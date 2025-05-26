@@ -1,9 +1,9 @@
-import { Component, EventEmitter, OnDestroy, OnInit, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, OnDestroy, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { ThemeToggleComponent, Themeable, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeToggleComponent, ThemeService } from '@optimistic-tanuki/theme-ui';
 import { filter, Subscription } from 'rxjs';
 import { UserComponent } from './user/user.component';
 

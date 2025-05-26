@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { AuthenticationService } from './authentication.service';
-import { RegisterRequest } from '@optimistic-tanuki/libs/models';
+import { RegisterRequest } from '@optimistic-tanuki/ui-models';
 
 describe('AuthenticationService', () => {
   let service: AuthenticationService;

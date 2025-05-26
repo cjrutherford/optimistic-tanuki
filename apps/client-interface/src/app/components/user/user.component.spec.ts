@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { UserComponent } from './user.component';
 import { AuthStateService } from '../../state/auth-state.service';
 import { Router } from '@angular/router';
-import { of, Subject } from 'rxjs';
+import { of } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
