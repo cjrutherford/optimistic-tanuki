@@ -1,0 +1,9 @@
+<div class="text-input-container" [ngClass]="labelPosition">
+  <label *ngIf="label" for="{{label}}">{{ label }}</label>
+  <input
+    [type]="type === 'obscured' ? 'password' : type"
+    [value]="value"
+    (input)="onInput($event)"
+    name="{{label}}"
+  />
+</div>

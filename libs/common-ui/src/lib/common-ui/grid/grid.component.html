@@ -1,0 +1,4 @@
+<div *ngIf="!renderEmpty" class="grid" [style.grid-template-columns]="gridTemplateColumns" [style.grid-template-rows]="gridTemplateRows">
+  <ng-content></ng-content>
+</div>
+<div *ngIf="renderEmpty"></div>

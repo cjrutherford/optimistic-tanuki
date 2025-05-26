@@ -1,0 +1,21 @@
+.button {
+    border: none;
+    background: none;
+    
+    &:hover {
+        background-color: var(--accent-shade-lighten-30);
+    }
+}
+
+.panel {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #00000066;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 1rem;
+    z-index: 1000;
+    margin-top: 0.5rem; // Add some space between the button and the panel
+}

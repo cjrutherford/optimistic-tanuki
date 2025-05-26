@@ -1,0 +1,7 @@
+<div *ngFor="let section of sections; let i = index" tabindex="0" class="accordion-section">
+  <h3 (click)="toggleSection(i)" (keypress)="toggleSection(i)" tabindex="1">{{ section.heading }}</h3>
+  <div *ngIf="expandedIndex === i">
+    <p>{{ section.content }}</p>
+  </div>
+    <otui-accordion *ngIf="section.subItems && section.subItems.length > 0" [sections]="section.subItems!"></otui-accordion>
+</div>

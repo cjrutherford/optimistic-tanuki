@@ -1,0 +1,38 @@
+<otui-card class="post-container" [ngClass]="'background-gradient-' + theme">
+  <div class="post-header">
+    @if (profile) {
+      <div class="post-profile">
+        <lib-profile-photo [src]="profile.avatar" [alt]="profile.name"></lib-profile-photo>
+        {{profile.name}}
+      </div>
+    }
+    <div class="title">{{ content.title }}</div>
+    <div class="subtitle">{{ content.createdAt | date }}</div>
+  </div>
+  <div class="content">
+    <div class="post-content" [innerHTML]="content.content"></div>
+    <div class="post-attachment" *ngIf="attachments.length > 0">
+      <h3>Attachments</h3>
+      <otui-grid [columns]="6" [rows]="attachmentRows"  class="attachment">
+        <!-- Display attachment details here -->
+        <otui-tile *ngFor="let attachment of attachments" (click)="downloadAttachment(attachment)" target="_blank">{{ attachment.name }}</otui-tile>
+      </otui-grid>
+    </div>
+    <div class="post-link" *ngIf="links.length > 0">
+      <h3>Links</h3>
+      <otui-grid [columns]="1" [rows]="links.length">
+          <otui-tile *ngFor="let link of links" class="link">
+            <!-- Display link details here -->
+            <a [href]="link.url" target="_blank">{{ link.title }}</a>
+          </otui-tile>
+      </otui-grid>
+    </div>
+    <div class="actions">
+      <otui-button variant="success">Like</otui-button>
+      <otui-button variant="success">Share</otui-button>
+      <lib-vote></lib-vote>
+      <lib-comment (commentAdded)="onCommentAdd($event)"></lib-comment>
+    </div>
+  </div>
+  <lib-comment-list [availableProfiles]="availableProfiles" (commentAdded)="onCommentReply($event)" [comments]="comments"></lib-comment-list>
+</otui-card>

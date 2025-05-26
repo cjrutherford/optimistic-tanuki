@@ -1,0 +1,12 @@
+@import '../../../../variables.scss';
+
+mat-card {
+    max-width: 400px;
+    margin-left: 1rem;
+    @extend .background-gradient-dark, .border-default, .shadow-default;
+    padding-bottom: 1rem;
+    text-align: center;
+    img {
+        margin-bottom: 1rem;
+    }
+}

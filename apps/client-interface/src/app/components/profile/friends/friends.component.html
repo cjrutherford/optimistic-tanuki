@@ -1,0 +1,10 @@
+<otui-tile>
+    <div class="icon">
+        <mat-icon matListIcon>person</mat-icon>
+    </div>
+    <div class="img">
+        <img mat-card-avatar [src]="friend.photo || 'https://placehold.it/300x300'" alt="{{ friend.name }}" width="500px"/>
+    </div>
+
+    <div matLine>{{ friend.name }}</div>
+</otui-tile>

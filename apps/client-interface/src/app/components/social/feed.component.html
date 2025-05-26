@@ -1,0 +1,12 @@
+<div class="feed-container">
+      <lib-compose (postSubmitted)="createdPost($event)"  style="width: 100%; padding-left: 1em; margin-right: 1em;"></lib-compose>
+      <div class="post" *ngFor="let post of posts; let i = index">
+        <lib-post 
+          [profile]="profiles[post.profileId]" 
+          [availableProfiles]="profiles"
+          [content]="post" 
+          [comments]="post.comments || []"
+          (newCommentAdded)="commented($event, i)"
+        ></lib-post>
+      </div>
+  </div>

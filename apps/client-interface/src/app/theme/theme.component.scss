@@ -1,0 +1,41 @@
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 2px solid;
+  border-radius: 5px;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+input[type='color'] {
+  border: none;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: box-shadow 0.3s;
+}
+
+input[type='color']:hover {
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.mat-slide-toggle-thumb {
+  background-color: #fff;
+  transition: background-color 0.3s;
+}
+
+.mat-slide-toggle-bar {
+  background-color: #ccc;
+  transition: background-color 0.3s;
+}
+
+.mat-checked .mat-slide-toggle-thumb {
+  background-color: #000;
+}
+
+.mat-checked .mat-slide-toggle-bar {
+  background-color: #666;
+}

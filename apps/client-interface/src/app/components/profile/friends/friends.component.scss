@@ -1,0 +1,19 @@
+@import '../../../../variables.scss';
+
+mat-card {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 400px;
+    margin-left: 1rem;
+    display: flex;
+    @extend .background-default;
+    @extend .border-default;
+    padding-bottom: 1rem;
+    text-align: center;
+    img {
+        margin-bottom: 1rem;
+    }
+}

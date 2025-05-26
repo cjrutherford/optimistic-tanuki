@@ -1,0 +1,15 @@
+<div class="toggle-container">
+  <form action="none" style="display: flex; align-items: center; width: 100%; justify-content: space-around">
+    <div class="theme-switch">
+      <span class="theme-label">Light</span>
+      <label class="switch">
+        <input type="checkbox" [checked]="theme === 'dark'" (change)="toggleTheme()">
+        <span class="slider round"></span>
+      </label>
+      <span class="theme-label">Dark</span>
+    </div>
+    <div class="accent-picker">
+      <input type="color" name="accent-color" [(ngModel)]="accentColor" (change)="updateAccentColor()" />
+    </div>
+  </form>
+</div>

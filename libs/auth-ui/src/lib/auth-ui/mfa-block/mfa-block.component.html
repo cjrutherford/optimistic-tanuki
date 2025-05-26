@@ -1,0 +1,24 @@
+<div class="mfa-container">
+    <otui-card>
+        @if (onboarding) {
+            <div class="onboarding-header">
+                <h1>Scan the QR Code</h1>
+                <p>Please scan the QR code with your authenticator app and enter the token below.</p>
+                <img [src]="qrCodeUrl" alt="QR Code" />
+            </div>
+        }
+        <div class="qr-container">
+
+        </div>
+        <div class="form-container">
+            <form [formGroup]="mfaForm" (ngSubmit)="onSubmit()">
+              <lib-text-input
+                  formControlName="mfaToken"
+                  label="MFA Token"
+              ></lib-text-input>
+              <br /><br />
+              <otui-button type="submit">Submit</otui-button>
+            </form>
+        </div>
+    </otui-card>
+</div>

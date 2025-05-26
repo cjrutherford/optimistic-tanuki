@@ -1,0 +1,28 @@
+<div class="tasks-container">
+  <div class="task-list">
+    <h2>Tasks</h2>
+    <div class="tab-group">
+      <button *ngFor="let task of tasks" class="tab-label" [class.active]="selectedTask && selectedTask.id === task.id" (click)="selectTask(task)">
+        {{ task.title }}
+      </button>
+    </div>
+  </div>
+  <div class="task-details" *ngIf="selectedTask">
+    <div class="card">
+      <div class="card-title">Details</div>
+      <div>{{ selectedTask.description }}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Timers</div>
+      <div *ngFor="let timer of filteredTimers" class="list-item">
+        {{ timer.description }} - {{ timer.status }}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Notes</div>
+      <div *ngFor="let note of filteredNotes" class="list-item">
+        {{ note.title }} - {{ note.status }}
+      </div>
+    </div>
+  </div>
+</div>

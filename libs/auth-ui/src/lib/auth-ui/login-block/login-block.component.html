@@ -1,0 +1,20 @@
+<div class="login-container">
+    <otui-card>
+        <div class="card-outer">
+            <div class="card-inner">
+                <div class="hero">
+                    <h1>{{title}}</h1>
+                    <p>{{description}}</p>
+                    <img width="300px" src="{{heroSrc}}" alt="{{heroAlt}}">
+                </div>
+                <div class="form">
+                    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+                      <lib-text-input formControlName="email" label="Email"></lib-text-input>
+                      <lib-text-input formControlName="password" label="Password" type="password"></lib-text-input>
+                      <otui-button type="submit">Login</otui-button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </otui-card>
+</div>

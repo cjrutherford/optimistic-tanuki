@@ -1,0 +1,114 @@
+.outer-card {
+    padding: 2px;
+    margin-top: 5px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+otui-grid{
+    overflow-x: scroll;
+    overflow-y: none;
+}
+.active {
+    box-shadow: 2px 2px 5px var(--complement);
+}
+.real-profile {
+    max-height: 200px;
+    max-width: 150px;
+    overflow: visible; // Changed from 'none' to 'visible' to ensure badges aren't clipped
+    h2 {
+        font-size: 12px;
+        margin: 0;
+    }
+
+    .profile-photo-badge-wrapper {
+        position: relative;
+        display: block; // Allows centering using margin auto
+        width: max-content; // Shrink to fit the photo
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 5px; // Space from h2
+        margin-bottom: 10px; // Space at the bottom
+    }
+
+    .profile-badge {
+        position: absolute;
+        z-index: 1; // Ensure badges are on top of the photo
+
+        &.left-badge {
+            bottom: 0px;
+            left: 0px;
+            transform: translate(-25%, 25%); // Position slightly offset from bottom-left
+        }
+
+        &.right-badge {
+            bottom: 0px;
+            right: 0px;
+            transform: translate(25%, 25%); // Position slightly offset from bottom-right
+        }
+    }
+
+    // Specific styling for the raw edit button
+    button.profile-badge.edit-profile-button {
+        background-color: rgba(220, 220, 220, 0.9); // Light grey, slightly transparent
+        border: 1px solid rgba(0,0,0,0.2);
+        color: #333;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        font-size: 14px; // For emoji
+        line-height: 28px; // Vertically center emoji
+        text-align: center;
+        cursor: pointer;
+        box-shadow: 0px 1px 3px rgba(0,0,0,0.2);
+
+        &:hover {
+            background-color: rgba(200, 200, 200, 0.95);
+        }
+    }
+    
+    // Specific styling for the raw add button
+    button.profile-badge.add-profile-bubble-button {
+        background-color: rgba(144, 238, 144, 0.9); // Light green, slightly transparent
+        border: 1px solid rgba(0,100,0,0.2);
+        color: darkgreen;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        font-size: 20px; // For '+'
+        font-weight: bold;
+        line-height: 26px; // Adjust for vertical centering of '+'
+        text-align: center;
+        cursor: pointer;
+        box-shadow: 0px 1px 3px rgba(0,0,0,0.2);
+
+        &:hover {
+            background-color: rgba(124, 218, 124, 0.95);
+        }
+    }
+}
+
+.add-profile {
+    max-height: 200px;
+    max-width: 150px;
+    overflow: visible; // Changed from 'none' to 'visible' to ensure badges aren't clipped
+    h2 {
+        font-size: 15px;
+        margin: 0;
+    }
+
+    .add-profile-photo-container {
+        position: relative; // For badge positioning
+        display: block; 
+        width: max-content; // Shrink to fit the photo
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 5px; // Consistent spacing
+        margin-bottom: 10px; // Consistent spacing
+    }
+
+    // The .profile-badge, .left-badge, and otui-button.profile-badge styles will apply
+    // to the button within .add-profile-photo-container.
+    // Removed general p and button styles from here.
+}

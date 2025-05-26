@@ -1,0 +1,15 @@
+.tabs {
+  .tab-titles {
+    display: flex;
+    button {
+      padding: 10px;
+      cursor: pointer;
+      &.active {
+        font-weight: bold;
+      }
+    }
+  }
+  .tab-content {
+    margin-top: 10px;
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@optimistic-tanuki/auth-ui": ["libs/auth-ui/src/index.ts"],
+      "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
+      "@optimistic-tanuki/form-ui": ["libs/form-ui/src/index.ts"],
+      "@optimistic-tanuki/profile-ui": ["libs/profile-ui/src/index.ts"],
+      "@optimistic-tanuki/social-ui": ["libs/social-ui/src/index.ts"],
+      "@optimistic-tanuki/theme-ui": ["libs/theme-ui/src/index.ts"],
+      "@optimistic-tanuki/ui-models": ["libs/ui-models/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

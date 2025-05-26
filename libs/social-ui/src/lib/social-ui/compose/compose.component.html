@@ -1,0 +1,44 @@
+<otui-card>
+  <form>
+    <lib-text-input
+      type="text"
+      label="Name your Masterpiece"
+      placeholder="Enter title"
+      [(ngModel)]="title"
+      [ngModelOptions]="{ standalone: true }"
+    ></lib-text-input>
+    <label for="content">Write your epic...</label>
+    <div 
+      class="editor-wrapper"
+      [class.dragover]="isDragOver"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      <quill-editor
+        id="quillEditor"
+        class="editor"
+        [theme]="'snow'"
+        [(ngModel)]="content"
+        [ngModelOptions]="{ standalone: true }"
+        [modules]="modules"
+        placeholder="What's on your mind?"
+        (onContentChanged)="onContentChange($event)"
+      ></quill-editor>
+    </div>
+    <!-- <otui-grid
+        [columns]="2"
+        [rows]="1"
+        [style]="{ 'margin-top': '1em' }"> -->
+    <!-- <lib-attachment (attachmentsChange)="onAttachmentChange($event)"></lib-attachment> -->
+    <!-- <lib-link [links]="links" (linksChange)="onLinksChange($event)"></lib-link> -->
+    <!-- </otui-grid> -->
+    <otui-button
+      style="margin-top: 1em; margin-left: 15px"
+      (click)="onPostSubmit()"
+      label="Post"
+      variant="success"
+      >Post!
+    </otui-button>
+  </form>
+</otui-card>

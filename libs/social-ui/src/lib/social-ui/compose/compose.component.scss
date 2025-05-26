@@ -1,0 +1,87 @@
+h3 {
+    margin: 10px;
+}
+.editor {
+    width: calc(100% - 20px);
+    height: calc(100% - 20px);
+    ::ng-deep .ql-editor {
+        height: 100%;
+    }
+    ::ng-deep .ql-container {
+        height: 100%;
+    }
+}
+button { 
+    margin: 10px;
+    margin-left: 15px;
+}
+
+  ::ng-deep .ql-container {
+    border: none;
+    background-color: var(--background-color);
+    color: var(--foreground-color);
+    font-family: 'Roboto', sans-serif;
+  }
+
+  ::ng-deep .ql-editor {
+    min-height: 200px;
+    padding: 1rem;
+    background-color: var(--accent-color);
+    color: var(--foreground-color);
+  }
+
+  ::ng-deep .ql-toolbar {
+    border: none;
+    background-color: var(--accent-shade-lighten-30);
+    color: var(--foreground-color);
+  }
+
+  ::ng-deep .ql-toolbar button:hover {
+    background-color: var(--accent-shade-darken-10);
+  }
+  .editor-wrapper {
+    position: relative;
+    border: 2px dashed transparent;
+    transition: border-color 0.3s ease;
+  
+    &.dragover {
+      border-color: var(--accent-color);
+      background-color: var(--accent-shade-lighten-30);
+    }
+  }
+  
+  .editor {
+    width: calc(100% - 20px);
+    height: calc(100% - 20px);
+  
+    ::ng-deep .ql-editor {
+      height: 100%;
+    }
+  
+    ::ng-deep .ql-container {
+      height: 100%;
+    }
+  }
+  ::ng-deep .ql-editor img {
+  max-width: 100%;
+  height: auto;
+}
+
+.overlay {
+  position: absolute;
+  border: 1px dashed #000;
+  z-index: 1000;
+}
+
+.overlay button {
+  margin: 5px;
+  padding: 5px 10px;
+  background-color: var(--accent-color);
+  color: var(--background-color);
+  border: none;
+  cursor: pointer;
+}
+
+.overlay button:hover {
+  background-color: var(--accent-shade-darken-10);
+}

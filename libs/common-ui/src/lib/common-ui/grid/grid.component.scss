@@ -1,0 +1,31 @@
+.grid {
+    display: grid;
+    gap: 1em;
+}
+
+.grid > * {
+    border-radius: 8px;
+    transition: box-shadow 0.3s ease;
+    background-color: var(--accent-shade-darken-10, #5969c3);
+    border: 1px solid var(--accent-shade-lighten-50, #b1baec);
+    color: var(--foreground-color, #fff);
+}
+
+.grid > *:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.grid.light-mode > * {
+    background-color: var(--accent-shade-lighten-50, #b1baec);
+    color: var(--foreground-color, #000);
+}
+
+.grid.dark-mode > * {
+    background-color: var(--accent-shade-darken-50, #313a6c);
+    color: var(--foreground-color, #fff);
+}
+
+.grid.fast-cycle-mode > * {
+    background: var(--gradient-fastCycle);
+    color: var(--foreground-color, #fff);
+}

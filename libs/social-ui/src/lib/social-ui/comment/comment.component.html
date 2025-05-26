@@ -1,0 +1,16 @@
+<ng-template #commentDialog>
+    <otui-card>
+        <form (ngSubmit)="onSubmit()">
+          <h2>Leave a Comment</h2>
+          <quill-editor
+            [(ngModel)]="comment"
+            [ngModelOptions]="{ standalone: true }"
+            [modules]="modules"
+            placeholder="Leave a comment"
+          ></quill-editor>
+          <otui-button variant="success" type="submit">Submit</otui-button>
+          <otui-button variant="warning" type="button" (click)="onCancel()">Cancel</otui-button>
+        </form>
+    </otui-card>
+</ng-template>
+<otui-button variant="success" (click)="openCommentDialog()">Leave a Comment</otui-button>

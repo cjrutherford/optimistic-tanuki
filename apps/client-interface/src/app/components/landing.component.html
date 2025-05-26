@@ -1,0 +1,33 @@
+<otui-grid [columns]="12" [rows]="12">
+    <otui-tile style="grid-column: 0 / 2; grid-row: 2 / 12; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <otui-heading [size]="'20px'" [text]="'Currently Available features:'"/>
+        <otui-list [type]="'block-list'" [items]="featureItems" />
+    </otui-tile>
+    <otui-tile style="grid-column: 2 / 10; grid-row: 2 / 4; display: flex; flex-direction: column;">
+        <otui-heading [size]="'30px'" [text]="'Optomistic Tanuki'"/>
+        <otui-heading [size]="'20px'" [text]="'Learn, Grow, Thrive – Side-by-Side'"/>
+    </otui-tile>
+    <otui-tile
+        style="grid-column: 2 / 10; grid-row: 4 / 12; display: flex; flex-direction: column; align-items: center; justify-content: center;"
+    >
+        <otui-heading [size]="'20px'" [text]="'Coming Soon...'"/>
+        <otui-heading [size]="'15px'" [text]="'Stay tuned for updates'"/>
+        <otui-card>
+            <otui-heading [size]="'20px'" [text]="'Unleash Your Best Self, Together'"/><br/>
+            <otui-heading [size]="'15px'" [text]="'This is a new kind of social network where you connect, grow, and uplift each other on your journey of self-improvement. Inspired by the transformative spirit of the tanuki, we\'re building a community powered by positivity and mutual encouragement. We believe that working to a better world can be accomplished by simply following the mantra &#34;Everyone does better when we help each other do better&#34;'"/>
+        </otui-card>
+
+        <otui-heading [size]="'20px'" [text]="'Why the Tanuki?'" />
+        <otui-heading [size]="'15px'" [text]="'The tanuki is a symbol of positivity and good luck in Japanese culture. It is known for its playful and mischievous nature, but also for its ability to bring good fortune to those who encounter it. We believe that this spirit of positivity and good luck is what we need to bring to the world, and that we can achieve this by helping each other do better.'"/>
+    </otui-tile>
+
+
+    <otui-tile style="grid-column: 11 / 13; grid-row: 2 / 12; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <otui-heading [size]="'20px'" [text]="'Follow Us'"/>
+        <otui-heading [size]="'15px'" [text]="'Stay updated with our latest news and updates'"/>
+        <otui-card>
+            <otui-heading [size]="'18px'" [text]="'Follow Us'"/><br/>
+            <otui-heading [size]="'15px'" [text]="'Stay updated with our latest news and updates'"/>
+        </otui-card>
+    </otui-tile>
+</otui-grid>

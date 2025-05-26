@@ -1,0 +1,18 @@
+.nav-button {
+    background: var(--background-color) !important;
+    color: var(--foreground-color);
+    // border: 1px solid var(--accent-color);
+}
+mat-toolbar > * {
+    background-color: var(--background-color);
+    color: var(--foreground-color);
+    // border: 1px solid var(--accent-color);
+    a {
+        color: var(--foreground-color);
+    }
+}
+.toolbar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}

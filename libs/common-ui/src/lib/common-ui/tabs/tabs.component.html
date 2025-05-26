@@ -1,0 +1,14 @@
+<div class="tabs">
+  <div class="tab-titles">
+    <button *ngFor="let tab of tabs.toArray(); let i = index" (click)="setActiveTab(i)" [class.active]="i === activeTabIndex">
+      {{ tab.title }}
+    </button>
+  </div>
+  <div class="tab-content">
+    <ng-container *ngFor="let tab of tabs.toArray(); let i = index">
+      <ng-container *ngIf="i === activeTabIndex">
+        <ng-container *ngTemplateOutlet="tab.content"></ng-container>
+      </ng-container>
+    </ng-container>
+  </div>
+</div>

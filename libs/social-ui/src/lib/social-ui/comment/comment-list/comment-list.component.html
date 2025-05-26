@@ -1,0 +1,16 @@
+<div class="comments-container">
+    <otui-grid [columns]="1" [rows]="comments.length">
+        <otui-card *ngFor="let comment of comments; let i" >
+            <div class="comment">
+                <div class="comment-heading">
+                    @if (getProfile(comment.profileId)) {
+                        <lib-profile-photo [src]="getProfile(comment.profileId)!.avatar" [alt]="getProfile(comment.profileId)!.name"></lib-profile-photo>
+                        <span class="comment-author">{{ getProfile(comment.profileId)!.name }}</span>
+                    }
+                </div>
+                <div class="comment-content" [innerHTML]="comment.content"></div>
+                <lib-comment (commentAdded)="addComment($event, comment.id, comment.postId)"></lib-comment>
+            </div>
+        </otui-card>
+    </otui-grid>
+</div>

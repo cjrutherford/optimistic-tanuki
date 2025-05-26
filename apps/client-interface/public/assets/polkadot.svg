@@ -1,0 +1,12 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gradient2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#11998E" />
+      <stop offset="100%" stop-color="#38EF7D" />
+    </radialGradient>
+    <pattern id="pattern2" patternUnits="userSpaceOnUse" width="20" height="20">
+      <circle cx="10" cy="10" r="9" fill="url(#gradient2)" />
+    </pattern>
+  </defs>
+  <rect width="200" height="200" fill="url(#pattern2)" />
+</svg>

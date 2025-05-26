@@ -1,0 +1,10 @@
+.profile-photo {
+  border-radius: 50%;
+  border: 6px solid var(--accent-shade-darken-30);
+  max-width: 100px;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}

@@ -1,0 +1,6 @@
+<div>
+  <otui-button [variant]="voteState === 1 ? 'success': 'danger'" (click)="upvote()" [class.active]="voteState === 1">⬆️</otui-button>
+  <otui-button [variant]="voteState === 0 ? 'success': 'danger'" (click)="cancelVote()" [class.active]="voteState === 0">😑</otui-button>
+  <otui-button [variant]="voteState === -1 ? 'success': 'danger'" (click)="downvote()" [class.active]="voteState === -1">⬇️</otui-button>
+</div>
+

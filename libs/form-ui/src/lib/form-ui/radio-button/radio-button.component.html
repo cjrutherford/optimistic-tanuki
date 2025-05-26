@@ -1,0 +1,9 @@
+<div [ngClass]="layout">
+  <div *ngFor="let option of options" class="radio-container">
+    <label>
+      <input type="radio" [value]="option.value" [(ngModel)]="selected" (change)="onSelect(option.value)">
+      <span class="radio-mark"></span>
+      {{ option.label }}
+    </label>
+  </div>
+</div>

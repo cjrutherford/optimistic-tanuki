@@ -1,0 +1,41 @@
+@if (profile) {
+  <lib-banner class="profile-banner"
+    [profileName]="profile.profileName"
+    [profileImage]="profile.profilePic"
+    [backgroundImage]="profile.coverPic"
+  >
+  </lib-banner>
+}
+
+<!-- <otui-card >
+    <div class="filter">
+      <h3>Friends</h3>
+      <otui-grid [columns]="7" [rows]="1">
+          <app-friends *ngFor="let friend of friends" [friend]="friend"></app-friends>
+      </otui-grid>
+    </div>
+</otui-card>
+
+<div>
+  <otui-card>
+    <div class="filter">
+      <h3>Photo Galleries</h3>
+      <otui-grid [columns]="7" [rows]="1">
+          <app-gallery *ngFor="let gallery of photoGalleries" [data]="gallery"></app-gallery>
+      </otui-grid>
+    </div>
+  </otui-card>
+</div>
+
+<div>
+  <otui-card class="posts">
+    <div class="filter">
+      <h3>Recent Posts</h3>
+      <div id="post-container">
+        <div *ngFor="let post of recentPosts">
+          <app-post [content]="post"></app-post>
+        </div>
+      </div>
+    </div>
+  </otui-card>
+</div> -->

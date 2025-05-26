@@ -1,0 +1,42 @@
+.text-input-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 1rem;
+  margin-top: 10px;
+  user-select: none;
+}
+
+.text-input-container.top {
+  flex-direction: column;
+}
+
+.text-input-container.left {
+  flex-direction: row;
+}
+
+.text-input-container.right {
+  flex-direction: row-reverse;
+}
+
+.text-input-container.bottom {
+  flex-direction: column-reverse;
+}
+
+.text-input-container input {
+  height: 20px;
+  width: 99%;
+  margin: 10px;
+  padding: 5px;
+  border: 2px solid var(--accent);
+  color: var(--foreground);
+  border: 2px solid var(--border-color);
+  box-shadow: 0 0 2px 1px var(--complement);
+  border-radius: 4px;
+  background-color: var(--accent);
+}
+
+.text-input-container input:focus {
+  border-color: var(--border-color);
+  box-shadow: 0 0 5px 4px var(--complement);
+}

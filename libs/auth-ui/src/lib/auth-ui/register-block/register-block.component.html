@@ -1,0 +1,40 @@
+<div class="register-container">
+  <otui-card>
+    <div class="card-outer">
+      <div class="card-inner">
+        <div class="hero">
+          <h1>{{ registerHeader }}</h1>
+          <p>{{ callToAction }}</p>
+          <img src="{{ heroSource }}" alt="Hero Image" width="300px" />
+        </div>
+        <div class="form">
+          <form
+            [formGroup]="registerForm"
+            (ngSubmit)="onSubmit()"
+          >
+            <lib-text-input
+              formControlName="email"
+              [label]="'Email'"
+              [type]="'text'"
+            ></lib-text-input>
+            <lib-text-input
+              formControlName="password"
+              [label]="'Password'"
+              [type]="'password'"
+            ></lib-text-input>
+            <lib-text-input
+              formControlName="confirmation"
+              [label]="'Confirm Password'"
+              [type]="'password'"
+            ></lib-text-input>
+            <div class="actions">
+              <otui-button mat-raised-button color="primary" type="submit">
+                {{ registerButtonText }}
+              </otui-button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </otui-card>
+</div>

@@ -1,0 +1,39 @@
+<div class="table-row" [ngStyle]="tableStyles">
+  <ng-container *ngFor="let cell of cells; index as i">
+    @if (cell.isBadge) {
+      <div class="table-cell badge-cell" [ngStyle]="cell.customStyles">
+        @if (isTemplateRef(cell.value)) {
+          <ng-container [ngTemplateOutlet]="cellTemplates[i]"></ng-container>
+        } @else {
+          {{ cell.value }}
+        }
+      </div>
+    }
+    @else if (!cell.isSpacer) {
+      <div class="table-cell" [ngStyle]="cell.customStyles">
+        @if (isTemplateRef(cell.value)) {
+          <ng-container [ngTemplateOutlet]="cellTemplates[i]"></ng-container>
+        } @else {
+          <div class="table-head" *ngIf="cell.heading">
+            {{ cell.heading }}
+          </div>
+          <div class="table-value">
+            {{ cell.value }}
+          </div>
+        }
+      </div>
+    }
+    @else {
+      <div class="table-spacer"></div>
+    }
+
+  </ng-container>
+  <div *ngIf="rowActions" class="table-cell actions-cell">
+    <otui-button (click)="toggleActions()">Actions</otui-button>
+    <div *ngIf="showActions" class="actions-list popover">
+      <otui-button *ngFor="let action of rowActions" (click)="executeAction(action)">
+        {{ action.title }}
+      </otui-button>
+    </div>
+  </div>
+</div>

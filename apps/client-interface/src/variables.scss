@@ -1,0 +1,99 @@
+.background-default {
+  background-color: var(--background-color);
+}
+
+.background-gradient-dark {
+  background: var(--gradient-dark);
+  color: var(--foreground-color);
+  position: relative;
+  z-index: 1;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5); // Adjust the opacity as needed
+    z-index: -1;
+  }
+}
+
+.background-gradient-light {
+  background: var(--gradient-light);
+  color: var(--foreground-color);
+  position: relative;
+  z-index: 1;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.5); // Adjust the opacity as needed
+    z-index: -1;
+  }
+}
+
+.border-default {
+  border: 1px solid var(--accent-color);
+}
+
+.shadow-default {
+  box-shadow: 0 0 10px 0 var(--accent-shade-darken-30);
+}
+
+.button-default {
+  background-color: var(--complementary-color) !important;
+  color: var(--foreground-color);
+  border: 3px solid var(--complementary-shade-darken-30);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    color 0.3s,
+    border-color 0.3s;
+
+  &:hover {
+    background-color: var(--complementary-shade-darken-30);
+    color: var(--button-text-hover);
+    border-color: var(--complementary-shade-4);
+  }
+}
+
+.button-outlined {
+  background-color: transparent;
+  color: var(--complementary-color);
+  border: 3px solid var(--complementary-shade-darken-10);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    color 0.3s,
+    border-color 0.3s;
+
+  &:hover {
+    background-color: var(--complementary-shade-darken-30);
+    color: var(--complementary-shade-darken-70);
+    border-color: var(--complementary-shade-darken-50);
+  }
+}
+
+.button-text {
+  background-color: transparent;
+  color: var(--complementary-color);
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: color 0.3s;
+
+  &:hover {
+    color: var(--complementary-shade-darken-10);
+    background-color: var(--complementary-color);
+  }
+}

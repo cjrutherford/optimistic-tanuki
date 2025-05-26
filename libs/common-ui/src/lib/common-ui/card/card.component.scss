@@ -1,0 +1,35 @@
+.card {
+    border: 4px solid var(--border-color, #b1baec);
+    border-radius: 4px;
+    margin: 10px;
+    padding: 20px;
+    box-shadow: inset 0 0 1em rgba(0, 0, 0, 0.1);
+    background: var(--background, #5969c3);
+    color: var(--foreground, #fff);
+}
+
+.card:hover {
+    box-shadow: 2px 4px 8px 6px linear-gradient(to right, var(--accent), var(--complement));
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+.card.light-mode {
+    background-color: var(--background, #b1baec);
+    color: var(--foreground, #000);
+}
+
+.card.dark-mode {
+    background-color: var(--background, #313a6c);
+    color: var(--foreground, #fff);
+}
+
+.card.fast-cycle-mode {
+    background: var(--border-gradient);
+    color: var(--foreground, #fff);
+}
+
+.card-header {
+    font-size: 1.25em;
+    margin-bottom: 10px;
+    color: var(--foreground, #fff);
+}
