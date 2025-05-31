@@ -1,0 +1,22 @@
+listenPort: 3000
+services:
+  authentication:
+    name: authentication
+    transport: TCP
+    host: ot_authentication
+    port: 3001
+  profile:
+    name: profile
+    transport: TCP
+    host: ot_profile
+    port: 3002
+  social:
+    name: social
+    transport: TCP
+    host: ot_social
+    port: 3003
+  tasks:
+    name: tasks
+    transport: TCP
+    host: ot_tasks
+    port: 3004
