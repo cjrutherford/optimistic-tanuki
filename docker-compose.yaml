@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    container_name: db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  authentication:
+    build:
+      context: .
+      dockerfile: ./apps/authentication/Dockerfile
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Command will be inherited from Dockerfile's CMD
+
+  client-interface:
+    build:
+      context: .
+      dockerfile: ./apps/client-interface/Dockerfile
+    ports:
+      - "8080:80"
+    # Command will be inherited from Dockerfile's CMD (e.g., nginx)
+    # depends_on: # Add if it needs gateway or other services to be up first for production
+
+  gateway:
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      authentication:
+        condition: service_started
+      profile:
+        condition: service_started
+      social:
+        condition: service_started
+      tasks:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    # Command will be inherited from Dockerfile's CMD
+
+  profile:
+    build:
+      context: .
+      dockerfile: ./apps/profile/Dockerfile
+    ports:
+      - "3002:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Command will be inherited from Dockerfile's CMD
+
+  social:
+    build:
+      context: .
+      dockerfile: ./apps/social/Dockerfile
+    ports:
+      - "3003:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Command will be inherited from Dockerfile's CMD
+
+  tasks:
+    build:
+      context: .
+      dockerfile: ./apps/tasks/Dockerfile
+    ports:
+      - "3004:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Command will be inherited from Dockerfile's CMD
+
+volumes:
+  postgres_data:

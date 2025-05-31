@@ -1,0 +1,69 @@
+
+services:
+  authentication:
+    build:
+      context: .
+      dockerfile: ./apps/authentication/Dockerfile
+    volumes:
+      - ./dist/apps/authentication:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+
+  client-interface:
+    build:
+      context: .
+      dockerfile: ./apps/client-interface/Dockerfile
+    volumes:
+      - ./dist/apps/client-interface:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: >
+      /bin/sh -c "cp -r /usr/src/app/* /usr/share/nginx/html/ && inotifywait -m -e modify,create,delete /usr/src/app |
+      while read; do cp -r /usr/src/app/* /usr/share/nginx/html/; done"
+    environment:
+      - NODE_ENV=development
+
+  gateway:
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile
+    volumes:
+      - ./dist/apps/gateway:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+
+  profile:
+    build:
+      context: .
+      dockerfile: ./apps/profile/Dockerfile
+    volumes:
+      - ./dist/apps/profile:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+
+  social:
+    build:
+      context: .
+      dockerfile: ./apps/social/Dockerfile
+    volumes:
+      - ./dist/apps/social:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+
+  tasks:
+    build:
+      context: .
+      dockerfile: ./apps/tasks/Dockerfile
+    volumes:
+      - ./dist/apps/tasks:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development

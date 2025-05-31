@@ -9,13 +9,25 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "webpack-cli build",
-        "args": ["node-env=production"]
+        "args": ["node-env=production"],
+        "packageJson": {
+          "dependencies": {
+            "pg": "^8.16.0"
+          }
+        }
       },
       "configurations": {
         "development": {
           "args": ["node-env=development"]
         }
       }
+    },
+    "add-pg-dependency": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/scripts/add-pg-dep.js dist/apps/profile"
+      },
+      "dependsOn": ["build"]
     },
     "serve": {
       "continuous": true,

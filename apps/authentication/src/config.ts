@@ -1,6 +1,7 @@
 import * as yaml from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
+import 'pg';
 
 export declare type AuthConfigType = {
         listenPort: number;

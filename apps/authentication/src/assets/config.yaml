@@ -1,0 +1,10 @@
+listenPort: 3001
+database:
+  host: db
+  port: 5432
+  name: ot_authentication
+  username: postgres
+  password: postgres
+auth: 
+  jwtSecret: |
+    c3VwZXJzZWNyZXRzdHJpbmc=

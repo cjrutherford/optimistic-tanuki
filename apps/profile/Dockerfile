@@ -10,12 +10,13 @@ RUN npm install --omit=dev
 FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=3002
+RUN npm i -g nodemon pg
 WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 COPY dist/apps/profile .
 RUN chown -R node:node .
 USER node
-EXPOSE 3000
+EXPOSE 3002
 CMD ["dumb-init", "node", "main.js"]
