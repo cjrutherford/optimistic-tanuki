@@ -11,6 +11,7 @@ import { AuthStateService } from '../state/auth-state.service';
 import { CommonModule } from '@angular/common';
 import { Subscription, filter } from 'rxjs';
 import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
+import { LoginType } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-login',
@@ -19,7 +20,6 @@ import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
   standalone: true,
   imports: [
     CommonModule, 
-    ReactiveFormsModule, 
     LoginBlockComponent
   ],
 })
@@ -45,8 +45,9 @@ export class LoginComponent implements OnDestroy {
     this.themeSub.unsubscribe();
   }
 
-  onSubmit($event: SubmitEvent) {
+  onSubmit($event: LoginType) {
     const event = $event as any;
+    console.log(event);
     const loginRequest: LoginRequest = {
       email: event.email,
       password: event.password,

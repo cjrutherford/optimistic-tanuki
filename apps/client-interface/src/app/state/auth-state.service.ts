@@ -70,7 +70,9 @@ export class AuthStateService {
   }
 
   setToken(token: string) {
+    console.log('setToken called with token:', token);
     if (!isPlatformBrowser(this.platformId)) {
+      console.log('setToken called on non-browser platform');
       return;
     }
     localStorage.setItem('authToken', token);

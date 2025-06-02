@@ -1,4 +1,4 @@
-import { Body, Controller, Inject, Post, HttpException, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Inject, Post, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
@@ -43,8 +43,8 @@ export class AuthenticationController {
   @ApiResponse({ status: 201, description: 'User registered successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   async registerUser(@Body() data: RegisterRequest) {
-    console.log("🚀 ~ AuthenticationController ~ registerUser ~ data:", data)
     try {
+      console.log('registerUser:', data);
       const result = await firstValueFrom(
         this.authClient.send({ cmd: AuthCommands.Register }, data),
       );

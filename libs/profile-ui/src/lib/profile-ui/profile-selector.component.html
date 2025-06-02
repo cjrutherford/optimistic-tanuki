@@ -31,13 +31,13 @@
 </otui-card>
 
 <ng-template #profileDialog>
-    <otui-card>
+    <otui-card style="max-height: 70vh; overflow-y: auto;">
         <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
           <h2>{{ editingProfile ? 'Edit Profile' : 'New Profile' }}</h2>
           <lib-text-input label="Profile Name" formControlName="profileName"></lib-text-input>
           <lib-image-upload label="Profile Picture" (imageUpload)="onProfilePicUpload($event)" [currentImage]="profileForm.get('profilePic')?.value"></lib-image-upload>
           <lib-text-input label="Bio" formControlName="bio"></lib-text-input> <!-- Consider TextAreaComponent for bio -->
-          <lib-text-input label="Description" formControlName="description"></lib-text-input> <!-- Consider TextAreaComponent -->
+          
           <lib-image-upload label="Cover Picture" (imageUpload)="onCoverPicUpload($event)" [currentImage]="profileForm.get('coverPic')?.value"></lib-image-upload>
           <div class="dialog-actions">
             <otui-button variant="success" type="submit" [disabled]="profileForm.invalid">Submit</otui-button>

@@ -23,6 +23,7 @@ const database = process.env.POSTGRES_DB || configDatabase || configName;
 
 const entities = [KeyDatum, UserEntity, TokenEntity];
 
+console.log(`Using database configuration: host=${host}, port=${port}, username=${username}, database=${database}`);
 const staticSource =  new DataSource({
     type: 'postgres',
     host: host, // Use the potentially overridden host

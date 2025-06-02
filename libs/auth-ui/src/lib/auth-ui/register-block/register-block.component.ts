@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { RegisterSubmitType } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'lib-register-block',
@@ -26,7 +27,7 @@ export class RegisterBlockComponent extends Themeable {
   @Input() registerButtonText = 'Register';
   @Input() callToAction = 'Join us on your journey';
   @Input() heroSource = 'https://source.unsplash.com/random/800x600/?nature,water'; 
-  @Output() submitEvent = new EventEmitter<{email: string; password: string, firstName: string, lastName: string, confirmation: string, bio: string}>();
+  @Output() submitEvent = new EventEmitter<RegisterSubmitType>();
   registerForm: FormGroup;
   constructor(private readonly fb: FormBuilder, themeService: ThemeService) {
     super(themeService);
@@ -59,7 +60,6 @@ export class RegisterBlockComponent extends Themeable {
   }
 
   onSubmit() {
-    console.log(this.registerForm.value);
     this.submitEvent.emit(this.registerForm.value);
   }
 }

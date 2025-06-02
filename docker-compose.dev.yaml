@@ -1,6 +1,6 @@
-
 services:
   authentication:
+    container_name: ot_authentication # Corrected typo
     build:
       context: .
       dockerfile: ./apps/authentication/Dockerfile
@@ -10,21 +10,36 @@ services:
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:
       - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
 
   client-interface:
+    container_name: ot_client_interface # Added
     build:
       context: .
       dockerfile: ./apps/client-interface/Dockerfile
     volumes:
-      - ./dist/apps/client-interface:/usr/src/app
-      - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: >
-      /bin/sh -c "cp -r /usr/src/app/* /usr/share/nginx/html/ && inotifywait -m -e modify,create,delete /usr/src/app |
-      while read; do cp -r /usr/src/app/* /usr/share/nginx/html/; done"
+      # The new Dockerfile handles copying built assets, so direct volume mounting of dist might conflict or be unnecessary for SSR.
+      # For development with hot-reloading of the SSR server, a different approach might be needed.
+      # This setup assumes the Dockerfile's build process is the source of truth for the container's content.
+      # If live-reloading of the Node.js server is desired, the command and volumes would need to be adjusted similar to other Node.js services.
+      # For now, we remove the previous volume mounts and command that were specific to Nginx and static file serving.
+      - ./apps/client-interface:/app/apps/client-interface # Mount the source code for potential rebuilds if command is adapted
+      - ./libs:/app/libs # Mount libs if they are part of the build
+      - ./dist/apps/client-interface:/app/dist/apps/client-interface # Mount the built dist for SSR
+      - /usr/src/app/node_modules # Keep node_modules from the image
+    ports:
+      - "8080:4000" # Match the new exposed port
+    # The command from the Dockerfile is `node dist/apps/client-interface/server/main.js`
+    # For development, you might want to use nodemon or similar for the SSR server.
+    # Example for nodemon (ensure nodemon is in your project or installed in the image for dev):
+    command: ["dumb-init", "nodemon", "/app/dist/apps/client-interface/server/server.mjs"]
     environment:
       - NODE_ENV=development
 
   gateway:
+    container_name: ot_gateway # Added
     build:
       context: .
       dockerfile: ./apps/gateway/Dockerfile
@@ -34,8 +49,22 @@ services:
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:
       - NODE_ENV=development
+    depends_on:
+      postgres: # Added
+        condition: service_healthy # Added
+      authentication:
+        condition: service_started
+      client-interface:
+        condition: service_started
+      profile:
+        condition: service_started
+      social:
+        condition: service_started
+      tasks:
+        condition: service_started
 
   profile:
+    container_name: ot_profile
     build:
       context: .
       dockerfile: ./apps/profile/Dockerfile
@@ -45,8 +74,12 @@ services:
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:
       - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
 
   social:
+    container_name: ot_social
     build:
       context: .
       dockerfile: ./apps/social/Dockerfile
@@ -56,8 +89,12 @@ services:
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:
       - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
 
   tasks:
+    container_name: ot_tasks
     build:
       context: .
       dockerfile: ./apps/tasks/Dockerfile
@@ -67,3 +104,6 @@ services:
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:
       - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy

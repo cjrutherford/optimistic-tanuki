@@ -1,5 +1,6 @@
 import { APP_BASE_HREF } from '@angular/common';
 import { CommonEngine, isMainModule } from '@angular/ssr/node';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +24,11 @@ const commonEngine = new CommonEngine();
  * });
  * ```
  */
+app.use('/api', createProxyMiddleware({
+  target: 'http://gateway:3000/api', // Change to your API server URL
+  changeOrigin: true,
+  // pathRewrite: { '^/api': '' }, // Remove /api prefix when forwarding to the target
+}))
 
 /**
  * Serve static files from /browser
@@ -38,6 +44,7 @@ app.get(
 /**
  * Handle all other requests by rendering the Angular application.
  */
+//tslint:disable-next-line:no-implicit-any
 app.get('**', (req, res, next) => {
   const { protocol, originalUrl, baseUrl, headers } = req;
 

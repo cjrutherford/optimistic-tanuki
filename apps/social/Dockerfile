@@ -15,7 +15,7 @@ ENV PORT=3003
 WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
-COPY dist/apps/social .
+COPY ./dist/apps/social .
 RUN chown -R node:node .
 USER node
 EXPOSE 3003
