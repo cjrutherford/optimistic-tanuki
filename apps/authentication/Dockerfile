@@ -15,7 +15,8 @@ RUN npm i -g nodemon pg
 WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
-COPY dist/apps/authentication .
+RUN pwd && ls -lath
+COPY ./dist/apps/authentication .
 RUN chown -R node:node .
 USER node
 EXPOSE 3001
