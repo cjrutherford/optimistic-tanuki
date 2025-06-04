@@ -1,8 +1,8 @@
 export default interface RegisterRequest {
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    fn: string;
+    ln: string;
     confirm: string;
     bio: string;
 }

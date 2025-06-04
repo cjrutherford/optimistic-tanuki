@@ -92,52 +92,67 @@ export class AppService {
     ln: string,
     password: string,
     confirm: string,
-    bio: string,
+    bio = '',
   ) {
     try {
+      this.l.log('Registering user:', email, fn, ln, bio);
+      this.l.log('Checking passwords', password, confirm)
       const passwordBuffer = Buffer.from(password);
       const confirmBuffer = Buffer.from(confirm);
       if (!timingSafeEqual(passwordBuffer, confirmBuffer)) {
         throw new RpcException('Passwords do not match');
       }
+      this.l.log('Passwords match, proceeding with registration');
       if (!validator.isEmail(email)) {
         this.l.error(`Invalid Email: ${email}`);
         throw new RpcException('Invalid Email ' + email);
       }
+      this.l.log('Email is valid, checking for existing user');
       const existingUser = await this.userRepo.findOne({ where: { email } });
+      this.l.log('Existing user check complete:', existingUser);
       if (existingUser) {
         console.error('User already exists');
         throw new RpcException('User already exists');
       }
+      this.l.log('Creating new user hash');
       const hashData = await this.saltedHashService.createNewHash(password);
       if (!hashData) {
         console.error('Error creating hash');
         throw new RpcException('Error creating hash');
       }
+      this.l.log('Hash created successfully:', hashData);
       const insertResult = await this.userRepo.insert({
         email,
         firstName: fn,
         lastName: ln,
         password: hashData.hash,
         keyData: { salt: hashData.salt },
-        bio,
+        bio: bio,
       });
+      this.l.log('User inserted successfully:', insertResult);
       const newUserId = insertResult.identifiers[0].id;
       const newUser = await this.userRepo.findOne({ where: { id: newUserId } }); // njsscan-ignore: node_nosqli_injection
 
+      if (!newUser) {
+        console.error('Error retrieving new user after insert');
+        throw new RpcException('Error retrieving new user');
+      }
       const { pubKey, privLocation } = await this.keyService.generateUserKeys(
         newUser.id,
         hashData.hash,
       );
+      this.l.log('User keys generated successfully:', pubKey, privLocation);
       const nk: Partial<KeyDatum> = {
         public: Buffer.from(pubKey),
         salt: hashData.salt.toString(),
       };
 
+      this.l.log(`Saving new key data for user: ${newUser.id}`);
       const newKeyData = await this.keyRepo.save({ ...nk });
       newUser.keyData = newKeyData;
       await this.userRepo.save(newUser);
 
+      this.l.log('New user registered successfully:', newUser);
       return {
         message: 'User Created',
         code: 0,
@@ -149,6 +164,7 @@ export class AppService {
         },
       };
     } catch (e) {
+      console.trace(e);
       console.error('Error in registerUser:', e);
       throw new RpcException(e);
     }
@@ -206,7 +222,7 @@ export class AppService {
       if (!storedToken || storedToken.revoked) {
         throw new RpcException('Token is invalid or revoked');
       }
-      return { message: 'Token is valid', code: 0, data: decoded };
+      return { message: 'Token is valid', code: 0, data: decoded, isValid: true };
     } catch (e) {
       throw new RpcException('Invalid token');
     }

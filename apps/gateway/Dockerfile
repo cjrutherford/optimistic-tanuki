@@ -14,7 +14,7 @@ ENV PORT=3000
 WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
-RUN pwd && ls -lath
+RUN npm i -g nodemon
 COPY ./dist/apps/gateway .
 RUN chown -R node:node .
 USER node

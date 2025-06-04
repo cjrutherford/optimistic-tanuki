@@ -5,3 +5,5 @@ export { TimerDto, TimerStatus } from './timer.dto';
 export { default as RegisterRequest } from './RegisterRequest';
 export { CreateProfileDto, UpdateProfileDto, ProfileDto } from './profile';
 export { UserDto } from './User.dto';
+export { RegisterSubmitType } from './register-types';
+export { LoginType } from './login-types';

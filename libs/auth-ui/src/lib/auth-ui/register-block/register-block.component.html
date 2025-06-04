@@ -13,6 +13,16 @@
             (ngSubmit)="onSubmit()"
           >
             <lib-text-input
+              formControlName="firstName"
+              [label]="'First Name'"
+              [type]="'text'"
+            ></lib-text-input>
+            <lib-text-input
+              formControlName="lastName"
+              [label]="'Last Name'"
+              [type]="'text'"
+            ></lib-text-input>
+            <lib-text-input
               formControlName="email"
               [label]="'Email'"
               [type]="'text'"

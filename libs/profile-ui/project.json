@@ -13,8 +13,43 @@
         "jestConfig": "libs/profile-ui/jest.config.ts"
       }
     },
+    "storybook": {
+      "executor": "@storybook/angular:start-storybook",
+      "options": {
+        "port": 4400,
+        "configDir": "libs/profile-ui/.storybook",
+        "browserTarget": "profile-ui:build-storybook",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "build-storybook": {
+      "executor": "@storybook/angular:build-storybook",
+      "outputs": ["{options.outputDir}"],
+      "options": {
+        "outputDir": "dist/storybook/profile-ui",
+        "configDir": "libs/profile-ui/.storybook",
+        "browserTarget": "profile-ui:build-storybook",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
     "lint": {
       "executor": "@nx/eslint:lint"
+    },
+    "test-storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test-storybook -c libs/profile-ui/.storybook --url=http://localhost:4400"
+      }
     }
   }
 }

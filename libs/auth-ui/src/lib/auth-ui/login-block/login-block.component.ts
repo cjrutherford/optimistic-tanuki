@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { LoginType } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'lib-login-block',
@@ -26,7 +27,7 @@ export class LoginBlockComponent extends Themeable{
   @Input()  description = 'login-block works!';
   @Input() heroSrc = 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNjUyOXwwfDF8c2VhcmNofDJ8fGxvZ298ZW58MHx8fHwxNjg3NTY5NzA1&ixlib=rb-4.0.3&q=80&w=1080';
   @Input() heroAlt = 'login-block works!';
-  @Output() submitEvent = new EventEmitter<{email: string; password: string}>();
+  @Output() submitEvent = new EventEmitter<LoginType>();
   loginForm: FormGroup;
   constructor(private readonly fb: FormBuilder, themeService: ThemeService) {
     super(themeService)
