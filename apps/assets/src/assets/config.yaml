@@ -1,0 +1,7 @@
+listenPort: 3001
+database:
+  host: db
+  port: 5432
+  name: ot_assets
+  username: postgres
+  password: postgres
