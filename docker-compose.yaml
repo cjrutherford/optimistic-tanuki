@@ -120,6 +120,20 @@ services:
       db-setup: # Ensures db-setup is completed before starting tasks
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
+  
+  asset:
+    container_name: ot_asset
+    build:
+      context: .
+      dockerfile: ./apps/asset/Dockerfile
+    ports:
+      - "3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting asset
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
 
 volumes:
   postgres_data:

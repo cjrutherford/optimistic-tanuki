@@ -3,5 +3,6 @@ const ServiceTokens = {
     PROFILE_SERVICE: 'PROFILE_SERVICE',
     SOCIAL_SERVICE: 'SOCIAL_SERVICE',
     TASKS_SERVICE: 'TASKS_SERVICE',
+    ASSETS_SERVICE: 'ASSETS_SERVICE',
 }
 export { ServiceTokens }

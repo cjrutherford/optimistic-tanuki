@@ -107,3 +107,18 @@ services:
     depends_on: # Added
       postgres:
         condition: service_healthy
+  
+  asset:
+    container_name: ot_asset
+    build:
+      context: .
+      dockerfile: ./apps/asset/Dockerfile
+    volumes:
+      - ./dist/apps/asset:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
