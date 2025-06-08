@@ -6,8 +6,8 @@
     "docker:build": "docker compose build",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
-    "build": "nx run-many --target=build --projects=authentication,client-interface,gateway,profile,social,tasks",
-    "watch:build": "nx watch --all -- nx run-many --target=build --projects=authentication,client-interface,gateway,profile,social,tasks",
+    "build": "nx run-many --target=build --projects=authentication,client-interface,gateway,profile,social,tasks,asset",
+    "watch:build": "nx watch --all -- nx run-many --target=build --projects=authentication,client-interface,gateway,profile,social,tasks,asset",
     "docker:dev": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up --build",
     "docker:dev:watch": "concurrently \"npm run docker:dev\" \"npm run watch:build\"",
     "db:setup": "sh ./setup-and-migrate.sh"
@@ -26,6 +26,7 @@
     "@angular/platform-server": "~19.2.0",
     "@angular/router": "~19.2.0",
     "@angular/ssr": "~19.2.0",
+    "@aws-sdk/client-s3": "^3.826.0",
     "@nestjs/common": "^10.0.2",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^10.0.2",
