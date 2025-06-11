@@ -18,6 +18,8 @@ import {
     UpdateProjectDto, 
     UpdateTimelineDto,
     ProfileDto,
+    AssetDto,
+    CreateAssetDto,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
@@ -25,7 +27,10 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 @ApiTags('profile')
 @Controller('profile')
 export class ProfileController {
-    constructor(@Inject(ServiceTokens.PROFILE_SERVICE) private readonly client: ClientProxy) {}
+    constructor(
+        @Inject(ServiceTokens.PROFILE_SERVICE) private readonly client: ClientProxy,
+        @Inject(ServiceTokens.ASSETS_SERVICE) private readonly assetClient: ClientProxy
+    ) {}
     
     @UseGuards(AuthGuard)
     @ApiOperation({ summary: 'Create a new profile' })

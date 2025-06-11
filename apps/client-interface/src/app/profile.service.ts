@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
-import { ProfileDto, CreateProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
+import { ProfileDto, CreateProfileDto, UpdateProfileDto, AssetDto, CreateAssetDto } from '@optimistic-tanuki/ui-models';
 import { firstValueFrom, map, switchMap, forkJoin } from 'rxjs';
 import { AuthStateService } from './state/auth-state.service';
 
@@ -31,15 +31,15 @@ export class ProfileService {
 
   async getAllProfiles() {
     const profiles = await firstValueFrom(this.http.get<ProfileDto[]>('/api/profile'));
-    for(const p of profiles) {
-      const pic = await firstValueFrom(this.http.get<{profilePic: string}>(`/api/profile/${p.id}/photo`));
-      p.profilePic = pic.profilePic;
-      const cover = await firstValueFrom(this.http.get<{coverPic: string}>(`/api/profile/${p.id}/cover`));
-      p.coverPic = cover.coverPic
-      if (p.id === this.currentUserProfile()?.id) {
-        this.currentUserProfile.set(p);
-      }
-    }
+    // for(const p of profiles) {
+    //   const pic = await firstValueFrom(this.http.get<{profilePic: string}>(`/api/profile/${p.id}/photo`));
+    //   p.profilePic = pic.profilePic;
+    //   const cover = await firstValueFrom(this.http.get<{coverPic: string}>(`/api/profile/${p.id}/cover`));
+    //   p.coverPic = cover.coverPic
+    //   if (p.id === this.currentUserProfile()?.id) {
+    //     this.currentUserProfile.set(p);
+    //   }
+    // }
     this.allProfiles.set(profiles);
     this.currentUserProfiles.set(profiles.filter(p => p.userId === this.authState.getDecodedTokenValue()?.userId));
     localStorage.setItem('profiles', JSON.stringify(profiles));
@@ -61,11 +61,32 @@ export class ProfileService {
       profile.userId = tokenValue.userId;
     }
     const newProfile = await firstValueFrom(this.http.post<ProfileDto>('/api/profile', profile));
-    const picUpdate = await firstValueFrom(this.http.put<ProfileDto>(
-      `/api/profile/${newProfile.id}`, 
-      { profilePic: originalProfilePic },
+    const profilePhotoDto: CreateAssetDto = {
+      name: `profile-${newProfile.profileName}-photo`,
+      profileId: newProfile.id,
+      type: 'image',
+      content: originalProfilePic,
+    };
+    const coverPhotoDto: CreateAssetDto = {
+      name: `profile-${newProfile.profileName}-cover`,
+      profileId: newProfile.id,
+      type: 'image',
+      content: originalCoverPic,
+    };
+    const profileAsset = await firstValueFrom(this.http.post<AssetDto>(
+      `/api/assets/}`, 
+      profilePhotoDto,
     ));
-    await firstValueFrom(this.http.put<ProfileDto>(`/api/profile/${picUpdate.id}`, { coverPic: originalCoverPic }));
+    const coverAsset = await firstValueFrom(this.http.post<AssetDto>(`/api/assets/`, coverPhotoDto));
+
+    newProfile.profilePic = `/api/assets/${profileAsset.id}`;
+    newProfile.coverPic = `/api/assets/${coverAsset.id}`;
+    await firstValueFrom(this.http.put<ProfileDto>(`/api/profiles/${newProfile.id}`, {
+      profilePic: newProfile.profilePic,
+      coverPic: newProfile.coverPic
+    }));
+    
+    this.currentUserProfiles.update(profiles => [...profiles, newProfile]);
     localStorage.setItem('profiles', JSON.stringify(this.currentUserProfiles()));
   }
 

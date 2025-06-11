@@ -92,6 +92,21 @@ import { AssetController } from '../controllers/asset.controller';
         });
       },
       inject: [ConfigService],
+    },{
+      provide: ServiceTokens.ASSETS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        console.log('Creating Asset Service Client');
+        console.log('Config Service:', configService);
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.asset');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
     },
   ],
 })

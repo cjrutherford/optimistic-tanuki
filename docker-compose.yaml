@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:latest
@@ -121,11 +119,11 @@ services:
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
   
-  asset:
-    container_name: ot_asset
+  assets:
+    container_name: ot_assets
     build:
       context: .
-      dockerfile: ./apps/asset/Dockerfile
+      dockerfile: ./apps/assets/Dockerfile
     ports:
       - "3005:3005"
     depends_on:
