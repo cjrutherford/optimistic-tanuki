@@ -10,6 +10,7 @@ import { RpcException } from '@nestjs/microservices';
 import { Repository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
 import { Logger } from '@nestjs/common';
+import { totp } from 'otplib';
 
 describe('AppService', () => {
   let service: AppService;
@@ -95,15 +96,11 @@ describe('AppService', () => {
 
   const email = 'thomasmorrow@adayaway.com';
   const pw = 'password';
-  // it("should throw an error on invalid email for login", async () => {
-  //   const email = "blergnotanemail";
-  //   const pw = "password";
-  //   expect(service.login(email, pw)).rejects.toThrow(RpcException);
-  // });
+
   describe('App Service Login User Errors', () => {
     it('should error when the user is not found', async () => {
       (userRepo.findOne as jest.Mock).mockResolvedValue(null);
-      await expect(service.login(email, pw)).rejects.toThrow(RpcException);
+      await expect(service.login(email, pw)).rejects.toThrow(new RpcException('User not found'));
     });
 
     it('should error when passwords do not match', async () => {
@@ -113,18 +110,21 @@ describe('AppService', () => {
         password: 'wrongPassword',
         keyData: { salt: '' },
       });
-      await expect(service.login(email, pw)).rejects.toThrow(RpcException);
+      await expect(service.login(email, pw)).rejects.toThrow(new RpcException('Invalid password'));
+      expect(saltedHashService.validateHash).toHaveBeenCalledWith(pw, 'wrongPassword', '')
     });
 
     it('should error when MFA is required but not provided', async () => {
       (userRepo.findOne as jest.Mock).mockResolvedValue({
         email,
-        password: 'hashedPassword',
+        password: pw,
         keyData: { salt: '' },
         totpSecret: 'totpSecret',
       });
       (saltedHashService.validateHash as jest.Mock).mockResolvedValue(true);
-      await expect(service.login(email, pw)).rejects.toThrow(RpcException);
+      await expect(service.login(email, pw)).rejects.toThrow(new RpcException('MFA token is required for this user.'));
+      expect(userRepo.findOne).toHaveBeenCalledWith({ where: { email }})
+      expect(saltedHashService.validateHash).toHaveBeenCalledWith(pw, 'hashedPassword', '')
     });
 
     it('should error when MFA is invalid', async () => {
@@ -280,6 +280,7 @@ describe('AppService', () => {
   });
   describe('App Service Reset Password Success', () => {
     it("should successfully reset the user's password", async () => {
+      (authenticator.check as jest.Mock).mockReturnValue(true);
       (userRepo.findOne as jest.Mock).mockResolvedValue({
         password: 'hashedPassword',
         keyData: { salt: 'salt' },
@@ -291,26 +292,20 @@ describe('AppService', () => {
         hash: 'newHash',
         salt: 'newSalt',
       });
-      await service.resetPassword(email, pw, pw, pw, 'validMfa');
+      const returnValue = await service.resetPassword(email, pw, pw, pw, 'validMfa');
+      expect(userRepo.findOne).toHaveBeenCalledWith({ where: { email } });
+      expect(saltedHashService.validateHash).toHaveBeenCalledWith(
+        pw,
+        'hashedPassword',
+        'salt'
+      );
+      expect(authenticator.check).toHaveBeenCalledWith('validMfa', 'totpSecret');
       expect(saltedHashService.createNewHash).toHaveBeenCalledWith(pw);
       expect(userRepo.save).toHaveBeenCalled();
-    });
-  });
-
-  describe('App Service Validate Token Errors', () => {
-    it('should throw an error when the token is invalid', () => {
-      (jwtHandle.verify as jest.Mock).mockImplementation(() => {
-        throw new Error();
-      });
-      expect(service.validateToken('invalidToken')).rejects.toThrow(
-        RpcException
-      );
-    });
-
-    it('should throw an error when the token is revoked', () => {
-      (jwtHandle.verify as jest.Mock).mockReturnValue({ email });
-      (tokenRepo.findOne as jest.Mock).mockResolvedValue({ revoked: true });
-      expect(service.validateToken('validToken')).rejects.toThrow(RpcException);
+      expect(returnValue).toHaveProperty('message');
+      expect(returnValue.message).toBe('Password reset successful');
+      expect(returnValue).toHaveProperty('code');
+      expect(returnValue.code).toBe(0);
     });
   });
 

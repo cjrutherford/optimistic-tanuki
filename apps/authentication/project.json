@@ -54,7 +54,9 @@
       }
     },
     "test": {
+      "executor": "@nx/jest:jest",
       "options": {
+        "jestConfig":"apps/authentication/jest.config.ts",
         "passWithNoTests": true
       }
     }

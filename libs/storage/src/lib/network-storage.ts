@@ -21,7 +21,8 @@ export class NetworkStorageAdapter implements StorageAdapter {
   async create(data: CreateAssetDto): Promise<AssetDto> {
     this.l.log(`NetworkStorageAdapter (S3): Creating asset with data:`, data.name);
 
-    const s3Key = `assets/${data.profileId}/${data.id || Date.now()}/${data.name}`; // Example S3 key structure
+    const newAssetId = uuidv4();
+    const s3Key = `assets/${data.profileId}/${newAssetId}-${Date.now()}/${data.name}`; // Example S3 key structure
 
     if (!data.content) {
         throw new Error('File content is missing in CreateAssetDto');
@@ -31,7 +32,7 @@ export class NetworkStorageAdapter implements StorageAdapter {
         await this.s3Service.uploadObject(s3Key, data.content, data.type); // Use S3Service
 
         const createdAsset: AssetDto = {
-            id: uuidv4(), // Use provided ID or generate one if needed
+            id: newAssetId, // Use provided ID or generate one if needed
             name: data.name,
             storagePath: `s3://${this.s3Service['bucketName']}/${s3Key}`, // Construct S3 path using service's bucketName
             type: data.type,
