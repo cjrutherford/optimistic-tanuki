@@ -1,32 +1,48 @@
+import {
+  FollowCommands,
+  ProfileCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { FollowController } from './follow.controller';
+import { UserDetails } from '../../../decorators/user.decorator';
 import { of } from 'rxjs';
 
 describe('FollowController', () => {
   let controller: FollowController;
+  let mockAuthClinent;
+  let mockSocialClient;
+  let mockProfileClient;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [FollowController],
-      providers: [{
-        provide: 'AUTHENTICATION_SERVICE',
-        useValue: {
-          send: jest.fn().mockImplementation(() => of({})),
-        }
-      },{
-        provide: 'SOCIAL_SERVICE',
-        useValue: {
-          send: jest.fn().mockImplementation(() => of({})),
+      providers: [
+        {
+          provide: ServiceTokens.AUTHENTICATION_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          },
         },
-      },{
-        provide: 'PROFILE_SERVICE',
-        useValue: {
-          send: jest.fn().mockImplementation(() => of({})),
+        {
+          provide: ServiceTokens.SOCIAL_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          },
         },
-      }]
+        {
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          },
+        },
+      ],
     }).compile();
 
+    mockAuthClinent = module.get(ServiceTokens.AUTHENTICATION_SERVICE);
+    mockSocialClient = module.get(ServiceTokens.SOCIAL_SERVICE);
+    mockProfileClient = module.get(ServiceTokens.PROFILE_SERVICE);
     controller = module.get<FollowController>(FollowController);
   });
 

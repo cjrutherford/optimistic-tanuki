@@ -17,11 +17,16 @@ export class AppService {
   ) {}
 
   async createAsset(data: CreateAssetDto): Promise<AssetEntity> {
-    this.l.log('Creating asset with data:', data);
-    const asset = this.assetRepo.create(data);
-    const persistedAsset = await this.storageAdapter.create(asset);
-    const newAsset = await this.assetRepo.save({...asset, ...persistedAsset} as AssetEntity);
-    return newAsset;
+    try{
+      this.l.log('Creating asset with data:', data);
+      const asset = this.assetRepo.create(data);
+      const persistedAsset = await this.storageAdapter.create(asset);
+      const newAsset = await this.assetRepo.save({...asset, ...persistedAsset} as AssetEntity);
+      return newAsset;
+    } catch (error) {
+      this.l.error('Error creating asset:', error);
+      throw new RpcException('Failed to create asset');
+    }
   }
 
   async removeAsset(data: AssetHandle): Promise<void> {

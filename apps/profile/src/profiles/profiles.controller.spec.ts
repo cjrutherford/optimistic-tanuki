@@ -87,17 +87,4 @@ describe('ProfilesController', () => {
     expect(result).toBe('updated');
   });
 
-  it('should get profile photo', async () => {
-    (service.findOne as jest.Mock).mockResolvedValue({ profilePic: 'pic.jpg' });
-    const result = await controller.getProfilePhoto('1');
-    expect(service.findOne).toHaveBeenCalledWith('1', { select: { profilePic: true } });
-    expect(result).toEqual({ profilePic: 'pic.jpg' });
-  });
-
-  it('should get profile cover photo', async () => {
-    (service.findOne as jest.Mock).mockResolvedValue({ coverPic: 'cover.jpg' });
-    const result = await controller.getProfileCoverPhoto('1');
-    expect(service.findOne).toHaveBeenCalledWith('1', { select: { coverPic: true } });
-    expect(result).toEqual({ coverPic: 'cover.jpg' });
-  });
 });

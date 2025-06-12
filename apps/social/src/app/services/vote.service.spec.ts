@@ -39,8 +39,8 @@ describe('VoteService', () => {
   });
 
   it('should create a vote', async () => {
-    const dto: CreateVoteDto = { postId: 1, userId: 'u1', value: 1 };
-    const vote = { id: 1, ...dto } as Vote;
+    const dto: CreateVoteDto = { postId: 'some uuid', userId: 'u1', value: 1 };
+    const vote = { id: 1, profileId: 'p1', ...dto } as Vote;
     voteRepo.create.mockReturnValue(vote);
     voteRepo.save.mockResolvedValue(vote);
     const result = await service.create(dto);

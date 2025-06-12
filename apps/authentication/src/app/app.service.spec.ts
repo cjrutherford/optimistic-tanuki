@@ -27,7 +27,6 @@ jest.mock('qrcode', () => ({
   toDataURL: jest.fn().mockResolvedValue('qrCodeDataUrl'),
 }));
 
-
 describe('AppService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -107,7 +106,6 @@ describe('AppService', () => {
     jwtHandle = module.get('jwt');
   });
 
-<<<<<<< HEAD
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
@@ -129,40 +127,6 @@ describe('AppService', () => {
       jest.spyOn(tokenRepo, 'save').mockResolvedValue(undefined);
       // Make jwtHandle.sign a jest.fn so .toHaveBeenCalledWith works
       const signSpy = jest.spyOn(jwtHandle, 'sign').mockImplementation(() => 'mockToken' as any);
-=======
-  const email = 'thomasmorrow@adayaway.com';
-  const pw = 'password';
-
-  describe('App Service Login User Errors', () => {
-    it('should error when the user is not found', async () => {
-      (userRepo.findOne as jest.Mock).mockResolvedValue(null);
-      await expect(service.login(email, pw)).rejects.toThrow(new RpcException('User not found'));
-    });
-
-    it('should error when passwords do not match', async () => {
-      (saltedHashService.validateHash as jest.Mock).mockResolvedValue(false);
-      (userRepo.findOne as jest.Mock).mockResolvedValue({
-        email,
-        password: 'wrongPassword',
-        keyData: { salt: '' },
-      });
-      await expect(service.login(email, pw)).rejects.toThrow(new RpcException('Invalid password'));
-      expect(saltedHashService.validateHash).toHaveBeenCalledWith(pw, 'wrongPassword', '')
-    });
-
-    it('should error when MFA is required but not provided', async () => {
-      (userRepo.findOne as jest.Mock).mockResolvedValue({
-        email,
-        password: pw,
-        keyData: { salt: '' },
-        totpSecret: 'totpSecret',
-      });
-      (saltedHashService.validateHash as jest.Mock).mockResolvedValue(true);
-      await expect(service.login(email, pw)).rejects.toThrow(new RpcException('MFA token is required for this user.'));
-      expect(userRepo.findOne).toHaveBeenCalledWith({ where: { email }})
-      expect(saltedHashService.validateHash).toHaveBeenCalledWith(pw, 'hashedPassword', '')
-    });
->>>>>>> 304ca37 (add test target config for all projects)
 
       const result = await service.login('test@example.com', 'password');
       expect(result).toEqual({ message: 'Login successful', code: 0, data: { newToken: 'mockToken' } });
@@ -287,7 +251,6 @@ describe('AppService', () => {
           inventory: undefined,
         },
       });
-<<<<<<< HEAD
       expect(userRepo.findOne).toHaveBeenCalledWith({ where: { email: registerRequest.email } });
       expect(saltedHashService.createNewHash).toHaveBeenCalledWith(registerRequest.password);
       expect(userRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ email: registerRequest.email }));
@@ -430,65 +393,6 @@ describe('AppService', () => {
           registerRequest.bio
         )
       ).rejects.toThrow(RpcException);
-=======
-      (saltedHashService.validateHash as jest.Mock).mockResolvedValue(false);
-      expect(
-        service.resetPassword(email, pw, pw, 'invalidOldPassword', pw)
-      ).rejects.toThrow(RpcException);
-    });
-
-    it('should throw an error when MFA is required but not provided', () => {
-      (userRepo.findOne as jest.Mock).mockResolvedValue({
-        password: 'hashedPassword',
-        keyData: { salt: 'salt' },
-        totpSecret: 'totpSecret',
-      });
-      expect(service.resetPassword(email, pw, pw, pw)).rejects.toThrow(
-        RpcException
-      );
-    });
-
-    it('should throw an error when MFA is invalid', () => {
-      (userRepo.findOne as jest.Mock).mockResolvedValue({
-        password: 'hashedPassword',
-        keyData: { salt: 'salt' },
-        totpSecret: 'totpSecret',
-      });
-      (authenticator.check as jest.Mock).mockReturnValue(false);
-      expect(
-        service.resetPassword(email, pw, pw, pw, 'invalidMfa')
-      ).rejects.toThrow(RpcException);
-    });
-  });
-  describe('App Service Reset Password Success', () => {
-    it("should successfully reset the user's password", async () => {
-      (authenticator.check as jest.Mock).mockReturnValue(true);
-      (userRepo.findOne as jest.Mock).mockResolvedValue({
-        password: 'hashedPassword',
-        keyData: { salt: 'salt' },
-        totpSecret: 'totpSecret',
-      });
-      (saltedHashService.validateHash as jest.Mock).mockResolvedValue(true);
-      (authenticator.check as jest.Mock).mockReturnValue(true);
-      (saltedHashService.createNewHash as jest.Mock).mockResolvedValue({
-        hash: 'newHash',
-        salt: 'newSalt',
-      });
-      const returnValue = await service.resetPassword(email, pw, pw, pw, 'validMfa');
-      expect(userRepo.findOne).toHaveBeenCalledWith({ where: { email } });
-      expect(saltedHashService.validateHash).toHaveBeenCalledWith(
-        pw,
-        'hashedPassword',
-        'salt'
-      );
-      expect(authenticator.check).toHaveBeenCalledWith('validMfa', 'totpSecret');
-      expect(saltedHashService.createNewHash).toHaveBeenCalledWith(pw);
-      expect(userRepo.save).toHaveBeenCalled();
-      expect(returnValue).toHaveProperty('message');
-      expect(returnValue.message).toBe('Password reset successful');
-      expect(returnValue).toHaveProperty('code');
-      expect(returnValue.code).toBe(0);
->>>>>>> 304ca37 (add test target config for all projects)
     });
   });
 

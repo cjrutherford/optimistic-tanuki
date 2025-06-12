@@ -4,6 +4,7 @@ import { CreateNoteDto, SearchNoteDto, UpdateNoteDto } from "@optimistic-tanuki/
 import { NotesCommands, ServiceTokens } from "@optimistic-tanuki/constants";
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery } from "@nestjs/swagger";
 
+//TODO: ensure this has proper authenticatioin and authorization guards
 @ApiTags('notes')
 @Controller('notes')
 export class NotesController {
