@@ -1,6 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
 
-import { AppService } from './app.service';
 import { PostService } from './services/post.service';
 import { AttachmentService } from './services/attachment.service';
 import { CommentService } from './services/comment.service';
@@ -41,7 +40,6 @@ export class AppController {
 
   @MessagePattern({ cmd: PostCommands.CREATE })
   async createPost(data: CreatePostDto) {
-    console.log("Post Data: ", data)
     return await this.postService.create(data);
   }
 
@@ -60,7 +58,6 @@ export class AppController {
       }
     }
     const posts = await this.postService.findAll(searchOptions);
-    const postIds = posts.map(post => post.id);
     for (const post of posts) {
 
       const votes = await this.voteService.findAll({ where: { post: { id: post.id } } });

@@ -95,7 +95,7 @@ describe('AppService', () => {
   });
 
   const email = 'thomasmorrow@adayaway.com';
-  const pw = 'password';
+  const pw = 'Pa$sw0rd1';
 
   describe('App Service Login User Errors', () => {
     it('should error when the user is not found', async () => {
@@ -123,8 +123,8 @@ describe('AppService', () => {
       });
       (saltedHashService.validateHash as jest.Mock).mockResolvedValue(true);
       await expect(service.login(email, pw)).rejects.toThrow(new RpcException('MFA token is required for this user.'));
-      expect(userRepo.findOne).toHaveBeenCalledWith({ where: { email }})
-      expect(saltedHashService.validateHash).toHaveBeenCalledWith(pw, 'hashedPassword', '')
+      expect(userRepo.findOne).toHaveBeenCalledWith({ relations: ['keyData'], where: { email }})
+      expect(saltedHashService.validateHash).toHaveBeenCalledWith(pw, pw, '')
     });
 
     it('should error when MFA is invalid', async () => {
@@ -137,7 +137,7 @@ describe('AppService', () => {
       (saltedHashService.validateHash as jest.Mock).mockResolvedValue(true);
       (authenticator.check as jest.Mock).mockReturnValue(false);
       await expect(service.login(email, pw, 'invalidMfa')).rejects.toThrow(
-        RpcException
+        new RpcException('Invalid MFA token')
       );
     });
   });
@@ -176,22 +176,63 @@ describe('AppService', () => {
   // Add more tests for registerUser, resetPassword, and validateToken methods
   describe('App Service Register User Errors', () => {
     it('should throw an error when passwords do not match during registration', async () => {
-      expect(
+      await expect(
         service.registerUser(email, 'Thomas', 'Morrow', pw, 'differentPassword', 'a day away')
       ).rejects.toThrow(RpcException);
     });
 
+    it("should throw an error if the password is too weak during registration", async () => {
+      const weakPassword = '12345';
+      await expect(
+        service.registerUser(email, 'Thomas', 'Morrow', weakPassword, weakPassword, 'a day away')
+      ).rejects.toThrow(new RpcException('Password is too weak'));
+    })
+
     it('should throw an error when the email is malformed during registration', async () => {
-      expect(
+      await expect(
         service.registerUser('invalidEmail', 'Thomas', 'Morrow', pw, pw, 'a day away')
-      ).rejects.toThrow(RpcException);
+      ).rejects.toThrow(new RpcException('Invalid Email invalidEmail'));
     });
 
     it('should throw an error when the user already exists during registration', async () => {
       (userRepo.findOne as jest.Mock).mockResolvedValue({ email });
       await expect(
         service.registerUser(email, 'Thomas', 'Morrow', pw, pw, 'a day away')
-      ).rejects.toThrow(RpcException);
+      ).rejects.toThrow(new RpcException('User already exists'));
+    });
+
+    it('should thow an error when the email already exists (case insensitive)', async () => {
+      (userRepo.findOne as jest.Mock).mockResolvedValue({ email: email.toUpperCase() });
+      await expect(
+        service.registerUser(email, 'Thomas', 'Morrow', pw, pw, 'a day away')
+      ).rejects.toThrow(new RpcException('User already exists'));
+    })
+
+    it("should throw an error when required fields are missing during registration", async () => {
+      await expect(
+        service.registerUser('', 'Thomas', 'Morrow', pw, pw, 'a day away')
+      ).rejects.toThrow(new RpcException('Invalid Email '));
+      await expect(
+        service.registerUser(email, '', 'Morrow', pw, pw, 'a day away')
+      ).rejects.toThrow(new RpcException('First Name is required'));
+      await expect(
+        service.registerUser(email, 'Thomas', '', pw, pw, 'a day away')
+      ).rejects.toThrow(new RpcException('Last Name is required'));
+    });
+
+    it('should throw an error when the email is malformed during registration', async () => {
+      await expect(
+        service.registerUser('invalidEmail', 'Thomas', 'Morrow', pw, pw, 'a day away')
+      ).rejects.toThrow(new RpcException('Invalid Email invalidEmail'));
+      await expect(
+        service.registerUser("invalid@", 'Thomas', 'Morrow', pw, pw, 'a day away')
+      ).rejects.toThrow(new RpcException('Invalid Email invalid@'));
+      await expect(
+        service.registerUser('invalidEmail.com', 'Thomas', 'Morrow', pw, pw, 'a day away')
+      ).rejects.toThrow(new RpcException('Invalid Email invalidEmail.com'));
+      await expect(
+        service.registerUser('invalidEmail@.com', 'Thomas', 'Morrow', pw, pw, 'a day away')
+      ).rejects.toThrow(new RpcException('Invalid Email invalidEmail@.com'));
     });
   });
   describe('App Service Register User Success', () => {
@@ -231,51 +272,66 @@ describe('AppService', () => {
   });
 
   describe('App Service Reset Password Errors', () => {
-    it('should throw an error when the passwords do not match', () => {
-      expect(
+    it('should throw an error when the passwords do not match', async () => {
+      await expect(
         service.resetPassword(email, pw, 'differentPassword', pw, pw)
-      ).rejects.toThrow(RpcException);
+      ).rejects.toThrow(new RpcException('Passwords do not match'));
     });
 
-    it('should throw an error when the user is not found', () => {
+    it('should throw an error when the user is not found', async () => {
       (userRepo.findOne as jest.Mock).mockResolvedValue(null);
-      expect(service.resetPassword(email, pw, pw, pw, pw)).rejects.toThrow(
-        RpcException
+      await expect(service.resetPassword(email, pw, pw, pw, pw)).rejects.toThrow(
+        new RpcException('User not found')
       );
     });
 
-    it('should throw an error when the old password is invalid', () => {
+    it('should throw an error when the old password is invalid', async () => {
       (userRepo.findOne as jest.Mock).mockResolvedValue({
         password: 'hashedPassword',
         keyData: { salt: 'salt' },
       });
       (saltedHashService.validateHash as jest.Mock).mockResolvedValue(false);
-      expect(
+      await expect(
         service.resetPassword(email, pw, pw, 'invalidOldPassword', pw)
-      ).rejects.toThrow(RpcException);
+      ).rejects.toThrow(new RpcException('Invalid old password'));
     });
 
-    it('should throw an error when MFA is required but not provided', () => {
+    it('should throw an error when MFA is required but not provided', async () => {
+      (saltedHashService.validateHash as jest.Mock).mockResolvedValue(true);
       (userRepo.findOne as jest.Mock).mockResolvedValue({
         password: 'hashedPassword',
         keyData: { salt: 'salt' },
         totpSecret: 'totpSecret',
       });
-      expect(service.resetPassword(email, pw, pw, pw)).rejects.toThrow(
-        RpcException
+      await expect(service.resetPassword(email, pw, pw, 'pw')).rejects.toThrow(
+        new RpcException('MFA token is required for this user.')
       );
     });
 
-    it('should throw an error when MFA is invalid', () => {
+    it('should throw an error when generating the secret fails', async () => {  
+      (userRepo.findOne as jest.Mock).mockResolvedValue({
+        password: 'hashedPassword',
+        keyData: { salt: 'salt' },
+        totpSecret: '',
+      });
+      (userRepo.update as jest.Mock).mockRejectedValue(new Error('Database error'));
+      (saltedHashService.createNewHash as jest.Mock).mockRejectedValue(new Error('Hashing error'));
+      await expect(
+        service.setupTotp('1234')
+      ).rejects.toThrow(new RpcException('TOTP setup failed: Database error'));
+    });
+
+    it('should throw an error when MFA is invalid', async () => {
+      (saltedHashService.validateHash as jest.Mock).mockResolvedValue(true);
       (userRepo.findOne as jest.Mock).mockResolvedValue({
         password: 'hashedPassword',
         keyData: { salt: 'salt' },
         totpSecret: 'totpSecret',
       });
       (authenticator.check as jest.Mock).mockReturnValue(false);
-      expect(
+      await expect(
         service.resetPassword(email, pw, pw, pw, 'invalidMfa')
-      ).rejects.toThrow(RpcException);
+      ).rejects.toThrow(new RpcException('Invalid MFA token'));
     });
   });
   describe('App Service Reset Password Success', () => {
@@ -310,16 +366,16 @@ describe('AppService', () => {
   });
 
   describe('App Service Setup Totp', () => {
-    it('should return an error when the user is not found', () => {
+    it('should return an error when the user is not found', async () => {
       (userRepo.findOne as jest.Mock).mockResolvedValue(null);
-      expect(service.setupTotp(email)).rejects.toThrow(RpcException);
+      await expect(service.setupTotp(email)).rejects.toThrow(new RpcException('TOTP setup failed: User not found'));
     });
 
-    it('should return an error when the user already has a totp secret', () => {
+    it('should return an error when the user already has a totp secret', async () => {
       (userRepo.findOne as jest.Mock).mockResolvedValue({
         totpSecret: 'totpSecret',
       });
-      expect(service.setupTotp(email)).rejects.toThrow(RpcException);
+      await expect(service.setupTotp(email)).rejects.toThrow(new RpcException('TOTP setup failed: TOTP already set up'));
     });
 
     it('should return the totp secret when successful', async () => {
@@ -338,19 +394,19 @@ describe('AppService', () => {
   });
 
   describe('App Service Validate token', () => {
-    it('should return an error when the token is invalid', () => {
+    it('should return an error when the token is invalid', async () => {
       (jwtHandle.verify as jest.Mock).mockImplementation(() => {
         throw new Error();
       });
-      expect(service.validateToken('invalidToken')).rejects.toThrow(
-        RpcException
+      await expect(service.validateToken('invalidToken')).rejects.toThrow(
+        new RpcException('Invalid token')
       );
     });
 
-    it('should return an error when the token is revoked', () => {
+    it('should return an error when the token is revoked', async () => {
       (jwtHandle.verify as jest.Mock).mockReturnValue({ email });
       (tokenRepo.findOne as jest.Mock).mockResolvedValue({ revoked: true });
-      expect(service.validateToken('validToken')).rejects.toThrow(RpcException);
+      await expect(service.validateToken('validToken')).rejects.toThrow(new RpcException('Invalid token'));
     });
 
     it('should return the decoded token when successful', async () => {

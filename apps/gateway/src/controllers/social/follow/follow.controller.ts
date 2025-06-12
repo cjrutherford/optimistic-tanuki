@@ -25,7 +25,8 @@ export class FollowController {
         if (!followingProfile) {
             throw new Error('Profile not found');
         }
-        if(followingProfile.userId !== user.userId) {
+        if(followingProfile.userId != user.userId) {
+            console.log(followingProfile.userId, user.userId);
             throw new Error("You can't add a follow for someone else as the follower!")
         }
         return await firstValueFrom(this.socialClient.send({ cmd: FollowCommands.FOLLOW }, followDto));
@@ -53,7 +54,7 @@ export class FollowController {
     @ApiResponse({ status: 201, description: 'The followers have been successfully retrieved.' })
     @Get('/:id')
     async getFollowers(@Param('id') id: string) {
-        return await firstValueFrom(this.socialClient.send({ cmd: FollowCommands.GET_FOLLOWERS }, { foloweeId: id}));
+        return await firstValueFrom(this.socialClient.send({ cmd: FollowCommands.GET_FOLLOWERS }, { followeeId: id}));
     }
 
     @UseGuards(AuthGuard)

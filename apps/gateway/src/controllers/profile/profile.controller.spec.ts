@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProfileController } from './profile.controller';
 import { ClientProxy } from '@nestjs/microservices';
-import { CreateProfileDto, UpdateProfileDto, CreateProjectDto, UpdateProjectDto, CreateGoalDto, UpdateGoalDto, CreateTimelineDto, UpdateTimelineDto, TimelineEventType } from '@optimistic-tanuki/models';
-import { of } from 'rxjs';
+import { CreateProfileDto, UpdateProfileDto, CreateProjectDto, UpdateProjectDto, CreateGoalDto, UpdateGoalDto, CreateTimelineDto, UpdateTimelineDto, TimelineEventType, ProfileDto } from '@optimistic-tanuki/models';
+import { firstValueFrom, of } from 'rxjs';
+import { GoalCommands, ProfileCommands, ProjectCommands, ServiceTokens, TimelineCommands } from '@optimistic-tanuki/constants';
+import { UserDetails } from '../../decorators/user.decorator';
 
 describe('ProfileController', () => {
   let controller: ProfileController;
@@ -13,12 +15,17 @@ describe('ProfileController', () => {
       controllers: [ProfileController],
       providers: [
         {
-          provide: 'PROFILE_SERVICE',
+          provide: ServiceTokens.PROFILE_SERVICE,
           useValue: {
             send: jest.fn().mockImplementation(() => of({})),
           }
         },{
-          provide: 'AUTHENTICATION_SERVICE',
+          provide: ServiceTokens.AUTHENTICATION_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          }
+        },{
+          provide: ServiceTokens.ASSETS_SERVICE,
           useValue: {
             send: jest.fn().mockImplementation(() => of({})),
           }
@@ -27,14 +34,14 @@ describe('ProfileController', () => {
     }).compile();
 
     controller = module.get<ProfileController>(ProfileController);
-    clientProxy = module.get<ClientProxy>('PROFILE_SERVICE');
+    clientProxy = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should create a profile', () => {
+  it('should create a profile', async () => {
     const createProfileDto: CreateProfileDto = { 
       name: 'Test',
       description: 'thomas morrow',
@@ -49,19 +56,30 @@ describe('ProfileController', () => {
      };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.createProfile(createProfileDto);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Create:Profile' }, createProfileDto);
+    const createResponse = await firstValueFrom(controller.createProfile(createProfileDto));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Create }, createProfileDto);
+    expect(createResponse).toEqual({});
   });
 
-  it('should get a profile', () => {
+  it('should get a profile', async () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.getProfile(id);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Get:Profile' }, id);
+    const getResponse = await firstValueFrom(controller.getProfile(id));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Get }, id);
+    expect(getResponse).toEqual({});
   });
 
-  it('should update a profile', () => {
+  it('should get all profiles', async () => {
+    const query = { userId: 'testUserId' } as Partial<ProfileDto>;
+    jest.spyOn(clientProxy, 'send').mockImplementation(() => of([]));
+
+    const getAllResponse = await firstValueFrom(controller.getAllProfiles({ userId: 'user1234' } as UserDetails, query));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.GetAll }, { query, userId: 'user1234' });
+    expect(getAllResponse).toEqual([]);
+  });
+
+  it('should update a profile', async () => {
     const id = '1';
     const updateProfileDto: UpdateProfileDto = { id, 
       name: 'Test',
@@ -77,19 +95,21 @@ describe('ProfileController', () => {
     };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.updateProfile(id, updateProfileDto);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Update:Profile' }, { id, ...updateProfileDto });
+    const updateResponse = await firstValueFrom(controller.updateProfile(id, updateProfileDto));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Update }, { id, ...updateProfileDto });
+    expect(updateResponse).toEqual({});
   });
 
-  it('should delete a profile', () => {
+  it('should delete a profile', async () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.deleteProfile(id);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Delete:Profile' }, id);
+    const deleteResponse = await firstValueFrom(controller.deleteProfile(id));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Delete }, id);
+    expect(deleteResponse).toEqual({});
   });
 
-  it('should create a project', () => {
+  it('should create a project', async () => {
     const createProjectDto: CreateProjectDto = { 
       name: 'Test',
       description: 'thomas morrow',
@@ -99,19 +119,21 @@ describe('ProfileController', () => {
      };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.createProject(createProjectDto);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Create:Project' }, createProjectDto);
+    const createResponse = await firstValueFrom(controller.createProject(createProjectDto));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProjectCommands.Create}, createProjectDto);
+    expect(createResponse).toEqual({});
   });
 
-  it('should get a project', () => {
+  it('should get a project', async () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.getProject(id);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Get:Project' }, id);
+    const getResponse = await firstValueFrom(controller.getProject(id));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProjectCommands.Get }, id);
+    expect(getResponse).toEqual({});
   });
 
-  it('should update a project', () => {
+  it('should update a project', async () => {
     const id = '1';
     const updateProjectDto: UpdateProjectDto = {
       id,
@@ -123,19 +145,21 @@ describe('ProfileController', () => {
      };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.updateProject(id, updateProjectDto);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Update:Project' }, { id, ...updateProjectDto });
+    const updateResponse = await firstValueFrom(controller.updateProject(id, updateProjectDto));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProjectCommands.Update }, { id, ...updateProjectDto });
+    expect(updateResponse).toEqual({});
   });
 
-  it('should delete a project', () => {
+  it('should delete a project', async () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.deleteProject(id);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Delete:Project' }, id);
+    const deleteResponse = await firstValueFrom(controller.deleteProject(id));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProjectCommands.Delete }, id);
+    expect(deleteResponse).toEqual({});
   });
 
-  it('should create a goal', () => {
+  it('should create a goal', async () => {
     const createGoalDto: CreateGoalDto = { 
       name: 'Test',
       description: 'thomas morrow',
@@ -146,19 +170,21 @@ describe('ProfileController', () => {
     };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.createGoal(createGoalDto);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Create:Goal' }, createGoalDto);
+    const createResponse = await firstValueFrom(controller.createGoal(createGoalDto));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: GoalCommands.Create }, createGoalDto);
+    expect(createResponse).toEqual({});
   });
 
-  it('should get a goal', () => {
+  it('should get a goal', async () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.getGoal(id);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Get:Goal' }, id);
+    const getResponse = await firstValueFrom(controller.getGoal(id));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: GoalCommands.Get }, id);
+    expect(getResponse).toEqual({})
   });
 
-  it('should update a goal', () => {
+  it('should update a goal', async () => {
     const id = '1';
     const updateGoalDto: UpdateGoalDto = { 
       id, 
@@ -168,19 +194,21 @@ describe('ProfileController', () => {
      };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.updateGoal(id, updateGoalDto);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Update:Goal' }, { id, ...updateGoalDto });
+    const updateResponse = await firstValueFrom(controller.updateGoal(id, updateGoalDto));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: GoalCommands.Update }, { id, ...updateGoalDto });
+    expect(updateResponse).toEqual({});
   });
 
-  it('should delete a goal', () => {
+  it('should delete a goal', async () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.deleteGoal(id);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Delete:Goal' }, id);
+    const deleteResponse = await firstValueFrom(controller.deleteGoal(id));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: GoalCommands.Delete }, id);
+    expect(deleteResponse).toEqual({});
   });
 
-  it('should create a timeline', () => {
+  it('should create a timeline', async () => {
     const createTimelineDto: CreateTimelineDto = { 
       name: 'Test',
       description: 'thomas morrow',
@@ -197,19 +225,21 @@ describe('ProfileController', () => {
      };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.createTimeline(createTimelineDto);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Create:Timeline' }, createTimelineDto);
+    const createResponse = await firstValueFrom(controller.createTimeline(createTimelineDto));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: TimelineCommands.Create }, createTimelineDto);
+    expect(createResponse).toEqual({});
   });
 
-  it('should get a timeline', () => {
+  it('should get a timeline', async () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.getTimeline(id);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'getTimeline' }, id);
+    const getResponse = await firstValueFrom(controller.getTimeline(id));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: TimelineCommands.Get }, id);
+    expect(getResponse).toEqual({});
   });
 
-  it('should update a timeline', () => {
+  it('should update a timeline', async () => {
     const id = '1';
     const updateTimelineDto: UpdateTimelineDto = {
       id, 
@@ -218,15 +248,17 @@ describe('ProfileController', () => {
      };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.updateTimeline(id, updateTimelineDto);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Update:Timeline' }, { id, ...updateTimelineDto });
+    const updateResponse = await firstValueFrom(controller.updateTimeline(id, updateTimelineDto));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: TimelineCommands.Update }, { id, ...updateTimelineDto });
+    expect(updateResponse).toEqual({});
   });
 
-  it('should delete a timeline', () => {
+  it('should delete a timeline', async () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    controller.deleteTimeline(id);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Delete:Timeline' }, id);
+    const deleteResponse = await firstValueFrom(controller.deleteTimeline(id));
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: TimelineCommands.Delete }, id);
+    expect(deleteResponse).toEqual({});
   });
 });
