@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ProfileComponent } from './profile.component';
 import { ProfileService } from '../profile.service';
 import { of } from 'rxjs';
-import { ProfileDto } from '@optimistic-tanuki/profile-ui';
+import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';

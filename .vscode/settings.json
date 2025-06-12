@@ -3,5 +3,5 @@
     "eslint.workingDirectories": [
         "."
     ],
-    
+    "jest.jestCommandLine": "npx jest --config=jest.config.ts",
 }

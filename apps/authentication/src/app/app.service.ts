@@ -1,4 +1,3 @@
- 
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { getRepositoryToken, InjectRepository } from '@nestjs/typeorm';
 import { timingSafeEqual } from 'crypto';
@@ -30,12 +29,15 @@ export class AppService {
     private readonly keyService: KeyService,
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     @Inject('totp') private readonly totp: typeof authenticator,
-    @Inject('jwt') private readonly jsonWebToken: typeof jwt,
-  ) { }
+    @Inject('jwt') private readonly jsonWebToken: typeof jwt
+  ) {}
 
   async login(email: string, password: string, mfa?: string) {
     try {
-      const user = await this.userRepo.findOne({ where: { email }, relations: ['keyData'] });
+      const user = await this.userRepo.findOne({
+        where: { email },
+        relations: ['keyData'],
+      });
       if (!user) {
         throw new RpcException('User not found');
       }
@@ -50,7 +52,7 @@ export class AppService {
       const valid = await this.saltedHashService.validateHash(
         password,
         storedHash,
-        salt,
+        salt
       );
 
       if (!valid) {
@@ -67,7 +69,9 @@ export class AppService {
       }
 
       const pl = { userId, name: `${user.firstName} ${user.lastName}`, email };
-      const tk = this.jsonWebToken.sign(pl, this.jwtSecret, { expiresIn: '1h' });
+      const tk = this.jsonWebToken.sign(pl, this.jwtSecret, {
+        expiresIn: '1h',
+      });
 
       delete user.keyData;
       delete user.password;
@@ -92,11 +96,17 @@ export class AppService {
     ln: string,
     password: string,
     confirm: string,
-    bio = '',
+    bio = ''
   ) {
     try {
       this.l.log('Registering user:', email, fn, ln, bio);
-      this.l.log('Checking passwords', password, confirm)
+      this.l.log('Checking passwords', password, confirm);
+      const weakPasswordRegex =
+      // eslint-disable-next-line no-useless-escape
+        /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
+      if (!weakPasswordRegex.test(password)) {
+        throw new RpcException('Password is too weak');
+      }
       const passwordBuffer = Buffer.from(password);
       const confirmBuffer = Buffer.from(confirm);
       if (!timingSafeEqual(passwordBuffer, confirmBuffer)) {
@@ -107,8 +117,16 @@ export class AppService {
         this.l.error(`Invalid Email: ${email}`);
         throw new RpcException('Invalid Email ' + email);
       }
+      if(!fn) {
+        this.l.error('First name is required');
+        throw new RpcException('First Name is required');
+      }
+      if(!ln) {
+        this.l.error('Last name is required');
+        throw new RpcException('Last Name is required');
+      }
       this.l.log('Email is valid, checking for existing user');
-      const existingUser = await this.userRepo.findOne({ where: { email } });
+      const existingUser = await this.userRepo.findOne({ where: { email: email.toLowerCase() } });
       this.l.log('Existing user check complete:', existingUser);
       if (existingUser) {
         console.error('User already exists');
@@ -139,7 +157,7 @@ export class AppService {
       }
       const { pubKey, privLocation } = await this.keyService.generateUserKeys(
         newUser.id,
-        hashData.hash,
+        hashData.hash
       );
       this.l.log('User keys generated successfully:', pubKey, privLocation);
       const nk: Partial<KeyDatum> = {
@@ -175,9 +193,15 @@ export class AppService {
     newPassword: string,
     confirm: string,
     oldPass: string,
-    mfa?: string,
+    mfa?: string
   ) {
     // Implement your password reset logic here
+    const weakPasswordRegex =
+    // eslint-disable-next-line no-useless-escape
+      /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
+    if (!weakPasswordRegex.test(newPassword)) {
+      throw new RpcException('Password is too weak');
+    }
     if (newPassword !== confirm) {
       throw new RpcException('Passwords do not match');
     }
@@ -190,7 +214,7 @@ export class AppService {
     const valid = await this.saltedHashService.validateHash(
       oldPass,
       user.password,
-      user.keyData.salt,
+      user.keyData.salt
     );
 
     if (!valid) {
@@ -222,7 +246,12 @@ export class AppService {
       if (!storedToken || storedToken.revoked) {
         throw new RpcException('Token is invalid or revoked');
       }
-      return { message: 'Token is valid', code: 0, data: decoded, isValid: true };
+      return {
+        message: 'Token is valid',
+        code: 0,
+        data: decoded,
+        isValid: true,
+      };
     } catch (e) {
       throw new RpcException('Invalid token');
     }
@@ -244,12 +273,13 @@ export class AppService {
         code: 0,
         data: {
           qr: qrcode.toDataURL(
-            authenticator.keyuri(userId, 'optomistic-tanuki', newSecret),
+            authenticator.keyuri(userId, 'optomistic-tanuki', newSecret)
           ),
         },
       };
     } catch (e) {
-      throw new RpcException('TOTP setup failed');
+      console.error('Error setting up TOTP:', e);
+      throw new RpcException(`TOTP setup failed: ${e.message}`);
     }
   }
 

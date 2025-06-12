@@ -20,3 +20,8 @@ services:
     transport: TCP
     host: ot_tasks
     port: 3004
+  asset:
+    name: asset
+    transport: TCP
+    host: ot_assets
+    port: 3005

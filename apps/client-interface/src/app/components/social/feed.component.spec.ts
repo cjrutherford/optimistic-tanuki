@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { EventEmitter } from '@angular/core';
 import { FeedComponent } from './feed.component';
 import { ThemeService } from '@optimistic-tanuki/theme-ui';
 import { PostService } from '../../post.service';
@@ -8,9 +9,24 @@ import { ProfileService } from '../../profile.service';
 import { Router } from '@angular/router';
 import { of, Subject } from 'rxjs';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
-import { OnDestroy } from '@angular/core';
+import { Component, OnDestroy, Output } from '@angular/core';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { CommonModule } from '@angular/common';
 
+jest.mock('quill', () => ({
+  Quill: jest.fn().mockImplementation(() => ({
+    register: jest.fn(),
+    on: jest.fn(),
+    off: jest.fn(),
+    setContents: jest.fn(),
+    getContents: jest.fn(),
+  })),
+  register: jest.fn(),
+}));
+jest.mock('quill-magic-url', () => ({}), { virtual: true });
+jest.mock('quill-image-compress', () => ({}), { virtual: true });
+jest.mock('quill-cursors', () => ({}), { virtual: true });
+jest.mock('quill-placeholder-module', () => ({}), { virtual: true });
 describe('FeedComponent', () => {
   let component: FeedComponent & Partial<OnDestroy>;
   let fixture: ComponentFixture<FeedComponent>;
@@ -34,17 +50,34 @@ describe('FeedComponent', () => {
       navigate: jest.fn(),
     };
 
+    // Mock ComposeComponent
+    @Component({
+      selector: 'lib-compose',
+      template: '',
+      standalone: true,
+      imports: [],
+      styles: [],
+    })
+    class MockComposeComponent {
+      @Output() postSubmitted = new EventEmitter<any>();
+    }
+
     TestBed.configureTestingModule({
-      imports: [FeedComponent, HttpClientTestingModule],
+      imports: [FeedComponent, HttpClientTestingModule, CommonModule],
       providers: [
-        { provide: ThemeService, useValue: themeServiceMock },
-        { provide: PostService, useValue: postServiceMock },
-        { provide: AttachmentService, useValue: {} },
-        { provide: CommentService, useValue: {} },
-        { provide: ProfileService, useValue: profileServiceMock },
-        { provide: Router, useValue: routerMock },
+      { provide: ThemeService, useValue: themeServiceMock },
+      { provide: PostService, useValue: postServiceMock },
+      { provide: AttachmentService, useValue: {} },
+      { provide: CommentService, useValue: {} },
+      { provide: ProfileService, useValue: profileServiceMock },
+      { provide: Router, useValue: routerMock },
       ],
-    }).compileComponents();
+    }).overrideComponent(FeedComponent, {
+      set: {
+        imports: [MockComposeComponent, CommonModule], // Add CommonModule for ngFor/ngIf support
+      },
+    })
+    .compileComponents();
 
     fixture = TestBed.createComponent(FeedComponent);
     component = fixture.componentInstance;
@@ -60,6 +93,10 @@ describe('FeedComponent', () => {
   });
 
   it('should initialize theme styles on ngOnInit', () => {
+    // The test expects themeStyles to be set to specific values.
+    // But the mock themeColors$ returns { background: 'bg', foreground: 'fg', accent: 'ac' }
+    // If FeedComponent uses these values directly, the test will fail unless it maps them to the expected values.
+    // If FeedComponent expects actual color values, update the mock to match.
     component.ngOnInit();
     expect(component.themeStyles).toEqual({
       backgroundColor: '#fff',

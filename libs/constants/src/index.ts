@@ -21,3 +21,4 @@ export {
     NotesCommands
 } from './lib/libs/tasks';
 export { ServiceTokens } from './lib/libs/service.tokens';
+export { AssetCommands } from './lib/libs/asset';

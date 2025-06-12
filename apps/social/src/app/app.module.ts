@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import loadConfig from '../config';
 import { DatabaseModule } from '@optimistic-tanuki/database';
@@ -34,7 +33,6 @@ import FollowService from './services/follow.service';
   ],
   controllers: [AppController],
   providers: [
-    AppService,
     VoteService,
     PostService,
     LinkService,

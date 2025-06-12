@@ -48,7 +48,9 @@
       }
     },
     "test": {
+      "executor": "@nx/jest:jest",
       "options": {
+        "jestConfig": "apps/social/jest.config.ts",
         "passWithNoTests": true
       }
     }

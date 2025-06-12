@@ -40,14 +40,4 @@ export class ProfilesController {
         return await this.profileService.update(data.id, data);
     }
 
-    @MessagePattern({ cmd: ProfileCommands.GetPhoto })
-    async getProfilePhoto(@Payload() id: string) {
-        return await this.profileService.findOne( id , { select: { profilePic: true } });
-    }
-
-    @MessagePattern({ cmd: ProfileCommands.GetCover })
-    async getProfileCoverPhoto(@Payload() id: string) {
-        return await this.profileService.findOne( id , { select: { coverPic: true } });
-    }
-
 }
