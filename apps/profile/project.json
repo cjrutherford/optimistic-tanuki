@@ -53,6 +53,36 @@
         "jestConfig": "apps/profile/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "typeorm:migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:generate migrations/%npm_config_name%",
+        "cwd": "apps/profile",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        }
+      }
+    },
+    "typeorm:migration:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:run",
+        "cwd": "apps/profile",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        }
+      }
+    },
+    "typeorm:migration:revert": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:revert",
+        "cwd": "apps/profile",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        }
+      }
     }
   }
 }
