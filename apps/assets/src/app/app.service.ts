@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import AssetEntity from '../entities/asset.entity';
+import AssetEntity, { StorageStrategy } from '../entities/asset.entity';
 import { AssetHandle, CreateAssetDto } from '@optimistic-tanuki/models';
 import { RpcException } from '@nestjs/microservices';
 import { STORAGE_ADAPTERS, StorageAdapter } from '@optimistic-tanuki/storage';
@@ -18,9 +18,16 @@ export class AppService {
 
   async createAsset(data: CreateAssetDto): Promise<AssetEntity> {
     try{
-      this.l.log('Creating asset with data:', data);
-      const asset = this.assetRepo.create(data);
-      const persistedAsset = await this.storageAdapter.create(asset);
+      this.l.log('Creating asset with data:', data.name, data.profileId, data.type, data.content.length);
+      const entityAsset: Partial<AssetEntity> = {
+        name: data.name,
+        profileId: data.profileId,
+        type: data.type,
+        storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
+      };
+      const asset = this.assetRepo.create(entityAsset);
+      data.id = asset.id; // Ensure the ID is set for the storage adapter
+      const persistedAsset = await this.storageAdapter.create(data);
       const newAsset = await this.assetRepo.save({...asset, ...persistedAsset} as AssetEntity);
       return newAsset;
     } catch (error) {

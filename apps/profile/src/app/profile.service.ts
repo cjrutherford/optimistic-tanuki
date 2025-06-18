@@ -3,7 +3,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { FindManyOptions, FindOneOptions, Repository } from "typeorm";
 import { Profile } from "../profiles/entities/profile.entity";
 import { CreateProfileDto } from "../profiles/dto/create-profile.dto";
-import { UpdateProfileDto } from "../profiles/dto/update-profile.dto";
+import { UpdateProfileDto, updateProfileDtoToPartial } from "../profiles/dto/update-profile.dto";
 
 @Injectable()
 export class ProfileService {
@@ -36,7 +36,8 @@ export class ProfileService {
     }
 
     async update(id: string, profile: UpdateProfileDto): Promise<Profile> {
-        await this.profileRepository.update(id, {...profile});
+        const partialProfile = updateProfileDtoToPartial(profile);
+        await this.profileRepository.update(id, {...partialProfile});
         return await this.profileRepository.findOne({where: { id }});
     }
 }

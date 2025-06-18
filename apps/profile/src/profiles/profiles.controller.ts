@@ -17,7 +17,7 @@ export class ProfilesController {
 
     @MessagePattern({ cmd: ProfileCommands.Get })
     async getProfile(@Payload() data: { id: string, query: FindOneOptions<Profile> }) {
-        return await this.profileService.findOne(data.id, data.query);
+        return await this.profileService.findOne(data.id, data.query || {});
     }
 
     @MessagePattern({ cmd: ProfileCommands.GetAll })

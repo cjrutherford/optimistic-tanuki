@@ -6,7 +6,7 @@ import { ProfileService } from '../profile.service';
 @Injectable({
   providedIn: 'root'
 })
-export class AuthGuard implements CanActivate {
+export class ProfileGuard implements CanActivate {
   private router = inject(Router);
   private authStateService = inject(AuthStateService);
   private isAuthenticated = false;
@@ -22,10 +22,20 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(): Promise<boolean> {
     if (this.isAuthenticated) {
+      try {
+        await this.profileService.getAllProfiles();
+        const selectedProfile = localStorage.getItem('selectedProfile');
+        if (selectedProfile) {
+          this.profileService.selectProfile(JSON.parse(selectedProfile));
+        }
         return true;
+      } catch (error) {
+        console.error('Error fetching profiles:', error);
+        return false;
+      }
     }
     // If the user is not authenticated, navigate to the login page
-    this.router.navigate(['/login']);
+    this.router.navigate(['/profile']);
     return false;
   }
 }

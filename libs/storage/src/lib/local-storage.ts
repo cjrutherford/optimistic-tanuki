@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { StorageAdapter } from './storage-adapter.interface';
-import { AssetDto } from '@optimistic-tanuki/models';
+import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
 import * as path from 'path';
 import { existsSync, mkdirSync, promises as fs} from 'fs';
 import { v4 as uuidv4 } from 'uuid';
@@ -19,9 +19,9 @@ export class LocalStorageAdapter implements StorageAdapter {
         }
     }
 
-    async create(data: AssetDto): Promise<AssetDto> {
+    async create(data: CreateAssetDto): Promise<AssetDto> {
         await this.ensureBasePathExists();
-        this.l.log(`LocalStorageAdapter: Creating asset with data:`, data);
+        this.l.log(`LocalStorageAdapter: Creating asset with data:`, data.name, data.profileId, data.type, data.content?.length);
         const assetId = uuidv4();
         // Create a unique path for the file within the base path
         const relativePath = path.join('assets', assetId, data.name);
@@ -37,7 +37,7 @@ export class LocalStorageAdapter implements StorageAdapter {
             if (!data.content) {
                  throw new Error('File content is missing in CreateAssetDto');
             }
-            await fs.writeFile(absolutePath, data.content);
+            await fs.writeFile(absolutePath, new Uint8Array(data.content));
 
             const createdAsset: AssetDto = {
                 id: assetId,

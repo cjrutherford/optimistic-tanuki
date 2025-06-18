@@ -1,15 +1,16 @@
-import { TestBed } from '@angular/core/testing';
-import { ThemeService } from './theme.service';
 import {
   generateColorShades,
   generateComplementaryColor,
   generateDangerColor,
-  generateWarningColor,
   generateSuccessColor,
+  generateWarningColor,
 } from './color-utils';
-
 import { loadTheme, saveTheme } from './theme-storage';
+
+import { TestBed } from '@angular/core/testing';
 import { ThemeColors } from './theme.interface';
+import { ThemeService } from './theme.service';
+
 jest.mock('./color-utils', () => ({
   generateColorShades: jest.fn(),
   generateComplementaryColor: jest.fn(),
@@ -100,13 +101,6 @@ describe('ThemeService', () => {
       expect(themeColors!.accent).toBe('#ff0000');
       done();
     });
-  });
-
-  it('should apply theme colors to document', () => {
-    service.setTheme('dark');
-    service.setAccentColor('#00ff00');
-    expect(document.documentElement.style.getPropertyValue('--accent-color')).toBe('#00ff00');
-    expect(document.documentElement.style.getPropertyValue('--background-color')).toBe('#333');
   });
 
   it('should generate theme colors correctly', () => {

@@ -12,6 +12,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TcpServiceConfig, loadConfig } from '../config';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { AssetController } from '../controllers/asset.controller';
+import { LoggerModule } from '@optimistic-tanuki/logger';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AssetController } from '../controllers/asset.controller';
       isGlobal: true,
       load: [loadConfig],
     }),
+    LoggerModule,
   ],
   controllers: [
     AuthenticationController,

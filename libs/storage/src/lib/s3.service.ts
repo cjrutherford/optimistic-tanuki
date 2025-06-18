@@ -10,6 +10,14 @@ export interface S3ServiceOptions {
   bucketName: string;
 }
 
+export const defaultS3ServiceOptions: S3ServiceOptions = {
+  endpoint: 'http://localhost:9000', // Default MinIO endpoint
+  region: 'us-east-1', // Default region
+  accessKeyId: 'minioadmin', // Default MinIO access key  
+  secretAccessKey: 'minioadmin', // Default MinIO secret key
+  bucketName: 'my-bucket', // Default bucket name
+};
+
 @Injectable()
 export class S3Service {
   private s3Client: S3Client;

@@ -20,7 +20,7 @@ COPY . .
 RUN npx nx build client-interface --configuration=production
 
 # Stage 2: Create the runtime image from a slim Node.js base
-FROM node:20-alpine
+FROM node:lts-alpine
 RUN apk add --no-cache dumb-init
 
 WORKDIR /app

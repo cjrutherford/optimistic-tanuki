@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Logger, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { 
@@ -24,6 +24,7 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 @Controller('profile')
 export class ProfileController {
     constructor(
+        private readonly l: Logger,
         @Inject(ServiceTokens.PROFILE_SERVICE) private readonly client: ClientProxy,
         @Inject(ServiceTokens.ASSETS_SERVICE) private readonly assetClient: ClientProxy
     ) {}
@@ -43,6 +44,8 @@ export class ProfileController {
     @ApiResponse({ status: 404, description: 'Profiles not found.' })
     @Get()
     getAllProfiles(@User() user: UserDetails, @Param('query') query: Partial<ProfileDto>) {
+        console.log(user);
+        console.log("Fetching all profiles for user:", user.userId);
         return this.client.send({ cmd: ProfileCommands.GetAll }, { userId: user.userId, query });
 
     }
@@ -53,7 +56,7 @@ export class ProfileController {
     @ApiResponse({ status: 404, description: 'Profile not found.' })
     @Get(':id')
     getProfile(@Param('id') id: string) {
-        return this.client.send({ cmd: ProfileCommands.Get }, id);
+        return this.client.send({ cmd: ProfileCommands.Get }, { id });
     }
 
     @UseGuards(AuthGuard)

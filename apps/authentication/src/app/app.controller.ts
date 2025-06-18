@@ -63,12 +63,6 @@ export class AppController {
       }
 
       const { email, fn, ln, password, confirm, bio } = data;
-<<<<<<< HEAD
-      if (!email || !fn || !ln || !password || !confirm) {
-        return { status: 'error', message: 'Invalid data', code: 1 };
-      }
-      const userReg =  await this.appService.registerUser(email, fn, ln, password, confirm, bio);
-=======
       const userReg = await this.appService.registerUser(
         email,
         fn,
@@ -77,7 +71,6 @@ export class AppController {
         confirm,
         bio
       );
->>>>>>> eb42fc1 (filled in unit tests)
       return userReg;
     } catch (e) {
       if (e instanceof RpcException) {

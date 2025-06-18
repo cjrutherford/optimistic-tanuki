@@ -1,4 +1,5 @@
 export interface CreateAssetDto {
+    id?: string;
     name: string;
     profileId: string;
     type: 'image' | 'video' | 'audio' | 'document';

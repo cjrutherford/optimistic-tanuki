@@ -1,8 +1,9 @@
 import { DynamicModule, Module, Provider, Logger } from '@nestjs/common'; // Import Logger
+import { LoggerModule } from '@optimistic-tanuki/logger'; // Import LoggerModule
 import { StorageAdapter } from './storage-adapter.interface';
 import { LocalStorageAdapter } from './local-storage';
 import { NetworkStorageAdapter } from './network-storage';
-import { S3Service, S3ServiceOptions } from './s3.service';
+import { defaultS3ServiceOptions, S3Service, S3ServiceOptions } from './s3.service';
 
 export interface StorageModuleOptions {
   enabledAdapters: ('local' | 'network')[];
@@ -25,24 +26,27 @@ export class StorageModule {
     const extraProviders: Provider[] = [];
 
     switch (firstEnabledAdapter) {
-        case 'local':
+        case 'local': {
             if (!options.localStoragePath) {
                  throw new Error('Local storage adapter requires localStoragePath option.');
             }
+            const sp = options.localStoragePath || './storage';
             adapterProvider = {
                 provide: STORAGE_ADAPTERS,
-                useFactory: (logger) => new LocalStorageAdapter(logger, options.localStoragePath!),
+                useFactory: (logger) => new LocalStorageAdapter(logger, sp),
                 inject: [Logger],
             };
             break;
-        case 'network':
+        }
+        case 'network': {
             if (!options.s3Options) {
                 throw new Error('Network adapter requires S3 options (or other network config)');
             }
+            const s3Options = {...defaultS3ServiceOptions, ...options.s3Options};
             // Provide the S3Service
             extraProviders.push({
                 provide: S3Service,
-                useFactory: (logger) => new S3Service(logger, options.s3Options!), // Inject options into S3Service
+                useFactory: (logger: Logger) => new S3Service(logger, s3Options), // Inject options into S3Service
                 inject: [Logger],
             });
             // Provide the NetworkStorageAdapter, injecting the S3Service
@@ -52,12 +56,14 @@ export class StorageModule {
                 inject: [Logger, S3Service], // Inject Logger and S3Service
             };
             break;
+        }
         default:
             throw new Error(`Unsupported storage strategy in enabledAdapters: ${firstEnabledAdapter}`);
     }
 
     return {
       module: StorageModule,
+      imports: [LoggerModule],
       providers: [adapterProvider], // Provide only the selected adapter under the token
       exports: [STORAGE_ADAPTERS], // Export the token
     };

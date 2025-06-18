@@ -1,4 +1,4 @@
-import { AssetDto } from '@optimistic-tanuki/models';
+import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
 
 export interface StorageAdapter {
     /***
@@ -6,7 +6,7 @@ export interface StorageAdapter {
      * @param data - The asset data to be created.
      * @return A promise that resolves to the created asset data.
      */
-    create(data: AssetDto): Promise<AssetDto>;
+    create(data: CreateAssetDto): Promise<AssetDto>;
 
     /***
      * Removes an asset from the storage system.

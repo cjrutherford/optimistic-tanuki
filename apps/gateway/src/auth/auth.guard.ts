@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ClientProxy } from '@nestjs/microservices';
 import { AuthCommands } from '@optimistic-tanuki/constants';
@@ -6,50 +12,49 @@ import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(@Inject('AUTHENTICATION_SERVICE') private authService: ClientProxy, private reflector: Reflector) {}
+  constructor(
+    @Inject('AUTHENTICATION_SERVICE') private authService: ClientProxy,
+    private reflector: Reflector
+  ) {}
 
-  private async introspectToken(token: string) {
-      const response = await firstValueFrom(this.authService.send({ cmd: AuthCommands.Validate }, { token }));
-      console.log(response)
-      // Assuming the response contains a field `isValid` to indicate token validity
-      return response && response.isValid;
+  private async introspectToken(token: string, userId: string): Promise<boolean> {
+    const response = await firstValueFrom(
+      this.authService.send({ cmd: AuthCommands.Validate }, { token, userId })
+    );
+    console.log(response);
+    // Assuming the response contains a field `isValid` to indicate token validity
+    return response && response.isValid;
   }
 
   parseToken(token: string) {
-      // Assuming the token is a JWT token
-      const payload = Buffer.from(token.split('.')[1], 'base64').toString('utf-8');
-      return JSON.parse(payload);
+    // Assuming the token is a JWT token
+    const payload = Buffer.from(token.split('.')[1], 'base64').toString(
+      'utf-8'
+    );
+    const data = JSON.parse(payload);
+    return data;
   }
 
-  async canActivate(
-      context: ExecutionContext,
-  ): Promise<boolean> {
-    console.log("😎 Auth Guard Activated");
-      const request = context.switchToHttp().getRequest();
-      const authHeader = request.headers['authorization'];
-      if (!authHeader) {
-          console.log("😵 No Auth Header Provided")
-          throw new UnauthorizedException('Unauthorized: No Auth Header Provided.');
-      }
-      console.log("😎 Auth Header Found: ", authHeader);
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const authHeader = request.headers['authorization'];
+    if (!authHeader) {
+      throw new UnauthorizedException('Unauthorized: No Auth Header Provided.');
+    }
 
-      const token = authHeader.split(' ')[1];
-      if (!token) {
-            console.log("😵 No Token Found");
-          throw new UnauthorizedException('Unauthorized: No Token Found.');
-      }
-        console.log("😎 Token: ", token);
-      const isAuthenticated = await this.introspectToken(token);
-        console.log("😎 Token Validity: ", isAuthenticated);
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedException('Unauthorized: No Token Found.');
+    }
+    const user = this.parseToken(token);
+    const isAuthenticated = await this.introspectToken(token, user.userId);
 
-      if (!isAuthenticated) {
-            console.log("😵 Token Invalid");
-          throw new UnauthorizedException('Unauthorized: Token Invalid.');
-      }
+    if (!isAuthenticated) {
+      throw new UnauthorizedException('Unauthorized: Token Invalid.');
+    }
 
-      const user = this.parseToken(token);
-      request.user = user;
+    request.user = user;
 
-      return true;
+    return true;
   }
 }

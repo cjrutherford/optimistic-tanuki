@@ -6,11 +6,14 @@ import { AppService } from './app.service';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import { StorageModule } from '@optimistic-tanuki/storage';
 import loadDatabase from './loadDatabase';
+import { loadConfig } from './config';
 import AssetEntity from '../entities/asset.entity';
 import { DataSource } from 'typeorm';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true, load: [loadConfig] }),
     LoggerModule,
     DatabaseModule.register({name: 'assets', factory: loadDatabase}),
     StorageModule.register({
