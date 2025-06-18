@@ -34,6 +34,6 @@ const staticSource =  new DataSource({
     password,
     database: database, // Use the potentially overridden database name
     entities,
-    migrations: ['../../migrations/*.ts'],
+    migrations: ['./migrations/*.ts'],
 }); 
 export default staticSource

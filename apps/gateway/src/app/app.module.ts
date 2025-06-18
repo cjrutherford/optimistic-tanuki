@@ -81,8 +81,7 @@ import { AssetController } from '../controllers/asset.controller';
     {
       provide: ServiceTokens.TASKS_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.tasks');
+        const serviceConfig = configService.get<TcpServiceConfig>('services.tasks');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {
@@ -95,10 +94,7 @@ import { AssetController } from '../controllers/asset.controller';
     },{
       provide: ServiceTokens.ASSETS_SERVICE,
       useFactory: (configService: ConfigService) => {
-        console.log('Creating Asset Service Client');
-        console.log('Config Service:', configService);
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.asset');
+        const serviceConfig = configService.get<TcpServiceConfig>('services.asset');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {
@@ -107,6 +103,7 @@ import { AssetController } from '../controllers/asset.controller';
           },
         });
       },
+      inject: [ConfigService],
     },
   ],
 })
