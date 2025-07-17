@@ -1,0 +1,40 @@
+.projectGrid {
+  position: relative; /* For absolute positioning of SVG background */
+  margin: 2px;
+  max-height: 50vh;
+}
+.svg-background-in-div {
+  position: absolute; /* Positioned relative to .content */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0; /* Behind the content-inner */
+  pointer-events: none; /* Allows clicks to pass through to content if needed */
+}
+
+.svg-background-in-div svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.project-image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.project-content-container {
+    position: relative;
+    z-index: 1; /* Ensure content is above the SVG background */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    height: 100%;
+    text-align: center;
+}

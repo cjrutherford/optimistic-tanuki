@@ -1,0 +1,133 @@
+<otui-tile>
+  <otui-heading [text]="'Projects'" [size]="'2em'"></otui-heading>
+</otui-tile>
+<otui-grid [columns]="4" [rows]="1" class="projectGrid">
+
+  <otui-card [style.gridRow]="'1 / 2'" [style.gridColumn]="'1 / 2'" style="height: 100%;" >
+        <div class="project-image-container">
+            <img src="assets/images/tanuki.png" alt="optomiztic tanuki" width="75%" style="border-radius: 15px;">
+        </div>
+        <div class="project-content-container">
+            <otui-heading [text]="'Optimistic Tanuki'" [size]="'1.25em'"/>
+            <p>An on-going  effort to create a microservice based collaboration and training hub for self employed individuals to connect and collaborate with complementary skills, services, and solutions.</p>
+            <otui-button [variant]="'primary'" (action)="linkTo('https://github.com/cjrutherford/optimistic-tanuki')"> Learn More </otui-button>
+        </div>
+  </otui-card>
+  <!-- <otui-card [style.gridRow]="'1 / 2'" [style.gridColumn]="'2 / 3'" style="height: 100%;">
+        <div class="project-image-container">
+            <img src="assets/images/tritanium.png" alt="tritanium" width="75%" style="border-radius: 15px;">
+        </div>
+        <div class="project-content-container">
+            <otui-heading [text]="'Tritanium'" [size]="'1.25em'"/>
+            <p>Fork of a small but popular note taking application Trilium. Provides a Notion-like experience in a self-hosted package. Fully OSS.</p>
+            <otui-button [variant]="'primary'" (action)="linkTo('https://github.com/cjrutherford/tritanium')"> Learn More </otui-button>
+        </div>
+  </otui-card> -->
+  <otui-card [style.gridRow]="'1 / 2'" [style.gridColumn]="'2 / 3'" style="height: 100%;">
+        <div class="project-image-container">
+            <img src="assets/images/checkit.png" alt="optomiztic tanuki" width="75%" style="border-radius: 15px;">
+        </div>
+        <div class="project-content-container">
+            <otui-heading [text]="'Checkit'" [size]="'1.25em'"/>
+            <p>A self-hosted task management tool that assists in the creation of template checklists, and the "runs" of those checklists.</p>
+            <otui-button [variant]="'primary'" (action)="linkTo('https://github.com/cjrutherford/checkit')"> Learn More </otui-button>
+            <otui-button [variant]="'secondary'" (action)="linkTo('https://checkit.christopherrutherford.net')"> Live Instance </otui-button>
+        </div>
+  </otui-card>
+  <otui-card [style.gridRow]="'1 / 2'" [style.gridColumn]="'3 / 4'" style="height: 100%;">
+        <div class="project-image-container">
+            <img src="assets/images/d6.png" alt="optomiztic tanuki" width="75%" style="border-radius: 15px;">
+        </div>
+        <div class="project-content-container">
+            <otui-heading [text]="'D6'" [size]="'1.25em'"/>
+            <p>A self hosted daily journalling tool that allows the user to follow a predetermined set of prompts in order to facilitate reflection, emotional resilience, and personal growth.</p>
+            <otui-button [variant]="'primary'" (action)="linkTo('https://github.com/cjrutherford/d6')"> Learn More </otui-button>
+            <otui-button [variant]="'secondary'" (action)="linkTo('https://d6.christopherrutherford.net')"> Live Instance </otui-button>
+        </div>
+  </otui-card>
+  <otui-card [style.gridRow]="'1 / 2'" [style.gridColumn]="'4 / 5'" style="height: 100%;">
+        <div class="project-image-container">
+            <img src="assets/images/s3m.png" alt="optomiztic tanuki" width="75%" style="border-radius: 15px;">
+        </div>
+        <div class="project-content-container">
+            <otui-heading [text]="'S3M'" [size]="'1.25em'"/>
+            <p>Super small text only social media application with rudimentary follow and voting functionality.</p>
+            <otui-button [variant]="'primary'" (action)="linkTo('https://github.com/cjrutherford/s3m')"> Learn More </otui-button>
+            <otui-button [variant]="'secondary'" (action)="linkTo('https://s3m.christopherrutherford.net')"> Live Instance </otui-button>
+        </div>
+  </otui-card>
+
+  
+  <div class="svg-background-in-div">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="xMidYMid slice"
+    >
+      <defs>
+        <pattern
+          id="animatedWavePattern"
+          x="0"
+          y="0"
+          width="100"
+          height="100"
+          patternUnits="userSpaceOnUse"
+          patternContentUnits="userSpaceOnUse"
+        >
+          <path
+            id="wavePath"
+            d="M0,50 Q25,25 50,50 T100,50 V100 H0 Z"
+            fill="{complement}"
+            opacity="0.15"
+          >
+            <animate
+              attributeName="d"
+              dur="6s"
+              repeatCount="indefinite"
+              values="M0,50 Q25,25 50,50 T100,50 V100 H0 Z;
+                                             M0,60 Q20,30 50,50 T100,40 V100 H0 Z;
+                                             M0,40 Q30,70 50,50 T100,60 V100 H0 Z;
+                                             M0,50 Q25,25 50,50 T100,50 V100 H0 Z"
+            />
+            <animate
+              attributeName="opacity"
+              dur="4s"
+              repeatCount="indefinite"
+              values="0.15;0.25;0.15"
+              calcMode="spline"
+              keyTimes="0;0.5;1"
+              keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+            />
+          </path>
+        </pattern>
+      </defs>
+
+      <rect
+        x="0"
+        y="0"
+        width="100%"
+        height="100%"
+        fill="url(#animatedWavePattern)"
+      />
+
+      <animateTransform
+        attributeName="patternTransform"
+        type="translate"
+        from="0 0"
+        to="100 0"
+        dur="30s"
+        repeatCount="indefinite"
+        additive="sum"
+      />
+      <animateTransform
+        attributeName="patternTransform"
+        type="translate"
+        from="0 0"
+        to="0 100"
+        dur="40s"
+        repeatCount="indefinite"
+        additive="sum"
+      />
+    </svg>
+  </div>
+</otui-grid>

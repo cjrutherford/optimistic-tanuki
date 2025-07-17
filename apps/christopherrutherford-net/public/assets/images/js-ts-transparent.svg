@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="120"
+   height="120"
+   viewBox="0 0 120 120"
+   version="1.1"
+   id="svg5"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2">
+    <linearGradient
+       id="linearGradient984">
+      <stop
+         style="stop-color:#0000ff;stop-opacity:1;"
+         offset="0"
+         id="stop980" />
+      <stop
+         style="stop-color:#0000ff;stop-opacity:0;"
+         offset="1"
+         id="stop982" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient889">
+      <stop
+         style="stop-color:#ffff00;stop-opacity:1;"
+         offset="0"
+         id="stop885" />
+      <stop
+         style="stop-color:#ffff00;stop-opacity:0;"
+         offset="1"
+         id="stop887" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient889"
+       id="linearGradient891"
+       x1="26.051666"
+       y1="31.779221"
+       x2="26.281509"
+       y2="58.370224"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       xlink:href="#linearGradient984"
+       id="linearGradient986"
+       x1="26.33897"
+       y1="31.44614"
+       x2="27.258345"
+       y2="58.75882"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     id="layer1">
+    <g
+       id="g621"
+       transform="matrix(2.0334729,0,0,2.1048036,-18.038649,-53.568666)">
+      <rect
+         style="fill:url(#linearGradient891);fill-opacity:1"
+         id="rect234"
+         width="27.925995"
+         height="26.757545"
+         x="11.801363"
+         y="30.613436"
+         ry="6.4264851" />
+      <text
+         xml:space="preserve"
+         style="font-size:21.3363px;fill:#000000;stroke-width:1.77803"
+         x="16.961552"
+         y="51.427555"
+         id="text450"
+         transform="scale(1.0310867,0.96985053)"><tspan
+           x="16.961552"
+           y="51.427555"
+           id="tspan456"
+           style="stroke-width:1.77803">JS</tspan></text>
+    </g>
+    <g
+       id="g792">
+      <g
+         id="g621-3"
+         transform="matrix(2.0334729,0,0,2.1048036,35.009066,-6.3632155)"
+         style="fill:#0000ff">
+        <rect
+           style="fill:url(#linearGradient986);fill-opacity:1"
+           id="rect234-6"
+           width="27.925995"
+           height="26.757545"
+           x="11.801363"
+           y="30.613436"
+           ry="6.4264851" />
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:46.7619px;fill:#000000;stroke-width:3.89682"
+         x="79.029358"
+         y="89.52269"
+         id="text780"
+         transform="scale(0.84076902,1.1893873)"><tspan
+           x="79.029358"
+           y="89.52269"
+           id="tspan782"
+           style="stroke-width:3.89682">TS</tspan></text>
+    </g>
+  </g>
+</svg>
