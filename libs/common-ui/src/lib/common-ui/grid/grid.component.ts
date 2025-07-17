@@ -12,6 +12,8 @@ export class GridComponent implements OnInit, OnChanges {
   @Input() columns?: number;
   @Input() rows?: number;
   @Input() gap = '20px';
+  @Input() rowFraction? = '1fr';
+  @Input() columnFraction? = '1fr';
 
   gridTemplateRows = '';
   gridTemplateColumns = '';
@@ -28,11 +30,11 @@ export class GridComponent implements OnInit, OnChanges {
     }
 
     if (this.columns) {
-      this.gridTemplateColumns = `repeat(${this.columns}, 1fr)`;
+      this.gridTemplateColumns = `repeat(${this.columns}, ${this.columnFraction})`;
     }
 
     if (this.rows) {
-      this.gridTemplateRows = `repeat(${this.rows}, 1fr)`;
+      this.gridTemplateRows = `repeat(${this.rows}, ${this.rowFraction})`;
     }
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

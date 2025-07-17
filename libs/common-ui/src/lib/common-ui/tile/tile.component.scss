@@ -17,6 +17,9 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  transition: box-shadow 0.3s ease-in-out;
+  background: var(--background, #5969c3);
+  box-shadow: 4px 4px 6px 10px var(--accent), inset 0 2px 12px 0 rgba(0, 0, 0, 0.15);
 }
 
 .tile:hover {
