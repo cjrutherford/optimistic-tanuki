@@ -1,6 +1,7 @@
-import { Column, Entity, LessThan, LessThanOrEqual, Like, ManyToOne, MoreThan, MoreThanOrEqual, Not, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { TaskEntity } from "./task.entity";
+import { Column, Entity, LessThan, LessThanOrEqual, Like, ManyToOne, MoreThan, MoreThanOrEqual, Not, PrimaryGeneratedColumn } from "typeorm";
+
 import { SearchNoteDto } from "@optimistic-tanuki/models";
+import { TaskEntity } from "./task.entity";
 
 export enum NoteStatus {
     Draft = 'draft',
@@ -42,6 +43,7 @@ export class NoteEntity {
     @Column({ type: 'enum', enum: NoteStatus, default: NoteStatus.Draft })
     status: NoteStatus;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @ManyToOne(type => TaskEntity, task => task.notes)
     task: TaskEntity;
 }

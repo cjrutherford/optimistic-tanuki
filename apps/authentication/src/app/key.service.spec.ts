@@ -36,7 +36,10 @@ describe('KeyService', () => {
 
     // Set mock implementations
     (fs.existsSync as jest.Mock).mockReturnValue(false);
-    (fs.mkdirSync as jest.Mock).mockImplementation(() => {});
+    (fs.mkdirSync as jest.Mock).mockImplementation(() => {
+      // Mock implementation of mkdirSync
+      console.log('Mocked mkdirSync called');
+    });
     (fsPromises.writeFile as jest.Mock).mockResolvedValue(undefined);
   });
 

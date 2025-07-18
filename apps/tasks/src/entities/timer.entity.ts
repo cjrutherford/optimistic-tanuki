@@ -1,4 +1,5 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+
 import { TaskEntity } from "./task.entity";
 
 export enum TimerStatus {
@@ -14,6 +15,7 @@ export class TimerEntity {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    // eslint-disable-next-line: @typescript-eslint/no-unused-vars
     @ManyToOne(type => TaskEntity, task => task.timers)
     task: TaskEntity;
 
