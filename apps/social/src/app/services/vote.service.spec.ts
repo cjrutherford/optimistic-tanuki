@@ -66,14 +66,14 @@ describe('VoteService', () => {
   });
 
   it('should update a vote', async () => {
-    voteRepo.update.mockResolvedValue(Promise.resolve());
+    voteRepo.update.mockResolvedValue(undefined);
     const dto: UpdateVoteDto = { value: -1 };
     await service.update(1, dto);
     expect(voteRepo.update).toHaveBeenCalledWith(1, dto);
   });
 
   it('should remove a vote', async () => {
-    voteRepo.delete.mockResolvedValue(Promise.resolve());
+    voteRepo.delete.mockResolvedValue(undefined);
     await service.remove(1);
     expect(voteRepo.delete).toHaveBeenCalledWith(1);
   });
