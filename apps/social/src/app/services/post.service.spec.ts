@@ -66,14 +66,14 @@ describe('PostService', () => {
   });
 
   it('should update a post', async () => {
-    postRepo.update.mockResolvedValue(Promise.resolve());
+    postRepo.update.mockResolvedValue(undefined);
     const dto: UpdatePostDto = { title: 'Updated', content: 'Updated' };
     await service.update(1, dto);
     expect(postRepo.update).toHaveBeenCalledWith(1, dto);
   });
 
   it('should remove a post', async () => {
-    postRepo.delete.mockResolvedValue(Promise.resolve());
+    postRepo.delete.mockResolvedValue(undefined);
     await service.remove(1);
     expect(postRepo.delete).toHaveBeenCalledWith(1);
   });
