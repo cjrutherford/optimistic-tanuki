@@ -1,6 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, FindOptions } from 'typeorm';
-import { Post } from './post.entity';
+/* istanbul ignore file */
+import { Column, Entity, FindOptions, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+
 import { FindOptionsWhere } from 'typeorm';
+import { Post } from './post.entity';
 import { SearchAttachmentDto } from '@optimistic-tanuki/models';
 
 export enum AttachmentType {

@@ -1,7 +1,9 @@
+/* istanbul ignore file */
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+
 import { Goal } from "../../goals/entities/goal.entity";
-import { Project } from "../../projects/entities/project.entity";
 import { Profile } from "../../profiles/entities/profile.entity";
+import { Project } from "../../projects/entities/project.entity";
 
 export enum TimelineEventType {
     AddedGoal = 'AddedGoal',

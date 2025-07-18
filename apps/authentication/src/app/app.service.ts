@@ -99,7 +99,10 @@ export class AppService {
       this.l.log('Checking passwords', password, confirm)
       const passwordBuffer = Buffer.from(password);
       const confirmBuffer = Buffer.from(confirm);
-      if (!timingSafeEqual(passwordBuffer, confirmBuffer)) {
+      if (!timingSafeEqual(
+        new Uint8Array(passwordBuffer.buffer, passwordBuffer.byteOffset, passwordBuffer.length),
+        new Uint8Array(confirmBuffer.buffer, confirmBuffer.byteOffset, confirmBuffer.length)
+      )) {
         throw new RpcException('Passwords do not match');
       }
       this.l.log('Passwords match, proceeding with registration');

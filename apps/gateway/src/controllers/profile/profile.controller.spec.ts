@@ -1,7 +1,9 @@
+import { CreateGoalDto, CreateProfileDto, CreateProjectDto, CreateTimelineDto, TimelineEventType, UpdateGoalDto, UpdateProfileDto, UpdateProjectDto, UpdateTimelineDto } from '@optimistic-tanuki/models';
+// Removed duplicate/out-of-scope tests at the top of the file
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProfileController } from './profile.controller';
+
 import { ClientProxy } from '@nestjs/microservices';
-import { CreateProfileDto, UpdateProfileDto, CreateProjectDto, UpdateProjectDto, CreateGoalDto, UpdateGoalDto, CreateTimelineDto, UpdateTimelineDto, TimelineEventType } from '@optimistic-tanuki/models';
+import { ProfileController } from './profile.controller';
 import { of } from 'rxjs';
 
 describe('ProfileController', () => {
@@ -28,6 +30,34 @@ describe('ProfileController', () => {
 
     controller = module.get<ProfileController>(ProfileController);
     clientProxy = module.get<ClientProxy>('PROFILE_SERVICE');
+  });
+
+  it('should get all profiles', () => {
+    const user = {
+      email: 'test@example.com',
+      exp: 123456,
+      iat: 123456,
+      name: 'Test User',
+      userId: 'user-1',
+    };
+    const query = { name: 'Test' };
+    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
+    controller.getAllProfiles(user, query);
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'GetAll:Profile' }, { userId: user.userId, query });
+  });
+
+  it('should get a profile photo', () => {
+    const id = '1';
+    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
+    controller.getProfilePhoto(id);
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Get:ProfilePhoto' }, id);
+  });
+
+  it('should get a profile cover photo', () => {
+    const id = '1';
+    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
+    controller.getProfileCoverPhoto(id);
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Get:ProfileCover' }, id);
   });
 
   it('should be defined', () => {

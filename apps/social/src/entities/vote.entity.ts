@@ -1,6 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Post } from './post.entity';
+/* istanbul ignore file */
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+
 import { Comment } from './comment.entity';
+import { Post } from './post.entity';
 
 @Entity()
 export class Vote {

@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ProfileService } from './profile.service';
 import { AuthStateService } from './state/auth-state.service';
-import { ProfileDto } from '@optimistic-tanuki/profile-ui';
+import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
 describe('ProfileService', () => {
   let service: ProfileService;

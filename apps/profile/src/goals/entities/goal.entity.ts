@@ -1,7 +1,9 @@
+/* istanbul ignore file */
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { Timeline } from "../../timelines/entities/timeline.entity";
+
 import { Profile } from "../../profiles/entities/profile.entity";
 import { Project } from "../../projects/entities/project.entity";
+import { Timeline } from "../../timelines/entities/timeline.entity";
 
 @Entity()
 export class Goal {

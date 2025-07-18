@@ -94,18 +94,18 @@ export class ThemeService {
       return;
     }
     // This method is now only called if isPlatformBrowser is true
-    // document.documentElement.style.setProperty(
-    //   '--background-color',
-    //   themeColors.background,
-    // );
-    // document.documentElement.style.setProperty(
-    //   '--foreground-color',
-    //   themeColors.foreground,
-    // );
-    // document.documentElement.style.setProperty(
-    //   '--accent-color',
-    //   themeColors.accent,
-    // );
+    document.documentElement.style.setProperty(
+      '--background-color',
+      themeColors.background,
+    );
+    document.documentElement.style.setProperty(
+      '--foreground-color',
+      themeColors.foreground,
+    );
+    document.documentElement.style.setProperty(
+      '--accent-color',
+      themeColors.accent,
+    );
 
     // themeColors.accentShades.forEach(([index, shade]: [string, string]) => {
     //   document.documentElement.style.setProperty(

@@ -51,12 +51,16 @@ describe('ToolbarComponent', () => {
       accent: 'blue',
     };
 
-    (themeService.themeColors$ as Subject<any>).next(mockColors);
+    (themeService.themeColors$ as Subject<any>).next({
+      background: 'red',
+      foreground: 'white',
+      accent: 'blue',
+    });
 
     expect(component.themeStyles).toEqual({
-      backgroundColor: '#fff',
-      color: '#333',
-      border: '1px solid #3f51b5',
+      backgroundColor: 'red',
+      color: 'white',
+      border: '1px solid blue',
     });
   });
 
