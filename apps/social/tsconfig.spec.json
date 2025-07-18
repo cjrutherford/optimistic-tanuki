@@ -5,8 +5,8 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "types": ["jest", "node"],
-    "target": "es2021"
-    ,"isolatedModules": true
+    "target": "es2021",
+    "isolatedModules": true
   },
   "include": [
     "jest.config.ts",
