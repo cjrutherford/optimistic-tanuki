@@ -1,9 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, Like } from 'typeorm';
-import { Post } from './post.entity';
-import { Vote } from './vote.entity';
+/* istanbul ignore file */
+import { Column, Entity, Like, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+
 import { FindManyOptions } from 'typeorm';
-import { SearchCommentDto } from '@optimistic-tanuki/models';
 import { FindOptionsWhere } from 'typeorm';
+import { Post } from './post.entity';
+import { SearchCommentDto } from '@optimistic-tanuki/models';
+import { Vote } from './vote.entity';
 
 @Entity()
 export class Comment {

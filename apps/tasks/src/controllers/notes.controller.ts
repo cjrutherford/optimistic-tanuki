@@ -1,5 +1,5 @@
 
-import { Controller, Post, Get, Put, Delete, Body, Param, Query } from "@nestjs/common";
+import { Controller } from "@nestjs/common";
 import { NotesService } from "../services/notes.service";
 import { CreateNoteDto, SearchNoteDto, UpdateNoteDto } from "@optimistic-tanuki/models";
 import { NoteEntity } from "../entities";

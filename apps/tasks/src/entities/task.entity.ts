@@ -1,7 +1,8 @@
 import { Column, Entity, FindManyOptions, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { TimerEntity } from "./timer.entity";
+
 import { NoteEntity } from "./note.entity";
 import { SearchTaskDto } from "@optimistic-tanuki/models";
+import { TimerEntity } from "./timer.entity";
 
 export enum TaskStatus {
     Draft = 'draft',
@@ -31,9 +32,11 @@ export class TaskEntity {
     @Column()
     deletedAt: Date;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @OneToMany(type => TimerEntity, timer => timer.task)    
     timers: TimerEntity[];
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @OneToMany(type => NoteEntity, note => note.task)
     notes: NoteEntity[];
 

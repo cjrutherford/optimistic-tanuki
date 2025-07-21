@@ -44,13 +44,12 @@ export class AppService {
         id: userId,
         password: storedHash,
         totpSecret,
-        keyData: { salt },
       } = user;
 
       const valid = await this.saltedHashService.validateHash(
         password,
         storedHash,
-        salt,
+        user.keyData.salt,
       );
 
       if (!valid) {
@@ -95,15 +94,15 @@ export class AppService {
     bio = '',
   ) {
     try {
+      if (typeof password !== 'string' || typeof confirm !== 'string') {
+        throw new RpcException('Invalid data');
+      }
       this.l.log('Registering user:', email, fn, ln, bio);
-      this.l.log('Checking passwords', password, confirm)
-      const passwordBuffer = Buffer.from(password);
-      const confirmBuffer = Buffer.from(confirm);
-      if (!timingSafeEqual(passwordBuffer, confirmBuffer)) {
+      if (password !== confirm) {
         throw new RpcException('Passwords do not match');
       }
       this.l.log('Passwords match, proceeding with registration');
-      if (!validator.isEmail(email)) {
+      if (typeof email !== 'string' || !validator.isEmail(email)) {
         this.l.error(`Invalid Email: ${email}`);
         throw new RpcException('Invalid Email ' + email);
       }
@@ -183,7 +182,7 @@ export class AppService {
     }
 
     const user = await this.userRepo.findOne({ where: { email } });
-    if (!user) {
+    if (!user || !user.keyData) {
       throw new RpcException('User not found');
     }
 

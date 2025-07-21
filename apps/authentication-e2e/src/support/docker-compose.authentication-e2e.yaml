@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: authentication_e2e
+    ports:
+      - "5432:5432"
+    networks:
+      - authentication-e2e
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d authentication_e2e"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  db_setup:
+    image: node:lts-alpine
+    container_name: db-setup-e2e
+    working_dir: /workspace
+    volumes:
+      - ../../../../:/workspace
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: authentication_e2e
+    depends_on:
+      db:
+        condition: service_healthy
+    command: /bin/sh -c "apk add --no-cache postgresql-client && ls -lath /workspace && npm run db:setup"
+    restart: "no"
+    networks:
+      - authentication-e2e
+  authentication:
+    build:
+      context: ../../../../
+      dockerfile: ./apps/authentication/Dockerfile
+    container_name: authentication-e2e
+    volumes: 
+      - ./authentication-e2e/src/support/e2e-config.yaml:/app/assets/config.yaml
+    networks:
+      - authentication-e2e
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+      db_setup:
+        condition: service_completed_successfully
+networks:
+  authentication-e2e: 
+      

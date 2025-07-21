@@ -1,8 +1,9 @@
-import { AuthGuard } from './auth.guard';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+
+import { AuthCommands } from '@optimistic-tanuki/constants';
+import { AuthGuard } from './auth.guard';
 import { Reflector } from '@nestjs/core';
 import { of } from 'rxjs';
-import { AuthCommands } from '@optimistic-tanuki/constants';
 
 describe('AuthGuard', () => {
     let authGuard: AuthGuard;
@@ -58,6 +59,22 @@ describe('AuthGuard', () => {
             await expect(authGuard.canActivate(context)).rejects.toThrowError(UnauthorizedException);
         });
 
+        it('should throw UnauthorizedException if authorization header is present but token is missing', async () => {
+            const context = {
+                switchToHttp: () => ({
+                    getRequest: () => ({
+                        headers: {
+                            authorization: 'Bearer', // No token after Bearer
+                        },
+                    }),
+                }),
+                getHandler: jest.fn(),
+                getClass: jest.fn(),
+            } as unknown as jest.Mocked<ExecutionContext>;
+
+            await expect(authGuard.canActivate(context)).rejects.toThrowError(UnauthorizedException);
+        });
+
         it('should throw UnauthorizedException for invalid token', async () => {
             clientProxy.send = jest.fn().mockReturnValue(of({ isValid: false }));
 
@@ -75,6 +92,19 @@ describe('AuthGuard', () => {
 
             await expect(authGuard.canActivate(context)).rejects.toThrowError(UnauthorizedException);
             expect(clientProxy.send).toHaveBeenCalledWith({ cmd: AuthCommands.Validate }, { token: 'invalid-token' });
+        });
+    });
+
+    describe('parseToken', () => {
+        it('should correctly parse a JWT token payload', () => {
+            // Create a fake payload
+            const payload = { foo: 'bar', sub: 123 };
+            const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
+            const fakeToken = `header.${base64Payload}.signature`;
+            // Create a new AuthGuard instance without mocking parseToken
+            const realAuthGuard = new AuthGuard(clientProxy, reflector);
+            const result = realAuthGuard.parseToken(fakeToken);
+            expect(result).toEqual(payload);
         });
     });
 });

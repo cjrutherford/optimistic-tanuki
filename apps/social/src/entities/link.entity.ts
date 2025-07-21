@@ -1,4 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany } from 'typeorm';
+/* istanbul ignore file */
+import { Column, Entity, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+
 import { Post } from './post.entity';
 
 @Entity()

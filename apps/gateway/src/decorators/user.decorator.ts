@@ -1,14 +1,16 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, createParamDecorator } from '@nestjs/common';
+
+export const UserDetailsDecorator = (data: unknown, ctx: ExecutionContext): UserDetails => {
+  const request = ctx.switchToHttp().getRequest();
+  const token = request.headers['authorization']?.split(' ')[1];
+  if (!token) {
+    return null;
+  }
+  return parseToken(token);
+}
 
 export const User = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext): UserDetails => {
-    const request = ctx.switchToHttp().getRequest();
-    const token = request.headers['authorization']?.split(' ')[1];
-    if (!token) {
-      return null;
-    }
-    return parseToken(token);
-  },
+  UserDetailsDecorator
 );
 
 

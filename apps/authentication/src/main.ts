@@ -3,14 +3,14 @@
  * This is only a minimal backend to get started.
  */
 
-import { Logger } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app/app.module';
 import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 
-async function bootstrap() {
+export async function bootstrap() {
   const configApp = await NestFactory.create(AppModule);
   const config = configApp.get(ConfigService);
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {

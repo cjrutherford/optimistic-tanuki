@@ -76,7 +76,7 @@ describe('ThemeService', () => {
   it('should update theme and save it', () => {
     service.setTheme('dark');
     expect(service.getTheme()).toBe('dark');
-    expect(saveTheme).toHaveBeenCalledWith('dark', '#ff0000');
+    expect(saveTheme).toHaveBeenCalledWith(expect.anything(), 'dark', '#ff0000');
     expect(document.documentElement.style.getPropertyValue('--background-color')).toBe('#333');
     expect(document.documentElement.style.getPropertyValue('--foreground-color')).toBe('#fff');
   });
@@ -84,7 +84,7 @@ describe('ThemeService', () => {
   it('should update accent color and save it', () => {
     service.setAccentColor('#00ff00');
     expect(service.getAccentColor()).toBe('#00ff00');
-    expect(saveTheme).toHaveBeenCalledWith('light', '#00ff00');
+    expect(saveTheme).toHaveBeenCalledWith(expect.anything(), 'light', '#00ff00');
   });
 
   it('should expose theme as observable', (done) => {

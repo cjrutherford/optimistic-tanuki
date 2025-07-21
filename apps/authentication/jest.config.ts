@@ -7,4 +7,14 @@ export default {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/apps/authentication',
+  coverageReporters: ['html', 'text', 'text-summary'],
+  collectCoverage: true,
+  coverageThreshold: {
+    global: {
+      branches: 90,
+      functions: 80,
+      lines: 95,
+      statements: 95,
+    },
+  },
 };
