@@ -2,7 +2,7 @@ import { Controller, Get, Logger } from '@nestjs/common';
 import { AuthCommands } from '@optimistic-tanuki/constants';
 import { AppService } from './app.service';
 import { EnableMultiFactorRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, ValidateTokenRequest } from '@optimistic-tanuki/models';
-import { Ctx, MessagePattern, Payload, RmqContext, RpcException } from '@nestjs/microservices';
+import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 
 @Controller()
 export class AppController {
@@ -16,6 +16,9 @@ export class AppController {
       this.l.log('login:', email, password, mfa);
       return await this.appService.login(email, password, mfa);
     } catch (e) {
+      if (e instanceof RpcException) {
+        throw e;
+      }
       throw new RpcException(e);
     }
   }
@@ -24,10 +27,16 @@ export class AppController {
   async register(@Payload() data: RegisterRequest) {
     try {
       const { email, fn, ln, password, confirm, bio } = data;
+      if (!email || !fn || !ln || !password || !confirm) {
+        return { status: 'error', message: 'Invalid data', code: 1 };
+      }
       const userReg =  await this.appService.registerUser(email, fn, ln, password, confirm, bio);
       return userReg;
     } catch (e) {
-      throw new RpcException(e);
+      if (e instanceof RpcException) {
+        return { status: 'error', message: e.message, code: 1 };
+      }
+      return { status: 'error', message: e.message, code: 1 };
     }
   }
 
@@ -37,6 +46,9 @@ export class AppController {
       const {email, newPass, newConf, oldPass, mfa } = data;
       return await this.appService.resetPassword(email, newPass, newConf, oldPass, mfa);
     } catch (e) {
+      if (e instanceof RpcException) {
+        throw e;
+      }
       throw new RpcException(e);
     }
   }
@@ -47,6 +59,9 @@ export class AppController {
       const { token } = data;
       return await this.appService.validateToken(token);
     } catch (e) {
+      if (e instanceof RpcException) {
+        throw e;
+      }
       throw new RpcException(e);
     }
   }
@@ -57,6 +72,9 @@ export class AppController {
       const { userId } = data;
       return await this.appService.setupTotp(userId);
     } catch (e) {
+      if (e instanceof RpcException) {
+        throw e;
+      }
       throw new RpcException(e);
     }
   }
@@ -67,6 +85,9 @@ export class AppController {
       const { userId, token } = data;
       return await this.appService.validateTotp(userId, token);
     } catch (e) {
+      if (e instanceof RpcException) {
+        throw e;
+      }
       throw new RpcException(e);
     }
   }
