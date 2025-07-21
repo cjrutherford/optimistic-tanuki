@@ -17,7 +17,7 @@ export class ProfilesController {
 
     @MessagePattern({ cmd: ProfileCommands.Get })
     async getProfile(@Payload() data: { id: string, query: FindOneOptions<Profile> }) {
-        return await this.profileService.findOne(data.id, data.query);
+        return await this.profileService.findOne(data.id, data.query || {});
     }
 
     @MessagePattern({ cmd: ProfileCommands.GetAll })
@@ -38,16 +38,6 @@ export class ProfilesController {
     @MessagePattern({ cmd: ProfileCommands.Update })
     async updateProfile(@Payload() data: UpdateProfileDto) {
         return await this.profileService.update(data.id, data);
-    }
-
-    @MessagePattern({ cmd: ProfileCommands.GetPhoto })
-    async getProfilePhoto(@Payload() id: string) {
-        return await this.profileService.findOne( id , { select: { profilePic: true } });
-    }
-
-    @MessagePattern({ cmd: ProfileCommands.GetCover })
-    async getProfileCoverPhoto(@Payload() id: string) {
-        return await this.profileService.findOne( id , { select: { coverPic: true } });
     }
 
 }

@@ -1,5 +1,6 @@
 import { Route } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard'; // Import the AuthGuard
+import { ProfileGuard } from './guards/profile.guard';
 
 export const appRoutes: Route[] = [
     {
@@ -14,7 +15,7 @@ export const appRoutes: Route[] = [
     },{
         path: 'feed',
         loadComponent: () => import('./components/social/feed.component').then(m => m.FeedComponent),
-        canActivate: [AuthGuard] // Protect the feed route
+        canActivate: [AuthGuard, ProfileGuard] // Protect the feed route
     },{
         path: 'profile',
         loadComponent: () => import('./components/profile.component').then(m => m.ProfileComponent),
@@ -22,7 +23,7 @@ export const appRoutes: Route[] = [
     },{
         path: 'tasks',
         loadComponent: () => import('./components/tasks/tasks.component').then(m => m.TasksComponent),
-        canActivate: [AuthGuard] // Protect the tasks route
+        canActivate: [AuthGuard, ProfileGuard] // Protect the tasks route
     },{
         path: '**',
         redirectTo: 'feed'

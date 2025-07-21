@@ -1,3 +1,10 @@
+<lib-profile-selector
+  [profiles]="profileService.getCurrentUserProfiles()"
+  [currentSelectedProfile]="profileService.getCurrentUserProfile()"
+  (selectedProfile)="profileService.selectProfile($event)"
+  (profileCreated)="profileService.createProfile($event)"
+  (profileUpdated)="updateProfile($event)"
+></lib-profile-selector>
 @if (profile) {
   <lib-banner class="profile-banner"
     [profileName]="profile.profileName"

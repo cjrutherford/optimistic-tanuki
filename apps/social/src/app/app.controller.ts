@@ -1,6 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
 
-import { AppService } from './app.service';
 import { PostService } from './services/post.service';
 import { AttachmentService } from './services/attachment.service';
 import { CommentService } from './services/comment.service';
@@ -41,7 +40,6 @@ export class AppController {
 
   @MessagePattern({ cmd: PostCommands.CREATE })
   async createPost(data: CreatePostDto) {
-    console.log("Post Data: ", data)
     return await this.postService.create(data);
   }
 
@@ -60,7 +58,6 @@ export class AppController {
       }
     }
     const posts = await this.postService.findAll(searchOptions);
-    const postIds = posts.map(post => post.id);
     for (const post of posts) {
 
       const votes = await this.voteService.findAll({ where: { post: { id: post.id } } });
@@ -83,7 +80,6 @@ export class AppController {
 
   @MessagePattern({ cmd: PostCommands.FIND })
   async findOnePost(@Payload('id') id: string, @Payload('options') options?: SearchPostDto) {
-    console.log("🚀 ~ AppController ~ findOnePost ~ options:", options)
     const search = options ? postSearchDtoToFindManyOptions(options) : {};
     return await this.postService.findOne(id, search);
   }
@@ -127,7 +123,6 @@ export class AppController {
 
   @MessagePattern({ cmd: CommentCommands.CREATE })
   async createComment(data: CreateCommentDto) {
-    console.log("🚀 ~ AppController ~ createComment ~ data:", data)
     return await this.commentService.create(data);
   }
 

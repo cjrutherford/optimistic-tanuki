@@ -1,11 +1,9 @@
-import { Body, Controller, Delete, Get, Inject, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Logger, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { 
-    GoalCommands, 
-    ProfileCommands, 
-    ProjectCommands, 
-    ServiceTokens,
+    GoalCommands, ProfileCommands, 
+    ProjectCommands, ServiceTokens,
     TimelineCommands
 } from '@optimistic-tanuki/constants';
 import { 
@@ -25,7 +23,11 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 @ApiTags('profile')
 @Controller('profile')
 export class ProfileController {
-    constructor(@Inject(ServiceTokens.PROFILE_SERVICE) private readonly client: ClientProxy) {}
+    constructor(
+        private readonly l: Logger,
+        @Inject(ServiceTokens.PROFILE_SERVICE) private readonly client: ClientProxy,
+        @Inject(ServiceTokens.ASSETS_SERVICE) private readonly assetClient: ClientProxy
+    ) {}
     
     @UseGuards(AuthGuard)
     @ApiOperation({ summary: 'Create a new profile' })
@@ -42,28 +44,10 @@ export class ProfileController {
     @ApiResponse({ status: 404, description: 'Profiles not found.' })
     @Get()
     getAllProfiles(@User() user: UserDetails, @Param('query') query: Partial<ProfileDto>) {
+        console.log(user);
+        console.log("Fetching all profiles for user:", user.userId);
         return this.client.send({ cmd: ProfileCommands.GetAll }, { userId: user.userId, query });
 
-    }
-
-    @UseGuards(AuthGuard)
-    @ApiTags('profile')
-    @ApiOperation({ summary: 'Get a profile photo' })
-    @ApiResponse({ status: 200, description: 'The profile photo has been successfully retrieved.' })
-    @ApiResponse({ status: 404, description: 'Profile not found.' })
-    @Get(':id/photo')
-    getProfilePhoto(@Param('id') id: string) {
-        return this.client.send({ cmd: ProfileCommands.GetPhoto }, id);
-    }
-
-    @UseGuards(AuthGuard)
-    @ApiTags('profile')
-    @ApiOperation({ summary: 'Get a profile cover photo' })
-    @ApiResponse({ status: 200, description: 'The profile cover photo has been successfully retrieved.' })
-    @ApiResponse({ status: 404, description: 'Profile not found.' })
-    @Get(':id/cover')
-    getProfileCoverPhoto(@Param('id') id: string) {
-        return this.client.send({ cmd: ProfileCommands.GetCover }, id);
     }
 
     @UseGuards(AuthGuard)
@@ -72,7 +56,7 @@ export class ProfileController {
     @ApiResponse({ status: 404, description: 'Profile not found.' })
     @Get(':id')
     getProfile(@Param('id') id: string) {
-        return this.client.send({ cmd: ProfileCommands.Get }, id);
+        return this.client.send({ cmd: ProfileCommands.Get }, { id });
     }
 
     @UseGuards(AuthGuard)
@@ -190,7 +174,7 @@ export class ProfileController {
     @ApiResponse({ status: 404, description: 'Timeline not found.' })
     @Get('timeline/:id')
     getTimeline(@Param('id') id: string) {
-        return this.client.send({ cmd: 'getTimeline' }, id);
+        return this.client.send({ cmd: TimelineCommands.Get }, id);
     }
 
     @UseGuards(AuthGuard)

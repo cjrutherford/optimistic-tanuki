@@ -29,7 +29,7 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models'; // Added import for P
     MatListModule,
     MatIconModule,
     ToolbarComponent,
-    ProfileSelectorComponent,
+    // ProfileSelectorComponent,
     GridComponent,
   ],
 })
@@ -79,15 +79,15 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.profileService.getAllProfiles().then((profiles: ProfileDto[] | void) => { // Used ProfileDto[] | void
-      // Added isPlatformBrowser check
-      if (isPlatformBrowser(this.platformId)) {
-        const selectedProfile = localStorage.getItem('selectedProfile');
-        if (selectedProfile) {
-          this.profileService.selectProfile(JSON.parse(selectedProfile));
-        }
-      }
-    });
+    // this.profileService.getAllProfiles().then((profiles: ProfileDto[] | void) => { // Used ProfileDto[] | void
+    //   // Added isPlatformBrowser check
+    //   if (isPlatformBrowser(this.platformId)) {
+    //     const selectedProfile = localStorage.getItem('selectedProfile');
+    //     if (selectedProfile) {
+    //       this.profileService.selectProfile(JSON.parse(selectedProfile));
+    //     }
+    //   }
+    // });
 
     this.themeSub = this.themeService.themeColors$.subscribe((theme: ThemeColors | undefined) => {
       if (theme) {

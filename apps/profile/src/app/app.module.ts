@@ -14,7 +14,6 @@ import { Project } from '../projects/entities/project.entity';
 import { ProjectsController } from '../projects/projects.controller';
 import { Timeline } from '../timelines/entities/timeline.entity';
 import { TimelinesController } from '../timelines/timelines.controller';
-import { AppService } from './app.service';
 import { GoalService } from './goal.service';
 import loadDatabase from './loadDatabase';
 import { ProfileService } from './profile.service';
@@ -40,7 +39,6 @@ import { TimelineService } from './timeline.service';
     TimelinesController,
   ],
   providers: [
-    AppService,
     GoalService,
     ProfileService,
     ProjectService,

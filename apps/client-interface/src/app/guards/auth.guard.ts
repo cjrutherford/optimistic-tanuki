@@ -9,7 +9,7 @@ import { ProfileService } from '../profile.service';
 export class AuthGuard implements CanActivate {
   private router = inject(Router);
   private authStateService = inject(AuthStateService);
-  private isAuthenticated!: boolean;
+  private isAuthenticated = false;
 
   constructor(
     private readonly profileService: ProfileService,
@@ -22,17 +22,7 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(): Promise<boolean> {
     if (this.isAuthenticated) {
-      try {
-        await this.profileService.getAllProfiles();
-        const selectedProfile = localStorage.getItem('selectedProfile');
-        if (selectedProfile) {
-          this.profileService.selectProfile(JSON.parse(selectedProfile));
-        }
         return true;
-      } catch (error) {
-        console.error('Error fetching profiles:', error);
-        return false;
-      }
     }
     // If the user is not authenticated, navigate to the login page
     this.router.navigate(['/login']);
