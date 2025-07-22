@@ -50,6 +50,20 @@
       "options": {
         "command": "test-storybook -c libs/profile-ui/.storybook --url=http://localhost:4400"
       }
+    },
+    "static-storybook": {
+      "executor": "@nx/web:file-server",
+      "dependsOn": ["build-storybook"],
+      "options": {
+        "buildTarget": "profile-ui:build-storybook",
+        "staticFilePath": "dist/storybook/profile-ui",
+        "spa": true
+      },
+      "configurations": {
+        "ci": {
+          "buildTarget": "profile-ui:build-storybook:ci"
+        }
+      }
     }
   }
 }
