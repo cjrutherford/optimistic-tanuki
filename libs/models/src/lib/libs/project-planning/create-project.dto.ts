@@ -21,22 +21,4 @@ export class CreateProjectDto {
 
     @ApiProperty({ type: String })
     status: string;
-
-    @ApiProperty({ type: String })
-    createdBy: string;
-
-    @ApiProperty({ type: Date })
-    createdAt: Date;
-
-    @ApiProperty({ type: String })
-    updatedBy: string;
-
-    @ApiProperty({ type: Date })
-    updatedAt: Date;
-
-    @ApiProperty({ type: String })
-    deletedBy: string;
-
-    @ApiProperty({ type: Date })
-    deletedAt: Date;
 }

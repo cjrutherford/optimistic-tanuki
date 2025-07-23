@@ -8,6 +8,12 @@ export enum Changetype {
     DELETION = "DELETION",
 }
 
+export enum ChangeResolution {
+    PENDING = "PENDING",
+    APPROVED = "APPROVED",
+    REJECTED = "REJECTED",
+}
+
 @Entity()
 export class Change {
     @PrimaryGeneratedColumn("uuid")
@@ -31,6 +37,8 @@ export class Change {
     @ManyToOne(type => Project, project => project.changes)
     project: Project;
 
+    @Column({ type: "enum", enum: ChangeResolution, default: ChangeResolution.PENDING })
+    resolution: ChangeResolution;
 
     @Column()
     updatedBy: string;

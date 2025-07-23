@@ -1,8 +1,39 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export enum RiskImpact {
+    LOW = "LOW",
+    MEDIUM = "MEDIUM",
+    HIGH = "HIGH",
+}
+
+export enum RiskLikelihood {
+    UNLIKELY = "UNLIKELY",
+    POSSIBLE = "POSSIBLE",
+    LIKELY = "LIKELY",
+    IMMINENT = "IMMINENT",
+    ALMOST_CERTAIN = "ALMOST_CERTAIN",
+    CERTAIN = "CERTAIN",
+    NOT_APPLICABLE = "NOT_APPLICABLE", // For risks that are not applicable
+    UNKNOWN = "UNKNOWN", // For risks that are unknown or not yet assessed
+}
+
+export enum RiskStatus {
+    OPEN = "OPEN",
+    IN_PROGRESS = "IN_PROGRESS",
+    CLOSED = "CLOSED",
+}
+
+export enum RiskResolution {
+    PENDING = "PENDING",
+    ACCEPTED = "ACCEPTED",
+    MITIGATED = "MITIGATED",
+    ESCALATED = "ESCALATED",
+    AVOIDED = "AVOIDED",
+}
 
 export class CreateRiskDto {
     @ApiProperty({ description: 'Manual reference to the User Profile Entity from the [Profile Service] representing owner of the risk' })
-    owner: string;
+    riskOwner: string;
 
     @ApiProperty({ description: 'Manual reference to the Project Entity from the [Project Planning Service] representing a related party to the risk' })
     projectId: string;
@@ -14,29 +45,17 @@ export class CreateRiskDto {
     description: string;
 
     @ApiProperty()
-    impact: string;
+    impact: RiskImpact;
 
     @ApiProperty()
-    likelihood: string;
+    likelihood: RiskLikelihood;
 
     @ApiProperty()
-    status: string;
+    status: RiskStatus;
 
-    @ApiProperty()
-    createdBy: string;
+    @ApiPropertyOptional()
+    mitigationPlan?: string;
 
-    @ApiProperty({ type: Date })
-    createdAt: Date;
-
-    @ApiProperty()
-    updatedBy: string;
-
-    @ApiProperty({ type: Date })
-    updatedAt: Date;
-
-    @ApiProperty()
-    deletedBy: string;
-
-    @ApiProperty({ type: Date })
-    deletedAt: Date;
+    @ApiPropertyOptional({ description: 'Optional field for a risk resolution'})
+    resolution?: RiskResolution;
 }

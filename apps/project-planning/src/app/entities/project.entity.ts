@@ -3,6 +3,7 @@ import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Change } from './change.entity';
 import { Risk } from './risk.entity';
 import { Task } from './task.entity';
+import { ProjectJournal } from './project-journal.entity';
 
 @Entity()
 export class Project {
@@ -57,5 +58,8 @@ export class Project {
 
   @OneToMany(() => Change, (change) => change.project)
   changes: Change[];
+
+  @OneToMany(() => ProjectJournal, journal => journal.project)
+  journalEntries: ProjectJournal[];
 
 }

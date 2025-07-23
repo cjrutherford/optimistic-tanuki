@@ -1,5 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export enum TaskStatus {
+    TODO = "TODO",
+    IN_PROGRESS = "IN_PROGRESS",
+    DONE = "DONE",
+    ARCHIVED = "ARCHIVED"
+}
+
+export enum TaskPriority {
+    LOW = "LOW",
+    MEDIUM_LOW = "MEDIUM_LOW",
+    MEDIUM = "MEDIUM",
+    MEDIUM_HIGH = "MEDIUM_HIGH",
+    HIGH = "HIGH"
+}
+
 export class CreateTaskDto {
     @ApiProperty({ description: 'Title of the task' })
     title: string;

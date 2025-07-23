@@ -34,8 +34,14 @@ export class Timer {
     task: Task;
 
     @Column()
-    createdBy: string; // manual reference to the User Profile Entity from the [Profile Service] representing the creator of the timer
+    updatedBy: string;
 
     @Column()
-    createdAt: Date;
+    updatedAt: Date;
+
+    @Column()
+    deletedBy: string;
+
+    @Column()
+    deletedAt: Date;
 }

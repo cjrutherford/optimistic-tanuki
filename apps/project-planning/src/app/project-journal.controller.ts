@@ -2,27 +2,28 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ProjectJournalService } from './project-journal.service';
 import { CreateProjectJournalDto, UpdateProjectJournalDto } from '@optimistic-tanuki/models';
+import { ProjectJournalCommands } from '@optimistic-tanuki/constants';
 
 @Controller()
 export class ProjectJournalController {
   constructor(private readonly projectJournalService: ProjectJournalService) {}
 
-  @MessagePattern('createProjectJournal')
+  @MessagePattern(ProjectJournalCommands.CREATE)
   create(@Payload() createProjectJournalDto: CreateProjectJournalDto) {
     return this.projectJournalService.create(createProjectJournalDto);
   }
 
-  @MessagePattern('findAllProjectJournal')
+  @MessagePattern(ProjectJournalCommands.FIND_ALL)
   findAll() {
     return this.projectJournalService.findAll();
   }
 
-  @MessagePattern('findOneProjectJournal')
+  @MessagePattern(ProjectJournalCommands.FIND_ONE)
   findOne(@Payload() id: number) {
     return this.projectJournalService.findOne(id);
   }
 
-  @MessagePattern('updateProjectJournal')
+  @MessagePattern(ProjectJournalCommands.UPDATE)
   update(@Payload() updateProjectJournalDto: UpdateProjectJournalDto) {
     return this.projectJournalService.update(
       updateProjectJournalDto.id,
@@ -30,7 +31,7 @@ export class ProjectJournalController {
     );
   }
 
-  @MessagePattern('removeProjectJournal')
+  @MessagePattern(ProjectJournalCommands.REMOVE)
   remove(@Payload() id: number) {
     return this.projectJournalService.remove(id);
   }
