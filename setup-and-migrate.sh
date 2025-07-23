@@ -6,7 +6,7 @@ export POSTGRES_PASSWORD=postgres
 export POSTGRES_HOST=${POSTGRES_HOST:-127.0.0.1}
 export POSTGRES_PORT=5432
 export NODE_ENV=development
-export ADDITIONAL_DBS=ot_authentication,ot_profile,ot_social,ot_tasks,ot_assets,ot_project_planning
+export ADDITIONAL_DBS=ot_authentication,ot_profile,ot_social,ot_assets,ot_project_planning
 
 # Run database creation script
 sh ./create-dbs.sh
