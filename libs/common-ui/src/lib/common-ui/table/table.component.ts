@@ -1,6 +1,7 @@
 import { Component, Input, TemplateRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButtonComponent } from '../button/button.component'; // Add this import
+import { ButtonComponent } from '../button/button.component';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
 
 export interface TableRowAction {
   title: string;
@@ -18,11 +19,21 @@ export interface TableCell {
 @Component({
   selector: 'otui-table',
   standalone: true,
-  imports: [CommonModule, ButtonComponent], // Add ButtonComponent to imports
+  imports: [CommonModule, ButtonComponent],
   templateUrl: './table.component.html',
   styleUrls: ['./table.component.scss'],
+  host: {
+    'class.theme': 'theme',
+    '[style.--background]': 'background',
+    '[style.--foreground]': 'foreground',
+    '[style.--accent]': 'accent',
+    '[style.--complement]': 'complement',
+    '[style.--border-color]': 'borderColor',
+    '[style.--border-gradient]': 'borderGradient',
+    '[style.--transition-duration]': 'transitionDuration',
+  }
 })
-export class TableComponent implements OnInit {
+export class TableComponent extends Themeable implements OnInit {
   @Input() cells: TableCell[] = [];
   @Input() rowIndex = 0;
   @Input() rowActions?: TableRowAction[];
@@ -32,7 +43,28 @@ export class TableComponent implements OnInit {
   cellTemplates: (TemplateRef<HTMLElement> | null)[] = []; 
   showActions = false;
 
-  ngOnInit() {
+  override applyTheme(colors: ThemeColors): void {
+    console.log('Applying theme colors:', colors);
+    // Use a softer gradient: background -> accent (60%) -> accent lighten (100%)
+    const accentLight = colors.accentShades?.[1] ?? colors.accent;
+    this.background = `linear-gradient(135deg, ${colors.background} 0%, ${colors.accent} 60%, ${accentLight} 100%)`;
+    this.foreground = colors.foreground;
+    this.accent = colors.accent;
+    this.complement = colors.complementary;
+    if(this.theme === 'dark') {
+      this.borderGradient = colors.accentGradients['dark'];
+      this.borderColor = colors.complementaryShades[2][1];
+      this.foreground = colors.complementaryShades[0][1];
+    } else {
+      this.borderGradient = colors.accentGradients['light'];
+      this.borderColor = colors.complementaryShades[2][1];
+      this.foreground = colors.accentShades[0][1];
+    }
+    this.transitionDuration = '0.3s';
+    this.initializeTable();
+  }
+
+  private initializeTable() {
     this.cellTemplates = this.cells.map(cell => {
       if (cell.isBadge) {
         cell.heading = undefined;

@@ -1,0 +1,49 @@
+<otui-card>
+    <h2>Project Overview {{ projectName() }}</h2>
+    <otui-grid [columns]="3" [rows]="3">
+        <lib-summary-block
+            title="Unresolved Tasks"
+            [count]="6"
+            (onClick)="showDetails('tasks')"
+        ></lib-summary-block>
+        <!-- <button (click)="showDetails('tasks')">
+            <otui-tile>
+                <h3>Unresolved Tasks</h3>
+                <p>Details about the unresolved tasks will go here.</p>
+            </otui-tile>
+        </button> -->
+        <lib-summary-block
+            title="Unresolved Risks"
+            [count]="3"
+            (onClick)="showDetails('risks')"
+        ></lib-summary-block>
+        <!-- <button (click)="showDetails('risks')">
+            <otui-tile>
+                <h3>Unresolved Risks</h3>
+                <p>List of unresolved risks related to the project.</p>
+            </otui-tile>
+        </button> -->
+        <lib-summary-block
+            title="Pending Changes"
+            [count]="2"
+            (onClick)="showDetails('changes')"
+        ></lib-summary-block>
+        <!-- <button (click)="showDetails('changes')">
+            <otui-tile>
+                <h3>Pending Changes</h3>
+                <p>List of pending changes associated with the project.</p>
+            </otui-tile>
+        </button> -->
+        @if (detailsShown()) {
+            <otui-tile style="grid-column: span 3;">
+                <h3>Project Details: {{shownDetails()}}</h3>
+                <p>Details about the project will be displayed here.</p>
+                <button (click)="hideDetails()">X</button>
+            </otui-tile>
+        }
+        <otui-tile style="grid-column: span 3;">
+            <h3>Ai Project Summary</h3>
+            <p>An Overview of the project provided by your AI Project Manager.</p>
+        </otui-tile>
+    </otui-grid>
+</otui-card>

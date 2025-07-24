@@ -21,7 +21,9 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
 })
 export class CardComponent extends Themeable{
   override applyTheme(colors: ThemeColors): void {
-    this.background = `linear-gradient(to bottom, ${colors.background}, ${colors.accent})`;
+    // Use a softer gradient: background -> accent (60%) -> accent lighten (100%)
+    const accentLight = colors.accentShades?.[1] ?? colors.accent;
+    this.background = `linear-gradient(135deg, ${colors.background} 0%, ${colors.accent} 60%, ${accentLight} 100%)`;
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;

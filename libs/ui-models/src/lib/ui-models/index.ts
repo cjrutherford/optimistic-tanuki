@@ -8,3 +8,6 @@ export { UserDto } from './User.dto';
 export { RegisterSubmitType } from './register-types';
 export { LoginType } from './login-types';
 export { CreateAssetDto, AssetDto } from './asset';
+export {
+    Project, Task, Risk, Change, Timer, ProjectJournal, 
+} from './project'

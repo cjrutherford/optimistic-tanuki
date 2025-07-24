@@ -1,0 +1,12 @@
+<otui-card>
+    <div class="flex-row">
+        <form [formGroup]="projectSelectionForm">
+            <lib-select
+              [options]="projectOptions"
+              (selectedValue)="onProjectSelected($event)"
+            ></lib-select>
+        </form>
+        <otui-button variant="warning">Edit</otui-button>
+        <otui-button variant="danger">Delete</otui-button>
+    </div>
+</otui-card>

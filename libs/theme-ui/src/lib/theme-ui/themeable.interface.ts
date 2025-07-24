@@ -1,14 +1,15 @@
 // filepath: libs/common-ui/src/lib/common-ui/themeable.ts
 import { Directive, OnDestroy, OnInit } from '@angular/core';
-import { ThemeService } from './theme.service';
+import { Subject, filter, takeUntil } from 'rxjs';
+
 import { ThemeColors } from './theme.interface';
-import { Subject, takeUntil, filter } from 'rxjs';
+import { ThemeService } from './theme.service';
 
 @Directive()
 export abstract class Themeable implements OnInit, OnDestroy {
   theme: 'light' | 'dark' = 'light';
   background = '#ffffff';
-  foreground = '#000000';
+  foreground = '#737373ff';
   accent = '#007bff';
   complement = '#f8f9fa';
   borderColor = '#dee2e6';
