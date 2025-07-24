@@ -1,18 +1,16 @@
-import { Module } from '@nestjs/common';
-import { AuthenticationController } from '../controllers/authentication/authentication.controller';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
-import { ProfileController } from '../controllers/profile/profile.controller';
-import { SocialController } from '../controllers/social/social.controller';
-import { AuthGuard } from '../auth/auth.guard';
-import { JwtService } from '@nestjs/jwt';
-import { NotesController } from '../controllers/notes.controller';
-import { TasksController } from '../controllers/tasks.controller';
-import { TimersController } from '../controllers/timers.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TcpServiceConfig, loadConfig } from '../config';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+
 import { AssetController } from '../controllers/asset.controller';
+import { AuthGuard } from '../auth/auth.guard';
+import { AuthenticationController } from '../controllers/authentication/authentication.controller';
+import { JwtService } from '@nestjs/jwt';
 import { LoggerModule } from '@optimistic-tanuki/logger';
+import { Module } from '@nestjs/common';
+import { ProfileController } from '../controllers/profile/profile.controller';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { SocialController } from '../controllers/social/social.controller';
 
 @Module({
   imports: [
@@ -26,9 +24,6 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
     AuthenticationController,
     ProfileController,
     SocialController,
-    NotesController,
-    TasksController,
-    TimersController,
     AssetController,
   ],
   providers: [
@@ -79,20 +74,6 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
         });
       },
       inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.TASKS_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>('services.tasks');
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
     },{
       provide: ServiceTokens.ASSETS_SERVICE,
       useFactory: (configService: ConfigService) => {
@@ -106,7 +87,20 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
         });
       },
       inject: [ConfigService],
-    },
+    },{
+      provide: ServiceTokens.PROJECT_PLANNING_SERVICE,
+      useFactory: (config: ConfigService) => {
+        const serviceConfig = config.get<TcpServiceConfig>('services.project-planning');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          }
+        });
+      },
+      inject: [ConfigService]
+    }
   ],
 })
 export class AppModule {}

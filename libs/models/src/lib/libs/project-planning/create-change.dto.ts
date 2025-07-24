@@ -1,8 +1,20 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+export enum Changetype {
+    ADDITION = "ADDITION",
+    MODIFICATION = "MODIFICATION",
+    DELETION = "DELETION",
+}
+
+export enum ChangeResolution {
+    PENDING = "PENDING",
+    APPROVED = "APPROVED",
+    REJECTED = "REJECTED",
+}
+
 export class CreateChangeDto {
-    @ApiProperty({ enum: ['ADDITION', 'MODIFICATION', 'DELETION'], description: 'Type of change' })
-    changeType: 'ADDITION' | 'MODIFICATION' | 'DELETION';
+    @ApiProperty({ enum: Changetype, description: 'Type of change' })
+    changeType: Changetype;
 
     @ApiProperty({ description: 'Description of the change' })
     changeDescription: string;

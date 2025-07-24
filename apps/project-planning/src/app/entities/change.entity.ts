@@ -1,18 +1,7 @@
+import { ChangeResolution, Changetype } from "@optimistic-tanuki/models";
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
 import { Project } from "./project.entity";
-
-export enum Changetype {
-    ADDITION = "ADDITION",
-    MODIFICATION = "MODIFICATION",
-    DELETION = "DELETION",
-}
-
-export enum ChangeResolution {
-    PENDING = "PENDING",
-    APPROVED = "APPROVED",
-    REJECTED = "REJECTED",
-}
 
 @Entity()
 export class Change {
@@ -41,8 +30,17 @@ export class Change {
     resolution: ChangeResolution;
 
     @Column()
+    createdBy: string; // manual reference to the User Profile Entity from the [Profile Service] representing the creator of the change
+
+    @Column()
+    createdAt: Date;
+
+    @Column()
     updatedBy: string;
 
     @Column()
     updatedAt: Date;
+
+    @Column({ nullable: true })
+    deletedAt?: Date;
 }

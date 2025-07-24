@@ -9,7 +9,10 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "webpack-cli build",
-        "args": ["node-env=production"]
+        "args": ["node-env=production"],
+        "packageJson": {
+          "pg": "^8.16.0"
+        }
       },
       "configurations": {
         "development": {
@@ -38,6 +41,36 @@
     "test": {
       "options": {
         "passWithNoTests": true
+      }
+    }
+  },
+  "typeorm:migration:generate": {
+    "executor": "nx:run-commands",
+    "options": {
+      "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:generate migrations/%npm_config_name%",
+      "cwd": "apps/project-planning",
+      "env": {
+        "TS_NODE_PROJECT": "tsconfig.app.json"
+      }
+    }
+  },
+  "typeorm:migration:run": {
+    "executor": "nx:run-commands",
+    "options": {
+      "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:run",
+      "cwd": "apps/project-planning",
+      "env": {
+        "TS_NODE_PROJECT": "tsconfig.app.json"
+      }
+    }
+  },
+  "typeorm:migration:revert": {
+    "executor": "nx:run-commands",
+    "options": {
+      "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:revert",
+      "cwd": "apps/project-planning",
+      "env": {
+        "TS_NODE_PROJECT": "tsconfig.app.json"
       }
     }
   }

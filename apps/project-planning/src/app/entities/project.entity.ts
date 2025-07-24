@@ -1,9 +1,9 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Change } from './change.entity';
+import { ProjectJournal } from './project-journal.entity';
 import { Risk } from './risk.entity';
 import { Task } from './task.entity';
-import { ProjectJournal } from './project-journal.entity';
 
 @Entity()
 export class Project {
@@ -14,7 +14,7 @@ export class Project {
   owner: string; // manual reference to the User Profile Entity from the [Profile Service] represneting owner of the project
 
 
-  @Column({ type: 'array', default: [] })
+  @Column({ type: 'text', array: true })
   members: string[]; // manual reference to the User Profile Entity from the [Profile Service] representing a related party to the project
 
   @Column()

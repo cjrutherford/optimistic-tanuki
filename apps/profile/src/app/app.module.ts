@@ -1,9 +1,6 @@
 import { ConfigModule } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
-import { Goal } from '../goals/entities/goal.entity';
-import { GoalService } from './goal.service';
-import { GoalsController } from '../goals/goals.controller';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { Module } from '@nestjs/common';
 import { Profile } from '../profiles/entities/profile.entity';
@@ -30,20 +27,14 @@ import loadDatabase from './loadDatabase';
   ],
   controllers: [
     ProfilesController,
-    GoalsController,
     TimelinesController,
   ],
   providers: [
-    GoalService,
     ProfileService,
     TimelineService,
     {
       provide: getRepositoryToken(Profile),
       useFactory: (ds: DataSource) => ds.getRepository(Profile),
-      inject: ['PROFILE_CONNECTION'],
-    },{
-      provide: getRepositoryToken(Goal),
-      useFactory: (ds: DataSource) => ds.getRepository(Goal),
       inject: ['PROFILE_CONNECTION'],
     },{
       provide: getRepositoryToken(Timeline),

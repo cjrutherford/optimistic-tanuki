@@ -1,11 +1,10 @@
+import * as yaml from 'js-yaml';
+
 import { DataSource } from "typeorm";
+import { Profile } from "../profiles/entities/profile.entity";
+import { Timeline } from "../timelines/entities/timeline.entity";
 import fs from 'fs';
 import path from 'path';
-import * as yaml from 'js-yaml';
-import { Profile } from "../profiles/entities/profile.entity";
-import { Project } from "../projects/entities/project.entity";
-import { Goal } from "../goals/entities/goal.entity";
-import { Timeline } from "../timelines/entities/timeline.entity";
 
 const config = yaml.load(fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')) as Record<string, any>;
 const { database: {
@@ -22,7 +21,7 @@ const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [Profile, Project, Goal, Timeline];
+const entities = [Profile, Timeline];
 
 const staticSource =  new DataSource({
     type: 'postgres',

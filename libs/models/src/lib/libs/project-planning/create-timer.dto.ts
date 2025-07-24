@@ -1,1 +1,3 @@
-export class CreateTimerDto {}
+export class CreateTimerDto {
+    taskId: string;
+}

@@ -56,6 +56,6 @@ export class CreateRiskDto {
     @ApiPropertyOptional()
     mitigationPlan?: string;
 
-    @ApiPropertyOptional({ description: 'Optional field for a risk resolution'})
+    @ApiPropertyOptional({ description: 'Optional field for a risk resolution, this is to include it in the update dto as well.'})
     resolution?: RiskResolution;
 }

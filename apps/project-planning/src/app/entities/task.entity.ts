@@ -21,7 +21,10 @@ export class Task {
     status: TaskStatus;
 
     @Column({ type: "enum", enum: TaskPriority, default: TaskPriority.MEDIUM })
-    createdBy: TaskPriority;
+    priority: TaskPriority;
+
+    @Column()
+    createdBy: string;
 
     @Column()
     createdAt: Date;

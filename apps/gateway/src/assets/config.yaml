@@ -20,8 +20,8 @@ services:
     transport: TCP
     host: ot_tasks
     port: 3004
-  asset:
-    name: asset
+  project-planning:
+    name: project-planning
     transport: TCP
-    host: ot_assets
-    port: 3005
+    host: ot_project_planning
+    port: 3006

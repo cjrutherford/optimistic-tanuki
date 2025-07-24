@@ -23,7 +23,10 @@ export class CreateTaskDto {
     description: string;
 
     @ApiProperty({ description: 'Status of the task' })
-    status: string;
+    status: TaskStatus;
+
+    @ApiProperty({ description: 'Priority of the task' })
+    priority: TaskPriority;
 
     @ApiProperty({ description: 'User who created the task' })
     createdBy: string;

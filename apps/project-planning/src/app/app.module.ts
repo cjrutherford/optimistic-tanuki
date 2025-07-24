@@ -1,25 +1,29 @@
-import { Module } from '@nestjs/common';
-import { LoggerModule } from '@optimistic-tanuki/logger';
-import { DatabaseModule } from '@optimistic-tanuki/database';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { ProjectModule } from './project.module';
-import { TaskModule } from './task.module';
-import { RiskModule } from './risk.module';
-import { ChangeModule } from './change.module';
-import { TimerModule } from './timer.module';
-import { ProjectJournalModule } from './project-journal.module';
+import { Change } from './entities/change.entity';
+import { ChangeController } from './change/change.controller';
+import { ChangeService } from './change/change.service';
 import { ConfigModule } from '@nestjs/config';
+import { DataSource } from 'typeorm';
+import { DatabaseModule } from '@optimistic-tanuki/database';
+import { LoggerModule } from '@optimistic-tanuki/logger';
+import { Module } from '@nestjs/common';
+import { Project } from './entities/project.entity';
+import { ProjectController } from './project/project.controller';
+import { ProjectJournal } from './entities/project-journal.entity';
+import { ProjectJournalController } from './project-journal/project-journal.controller';
+import { ProjectJournalService } from './project-journal/project-journal.service';
+import { ProjectService } from './project/project.service';
+import { Risk } from './entities/risk.entity';
+import { RiskController } from './risk/risk.controller';
+import { RiskService } from './risk/risk.service';
+import { Task } from './entities/task.entity';
+import { TaskController } from './task/task.controller';
+import { TaskService } from './task/task.service';
+import { Timer } from './entities/timer.entity';
+import { TimerController } from './timer/timer.controller';
+import { TimerService } from './timer/timer.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { loadConfig } from './config';
 import loadDatabase from './loadDatabase';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Project } from './entities/project.entity';
-import { DataSource } from 'typeorm';
-import { ProjectJournal } from './entities/project-journal.entity';
-import { Task } from './entities/task.entity';
-import { Risk } from './entities/risk.entity';
-import { Change } from './entities/change.entity';
-import { Timer } from './entities/timer.entity';
 
 @Module({
   imports: [
@@ -29,15 +33,22 @@ import { Timer } from './entities/timer.entity';
     }),
     LoggerModule,
     DatabaseModule.register({ name: 'project-planning', factory: loadDatabase }),
-    ProjectModule,
-    TaskModule,
-    RiskModule,
-    ChangeModule,
-    TimerModule,
-    ProjectJournalModule,
   ],
-  controllers: [AppController],
-  providers: [AppService,
+  controllers: [
+    ChangeController,
+    ProjectController,
+    ProjectJournalController,
+    RiskController,
+    TaskController,
+    TimerController
+  ],
+  providers: [
+    ChangeService,
+    ProjectService,
+    ProjectJournalService,
+    RiskService,
+    TaskService,
+    TimerService,
     {
       provide: getRepositoryToken(Project),
       useFactory: (connection: DataSource) => connection.getRepository(Project),
