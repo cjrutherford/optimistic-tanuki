@@ -1,4 +1,4 @@
-import { ChangeResolution, Changetype } from "@optimistic-tanuki/models";
+import { ChangeResolution, ChangeStatus, Changetype } from "@optimistic-tanuki/models";
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
 import { Project } from "./project.entity";
@@ -10,6 +10,9 @@ export class Change {
 
     @Column({ type: "enum", enum: Changetype })
     changeType: Changetype;
+
+    @Column({ type: "enum", enum: ChangeStatus, default: ChangeStatus.PENDING })
+    status: ChangeStatus;
 
     @Column()
     changeDescription: string;

@@ -1,1 +1,17 @@
-<p>risk-form works!</p>
+<form [formGroup]="riskForm" (ngSubmit)="onSubmit()">
+  <otui-card>
+    <lib-text-input formControlName="title" label="Title"></lib-text-input>
+    <lib-text-area formControlName="description" label="Description"></lib-text-area>
+    <lib-select formControlName="impact" label="Impact" [options]="impactOptions">
+      <ng-template let-option>
+        {{ option.label }}
+      </ng-template>
+    </lib-select>
+    <lib-select formControlName="likelihood" label="Likelihood" [options]="likelihoodOptions">
+      <ng-template let-option>
+        {{ option.label }}
+      </ng-template>
+    </lib-select>
+    <otui-button type="submit">Submit</otui-button>
+  </otui-card>
+</form>

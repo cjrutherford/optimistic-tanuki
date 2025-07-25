@@ -1,4 +1,5 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -14,6 +15,7 @@ export class ModalComponent {
   @Output() closeModal = new EventEmitter<void>();
 
   onClose() {
+    console.log('closing modal')
     this.closeModal.emit();
   }
 }

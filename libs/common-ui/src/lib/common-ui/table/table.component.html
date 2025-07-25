@@ -17,7 +17,12 @@
           <div class="table-head" *ngIf="cell.heading">
             {{ cell.heading }}
           </div>
-          <div class="table-value">
+          <div class="table-value"
+            [ngClass]="{
+              'overflowable': cell.isOverflowable && !rowExpanded,
+              'row-expanded': rowExpanded && cell.isOverflowable
+            }"
+          >
             {{ cell.value }}
           </div>
         }
@@ -28,12 +33,22 @@
     }
 
   </ng-container>
-  <div *ngIf="rowActions" class="table-cell actions-cell">
-    <otui-button (click)="toggleActions()">Actions</otui-button>
-    <div *ngIf="showActions" class="actions-list popover">
+  <div *ngIf="rowActions" class="table-cell actions-cell flex-row-actions">
+    <ng-container *ngIf="showActionsSplit; else actionsDropdown">
       <otui-button *ngFor="let action of rowActions" (click)="executeAction(action)">
         {{ action.title }}
       </otui-button>
-    </div>
-  </div>
+    </ng-container>
+    <ng-template #actionsDropdown>
+      <otui-button (click)="toggleActions()">Actions</otui-button>
+      <div *ngIf="showActions" class="actions-list popover">
+        <otui-button *ngFor="let action of rowActions" (click)="executeAction(action)">
+          {{ action.title }}
+        </otui-button>
+      </div>
+    </ng-template>
+  </div>  
+  <otui-button *ngIf="hasOverflowableCells" class="expand-btn" type="button" (click)="toggleRowExpansion()">
+    {{ rowExpanded ? '⬆️' : '⬇️' }}
+  </otui-button>
 </div>

@@ -1,22 +1,43 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  forwardRef,
+  Input,
+  Output,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeService, Themeable } from '@optimistic-tanuki/theme-ui';
-import { FormsModule } from '@angular/forms';
+import {
+  ControlValueAccessor,
+  FormsModule,
+  NG_VALUE_ACCESSOR,
+} from '@angular/forms';
 
 @Component({
   selector: 'lib-select',
   imports: [CommonModule, FormsModule],
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => SelectComponent),
+      multi: true,
+    },
+  ],
   templateUrl: './select.component.html',
   styleUrl: './select.component.scss',
   standalone: true,
 })
-export class SelectComponent extends Themeable {
+export class SelectComponent extends Themeable implements ControlValueAccessor {
   @Input() options: Array<{ value: string; label: string }> = [
     { value: '', label: 'Please select' },
     { value: 'option1', label: 'Option 1' },
     { value: 'option2', label: 'Option 2' },
     { value: 'option3', label: 'Option 3' },
   ];
+
+  value = '';
+  onChange?: (value: string) => void;
+  onTouched?: () => void;
 
   @Output() selectedValue: EventEmitter<string> = new EventEmitter<string>();
 
@@ -31,7 +52,24 @@ export class SelectComponent extends Themeable {
     this.accent = colors.accent;
     this.complement = colors.complement;
     this.borderColor = colors.borderColor || '#dee2e6';
-    this.borderGradient = colors.borderGradient || 'linear-gradient(to right, #007bff, #6610f2)';
+    this.borderGradient =
+      colors.borderGradient || 'linear-gradient(to right, #007bff, #6610f2)';
     this.transitionDuration = colors.transitionDuration || '0.3s';
+  }
+
+  emitChange(value: any): void {
+    console.log('Selected value:', value);
+    this.selectedValue.emit(value);
+  }
+
+  // ControlValueAccessor methods
+  writeValue(value: string): void {
+    this.value = value;
+  }
+  registerOnChange(fn: (value: string) => void): void {
+    this.onChange = fn;
+  }
+  registerOnTouched(fn: () => void): void {
+    this.onTouched = fn;
   }
 }

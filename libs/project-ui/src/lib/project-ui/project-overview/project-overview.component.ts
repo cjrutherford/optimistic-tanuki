@@ -1,13 +1,28 @@
-import { CardComponent, GridComponent, TileComponent } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, CardComponent, GridComponent, TileComponent } from '@optimistic-tanuki/common-ui';
 import { Component, Input, signal } from '@angular/core';
 
+import { ChangesTableComponent } from '../changes-table/changes-table.component';
 import { CommonModule } from '@angular/common';
 import { Project } from '@optimistic-tanuki/ui-models';
+import { ProjectJournalTableComponent } from '../project-journal-table/project-journal-table.component';
+import { RisksTableComponent } from '../risks-table/risks-table.component';
 import { SummaryBlockComponent } from '../summary-block/summary-block.component';
+import { TasksTableComponent } from '../tasks-table/tasks-table.component';
 
 @Component({
   selector: 'lib-project-overview',
-  imports: [CommonModule, CardComponent, GridComponent, SummaryBlockComponent, TileComponent],
+  imports: [
+    CommonModule, 
+    CardComponent, 
+    GridComponent, 
+    SummaryBlockComponent, 
+    TileComponent, 
+    ButtonComponent,
+    ProjectJournalTableComponent,
+    TasksTableComponent,
+    RisksTableComponent,
+    ChangesTableComponent
+  ],
   templateUrl: './project-overview.component.html',
   styleUrl: './project-overview.component.scss',
 })

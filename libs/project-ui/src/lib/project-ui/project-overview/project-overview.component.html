@@ -1,6 +1,6 @@
 <otui-card>
     <h2>Project Overview {{ projectName() }}</h2>
-    <otui-grid [columns]="3" [rows]="3">
+    <otui-grid [columns]="3" [rows]="9">
         <lib-summary-block
             title="Unresolved Tasks"
             [count]="6"
@@ -35,15 +35,25 @@
             </otui-tile>
         </button> -->
         @if (detailsShown()) {
-            <otui-tile style="grid-column: span 3;">
-                <h3>Project Details: {{shownDetails()}}</h3>
-                <p>Details about the project will be displayed here.</p>
-                <button (click)="hideDetails()">X</button>
+            <otui-tile style="grid-column: span 3; grid-row: span 4;" class="parent-container">
+                @if (shownDetails() === 'tasks') {
+                    <lib-tasks-table style="width: 100%; height: 100%;" ></lib-tasks-table>
+                } @else if (shownDetails() === 'risks') {
+                    <lib-risks-table style="width: 100%; height: 100%;" ></lib-risks-table>
+                } @else if (shownDetails() === 'changes') {
+                    <lib-changes-table style="width: 100%; height: 100%;" ></lib-changes-table>
+                }
+                <otui-button (click)="hideDetails()" class="close-button">X</otui-button>
             </otui-tile>
         }
         <otui-tile style="grid-column: span 3;">
             <h3>Ai Project Summary</h3>
             <p>An Overview of the project provided by your AI Project Manager.</p>
+        </otui-tile>
+        <otui-tile style="grid-column: span 3; grid-row: span 3">
+            <h3>Project Journal</h3>
+            <p>Recent updates and notes about the project.</p>
+            <lib-project-journal-table style="width: 100%; height: 100%;"></lib-project-journal-table>
         </otui-tile>
     </otui-grid>
 </otui-card>

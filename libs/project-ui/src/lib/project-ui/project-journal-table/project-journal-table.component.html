@@ -3,19 +3,20 @@
     [cells]="row"
     [rowIndex]="idx"
     [spacer]="true"
-    [rowActions]="tableActions()"
+    [rowActions]="tableActions"
     [showActionsSplit]="true"
   ></otui-table>
 }
 <div class="action-group">
-  <otui-button (click)="showModal.set(true)">➕ Add Risk</otui-button>
+  <otui-button (click)="showModal.set(true)">➕ Add Journal Entry</otui-button>
+
 </div>
 
 @if (showModal()) {
   <otui-modal
     (closeModal)="closeModal()"
-    [heading]="'Add Risk'"
+    [heading]="'Add Journal Entry'"
   >
-    <lib-risk-form (close)="closeModal()"></lib-risk-form>
+    <lib-project-journal-form (close)="closeModal()"></lib-project-journal-form>
   </otui-modal>
 }

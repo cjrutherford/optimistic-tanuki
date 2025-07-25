@@ -1,0 +1,6 @@
+<form [formGroup]="journalForm" (ngSubmit)="onSubmit()">
+  <otui-card>
+    <lib-text-area formControlName="content" label="Journal Entry"></lib-text-area>
+    <otui-button type="submit">Submit</otui-button>
+  </otui-card>
+</form>

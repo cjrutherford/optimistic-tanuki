@@ -27,7 +27,8 @@ export interface Task {
   projectId: string; // Foreign key to Project
   title: string;
   description: string;
-  status: 'Open' | 'In Progress' | 'Completed' | 'Blocked';
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED'; // Assuming status is a string enum
+  priority: 'LOW' | 'MEDIUM_LOW' | 'MEDIUM' | 'MEDIUM_HIGH' | 'HIGH'; // Assuming priority is a string enum
   assignee: string; // Assuming 'createdBy' in ER is 'assignee' for task context
   dueDate: Date; // Added based on wireframe display
   createdBy: string;
@@ -57,12 +58,12 @@ export interface Risk {
   id: string; // uuid
   projectId: string; // Foreign key to Project
   description: string;
-  impact: 'Low' | 'Medium' | 'High';
-  likelihood: 'Low' | 'Medium' | 'High';
-  status: 'Open' | 'Mitigated' | 'Closed';
-  resolution?: 'Resolved' | 'Accepted' | 'Transferred'; // Renamed from 'resolution' to avoid conflict with status
+  impact: 'LOW' | 'MEDIUM' | 'HIGH';
+  likelihood: 'UNLIKELY' | 'POSSIBLE' | 'LIKELY' | 'IMMINENT' | 'ALMOST_CERTAIN' | 'CERTAIN' | 'NOT_APPLICABLE' | 'UNKNOWN'; 
+  status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
+  resolution?: 'PENDING' |'ACCEPTED' | 'MITIGATED' |'ESCALATED' | 'AVOIDED';
   mitigationPlan?: string;
-  riskOwner?: string; // Added based on ER
+  riskOwner?: string; 
   createdBy: string;
   createdAt: Date;
   updatedBy?: string;
@@ -75,12 +76,13 @@ export interface Risk {
 export interface Change {
   id: string; // uuid
   projectId: string; // Foreign key to Project
-  changeType: 'Scope' | 'Schedule' | 'Cost' | 'Resource' | 'Other';
+  changeType: 'ADDITION' | 'MODIFICATION' | 'DELETION'; 
+  changeStatus: 'PENDING' | 'RESEARCHING' | 'DISCUSSING' | 'DESIGNING' | 'PENDING_APPROVAL' | 'IMPELEMENTING' | 'COMPLETE' | 'DISCARDED'; 
   changeDescription: string;
   changeDate: Date;
   requestor: string;
   approver?: string;
-  resolution: 'Pending' | 'Approved' | 'Rejected'; // Renamed from 'resolution' to avoid conflict with status
+  resolution: 'PENDING' | 'APPROVED' | 'REJECTED'; 
   updatedBy?: string;
   updatedAt?: Date;
 }

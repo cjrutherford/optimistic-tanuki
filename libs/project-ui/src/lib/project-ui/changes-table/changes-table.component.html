@@ -1,1 +1,20 @@
-<p>changes-table works!</p>
+@for (row of cells(); track $index; let idx = $index) {
+  <otui-table
+    [cells]="row"
+    [rowIndex]="idx"
+    [spacer]="true"
+    [rowActions]="rowActions"
+  ></otui-table>
+}
+<div class="action-group">
+    <otui-button (click)="setShowModal()">➕ Add Change</otui-button>
+</div>
+
+@if (showModal()) {
+  <otui-modal
+    (closeModal)="closeModal()"
+    [heading]="'Add Change'"
+  >
+    <lib-change-form (close)="closeModal()"></lib-change-form>
+  </otui-modal>
+}

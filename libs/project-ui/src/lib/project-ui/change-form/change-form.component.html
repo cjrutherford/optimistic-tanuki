@@ -1,1 +1,8 @@
-<p>change-form works!</p>
+<form [formGroup]="changeForm" (ngSubmit)="onSubmit()">
+  <otui-card>
+    <lib-text-area formControlName="changeDescription" label="Change Description"></lib-text-area>
+    <lib-select formControlName="changeType" [options]="changeTypeOptions" label="Change Type"></lib-select>
+    <lib-text-input formControlName="changeDate" label="Change Date" type="date"></lib-text-input>
+    <otui-button type="submit">Submit</otui-button>
+  </otui-card>
+</form>

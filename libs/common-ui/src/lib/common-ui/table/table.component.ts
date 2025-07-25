@@ -12,6 +12,7 @@ export interface TableCell {
   heading?: string;
   value?: string | TemplateRef<HTMLElement>;
   isBadge?: boolean;
+  isOverflowable?: boolean;
   customStyles?: { [key: string]: string };
   isSpacer?: boolean;
 }
@@ -39,9 +40,11 @@ export class TableComponent extends Themeable implements OnInit {
   @Input() rowActions?: TableRowAction[];
   @Input() tableStyles: { [key: string]: string } = {};
   @Input() spacer?: boolean = false;
+  @Input() showActionsSplit = false;
 
   cellTemplates: (TemplateRef<HTMLElement> | null)[] = []; 
   showActions = false;
+  rowExpanded = false;
 
   override applyTheme(colors: ThemeColors): void {
     console.log('Applying theme colors:', colors);
@@ -79,6 +82,14 @@ export class TableComponent extends Themeable implements OnInit {
     if (this.spacer) {
       this.cells.push({ value: '', customStyles: { flex: '1' } });
     }
+  }
+
+  get hasOverflowableCells(): boolean {
+    return this.cells.some(cell => cell.isOverflowable);
+  }
+
+  toggleRowExpansion() {
+    this.rowExpanded = !this.rowExpanded;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

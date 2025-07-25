@@ -1,7 +1,8 @@
 export { 
     CreateChangeDto,
     Changetype,
-    ChangeResolution
+    ChangeResolution,
+    ChangeStatus
 } from './create-change.dto'
 export { CreateProjectDto } from './create-project.dto'
 export { CreateProjectJournalDto } from './create-project-journal.dto'

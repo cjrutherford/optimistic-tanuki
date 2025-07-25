@@ -78,6 +78,12 @@
   margin-top: 5px;
 }
 
+.actions-cell.flex-row-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
 .actions-list button {
   padding: 5px 10px;
   font-size: 14px;
@@ -91,4 +97,29 @@
   &:hover {
     background-color: var(--complement, #0056b3);
   }
+}
+.table-value.overflowable {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  display: inline-block;
+  vertical-align: middle;
+  transition: max-width 0.3s;
+}
+.table-value.expanded {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  max-width: none;
+}
+.expand-btn {
+  margin-left: 8px;
+  background: none;
+  border: none;
+  color: var(--accent, #007bff);
+  cursor: pointer;
+  font-size: 0.9em;
+  padding: 0;
+  vertical-align: middle;
 }

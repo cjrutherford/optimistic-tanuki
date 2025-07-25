@@ -12,6 +12,17 @@ export enum ChangeResolution {
     REJECTED = "REJECTED",
 }
 
+export enum ChangeStatus {
+    PENDING = "PENDING",
+    RESEARCHING = "RESEARCHING",
+    DISCUSSING = "DISCUSSING",
+    DESIGNING = "DESIGNING",
+    PENDING_APPROVAL = "PENDING_APPROVAL",
+    IMPLEMENTING = "IMPLEMENTING",
+    COMPLETE = "COMPLETE",
+    DISCARDED = "DISCARDED",
+}
+
 export class CreateChangeDto {
     @ApiProperty({ enum: Changetype, description: 'Type of change' })
     changeType: Changetype;

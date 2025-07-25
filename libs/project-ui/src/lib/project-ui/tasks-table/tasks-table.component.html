@@ -1,1 +1,21 @@
-<p>tasks-table works!</p>
+@for (row of cells(); track $index; let idx = $index) {
+    <otui-table
+      [cells]="row"
+      [rowIndex]="idx"
+      [spacer]="true"
+      [rowActions]="tableActions"
+      [showActionsSplit]="true"
+    ></otui-table>
+}
+<div class="action-group">
+  <otui-button (click)="showModal.set(true)">➕ Add Task</otui-button>
+</div>
+
+@if (showModal()) {
+  <otui-modal
+    (closeModal)="closeModal()"
+    [heading]="'Add Task'"
+  >
+    <lib-task-form (close)="closeModal()"></lib-task-form>
+  </otui-modal>
+}
