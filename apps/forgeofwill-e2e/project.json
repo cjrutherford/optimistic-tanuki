@@ -1,0 +1,9 @@
+{
+  "name": "forgeofwill-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/forgeofwill-e2e/src",
+  "implicitDependencies": ["forgeofwill"],
+  "// targets": "to see all targets run: nx show project forgeofwill-e2e --web",
+  "targets": {}
+}

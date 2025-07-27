@@ -1,8 +1,8 @@
 export default {
-  displayName: 'journeyman',
+  displayName: 'forgeofwill',
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
-  coverageDirectory: '../../coverage/apps/journeyman',
+  coverageDirectory: '../../coverage/apps/forgeofwill',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
       'jest-preset-angular',

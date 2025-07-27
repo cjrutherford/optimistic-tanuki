@@ -1,28 +1,28 @@
 {
-  "name": "journeyman",
+  "name": "forgeofwill",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "prefix": "app",
-  "sourceRoot": "apps/journeyman/src",
+  "sourceRoot": "apps/forgeofwill/src",
   "tags": [],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/apps/journeyman",
-        "index": "apps/journeyman/src/index.html",
-        "browser": "apps/journeyman/src/main.ts",
+        "outputPath": "dist/apps/forgeofwill",
+        "index": "apps/forgeofwill/src/index.html",
+        "browser": "apps/forgeofwill/src/main.ts",
         "polyfills": ["zone.js"],
-        "tsConfig": "apps/journeyman/tsconfig.app.json",
+        "tsConfig": "apps/forgeofwill/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
           {
             "glob": "**/*",
-            "input": "apps/journeyman/public"
+            "input": "apps/forgeofwill/public"
           }
         ],
-        "styles": ["apps/journeyman/src/styles.scss"],
+        "styles": ["apps/forgeofwill/src/styles.scss"],
         "scripts": []
       },
       "configurations": {
@@ -54,10 +54,10 @@
       "executor": "@angular-devkit/build-angular:dev-server",
       "configurations": {
         "production": {
-          "buildTarget": "journeyman:build:production"
+          "buildTarget": "forgeofwill:build:production"
         },
         "development": {
-          "buildTarget": "journeyman:build:development"
+          "buildTarget": "forgeofwill:build:development"
         }
       },
       "defaultConfiguration": "development"
@@ -65,7 +65,7 @@
     "extract-i18n": {
       "executor": "@angular-devkit/build-angular:extract-i18n",
       "options": {
-        "buildTarget": "journeyman:build"
+        "buildTarget": "forgeofwill:build"
       }
     },
     "lint": {
@@ -75,16 +75,16 @@
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "apps/journeyman/jest.config.ts"
+        "jestConfig": "apps/forgeofwill/jest.config.ts"
       }
     },
     "serve-static": {
       "continuous": true,
       "executor": "@nx/web:file-server",
       "options": {
-        "buildTarget": "journeyman:build",
+        "buildTarget": "forgeofwill:build",
         "port": 4200,
-        "staticFilePath": "dist/apps/journeyman/browser",
+        "staticFilePath": "dist/apps/forgeofwill/browser",
         "spa": true
       }
     },
@@ -92,8 +92,8 @@
       "executor": "@storybook/angular:start-storybook",
       "options": {
         "port": 4400,
-        "configDir": "apps/journeyman/.storybook",
-        "browserTarget": "journeyman:build",
+        "configDir": "apps/forgeofwill/.storybook",
+        "browserTarget": "forgeofwill:build",
         "compodoc": false
       },
       "configurations": {
@@ -106,9 +106,9 @@
       "executor": "@storybook/angular:build-storybook",
       "outputs": ["{options.outputDir}"],
       "options": {
-        "outputDir": "dist/storybook/journeyman",
-        "configDir": "apps/journeyman/.storybook",
-        "browserTarget": "journeyman:build",
+        "outputDir": "dist/storybook/forgeofwill",
+        "configDir": "apps/forgeofwill/.storybook",
+        "browserTarget": "forgeofwill:build",
         "compodoc": false
       },
       "configurations": {
@@ -120,20 +120,20 @@
     "test-storybook": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "test-storybook -c apps/journeyman/.storybook --url=http://localhost:4400"
+        "command": "test-storybook -c apps/forgeofwill/.storybook --url=http://localhost:4400"
       }
     },
     "static-storybook": {
       "executor": "@nx/web:file-server",
       "dependsOn": ["build-storybook"],
       "options": {
-        "buildTarget": "journeyman:build-storybook",
-        "staticFilePath": "dist/storybook/journeyman",
+        "buildTarget": "forgeofwill:build-storybook",
+        "staticFilePath": "dist/storybook/forgeofwill",
         "spa": true
       },
       "configurations": {
         "ci": {
-          "buildTarget": "journeyman:build-storybook:ci"
+          "buildTarget": "forgeofwill:build-storybook:ci"
         }
       }
     }
