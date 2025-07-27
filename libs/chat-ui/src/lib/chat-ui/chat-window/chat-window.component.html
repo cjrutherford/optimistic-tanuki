@@ -1,1 +1,18 @@
-<p>chat-window works!</p>
+
+<div class="chat-window-container" [class.full-screen]="isFullScreen" [class.popout]="isPopout">
+  <div class="chat-window-header">
+    <span>Chat</span>
+    <div class="chat-window-actions">
+      <button (click)="toggleFullScreen()" [attr.aria-pressed]="isFullScreen">
+        {{ isFullScreen ? 'Exit Full Screen' : 'Full Screen' }}
+      </button>
+      <button (click)="togglePopout()" [attr.aria-pressed]="isPopout">
+        {{ isPopout ? 'Close Popout' : 'Popout' }}
+      </button>
+    </div>
+  </div>
+  <div class="chat-window-content">
+    <lib-participants></lib-participants>
+    <lib-message-list></lib-message-list>
+  </div>
+</div>

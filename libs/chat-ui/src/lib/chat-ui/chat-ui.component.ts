@@ -1,10 +1,40 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChatWindowComponent } from './chat-window/chat-window.component';
+import { ContactBubbleComponent } from './contact-bubble/contact-bubble.component';
 
 @Component({
   selector: 'lib-chat-ui',
-  imports: [CommonModule],
+  imports: [CommonModule, ChatWindowComponent, ContactBubbleComponent],
   templateUrl: './chat-ui.component.html',
-  styleUrl: './chat-ui.component.css',
+  styleUrl: './chat-ui.component.scss',
 })
-export class ChatUiComponent {}
+export class ChatUiComponent {
+  contacts = [{
+    id: 1,
+    name: 'Johnathon Doe',
+    avatarUrl: 'https://placehold.co/60x60',
+    lastMessage: 'Hello, how are you?',
+    lastMessageTime: '2023-10-01T12:00:00Z',
+  }, {
+    id: 2,
+    name: 'Jane Smith',
+    avatarUrl: 'https://placehold.co/60x60',
+    lastMessage: 'Are we still on for the meeting?',
+    lastMessageTime: '2023-10-01T12:05:00Z',
+  }];
+  selectedContact = signal<any>(null);
+
+  onContactClick(contact: any) {
+    const currentContact = this.selectedContact(); 
+    if (currentContact && currentContact === contact) {
+      this.closeChatWindow();
+      return;
+    }
+    this.selectedContact.set(contact);
+  }
+
+  closeChatWindow() {
+    this.selectedContact.set(null);
+  }
+}

@@ -101,6 +101,22 @@ button {
       cursor: not-allowed;
     }
   }
+  &.rounded {
+    background-color: var(--accent, #007bff);
+    color: var(--foreground, #fff);
+    border-radius: 50%;
+    padding: 5px 5px;
+
+    &:hover {
+      background-color: var(--accent-shade-darken-30, #0056b3);
+      box-shadow: 2px 2px 5px 6px var(--accent);
+    }
+
+    &:disabled {
+      background-color: var(--accent-shade-lighten-70, #cccccc);
+      cursor: not-allowed;
+    }
+  }
 
   &.text {
     background-color: transparent;

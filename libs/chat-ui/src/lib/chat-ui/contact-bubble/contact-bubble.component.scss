@@ -1,0 +1,29 @@
+.contact-bubble {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: var(--color-background);
+  box-shadow: var(--shadow-elevation-1);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: var(--color-hover-background);
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px;
+    object-fit: cover;
+  }
+
+  .name {
+    font-size: 8px;
+    font-weight: bold;
+    color: var(--color-text-primary);
+  }
+}

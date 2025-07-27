@@ -1,1 +1,8 @@
-<p>contact-bubble works!</p>
+<otui-button [variant]="'rounded'">
+    <div class="contact-bubble">
+        <div class="contact-avatar">
+        <lib-profile-photo [src]="contact.avatarUrl" [alt]="contact.name"></lib-profile-photo>
+        <!-- <img [src]="contact.avatarUrl" alt="{{ contact.name }}'s avatar" /> -->
+        </div>
+    </div>
+</otui-button>

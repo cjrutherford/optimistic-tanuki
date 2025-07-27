@@ -27,7 +27,7 @@ export class ButtonComponent extends Themeable {
   warning!: string;
   danger!: string;
   @Input() disabled = false;
-  @Input() variant: 'primary' | 'secondary' | 'outlined' | 'text' | 'warning' | 'danger' | 'success' = 'primary';
+  @Input() variant: 'primary' | 'secondary' | 'outlined' | 'text' | 'warning' | 'danger' | 'success' | 'rounded' = 'primary';
   @Output() action = new EventEmitter<void>();
 
   override applyTheme(colors: ThemeColors): void {

@@ -1,0 +1,19 @@
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #fafafa;
+}
+.message {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: baseline;
+}
+.sender {
+  font-weight: bold;
+  margin-right: 8px;
+  color: #1976d2;
+}
+.text {
+  color: #333;
+}
