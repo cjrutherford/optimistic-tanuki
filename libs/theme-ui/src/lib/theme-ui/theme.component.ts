@@ -1,9 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ThemeService } from './theme.service';
-import { FormsModule } from '@angular/forms';
 import { Observable, Subject, Subscription, filter, takeUntil } from 'rxjs';
+
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ThemeColors } from './theme.interface';
+import { ThemeService } from './theme.service';
 
 @Component({
   selector: 'lib-theme-toggle',
@@ -34,7 +35,7 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
   transitionDuration: string = '0.3s';
 
-  constructor(private themeService: ThemeService) {
+  constructor(private readonly themeService: ThemeService) {
     this.theme = this.themeService.getTheme();
     this.accentColor = this.themeService.getAccentColor();
   }
@@ -44,7 +45,7 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
       .pipe(
         filter(
           (value) =>
-            !!(value && value.background && value.foreground && value.accent),
+            !!(value?.background && value?.foreground && value?.accent),
         ),
         takeUntil(this.destroy$),
       )

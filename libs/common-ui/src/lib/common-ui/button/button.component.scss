@@ -4,6 +4,7 @@ button {
   cursor: pointer;
   border: none;
   border-radius: 4px;
+  color: var(--foreground);
   transition: background-color ease-in-out 0.3s, box-shadow ease-in-out 0.3s;
 
   &.primary {

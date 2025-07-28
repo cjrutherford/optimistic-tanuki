@@ -1,2 +1,28 @@
-<app-nx-welcome></app-nx-welcome>
+<otui-card>
+    <div class="title-bar">
+        <otui-button variant="rounded" (click)="showModal()" (keydown)="showModal()">
+            <img src="https://placehold.co/50x50" style="border-radius: 50%;" alt="User avatar" />
+        </otui-button>
+        <h1>Forge of Will</h1>
+        <lib-theme-toggle></lib-theme-toggle>
+    </div>
+</otui-card>
+@if (isModalOpen()) {
+    <otui-modal (closeModal)="showModal()" [mode]="'sidebar-left'">
+        <otui-card >
+            <div class="router-links">
+                <otui-button (action)="navigateTo(isAuthenticated() ? '/logout' : '/login')">
+                    {{ isAuthenticated() ? 'Logout' : 'Login' }}
+                </otui-button>
+                @if (isAuthenticated()) {
+                    <otui-button (action)="navigateTo('/')">Projects</otui-button>
+                    <otui-button (action)="navigateTo('/profile')">My Profile</otui-button>
+                } @else {
+                    <otui-button (action)="navigateTo('/register')">Register</otui-button>
+                }
+            </div>
+        </otui-card>
+    </otui-modal>
+}
 <router-outlet></router-outlet>
+<lib-chat-ui></lib-chat-ui>

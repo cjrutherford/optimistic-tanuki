@@ -17,17 +17,17 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
     '[style.--border-color]': 'borderColor',
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
-  }
+  },
 })
-export class CardComponent extends Themeable{
+export class CardComponent extends Themeable {
   override applyTheme(colors: ThemeColors): void {
     // Use a softer gradient: background -> accent (60%) -> accent lighten (100%)
     const accentLight = colors.accentShades?.[1] ?? colors.accent;
-    this.background = `linear-gradient(135deg, ${colors.background} 0%, ${colors.accent} 60%, ${accentLight} 100%)`;
+    this.background = `linear-gradient(to bottom, ${colors.background}, ${colors.accent})`;
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;
-    if(this.theme === 'dark') {
+    if (this.theme === 'dark') {
       this.borderGradient = colors.accentGradients['dark'];
       this.borderColor = colors.complementaryShades[2][0];
     } else {
@@ -36,5 +36,4 @@ export class CardComponent extends Themeable{
     }
     this.transitionDuration = '0.3s';
   }
-
 }

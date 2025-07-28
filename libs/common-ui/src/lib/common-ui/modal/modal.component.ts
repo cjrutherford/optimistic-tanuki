@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
 })
 export class ModalComponent {
   @Input() heading = '';
-  @Input() mode: 'sidebar' | 'trough' | 'standard-modal' | 'captive-modal' = 'standard-modal';
+  @Input() mode: 'sidebar'| 'sidebar-left' | 'trough' | 'standard-modal' | 'captive-modal' = 'standard-modal';
   @Output() closeModal = new EventEmitter<void>();
 
   onClose() {
