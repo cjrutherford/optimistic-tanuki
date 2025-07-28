@@ -16,8 +16,8 @@ export class CreateProjectDto {
     @ApiProperty({ type: Date })
     startDate: Date;
 
-    @ApiProperty({ type: Date })
-    endDate: Date;
+    @ApiProperty({ type: Date, nullable: true })
+    endDate?: Date;
 
     @ApiProperty({ type: String })
     status: string;

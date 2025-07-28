@@ -2,7 +2,7 @@
     @for( contact of contacts; track contact.id; let i = $index) {
         <div style="position:relative;">
             <lib-contact-bubble [contact]="contact" (click)="onContactClick(contact)"></lib-contact-bubble>
-            @if(selectedContact().id === contact.id) {
+            @if(showModal() && selectedContact().id === contact.id) {
                 <div class="chat-popout">
                     <lib-chat-window [contact]="selectedContact()" (close)="closeChatWindow()"></lib-chat-window>
                 </div>

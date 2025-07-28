@@ -1,4 +1,4 @@
-import { ButtonComponent, CardComponent, GridComponent, TileComponent } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, CardComponent, TileComponent } from '@optimistic-tanuki/common-ui';
 import { Component, Input, signal } from '@angular/core';
 
 import { ChangesTableComponent } from '../changes-table/changes-table.component';
@@ -14,7 +14,6 @@ import { TasksTableComponent } from '../tasks-table/tasks-table.component';
   imports: [
     CommonModule, 
     CardComponent, 
-    GridComponent, 
     SummaryBlockComponent, 
     TileComponent, 
     ButtonComponent,

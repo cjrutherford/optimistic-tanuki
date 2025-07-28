@@ -1,8 +1,14 @@
+<div class="contact-bubble"(mouseenter)="showPopup.set(true)" (mouseout)="showPopup.set(false)" (blur)="showPopup.set(false)">
 <otui-button [variant]="'rounded'">
-    <div class="contact-bubble">
         <div class="contact-avatar">
         <lib-profile-photo [src]="contact.avatarUrl" [alt]="contact.name"></lib-profile-photo>
-        <!-- <img [src]="contact.avatarUrl" alt="{{ contact.name }}'s avatar" /> -->
         </div>
-    </div>
-</otui-button>
+        @if (showPopup()) {
+            <div class="contact-popup">
+                <div class="contact-name">{{ contact.name }}</div>
+                <div class="contact-last-message">{{ contact.lastMessage }}</div>
+                <div class="contact-last-message-time">{{ contact.lastMessageTime }}</div>
+            </div>
+        }
+    </otui-button>
+</div>

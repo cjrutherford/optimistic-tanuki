@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ChatWindowComponent } from './chat-window/chat-window.component';
+import { CommonModule } from '@angular/common';
 import { ContactBubbleComponent } from './contact-bubble/contact-bubble.component';
 
 @Component({
@@ -24,17 +25,20 @@ export class ChatUiComponent {
     lastMessageTime: '2023-10-01T12:05:00Z',
   }];
   selectedContact = signal<any>(null);
+  showModal = signal<boolean>(false);
 
   onContactClick(contact: any) {
     const currentContact = this.selectedContact(); 
-    if (currentContact && currentContact === contact) {
+    if (currentContact && currentContact.id === contact.id) {
       this.closeChatWindow();
       return;
     }
+    this.showModal.set(true);
     this.selectedContact.set(contact);
   }
 
   closeChatWindow() {
+    this.showModal.set(false);
     this.selectedContact.set(null);
   }
 }

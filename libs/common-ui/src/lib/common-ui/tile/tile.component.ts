@@ -26,7 +26,7 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
 export class TileComponent extends Themeable{
 
   override applyTheme(colors: ThemeColors): void {
-    this.background = `linear-gradient(to bottom, ${colors.background}, ${colors.accent})`;
+    this.background = `radial-gradient(ellipse, ${colors.background}, ${colors.accent})`;
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;
