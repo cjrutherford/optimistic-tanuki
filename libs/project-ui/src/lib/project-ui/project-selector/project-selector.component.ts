@@ -1,6 +1,6 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { Change, Project, ProjectJournal, Risk, Task, Timer } from '@optimistic-tanuki/ui-models';
-import { Component, EventEmitter, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { CommonModule } from '@angular/common';
@@ -13,10 +13,12 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
   styleUrl: './project-selector.component.scss',
 })
 export class ProjectSelectorComponent {
+  @Input() projects: Project[] = [];
   availableProjects = signal<Project[]>([]);
   projectSelectionForm: FormGroup;
   @Output() projectSelected: EventEmitter<string> = new EventEmitter<string>();
-  @Output() editProject: EventEmitter<void> = new EventEmitter<void>();
+  @Output() createProject: EventEmitter<void> = new EventEmitter<void>();
+  @Output() editProject: EventEmitter<Project> = new EventEmitter<Project>();
   @Output() deleteProject: EventEmitter<void> = new EventEmitter<void>();
 
   // Prepare options for the SelectComponent
@@ -39,42 +41,47 @@ export class ProjectSelectorComponent {
       console.log('Selected project:', value.project);
       // Handle project selection change
     });
-    this.availableProjects.set([
-      {
-        id: '1',
-        name: 'Project Alpha',
-        owner: 'John Doe',
-        members: ['Alice', 'Bob'],
-        createdBy: 'John Doe',
-        createdAt: new Date(),
-        description: 'This is the first project.',
-        startDate: new Date('2023-01-01'),
-        endDate: new Date('2023-12-31'),
-        status: 'active',
-        tasks: [] as Task[],
-        risks: [] as Risk[],
-        changes: [] as Change[],
-        journalEntries: [] as ProjectJournal[],
-        timers: [] as Timer[]
-      },
-      {
-        id: '2',
-        name: 'Project Beta',
-        description: 'This is the second project.',
-        startDate: new Date('2023-02-01'),
-        endDate: new Date('2023-11-30'),
-        status: 'active',
-        tasks: [],
-        risks: [],
-        changes: [],
-        journalEntries: [],
-        timers: [],
-        owner: '',
-        members: [],
-        createdBy: '',
-        createdAt: new Date(),
-      }
-    ])
+    this.availableProjects.set(this.projects);
+    // this.availableProjects.set([
+    //   {
+    //     id: '1',
+    //     name: 'Project Alpha',
+    //     owner: 'John Doe',
+    //     members: ['Alice', 'Bob'],
+    //     createdBy: 'John Doe',
+    //     createdAt: new Date(),
+    //     description: 'This is the first project.',
+    //     startDate: new Date('2023-01-01'),
+    //     endDate: new Date('2023-12-31'),
+    //     status: 'active',
+    //     tasks: [] as Task[],
+    //     risks: [] as Risk[],
+    //     changes: [] as Change[],
+    //     journalEntries: [] as ProjectJournal[],
+    //     timers: [] as Timer[]
+    //   },
+    //   {
+    //     id: '2',
+    //     name: 'Project Beta',
+    //     description: 'This is the second project.',
+    //     startDate: new Date('2023-02-01'),
+    //     endDate: new Date('2023-11-30'),
+    //     status: 'active',
+    //     tasks: [],
+    //     risks: [],
+    //     changes: [],
+    //     journalEntries: [],
+    //     timers: [],
+    //     owner: '',
+    //     members: [],
+    //     createdBy: '',
+    //     createdAt: new Date(),
+    //   }
+    // ])
+  }
+
+  onCreateClick() {
+    this.createProject.emit();
   }
 
   onProjectSelected(projectId: string) {

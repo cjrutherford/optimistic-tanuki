@@ -2,7 +2,7 @@ import { AssetDto, CreateAssetDto, CreateProfileDto, ProfileDto, UpdateProfileDt
 import { Injectable, signal } from '@angular/core';
 import { firstValueFrom, forkJoin, map, switchMap } from 'rxjs';
 
-import { AuthStateService } from './auth-state.service';
+import { AuthStateService } from '../auth-state.service';
 import { HttpClient } from '@angular/common/http';
 import { UpdateAttachmentDto } from '@optimistic-tanuki/social-ui';
 

@@ -1,3 +1,9 @@
 <otui-card>
-    <lib-register-block></lib-register-block>
+    <lib-register-block
+        [registerHeader]="'Welcome to Forge of Will!'"
+        [registerButtonText]="'Start your next adventure'"
+        [callToAction]="'Create your first project to begin.'"
+        [heroSource]="'assets/fow-hero.webp'"
+        (submitEvent)="onSubmit($event)"
+    ></lib-register-block>
 </otui-card>

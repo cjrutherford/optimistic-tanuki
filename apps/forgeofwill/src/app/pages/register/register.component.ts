@@ -1,9 +1,12 @@
+import { RegisterSubmitType, submitTypeToRegisterRequest } from '@optimistic-tanuki/ui-models';
+
 import { AuthStateService } from '../../auth-state.service';
-import { AuthenticationService } from '../../authentication.service copy';
+import { AuthenticationService } from '../../authentication.service';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-register',
@@ -15,6 +18,23 @@ import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
 export class RegisterComponent {
   constructor(
     private readonly authService: AuthenticationService,
-    private readonly authState: AuthStateService
+    private readonly router: Router
   ) {}
+
+  onSubmit(event: RegisterSubmitType) {
+    console.log('Registering user with data:', event);
+    const request = submitTypeToRegisterRequest(event);
+    console.log('Converted request:', request);
+    this.authService.register(request).subscribe({
+      next: (response) => {
+        console.log('Registration successful:', response);
+        this.router.navigate(['/login']); // Redirect to login or another page after successful registration
+        // Handle successful registration, e.g., redirect or show a success message
+      },
+      error: (error) => {
+        console.error('Registration failed:', error);
+        // Handle registration error, e.g., show an error message
+      },
+    });
+  }
 }

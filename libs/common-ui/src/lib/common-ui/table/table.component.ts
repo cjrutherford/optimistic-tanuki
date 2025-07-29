@@ -54,7 +54,7 @@ export class TableComponent extends Themeable implements OnInit {
     // Use a softer gradient: background -> accent (60%) -> accent lighten (100%)
     const accentLight = colors.accentShades?.[1][1] ?? colors.accent;
     this.background = colors.background;
-    this.backgroundGradient = `linear-gradient(to bottom, ${colors.background}, ${colors.accent}, ${accentLight}, ${colors.background})`;
+    this.backgroundGradient = `linear-gradient(to bottom, ${colors.accent}, ${colors.background}, ${colors.background}, ${accentLight})`;
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;

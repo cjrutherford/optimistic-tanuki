@@ -6,7 +6,8 @@
               (selectedValue)="onProjectSelected($event)"
             ></lib-select>
         </form>
-        <otui-button variant="warning">Edit</otui-button>
-        <otui-button variant="danger">Delete</otui-button>
+        <otui-button variant="primary" (click)="onCreateClick()">Create</otui-button>
+        <otui-button variant="warning" (click)="editProject.emit()">Edit</otui-button>
+        <otui-button variant="danger" (click)="deleteProject.emit()">Delete</otui-button>
     </div>
 </otui-card>

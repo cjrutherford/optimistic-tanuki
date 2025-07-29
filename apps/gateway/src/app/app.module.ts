@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { Module } from '@nestjs/common';
 import { ProfileController } from '../controllers/profile/profile.controller';
+import { ProjectPlanningController } from '../controllers/project-planning/project-planning.controller';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { SocialController } from '../controllers/social/social.controller';
 
@@ -25,6 +26,7 @@ import { SocialController } from '../controllers/social/social.controller';
     ProfileController,
     SocialController,
     AssetController,
+    ProjectPlanningController
   ],
   providers: [
     AuthGuard,
@@ -90,7 +92,7 @@ import { SocialController } from '../controllers/social/social.controller';
     },{
       provide: ServiceTokens.PROJECT_PLANNING_SERVICE,
       useFactory: (config: ConfigService) => {
-        const serviceConfig = config.get<TcpServiceConfig>('services.project-planning');
+        const serviceConfig = config.get<TcpServiceConfig>('services.project_planning');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

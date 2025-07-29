@@ -1,3 +1,8 @@
 <otui-card>
-    <lib-login-block></lib-login-block>
+    <lib-login-block
+        [title]="'Welcome back to Forge of Will!'"
+        [description]="'Log in to continue your adventure.'"
+        [heroAlt]="'Forge of Will Hero Image'"
+        (submitEvent)="onLoginSubmit($event)"
+    ></lib-login-block>
 </otui-card>

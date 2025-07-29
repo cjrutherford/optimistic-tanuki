@@ -1,6 +1,8 @@
-import { TcpClientOptions, Transport } from '@nestjs/microservices';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
+
+import { TcpClientOptions, Transport } from '@nestjs/microservices';
+
 import path from 'path';
 
 export type TcpServiceConfig = {
@@ -13,10 +15,12 @@ export type TcpServiceConfig = {
 export type Config = {
     listenPort: number;
     services: {
+        asset: TcpServiceConfig;
         authentication: TcpServiceConfig;
         profile: TcpServiceConfig;
         social: TcpServiceConfig;
         tasks: TcpServiceConfig;
+        project_planning: TcpServiceConfig;
     }
 };
 

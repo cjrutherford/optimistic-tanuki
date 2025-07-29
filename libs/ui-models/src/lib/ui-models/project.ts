@@ -26,6 +26,7 @@ export interface CreateProject {
   members: string[];
   name: string;
   description: string;
+  status: string;
   startDate: Date;
   endDate?: Date;
 }

@@ -1,5 +1,30 @@
 <div style="margin-left: 16px; margin-right: 16px;">
-    <lib-project-selector></lib-project-selector>
+    <lib-project-selector
+      [projects]="projects()"
+      (projectSelected)="onProjectSelected($event)"
+      (createProject)="onCreateProject()"
+      (editProject)="onEditProject($event)"
+      (deleteProject)="onDeleteProject()"
+    ></lib-project-selector>
     <lib-project-overview>
     </lib-project-overview>
 </div>
+
+@if(showCreateModal()) {
+    <otui-modal [title]="'Create Project'" (closeModal)="showCreateModal.set(false)">
+        <lib-project-form
+            (submitEvent)="onProjectCreated($event)"
+        >
+        </lib-project-form>
+    </otui-modal>
+}
+
+@if(showEditModal() && selectedProject() !== undefined) {
+    <otui-modal [title]="'Edit Project'" (closeModal)="showEditModal.set(false)">
+        <lib-project-form
+            [project]="selectedProject()"
+            (submitEvent)="onProjectUpdated($event)"
+        >
+        </lib-project-form>
+    </otui-modal>
+}

@@ -1,5 +1,10 @@
 listenPort: 3000
 services:
+  asset:
+    name: asset
+    transport: TCP
+    host: ot_asset
+    port: 3005
   authentication:
     name: authentication
     transport: TCP
@@ -20,8 +25,8 @@ services:
     transport: TCP
     host: ot_tasks
     port: 3004
-  project-planning:
-    name: project-planning
+  project_planning:
+    name: project_planning
     transport: TCP
     host: ot_project_planning
     port: 3006

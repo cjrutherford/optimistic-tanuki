@@ -1,9 +1,12 @@
-import { Controller, Inject, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Inject, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { ChangeCommands, ProjectCommands, ProjectJournalCommands, RiskCommands, ServiceTokens, TaskCommands, TimerCommands } from '@optimistic-tanuki/constants';
 import { CreateChangeDto, CreateProjectDto, CreateProjectJournalDto, CreateRiskDto, CreateTaskDto, CreateTimerDto, QueryChangeDto, QueryProjectDto, QueryProjectJournalDto, QueryRiskDto, QueryTaskDto, UpdateChangeDto, UpdateProjectDto, UpdateProjectJournalDto, UpdateRiskDto, UpdateTaskDto, UpdateTimerDto } from '@optimistic-tanuki/models';
+import { AuthGuard } from '../../auth/auth.guard';
+import { User, UserDetails } from '../../decorators/user.decorator';
 
+@UseGuards(AuthGuard)
 @Controller('project-planning')
 export class ProjectPlanningController {
     constructor(@Inject(ServiceTokens.PROJECT_PLANNING_SERVICE) private readonly projectPlanningService: ClientProxy) {}
@@ -25,7 +28,7 @@ export class ProjectPlanningController {
 
     @Post('projects')
     async createProject(@Body() createProjectDto: CreateProjectDto) {
-        return await firstValueFrom(this.projectPlanningService.send({ cmd: ProjectCommands.CREATE }, createProjectDto));
+        return await firstValueFrom(this.projectPlanningService.send({ cmd: ProjectCommands.CREATE }, { ...createProjectDto }));
     }
 
     @Patch('projects')

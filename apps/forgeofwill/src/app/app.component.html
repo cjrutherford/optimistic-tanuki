@@ -11,7 +11,7 @@
     <otui-modal (closeModal)="showModal()" [mode]="'sidebar-left'">
         <otui-card >
             <div class="router-links">
-                <otui-button (action)="navigateTo(isAuthenticated() ? '/logout' : '/login')">
+                <otui-button (action)="loginOutButton()">
                     {{ isAuthenticated() ? 'Logout' : 'Login' }}
                 </otui-button>
                 @if (isAuthenticated()) {

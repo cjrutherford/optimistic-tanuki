@@ -106,7 +106,11 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    return this.tokenSubject.value;
+    const subjectValue = this.tokenSubject.value;
+    if(!subjectValue) {
+      return localStorage.getItem('authToken');
+    }
+    return subjectValue;
   }
 
   getDecodedTokenValue() {

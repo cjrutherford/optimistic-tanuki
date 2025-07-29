@@ -7,6 +7,11 @@ export const appRoutes: Route[] = [
         title: 'Projects',
     },
     {
+        path: 'profile',
+        loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent),
+        title: 'Profile',
+    },
+    {
         path: 'login',
         loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent),
         title: 'Login',

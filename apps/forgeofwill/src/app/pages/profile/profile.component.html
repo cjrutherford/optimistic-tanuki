@@ -1,0 +1,15 @@
+<lib-profile-selector
+  [profiles]="availableProfiles()"
+  [currentSelectedProfile]="selectedProfile()"
+  (selectedProfile)="selectProfile($event)"
+  (profileCreated)="createProfile($event)"
+  (profileUpdated)="updateProfile($event)"
+></lib-profile-selector>
+@if (selectedProfile()) {
+  <lib-banner class="profile-banner"
+    [profileName]="selectedProfile()!.profileName"
+    [profileImage]="selectedProfile()!.profilePic"
+    [backgroundImage]="selectedProfile()!.coverPic"
+  >
+  </lib-banner>
+}

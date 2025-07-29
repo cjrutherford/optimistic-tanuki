@@ -1,0 +1,141 @@
+services:
+  authentication:
+    container_name: ot_authentication # Corrected typo
+    build:
+      context: .
+      dockerfile: ./apps/authentication/Dockerfile
+    volumes:
+      - ./dist/apps/authentication:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+  forgeofwill:
+    container_name: ot_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/forgeofwill/Dockerfile
+    volumes:
+      # The new Dockerfile handles copying built assets, so direct volume mounting of dist might conflict or be unnecessary for SSR.
+      # For development with hot-reloading of the SSR server, a different approach might be needed.
+      # This setup assumes the Dockerfile's build process is the source of truth for the container's content.
+      # If live-reloading of the Node.js server is desired, the command and volumes would need to be adjusted similar to other Node.js services.
+      # For now, we remove the previous volume mounts and command that were specific to Nginx and static file serving.
+      - ./apps/forgeofwill:/app/apps/forgeofwill # Mount the source code for potential rebuilds if command is adapted
+      - ./libs:/app/libs # Mount libs if they are part of the build
+      - ./dist/apps/forgeofwill:/app/dist/apps/forgeofwill # Mount the built dist for SSR
+      - /usr/src/app/node_modules # Keep node_modules from the image
+    ports:
+      - "8080:4000" # Match the new exposed port
+    # The command from the Dockerfile is `node dist/apps/forgeofwill/server/main.js`
+    # For development, you might want to use nodemon or similar for the SSR server.
+    # Example for nodemon (ensure nodemon is in your project or installed in the image for dev):
+    command: ["dumb-init", "nodemon", "/app/dist/apps/forgeofwill/server/server.mjs"]
+    environment:
+      - NODE_ENV=development
+
+  gateway:
+    container_name: ot_gateway # Added
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile.dev
+    volumes:
+      - ./dist/apps/gateway:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "--inspect=0.0.0.0:9000", "main.js"]
+    ports:
+      - "9000:9000" # Expose the debugging port
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      postgres: # Added
+        condition: service_healthy # Added
+      authentication:
+        condition: service_started
+      forgeofwill:
+        condition: service_started
+      profile:
+        condition: service_started
+      social:
+        condition: service_started
+      # tasks:
+      #   condition: service_started
+
+  profile:
+    container_name: ot_profile
+    build:
+      context: .
+      dockerfile: ./apps/profile/Dockerfile
+    volumes:
+      - ./dist/apps/profile:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+  project-planning:
+    container_name: ot_project_planning
+    build:
+      context: .
+      dockerfile: ./apps/project-planning/Dockerfile
+    volumes:
+      - ./dist/apps/project-planning:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+  social:
+    container_name: ot_social
+    build:
+      context: .
+      dockerfile: ./apps/social/Dockerfile
+    volumes:
+      - ./dist/apps/social:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+  # tasks:
+  #   container_name: ot_tasks
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/tasks/Dockerfile
+  #   volumes:
+  #     - ./dist/apps/tasks:/usr/src/app
+  #     - /usr/src/app/node_modules # Ensures node_modules from the image are used
+  #   command: ["dumb-init", "nodemon", "-L", "main.js"]
+  #   environment:
+  #     - NODE_ENV=development
+  #   depends_on: # Added
+  #     postgres:
+  #       condition: service_healthy
+  
+  assets:
+    container_name: ot_assets
+    build:
+      context: .
+      dockerfile: ./apps/assets/Dockerfile
+    volumes:
+      - ./dist/apps/assets:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy

@@ -32,7 +32,7 @@ import loadDatabase from './loadDatabase';
       load: [loadConfig]
     }),
     LoggerModule,
-    DatabaseModule.register({ name: 'project-planning', factory: loadDatabase }),
+    DatabaseModule.register({ name: 'project_planning', factory: loadDatabase }),
   ],
   controllers: [
     ChangeController,
