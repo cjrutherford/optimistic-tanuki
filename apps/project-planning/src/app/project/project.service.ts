@@ -12,7 +12,7 @@ export class ProjectService {
     @Inject(getRepositoryToken(Project)) private readonly projectRepository: Repository<Project>,
   ) {}
   async create(createProjectDto: CreateProjectDto) {
-    const project = this.projectRepository.create(createProjectDto);
+    const project = this.projectRepository.create({ ...createProjectDto, updatedBy: createProjectDto.owner, createdAt: new Date(), updatedAt: new Date() });
     return await this.projectRepository.save(project);
   }
 
@@ -57,7 +57,7 @@ export class ProjectService {
   }
 
   async update(id: string, updateProjectDto: UpdateProjectDto) {
-    return await this.projectRepository.update(id, updateProjectDto);
+    return await this.projectRepository.update(id, { ...updateProjectDto, updatedAt: new Date() });
   }
 
   async remove(id: string) {

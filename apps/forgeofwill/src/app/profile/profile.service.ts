@@ -16,19 +16,48 @@ export class ProfileService {
   constructor(private readonly http: HttpClient, private readonly authState: AuthStateService) { }
 
   selectProfile(_p: ProfileDto) {
+    console.log('Selecting profile:', _p);
     const profile = this.currentUserProfiles().find(p => p.id === _p.id);
     if (profile) {
       this.currentUserProfile.set(profile);
       localStorage.setItem('selectedProfile', JSON.stringify(profile));
+    } else {
+      console.warn("New Profile being added to the list");
+      this.currentUserProfiles.update(profiles => [...profiles, _p]);
+      this.currentUserProfile.set(_p);
+      localStorage.setItem('selectedProfile', JSON.stringify(_p));
+      localStorage.setItem('profiles', JSON.stringify(this.currentUserProfiles()));
     }
   }
 
   getCurrentUserProfiles() {
-    return this.currentUserProfiles();
+    const currentProfiles = this.currentUserProfiles();
+    if (!currentProfiles || currentProfiles.length === 0) {
+      // fallback to local storage if no profiles are selected
+      const storedProfiles = localStorage.getItem('profiles');
+      if (storedProfiles) {
+        const profiles = JSON.parse(storedProfiles) as ProfileDto[];
+        this.currentUserProfiles.set(profiles);
+        return profiles;
+      }
+      return [];
+    }
+    return currentProfiles;
   }
 
   getCurrentUserProfile() {
-    return this.currentUserProfile();
+    const currentProfile = this.currentUserProfile();
+    if(!currentProfile) {
+      // fallback to local storage if no profile is selected
+      const storedProfile = localStorage.getItem('selectedProfile');
+      if (storedProfile) {
+        const profile = JSON.parse(storedProfile) as ProfileDto;
+        this.currentUserProfile.set(profile);
+        return profile;
+      }
+      return null;
+    }
+    return currentProfile;
   }
 
   async getAllProfiles() {

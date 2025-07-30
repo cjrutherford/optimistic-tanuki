@@ -43,6 +43,7 @@ export class ProjectFormComponent {
         owner: '',
         members: [],
         startDate: new Date(),
+        createdBy: '',
       });
     }
   }

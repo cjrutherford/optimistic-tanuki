@@ -4,6 +4,9 @@ export class CreateProjectDto {
     @ApiProperty({ type: String })
     owner: string;
 
+    @ApiProperty({ type: String })
+    createdBy: string;
+
     @ApiProperty({ type: [String] })
     members: string[];
 

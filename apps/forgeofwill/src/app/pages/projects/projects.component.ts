@@ -1,14 +1,27 @@
-import { Component, signal } from '@angular/core';
+import { ButtonComponent, CardComponent, ModalComponent, TileComponent } from '@optimistic-tanuki/common-ui';
+import { ChangesTableComponent, ProjectFormComponent, ProjectJournalTableComponent, ProjectOverviewComponent, ProjectSelectorComponent, RisksTableComponent, SummaryBlockComponent, TasksTableComponent } from '@optimistic-tanuki/project-ui';
+import { Component, computed, signal } from '@angular/core';
 import { CreateProject, Project } from '@optimistic-tanuki/ui-models';
-import { ProjectFormComponent, ProjectOverviewComponent, ProjectSelectorComponent } from '@optimistic-tanuki/project-ui';
 
 import { CommonModule } from '@angular/common';
-import { ModalComponent } from '@optimistic-tanuki/common-ui';
 import { ProjectService } from '../../project/project.service';
 
 @Component({
   selector: 'app-projects',
-  imports: [CommonModule, ModalComponent, ProjectOverviewComponent, ProjectSelectorComponent, ProjectFormComponent],
+  imports: [
+    CommonModule, 
+    ModalComponent, 
+    CardComponent,
+    SummaryBlockComponent,
+    TasksTableComponent,
+    RisksTableComponent,
+    ChangesTableComponent,
+    ButtonComponent,
+    TileComponent,
+    ProjectJournalTableComponent,
+    ProjectSelectorComponent, 
+    ProjectFormComponent
+  ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
 })
@@ -24,21 +37,70 @@ export class ProjectsComponent {
   showDeleteModal = signal<boolean>(false);
   selectedProjectIndex = signal<number | null>(null);
   selectedProject = signal<Project | null>(null);
+  detailsShown = signal<boolean>(false); // Whether to show the details section
+  shownDetails = signal<'tasks' | 'risks' | 'changes' | 'journal'>('tasks'); // Details to show
+
+  showDetails(details: 'tasks' | 'risks' | 'changes' | 'journal'): void {
+    console.log('Showing details:', details);
+    this.selectedProjectIndex.set(this.projects().findIndex(p => p.id === this.selectedProject()?.id));
+    this.shownDetails.set(details);
+    this.detailsShown.set(true);
+  }
+
+  hideDetails(): void {
+    console.log('Hiding details');
+    this.detailsShown.set(false);
+    this.shownDetails.set('tasks'); // Reset to tasks view
+  }
+
+  taskCount = computed(() => {
+    const selectedProject = this.selectedProject();
+    if (!selectedProject) return 0;
+    if (!selectedProject.tasks) return 0;
+    return selectedProject.tasks.filter(t => !['DONE', 'ARCHIVED'].includes(t.status))?.length || 0;
+  });
+
+  riskCount = computed(() => {
+    const selectedProject = this.selectedProject();
+    if (!selectedProject) return 0;
+    if (!selectedProject.risks) return 0;
+    return selectedProject.risks.filter(r => r.status !== 'CLOSED')?.length || 0;
+  });
+
+  changeCount = computed(() => {
+    const selectedProject = this.selectedProject();
+    if (!selectedProject) return 0;
+    if (!selectedProject.changes) return 0;
+    return selectedProject.changes.filter(c => !['COMPLETE', 'DISCARDED'].includes(c.changeStatus))?.length || 0;
+  });
 
   ngOnInit() {
+    console.log('ProjectsComponent initialized');
+    this.loadProjects();
+  }
+
+  
+
+  private loadProjects() {
     this.projectService.getProjects().subscribe({
       next: (projects) => {
         console.log('Projects loaded:', projects);
         this.projects.set(projects);
+        this.selectedProject.set(projects.length > 0 ? projects[0] : null);
       },
       error: (error) => {
         console.error('Error loading projects:', error);
       },
-    })
+    });
   }
 
   onProjectSelected(projectId: string) {
     console.log('Selected project ID:', projectId);
+    const project = this.projects().find(p => p.id === projectId);
+    if (project) {
+      this.selectedProject.set(project);
+      console.log('Selected project:', project);
+    }
   }
 
   onCreateProject() {
@@ -63,7 +125,8 @@ export class ProjectsComponent {
     this.projectService.createProject(newProject).subscribe({
       next: (createdProject) => {
         console.log('New project created:', createdProject);
-        this.projects.update((currentProjects) => [...currentProjects, createdProject]);
+        this.projects.update((currentProjects) => [...currentProjects, createdProject]); 
+        this.loadProjects();
         this.showCreateModal.set(false);
       },
       error: (error) => {

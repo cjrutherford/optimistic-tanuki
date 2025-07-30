@@ -1,6 +1,21 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { Change, Project, ProjectJournal, Risk, Task, Timer } from '@optimistic-tanuki/ui-models';
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import {
+  Change,
+  Project,
+  ProjectJournal,
+  Risk,
+  Task,
+  Timer,
+} from '@optimistic-tanuki/ui-models';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  SimpleChanges,
+  computed,
+  signal,
+} from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { CommonModule } from '@angular/common';
@@ -8,7 +23,13 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
 
 @Component({
   selector: 'lib-project-selector',
-  imports: [CommonModule, CardComponent, ReactiveFormsModule, SelectComponent, ButtonComponent],
+  imports: [
+    CommonModule,
+    CardComponent,
+    ReactiveFormsModule,
+    SelectComponent,
+    ButtonComponent,
+  ],
   templateUrl: './project-selector.component.html',
   styleUrl: './project-selector.component.scss',
 })
@@ -22,24 +43,30 @@ export class ProjectSelectorComponent {
   @Output() deleteProject: EventEmitter<void> = new EventEmitter<void>();
 
   // Prepare options for the SelectComponent
-  get projectOptions() {
-    return this.availableProjects().map(project => ({
+  projectOptions = computed(() =>
+    this.availableProjects().map((project) => ({
       value: project.id,
-      label: project.name
-    }));
-  }
+      label: project.name,
+    }))
+  );
 
   constructor(private readonly fb: FormBuilder) {
     this.projectSelectionForm = this.fb.group({
-      project: this.fb.control('')
+      project: this.fb.control(''),
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['projects']) {
+      this.availableProjects.set(this.projects);
+    }
   }
 
   ngOnInit(): void {
     // Initialize form values or perform any setup logic here
     this.projectSelectionForm.valueChanges.subscribe((value) => {
       console.log('Selected project:', value.project);
-      // Handle project selection change
+      this.projectSelected.emit(value.project);
     });
     this.availableProjects.set(this.projects);
     // this.availableProjects.set([
@@ -85,6 +112,8 @@ export class ProjectSelectorComponent {
   }
 
   onProjectSelected(projectId: string) {
-    this.projectSelectionForm.get('project')?.setValue(projectId);
+    console.log('Selected project ID:', projectId);
+    this.projectSelectionForm.patchValue({ project: projectId });
+    this.projectSelected.emit(projectId);
   }
 }

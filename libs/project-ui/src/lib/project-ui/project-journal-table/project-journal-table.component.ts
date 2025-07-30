@@ -67,7 +67,7 @@ export class ProjectJournalTableComponent {
   ];
 
   ngOnInit() {
-    const currentCells = this.journals.map(journal => {
+    const currentCells = this.journals?.map(journal => {
       return [
         {
           heading: 'Content',
@@ -88,7 +88,7 @@ export class ProjectJournalTableComponent {
           value: journal.updatedAt?.toLocaleDateString(),
         },
       ];
-    });
+    }) || [];
     this.cells.set(currentCells);
   }
 

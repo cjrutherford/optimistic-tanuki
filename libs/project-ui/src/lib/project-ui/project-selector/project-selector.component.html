@@ -1,13 +1,20 @@
 <otui-card>
-    <div class="flex-row">
-        <form [formGroup]="projectSelectionForm">
-            <lib-select
-              [options]="projectOptions"
-              (selectedValue)="onProjectSelected($event)"
-            ></lib-select>
-        </form>
-        <otui-button variant="primary" (click)="onCreateClick()">Create</otui-button>
-        <otui-button variant="warning" (click)="editProject.emit()">Edit</otui-button>
-        <otui-button variant="danger" (click)="deleteProject.emit()">Delete</otui-button>
-    </div>
+  <div class="flex-row">
+    <form [formGroup]="projectSelectionForm">
+      <lib-select
+        [formControlName]="'project'"
+        [options]="projectOptions()"
+        (selectedValue)="onProjectSelected($event)"
+      ></lib-select>
+    </form>
+    <otui-button variant="primary" (click)="onCreateClick()"
+      >Create</otui-button
+    >
+    <otui-button variant="warning" (click)="editProject.emit()"
+      >Edit</otui-button
+    >
+    <otui-button variant="danger" (click)="deleteProject.emit()"
+      >Delete</otui-button
+    >
+  </div>
 </otui-card>

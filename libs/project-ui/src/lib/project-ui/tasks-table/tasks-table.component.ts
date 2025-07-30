@@ -1,8 +1,7 @@
-import { ButtonComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
 import { Component, Input, signal } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { ModalComponent } from 'libs/common-ui/src/lib/common-ui/modal/modal.component';
 import { Task } from '@optimistic-tanuki/ui-models';
 import { TaskFormComponent } from '../task-form/task-form.component';
 
@@ -103,7 +102,7 @@ export class TasksTableComponent {
   ]
 
   ngOnInit() {
-    const currentCells: TableCell[][] = this.tasks.map((task, index) => [
+    const currentCells: TableCell[][] = this.tasks?.map((task, index) => [
       { id: task.id, heading: 'Title',  value: task.title },
       { id: task.id, heading: 'Description',  value: task.description },
       { id: task.id, heading: 'Status',  value: task.status },

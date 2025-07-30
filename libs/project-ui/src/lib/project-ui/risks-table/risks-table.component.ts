@@ -71,14 +71,14 @@ export class RisksTableComponent {
 
 
   ngOnInit() {
-    const currentCells = this.risks.map((risk, index) => [
+    const currentCells = this.risks?.map((risk, index) => [
       { id: risk.id, heading: 'Description', value: risk.description, index },
       { id: risk.id, heading: 'Impact', value: risk.impact, index },
       { id: risk.id, heading: 'Likelihood', value: risk.likelihood, index },
       { id: risk.id, heading: 'Status', value: risk.status, index },
       { id: risk.id, heading: 'Created By', value: risk.createdBy, index },
       { id: risk.id, heading: 'Created At', value: risk.createdAt.toLocaleDateString(), index },
-    ]);
+    ]) || [];
     this.cells.set(currentCells);
   }
 

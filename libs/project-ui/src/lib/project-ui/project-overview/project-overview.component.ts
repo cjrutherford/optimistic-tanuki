@@ -28,6 +28,9 @@ import { TasksTableComponent } from '../tasks-table/tasks-table.component';
 export class ProjectOverviewComponent {
   detailsShown = signal<boolean>(false);
   projectName = signal<string>('Project Name');
+  taskCount = signal<number>(0);
+  riskCount = signal<number>(0);
+  changeCount = signal<number>(0);
   shownDetails = signal<'tasks' | 'risks' | 'changes' | 'journal'>('tasks');
 
   @Input() project: Project = {
@@ -47,6 +50,21 @@ export class ProjectOverviewComponent {
     journalEntries: [],
     timers: [],
   };
+
+  ngOnInit() {
+    if (this.project) {
+      this.projectName.set(this.project.name);
+    }
+    if (this.project.tasks) {
+      this.taskCount.set(this.project.tasks.filter(t => !['DONE', 'ARCHIVED'].includes(t.status)).length);
+    }
+    if (this.project.risks) {
+      this.riskCount.set(this.project.risks.filter(r => r.status !== 'CLOSED').length);
+    }
+    if (this.project.changes) {
+      this.changeCount.set(this.project.changes.filter(c => !['COMPLETE', 'DISCARDED'].includes(c.changeStatus)).length);
+    }
+  }
 
   showDetails(details: 'tasks' | 'risks' | 'changes' | 'journal'): void {
     this.shownDetails.set(details);

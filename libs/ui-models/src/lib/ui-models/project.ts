@@ -29,6 +29,7 @@ export interface CreateProject {
   status: string;
   startDate: Date;
   endDate?: Date;
+  createdBy: string;
 }
 
 export interface QueryProject {

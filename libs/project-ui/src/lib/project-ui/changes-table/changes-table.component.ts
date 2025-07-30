@@ -1,10 +1,9 @@
-import { ButtonComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
 import { Component, Input, signal } from '@angular/core';
 
 import { Change } from '@optimistic-tanuki/ui-models';
 import { ChangeFormComponent } from '../change-form/change-form.component';
 import { CommonModule } from '@angular/common';
-import { ModalComponent } from './../../../../../common-ui/src/lib/common-ui/modal/modal.component';
 
 @Component({
   selector: 'lib-changes-table',
@@ -97,14 +96,14 @@ export class ChangesTableComponent {
   ]
 
   ngOnInit() {
-    const currentCells: TableCell[][] = this.changes.map((change, index) => [
+    const currentCells: TableCell[][] = this.changes?.map((change, index) => [
       { id: change.id, heading: 'Change Description', value: change.changeDescription },
       { id: change.id, heading: 'Change Type', value: change.changeType },
       { id: change.id, heading: 'Change Date', value: change.changeDate.toLocaleDateString() },
       { id: change.id, heading: 'Requestor', value: change.requestor },
       { id: change.id, heading: 'Approver', value: change.approver },
       { id: change.id, heading: 'Resolution', value: change.resolution },
-    ]);
+    ]) || [];
     this.cells.set(currentCells);
   }
 

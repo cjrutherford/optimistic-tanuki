@@ -102,7 +102,7 @@ services:
         condition: service_healthy
       db-setup: # Ensures db-setup is completed before starting profile
         condition: service_completed_successfully
-  
+
   social:
     container_name: ot_social
     build:
@@ -132,7 +132,7 @@ services:
   #   # Command will be inherited from Dockerfile\'s CMD
   
   assets:
-    container_name: ot_assets
+    container_name: ot_asset
     build:
       context: .
       dockerfile: ./apps/assets/Dockerfile

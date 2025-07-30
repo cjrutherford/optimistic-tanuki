@@ -126,7 +126,7 @@ services:
   #       condition: service_healthy
   
   assets:
-    container_name: ot_assets
+    container_name: ot_asset
     build:
       context: .
       dockerfile: ./apps/assets/Dockerfile

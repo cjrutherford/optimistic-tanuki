@@ -1,21 +1,22 @@
-@for (row of cells(); track $index; let idx = $index) {
-  <otui-table
-    [cells]="row"
-    [rowIndex]="idx"
-    [spacer]="true"
-    [rowActions]="tableActions()"
-    [showActionsSplit]="true"
-  ></otui-table>
-}
+@if (cells().length === 0) {
+<div class="empty-state">
+  <p>No risks available.</p>
+</div>
+} @else { @for (row of cells(); track $index; let idx = $index) {
+<otui-table
+  [cells]="row"
+  [rowIndex]="idx"
+  [spacer]="true"
+  [rowActions]="tableActions()"
+  [showActionsSplit]="true"
+></otui-table>
+} }
 <div class="action-group">
   <otui-button (click)="showModal.set(true)">➕ Add Risk</otui-button>
 </div>
 
 @if (showModal()) {
-  <otui-modal
-    (closeModal)="closeModal()"
-    [heading]="'Add Risk'"
-  >
-    <lib-risk-form (close)="closeModal()"></lib-risk-form>
-  </otui-modal>
+<otui-modal (closeModal)="closeModal()" [heading]="'Add Risk'">
+  <lib-risk-form (close)="closeModal()"></lib-risk-form>
+</otui-modal>
 }

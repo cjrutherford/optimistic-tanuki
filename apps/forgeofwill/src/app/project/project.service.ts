@@ -2,15 +2,25 @@ import { CreateProject, Project, QueryProject } from '@optimistic-tanuki/ui-mode
 
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { ProfileService } from '../profile/profile.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProjectService {
    baseUrl = '/api/project-planning/projects'
-  constructor(private readonly http: HttpClient) { }
+  constructor(
+    private readonly http: HttpClient,
+    private readonly profileService: ProfileService
+  ) { }
 
   createProject(data: CreateProject) {
+    const profile = this.profileService.getCurrentUserProfile();
+    if(!profile) {
+      throw new Error('No profile selected. Please select a profile before creating a project.');
+    }
+    data.createdBy = profile.id;
+    data.owner = profile.id;
     return this.http.post<Project>(`${this.baseUrl}`, data);
   }
 

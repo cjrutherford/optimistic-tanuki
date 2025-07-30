@@ -25,4 +25,6 @@
     </otui-modal>
 }
 <router-outlet></router-outlet>
-<lib-chat-ui></lib-chat-ui>
+@if (isAuthenticated()) {
+    <lib-chat-ui></lib-chat-ui>
+}

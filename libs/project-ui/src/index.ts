@@ -2,6 +2,7 @@ export * from './lib/project-ui/project-ui.component';
 export * from './lib/project-ui/project-overview/project-overview.component';
 export * from './lib/project-ui/ai-summary/ai-summary.component';
 export * from './lib/project-ui/change-form/change-form.component';
+export * from './lib/project-ui/changes-table/changes-table.component';
 export * from './lib/project-ui/project-form/project-form.component';
 export * from './lib/project-ui/project-journal-form/project-journal-form.component';
 export * from './lib/project-ui/project-journal-table/project-journal-table.component';
