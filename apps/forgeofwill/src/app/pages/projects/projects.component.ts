@@ -1,10 +1,15 @@
 import { ButtonComponent, CardComponent, ModalComponent, TileComponent } from '@optimistic-tanuki/common-ui';
+import { Change, CreateChange, CreateProject, CreateProjectJournal, CreateRisk, CreateTask, Project, ProjectJournal, Risk, Task } from '@optimistic-tanuki/ui-models';
 import { ChangesTableComponent, ProjectFormComponent, ProjectJournalTableComponent, ProjectOverviewComponent, ProjectSelectorComponent, RisksTableComponent, SummaryBlockComponent, TasksTableComponent } from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal } from '@angular/core';
-import { CreateProject, Project } from '@optimistic-tanuki/ui-models';
 
+import { AuthStateService } from '../../auth-state.service';
+import { ChangeService } from '../../change/change.service';
 import { CommonModule } from '@angular/common';
+import { JournalService } from '../../journal/journal.service';
 import { ProjectService } from '../../project/project.service';
+import { RiskService } from '../../risk/risk.service';
+import { TaskService } from '../../task/task.service';
 
 @Component({
   selector: 'app-projects',
@@ -28,6 +33,10 @@ import { ProjectService } from '../../project/project.service';
 export class ProjectsComponent {
   constructor(
     private readonly projectService: ProjectService,
+    private readonly taskService: TaskService,
+    private readonly riskService: RiskService,
+    private readonly changeService: ChangeService,
+    private readonly journalService: JournalService,
   ) {}
 
   projects = signal<Project[]>([]);
@@ -119,6 +128,131 @@ export class ProjectsComponent {
     this.showDeleteModal.set(true);
   }
 
+  onDeleteTask(taskId: string) {
+    console.log('Delete task with ID:', taskId);
+    this.taskService.deleteTask(taskId).subscribe({
+      next: () => {
+        console.log('Task deleted successfully');
+        this.selectedProject.update((project) => {
+          if (!project) return project;
+          return {
+            ...project,
+            tasks: project.tasks.filter(t => t.id !== taskId),
+          };
+        });
+      },
+      error: (error) => {
+        console.error('Error deleting task:', error);
+      },
+    });
+  }
+
+  onCreateTask(task: Task) {
+    console.log('Create task:', task);
+    const currentProject = this.selectedProject();
+    if (!currentProject) {
+      console.error('No project selected for task creation');
+      return;
+    }
+    console.log('Current project for task creation:', currentProject);
+    task.projectId = currentProject.id;
+    this.taskService.createTask(task as CreateTask).subscribe({
+      next: (createdTask) => {
+        console.log('Task created successfully:', createdTask);
+        const currentProject = this.selectedProject();
+        if (!currentProject) {
+          console.error('No project selected to update with new task');
+          return;
+        }
+        currentProject.tasks = [...(currentProject.tasks || []), createdTask];
+        this.selectedProject.set(currentProject);
+        console.log('Updated project with new task:', currentProject);
+      },
+      error: (error) => {
+        console.error('Error creating task:', error);
+      },
+    });
+  }
+
+  onEditTask(task: Task) {
+    console.log('Edit task:', task);
+    this.taskService.updateTask(task).subscribe({
+      next: (updatedTask) => {
+        console.log('Task updated successfully:', updatedTask);
+        this.selectedProject.update((project) => {
+          if (!project) return project;
+          return {
+            ...project,
+            tasks: project.tasks.map(t => (t.id === updatedTask.id ? updatedTask : t)),
+          };
+        });
+      },
+      error: (error) => {
+        console.error('Error updating task:', error);
+      },
+    });
+  }
+
+  onCreateRisk(risk: CreateRisk) {
+    console.log('Create risk:', risk);
+    const currentProject = this.selectedProject();
+    if (!currentProject) {
+      console.error('No project selected for risk creation');
+      return;
+    }
+    console.log('Current project for risk creation:', currentProject);
+    risk.projectId = currentProject.id;
+    this.riskService.createRisk(risk).subscribe({
+      next: (createdRisk) => {
+        console.log('Risk created successfully:', createdRisk);
+        currentProject.risks = [...(currentProject.risks || []), createdRisk];
+        this.selectedProject.set(currentProject);
+        console.log('Updated project with new risk:', currentProject);
+      },
+      error: (error) => {
+        console.error('Error creating risk:', error);
+      },
+    });
+  }
+
+  onEditRisk(risk: Risk) {
+    console.log('Edit risk:', risk);
+    this.riskService.updateRisk(risk.id, risk).subscribe({
+      next: (updatedRisk) => {
+        console.log('Risk updated successfully:', updatedRisk);
+        this.selectedProject.update((project) => {
+          if (!project) return project;
+          return {
+            ...project,
+            risks: project.risks.map(r => (r.id === updatedRisk.id ? updatedRisk : r)),
+          };
+        });
+      },
+      error: (error) => {
+        console.error('Error updating risk:', error);
+      },
+    });
+  }
+
+  onDeleteRisk(riskId: string) {
+    console.log('Delete risk with ID:', riskId);
+    this.riskService.deleteRisk(riskId).subscribe({
+      next: () => {
+        console.log('Risk deleted successfully');
+        this.selectedProject.update((project) => {
+          if (!project) return project;
+          return {
+            ...project,
+            risks: project.risks.filter(r => r.id !== riskId),
+          };
+        });
+      },
+      error: (error) => {
+        console.error('Error deleting risk:', error);
+      },
+    });
+  }
+
   onProjectCreated(project: CreateProject) {
     const newProject: CreateProject = project;
     console.log('Project created:', newProject);
@@ -149,6 +283,128 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error updating project:', error);
+      },
+    });
+  }
+
+  onCreateChange(change: CreateChange) {
+    console.log('Create change:', change);
+    const currentProject = this.selectedProject();
+    if (!currentProject) {
+      console.error('No project selected for change creation');
+      return;
+    }
+    console.log('Current project for change creation:', currentProject);
+    change.projectId = currentProject.id;
+    this.changeService.createChange(change).subscribe({
+      next: (createdChange) => {
+        console.log('Change created successfully:', createdChange);
+        currentProject.changes = [...(currentProject.changes || []), createdChange];
+        this.selectedProject.set(currentProject);
+        console.log('Updated project with new change:', currentProject);
+      },
+      error: (error) => {
+        console.error('Error creating change:', error);
+      },
+    });
+  }
+
+  onEditChange(change: Change) {
+    console.log('Edit change:', change);
+    this.changeService.updateChange(change).subscribe({
+      next: (updatedChange) => {
+        console.log('Change updated successfully:', updatedChange);
+        this.selectedProject.update((project) => {
+          if (!project) return project;
+          return {
+            ...project,
+            changes: project.changes.map(c => (c.id === updatedChange.id ? updatedChange : c)),
+          };
+        });
+      },
+      error: (error) => {
+        console.error('Error updating change:', error);
+      },
+    });
+  }
+
+  onDeleteChange(changeId: string) {
+    console.log('Delete change with ID:', changeId);
+    this.changeService.deleteChange(changeId).subscribe({
+      next: () => {
+        console.log('Change deleted successfully');
+        this.selectedProject.update((project) => {
+          if (!project) return project;
+          return {
+            ...project,
+            changes: project.changes.filter(c => c.id !== changeId),
+          };
+        });
+      },
+      error: (error) => {
+        console.error('Error deleting change:', error);
+      },
+    });
+  }
+
+
+  onCreateJournalEntry(entry: CreateProjectJournal) {
+    console.log('Create journal entry:', entry);
+    const currentProject = this.selectedProject();
+    if (!currentProject) {
+      console.error('No project selected for journal entry creation');
+      return;
+    }
+    console.log('Current project for journal entry creation:', currentProject);
+    entry.projectId = currentProject.id;
+    entry.profileId = currentProject.owner;
+    this.journalService.createJournalEntry(entry).subscribe({
+      next: (createdEntry) => {
+        console.log('Journal entry created successfully:', createdEntry);
+        currentProject.journalEntries = [...(currentProject.journalEntries || []), createdEntry];
+        this.selectedProject.set(currentProject);
+        console.log('Updated project with new journal entry:', currentProject);
+      },
+      error: (error) => {
+        console.error('Error creating journal entry:', error);
+      },
+    });
+  }
+
+  onUpdateJournalEntry(entry: ProjectJournal) {
+    console.log('Update journal entry:', entry);
+    this.journalService.updateJournalEntry(entry).subscribe({
+      next: (updatedEntry) => {
+        console.log('Journal entry updated successfully:', updatedEntry);
+        this.selectedProject.update((project) => {
+          if (!project) return project;
+          return {
+            ...project,
+            journalEntries: project.journalEntries.map(e => (e.id === updatedEntry.id ? updatedEntry : e)),
+          };
+        });
+      },
+      error: (error) => {
+        console.error('Error updating journal entry:', error);
+      },
+    });
+  }
+
+  onDeleteJournalEntry(entryId: string) {
+    console.log('Delete journal entry with ID:', entryId);
+    this.journalService.deleteJournalEntry(entryId).subscribe({
+      next: () => {
+        console.log('Journal entry deleted successfully');
+        this.selectedProject.update((project) => {
+          if (!project) return project;
+          return {
+            ...project,
+            journalEntries: project.journalEntries.filter(e => e.id !== entryId),
+          };
+        });
+      },
+      error: (error) => {
+        console.error('Error deleting journal entry:', error);
       },
     });
   }

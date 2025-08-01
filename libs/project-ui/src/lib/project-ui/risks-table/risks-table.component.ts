@@ -1,9 +1,8 @@
-import { ButtonComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
-import { Component, Input, signal } from '@angular/core';
+import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
+import { Component, EventEmitter, Input, Output, SimpleChanges, signal } from '@angular/core';
+import { CreateRisk, Risk } from '@optimistic-tanuki/ui-models';
 
 import { CommonModule } from '@angular/common';
-import { ModalComponent } from 'libs/common-ui/src/lib/common-ui/modal/modal.component';
-import { Risk } from '@optimistic-tanuki/ui-models';
 import { RiskFormComponent } from '../risk-form/risk-form.component';
 
 @Component({
@@ -15,6 +14,9 @@ import { RiskFormComponent } from '../risk-form/risk-form.component';
 export class RisksTableComponent {
   cells = signal<TableCell[][]>([]);
   showModal = signal<boolean>(false);
+  @Output() createRisk: EventEmitter<CreateRisk> = new EventEmitter<CreateRisk>();
+  @Output() editRisk: EventEmitter<Risk> = new EventEmitter<Risk>();
+  @Output() deleteRisk: EventEmitter<string> = new EventEmitter<string>();
   tableActions = signal<TableRowAction[]>([
     {
       title: 'View',
@@ -26,12 +28,15 @@ export class RisksTableComponent {
       title: 'Edit',
       action: (index: number) => {
         console.log('Edit action for row:', index);
+        this.editRisk.emit(this.risks[index]);
+        this.setShowModal(index);
       },
     },
     {
       title: 'Delete',
       action: (index: number) => {
         console.log('Delete action for row:', index);
+        this.deleteRisk.emit(this.risks[index].id);
       },
     },
   ]);
@@ -71,13 +76,24 @@ export class RisksTableComponent {
 
 
   ngOnInit() {
+    this.setCellularData();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['risks']) {
+      console.log('Risks changed:', changes['risks'].currentValue);
+      this.setCellularData();
+    }
+  }
+
+  private setCellularData() {
     const currentCells = this.risks?.map((risk, index) => [
       { id: risk.id, heading: 'Description', value: risk.description, index },
       { id: risk.id, heading: 'Impact', value: risk.impact, index },
       { id: risk.id, heading: 'Likelihood', value: risk.likelihood, index },
       { id: risk.id, heading: 'Status', value: risk.status, index },
       { id: risk.id, heading: 'Created By', value: risk.createdBy, index },
-      { id: risk.id, heading: 'Created At', value: risk.createdAt.toLocaleDateString(), index },
+      { id: risk.id, heading: 'Created At', value: new Date(risk.createdAt)?.toLocaleDateString(), index },
     ]) || [];
     this.cells.set(currentCells);
   }
@@ -89,6 +105,12 @@ export class RisksTableComponent {
       // Logic to populate the modal with the selected risk details
       console.log('Selected risk:', risk);
     }
+  }
+
+  onCreateFormSubmit(risk: CreateRisk) {
+    console.log('Creating risk with data:', risk);
+    this.createRisk.emit(risk);
+    this.closeModal();
   }
 
   closeModal() {

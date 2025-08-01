@@ -8,7 +8,9 @@ import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
 
 @Component({
   imports: [RouterModule, CardComponent, ButtonComponent, ModalComponent, ThemeToggleComponent, ChatUiComponent],
-  providers: [AuthStateService],
+  providers: [
+    AuthStateService
+  ],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -20,7 +22,7 @@ export class AppComponent {
   constructor(private readonly router: Router, private readonly authState: AuthStateService) {}
 
   ngOnInit() {
-    this.authState.isAuthenticated$.subscribe({
+    this.authState.isAuthenticated$().subscribe({
       next: (isAuthenticated) => {
         console.log('Authentication state changed:', isAuthenticated);
         this.isAuthenticated.set(isAuthenticated);

@@ -1,9 +1,8 @@
-import { ButtonComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
-import { Component, Input, signal } from '@angular/core';
+import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
+import { Component, EventEmitter, Input, Output, SimpleChange, SimpleChanges, signal } from '@angular/core';
+import { CreateProjectJournal, ProjectJournal } from '@optimistic-tanuki/ui-models';
 
 import { CommonModule } from '@angular/common';
-import { ModalComponent } from 'libs/common-ui/src/lib/common-ui/modal/modal.component';
-import { ProjectJournal } from '@optimistic-tanuki/ui-models';
 import { ProjectJournalFormComponent } from '../project-journal-form/project-journal-form.component';
 
 @Component({
@@ -15,6 +14,9 @@ import { ProjectJournalFormComponent } from '../project-journal-form/project-jou
 export class ProjectJournalTableComponent {
   cells = signal<TableCell[][]>([]);
   showModal = signal<boolean>(false);
+  @Output() createJournalEntry: EventEmitter<CreateProjectJournal> = new EventEmitter<CreateProjectJournal>();
+  @Output() editJournalEntry: EventEmitter<ProjectJournal> = new EventEmitter<ProjectJournal>();
+  @Output() deleteJournalEntry: EventEmitter<string> = new EventEmitter<string>();
   tableActions: TableRowAction[] = [
     {
       title: 'View',
@@ -26,12 +28,15 @@ export class ProjectJournalTableComponent {
       title: 'Edit',
       action: (index: number) => {
         console.log('Edit action for row:', index);
+        this.editJournalEntry.emit(this.journals[index]);
+        this.setShowModal(index);
       },
     },
     {
       title: 'Delete',
       action: (index: number) => {
         console.log('Delete action for row:', index);
+        this.deleteJournalEntry.emit(this.journals[index].id);
       },
     }
   ];
@@ -67,6 +72,15 @@ export class ProjectJournalTableComponent {
   ];
 
   ngOnInit() {
+    this.initCellularData();
+  }
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['journals']) {
+      this.initCellularData();
+    }
+  }
+
+  private initCellularData() {
     const currentCells = this.journals?.map(journal => {
       return [
         {
@@ -81,11 +95,11 @@ export class ProjectJournalTableComponent {
         },
         {
           heading: 'Created At',
-          value: journal.createdAt.toLocaleDateString(),
+          value: new Date(journal.createdAt)?.toLocaleDateString(),
         },
         {
           heading: 'Updated At',
-          value: journal.updatedAt?.toLocaleDateString(),
+          value: new Date(journal.updatedAt || new Date())?.toLocaleDateString(),
         },
       ];
     }) || [];
@@ -99,6 +113,11 @@ export class ProjectJournalTableComponent {
       // Logic to populate the modal with the selected journal details
       console.log('Selected journal:', journal);
     }
+  }
+
+  entryCreated(newEntry: CreateProjectJournal) {
+    this.createJournalEntry.emit(newEntry);
+    this.closeModal();
   }
 
   closeModal() {

@@ -21,8 +21,6 @@ export class AuthStateService {
   private decodedTokenSubject: BehaviorSubject<UserData | null>;
   private _isAuthenticated = false;
 
-  isAuthenticated$: Observable<boolean>;
-  decodedToken$: Observable<UserData | null>;
 
   constructor(
     private authService: AuthenticationService,
@@ -34,21 +32,31 @@ export class AuthStateService {
       this.tokenSubject = new BehaviorSubject<string | null>(null);
       this.isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
       this.decodedTokenSubject = new BehaviorSubject<UserData | null>(null);
-      this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
-      this.decodedToken$ = this.decodedTokenSubject.asObservable();
       return;
     }
 
     this.tokenSubject = new BehaviorSubject<string | null>(localStorage.getItem('authToken'));
     this.isAuthenticatedSubject = new BehaviorSubject<boolean>(!!localStorage.getItem('authToken'));
     this.decodedTokenSubject = new BehaviorSubject<UserData | null>(this.getDecodedToken());
-    this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
-    this.decodedToken$ = this.decodedTokenSubject.asObservable();
 
     const token = localStorage.getItem('authToken');
     if (token) {
       this.setToken(token);
     }
+  }
+
+  isAuthenticated$(): Observable<boolean> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return new BehaviorSubject<boolean>(false).asObservable();
+    }
+    return this.isAuthenticatedSubject.asObservable();
+  }
+
+  decodedToken$(): Observable<UserData | null> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return new BehaviorSubject<UserData | null>(null).asObservable();
+    }
+    return this.decodedTokenSubject.asObservable();
   }
 
   get isAuthenticated(): boolean {

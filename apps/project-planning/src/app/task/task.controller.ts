@@ -29,7 +29,7 @@ export class TaskController {
     return await this.taskService.update(updateTaskDto.id, updateTaskDto);
   }
 
-  @MessagePattern({ cmd: TaskCommands.REMOVE })
+  @MessagePattern({ cmd: TaskCommands.DELETE })
   async remove(@Payload() id: string) {
     return await this.taskService.remove(id);
   }

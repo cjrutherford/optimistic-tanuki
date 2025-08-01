@@ -29,7 +29,8 @@ export class RiskController {
   }
 
   @MessagePattern({ cmd: RiskCommands.REMOVE })
-  async remove(@Payload() id: string) {
+  async remove(@Payload('id') id: string) {
+    console.log("🚀 ~ RiskController ~ remove ~ id:", id)
     return await this.riskService.remove(id);
   }
 }

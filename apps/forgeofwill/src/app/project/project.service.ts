@@ -16,7 +16,7 @@ export class ProjectService {
 
   createProject(data: CreateProject) {
     const profile = this.profileService.getCurrentUserProfile();
-    if(!profile) {
+    if(profile !== undefined && profile === null) {
       throw new Error('No profile selected. Please select a profile before creating a project.');
     }
     data.createdBy = profile.id;

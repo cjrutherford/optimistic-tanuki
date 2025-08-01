@@ -49,11 +49,11 @@ export class ProjectService {
     if (query.members) {
       where.members = ArrayContains(query.members);
     }
-    return await this.projectRepository.find({ where });
+    return await this.projectRepository.find({ where, relations: ['tasks', 'risks', 'changes', 'journalEntries'] });
   }
 
   async findOne(id: string) {
-    return await this.projectRepository.findOne({ where: { id } });
+    return await this.projectRepository.findOne({ where: { id }, relations: ['tasks', 'risks', 'changes', 'journalEntries'] });
   }
 
   async update(id: string, updateProjectDto: UpdateProjectDto) {

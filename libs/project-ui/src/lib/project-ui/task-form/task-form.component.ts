@@ -1,9 +1,10 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { Component, EventEmitter, Output } from '@angular/core';
+import { CreateProfileDto, ProfileDto, Task, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
 
 @Component({
   selector: 'lib-task-form',
@@ -12,6 +13,7 @@ import { Component } from '@angular/core';
   styleUrl: './task-form.component.scss',
 })
 export class TaskFormComponent {
+  @Output() formSubmit: EventEmitter<Task> = new EventEmitter<Task>();
   statusOptions = [
     { value: 'TODO', label: 'To Do' },
     { value: 'IN_PROGRESS', label: 'In Progress' },
@@ -43,6 +45,12 @@ export class TaskFormComponent {
   onSubmit() {
     if (this.taskForm.valid) {
       console.log('Form Submitted!', this.taskForm.value);
+      this.formSubmit.emit({
+        ...this.taskForm.value,
+        projectId: '',
+        asignee: '',
+      } as Task);
+      this.taskForm.reset();
     }
   }
 }

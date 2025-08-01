@@ -1,12 +1,10 @@
 <otui-card>
   <div class="flex-row">
-    <form [formGroup]="projectSelectionForm">
-      <lib-select
-        [formControlName]="'project'"
-        [options]="projectOptions()"
-        (selectedValue)="onProjectSelected($event)"
-      ></lib-select>
-    </form>
+      <select (change)="onProjectSelected($event)" [value]="">
+        <option *ngFor="let option of projectOptions()" [value]="option.value">
+          {{ option.label }}
+        </option>
+      </select>
     <otui-button variant="primary" (click)="onCreateClick()"
       >Create</otui-button
     >

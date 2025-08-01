@@ -1,10 +1,8 @@
 import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import {TaskStatus, TaskPriority } from "@optimistic-tanuki/models";
+import {TaskPriority, TaskStatus} from "@optimistic-tanuki/models";
+
 import { Project } from "./project.entity";
 import { Timer } from "./timer.entity"; // Assuming Timer is another entity in your project
-
-
-
 
 @Entity()
 export class Task {
@@ -41,9 +39,9 @@ export class Task {
     @Column()
     updatedAt: Date;
 
-    @Column()
-    deletedBy: string;
+    @Column({ nullable: true })
+    deletedBy?: string;
 
-    @Column()
-    deletedAt: Date;
+    @Column({ type: 'timestamp', nullable: true })
+    deletedAt?: Date;
 }

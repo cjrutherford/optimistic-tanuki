@@ -15,6 +15,7 @@ export class TaskService {
   ) {}
 
   async create(createTaskDto: CreateTaskDto) {
+    console.log('Creating task with DTO:', createTaskDto);
     const project = await this.projectRepository.findOne({ where: { id: createTaskDto.projectId } });
     if (!project) {
       throw new Error('Project not found');
@@ -22,6 +23,7 @@ export class TaskService {
     const task = this.taskRepository.create({
       ...createTaskDto,
       project: project,
+      updatedBy: createTaskDto.createdBy,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -29,7 +31,9 @@ export class TaskService {
   }
 
   async findAll(query: QueryTaskDto) {
-    const where: FindOptionsWhere<Task> = {};
+    const where: FindOptionsWhere<Task> = {
+      deletedAt: IsNull(),
+    };
     if (query.title) {
       where.title = Like(`%${query.title}%`);
     }

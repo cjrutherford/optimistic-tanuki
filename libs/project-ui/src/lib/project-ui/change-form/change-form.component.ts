@@ -1,9 +1,10 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { CreateChange } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'lib-change-form',
@@ -13,6 +14,7 @@ import { Component } from '@angular/core';
 })
 export class ChangeFormComponent {
   changeForm : FormGroup;
+  @Output() submitted: EventEmitter<CreateChange> = new EventEmitter<CreateChange>();
   constructor(private readonly fb: FormBuilder) {
     this.changeForm = this.fb.group({
       changeType: this.fb.control('ADDITION'),
@@ -43,6 +45,7 @@ export class ChangeFormComponent {
   onSubmit() {
     if (this.changeForm.valid) {
       console.log('Form Submitted!', this.changeForm.value);
+      this.submitted.emit(this.changeForm.value as CreateChange);
     }
   }
 }

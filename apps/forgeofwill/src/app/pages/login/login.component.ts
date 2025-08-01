@@ -11,7 +11,6 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-login',
   imports: [CommonModule, LoginBlockComponent, CardComponent],
-  providers: [AuthenticationService, AuthStateService, ProfileService],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })

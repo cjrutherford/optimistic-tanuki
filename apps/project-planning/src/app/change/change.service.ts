@@ -22,6 +22,9 @@ export class ChangeService {
     const change = this.changeRepository.create({
       ...createChangeDto,
       project, // Associate the change with the project
+      updatedBy: createChangeDto.requestor,
+      approver: createChangeDto.requestor,
+      createdBy: createChangeDto.requestor,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

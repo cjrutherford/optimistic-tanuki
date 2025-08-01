@@ -1,4 +1,5 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+
 import { Project } from "./project.entity";
 
 @Entity()
@@ -30,9 +31,9 @@ export class ProjectJournal {
     @Column()
     updatedAt: Date;
     
-    @Column()
-    deletedBy: string;
+    @Column({ nullable: true })
+    deletedBy?: string;
     
-    @Column()
-    deletedAt: Date;
+    @Column({ type: 'timestamp', nullable: true })
+    deletedAt?: Date;
 }

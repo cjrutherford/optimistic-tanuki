@@ -36,7 +36,7 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
 export class ProjectSelectorComponent {
   @Input() projects: Project[] = [];
   availableProjects = signal<Project[]>([]);
-  projectSelectionForm: FormGroup;
+  selectedProject = signal<Project | null>(null);
   @Output() projectSelected: EventEmitter<string> = new EventEmitter<string>();
   @Output() createProject: EventEmitter<void> = new EventEmitter<void>();
   @Output() editProject: EventEmitter<Project> = new EventEmitter<Project>();
@@ -50,11 +50,6 @@ export class ProjectSelectorComponent {
     }))
   );
 
-  constructor(private readonly fb: FormBuilder) {
-    this.projectSelectionForm = this.fb.group({
-      project: this.fb.control(''),
-    });
-  }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['projects']) {
@@ -63,57 +58,18 @@ export class ProjectSelectorComponent {
   }
 
   ngOnInit(): void {
-    // Initialize form values or perform any setup logic here
-    this.projectSelectionForm.valueChanges.subscribe((value) => {
-      console.log('Selected project:', value.project);
-      this.projectSelected.emit(value.project);
-    });
     this.availableProjects.set(this.projects);
-    // this.availableProjects.set([
-    //   {
-    //     id: '1',
-    //     name: 'Project Alpha',
-    //     owner: 'John Doe',
-    //     members: ['Alice', 'Bob'],
-    //     createdBy: 'John Doe',
-    //     createdAt: new Date(),
-    //     description: 'This is the first project.',
-    //     startDate: new Date('2023-01-01'),
-    //     endDate: new Date('2023-12-31'),
-    //     status: 'active',
-    //     tasks: [] as Task[],
-    //     risks: [] as Risk[],
-    //     changes: [] as Change[],
-    //     journalEntries: [] as ProjectJournal[],
-    //     timers: [] as Timer[]
-    //   },
-    //   {
-    //     id: '2',
-    //     name: 'Project Beta',
-    //     description: 'This is the second project.',
-    //     startDate: new Date('2023-02-01'),
-    //     endDate: new Date('2023-11-30'),
-    //     status: 'active',
-    //     tasks: [],
-    //     risks: [],
-    //     changes: [],
-    //     journalEntries: [],
-    //     timers: [],
-    //     owner: '',
-    //     members: [],
-    //     createdBy: '',
-    //     createdAt: new Date(),
-    //   }
-    // ])
   }
 
   onCreateClick() {
     this.createProject.emit();
   }
 
-  onProjectSelected(projectId: string) {
+  onProjectSelected(event: Event) {
+    const selectElement = event.target as HTMLSelectElement;
+    const projectId = selectElement.value;
     console.log('Selected project ID:', projectId);
-    this.projectSelectionForm.patchValue({ project: projectId });
+    this.selectedProject.set(this.projects.find(p => p.id === projectId) || null);
     this.projectSelected.emit(projectId);
   }
 }

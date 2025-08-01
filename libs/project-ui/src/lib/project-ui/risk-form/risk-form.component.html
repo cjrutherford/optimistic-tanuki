@@ -2,16 +2,18 @@
   <otui-card>
     <lib-text-input formControlName="title" label="Title"></lib-text-input>
     <lib-text-area formControlName="description" label="Description"></lib-text-area>
-    <lib-select formControlName="impact" label="Impact" [options]="impactOptions">
-      <ng-template let-option>
+    <label for="impact">Impact</label>
+    <select id="impact" formControlName="impact">
+      <option *ngFor="let option of impactOptions" [value]="option.value">
+      {{ option.label }}
+      </option>
+    </select>
+    <label for="likelihood">Likelihood</label>
+    <select id="likelihood" formControlName="likelihood">
+      <option *ngFor="let option of likelihoodOptions" [value]="option.value">
         {{ option.label }}
-      </ng-template>
-    </lib-select>
-    <lib-select formControlName="likelihood" label="Likelihood" [options]="likelihoodOptions">
-      <ng-template let-option>
-        {{ option.label }}
-      </ng-template>
-    </lib-select>
+      </option>
+    </select>
     <otui-button type="submit">Submit</otui-button>
   </otui-card>
 </form>

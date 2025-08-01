@@ -25,7 +25,7 @@ export class Timer {
     startTime: Date;
 
     @Column({ nullable: true })
-    endTime: Date; // Nullable to allow for ongoing timers
+    endTime?: Date; // Nullable to allow for ongoing timers
 
     @Column({ default: 0 })
     elapsedTime: number; // Store elapsed time in seconds
@@ -39,9 +39,9 @@ export class Timer {
     @Column()
     updatedAt: Date;
 
-    @Column()
-    deletedBy: string;
+    @Column({ nullable: true })
+    deletedBy?: string;
 
-    @Column()
-    deletedAt: Date;
+    @Column({ type: 'timestamp', nullable: true })
+    deletedAt?: Date;
 }

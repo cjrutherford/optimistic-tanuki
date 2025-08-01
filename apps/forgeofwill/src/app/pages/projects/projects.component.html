@@ -33,16 +33,25 @@
         <otui-tile class="parent-container">
           @if (shownDetails() === 'tasks') {
           <lib-tasks-table
+            (deleteTask)="onDeleteTask($event)"
+            (editTask)="onEditTask($event)"
+            (createTask)="onCreateTask($event)"
             [tasks]="selectedProject()!.tasks"
             style="width: 100%; height: 100%"
           ></lib-tasks-table>
           } @else if (shownDetails() === 'risks') {
           <lib-risks-table
+            (createRisk)="onCreateRisk($event)"
+            (editRisk)="onEditRisk($event)"
+            (deleteRisk)="onDeleteRisk($event)"
             [risks]="selectedProject()!.risks"
             style="width: 100%; height: 100%"
           ></lib-risks-table>
           } @else if (shownDetails() === 'changes') {
           <lib-changes-table
+            (createChange)="onCreateChange($event)"
+            (editChange)="onEditChange($event)"
+            (deleteChange)="onDeleteChange($event)"
             [changes]="selectedProject()!.changes"
             style="width: 100%; height: 100%"
           ></lib-changes-table>
@@ -64,6 +73,9 @@
           <h3>Project Journal</h3>
           <p>Recent updates and notes about the project.</p>
           <lib-project-journal-table
+            (createJournalEntry)="onCreateJournalEntry($event)"
+            (editJournalEntry)="onUpdateJournalEntry($event)"
+            (deleteJournalEntry)="onDeleteJournalEntry($event)"
             style="width: 100%; height: 100%"
             [journals]="selectedProject()!.journalEntries"
           ></lib-project-journal-table>

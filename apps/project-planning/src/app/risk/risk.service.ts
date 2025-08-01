@@ -22,6 +22,7 @@ export class RiskService {
     const risk = this.riskRepository.create({
       ...createRiskDto,
       project, // Associate the risk with the project
+      updatedBy: createRiskDto.riskOwner,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

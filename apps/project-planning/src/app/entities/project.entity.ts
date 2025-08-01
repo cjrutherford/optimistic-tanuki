@@ -26,8 +26,8 @@ export class Project {
   @Column()
   startDate: Date;
 
-  @Column()
-  endDate: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  endDate?: Date;
 
   @Column()
   status: string;
@@ -44,11 +44,11 @@ export class Project {
   @Column()
   updatedAt: Date;
 
-  @Column()
-  deletedBy: string;
+  @Column({ nullable: true })
+  deletedBy?: string;
 
-  @Column()
-  deletedAt: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  deletedAt?: Date;
 
   @OneToMany(() => Task, (task) => task.project)
   tasks: Task[];

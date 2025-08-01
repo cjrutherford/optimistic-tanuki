@@ -32,7 +32,7 @@ export class ProjectJournalController {
   }
 
   @MessagePattern({ cmd: ProjectJournalCommands.REMOVE })
-  async remove(@Payload() id: string) {
+  async remove(@Payload('id') id: string) {
     return await this.projectJournalService.remove(id);
   }
 }

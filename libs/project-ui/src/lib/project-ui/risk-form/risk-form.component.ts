@@ -1,11 +1,10 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { Component, EventEmitter, Output } from '@angular/core';
+import { CreateRisk, Risk } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { SelectComponent } from 'libs/form-ui/src/lib/form-ui/select/select.component';
-import { TextAreaComponent } from 'libs/form-ui/src/lib/form-ui/text-area/text-area.component';
-import { TextInputComponent } from 'libs/form-ui/src/lib/form-ui/text-input/text-input.component';
 
 @Component({
   selector: 'lib-risk-form',
@@ -15,6 +14,7 @@ import { TextInputComponent } from 'libs/form-ui/src/lib/form-ui/text-input/text
 })
 export class RiskFormComponent {
   riskForm: FormGroup;
+  @Output() submitted: EventEmitter<CreateRisk> = new EventEmitter<CreateRisk>();
 
   constructor(private fb: FormBuilder) {
     this.riskForm = this.fb.group({
@@ -44,6 +44,7 @@ export class RiskFormComponent {
   onSubmit() {
     if (this.riskForm.valid) {
       console.log('Risk Form Submitted!', this.riskForm.value);
+      this.submitted.emit(this.riskForm.value);
     }
   }
 }

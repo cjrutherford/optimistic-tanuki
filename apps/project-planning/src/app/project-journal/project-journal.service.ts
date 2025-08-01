@@ -20,6 +20,7 @@ export class ProjectJournalService {
     const projectJournal = this.projectJournalRepository.create({
       ...createProjectJournalDto,
       project, // Associate the journal entry with the project
+      updatedBy: createProjectJournalDto.profileId,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -56,6 +57,6 @@ export class ProjectJournalService {
   }
 
   async remove(id: string) {
-    await this.projectJournalRepository.update(id, { deletedAt: new Date() });
+    return await this.projectJournalRepository.update(id, { deletedAt: new Date() });
   }
 }

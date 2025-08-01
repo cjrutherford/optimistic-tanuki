@@ -1,7 +1,7 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { RiskImpact, RiskLikelihood, RiskStatus, RiskResolution } from '@optimistic-tanuki/models'
-import { Project } from "./project.entity";
+import { RiskImpact, RiskLikelihood, RiskResolution, RiskStatus } from '@optimistic-tanuki/models'
 
+import { Project } from "./project.entity";
 
 @Entity()
 export class Risk {
@@ -38,14 +38,14 @@ export class Risk {
     @Column()
     updatedAt: Date;
 
-    @Column()
-    deletedBy: string;
+    @Column({ nullable: true })
+    deletedBy?: string;
 
-    @Column()
+    @Column({ type: 'timestamp', nullable: true })
     deletedAt: Date;
 
-    @Column()
-    mitigationPlan: string;
+    @Column({ nullable: true })
+    mitigationPlan?: string;
 
     @Column()
     riskOwner: string; // manual reference to the User Profile Entity from the [Profile Service] representing the owner of the risk

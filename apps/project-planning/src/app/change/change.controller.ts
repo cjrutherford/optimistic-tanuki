@@ -29,7 +29,7 @@ export class ChangeController {
   }
 
   @MessagePattern({ cmd: ChangeCommands.REMOVE })
-  async remove(@Payload() id: string) {
+  async remove(@Payload('id') id: string) {
     return await this.changeService.remove(id);
   }
 }

@@ -1,7 +1,7 @@
 import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
-import { Component, Input, signal } from '@angular/core';
+import { Change, CreateChange } from '@optimistic-tanuki/ui-models';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 
-import { Change } from '@optimistic-tanuki/ui-models';
 import { ChangeFormComponent } from '../change-form/change-form.component';
 import { CommonModule } from '@angular/common';
 
@@ -14,6 +14,9 @@ import { CommonModule } from '@angular/common';
 export class ChangesTableComponent {
   cells = signal<TableCell[][]>([])
   showModal = signal<boolean>(false);
+  @Output() createChange: EventEmitter<CreateChange> = new EventEmitter<CreateChange>();
+  @Output() editChange: EventEmitter<Change> = new EventEmitter<Change>();
+  @Output() deleteChange: EventEmitter<string> = new EventEmitter<string>();
   @Input() changes: Change[] = [
     {
       id: '1',
@@ -73,6 +76,8 @@ export class ChangesTableComponent {
     title: 'Delete',
     action: (index: number) => {
       console.log('Delete action for row:', index);
+      const change = this.changes[index];
+      this.deleteChange.emit(change.id);
     },
   },
   {
@@ -99,7 +104,7 @@ export class ChangesTableComponent {
     const currentCells: TableCell[][] = this.changes?.map((change, index) => [
       { id: change.id, heading: 'Change Description', value: change.changeDescription },
       { id: change.id, heading: 'Change Type', value: change.changeType },
-      { id: change.id, heading: 'Change Date', value: change.changeDate.toLocaleDateString() },
+      { id: change.id, heading: 'Change Date', value: new Date(change.changeDate)?.toLocaleDateString() },
       { id: change.id, heading: 'Requestor', value: change.requestor },
       { id: change.id, heading: 'Approver', value: change.approver },
       { id: change.id, heading: 'Resolution', value: change.resolution },
@@ -118,5 +123,11 @@ export class ChangesTableComponent {
   closeModal() {
     console.log("Closing modal")
     this.showModal.set(false);
+  }
+
+  onCreateFormSubmit(change: CreateChange) {
+    console.log('Creating change with data:', change);
+    this.createChange.emit(change);
+    this.closeModal();
   }
 }

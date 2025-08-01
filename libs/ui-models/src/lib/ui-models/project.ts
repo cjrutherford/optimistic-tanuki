@@ -68,6 +68,7 @@ export interface CreateTask {
   description: string;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
   priority: 'LOW' | 'MEDIUM_LOW' | 'MEDIUM' | 'MEDIUM_HIGH' | 'HIGH'; 
+  createdBy: string;
 }
 
 export interface QueryTask {
@@ -136,6 +137,7 @@ export interface CreateRisk {
   resolution?: 'PENDING' |'ACCEPTED' | 'MITIGATED' |'ESCALATED' | 'AVOIDED';
   mitigationPlan?: string;
   riskOwner?: string; // Assuming this is a user profile ID
+  createdBy: string;
 }
 
 export interface QueryRisk {

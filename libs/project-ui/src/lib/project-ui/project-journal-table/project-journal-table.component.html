@@ -23,6 +23,6 @@
     (closeModal)="closeModal()"
     [heading]="'Add Journal Entry'"
   >
-    <lib-project-journal-form (close)="closeModal()"></lib-project-journal-form>
+    <lib-project-journal-form (submitted)="entryCreated($event)" (close)="closeModal()"></lib-project-journal-form>
   </otui-modal>
 }

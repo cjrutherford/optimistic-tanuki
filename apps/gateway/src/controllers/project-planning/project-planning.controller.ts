@@ -68,7 +68,7 @@ export class ProjectPlanningController {
 
     @Delete('changes/:id')
     async deleteChange(@Param('id') id: string) {
-        return await firstValueFrom(this.projectPlanningService.send({ cmd: ChangeCommands.DELETE }, { id }));
+        return await firstValueFrom(this.projectPlanningService.send({ cmd: ChangeCommands.REMOVE }, { id }));
     }
 
     @Get('journal/:id')
@@ -98,7 +98,8 @@ export class ProjectPlanningController {
 
     @Delete('journal/:id')
     async deleteJournal(@Param('id') id: string) {
-        return await firstValueFrom(this.projectPlanningService.send({ cmd: ProjectJournalCommands.DELETE }, { id }));
+        console.log("🚀 ~ ProjectPlanningController ~ deleteJournal ~ id:", id)
+        return await firstValueFrom(this.projectPlanningService.send({ cmd: ProjectJournalCommands.REMOVE }, { id }));
     }
 
     @Get('risk/:id')
@@ -128,6 +129,7 @@ export class ProjectPlanningController {
 
     @Delete('risk/:id')
     async deleteRisk(@Param('id') id: string) {
+        console.log("🚀 ~ ProjectPlanningController ~ deleteRisk ~ id:", id)
         return await firstValueFrom(this.projectPlanningService.send({ cmd: RiskCommands.DELETE }, { id }));
     }
 
