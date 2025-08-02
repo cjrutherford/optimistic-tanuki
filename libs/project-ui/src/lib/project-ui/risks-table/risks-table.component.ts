@@ -14,6 +14,8 @@ import { RiskFormComponent } from '../risk-form/risk-form.component';
 export class RisksTableComponent {
   cells = signal<TableCell[][]>([]);
   showModal = signal<boolean>(false);
+  showEditModal = signal<boolean>(false);
+  selectedRisk = signal<Risk | null>(null);
   @Output() createRisk: EventEmitter<CreateRisk> = new EventEmitter<CreateRisk>();
   @Output() editRisk: EventEmitter<Risk> = new EventEmitter<Risk>();
   @Output() deleteRisk: EventEmitter<string> = new EventEmitter<string>();
@@ -28,8 +30,9 @@ export class RisksTableComponent {
       title: 'Edit',
       action: (index: number) => {
         console.log('Edit action for row:', index);
-        this.editRisk.emit(this.risks[index]);
-        this.setShowModal(index);
+        this.selectedRisk.set(this.risks[index]);
+        this.showEditModal.set(true);
+        console.log('Selected risk for editing:', this.selectedRisk());
       },
     },
     {
@@ -109,8 +112,24 @@ export class RisksTableComponent {
 
   onCreateFormSubmit(risk: CreateRisk) {
     console.log('Creating risk with data:', risk);
-    this.createRisk.emit(risk);
+    const { description, impact, likelihood, projectId, status, createdBy } = risk;
+    const newRisk: CreateRisk = {
+      description,
+      impact,
+      likelihood,
+      projectId,
+      status: status || 'OPEN',
+      createdBy: createdBy || '',
+    };
+    this.createRisk.emit(newRisk);
     this.closeModal();
+  }
+
+  onEditFormSubmit(risk: Risk) {
+    console.log('Editing risk:', risk);
+    risk.id = this.selectedRisk()?.id || '';
+    this.editRisk.emit(risk);
+    this.showEditModal.set(false);
   }
 
   closeModal() {

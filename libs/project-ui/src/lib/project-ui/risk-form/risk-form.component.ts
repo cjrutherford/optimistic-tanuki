@@ -1,5 +1,5 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CreateRisk, Risk } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -13,12 +13,12 @@ import { CommonModule } from '@angular/common';
   styleUrl: './risk-form.component.scss',
 })
 export class RiskFormComponent {
+  @Input() risk: Risk | null = null;
   riskForm: FormGroup;
-  @Output() submitted: EventEmitter<CreateRisk> = new EventEmitter<CreateRisk>();
+  @Output() submitted: EventEmitter<Risk> = new EventEmitter<Risk>();
 
   constructor(private fb: FormBuilder) {
     this.riskForm = this.fb.group({
-      title: [''],
       description: [''],
       impact: [''],
       likelihood: [''],
@@ -41,10 +41,30 @@ export class RiskFormComponent {
     { value: 'UNKNOWN', label: 'Unknown' },
   ];
 
+  ngOnInit() {
+    if (this.risk) {
+      this.riskForm.patchValue({
+        description: this.risk.description,
+        impact: this.risk.impact,
+        likelihood: this.risk.likelihood,
+      });
+    }
+  }
+
   onSubmit() {
     if (this.riskForm.valid) {
       console.log('Risk Form Submitted!', this.riskForm.value);
-      this.submitted.emit(this.riskForm.value);
+      const emittedValue: Risk = {
+        id: this.risk?.id || '',
+        description: this.riskForm.value.description,
+        impact: this.riskForm.value.impact,
+        likelihood: this.riskForm.value.likelihood,
+        projectId: this.risk?.projectId || '',
+        status: this.risk?.status || 'OPEN',
+        createdBy: this.risk?.createdBy || '',
+        createdAt: this.risk?.createdAt || new Date(),
+      };
+      this.submitted.emit(emittedValue);
     }
   }
 }

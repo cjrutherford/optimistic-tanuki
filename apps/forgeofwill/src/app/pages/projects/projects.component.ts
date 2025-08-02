@@ -3,7 +3,6 @@ import { Change, CreateChange, CreateProject, CreateProjectJournal, CreateRisk, 
 import { ChangesTableComponent, ProjectFormComponent, ProjectJournalTableComponent, ProjectOverviewComponent, ProjectSelectorComponent, RisksTableComponent, SummaryBlockComponent, TasksTableComponent } from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal } from '@angular/core';
 
-import { AuthStateService } from '../../auth-state.service';
 import { ChangeService } from '../../change/change.service';
 import { CommonModule } from '@angular/common';
 import { JournalService } from '../../journal/journal.service';
@@ -147,7 +146,7 @@ export class ProjectsComponent {
     });
   }
 
-  onCreateTask(task: Task) {
+  onCreateTask(task: CreateTask) {
     console.log('Create task:', task);
     const currentProject = this.selectedProject();
     if (!currentProject) {
@@ -156,7 +155,7 @@ export class ProjectsComponent {
     }
     console.log('Current project for task creation:', currentProject);
     task.projectId = currentProject.id;
-    this.taskService.createTask(task as CreateTask).subscribe({
+    this.taskService.createTask(task).subscribe({
       next: (createdTask) => {
         console.log('Task created successfully:', createdTask);
         const currentProject = this.selectedProject();

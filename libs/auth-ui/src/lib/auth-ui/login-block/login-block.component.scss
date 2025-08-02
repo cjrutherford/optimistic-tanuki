@@ -4,7 +4,6 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh; /* Full viewport height */
 }
 .card-outer {
     background: var(--border-gradient);
@@ -21,6 +20,9 @@
     background: var(--background);
     border-radius: 8px;
     box-shadow: 0 4px 8px var(--complement);
+    @media(max-width: 600px) {
+        flex-direction: column;
+    }
     .hero {
         display: flex;
         flex-direction: column;
@@ -29,6 +31,10 @@
         margin-top: 20px;
         margin-bottom: 20px;
         padding: 20px 60px;
+        @media(max-width: 600px) {
+            padding: 5px;
+            margin: 0;
+        }
     }
     .form {
         display: flex;

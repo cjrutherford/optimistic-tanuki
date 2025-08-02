@@ -8,9 +8,6 @@ import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
 
 @Component({
   imports: [RouterModule, CardComponent, ButtonComponent, ModalComponent, ThemeToggleComponent, ChatUiComponent],
-  providers: [
-    AuthStateService
-  ],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',

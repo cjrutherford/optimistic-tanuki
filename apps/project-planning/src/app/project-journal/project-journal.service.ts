@@ -52,6 +52,7 @@ export class ProjectJournalService {
   }
 
   async update(id: string, updateProjectJournalDto: UpdateProjectJournalDto) {
+    delete updateProjectJournalDto.projectId;
     await this.projectJournalRepository.update(id, updateProjectJournalDto);
     return await this.projectJournalRepository.findOne({ where: { id } });
   }

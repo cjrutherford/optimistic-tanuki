@@ -1,5 +1,5 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CreateProfileDto, ProfileDto, Task, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -13,6 +13,8 @@ import { CommonModule } from '@angular/common';
   styleUrl: './task-form.component.scss',
 })
 export class TaskFormComponent {
+  @Input() task: Task | null = null;
+  isEditing = signal<boolean>(false);
   @Output() formSubmit: EventEmitter<Task> = new EventEmitter<Task>();
   statusOptions = [
     { value: 'TODO', label: 'To Do' },
@@ -37,6 +39,20 @@ export class TaskFormComponent {
     });
   }
 
+  ngOnInit() {
+    if (this.task) {
+      this.isEditing.set(true);
+      this.taskForm.patchValue({
+        title: this.task.title,
+        description: this.task.description,
+        status: this.task.status,
+        priority: this.task.priority,
+      });
+    } else {
+      this.isEditing.set(false);
+    }
+  }
+
   selectChange(event: any, field: string) {
     console.log(`Patching value for ${field}:`, event.target.value);
     this.taskForm.patchValue({ [field]: event.target.value });
@@ -45,11 +61,15 @@ export class TaskFormComponent {
   onSubmit() {
     if (this.taskForm.valid) {
       console.log('Form Submitted!', this.taskForm.value);
-      this.formSubmit.emit({
+      const emittedValue: Task = {
         ...this.taskForm.value,
-        projectId: '',
-        asignee: '',
-      } as Task);
+        id: this.task ? this.task.id : '',
+        projectId: this.task ? this.task.projectId : '',
+        createdBy: this.task ? this.task.createdBy : '',
+        createdAt: this.task ? this.task.createdAt : new Date(),
+        updatedAt: new Date(),
+      }
+      this.formSubmit.emit(emittedValue);
       this.taskForm.reset();
     }
   }

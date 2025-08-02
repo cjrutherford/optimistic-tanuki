@@ -15,6 +15,16 @@
   <otui-button (click)="showModal.set(true)">➕ Add Risk</otui-button>
 </div>
 
+@if (showEditModal()) {
+<otui-modal (closeModal)="showEditModal.set(false)" [heading]="'Edit Risk'">
+  <lib-risk-form
+    [risk]="selectedRisk()"
+    (submitted)="onEditFormSubmit($event)"
+    (close)="showEditModal.set(false)"
+  ></lib-risk-form>
+</otui-modal>
+}
+
 @if (showModal()) {
 <otui-modal (closeModal)="closeModal()" [heading]="'Add Risk'">
   <lib-risk-form (submitted)="onCreateFormSubmit($event)" (close)="closeModal()"></lib-risk-form>

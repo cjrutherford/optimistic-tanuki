@@ -58,6 +58,7 @@ export class RiskService {
   }
 
   async update(id: string, updateRiskDto: UpdateRiskDto) {
+    delete updateRiskDto.projectId;
     await this.riskRepository.update(id, updateRiskDto);
     return await this.riskRepository.findOne({ where: { id } });
   }

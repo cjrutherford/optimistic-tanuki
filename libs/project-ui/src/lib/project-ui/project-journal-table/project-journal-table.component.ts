@@ -14,6 +14,8 @@ import { ProjectJournalFormComponent } from '../project-journal-form/project-jou
 export class ProjectJournalTableComponent {
   cells = signal<TableCell[][]>([]);
   showModal = signal<boolean>(false);
+  showEditModal = signal<boolean>(false);
+  selectedJournal = signal<ProjectJournal | null>(null);
   @Output() createJournalEntry: EventEmitter<CreateProjectJournal> = new EventEmitter<CreateProjectJournal>();
   @Output() editJournalEntry: EventEmitter<ProjectJournal> = new EventEmitter<ProjectJournal>();
   @Output() deleteJournalEntry: EventEmitter<string> = new EventEmitter<string>();
@@ -28,8 +30,9 @@ export class ProjectJournalTableComponent {
       title: 'Edit',
       action: (index: number) => {
         console.log('Edit action for row:', index);
-        this.editJournalEntry.emit(this.journals[index]);
-        this.setShowModal(index);
+        this.selectedJournal.set(this.journals[index]);
+        this.showEditModal.set(true);
+        console.log('Selected journal for editing:', this.selectedJournal());
       },
     },
     {
@@ -115,8 +118,33 @@ export class ProjectJournalTableComponent {
     }
   }
 
-  entryCreated(newEntry: CreateProjectJournal) {
-    this.createJournalEntry.emit(newEntry);
+  entryUpdated(updatedEntry: Partial<ProjectJournal>) {
+    const projectId = this.selectedJournal()?.projectId || '';
+    const journalId = this.selectedJournal()?.id || '';
+    const profileId = this.selectedJournal()?.profileId || '';
+    const updateEntry: ProjectJournal = {
+      id: journalId,
+      projectId: projectId,
+      profileId: profileId,
+      ...this.selectedJournal(),
+      ...updatedEntry,
+      content: updatedEntry.content || this.selectedJournal()?.content || '',
+      createdAt: this.selectedJournal()?.createdAt || new Date(),
+      updatedAt: new Date(),
+    };
+    this.editJournalEntry.emit(updateEntry);
+    this.showEditModal.set(false);
+    this.selectedJournal.set(null);
+  }
+
+  entryCreated(newEntry: Partial<ProjectJournal>) {
+    const newJournal: CreateProjectJournal = {
+      projectId: newEntry.projectId || '',
+      profileId: newEntry.profileId || '',
+      content: newEntry.content || '',
+      createdAt: newEntry.createdAt || new Date(),
+    };
+    this.createJournalEntry.emit(newJournal);
     this.closeModal();
   }
 

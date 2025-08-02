@@ -16,12 +16,7 @@
   }
 }
 
-.toggle-container {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
+.toggle-container{
   padding: 10px;
   border: 2px solid var(--border-color);
   background: var(--background);
@@ -31,6 +26,26 @@
     -2px -4px 10px 0px var(--accent-color);
   transition: background-color 0.3s, color 0.3s, var(--border-color) 0.3s, box-shadow 0.3s;
   animation: pulse-halo 4s infinite ease-in-out;
+  @media (max-width: 600px) {
+    width: 100%;
+    padding: 5px;
+    margin: 0 auto;
+  }
+}
+
+.toggle-container > form {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: center;
+    width: 40px;
+    padding: 0;
+    margin: 0 auto;    
+  }
   .accent-picker {
     display: flex;
     align-items: center;
@@ -39,12 +54,23 @@
   .theme-switch {
     margin: 5px;
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 10px;
+    @media(max-width: 600px) {
+      flex-direction: column;
+      align-items: center;
+    }
+    label.switch{
+      display: block;
+    }
     .theme-label {
       font-size: 16px;
       font-weight: 500;
+      @media(max-width: 600px) {
+        font-size: 12px;
+      }
     }
   }
 }

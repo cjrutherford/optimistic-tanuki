@@ -1,6 +1,5 @@
 import { RegisterSubmitType, submitTypeToRegisterRequest } from '@optimistic-tanuki/ui-models';
 
-import { AuthStateService } from '../../auth-state.service';
 import { AuthenticationService } from '../../authentication.service';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 import { CommonModule } from '@angular/common';
@@ -11,7 +10,6 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-register',
   imports: [CommonModule, RegisterBlockComponent, CardComponent],
-  providers: [AuthenticationService, AuthStateService],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })

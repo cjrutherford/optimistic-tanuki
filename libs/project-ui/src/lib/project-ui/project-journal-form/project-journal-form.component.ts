@@ -1,9 +1,9 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { CreateProjectJournal, ProjectJournal } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { CommonModule } from '@angular/common';
-import { CreateProjectJournal } from '@optimistic-tanuki/ui-models';
 import { TextAreaComponent } from '@optimistic-tanuki/form-ui';
 
 @Component({
@@ -13,8 +13,10 @@ import { TextAreaComponent } from '@optimistic-tanuki/form-ui';
   styleUrl: './project-journal-form.component.scss',
 })
 export class ProjectJournalFormComponent {
+  @Input() journal: ProjectJournal | null = null;
+  isEditing = signal<boolean>(false);
   journalForm: FormGroup;
-  @Output() submitted: EventEmitter<CreateProjectJournal> = new EventEmitter<CreateProjectJournal>();
+  @Output() submitted: EventEmitter<Partial<ProjectJournal>> = new EventEmitter<Partial<ProjectJournal>>();
 
   constructor(private readonly fb: FormBuilder) {
     this.journalForm = this.fb.group({
@@ -22,15 +24,20 @@ export class ProjectJournalFormComponent {
     });
   }
 
+  ngOnInit() {
+    if (this.journal) {
+      this.journalForm.patchValue({
+        content: this.journal.content,
+      });
+    }
+  }
+
   onSubmit() {
     if (this.journalForm.valid) {
       console.log('Journal Entry Submitted!', this.journalForm.value);
       this.submitted.emit({
+        ...this.journal,
         ...this.journalForm.value,
-        projectId: '',
-        profileId: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
     }
   }

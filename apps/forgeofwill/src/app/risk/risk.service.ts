@@ -37,7 +37,7 @@ export class RiskService {
   }
 
   updateRisk(id: string, risk: Partial<Risk>) {
-    return this.http.put<Risk>(`${this.baseUrl}/${id}`, risk);
+    return this.http.patch<Risk>(`${this.baseUrl}`, risk);
   }
 
   deleteRisk(id: string) {

@@ -13,7 +13,7 @@ import {
   SimpleChanges,
   signal,
 } from '@angular/core';
-import { ProfileDto, Task } from '@optimistic-tanuki/ui-models';
+import { CreateTask, ProfileDto, Task } from '@optimistic-tanuki/ui-models';
 
 import { CommonModule } from '@angular/common';
 import { TaskFormComponent } from '../task-form/task-form.component';
@@ -33,7 +33,9 @@ import { TaskFormComponent } from '../task-form/task-form.component';
 export class TasksTableComponent {
   cells = signal<TableCell[][]>([]);
   showModal = signal<boolean>(false);
-  @Output() createTask: EventEmitter<Task> = new EventEmitter<Task>();
+  showEditModal = signal<boolean>(false);
+  selectedTask = signal<Task | null>(null);
+  @Output() createTask: EventEmitter<CreateTask> = new EventEmitter<CreateTask>();
   @Output() editTask: EventEmitter<Task> = new EventEmitter<Task>();
   @Output() deleteTask: EventEmitter<string> = new EventEmitter<string>();
   @Input() tasks: Task[] = [
@@ -111,8 +113,7 @@ export class TasksTableComponent {
       title: 'Edit',
       action: (index: number) => {
         console.log('Edit action for task at index:', index);
-        this.editTask.emit(this.tasks[index]);
-        this.setShowModal(index);
+        this.setShowEditModal(this.tasks[index]);
       },
     },
     {
@@ -166,9 +167,30 @@ export class TasksTableComponent {
     }
   }
 
+  setShowEditModal(task: Task) {
+    console.log("🚀 ~ TasksTableComponent ~ setShowEditModal ~ task:", task)
+    this.selectedTask.set(task);
+    this.showEditModal.set(true);
+    console.log('Selected task for editing:', task);
+  }
+
+  onEditFormSubmit(task: Task) {
+    console.log('Editing task:', task);
+    this.editTask.emit(task);
+    this.showEditModal.set(false);
+  }
+
   onCreateFormSubmit(task: Task) {
     console.log('Creating task:', task);
-    this.createTask.emit(task);
+    const newTask: CreateTask = {
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      projectId: task.projectId,
+      createdBy: task.createdBy,
+    };
+    this.createTask.emit(newTask);
     this.closeModal();
   }
 

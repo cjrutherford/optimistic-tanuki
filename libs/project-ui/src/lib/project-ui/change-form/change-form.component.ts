@@ -1,10 +1,10 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Change, CreateChange } from '@optimistic-tanuki/ui-models';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 import { CommonModule } from '@angular/common';
-import { CreateChange } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'lib-change-form',
@@ -13,15 +13,33 @@ import { CreateChange } from '@optimistic-tanuki/ui-models';
   styleUrl: './change-form.component.scss',
 })
 export class ChangeFormComponent {
+  @Input() change: Change | null = null;
+  isEditing = signal<boolean>(false);
   changeForm : FormGroup;
-  @Output() submitted: EventEmitter<CreateChange> = new EventEmitter<CreateChange>();
+  @Output() submitted: EventEmitter<Partial<Change>> = new EventEmitter<Partial<Change>>();
   constructor(private readonly fb: FormBuilder) {
     this.changeForm = this.fb.group({
       changeType: this.fb.control('ADDITION'),
       changeDescription: this.fb.control(''),
+      changeStatus: this.fb.control('PENDING'),
       changeDate: this.fb.control(''),
       requestor: this.fb.control(''),
     });
+  }
+
+  ngOnInit() {
+    if (this.change) {
+      this.isEditing.set(true);
+      this.changeForm.patchValue({
+        changeType: this.change.changeType,
+        changeDescription: this.change.changeDescription,
+        changeStatus: this.change.changeStatus,
+        changeDate: this.change.changeDate,
+        requestor: this.change.requestor,
+      });
+    } else {
+      this.isEditing.set(false);
+    }
   }
 
   statusOptions = [
@@ -45,7 +63,7 @@ export class ChangeFormComponent {
   onSubmit() {
     if (this.changeForm.valid) {
       console.log('Form Submitted!', this.changeForm.value);
-      this.submitted.emit(this.changeForm.value as CreateChange);
+      this.submitted.emit(this.changeForm.value);
     }
   }
 }

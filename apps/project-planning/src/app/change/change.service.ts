@@ -57,7 +57,18 @@ export class ChangeService {
   }
 
   async update(id: string, updateChangeDto: UpdateChangeDto) {
-    await this.changeRepository.update(id, updateChangeDto);
+    const {
+      changeStatus: status,
+      projectId,
+      ...updateData
+    } = updateChangeDto;
+    const updatedChange: Partial<Change> = {
+      ...updateData,
+      status, 
+      updatedAt: new Date(),
+      updatedBy: updateChangeDto.requestor,
+    };
+    await this.changeRepository.update(id, updatedChange);
     return await this.changeRepository.findOne({ where: { id } });
   }
 

@@ -30,6 +30,9 @@ export class CreateChangeDto {
     @ApiProperty({ description: 'Description of the change' })
     changeDescription: string;
 
+    @ApiProperty({ enum: ChangeStatus, description: 'Current status of the change' })
+    changeStatus: ChangeStatus;
+
     @ApiProperty({ type: String, format: 'date-time', description: 'Date of the change' })
     changeDate: Date;
 

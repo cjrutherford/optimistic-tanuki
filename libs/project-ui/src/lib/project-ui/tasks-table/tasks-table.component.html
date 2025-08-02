@@ -17,6 +17,19 @@
   <otui-button (click)="showModal.set(true)">➕ Add Task</otui-button>
 </div>
 
+@if (showEditModal()) {
+  <otui-modal
+    (closeModal)="showEditModal.set(false)"
+    [heading]="'Edit Task'"
+  >
+    <lib-task-form
+      [task]="selectedTask()"
+      (formSubmit)="onEditFormSubmit($event)"
+      (close)="showEditModal.set(false)"
+    ></lib-task-form>
+  </otui-modal>
+}
+
 @if (showModal()) {
   <otui-modal
     (closeModal)="closeModal()"

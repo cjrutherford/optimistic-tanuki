@@ -18,6 +18,19 @@
 
 </div>
 
+@if (showEditModal()) {
+  <otui-modal
+    (closeModal)="showEditModal.set(false)"
+    [heading]="'Edit Journal Entry'"
+  >
+    <lib-project-journal-form
+      [journal]="selectedJournal()"
+      (submitted)="entryUpdated($event)"
+      (close)="showEditModal.set(false)"
+    ></lib-project-journal-form>
+  </otui-modal>
+}
+
 @if (showModal()) {
   <otui-modal
     (closeModal)="closeModal()"

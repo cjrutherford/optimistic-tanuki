@@ -9,6 +9,7 @@
   color: var(--foreground, #fff);
   box-shadow: inset 0 0 1em rgba(0, 0, 0, 0.1);
   transition: box-shadow var(--transition-duration, 0.3s) ease-in-out;
+  overflow-x: auto;
 
   &:hover {
     box-shadow: 2px 4px 8px 6px var(--border-gradient, #b1baec);
