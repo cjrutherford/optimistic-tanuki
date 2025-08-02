@@ -36,9 +36,10 @@ export class LoginComponent {
             console.warn('No profiles found for the current user. Redirecting to profile creation.');
             // Redirect to profile creation if no profiles exist
             this.router.navigate(['/profile']); 
+          } else {
+            this.profileService.selectProfile(currentProfiles[0]);
+            this.router.navigate(['/']);
           }
-          this.profileService.selectProfile(currentProfiles[0]);
-          this.router.navigate(['/']);
         });
       }
     }).catch((error) => {
