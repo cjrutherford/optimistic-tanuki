@@ -5,15 +5,15 @@
       formControlName="description"
       label="Description"
     ></lib-text-area>
-    <lib-select formControlName="status" label="Status" [options]="statusOptions" (selectedValue)="selectChange($event, 'status')">
-      <ng-template let-option>
+    <lib-select formControlName="status" label="Status" [options]="statusOptions">
+      <!-- <ng-template let-option>
         {{ option.label }}
-      </ng-template>
+      </ng-template> -->
     </lib-select>
-    <lib-select formControlName="priority" label="Priority" [options]="priorityOptions" (selectedValue)="selectChange($event, 'priority')">
-      <ng-template let-option>
+    <lib-select formControlName="priority" label="Priority" [options]="priorityOptions">
+      <!-- <ng-template let-option>
         {{ option.label }}
-      </ng-template>
+      </ng-template> -->
     </lib-select>
     <otui-button type="submit">Save</otui-button>
   </otui-card>

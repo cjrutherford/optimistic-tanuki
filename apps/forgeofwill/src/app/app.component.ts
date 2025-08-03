@@ -1,5 +1,6 @@
 import { ButtonComponent, CardComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
-import { Component, signal } from '@angular/core';
+import { Component, effect, signal } from '@angular/core';
+import { MessageComponent, MessageService, MessageType } from '@optimistic-tanuki/message-ui';
 import { Router, RouterModule } from '@angular/router';
 
 import { AuthStateService } from './auth-state.service';
@@ -7,7 +8,7 @@ import { ChatUiComponent } from '@optimistic-tanuki/chat-ui';
 import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
 
 @Component({
-  imports: [RouterModule, CardComponent, ButtonComponent, ModalComponent, ThemeToggleComponent, ChatUiComponent],
+  imports: [RouterModule, CardComponent, ButtonComponent, ModalComponent, ThemeToggleComponent, ChatUiComponent, MessageComponent],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -15,10 +16,12 @@ import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
 export class AppComponent {
   title = 'forgeofwill';
   isModalOpen = signal<boolean>(false);
+  messages = signal<MessageType[]>([]);
 
-  constructor(private readonly router: Router, private readonly authState: AuthStateService) {}
+  constructor(private readonly router: Router, private readonly authState: AuthStateService, private readonly messageService: MessageService) {}
 
   ngOnInit() {
+    
     this.authState.isAuthenticated$().subscribe({
       next: (isAuthenticated) => {
         console.log('Authentication state changed:', isAuthenticated);
@@ -26,7 +29,16 @@ export class AppComponent {
       },
       error: (error) => {
         console.error('Error checking authentication state:', error);
+        this.messageService.addMessage({
+          content: 'Error checking authentication state: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       }
+    });
+
+    effect(() => {
+      this.messages.set(this.messageService.messages());
+      console.log('Messages updated:', this.messages());
     });
   }
 

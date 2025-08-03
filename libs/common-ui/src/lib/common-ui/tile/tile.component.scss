@@ -13,6 +13,12 @@
   animation: pulse-halo 16s infinite ease;
 }
 
+.tile.row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .tile:hover {
   box-shadow: inset 1px 2px 1em var(--accent), 
   2px 4px 8px 6px var(--complement);

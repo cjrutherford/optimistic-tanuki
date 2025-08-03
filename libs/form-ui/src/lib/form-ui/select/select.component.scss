@@ -2,7 +2,7 @@ select {
   width: 100%;
   padding: 0.5rem 2rem 0.5rem 1rem;
   font-size: 1rem;
-  border: 1px solid;
+  border: 1px solid var(--border-color, #dee2e6);
   border-radius: 0.375rem;
   appearance: none;
   background-repeat: no-repeat;
@@ -10,13 +10,32 @@ select {
   background-size: 1rem;
   outline: none;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-duration, 0.3s);
+  background: var(--accent, #fff);
+  color: var(--foreground, #212529);
+  option {
+    background: var(--accent, #fff);
+    color: var(--foreground, #212529);
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+  }
+
+  // For browsers that support ::-ms-expand (IE/Edge)
+  select::-ms-expand {
+    display: none;
+  }
+
+  // For Firefox dropdown arrow
+  select:-moz-focusring {
+    color: transparent;
+    text-shadow: 0 0 0 var(--foreground, #212529);
+  }
 
   // Custom arrow using SVG data URI
   background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' fill='gray' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6l4 4 4-4' stroke='gray' stroke-width='2' fill='none'/%3E%3C/svg%3E");
 
   &:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    border-color: var(--border-color, #007bff);
+    box-shadow: 0 0 0 2px var(--complement, rgba(0,123,255,0.25));
   }
 }

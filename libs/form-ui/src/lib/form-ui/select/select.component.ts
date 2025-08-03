@@ -1,17 +1,15 @@
 import {
   Component,
-  EventEmitter,
   forwardRef,
   Input,
-  Output,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ThemeService, Themeable } from '@optimistic-tanuki/theme-ui';
 import {
   ControlValueAccessor,
   FormsModule,
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
 
 @Component({
   selector: 'lib-select',
@@ -26,6 +24,15 @@ import {
   templateUrl: './select.component.html',
   styleUrl: './select.component.scss',
   standalone: true,
+  host: {
+    '[style.--background]': 'background',
+    '[style.--foreground]': 'foreground',
+    '[style.--accent]': 'accent',
+    '[style.--complement]': 'complement',
+    '[style.--border-color]': 'borderColor',
+    '[style.--border-gradient]': 'borderGradient',
+    '[style.--transition-duration]': 'transitionDuration',
+  },
 })
 export class SelectComponent extends Themeable implements ControlValueAccessor {
   @Input() options: Array<{ value: string; label: string }> = [
@@ -35,32 +42,24 @@ export class SelectComponent extends Themeable implements ControlValueAccessor {
     { value: 'option3', label: 'Option 3' },
   ];
 
-  value = '';
-  onChange?: (value: string) => void;
-  onTouched?: () => void;
-
-  @Output() selectedValue: EventEmitter<string> = new EventEmitter<string>();
-
-  constructor(protected override readonly themeService: ThemeService) {
-    super(themeService);
-  }
-
-  override applyTheme(colors: any): void {
-    this.theme = colors.theme || 'light';
-    this.background = colors.background;
-    this.foreground = colors.foreground;
+  override applyTheme(colors: ThemeColors): void {
+    this.background = `linear-gradient(to bottom, ${colors.background}, ${colors.accent})`;
     this.accent = colors.accent;
-    this.complement = colors.complement;
-    this.borderColor = colors.borderColor || '#dee2e6';
-    this.borderGradient =
-      colors.borderGradient || 'linear-gradient(to right, #007bff, #6610f2)';
-    this.transitionDuration = colors.transitionDuration || '0.3s';
+    this.foreground = colors.foreground;
+    this.borderColor = colors.complementary;
+    this.complement = colors.complementary;
+    if (this.theme === 'dark') {
+      this.borderColor = colors.complementaryShades[6][1];
+    } else {
+      this.borderColor = colors.complementaryShades[2][1];
+    }
   }
 
-  emitChange(value: any): void {
-    console.log('Selected value:', value);
-    this.selectedValue.emit(value);
-  }
+  value = '';
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  onChange: (value: string) => void = () => {};
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  onTouched: () => void = () => {};
 
   // ControlValueAccessor methods
   writeValue(value: string): void {

@@ -8,7 +8,7 @@
     </div>
 </otui-card>
 @if (isModalOpen()) {
-    <otui-modal (closeModal)="showModal()" [mode]="'sidebar-left'">
+    <otui-modal heading="Navigation" (closeModal)="showModal()" [mode]="'sidebar-left'">
         <otui-card >
             <div class="router-links">
                 <otui-button (action)="loginOutButton()">
@@ -28,3 +28,4 @@
 @if (isAuthenticated()) {
     <lib-chat-ui></lib-chat-ui>
 }
+<lib-message></lib-message>

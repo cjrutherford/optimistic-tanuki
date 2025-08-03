@@ -5,12 +5,13 @@ import {
 } from '@angular/platform-browser';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
+import { AuthStateService } from './auth-state.service';
+import { AuthenticationService } from './authentication.service';
+import { MessageService } from '@optimistic-tanuki/message-ui';
+import { ProfileService } from './profile/profile.service';
 import { appRoutes } from './app.routes';
 import { authenticationInterceptor } from './authentication.interceptor';
 import { provideRouter } from '@angular/router';
-import { AuthStateService } from './auth-state.service';
-import { AuthenticationService } from './authentication.service';
-import { ProfileService } from './profile/profile.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,5 +22,6 @@ export const appConfig: ApplicationConfig = {
     AuthStateService,
     AuthenticationService,
     ProfileService,
+    MessageService,
   ],
 };

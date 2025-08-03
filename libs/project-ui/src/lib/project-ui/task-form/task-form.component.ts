@@ -51,6 +51,9 @@ export class TaskFormComponent {
     } else {
       this.isEditing.set(false);
     }
+    this.taskForm.valueChanges.subscribe((value) => {
+      console.log('Form value changed:', value);
+    });
   }
 
   selectChange(event: any, field: string) {

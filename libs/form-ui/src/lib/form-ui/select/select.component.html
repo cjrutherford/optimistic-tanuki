@@ -1,14 +1,9 @@
 <select
-  [ngStyle]="{
-    background: background,
-    color: foreground,
-    borderColor: borderColor,
-    transition: 'all ' + transitionDuration,
-    boxShadow: '0 2px 8px 0 ' + complement
-  }"
-  (ngModelChange)="emitChange($event)"
-  >
+  [(ngModel)]="value"
+  (ngModelChange)="onChange($event); onTouched()"
+>
   <option *ngFor="let option of options" [value]="option.value">
     {{ option.label }}
   </option>
 </select>
+

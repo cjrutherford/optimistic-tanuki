@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
+import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ProfileService } from '../../profile/profile.service';
 import { Router } from '@angular/router';
 
@@ -19,7 +20,8 @@ export class LoginComponent {
     private readonly authService: AuthenticationService,
     private readonly authState: AuthStateService,
     private readonly profileService: ProfileService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly messageService: MessageService,
   ) {}
 
   onLoginSubmit(event: LoginType) {
@@ -36,9 +38,17 @@ export class LoginComponent {
             console.warn('No profiles found for the current user. Redirecting to profile creation.');
             // Redirect to profile creation if no profiles exist
             this.router.navigate(['/profile']); 
+            this.messageService.addMessage({
+              content: 'No profiles found. Please create a profile to continue.',
+              type: 'warning',
+            });
           } else {
             this.profileService.selectProfile(currentProfiles[0]);
             this.router.navigate(['/']);
+            this.messageService.addMessage({
+              content: 'Login successful! Welcome back.',
+              type: 'success',
+            });
           }
         });
       }

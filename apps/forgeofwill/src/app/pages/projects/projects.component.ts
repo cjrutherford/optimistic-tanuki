@@ -6,6 +6,7 @@ import { Component, computed, signal } from '@angular/core';
 import { ChangeService } from '../../change/change.service';
 import { CommonModule } from '@angular/common';
 import { JournalService } from '../../journal/journal.service';
+import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ProjectService } from '../../project/project.service';
 import { RiskService } from '../../risk/risk.service';
 import { TaskService } from '../../task/task.service';
@@ -36,6 +37,7 @@ export class ProjectsComponent {
     private readonly riskService: RiskService,
     private readonly changeService: ChangeService,
     private readonly journalService: JournalService,
+    private readonly messageService: MessageService,
   ) {}
 
   projects = signal<Project[]>([]);
@@ -98,6 +100,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error loading projects:', error);
+        this.messageService.addMessage({
+          content: 'Error loading projects: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -134,6 +140,10 @@ export class ProjectsComponent {
         console.log('Task deleted successfully');
         this.selectedProject.update((project) => {
           if (!project) return project;
+          this.messageService.addMessage({
+            content: 'Task deleted successfully',
+            type: 'success',
+          });
           return {
             ...project,
             tasks: project.tasks.filter(t => t.id !== taskId),
@@ -142,6 +152,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error deleting task:', error);
+        this.messageService.addMessage({
+          content: 'Error deleting task: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -161,14 +175,26 @@ export class ProjectsComponent {
         const currentProject = this.selectedProject();
         if (!currentProject) {
           console.error('No project selected to update with new task');
+          this.messageService.addMessage({
+            content: 'No project selected to update with new task',
+            type: 'error',
+          });
           return;
         }
         currentProject.tasks = [...(currentProject.tasks || []), createdTask];
         this.selectedProject.set(currentProject);
         console.log('Updated project with new task:', currentProject);
+        this.messageService.addMessage({
+          content: 'Task created successfully',
+          type: 'success',
+        });
       },
       error: (error) => {
         console.error('Error creating task:', error);
+        this.messageService.addMessage({
+          content: 'Error creating task: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -178,6 +204,10 @@ export class ProjectsComponent {
     this.taskService.updateTask(task).subscribe({
       next: (updatedTask) => {
         console.log('Task updated successfully:', updatedTask);
+        this.messageService.addMessage({
+          content: 'Task updated successfully',
+          type: 'success',
+        });
         this.selectedProject.update((project) => {
           if (!project) return project;
           return {
@@ -188,6 +218,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error updating task:', error);
+        this.messageService.addMessage({
+          content: 'Error updating task: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -203,6 +237,10 @@ export class ProjectsComponent {
     risk.projectId = currentProject.id;
     this.riskService.createRisk(risk).subscribe({
       next: (createdRisk) => {
+        this.messageService.addMessage({
+          content: 'Risk created successfully',
+          type: 'success',
+        });
         console.log('Risk created successfully:', createdRisk);
         currentProject.risks = [...(currentProject.risks || []), createdRisk];
         this.selectedProject.set(currentProject);
@@ -210,6 +248,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error creating risk:', error);
+        this.messageService.addMessage({
+          content: 'Error creating risk: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -219,6 +261,10 @@ export class ProjectsComponent {
     this.riskService.updateRisk(risk.id, risk).subscribe({
       next: (updatedRisk) => {
         console.log('Risk updated successfully:', updatedRisk);
+        this.messageService.addMessage({
+          content: 'Risk updated successfully',
+          type: 'success',
+        });
         this.selectedProject.update((project) => {
           if (!project) return project;
           return {
@@ -228,6 +274,10 @@ export class ProjectsComponent {
         });
       },
       error: (error) => {
+        this.messageService.addMessage({
+          content: 'Error updating risk: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
         console.error('Error updating risk:', error);
       },
     });
@@ -237,6 +287,10 @@ export class ProjectsComponent {
     console.log('Delete risk with ID:', riskId);
     this.riskService.deleteRisk(riskId).subscribe({
       next: () => {
+        this.messageService.addMessage({
+          content: 'Risk deleted successfully',
+          type: 'success',
+        });
         console.log('Risk deleted successfully');
         this.selectedProject.update((project) => {
           if (!project) return project;
@@ -248,6 +302,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error deleting risk:', error);
+        this.messageService.addMessage({
+          content: 'Error deleting risk: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -257,6 +315,10 @@ export class ProjectsComponent {
     console.log('Project created:', newProject);
     this.projectService.createProject(newProject).subscribe({
       next: (createdProject) => {
+        this.messageService.addMessage({
+          content: 'New project created successfully',
+          type: 'success',
+        });
         console.log('New project created:', createdProject);
         this.projects.update((currentProjects) => [...currentProjects, createdProject]); 
         this.loadProjects();
@@ -264,6 +326,11 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error creating project:', error);
+        this.messageService.addMessage({
+          content: 'Error creating project: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
+        this.showCreateModal.set(false);
       },
     });
   }
@@ -274,6 +341,10 @@ export class ProjectsComponent {
 
     this.projectService.updateProject(updatedProject).subscribe({
       next: (systemUpdatedProject) => {
+        this.messageService.addMessage({
+          content: 'Project updated successfully',
+          type: 'success',
+        });
         console.log('Project updated successfully:', systemUpdatedProject);
         this.projects.update((currentProjects) =>
           currentProjects.map((p) => (p.id === systemUpdatedProject.id ? systemUpdatedProject : p))
@@ -282,6 +353,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error updating project:', error);
+        this.messageService.addMessage({
+          content: 'Error updating project: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -297,6 +372,10 @@ export class ProjectsComponent {
     change.projectId = currentProject.id;
     this.changeService.createChange(change).subscribe({
       next: (createdChange) => {
+        this.messageService.addMessage({
+          content: 'Change created successfully',
+          type: 'success',
+        });
         console.log('Change created successfully:', createdChange);
         currentProject.changes = [...(currentProject.changes || []), createdChange];
         this.selectedProject.set(currentProject);
@@ -304,6 +383,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error creating change:', error);
+        this.messageService.addMessage({
+          content: 'Error creating change: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -312,6 +395,10 @@ export class ProjectsComponent {
     console.log('Edit change:', change);
     this.changeService.updateChange(change).subscribe({
       next: (updatedChange) => {
+        this.messageService.addMessage({
+          content: 'Change updated successfully',
+          type: 'success',
+        });
         console.log('Change updated successfully:', updatedChange);
         this.selectedProject.update((project) => {
           if (!project) return project;
@@ -323,6 +410,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error updating change:', error);
+        this.messageService.addMessage({
+          content: 'Error updating change: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -332,6 +423,10 @@ export class ProjectsComponent {
     this.changeService.deleteChange(changeId).subscribe({
       next: () => {
         console.log('Change deleted successfully');
+        this.messageService.addMessage({
+          content: 'Change deleted successfully',
+          type: 'success',
+        });
         this.selectedProject.update((project) => {
           if (!project) return project;
           return {
@@ -342,6 +437,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error deleting change:', error);
+        this.messageService.addMessage({
+          content: 'Error deleting change: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -359,6 +458,10 @@ export class ProjectsComponent {
     entry.profileId = currentProject.owner;
     this.journalService.createJournalEntry(entry).subscribe({
       next: (createdEntry) => {
+        this.messageService.addMessage({
+          content: 'Journal entry created successfully',
+          type: 'success',
+        });
         console.log('Journal entry created successfully:', createdEntry);
         currentProject.journalEntries = [...(currentProject.journalEntries || []), createdEntry];
         this.selectedProject.set(currentProject);
@@ -366,6 +469,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error creating journal entry:', error);
+        this.messageService.addMessage({
+          content: 'Error creating journal entry: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -374,6 +481,10 @@ export class ProjectsComponent {
     console.log('Update journal entry:', entry);
     this.journalService.updateJournalEntry(entry).subscribe({
       next: (updatedEntry) => {
+        this.messageService.addMessage({
+          content: 'Journal entry updated successfully',
+          type: 'success',
+        });
         console.log('Journal entry updated successfully:', updatedEntry);
         this.selectedProject.update((project) => {
           if (!project) return project;
@@ -385,6 +496,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error updating journal entry:', error);
+        this.messageService.addMessage({
+          content: 'Error updating journal entry: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
@@ -394,6 +509,10 @@ export class ProjectsComponent {
     this.journalService.deleteJournalEntry(entryId).subscribe({
       next: () => {
         console.log('Journal entry deleted successfully');
+        this.messageService.addMessage({
+          content: 'Journal entry deleted successfully',
+          type: 'success',
+        });
         this.selectedProject.update((project) => {
           if (!project) return project;
           return {
@@ -404,6 +523,10 @@ export class ProjectsComponent {
       },
       error: (error) => {
         console.error('Error deleting journal entry:', error);
+        this.messageService.addMessage({
+          content: 'Error deleting journal entry: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
       },
     });
   }
