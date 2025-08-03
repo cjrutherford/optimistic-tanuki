@@ -27,5 +27,5 @@ export interface StorageAdapter {
      * @param data - The asset data containing information like path.
      * @return A promise that resolves to the asset's content as a Buffer.
      */
-    read(data: AssetDto): Promise<Buffer>; 
+    read(data: AssetDto): Promise<Buffer|string>; 
 }

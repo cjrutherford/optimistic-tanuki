@@ -1,8 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
-import { MessagePattern } from '@nestjs/microservices';
-import { AssetCommands } from '@optimistic-tanuki/constants';
 import { AssetHandle, CreateAssetDto } from '@optimistic-tanuki/models';
+import { Controller, Get } from '@nestjs/common';
+
+import { AppService } from './app.service';
+import { AssetCommands } from '@optimistic-tanuki/constants';
+import { MessagePattern } from '@nestjs/microservices';
 
 @Controller()
 export class AppController {
@@ -25,6 +26,8 @@ export class AppController {
 
   @MessagePattern({ cmd: AssetCommands.READ})
   async readAsset(data: AssetHandle) {
-    return await this.appService.retrieveAsset(data);
+    const asset = await this.appService.readAsset(data);
+    console.log("🚀 ~ AppController ~ readAsset ~ asset:", asset.length)
+    return asset;
   }
 }

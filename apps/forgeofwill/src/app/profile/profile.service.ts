@@ -73,6 +73,18 @@ export class ProfileService {
     localStorage.setItem('selectedProfile', JSON.stringify(profile));
   }
 
+  getFileExtensionFromDataUrl(dataUrl: string): string {
+    const matches = dataUrl.match(/^data:(.+?);base64,/);
+    if (matches && matches[1]) {
+      const mimeType = matches[1];
+      const mimeTypeParts = mimeType.split('/');
+      if (mimeTypeParts.length === 2) {
+        return mimeTypeParts[1]; // Return the file extension part
+      }
+    }
+    return ''; // Return an empty string if no valid extension is found
+  }
+
   async createProfile(profile: CreateProfileDto) {
     const originalProfilePic = profile.profilePic;
     const originalCoverPic = profile.coverPic;
@@ -88,12 +100,14 @@ export class ProfileService {
       profileId: newProfile.id,
       type: 'image',
       content: originalProfilePic,
+      fileExtension: this.getFileExtensionFromDataUrl(originalProfilePic)
     };
     const coverPhotoDto: CreateAssetDto = {
       name: `profile-${newProfile.profileName}-cover`,
       profileId: newProfile.id,
       type: 'image',
       content: originalCoverPic,
+      fileExtension: this.getFileExtensionFromDataUrl(originalCoverPic)
     };
     const profileAsset = await firstValueFrom(this.http.post<AssetDto>(
       `/api/asset`, 
@@ -125,7 +139,11 @@ export class ProfileService {
       if (originalAssetUrl && originalAssetUrl !== profile.profilePic) {
         const assetId = originalAssetUrl.split('/').pop();
         if (assetId) {
-          await firstValueFrom(this.http.delete(originalAssetUrl));
+          try{
+            await firstValueFrom(this.http.delete(originalAssetUrl));
+          } catch (error) {
+            console.warn("Error deleting asset:", error);
+          }
         }
       }
 
@@ -146,7 +164,11 @@ export class ProfileService {
       if (originalAssetUrl && originalAssetUrl !== profile.coverPic) {
         const assetId = originalAssetUrl.split('/').pop();
         if (assetId) {
-          await firstValueFrom(this.http.delete(originalAssetUrl));
+          try{
+            await firstValueFrom(this.http.delete(originalAssetUrl));
+          } catch (error) {
+            console.warn("Error deleting asset:", error);
+          }
         }
       }
       const newCoverPic: CreateAssetDto = {

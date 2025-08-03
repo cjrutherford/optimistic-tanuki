@@ -22,17 +22,7 @@ export class ProfilesController {
 
     @MessagePattern({ cmd: ProfileCommands.GetAll })
     async getAllProfiles(@Payload() query: FindManyOptions<Profile>) {
-        return await this.profileService.findAll({...query, select: {
-            id: true,
-            profileName: true,
-            bio: true,
-            location: true,
-            occupation: true,
-            interests: true,
-            skills: true,
-            created_at: true,
-            userId: true,
-        }});
+        return await this.profileService.findAll(query || {});
     }
 
     @MessagePattern({ cmd: ProfileCommands.Update })

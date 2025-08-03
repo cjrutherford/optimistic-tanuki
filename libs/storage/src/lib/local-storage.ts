@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { StorageAdapter } from './storage-adapter.interface';
-import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
 import * as path from 'path';
-import { existsSync, mkdirSync, promises as fs} from 'fs';
+
+import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
+import { Injectable, Logger } from '@nestjs/common';
+import { existsSync, promises as fs, mkdirSync } from 'fs';
+
+import { StorageAdapter } from './storage-adapter.interface';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -20,6 +22,8 @@ export class LocalStorageAdapter implements StorageAdapter {
     }
 
     async create(data: CreateAssetDto): Promise<AssetDto> {
+        data.name = data.name.replace(/\s+/g, '_');
+        console.log("🚀 ~ LocalStorageAdapter ~ create ~ data:", data)
         await this.ensureBasePathExists();
         this.l.log(`LocalStorageAdapter: Creating asset with data:`, data.name, data.profileId, data.type, data.content?.length);
         const assetId = uuidv4();
@@ -37,7 +41,17 @@ export class LocalStorageAdapter implements StorageAdapter {
             if (!data.content) {
                  throw new Error('File content is missing in CreateAssetDto');
             }
-            await fs.writeFile(absolutePath, new Uint8Array(data.content));
+            let buffer: Buffer;
+            if(typeof data.content === 'string' && data.content.startsWith('data:')) {
+                // Handle base64 encoded data URL
+                const base64Data = data.content.split(',')[1];
+                buffer = Buffer.from(base64Data, 'base64');
+            } else if (Buffer.isBuffer(data.content)) {
+                buffer = data.content;
+            } else {
+                throw new Error('Invalid content type in CreateAssetDto');
+            }
+            await fs.writeFile(absolutePath, new Uint8Array(buffer));
 
             const createdAsset: AssetDto = {
                 id: assetId,
@@ -98,20 +112,36 @@ export class LocalStorageAdapter implements StorageAdapter {
         return mockAsset; // Return mock data
     }
 
-    async read(data: AssetDto): Promise<Buffer> {
+    async read(data: AssetDto): Promise<string> {
         this.ensureBasePathExists();
-        this.l.log(`LocalStorageAdapter: Reading asset with data:`, data);
-        this.l.log(`LocalStorageAdapter: Reading asset content with data:`, data);
+        this.l.log(`LocalStorageAdapter: Reading asset with data:`, Object.entries(data).map(([key, value]) => `${key}: ${value}`).join(', '));
         const absolutePath = path.join(this.basePath, data.storagePath);
 
         try {
             // Read the file content
             const fileContent = await fs.readFile(absolutePath);
-            this.l.log(`LocalStorageAdapter: Asset content read from ${absolutePath}`);
-            return fileContent;
-        } catch (error) {
+            this.l.log(`LocalStorageAdapter: Asset content read from ${absolutePath}: ${fileContent.length}`);
+            const mime = this.getMimeType(data.type);
+            const base64Content = `data:${mime};base64,${fileContent.toString('base64')}`;
+            return base64Content;;
+        } catch (error: any) {
             this.l.error(`LocalStorageAdapter: Failed to read asset content from ${absolutePath}: ${error.message}`);
             throw error; // Re-throw the error
+        }
+    }
+
+    private getMimeType(type: string): string {
+        switch (type) {
+            case 'image':
+                return 'image/png'; // Default to PNG for simplicity
+            case 'video':
+                return 'video/mp4'; // Default to MP4 for simplicity
+            case 'audio':
+                return 'audio/mpeg'; // Default to MP3 for simplicity
+            case 'document':
+                return 'application/pdf'; // Default to PDF for simplicity
+            default:
+                return 'application/octet-stream'; // Fallback for unknown types
         }
     }
 }

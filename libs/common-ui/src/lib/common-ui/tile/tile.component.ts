@@ -30,7 +30,6 @@ export class TileComponent extends Themeable {
   @Input() isRow = false;
 
   override applyTheme(colors: ThemeColors): void {
-    console.log('🚀 ~ TileComponent ~ applyTheme ~ colors:', colors);
     this.transitionDuration = '0.3s';
 
     switch (this.variant) {

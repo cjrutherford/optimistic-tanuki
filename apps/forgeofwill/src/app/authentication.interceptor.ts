@@ -9,7 +9,6 @@ export const authenticationInterceptor: HttpInterceptorFn = (req, next) => {
    const authStateService = inject(AuthStateService);
   const router = inject(Router);
   const token = authStateService.getToken();
-  console.log("🚀 ~ authenticationInterceptor ~ token:", token)
 
   const clonedRequest = req.clone({
     setHeaders: {

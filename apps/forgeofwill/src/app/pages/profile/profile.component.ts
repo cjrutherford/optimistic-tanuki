@@ -23,7 +23,6 @@ export class ProfileComponent {
   private loadProfiles() {
     this.profileService.getAllProfiles().then(() => {
       const profiles = this.profileService.currentUserProfiles();
-      console.log('Available profiles:', profiles);
       this.availableProfiles.set(profiles);
       if (profiles.length) {
         this.selectedProfile.set(profiles[0]);
