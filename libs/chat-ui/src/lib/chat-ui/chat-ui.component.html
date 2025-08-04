@@ -1,12 +1,13 @@
 <div class="contacts-container">
     @for( contact of contacts; track contact.id; let i = $index) {
         <div style="position:relative;">
-            <lib-contact-bubble [contact]="contact" (click)="onContactClick(contact)"></lib-contact-bubble>
-            @if(showModal() && selectedContact().id === contact.id) {
-                <div class="chat-popout">
-                    <lib-chat-window [contact]="selectedContact()" (close)="closeChatWindow()"></lib-chat-window>
-                </div>
-            }
+            <lib-contact-bubble [contact]="contact" (click)="openChat(contact.id)"></lib-contact-bubble>
+            <lib-chat-window 
+                [contact]="getConversationContacts(profiles, windowStates()[contact.id]!.conversation || [])" 
+                [messages]="windowStates()[contact.id]!.conversation || []"
+                [windowState]="windowStates()[contact.id]!.windowState || 'hidden'"
+                (windowStateChange)="handleWindowStateChange(contact.id, $event)"
+            ></lib-chat-window>
         </div>
     }
 </div>

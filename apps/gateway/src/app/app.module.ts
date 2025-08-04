@@ -12,6 +12,7 @@ import { ProfileController } from '../controllers/profile/profile.controller';
 import { ProjectPlanningController } from '../controllers/project-planning/project-planning.controller';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { SocialController } from '../controllers/social/social.controller';
+import { ChatGateway } from './chat-gateway/chat.gateway';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { SocialController } from '../controllers/social/social.controller';
     ProfileController,
     SocialController,
     AssetController,
-    ProjectPlanningController
+    ProjectPlanningController,
   ],
   providers: [
     AuthGuard,
@@ -76,10 +77,12 @@ import { SocialController } from '../controllers/social/social.controller';
         });
       },
       inject: [ConfigService],
-    },{
+    },
+    {
       provide: ServiceTokens.ASSETS_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>('services.asset');
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.asset');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {
@@ -89,20 +92,24 @@ import { SocialController } from '../controllers/social/social.controller';
         });
       },
       inject: [ConfigService],
-    },{
+    },
+    {
       provide: ServiceTokens.PROJECT_PLANNING_SERVICE,
       useFactory: (config: ConfigService) => {
-        const serviceConfig = config.get<TcpServiceConfig>('services.project_planning');
+        const serviceConfig = config.get<TcpServiceConfig>(
+          'services.project_planning'
+        );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {
             host: serviceConfig.host,
             port: serviceConfig.port,
-          }
+          },
         });
       },
-      inject: [ConfigService]
-    }
+      inject: [ConfigService],
+    },
+    ChatGateway,
   ],
 })
 export class AppModule {}

@@ -1,5 +1,8 @@
+import { Component, Input } from '@angular/core';
+
+import { ChatContact } from '../../chat-ui.component';
+import { ChatMessage } from '../../../types/message';
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
 
 @Component({
   selector: 'lib-message-list',
@@ -8,10 +11,10 @@ import { Component } from '@angular/core';
   styleUrls: ['./message-list.component.scss'],
 })
 export class MessageListComponent {
-  messages = [
-    { sender: 'Alice', text: 'Hi there!' },
-    { sender: 'Bob', text: 'Hello!' },
-    { sender: 'Alice', text: 'How are you?' },
-    { sender: 'Bob', text: 'Doing well, thanks!' },
-  ];
+  @Input() contacts: ChatContact[] = [];
+  @Input() messages: ChatMessage[] = [];
+
+  getContact(senderId: string): ChatContact | undefined {
+    return this.contacts.find(c => c.id === senderId);
+  }
 }

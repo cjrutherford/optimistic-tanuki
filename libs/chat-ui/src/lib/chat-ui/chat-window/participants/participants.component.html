@@ -1,5 +1,6 @@
 <div class="participants">
   <span *ngFor="let participant of participants" class="participant">
-    {{ participant }}
+    <img [src]="participant.avatarUrl" [alt]="participant.name" class="avatar" />
+    {{ participant.name }}
   </span>
 </div>

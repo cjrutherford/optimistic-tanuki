@@ -1,8 +1,12 @@
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-import { Component, Input } from '@angular/core';
+import { ChatContact } from '../chat-ui.component';
+import { ChatMessage } from '../../types/message';
 import { CommonModule } from '@angular/common';
 import { MessageListComponent } from './message-list/message-list.component';
 import { ParticipantsComponent } from './participants/participants.component';
+
+export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
 
 @Component({
   selector: 'lib-chat-window',
@@ -12,22 +16,17 @@ import { ParticipantsComponent } from './participants/participants.component';
   styleUrls: ['./chat-window.component.scss'],
 })
 export class ChatWindowComponent {
-  @Input() contact: any;
-  @Input() messages: any[] = [];  
-  isFullScreen = false;
-  isPopout = false;
+  @Input() contact: ChatContact[] | null = null;
+  @Input() messages: ChatMessage[] = [];
+  @Input() windowState: ChatWindowState = 'popout';
+  @Output() windowStateChange: EventEmitter<ChatWindowState> = new EventEmitter<ChatWindowState>();
 
-  toggleFullScreen() {
-    this.isFullScreen = !this.isFullScreen;
-    if (this.isFullScreen) {
-      this.isPopout = false;
-    }
+  onWindowStateChange(newState: ChatWindowState) {
+    this.windowState = newState;
+    this.windowStateChange.emit(newState);
   }
-
-  togglePopout() {
-    this.isPopout = !this.isPopout;
-    if (this.isPopout) {
-      this.isFullScreen = false;
-    }
+  onClose() {
+    this.windowState = 'hidden';
+    this.windowStateChange.emit(this.windowState);
   }
 }

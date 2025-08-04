@@ -1,6 +1,9 @@
 <div class="message-list">
   <div *ngFor="let message of messages" class="message">
-    <span class="sender">{{ message.sender }}:</span>
-    <span class="text">{{ message.text }}</span>
+    <div class="profile">
+      <img src="{{ getContact(message.senderId)?.avatarUrl }}" alt="{{getContact(message.senderId)?.name}}'s avatar" class="avatar" />
+      <span class="sender">{{ (getContact(message.senderId)?.name || message.senderId) }}:</span>
+    </div>
+    <span class="text">{{ message.content }}</span>
   </div>
 </div>
