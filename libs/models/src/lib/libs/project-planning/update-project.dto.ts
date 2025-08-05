@@ -1,7 +1,7 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateProjectDto } from './create-project.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+import { CreateProjectDto } from './create-project.dto';
+import { PartialType } from '@nestjs/mapped-types';
 
 export class UpdateProjectDto extends PartialType(CreateProjectDto) {
   @ApiProperty()
@@ -9,8 +9,6 @@ export class UpdateProjectDto extends PartialType(CreateProjectDto) {
 }
 
 export class QueryProjectDto extends PartialType(CreateProjectDto) {
-  @ApiPropertyOptional()
-  createdBy?: string;
 
   @ApiPropertyOptional()
   updatedBy?: string;

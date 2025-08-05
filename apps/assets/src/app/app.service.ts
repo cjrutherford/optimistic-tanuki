@@ -32,6 +32,7 @@ export class AppService {
       const newAsset = await this.assetRepo.save({...asset, ...persistedAsset} as AssetEntity);
       return newAsset;
     } catch (error) {
+      console.error('Error creating asset:', error);
       this.l.error('Error creating asset:', error);
       throw new RpcException('Failed to create asset');
     }

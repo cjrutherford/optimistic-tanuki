@@ -18,7 +18,12 @@ export class AppComponent {
   isModalOpen = signal<boolean>(false);
   messages = signal<MessageType[]>([]);
 
-  constructor(private readonly router: Router, private readonly authState: AuthStateService, private readonly messageService: MessageService) {}
+  constructor(private readonly router: Router, private readonly authState: AuthStateService, private readonly messageService: MessageService) {
+    effect(() => {
+      this.messages.set(this.messageService.messages());
+      console.log('Messages updated:', this.messages());
+    });
+  }
 
   ngOnInit() {
     
@@ -34,11 +39,6 @@ export class AppComponent {
           type: 'error',
         });
       }
-    });
-
-    effect(() => {
-      this.messages.set(this.messageService.messages());
-      console.log('Messages updated:', this.messages());
     });
   }
 

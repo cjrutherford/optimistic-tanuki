@@ -74,7 +74,7 @@ export class NetworkStorageAdapter implements StorageAdapter {
         const fileContent = await this.s3Service.getObject(s3Key); // Use S3Service
         return fileContent;
     } catch (error) {
-        this.l.error(`NetworkStorageAdapter (S3): Failed to read asset content from ${data.storagePath}: ${error.message}`);
+        this.l.error(`NetworkStorageAdapter (S3): Failed to read asset content from ${data.storagePath}: ${(error as any).message}`);
         throw error;
     }
   }

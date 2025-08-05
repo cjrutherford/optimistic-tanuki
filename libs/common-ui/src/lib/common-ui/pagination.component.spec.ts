@@ -20,14 +20,14 @@ describe('PaginationComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should set complement style variable based on theme colors', () => {
+    it('should set complement style variable based on theme colors for light theme', () => {
     const mockColors = {
       background: '#fff',
       accent: '#f00',
       foreground: '#000',
       complementary: '#0f0',
-      complementaryGradients: { dark: 'linear-gradient(#0f0, #000)' },
-      accentGradients: { light: 'linear-gradient(#f00, #fff)' },
+      complementaryGradients: { dark: 'linear-gradient(#0f0, #000)', light: 'linear-gradient(#0f0, #000)' },
+      accentGradients: { light: 'linear-gradient(#f00, #fff)', dark: 'linear-gradient(#f00, #fff)' },
       complementaryShades: [[null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0']],
     } as any;
 
@@ -35,6 +35,46 @@ describe('PaginationComponent', () => {
     component.applyTheme(mockColors);
 
     expect(component.complement).toBe('#0f0');
+    expect(component.borderGradient).toBe('linear-gradient(#f00, #fff)');
+    expect(component.borderColor).toBe(mockColors.complementaryShades[2][1]);
+  });
+
+  it('should set complement style variable based on theme colors for dark theme', () => {
+    const mockColors = {
+      background: '#fff',
+      accent: '#f00',
+      foreground: '#000',
+      complementary: '#0f0',
+      complementaryGradients: { dark: 'linear-gradient(#0f0, #000)', light: 'linear-gradient(#0f0, #000)' },
+      accentGradients: { light: 'linear-gradient(#f00, #fff)', dark: 'linear-gradient(#f00, #fff)' },
+      complementaryShades: [[null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0']],
+    } as any;
+
+    component.theme = 'dark';
+    component.applyTheme(mockColors);
+
+    expect(component.complement).toBe('#0f0');
+    expect(component.borderGradient).toBe('linear-gradient(#0f0, #000)');
+    expect(component.borderColor).toBe(mockColors.complementaryShades[6][1]);
+  });
+
+  it('should set complement style variable based on theme colors for dark theme', () => {
+    const mockColors = {
+      background: '#fff',
+      accent: '#f00',
+      foreground: '#000',
+      complementary: '#0f0',
+      complementaryGradients: { dark: 'linear-gradient(#0f0, #000)', light: 'linear-gradient(#0f0, #000)' },
+      accentGradients: { light: 'linear-gradient(#f00, #fff)', dark: 'linear-gradient(#f00, #fff)' },
+      complementaryShades: [[null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0']],
+    } as any;
+
+    component.theme = 'dark';
+    component.applyTheme(mockColors);
+
+    expect(component.complement).toBe('#0f0');
+    expect(component.borderGradient).toBe('linear-gradient(#0f0, #000)');
+    expect(component.borderColor).toBe(mockColors.complementaryShades[6][1]);
   });
 
   it('should initialize with default pages', () => {

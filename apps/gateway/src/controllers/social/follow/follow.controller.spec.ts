@@ -115,7 +115,7 @@ describe('FollowController', () => {
       const module = (controller as any);
       module.socialClient = { send: jest.fn(() => of(['follower1', 'follower2'])) };
       const result = await controller.getFollowers('id-1');
-      expect(module.socialClient.send).toHaveBeenCalledWith({ cmd: 'GET_FOLLOWERS' }, { foloweeId: 'id-1' });
+      expect(module.socialClient.send).toHaveBeenCalledWith({ cmd: 'GET_FOLLOWERS' }, { followeeId: 'id-1' });
       expect(result).toEqual(['follower1', 'follower2']);
     });
   });

@@ -32,7 +32,10 @@ export class LinkComponent {
   }
 
   removeLink(link: LinkType) {
+    const initialLength = this.links.length;
     this.links = this.links.filter(l => l !== link);
-    this.linksChange.emit({ all: this.links, removed: link });
+    if (this.links.length < initialLength) {
+      this.linksChange.emit({ all: this.links, removed: link });
+    }
   }
 }

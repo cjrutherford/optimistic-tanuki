@@ -2,13 +2,13 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export default class ResetPasswordRequest {
     @ApiProperty()
-    email: string;
+    email = '';
   @ApiProperty()
-  oldPass: string;
+  oldPass = '';
   @ApiProperty()
-  newConf: string;
+  newConf = '';
   @ApiProperty()
-  newPass: string;
+  newPass = '';
   @ApiPropertyOptional()
   mfa?:string;
 }

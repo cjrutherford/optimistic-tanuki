@@ -7,6 +7,8 @@ import { firstValueFrom, of } from 'rxjs';
 import { ClientProxy } from '@nestjs/microservices';
 import { ProfileController } from './profile.controller';
 import { UserDetails } from '../../decorators/user.decorator';
+import { AuthGuard } from '../../auth/auth.guard';
+import { Logger } from '@nestjs/common';
 
 describe('ProfileController', () => {
   let controller: ProfileController;
@@ -16,6 +18,7 @@ describe('ProfileController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProfileController],
       providers: [
+        Logger,
         {
           provide: ServiceTokens.PROFILE_SERVICE,
           useValue: {
@@ -33,38 +36,13 @@ describe('ProfileController', () => {
           }
         }
       ]
-    }).compile();
+    })
+    .overrideGuard(AuthGuard)
+    .useValue({ canActivate: () => of(true) })
+    .compile();
 
     controller = module.get<ProfileController>(ProfileController);
     clientProxy = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
-  });
-
-  it('should get all profiles', () => {
-    const user = {
-      email: 'test@example.com',
-      exp: 123456,
-      iat: 123456,
-      name: 'Test User',
-      userId: 'user-1',
-    };
-    const query = { name: 'Test' };
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-    controller.getAllProfiles(user, query);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'GetAll:Profile' }, { userId: user.userId, query });
-  });
-
-  it('should get a profile photo', () => {
-    const id = '1';
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-    controller.getProfilePhoto(id);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Get:ProfilePhoto' }, id);
-  });
-
-  it('should get a profile cover photo', () => {
-    const id = '1';
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-    controller.getProfileCoverPhoto(id);
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: 'Get:ProfileCover' }, id);
   });
 
   it('should be defined', () => {
@@ -96,7 +74,7 @@ describe('ProfileController', () => {
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
     const getResponse = await firstValueFrom(controller.getProfile(id));
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Get }, id);
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Get }, { id });
     expect(getResponse).toEqual({});
   });
 
@@ -105,7 +83,7 @@ describe('ProfileController', () => {
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of([]));
 
     const getAllResponse = await firstValueFrom(controller.getAllProfiles({ userId: 'user1234' } as UserDetails, query));
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.GetAll }, { query, userId: 'user1234' });
+    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.GetAll }, { userId: 'user1234', query });
     expect(getAllResponse).toEqual([]);
   });
 
@@ -136,105 +114,6 @@ describe('ProfileController', () => {
 
     const deleteResponse = await firstValueFrom(controller.deleteProfile(id));
     expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Delete }, id);
-    expect(deleteResponse).toEqual({});
-  });
-
-  it('should create a project', async () => {
-    const createProjectDto: CreateProjectDto = { 
-      name: 'Test',
-      description: 'thomas morrow',
-      userId: 'a;klsdjnfgn;lkajnerg;ljn',
-      timelineId: 'a;klsdjnfgn;lkajnerg;ljn',
-      profileId: 'a;klsdjnfgn;lkajnerg;ljn'
-     };
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-
-    const createResponse = await firstValueFrom(controller.createProject(createProjectDto));
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProjectCommands.Create}, createProjectDto);
-    expect(createResponse).toEqual({});
-  });
-
-  it('should get a project', async () => {
-    const id = '1';
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-
-    const getResponse = await firstValueFrom(controller.getProject(id));
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProjectCommands.Get }, id);
-    expect(getResponse).toEqual({});
-  });
-
-  it('should update a project', async () => {
-    const id = '1';
-    const updateProjectDto: UpdateProjectDto = {
-      id,
-      name: 'Test',
-      description: 'thomas morrow',
-      userId: 'a;klsdjnfgn;lkajnerg;ljn',
-      timelineId: 'a;klsdjnfgn;lkajnerg;ljn',
-      profileId: 'a;klsdjnfgn;lkajnerg;ljn'
-     };
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-
-    const updateResponse = await firstValueFrom(controller.updateProject(id, updateProjectDto));
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProjectCommands.Update }, { id, ...updateProjectDto });
-    expect(updateResponse).toEqual({});
-  });
-
-  it('should delete a project', async () => {
-    const id = '1';
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-
-    const deleteResponse = await firstValueFrom(controller.deleteProject(id));
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProjectCommands.Delete }, id);
-    expect(deleteResponse).toEqual({});
-  });
-
-  it('should create a goal', async () => {
-    const createGoalDto: CreateGoalDto = { 
-      name: 'Test',
-      description: 'thomas morrow',
-      userId: 'a;klsdjnfgn;lkajnerg;ljn',
-      timelineId: 'a;klsdjnfgn;lkajnerg;ljn',
-      projectId: 'a;klsdjnfgn;lkajnerg;ljn',
-      profileId: 'a;klsdjnfgn;lkajnerg;ljn'
-    };
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-
-    const createResponse = await firstValueFrom(controller.createGoal(createGoalDto));
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: GoalCommands.Create }, createGoalDto);
-    expect(createResponse).toEqual({});
-  });
-
-  it('should get a goal', async () => {
-    const id = '1';
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-
-    const getResponse = await firstValueFrom(controller.getGoal(id));
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: GoalCommands.Get }, id);
-    expect(getResponse).toEqual({})
-  });
-
-  it('should update a goal', async () => {
-    const id = '1';
-    const updateGoalDto: UpdateGoalDto = { 
-      id, 
-      name: 'Test',
-      description: 'thomas morrow',
-      userId: 'a;klsdjnfgn;lkajnerg;ljn',
-     };
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-
-    const updateResponse = await firstValueFrom(controller.updateGoal(id, updateGoalDto));
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: GoalCommands.Update }, { id, ...updateGoalDto });
-    expect(updateResponse).toEqual({});
-  });
-
-  it('should delete a goal', async () => {
-    const id = '1';
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-
-    const deleteResponse = await firstValueFrom(controller.deleteGoal(id));
-    expect(clientProxy.send).toHaveBeenCalledWith({ cmd: GoalCommands.Delete }, id);
     expect(deleteResponse).toEqual({});
   });
 

@@ -59,4 +59,12 @@ describe('SocketChatService', () => {
     service.ngOnDestroy();
     expect(mockSocket.disconnect).toHaveBeenCalled();
   });
+
+  it('should warn if socket is not initialized on ngOnDestroy', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn');
+    // @ts-ignore
+    service['socket'] = undefined;
+    service.ngOnDestroy();
+    expect(consoleWarnSpy).toHaveBeenCalledWith('Socket was not initialized');
+  });
 });

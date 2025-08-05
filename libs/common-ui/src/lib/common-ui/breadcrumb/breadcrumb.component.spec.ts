@@ -18,4 +18,12 @@ describe('BreadcrumbComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should toggle showPopup', () => {
+    expect(component.showPopup).toBeFalsy();
+    component.togglePopup();
+    expect(component.showPopup).toBeTruthy();
+    component.togglePopup();
+    expect(component.showPopup).toBeFalsy();
+  });
 });

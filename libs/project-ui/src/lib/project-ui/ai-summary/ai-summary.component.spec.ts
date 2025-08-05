@@ -18,4 +18,12 @@ describe('AiSummaryComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should display the summaryText input', () => {
+    const testSummary = 'This is a test summary.';
+    component.summaryText = testSummary;
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('p')?.textContent).toContain(testSummary);
+  });
 });

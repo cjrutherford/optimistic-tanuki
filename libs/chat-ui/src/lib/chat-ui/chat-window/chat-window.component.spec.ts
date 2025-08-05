@@ -18,4 +18,18 @@ describe('ChatWindowComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should emit windowStateChange with new state on onWindowStateChange', () => {
+    jest.spyOn(component.windowStateChange, 'emit');
+    component.onWindowStateChange('fullscreen');
+    expect(component.windowState).toBe('fullscreen');
+    expect(component.windowStateChange.emit).toHaveBeenCalledWith('fullscreen');
+  });
+
+  it('should emit windowStateChange with hidden state on onClose', () => {
+    jest.spyOn(component.windowStateChange, 'emit');
+    component.onClose();
+    expect(component.windowState).toBe('hidden');
+    expect(component.windowStateChange.emit).toHaveBeenCalledWith('hidden');
+  });
 });
