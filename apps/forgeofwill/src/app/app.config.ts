@@ -3,8 +3,9 @@ import {
   provideClientHydration,
   withEventReplay,
 } from '@angular/platform-browser';
+import { io } from 'socket.io-client';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-
+import { SOCKET_HOST, SOCKET_IO_INSTANCE, SOCKET_NAMESPACE, SocketChatService } from '@optimistic-tanuki/chat-ui';
 import { AuthStateService } from './auth-state.service';
 import { AuthenticationService } from './authentication.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
@@ -19,6 +20,10 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authenticationInterceptor])),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
+    { provide: SOCKET_HOST, useFactory: () => typeof window !== 'undefined' ? window.location.hostname : '' },
+    { provide: SOCKET_NAMESPACE, useValue: 'chat' },
+    { provide: SOCKET_IO_INSTANCE, useValue: io },
+    SocketChatService,
     AuthStateService,
     AuthenticationService,
     ProfileService,

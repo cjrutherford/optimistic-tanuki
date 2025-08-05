@@ -55,7 +55,7 @@ export class SocketChatService {
     this.socket.on('message', callback);
   }
 
-  ngOnDestroy(): void {
+  destroy(): void {
     if (this.socket) {
       this.socket.disconnect();
       console.log('Socket disconnected');

@@ -116,6 +116,20 @@ services:
       db-setup: # Ensures db-setup is completed before starting social
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
+  
+  chat-collector:
+    container_name: ot_chat_collector
+    build:
+      context: .
+      dockerfile: ./apps/chat-collector/Dockerfile
+    ports:
+      - "3007:3007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting chat-collector
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
 
   # tasks:
   #   container_name: ot_tasks

@@ -94,6 +94,21 @@ services:
     depends_on: # Added
       postgres:
         condition: service_healthy
+  
+  chat-collector:
+    container_name: ot_chat_collector
+    build:
+      context: .
+      dockerfile: ./apps/chat-collector/Dockerfile
+    volumes:
+      - ./dist/apps/chat-collector:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
 
   # tasks:
   #   container_name: ot_tasks
