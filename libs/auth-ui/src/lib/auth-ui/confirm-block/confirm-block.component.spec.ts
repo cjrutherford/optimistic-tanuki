@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+
 import { ConfirmBlockComponent } from './confirm-block.component';
 
 describe('ConfirmBlockComponent', () => {
@@ -17,5 +18,11 @@ describe('ConfirmBlockComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should call onResend method', () => {
+    const spy = jest.spyOn(component, 'onResend');
+    component.onResend();
+    expect(spy).toHaveBeenCalled();
   });
 });

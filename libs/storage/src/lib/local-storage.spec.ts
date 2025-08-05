@@ -14,7 +14,7 @@ jest.mock('uuid');
 describe('LocalStorageAdapter', () => {
   let adapter: LocalStorageAdapter;
   let mockLogger: Logger;
-  const basePath = '/test/local/storage';
+  const basePath = '/tmp/test/local/storage';
   const mockUuid = 'mock-uuid';
 
   beforeEach(async () => {

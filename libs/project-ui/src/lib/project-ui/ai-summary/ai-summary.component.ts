@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -7,4 +7,6 @@ import { CommonModule } from '@angular/common';
   templateUrl: './ai-summary.component.html',
   styleUrl: './ai-summary.component.scss',
 })
-export class AiSummaryComponent {}
+export class AiSummaryComponent {
+  @Input() summaryText: string = '';
+}

@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
-import { NetworkStorageAdapter } from './index'; // Assuming index.ts exports NetworkStorageAdapter
-import { S3Service } from '../s3.service'; // Import the S3Service
+import { NetworkStorageAdapter } from './network-storage';
+import { S3Service } from './s3.service';
 import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
 
 // Mock the S3Service
-jest.mock('../s3.service');
+jest.mock('./s3.service');
 
 describe('NetworkStorageAdapter', () => {
   let adapter: NetworkStorageAdapter;

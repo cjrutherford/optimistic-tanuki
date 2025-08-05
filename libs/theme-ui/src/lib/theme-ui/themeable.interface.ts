@@ -38,7 +38,7 @@ export abstract class Themeable implements OnInit, OnDestroy {
           console.error('Error fetching theme colors:', err);
         },
         complete: () => {
-          console.log('Theme colors subscription completed');
+          return;
         }
       });
   }

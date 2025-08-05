@@ -18,4 +18,20 @@ describe('VoteComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should set voteState to 1 when upvote is called', () => {
+    component.upvote();
+    expect(component.voteState).toBe(1);
+  });
+
+  it('should set voteState to -1 when downvote is called', () => {
+    component.downvote();
+    expect(component.voteState).toBe(-1);
+  });
+
+  it('should set voteState to 0 when cancelVote is called', () => {
+    component.voteState = 1; // Set to a non-zero value first
+    component.cancelVote();
+    expect(component.voteState).toBe(0);
+  });
 });

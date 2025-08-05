@@ -1,16 +1,13 @@
-import { Component, EventEmitter, Input, Output, signal, TemplateRef, ViewChild, OnInit, HostListener, ElementRef, AfterViewInit, ChangeDetectorRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { ButtonComponent, CardComponent, GridComponent, TileComponent, ThemeColors } from '@optimistic-tanuki/common-ui'; // Added ThemeColors import
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
+import { ButtonComponent, CardComponent, ModalComponent, ThemeColors, TileComponent } from '@optimistic-tanuki/common-ui'; // Removed GridComponent
+import { CreateProfileDto, ProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ImageUploadComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatListModule } from '@angular/material/list';
-import { CreateProfileDto, UpdateProfileDto, ProfileDto } from '@optimistic-tanuki/ui-models';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
-import { ProfilePhotoComponent } from './profile-photo/profile-photo.component';
 
-// Define an approximate width for each tile (including its padding/margin)
-const APPROX_TILE_WIDTH_PX = 150; // Updated to match the CSS max-width
+import { CommonModule } from '@angular/common';
+import { MatListModule } from '@angular/material/list';
+import { ProfilePhotoComponent } from './profile-photo/profile-photo.component';
+import { ThemeService } from '@optimistic-tanuki/theme-ui';
 
 @Component({
   selector: 'lib-profile-selector',
@@ -20,13 +17,12 @@ const APPROX_TILE_WIDTH_PX = 150; // Updated to match the CSS max-width
     ReactiveFormsModule,
     CardComponent,
     TileComponent,
-    GridComponent,
     TextInputComponent,
     ButtonComponent,
-    MatDialogModule,
-    ImageUploadComponent, // Added ImageUploadComponent
+    ModalComponent, 
+    ImageUploadComponent,
     ProfilePhotoComponent,
-    MatListModule, // Added MatListModule
+    MatListModule,
   ],
   templateUrl: './profile-selector.component.html',
   styleUrl: './profile-selector.component.scss',
@@ -37,13 +33,13 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
   @Output() selectedProfile: EventEmitter<ProfileDto> = new EventEmitter<ProfileDto>();
   @Output() profileCreated: EventEmitter<CreateProfileDto> = new EventEmitter<CreateProfileDto>();
   @Output() profileUpdated: EventEmitter<UpdateProfileDto> = new EventEmitter<UpdateProfileDto>();
-  @ViewChild('profileDialog') profileDialog!: TemplateRef<unknown>; // Changed any to unknown
+  
   internalSelectedProfile = signal<ProfileDto | null>(null);
   editingProfile: ProfileDto | null = null;
-  dynamicGridColumns = signal(2); // Initialize with minimum columns
 
   showCreateProfile = false;
   profileForm: FormGroup;
+  showProfileModal = false; // Control for the new modal component
 
   // Injected ThemeService if needed for direct theme manipulation, otherwise remove if not used.
   private themeService = inject(ThemeService); 
@@ -59,12 +55,11 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
 
   constructor(
     private fb: FormBuilder,
-    private dialog: MatDialog,
     private elRef: ElementRef,
     private cdr: ChangeDetectorRef
   ) {
     this.profileForm = this.fb.group({
-      profileName: this.fb.control(''),
+      profileName: this.fb.control('', Validators.required),
       // Ensure all form controls used in the template are defined here
       description: this.fb.control(''), 
       profilePic: this.fb.control(''),
@@ -73,16 +68,9 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
     });
   }
   ngAfterViewInit(): void {
-    // Perform initial calculation after the view and its children are initialized.
-    this.updateGridColumns();
     // Manually trigger change detection if needed, especially if running in dev mode
     // and to prevent ExpressionChangedAfterItHasBeenCheckedError.
     this.cdr.detectChanges();
-  }
-
-  @HostListener('window:resize')
-  onResize(): void {
-    this.updateGridColumns();
   }
 
   ngOnInit(): void {
@@ -100,33 +88,10 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private updateGridColumns(): void {
-    const hostElement = this.elRef.nativeElement as HTMLElement;
-    let availableWidth = hostElement.offsetWidth;
-
-    // Fallback if offsetWidth is 0 (e.g., element not visible yet)
-    if (availableWidth === 0 && typeof window !== 'undefined') {
-        availableWidth = window.innerWidth; // Or a more specific parent container width
-    }
-    
-    // Subtract any horizontal padding of the container if not accounted for by offsetWidth
-    // For example, if the grid container itself has padding.
-    // const gridPadding = 0; // Example: 20px left + 20px right = 40
-    // availableWidth -= gridPadding;
-
-    if (availableWidth > 0) {
-      const calculatedColumns = Math.floor(availableWidth / APPROX_TILE_WIDTH_PX);
-      const columnsToSet = Math.max(2, calculatedColumns); // Ensure minimum of 2 columns
-      this.dynamicGridColumns.set(columnsToSet);
-    } else {
-      this.dynamicGridColumns.set(2); // Default to 2 if width calculation is not possible
-    }
-  }
-
   selectProfile(profile: ProfileDto): void {
     this.internalSelectedProfile.set(profile);
     this.selectedProfile.emit(profile);
-    this.dialog.closeAll();
+    this.showProfileModal = false; // Close the modal
   }
 
   openProfileDialog(profile?: ProfileDto): void {
@@ -136,7 +101,7 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
     } else {
       this.profileForm.reset(); // Reset form for new profile creation
     }
-    this.dialog.open(this.profileDialog, { width: '500px' });
+    this.showProfileModal = true; // Open the modal
   }
 
   onProfilePicUpload(base64Image: string): void {
@@ -177,14 +142,20 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
         };
         this.profileCreated.emit(newProfile);
       }
-      this.dialog.closeAll();
+      this.showProfileModal = false; // Close the modal
       this.profileForm.reset();
       this.editingProfile = null;
     }
   }
 
   cancelEdit(): void {
-    this.dialog.closeAll();
+    this.showProfileModal = false; // Close the modal
+    this.profileForm.reset();
+    this.editingProfile = null;
+  }
+
+  closeProfileModal(): void {
+    this.showProfileModal = false;
     this.profileForm.reset();
     this.editingProfile = null;
   }

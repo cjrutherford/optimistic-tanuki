@@ -4,9 +4,13 @@
     overflow-y: auto;
     overflow-x: hidden;
 }
-otui-grid{
-    overflow-x: scroll;
-    overflow-y: none;
+.profile-grid-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Adjust gap as needed */
+    padding-bottom: 10px;
+    overflow-x: auto; /* Allow horizontal scrolling if items overflow */
+    overflow-y: hidden; /* Hide vertical overflow */
 }
 .active {
     box-shadow: 2px 2px 5px var(--complement);

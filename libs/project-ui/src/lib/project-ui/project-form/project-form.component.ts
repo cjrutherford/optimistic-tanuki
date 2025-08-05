@@ -34,7 +34,7 @@ export class ProjectFormComponent {
   }
 
   onSubmit() {
-    if (this.projectForm.valid) {
+        if (this.projectForm.valid && this.projectForm.value.projectName && this.projectForm.value.projectDescription) {
       console.log('Form Submitted!', this.projectForm.value);
       this.submitEvent.emit({
         name: this.projectForm.value.projectName,

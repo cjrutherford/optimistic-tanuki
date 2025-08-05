@@ -50,7 +50,6 @@ export class TableComponent extends Themeable implements OnInit {
   rowExpanded = false;
 
   override applyTheme(colors: ThemeColors): void {
-    console.log('Applying theme colors:', colors);
     // Use a softer gradient: background -> accent (60%) -> accent lighten (100%)
     const accentLight = colors.accentShades?.[1][1] ?? colors.accent;
     this.background = colors.background;
@@ -70,14 +69,15 @@ export class TableComponent extends Themeable implements OnInit {
   }
 
   private initializeTable() {
-    this.cellTemplates = this.cells.map(cell => {
+    this.cellTemplates = [];
+    this.cells.forEach(cell => {
       if (cell.isBadge) {
         cell.heading = undefined;
       }
       if (cell.value instanceof TemplateRef) {
-        return cell.value;
+        this.cellTemplates.push(cell.value);
       } else {
-        return null;
+        this.cellTemplates.push(null);
       }
     });
 

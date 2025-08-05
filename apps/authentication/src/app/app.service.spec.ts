@@ -208,8 +208,8 @@ describe('AppService', () => {
       email: 'newuser@example.com',
       fn: 'New',
       ln: 'User',
-      password: 'newpassword',
-      confirm: 'newpassword',
+                              password: 'newpassword123!',
+      confirm: 'newpassword123!',
       bio: 'A new user',
     };
 
@@ -405,23 +405,23 @@ describe('AppService', () => {
       totpSecret: null,
     };
 
-    it('should successfully reset password without MFA', async () => {
-      // totpSecret should be undefined for a user without TOTP
-      const userNoTotp = { ...mockUser, totpSecret: undefined };
+    it('should successfully reset password without MFA when not required', async () => {
+      // totpSecret should be null for a user without TOTP
+      const userNoTotp = { ...mockUser, totpSecret: null };
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(userNoTotp as UserEntity);
       jest.spyOn(saltedHashService, 'validateHash').mockReturnValue(true as boolean);
       jest.spyOn(saltedHashService, 'createNewHash').mockReturnValue({ hash: 'newHashedPassword', salt: 'newSalt' });
       jest.spyOn(userRepo, 'save').mockResolvedValue(undefined);
 
-      const result = await service.resetPassword('test@example.com', 'newPass', 'newPass', 'oldPass');
+      const result = await service.resetPassword('test@example.com', 'newPass1234!', 'newPass1234!', 'oldPass');
       expect(result).toEqual({ message: 'Password reset successful', code: 0 });
       expect(userRepo.findOne).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
       expect(saltedHashService.validateHash).toHaveBeenCalledWith('oldPass', 'oldHashedPassword', 'oldSalt');
-      expect(saltedHashService.createNewHash).toHaveBeenCalledWith('newPass');
+      expect(saltedHashService.createNewHash).toHaveBeenCalledWith('newPass1234!');
       expect(userRepo.save).toHaveBeenCalledWith(expect.objectContaining({ password: 'newHashedPassword', keyData: { salt: 'newSalt' } }));
     });
 
-    it('should successfully reset password with MFA', async () => {
+    it('should successfully reset password with MFA when required', async () => {
       const userWithTotp = { ...mockUser, totpSecret: 'someTotpSecret' };
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(userWithTotp as UserEntity);
       jest.spyOn(saltedHashService, 'validateHash').mockReturnValue(true as boolean);
@@ -429,35 +429,35 @@ describe('AppService', () => {
       jest.spyOn(saltedHashService, 'createNewHash').mockReturnValue({ hash: 'newHashedPassword', salt: 'newSalt' });
       jest.spyOn(userRepo, 'save').mockResolvedValue(undefined);
 
-      const result = await service.resetPassword('test@example.com', 'newPass', 'newPass', 'oldPass', '123456');
+      const result = await service.resetPassword('test@example.com', 'newPass1234!', 'newPass1234!', 'oldPass', '123456');
       expect(result).toEqual({ message: 'Password reset successful', code: 0 });
       expect(authenticator.check).toHaveBeenCalledWith( '123456', 'someTotpSecret');
     });
 
     it('should throw RpcException if new passwords do not match', async () => {
-      await expect(service.resetPassword('test@example.com', 'newPass', 'mismatchPass', 'oldPass')).rejects.toThrow(RpcException);
-      await expect(service.resetPassword('test@example.com', 'newPass', 'mismatchPass', 'oldPass')).rejects.toThrow('Passwords do not match');
+      await expect(service.resetPassword('test@example.com', 'newPass1234!', 'mismatchPass', 'oldPass')).rejects.toThrow(RpcException);
+      await expect(service.resetPassword('test@example.com', 'newPass1234', 'mismatchPass', 'oldPass')).rejects.toThrow('Passwords do not match');
     });
 
     it('should throw RpcException if user not found', async () => {
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(null as any);
       await expect(service.resetPassword('nonexistent@example.com', 'newPass', 'newPass', 'oldPass')).rejects.toThrow(RpcException);
-      await expect(service.resetPassword('nonexistent@example.com', 'newPass', 'newPass', 'oldPass')).rejects.toThrow('User not found');
+      await expect(service.resetPassword('nonexistent@example.com', 'newStrongPass1!', 'newStrongPass1!', 'oldPass')).rejects.toThrow('User not found');
     });
 
     it('should throw RpcException if old password is invalid', async () => {
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as UserEntity);
       jest.spyOn(saltedHashService, 'validateHash').mockReturnValue(false as boolean);
-      await expect(service.resetPassword('test@example.com', 'newPass', 'newPass', 'wrongOldPass')).rejects.toThrow(RpcException);
-      await expect(service.resetPassword('test@example.com', 'newPass', 'newPass', 'wrongOldPass')).rejects.toThrow('Invalid old password');
+      await expect(service.resetPassword('test@example.com', 'newStrongPass1!', 'newStrongPass1!', 'wrongOldPass')).rejects.toThrow(RpcException);
+      await expect(service.resetPassword('test@example.com', 'newStrongPass1!', 'newStrongPass1!', 'wrongOldPass')).rejects.toThrow('Invalid old password');
     });
 
     it('should throw RpcException if MFA is required but not provided', async () => {
       const userWithTotp = { ...mockUser, totpSecret: 'someTotpSecret' };
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(userWithTotp as UserEntity);
       jest.spyOn(saltedHashService, 'validateHash').mockReturnValue(true as boolean);
-      await expect(service.resetPassword('test@example.com', 'newPass', 'newPass', 'oldPass')).rejects.toThrow(RpcException);
-      await expect(service.resetPassword('test@example.com', 'newPass', 'newPass', 'oldPass')).rejects.toThrow('MFA token is required for this user.');
+      await expect(service.resetPassword('test@example.com', 'newStrongPass1!', 'newStrongPass1!', 'oldPass')).rejects.toThrow(RpcException);
+      await expect(service.resetPassword('test@example.com', 'newStrongPass1!', 'newStrongPass1!', 'oldPass')).rejects.toThrow('MFA token is required for this user.');
     });
 
     it('should throw RpcException if MFA token is invalid', async () => {
@@ -465,14 +465,14 @@ describe('AppService', () => {
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(userWithTotp as UserEntity);
       jest.spyOn(saltedHashService, 'validateHash').mockReturnValue(true as boolean);
       jest.spyOn(authenticator, 'check').mockReturnValue(false as boolean);
-      await expect(service.resetPassword('test@example.com', 'newPass', 'newPass', 'oldPass', 'wrongMfa')).rejects.toThrow(RpcException);
-      await expect(service.resetPassword('test@example.com', 'newPass', 'newPass', 'oldPass', 'wrongMfa')).rejects.toThrow('Invalid MFA token');
+      await expect(service.resetPassword('test@example.com', 'newStrongPass1!', 'newStrongPass1!', 'oldPass', 'wrongMfa')).rejects.toThrow(RpcException);
+      await expect(service.resetPassword('test@example.com', 'newStrongPass1!', 'newStrongPass1!', 'oldPass', 'wrongMfa')).rejects.toThrow('Invalid MFA token');
     });
 
     it('should throw RpcException on generic error during resetPassword', async () => {
       jest.spyOn(userRepo, 'findOne').mockRejectedValue(new Error('Database error'));
       // The service does not catch and wrap errors in resetPassword, so expect Error
-      await expect(service.resetPassword('test@example.com', 'newPass', 'newPass', 'oldPass')).rejects.toThrow(Error);
+      await expect(service.resetPassword('test@example.com', 'newStrongPass1!', 'newStrongPass1!', 'oldPass')).rejects.toThrow(Error);
     });
   });
 

@@ -74,7 +74,6 @@ export class ChangesTableComponent {
       console.log('Edit action for row:', index);
       this.selectedChange.set(this.changes[index]);
       this.showEditModal.set(true);
-      console.log('Selected change for editing:', this.selectedChange());
     },
   },
   {
@@ -106,13 +105,11 @@ export class ChangesTableComponent {
   ]
 
   ngOnInit() {
-    console.log('ChangesTableComponent initialized');
     this.setCellularData();
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['changes']) {
-      console.log('Changes changed:', changes['changes'].currentValue);
       this.setCellularData();
     }
   }
@@ -136,8 +133,11 @@ export class ChangesTableComponent {
     this.showModal.set(true);
     if (index !== undefined) {
       const change = this.changes[index];
-      // Logic to populate the modal with the selected change details
-      console.log('Selected change:', change);
+      this.selectedChange.set(change);
+      this.showEditModal.set(true)
+    } else {
+      this.selectedChange.set(null);
+      this.showModal.set(true);
     }
   }
   closeModal() {
@@ -146,7 +146,6 @@ export class ChangesTableComponent {
   }
 
   onCreateFormSubmit(change: Partial<Change>) {
-    console.log('Creating change with data:', change);
     const {
       changeType = 'ADDITION',
       changeDescription = '',
@@ -176,19 +175,10 @@ export class ChangesTableComponent {
     const selected = this.selectedChange();
     const changeId = selected?.id || '';
     const updatedChange: Change = {
-      ...selected,
-      ...change,
+      ...(selected as Change),
+      ...(change as Change),
       id: changeId,
       updatedAt: new Date(),
-      projectId: selected?.projectId ?? '', 
-      changeType: selected?.changeType ?? 'ADDITION', 
-      changeStatus: selected?.changeStatus ?? 'PENDING', 
-      changeDescription: selected?.changeDescription ?? '',
-      requestor: selected?.requestor ?? '',
-      approver: selected?.approver ?? '', 
-      resolution: selected?.resolution ?? 'PENDING', 
-      updatedBy: selected?.updatedBy ?? '', 
-      changeDate: selected?.changeDate ?? new Date(),
     };
     this.editChange.emit(updatedChange);
     this.showEditModal.set(false);

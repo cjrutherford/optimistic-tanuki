@@ -1,6 +1,6 @@
 <otui-card class="outer-card"> <!-- Changed overflow-x and overflow-y -->
     <h2>Your Profiles:</h2>
-    <otui-grid [columns]="dynamicGridColumns()" style="padding-bottom: 10px;"> <!-- Bind to dynamicGridColumns and removed overflow styles -->
+    <div class="profile-grid-flex"> <!-- Replaced otui-grid with a div and new class -->
     @for (p of profiles; track p.id) {
             <otui-tile class="real-profile" [class.active]="p.id === internalSelectedProfile()?.id">
                 <h2>{{p.profileName}}</h2>
@@ -27,13 +27,12 @@
                 <button class="profile-badge left-badge add-profile-bubble-button" (click)="openProfileDialog()" title="Add New Profile">+</button>
             </div>
         </otui-tile>
-    </otui-grid>
+    </div>
 </otui-card>
 
-<ng-template #profileDialog>
+<otui-modal *ngIf="showProfileModal" [heading]="editingProfile ? 'Edit Profile' : 'New Profile'" (closeModal)="closeProfileModal()">
     <otui-card style="max-height: 70vh; overflow-y: auto;">
         <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
-          <h2>{{ editingProfile ? 'Edit Profile' : 'New Profile' }}</h2>
           <lib-text-input label="Profile Name" formControlName="profileName"></lib-text-input>
           <lib-image-upload label="Profile Picture" (imageUpload)="onProfilePicUpload($event)" [currentImage]="profileForm.get('profilePic')?.value"></lib-image-upload>
           <lib-text-input label="Bio" formControlName="bio"></lib-text-input> <!-- Consider TextAreaComponent for bio -->
@@ -41,9 +40,9 @@
           <lib-image-upload label="Cover Picture" (imageUpload)="onCoverPicUpload($event)" [currentImage]="profileForm.get('coverPic')?.value"></lib-image-upload>
           <div class="dialog-actions">
             <otui-button variant="success" type="submit" [disabled]="profileForm.invalid">Submit</otui-button>
-            <otui-button variant="warning" type="button" (click)="openProfileDialog()">Cancel</otui-button>
+            <otui-button variant="warning" type="button" (click)="cancelEdit()">Cancel</otui-button>
           </div>
         </form>
     </otui-card>
-</ng-template>
+</otui-modal>
 <!-- <otui-button variant="success" (click)="addNewProfile()">Add New Profile</otui-button> -->
