@@ -11,29 +11,7 @@ import {
 } from '@angular/forms';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
 
-@Component({
-  selector: 'lib-select',
-  imports: [CommonModule, FormsModule],
-  providers: [
-    {
-      provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => SelectComponent),
-      multi: true,
-    },
-  ],
-  templateUrl: './select.component.html',
-  styleUrl: './select.component.scss',
-  standalone: true,
-  host: {
-    '[style.--background]': 'background',
-    '[style.--foreground]': 'foreground',
-    '[style.--accent]': 'accent',
-    '[style.--complement]': 'complement',
-    '[style.--border-color]': 'borderColor',
-    '[style.--border-gradient]': 'borderGradient',
-    '[style.--transition-duration]': 'transitionDuration',
-  },
-})
+
 /**
  * A reusable select input component with theming capabilities.
  */

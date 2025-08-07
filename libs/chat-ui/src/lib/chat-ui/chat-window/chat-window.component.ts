@@ -26,7 +26,13 @@ export class ChatWindowComponent {
   /**
    * The messages in the chat conversation.
    */
-  @Input() messages: ChatConversation[] = [];
+  @Input() messages: ChatConversation = {
+    id: '',
+    participants: [],
+    messages: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
   /**
    * The current state of the chat window.
    */

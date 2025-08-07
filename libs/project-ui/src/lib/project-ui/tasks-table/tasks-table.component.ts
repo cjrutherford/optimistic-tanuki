@@ -19,6 +19,7 @@ import { CommonModule } from '@angular/common';
 import { TaskFormComponent } from '../task-form/task-form.component';
 
 @Component({
+  standalone: true,
   selector: 'lib-tasks-table',
   imports: [
     CommonModule,

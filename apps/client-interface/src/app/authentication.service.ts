@@ -4,9 +4,6 @@ import { LoginRequest, RegisterRequest, UserDto } from '@optimistic-tanuki/ui-mo
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 
 
-@Injectable({
-  providedIn: 'root'
-})
 /**
  * Service for handling user authentication.
  */

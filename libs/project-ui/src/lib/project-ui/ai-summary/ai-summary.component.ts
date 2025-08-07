@@ -14,5 +14,5 @@ export class AiSummaryComponent {
   /**
    * The text content of the summary.
    */
-  @Input() summaryText: string = '';
+  @Input() summaryText = '';
 }

@@ -38,7 +38,7 @@ export declare type ChatContact = {
  */
 @Component({
   selector: 'lib-chat-ui',
-  imports: [CommonModule, ChatWindowComponent, ContactBubbleComponent],
+  imports: [CommonModule, ContactBubbleComponent],
   templateUrl: './chat-ui.component.html',
   styleUrl: './chat-ui.component.scss',
 })

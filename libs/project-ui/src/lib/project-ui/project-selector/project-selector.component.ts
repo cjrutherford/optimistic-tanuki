@@ -23,6 +23,7 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
 
 @Component({
   selector: 'lib-project-selector',
+  standalone: true,
   imports: [
     CommonModule,
     CardComponent,

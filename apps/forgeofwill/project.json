@@ -22,13 +22,14 @@
             "input": "apps/forgeofwill/public"
           }
         ],
+        "aot": true,
+        "prerender": false,
         "styles": ["apps/forgeofwill/src/styles.scss"],
         "scripts": [],
         "server": "apps/forgeofwill/src/main.server.ts",
         "ssr": {
           "entry": "apps/forgeofwill/src/server.ts"
-        },
-        "outputMode": "server"
+        }
       },
       "configurations": {
         "production": {

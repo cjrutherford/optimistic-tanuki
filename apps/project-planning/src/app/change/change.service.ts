@@ -6,7 +6,6 @@ import { Change } from '../entities/change.entity';
 import { Between, FindOptionsWhere, Repository, Like } from 'typeorm';
 import { Project } from '../entities/project.entity';
 
-@Injectable()
 /**
  * Service for managing changes within projects.
  */

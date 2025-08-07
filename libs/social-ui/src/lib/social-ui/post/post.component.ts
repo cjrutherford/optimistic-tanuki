@@ -1,3 +1,13 @@
+import { CommonModule } from "@angular/common";
+import { Component, Input, Output, EventEmitter } from "@angular/core";
+import { CardComponent, ButtonComponent, GridComponent, TileComponent } from "@optimistic-tanuki/common-ui";
+import { ProfilePhotoComponent } from "@optimistic-tanuki/profile-ui";
+import { PostDto, CommentDto, AttachmentDto, CreateCommentDto } from "../../models";
+import { CommentListComponent } from "../comment/comment-list/comment-list.component";
+import { CommentComponent } from "../comment/comment.component";
+import { LinkType } from "../link/link.component";
+import { VoteComponent } from "../vote/vote.component";
+
 /**
  * Represents a stub for a post's profile information.
  */

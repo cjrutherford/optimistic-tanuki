@@ -7,7 +7,7 @@ import { ProfileService } from '../../profile/profile.service';
 
 @Component({
   selector: 'app-profile',
-  imports: [CommonModule, ProfileSelectorComponent, ProfilePhotoComponent, BannerComponent],
+  imports: [CommonModule, ProfileSelectorComponent, BannerComponent],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })

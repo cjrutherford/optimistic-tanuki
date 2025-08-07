@@ -4,7 +4,6 @@ import { Conversation, Message } from './entities';
 import { Any, Repository } from 'typeorm';
 import { ChatMessage } from '@optimistic-tanuki/models';
 
-@Injectable()
 /**
  * Service for handling chat-related business logic.
  */

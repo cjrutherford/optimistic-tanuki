@@ -3,6 +3,7 @@ import { CreateProject, Project, QueryProject } from '@optimistic-tanuki/ui-mode
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -28,15 +29,15 @@ export class ProjectService {
     return this.http.get<Project[]>(`${this.baseUrl}`);
   }
 
-  queryProjects(query: QueryProject) {
-    return this.http.post<Project[]>(`${this.baseUrl}/query`, query);
+  queryProjects(query: QueryProject): Observable<Project[]> {
+    return this.http.post<Project[]>(`${this.baseUrl}/query`, {...query});
   }
 
-  getProjectById(id: string) {
+  getProjectById(id: string): Observable<Project> {
     return this.http.get<Project>(`${this.baseUrl}/${id}`);
   }
 
-  updateProject(data: Project) {
+  updateProject(data: Project): Observable<Project> {
     return this.http.patch<Project>(`${this.baseUrl}`, data);
   }
 

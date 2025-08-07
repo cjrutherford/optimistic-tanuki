@@ -16,19 +16,21 @@ import { ChatMessage, ChatUiComponent, SocketChatService } from '@optimistic-tan
 import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
 import { isPlatformBrowser } from '@angular/common';
 import { ProfileService } from './profile/profile.service';
+import { ChatComponent } from './chat.component';
 
 /**
  * The root component of the Forge of Will application.
  */
 @Component({
+  standalone: true,
   imports: [
     RouterModule,
     CardComponent,
     ButtonComponent,
     ModalComponent,
     ThemeToggleComponent,
-    ChatUiComponent,
     MessageComponent,
+    ChatComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -61,7 +63,6 @@ export class AppComponent {
    * @param profileService The service for managing user profiles.
    */
   constructor(
-    @Inject(PLATFORM_ID) private readonly platformId: object,
     private readonly router: Router,
     private readonly authState: AuthStateService,
     private readonly messageService: MessageService,
@@ -71,16 +72,6 @@ export class AppComponent {
       this.messages.set(this.messageService.messages());
       console.log('Messages updated:', this.messages());
     });
-    if (isPlatformBrowser(this.platformId)) {
-      this.socketChat = inject(SocketChatService);
-      this.socketChat.onMessage((message) => {
-        console.log('New message received:', message);
-      });
-      this.socketChat.onConversations((data) => {
-        console.log('Conversations update received:', data);
-      });
-      // this.socketChat.getConversations(this.profileService.currentUserProfile()!.id);
-    }
   }
 
   /**
@@ -113,22 +104,7 @@ export class AppComponent {
     });
   }
 
-  /**
-   * Sends a chat message using the SocketChatService.
-   * @param message The chat message to send.
-   */
-  postMessage(message: ChatMessage) {
-    if (this.socketChat) {
-      this.socketChat.sendMessage(message);
-      console.log('Message sent:', message);
-    } else {
-      console.error('SocketChatService is not initialized.');
-      this.messageService.addMessage({
-        content: 'SocketChatService is not initialized.',
-        type: 'error',
-      });
-    }
-  }
+
 
   /**
    * Toggles the visibility of the modal window.

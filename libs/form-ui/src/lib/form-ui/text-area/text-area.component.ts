@@ -1,3 +1,8 @@
+import { CommonModule } from "@angular/common";
+import { Component, forwardRef, Input, Output, EventEmitter } from "@angular/core";
+import { FormsModule, NG_VALUE_ACCESSOR, ControlValueAccessor } from "@angular/forms";
+import { Themeable, ThemeColors } from "@optimistic-tanuki/theme-ui";
+
 /**
  * A reusable text area component with theming capabilities.
  */

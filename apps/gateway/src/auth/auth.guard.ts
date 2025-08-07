@@ -10,7 +10,6 @@ import { ClientProxy } from '@nestjs/microservices';
 import { AuthCommands } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 
-@Injectable()
 /**
  * A guard that checks for authentication and validates tokens.
  */

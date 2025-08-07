@@ -5,7 +5,6 @@ import { Repository, FindOneOptions, FindManyOptions } from "typeorm";
 import { CreateAttachmentDto, UpdateAttachmentDto } from "@optimistic-tanuki/models";
 import { Post } from "../../entities/post.entity";
 
-@Injectable()
 /**
  * Service for managing attachments.
  */

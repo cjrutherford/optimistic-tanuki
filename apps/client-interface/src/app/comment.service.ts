@@ -4,9 +4,6 @@ import { Observable } from 'rxjs';
 import { CommentDto, UpdateCommentDto, CreateCommentDto, SearchCommentDto } from '@optimistic-tanuki/social-ui';
 
 
-@Injectable({
-  providedIn: 'root'
-})
 /**
  * Service for managing comments.
  */

@@ -22,6 +22,7 @@ export declare type MessageType = {
  * Component for displaying messages.
  */
 @Component({
+  standalone: true,
   selector: 'lib-message',
   imports: [CommonModule, CardComponent, TileComponent, ButtonComponent],
   templateUrl: './message.component.html',

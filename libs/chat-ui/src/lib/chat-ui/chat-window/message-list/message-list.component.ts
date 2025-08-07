@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 
 import { ChatContact } from '../../chat-ui.component';
-import { ChatConversation, ChatMessage } from '../../../types/message';
+import { ChatMessage } from '../../../types/message';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -21,7 +21,7 @@ export class MessageListComponent {
   /**
    * The list of messages in the conversation.
    */
-  @Input() messages: ChatConversation[] = [];
+  @Input() messages: ChatMessage[] = [];
 
   /**
    * Gets the contact information for a given sender ID.

@@ -1,3 +1,10 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil, filter } from 'rxjs/operators';
+import { ThemeService } from './theme.service';
+import { ThemeColors } from './theme.interface';
 /**
  * Component for toggling themes and updating accent colors.
  */
@@ -49,7 +56,7 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
   /**
    * The duration for CSS transitions.
    */
-  transitionDuration: string = '0.3s';
+  transitionDuration = '0.3s';
 
   /**
    * Creates an instance of ThemeToggleComponent.

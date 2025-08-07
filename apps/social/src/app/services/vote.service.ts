@@ -4,7 +4,6 @@ import { Repository, FindOneOptions, FindManyOptions } from "typeorm";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { CreateVoteDto, UpdateVoteDto } from "@optimistic-tanuki/models";
 
-@Injectable()
 /**
  * Service for managing votes.
  */

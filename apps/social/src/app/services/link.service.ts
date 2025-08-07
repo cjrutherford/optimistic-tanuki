@@ -4,7 +4,6 @@ import { Link } from "../../entities/link.entity";
 import { Repository, FindOneOptions, FindManyOptions } from "typeorm";
 import { CreateLinkDto, UpdateLinkDto } from "@optimistic-tanuki/models";
 
-@Injectable()
 /**
  * Service for managing links.
  */

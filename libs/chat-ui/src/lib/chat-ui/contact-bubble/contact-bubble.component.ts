@@ -3,6 +3,7 @@ import { Component, Input, signal } from '@angular/core';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { CommonModule } from '@angular/common';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
+import { ChatContact } from '../chat-ui.component';
 
 /**
  * Represents a contact with chat information.
@@ -40,20 +41,25 @@ export interface Contact {
   styleUrl: './contact-bubble.component.scss',
 })
 export class ContactBubbleComponent {
+
   /**
    * The contact data to display.
    */
-  @Input() contact: Contact = {
-    id: 1,
-    name: 'Johnathon Doe',
-    avatarUrl: 'https://placehold.co/60x60',
-    lastMessage: "Nah, man, I think it's cool",
-    lastMessageTime: '2023-10-01T12:00:00Z',
-  };
+  @Input() contacts: ChatContact[] = [
+    {
+      id: '1',
+      name: 'Johnathon Doe',
+      avatarUrl: 'https://placehold.co/60x60',
+      lastMessage: "Nah, man, I think it's cool",
+      lastMessageTime: '2023-10-01T12:00:00Z',
+    },
+  ];
+
   /**
    * Indicates whether the contact bubble is selected.
    */
   @Input() isSelected = false;
+
   /**
    * Signal to control the visibility of a popup.
    */

@@ -1,3 +1,10 @@
+import { UseGuards, Controller, Inject, Get, Param, Post, Body, Patch, Delete } from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
+import { ServiceTokens, ProjectCommands, ChangeCommands, ProjectJournalCommands, RiskCommands, TaskCommands, TimerCommands } from "@optimistic-tanuki/constants";
+import { QueryProjectDto, CreateProjectDto, UpdateProjectDto, QueryChangeDto, CreateChangeDto, UpdateChangeDto, QueryProjectJournalDto, CreateProjectJournalDto, UpdateProjectJournalDto, QueryRiskDto, CreateRiskDto, UpdateRiskDto, QueryTaskDto, CreateTaskDto, UpdateTaskDto, CreateTimerDto, UpdateTimerDto } from "@optimistic-tanuki/models";
+import { firstValueFrom } from "rxjs";
+import { AuthGuard } from "../../auth/auth.guard";
+
 /**
  * Controller for handling project planning related API requests.
  */

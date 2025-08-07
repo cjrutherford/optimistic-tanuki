@@ -2,15 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NoteDto, NoteStatus, TaskDto, TaskStatus, TimerDto, TimerStatus } from '@optimistic-tanuki/ui-models';
 
-@Component({
-  selector: 'app-tasks',
-  templateUrl: './tasks.component.html',
-  styleUrls: ['./tasks.component.scss'],
-  standalone: true,
-  imports: [
-    CommonModule, 
-  ],
-})
+
 /**
  * Component for displaying and managing tasks, timers, and notes.
  */

@@ -1,3 +1,6 @@
+import { CommonModule } from "@angular/common";
+import { Component, OnInit, Output, EventEmitter, Input, HostListener } from "@angular/core";
+
 /**
  * Component for uploading images via file input or drag-and-drop.
  */

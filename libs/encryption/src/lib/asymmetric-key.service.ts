@@ -1,3 +1,11 @@
+import { Injectable } from '@nestjs/common';
+import {
+  generateKeyPair,
+  privateEncrypt,
+  publicDecrypt,
+  constants as CryptoConstants,
+} from 'crypto';
+
 /**
  * Service for asymmetric encryption and decryption using RSA key pairs.
  */
@@ -50,7 +58,7 @@ export default class AsymmetricService {
         passphrase: secret ? secret : undefined,
         padding: CryptoConstants.RSA_PKCS1_PADDING,
       },
-      Buffer.from(value),
+      new Uint8Array(Buffer.from(value)),
     );
   }
 
@@ -68,7 +76,7 @@ export default class AsymmetricService {
         passphrase: secret ? secret : undefined,
         padding: CryptoConstants.RSA_PKCS1_PADDING,
       },
-      Buffer.from(cyText),
+      new Uint8Array(Buffer.from(cyText)),
     ); //
   }
 }

@@ -3,9 +3,6 @@ import { CanActivate, Router } from '@angular/router';
 import { AuthStateService } from '../state/auth-state.service';
 import { ProfileService } from '../profile.service';
 
-@Injectable({
-  providedIn: 'root'
-})
 /**
  * A guard that checks if the user has a profile selected before allowing access to a route.
  */

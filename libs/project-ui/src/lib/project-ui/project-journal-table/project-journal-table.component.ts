@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { ProjectJournalFormComponent } from '../project-journal-form/project-journal-form.component';
 
 @Component({
+  standalone: true,
   selector: 'lib-project-journal-table',
   imports: [CommonModule, TableComponent, ButtonComponent, ModalComponent, ProjectJournalFormComponent],
   templateUrl: './project-journal-table.component.html',

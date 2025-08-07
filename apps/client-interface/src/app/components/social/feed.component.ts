@@ -1,3 +1,19 @@
+import { CommonModule } from "@angular/common";
+import { Component, OnInit, OnDestroy, Input } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { ComposeComponent, PostComponent, PostDto, PostProfileStub, ComposeCompleteEvent, CreatePostDto, CreateCommentDto } from "@optimistic-tanuki/social-ui";
+import { ThemeService } from "@optimistic-tanuki/theme-ui";
+import { Router } from "@angular/router";
+import { Subject, filter, takeUntil, firstValueFrom } from "rxjs";
+import { AttachmentService } from "../../attachment.service";
+import { CommentService } from "../../comment.service";
+import { PostService } from "../../post.service";
+import { ProfileService } from "../../profile.service";
+import { ProfileDto } from "@optimistic-tanuki/ui-models";
+
 /**
  * Component for displaying a social feed of posts.
  */
@@ -106,7 +122,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       ),
     ];
     profileIds.forEach((profileId) => {
-      this.profileService.getDisplayProfile(profileId).subscribe((profile) => {
+      this.profileService.getDisplayProfile(profileId).subscribe((profile: ProfileDto) => {
         this.profiles[profileId] = {
           id: profile.id,
           name: profile.profileName,

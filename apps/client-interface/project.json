@@ -12,6 +12,7 @@
         "{options.outputPath}"
       ],
       "options": {
+        "aot": true,
         "outputPath": "dist/apps/client-interface",
         "index": "apps/client-interface/src/index.html",
         "browser": "apps/client-interface/src/main.ts",
@@ -21,7 +22,8 @@
           "quill-mention",
           "quill-image-compress",
           "quill-cursors",
-          "quill-placeholder-module"
+          "quill-placeholder-module",
+          "http-proxy-middleware"
         ],
         "polyfills": [
           "zone.js"
@@ -43,7 +45,7 @@
         "ssr": {
           "entry": "apps/client-interface/src/server.ts"
         },
-        "prerender": true
+        "prerender": false
       },
       "configurations": {
         "production": {

@@ -5,9 +5,6 @@ import { CreatePostDto, PostDto, UpdatePostDto, SearchPostDto, SearchPostOptions
 
 
 
-@Injectable({
-  providedIn: 'root'
-})
 /**
  * Service for managing posts.
  */

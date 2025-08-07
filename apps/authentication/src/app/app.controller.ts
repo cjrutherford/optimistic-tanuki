@@ -1,4 +1,4 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
 import { AuthCommands } from '@optimistic-tanuki/constants';
 import { validateRequiredFields } from '@optimistic-tanuki/database';
 import { AppService } from './app.service';

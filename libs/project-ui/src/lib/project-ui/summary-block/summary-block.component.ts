@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { TileComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
+  standalone: true,
   selector: 'lib-summary-block',
   imports: [CommonModule, TileComponent],
   templateUrl: './summary-block.component.html',

@@ -38,7 +38,7 @@ export class AuthStateService {
       this.decodedToken$ = this.decodedTokenSubject.asObservable();
       return;
     }
-
+    
     this.tokenSubject = new BehaviorSubject<string | null>(localStorage.getItem('authToken'));
     this.isAuthenticatedSubject = new BehaviorSubject<boolean>(!!localStorage.getItem('authToken'));
     this.decodedTokenSubject = new BehaviorSubject<UserData | null>(this.getDecodedToken());

@@ -10,14 +10,6 @@ import { RegisterRequest, RegisterSubmitType } from '@optimistic-tanuki/ui-model
 import { AuthenticationService } from '../authentication.service';
 import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
 
-@Component({
-  selector: 'app-register',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatInputModule, MatButtonModule, MatCardModule, RegisterBlockComponent],
-  providers: [AuthenticationService], 
-  templateUrl: './register.component.html',
-  styleUrl: './register.component.scss',
-})
 /**
  * Component for user registration.
  */

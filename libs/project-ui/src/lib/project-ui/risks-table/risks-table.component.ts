@@ -7,6 +7,7 @@ import { RiskFormComponent } from '../risk-form/risk-form.component';
 
 @Component({
   selector: 'lib-risks-table',
+  standalone: true,
   imports: [CommonModule, TableComponent, ButtonComponent, ModalComponent, RiskFormComponent],
   templateUrl: './risks-table.component.html',
   styleUrl: './risks-table.component.scss',

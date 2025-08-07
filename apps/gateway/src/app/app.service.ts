@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 
-@Injectable()
 /**
  * Main application service for the Gateway microservice.
  */

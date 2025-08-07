@@ -5,7 +5,6 @@ import { Profile } from "../profiles/entities/profile.entity";
 import { CreateProfileDto } from "../profiles/dto/create-profile.dto";
 import { UpdateProfileDto, updateProfileDtoToPartial } from "../profiles/dto/update-profile.dto";
 
-@Injectable()
 /**
  * Service for managing user profiles.
  */

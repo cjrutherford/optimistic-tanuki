@@ -4,7 +4,6 @@ import { Post } from "../../entities/post.entity";
 import { Repository, FindOneOptions, FindManyOptions } from "typeorm";
 import { CreatePostDto, UpdatePostDto } from "@optimistic-tanuki/models";
 
-@Injectable()
 /**
  * Service for managing posts.
  */

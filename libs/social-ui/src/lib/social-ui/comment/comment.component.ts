@@ -1,3 +1,11 @@
+import { CommonModule } from "@angular/common";
+import { Component, OnInit, Output, EventEmitter, ViewChild, TemplateRef } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { CardComponent, ButtonComponent } from "@optimistic-tanuki/common-ui";
+import { Themeable, ThemeColors, ThemeService } from "@optimistic-tanuki/theme-ui";
+import { QuillModule, QuillModules } from "ngx-quill";
+import { MatDialog } from "@angular/material/dialog";
+
 /**
  * Component for creating and managing comments with rich text editing capabilities.
  */

@@ -6,7 +6,6 @@ import { CreateCommentDto, UpdateCommentDto } from "@optimistic-tanuki/models";
 import { RpcException } from "@nestjs/microservices";
 import { Post } from "../../entities/post.entity";
 
-@Injectable()
 /**
  * Service for managing comments.
  */

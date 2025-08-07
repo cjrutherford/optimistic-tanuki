@@ -1,16 +1,8 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnInit, OnDestroy, Renderer2, ElementRef, Input } from "@angular/core";
-import { Theme, ThemeService } from "@optimistic-tanuki/theme-ui";
+import { ThemeColors, ThemeService } from "@optimistic-tanuki/theme-ui";
 import { filter, Subscription } from "rxjs";
 
-@Component({
-    standalone: true,
-    selector: 'app-first-svg',
-    templateUrl: './first-svg.component.html',
-    styleUrls: ['./first-svg.component.scss'],
-    imports: [CommonModule],
-    providers: [ThemeService]
-})
 /**
  * Component for displaying an SVG with theme-dependent styling.
  */
@@ -52,8 +44,8 @@ export class FirstSvgComponent implements OnInit, OnDestroy {
      * Initializes the component and subscribes to theme changes.
      */
     ngOnInit() {
-        this.sub = this.themeService.themeColors$.pipe(filter((x): x is Theme => !!x)).subscribe((colors) => {
-            this.accentColor = colors.accentColor;
+        this.sub = this.themeService.themeColors$.pipe(filter((x): x is ThemeColors => !!x)).subscribe((colors) => {
+            this.accentColor = colors.accent;
         });
     }
 

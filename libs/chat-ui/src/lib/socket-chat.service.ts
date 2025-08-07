@@ -105,7 +105,7 @@ export class SocketChatService {
    * Registers a callback to be invoked when a conversation is received.
    * @param callback The callback function.
    */
-  onConversations(callback: (data: ChatConversation) => void): void {
+  onConversations(callback: (data: ChatConversation[]) => void): void {
     this.socket.on('conversations', callback);
   }
 

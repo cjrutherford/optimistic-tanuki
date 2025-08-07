@@ -7,13 +7,6 @@ import { ThemeToggleComponent, ThemeService } from '@optimistic-tanuki/theme-ui'
 import { filter, Subscription } from 'rxjs';
 import { UserComponent } from './user/user.component';
 
-@Component({
-  selector: 'app-toolbar',
-  standalone: true,
-  imports: [CommonModule, MatToolbarModule, MatIconModule, MatButtonModule, ThemeToggleComponent, UserComponent],
-  templateUrl: './toolbar.component.html',
-  styleUrl: './toolbar.component.scss',
-})
 /**
  * Component for the application toolbar.
  */

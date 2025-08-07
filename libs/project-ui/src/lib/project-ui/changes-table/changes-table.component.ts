@@ -1,7 +1,14 @@
+import { CommonModule } from "@angular/common";
+import { Component, signal, Output, EventEmitter, Input, SimpleChanges } from "@angular/core";
+import { TableComponent, ButtonComponent, ModalComponent, TableCell, TableRowAction } from "@optimistic-tanuki/common-ui";
+import { Change, CreateChange } from "@optimistic-tanuki/ui-models";
+import { ChangeFormComponent } from "../change-form/change-form.component";
+
 /**
  * Component for displaying a table of changes.
  */
 @Component({
+  standalone: true,
   selector: 'lib-changes-table',
   imports: [CommonModule, TableComponent, ButtonComponent, ModalComponent, ChangeFormComponent],
   templateUrl: './changes-table.component.html',

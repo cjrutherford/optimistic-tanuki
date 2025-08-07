@@ -17,7 +17,9 @@ export abstract class Themeable implements OnInit, OnDestroy {
   transitionDuration = '0.3s';
   protected destroy$ = new Subject<void>();
 
-  constructor(protected readonly themeService: ThemeService) {}
+  constructor(
+    protected readonly themeService: ThemeService
+  ) {}
 
   ngOnInit() {
     this.themeService.themeColors$

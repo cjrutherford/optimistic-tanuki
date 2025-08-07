@@ -13,6 +13,7 @@ import { TaskService } from '../../task/task.service';
 
 @Component({
   selector: 'app-projects',
+  standalone: true,
   imports: [
     CommonModule, 
     ModalComponent, 
@@ -26,6 +27,13 @@ import { TaskService } from '../../task/task.service';
     ProjectJournalTableComponent,
     ProjectSelectorComponent, 
     ProjectFormComponent
+  ],
+  providers: [
+    ProjectService,
+    TaskService,
+    RiskService,
+    ChangeService,
+    JournalService,
   ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',

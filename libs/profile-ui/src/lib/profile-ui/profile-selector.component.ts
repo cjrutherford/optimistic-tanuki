@@ -1,3 +1,12 @@
+import { CommonModule } from "@angular/common";
+import { Component, OnInit, AfterViewInit, Input, Output, EventEmitter, signal, inject, ElementRef, ChangeDetectorRef } from "@angular/core";
+import { ReactiveFormsModule, FormGroup, FormBuilder, Validators } from "@angular/forms";
+import { CardComponent, TileComponent, ButtonComponent, ModalComponent } from "@optimistic-tanuki/common-ui";
+import { ThemeService, ThemeColors } from "@optimistic-tanuki/theme-ui";
+import { ProfilePhotoComponent } from "./profile-photo/profile-photo.component";
+import { TextInputComponent, ImageUploadComponent } from '@optimistic-tanuki/form-ui'
+import { ProfileDto, CreateProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models'
+
 /**
  * Component for selecting and managing user profiles.
  */
@@ -14,7 +23,6 @@
     ModalComponent, 
     ImageUploadComponent,
     ProfilePhotoComponent,
-    MatListModule,
   ],
   templateUrl: './profile-selector.component.html',
   styleUrl: './profile-selector.component.scss',

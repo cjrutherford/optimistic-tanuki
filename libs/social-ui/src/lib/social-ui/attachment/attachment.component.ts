@@ -2,13 +2,6 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent, CardComponent, GridComponent } from '@optimistic-tanuki/common-ui';
 
-@Component({
-  selector: 'lib-attachment',
-  standalone: true,
-  imports: [CommonModule, CardComponent, GridComponent, ButtonComponent],
-  templateUrl: './attachment.component.html',
-  styleUrls: ['./attachment.component.scss'],
-})
 /**
  * Component for managing attachments.
  */
