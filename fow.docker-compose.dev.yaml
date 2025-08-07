@@ -48,6 +48,8 @@ services:
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command: ["dumb-init", "nodemon", "-L", "--inspect=0.0.0.0:9000", "main.js"]
     ports:
+      - "3300:3300"
+      - "3000:3000" # Expose the main port
       - "9000:9000" # Expose the debugging port
     environment:
       - NODE_ENV=development

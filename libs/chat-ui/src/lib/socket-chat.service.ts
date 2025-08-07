@@ -1,6 +1,6 @@
 import { Socket, io } from 'socket.io-client';
 
-import { ChatMessage } from './types/message';
+import { ChatConversation, ChatMessage } from './types/message';
 import { Inject, Injectable } from '@angular/core';
 
 /**
@@ -45,6 +45,31 @@ export class SocketChatService {
     @Inject(SOCKET_IO_INSTANCE) private readonly ioInstance: typeof io
   ) {
     this.socket = this.ioInstance(`${this.hostUrl}/${this.namespace}`, { autoConnect: true });
+    this.socket.on('connect', () => {
+      console.log(`Socket connected to ${this.hostUrl}/${this.namespace}`);
+    });
+    this.socket.on('disconnect', () => {
+      console.log(`Socket disconnected from ${this.hostUrl}/${this.namespace}`);
+    });
+    this.socket.on('connect_error', (error) => {
+      console.error(`Socket connection error: ${error.message}`);
+    });
+    this.socket.on('connect_timeout', (timeout) => {
+      console.warn(`Socket connection timed out after ${timeout}ms`);
+    });
+    this.socket.on('reconnect_attempt', (attempt) => {
+      console.log(`Socket reconnect attempt #${attempt}`);
+    });
+    this.socket.on('reconnect_failed', () => {
+      console.error('Socket reconnection failed');
+    });
+    this.socket.on('reconnect', (attempt) => {
+      console.log(`Socket reconnected after ${attempt} attempts`);
+    });
+  }
+
+  getConversations(profileId: string): void {
+    this.socket.emit('get_conversations', { profileId });
   }
 
   sendMessage(message: ChatMessage): void {
@@ -53,6 +78,10 @@ export class SocketChatService {
 
   onMessage(callback: (message: ChatMessage) => void): void {
     this.socket.on('message', callback);
+  }
+
+  onConversations(callback: (data: ChatConversation) => void): void {
+    this.socket.on('conversations', callback);
   }
 
   destroy(): void {

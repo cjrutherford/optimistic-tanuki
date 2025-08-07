@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 import { ChatContact } from '../chat-ui.component';
-import { ChatMessage } from '../../types/message';
+import { ChatConversation, ChatMessage } from '../../types/message';
 import { CommonModule } from '@angular/common';
 import { MessageListComponent } from './message-list/message-list.component';
 import { ParticipantsComponent } from './participants/participants.component';
@@ -17,7 +17,7 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
 })
 export class ChatWindowComponent {
   @Input() contact: ChatContact[] | null = null;
-  @Input() messages: ChatMessage[] = [];
+  @Input() messages: ChatConversation[] = [];
   @Input() windowState: ChatWindowState = 'popout';
   @Output() windowStateChange: EventEmitter<ChatWindowState> = new EventEmitter<ChatWindowState>();
 

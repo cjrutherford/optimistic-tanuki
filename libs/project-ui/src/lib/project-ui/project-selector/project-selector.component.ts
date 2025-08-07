@@ -42,6 +42,14 @@ export class ProjectSelectorComponent {
   @Output() editProject: EventEmitter<Project> = new EventEmitter<Project>();
   @Output() deleteProject: EventEmitter<void> = new EventEmitter<void>();
 
+  projectForm: FormGroup;
+
+  constructor(private fb: FormBuilder) {
+    this.projectForm = this.fb.group({
+      project: this.fb.control<string | null>(null),
+    });
+  }
+
   // Prepare options for the SelectComponent
   projectOptions = computed(() =>
     this.availableProjects().map((project) => ({
@@ -59,6 +67,19 @@ export class ProjectSelectorComponent {
 
   ngOnInit(): void {
     this.availableProjects.set(this.projects);
+    if (this.projects.length > 0) {
+      this.selectedProject.set(this.projects[0]);
+      this.projectForm.patchValue({ project: this.projects[0].id });
+    } else {
+      this.selectedProject.set(null);
+    }
+    this.projectForm.valueChanges.subscribe((value) => {
+      const selectedId = value.project;
+      this.selectedProject.set(
+        this.projects.find((p) => p.id === selectedId) || null
+      );
+      this.projectSelected.emit(selectedId);
+    });
   }
 
   onCreateClick() {

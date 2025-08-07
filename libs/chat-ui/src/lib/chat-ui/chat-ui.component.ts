@@ -1,7 +1,7 @@
 import { ChatWindowComponent, ChatWindowState } from './chat-window/chat-window.component';
-import { Component, Input, SimpleChanges, signal } from '@angular/core';
+import { Component, Input, SimpleChanges, computed, signal } from '@angular/core';
 
-import { ChatMessage } from '../types/message';
+import { ChatConversation, ChatMessage } from '../types/message';
 import { CommonModule } from '@angular/common';
 import { ContactBubbleComponent } from './contact-bubble/contact-bubble.component';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
@@ -42,42 +42,60 @@ export class ChatUiComponent {
     lastMessageTime: '2023-10-01T12:10:00Z',
   }];
 
-  @Input() conversations: Map<string, ChatMessage[]> = new Map([
-    ['1', [
-      {
-        id: '1',
-        conversationId: '1',
-        senderId: '1',
-        recipientId: ['2'],
-        sender: '1',
-        content: 'Hello, how are you?',
-        timestamp: new Date('2023-10-01T12:00:00Z'),
-        type: 'chat'
-      },
-    ]],
-    ['2', [
-      {
-        id: '2',
-        conversationId: '2',
-        senderId: '2',
-        recipientId: ['1'],
-        sender: '2',
-        content: 'Are we still on for the meeting?',
-        timestamp: new Date('2023-10-01T12:05:00Z'),
-        type: 'chat'
-      },
-    ]],['3',[{
+  @Input() conversations: ChatConversation[] = [
+    {
+      id: '1',
+      messages: [
+        {
+          id: '1',
+          conversationId: '1',
+          senderId: '1',
+          recipientId: ['2'],
+          content: 'Hello, how are you?',
+          timestamp: new Date('2023-10-01T12:00:00Z'),
+          type: 'chat'
+        },
+      ],
+      participants: ['1', '2'],
+      createdAt: new Date('2023-10-01T11:59:00Z'),
+      updatedAt: new Date('2023-10-01T12:00:00Z')
+    },
+    {
+      id: '2',
+      messages: [
+        {
+          id: '2',
+          conversationId: '2',
+          senderId: '2',
+          recipientId: ['1'],
+          content: 'Are we still on for the meeting?',
+          timestamp: new Date('2023-10-01T12:05:00Z'),
+          type: 'chat'
+        },
+      ],
+      participants: [ '1', '2' ],
+      createdAt: new Date('2023-10-01T12:05:00Z'),
+      updatedAt: new Date('2023-10-01T12:05:00Z')
+    },
+    {
       id: '3',
-      conversationId: '3',
-      senderId: '1',
-      recipientId: ['2'],
-      sender: '1',
-      content: 'Your password has been reset. If you did not request this, please contact support.',
-      timestamp: new Date('2023-10-01T12:10:00Z'),
-      type: 'system'
-    }]]
-  ]);
-  windowStates = signal<{ [key: string]: { windowState: ChatWindowState, conversation: ChatMessage[] } }>({});
+      messages: [
+        {
+          id: '3',
+          conversationId: '3',
+          senderId: '1',
+          recipientId: ['2'],
+          content: 'Your password has been reset. If you did not request this, please contact support.',
+          timestamp: new Date('2023-10-01T12:10:00Z'),
+          type: 'system'
+        }
+      ],
+      participants: ['1', '2'],
+      createdAt: new Date('2023-10-01T12:10:00Z'),
+      updatedAt: new Date('2023-10-01T12:10:00Z')
+    }
+  ];
+  windowStates = signal<{ [key: string]: { windowState: ChatWindowState, conversation: ChatConversation[] } }>({});
   selectedContact = signal<ChatContact | null>(null);
   showModal = signal<boolean>(false);
 
@@ -121,7 +139,7 @@ export class ChatUiComponent {
       skills: '',
       created_at: new Date()
     }
-  ]
+  ];
 
   ngOnInit(){
     this.syncWindowStates();
@@ -137,8 +155,8 @@ export class ChatUiComponent {
     const currentStates = this.windowStates();
     this.contacts.forEach(contact => {
       if (!currentStates[contact.id]) {
-        const conversation = this.conversations.get(contact.id) || [];
-        currentStates[contact.id] = { windowState: 'hidden', conversation: [...conversation] };
+        const conversation = this.conversations.filter(convo => convo.id === contact.id) || [] as ChatConversation[];
+        currentStates[contact.id] = { windowState: 'hidden', conversation: [...conversation] as ChatConversation[] };
       }
     });
     this.windowStates.set(currentStates);

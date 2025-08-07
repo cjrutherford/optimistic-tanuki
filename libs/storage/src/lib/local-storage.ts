@@ -16,7 +16,7 @@ export class LocalStorageAdapter implements StorageAdapter {
 
     private ensureBasePathExists(): void {
         if (!existsSync(this.basePath)) {
-            mkdirSync(this.basePath, { recursive: true });
+            mkdirSync(path.join(this.basePath), { recursive: true });
             this.l.log(`LocalStorageAdapter: Created basePath at ${this.basePath}`);
         }
     }

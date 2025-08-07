@@ -39,10 +39,31 @@ app.use(
   })
 );
 
-app.use('/api', createProxyMiddleware({
-  target: 'http://gateway:3000/api', // Change to your API server URL
-  changeOrigin: true,
-}));
+app.use(
+  '/socket.io',
+  createProxyMiddleware({
+    target: 'http://gateway:3300',
+    ws: true,
+    changeOrigin: true,
+  })
+);
+app.use(
+  '/chat',
+  createProxyMiddleware({
+    target: 'http://gateway:3300', 
+    ws: true,
+    changeOrigin: true,
+  })
+);
+
+app.use(
+  '/api',
+  createProxyMiddleware({
+    target: 'http://gateway:3000/api',
+    ws: true,
+    changeOrigin: true,
+  })
+);
 /**
  * Handle all other requests by rendering the Angular application.
  */

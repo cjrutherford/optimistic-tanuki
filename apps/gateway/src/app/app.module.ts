@@ -109,6 +109,22 @@ import { ChatGateway } from './chat-gateway/chat.gateway';
       },
       inject: [ConfigService],
     },
+    {
+      provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.chat_collector'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
     ChatGateway,
   ],
 })

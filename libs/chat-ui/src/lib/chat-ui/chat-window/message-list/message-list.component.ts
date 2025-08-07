@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 
 import { ChatContact } from '../../chat-ui.component';
-import { ChatMessage } from '../../../types/message';
+import { ChatConversation, ChatMessage } from '../../../types/message';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
 })
 export class MessageListComponent {
   @Input() contacts: ChatContact[] = [];
-  @Input() messages: ChatMessage[] = [];
+  @Input() messages: ChatConversation[] = [];
 
   getContact(senderId: string): ChatContact | undefined {
     return this.contacts.find(c => c.id === senderId);
