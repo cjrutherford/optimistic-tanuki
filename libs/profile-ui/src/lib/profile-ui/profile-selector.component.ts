@@ -1,14 +1,6 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
-import { ButtonComponent, CardComponent, ModalComponent, ThemeColors, TileComponent } from '@optimistic-tanuki/common-ui'; // Removed GridComponent
-import { CreateProfileDto, ProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ImageUploadComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
-
-import { CommonModule } from '@angular/common';
-import { MatListModule } from '@angular/material/list';
-import { ProfilePhotoComponent } from './profile-photo/profile-photo.component';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
-
+/**
+ * Component for selecting and managing user profiles.
+ */
 @Component({
   selector: 'lib-profile-selector',
   standalone: true,
@@ -28,17 +20,47 @@ import { ThemeService } from '@optimistic-tanuki/theme-ui';
   styleUrl: './profile-selector.component.scss',
 })
 export class ProfileSelectorComponent implements OnInit, AfterViewInit {
+  /**
+   * Input property for the list of available profiles.
+   */
   @Input() profiles: ProfileDto[] = [];
+  /**
+   * Input property for the currently selected profile.
+   */
   @Input() currentSelectedProfile: ProfileDto | null = null;
+  /**
+   * Emits the selected profile.
+   */
   @Output() selectedProfile: EventEmitter<ProfileDto> = new EventEmitter<ProfileDto>();
+  /**
+   * Emits when a new profile is created.
+   */
   @Output() profileCreated: EventEmitter<CreateProfileDto> = new EventEmitter<CreateProfileDto>();
+  /**
+   * Emits when a profile is updated.
+   */
   @Output() profileUpdated: EventEmitter<UpdateProfileDto> = new EventEmitter<UpdateProfileDto>();
   
+  /**
+   * Internal signal for the selected profile.
+   */
   internalSelectedProfile = signal<ProfileDto | null>(null);
+  /**
+   * The profile currently being edited.
+   */
   editingProfile: ProfileDto | null = null;
 
+  /**
+   * Controls the visibility of the create profile form.
+   */
   showCreateProfile = false;
+  /**
+   * The form group for profile creation/editing.
+   */
   profileForm: FormGroup;
+  /**
+   * Controls the visibility of the profile modal.
+   */
   showProfileModal = false; // Control for the new modal component
 
   // Injected ThemeService if needed for direct theme manipulation, otherwise remove if not used.
@@ -53,6 +75,12 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
   borderGradient?: string;
   transitionDuration?: string = '0.3s'; // Default transition duration
 
+  /**
+   * Creates an instance of ProfileSelectorComponent.
+   * @param fb The FormBuilder instance.
+   * @param elRef The ElementRef instance.
+   * @param cdr The ChangeDetectorRef instance.
+   */
   constructor(
     private fb: FormBuilder,
     private elRef: ElementRef,
@@ -67,12 +95,18 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
       bio: this.fb.control('')
     });
   }
+  /**
+   * Lifecycle hook that is called after a component's view, and its children's views, are initialized.
+   */
   ngAfterViewInit(): void {
     // Manually trigger change detection if needed, especially if running in dev mode
     // and to prevent ExpressionChangedAfterItHasBeenCheckedError.
     this.cdr.detectChanges();
   }
 
+  /**
+   * Lifecycle hook that is called after data-bound properties of a directive are initialized.
+   */
   ngOnInit(): void {
     if (this.currentSelectedProfile) {
       this.internalSelectedProfile.set(this.currentSelectedProfile);
@@ -88,12 +122,20 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
     });
   }
 
+  /**
+   * Selects a profile and emits the selected profile.
+   * @param profile The profile to select.
+   */
   selectProfile(profile: ProfileDto): void {
     this.internalSelectedProfile.set(profile);
     this.selectedProfile.emit(profile);
     this.showProfileModal = false; // Close the modal
   }
 
+  /**
+   * Opens the profile dialog for creating or editing a profile.
+   * @param profile Optional profile data to pre-fill the form.
+   */
   openProfileDialog(profile?: ProfileDto): void {
     this.editingProfile = profile || null;
     if (profile) {
@@ -104,14 +146,25 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
     this.showProfileModal = true; // Open the modal
   }
 
+  /**
+   * Handles the upload of a profile picture.
+   * @param base64Image The base64 encoded string of the uploaded image.
+   */
   onProfilePicUpload(base64Image: string): void {
     this.profileForm.get('profilePic')?.setValue(base64Image);
   }
 
+  /**
+   * Handles the upload of a cover picture.
+   * @param base64Image The base64 encoded string of the uploaded image.
+   */
   onCoverPicUpload(base64Image: string): void {
     this.profileForm.get('coverPic')?.setValue(base64Image);
   }
 
+  /**
+   * Saves the profile, either creating a new one or updating an existing one.
+   */
   saveProfile(): void {
     if (this.profileForm.valid) {
       const formValue = this.profileForm.value;
@@ -148,12 +201,18 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
     }
   }
 
+  /**
+   * Cancels the profile editing/creation process.
+   */
   cancelEdit(): void {
     this.showProfileModal = false; // Close the modal
     this.profileForm.reset();
     this.editingProfile = null;
   }
 
+  /**
+   * Closes the profile modal.
+   */
   closeProfileModal(): void {
     this.showProfileModal = false;
     this.profileForm.reset();

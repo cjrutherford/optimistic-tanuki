@@ -1,8 +1,16 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
+/**
+ * Initial database migration for the profile service.
+ */
 export class Initial1730836292692 implements MigrationInterface {
     name = 'Initial1730836292692'
 
+    /**
+     * Applies the migration to the database.
+     * Creates 'project', 'goal', 'timeline', and 'profile' tables, and sets up foreign key constraints.
+     * @param queryRunner The QueryRunner instance.
+     */
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "project" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "description" character varying NOT NULL, "userId" character varying NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "relatedProfileId" uuid, "timeLineEventsId" uuid, "goalsId" uuid, CONSTRAINT "PK_4d68b1358bb5b766d3e78f32f57" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "goal" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "description" character varying NOT NULL, "target" integer NOT NULL, "progress" integer NOT NULL, "userId" character varying NOT NULL, "startDate" TIMESTAMP NOT NULL, "endDate" TIMESTAMP, "completed" boolean NOT NULL DEFAULT false, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "relatedProfileId" uuid, "relatedProjectId" uuid, CONSTRAINT "PK_88c8e2b461b711336c836b1e130" PRIMARY KEY ("id"))`);
@@ -19,6 +27,11 @@ export class Initial1730836292692 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "timeline" ADD CONSTRAINT "FK_6f73d927c0033fd7599f4883bb0" FOREIGN KEY ("relatedProfileId") REFERENCES "profile"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
 
+    /**
+     * Reverts the migration from the database.
+     * Drops 'project', 'goal', 'timeline', and 'profile' tables, and removes foreign key constraints.
+     * @param queryRunner The QueryRunner instance.
+     */
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "timeline" DROP CONSTRAINT "FK_6f73d927c0033fd7599f4883bb0"`);
         await queryRunner.query(`ALTER TABLE "timeline" DROP CONSTRAINT "FK_4b2c95c68243b9c3acbd9e7ea0d"`);

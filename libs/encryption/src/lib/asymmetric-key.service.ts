@@ -1,17 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import {
-  generateKeyPair,
-  privateEncrypt,
-  publicDecrypt,
-  constants as CryptoConstants,
-} from 'crypto';
-
+/**
+ * Service for asymmetric encryption and decryption using RSA key pairs.
+ */
 @Injectable()
 export default class AsymmetricService {
   /**
-   *
-   * @param secret string that represents the data to be used as an encryption hook. (optional, but less secure).
-   * @returns Public and private keypair for use in the caller
+   * Generates an RSA key pair.
+   * @param secret Optional secret to encrypt the private key. If provided, it will be required for decryption.
+   * @returns A Promise that resolves to an object containing the public and private keys in PEM format.
    */
   generateKeyPair(secret?: string) {
     return new Promise<{ public: string; private: string }>(
@@ -42,11 +37,11 @@ export default class AsymmetricService {
   }
 
   /**
-   *
-   * @param privKey private key in which to use to encrypt the data in the value parameter.
-   * @param value the data that is to be encrypted. Please text format only.
-   * @param secret (Optional) Secret used when creating the key pair. (validation, required if provided at key generation.)
-   * @returns
+   * Encrypts data using a private key.
+   * @param privKey The private key in PEM format.
+   * @param value The data to be encrypted (text format only).
+   * @param secret Optional secret used when creating the key pair. Required if the private key is encrypted.
+   * @returns A Buffer containing the encrypted data.
    */
   encrypt(privKey: string, value: string, secret?: string) {
     return privateEncrypt(
@@ -60,11 +55,11 @@ export default class AsymmetricService {
   }
 
   /**
-   *
-   * @param pubKey public key in the keypar.
-   * @param cyText value to be decrypted.
-   * @param secret (Optional) secret used when creating the key pair. (Validation, required if provided at key generation.)
-   * @returns
+   * Decrypts data using a public key.
+   * @param pubKey The public key in PEM format.
+   * @param cyText The ciphertext to be decrypted.
+   * @param secret Optional secret used when creating the key pair. Required if the private key was encrypted.
+   * @returns A Buffer containing the decrypted data.
    */
   decrypt(pubKey: string, cyText: string, secret?: string) {
     return publicDecrypt(

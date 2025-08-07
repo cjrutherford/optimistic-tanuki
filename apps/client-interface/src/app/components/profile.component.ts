@@ -21,9 +21,33 @@ import { UpdateProfileDto } from '@optimistic-tanuki/ui-models';
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })
+/**
+ * Component for displaying and managing user profiles.
+ */
+@Component({
+  selector: 'app-profile',
+  standalone: true,
+  imports: [
+    CommonModule, 
+    MatCardModule, 
+    MatListModule, 
+    MatIconModule, 
+    BannerComponent,
+    ProfileSelectorComponent,
+  ],
+  templateUrl: './profile.component.html',
+  styleUrl: './profile.component.scss',
+})
 export class ProfileComponent implements OnInit {
+  /**
+   * The ProfileService instance.
+   */
   profileService: ProfileService
 
+  /**
+   * Creates an instance of ProfileComponent.
+   * @param _profileService The ProfileService instance to inject.
+   */
   constructor(readonly _profileService: ProfileService) {
     this.profileService = _profileService;
     const profile = localStorage.getItem('selectedProfile');
@@ -32,6 +56,9 @@ export class ProfileComponent implements OnInit {
     }
   }
 
+  /**
+   * Initializes the component and loads user profiles.
+   */
   ngOnInit(): void {
     this.profileService.getAllProfiles().then(() => {
       const profile = localStorage.getItem('selectedProfile');
@@ -41,6 +68,10 @@ export class ProfileComponent implements OnInit {
     });
   }
 
+  /**
+   * Updates a user profile.
+   * @param profile The profile data to update.
+   */
   updateProfile(profile: UpdateProfileDto) {
     const id = profile.id
     this.profileService.updateProfile(id, profile).then(() => {
@@ -48,6 +79,9 @@ export class ProfileComponent implements OnInit {
     });
   }
 
+  /**
+   * Gets the current user profile.
+   */
   get profile() {
     return this.profileService.getCurrentUserProfile();
   }

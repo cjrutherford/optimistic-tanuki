@@ -11,12 +11,27 @@ import { AuthCommands } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
+/**
+ * A guard that checks for authentication and validates tokens.
+ */
+@Injectable()
 export class AuthGuard implements CanActivate {
+  /**
+   * Creates an instance of AuthGuard.
+   * @param authService Client proxy for the authentication service.
+   * @param reflector The Reflector instance.
+   */
   constructor(
     @Inject('AUTHENTICATION_SERVICE') private authService: ClientProxy,
     private reflector: Reflector
   ) {}
 
+  /**
+   * Introspects the given token by sending it to the authentication service for validation.
+   * @param token The token to introspect.
+   * @param userId The ID of the user associated with the token.
+   * @returns A Promise that resolves to a boolean indicating token validity.
+   */
   private async introspectToken(token: string, userId: string): Promise<boolean> {
     const response = await firstValueFrom(
       this.authService.send({ cmd: AuthCommands.Validate }, { token, userId })
@@ -26,6 +41,11 @@ export class AuthGuard implements CanActivate {
     return response && response.isValid;
   }
 
+  /**
+   * Parses a JWT token to extract its payload.
+   * @param token The JWT token to parse.
+   * @returns The parsed payload of the token.
+   */
   parseToken(token: string) {
     // Assuming the token is a JWT token
     const payload = Buffer.from(token.split('.')[1], 'base64').toString(
@@ -35,6 +55,12 @@ export class AuthGuard implements CanActivate {
     return data;
   }
 
+  /**
+   * Determines if the current request can be activated.
+   * @param context The execution context.
+   * @returns A Promise that resolves to a boolean indicating whether the request can be activated.
+   * @throws UnauthorizedException if authentication fails.
+   */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers['authorization'];

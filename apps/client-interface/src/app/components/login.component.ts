@@ -23,14 +23,29 @@ import { LoginType } from '@optimistic-tanuki/ui-models';
     LoginBlockComponent
   ],
 })
+/**
+ * Component for user login.
+ */
 export class LoginComponent implements OnDestroy {
+  /**
+   * Subscription for theme changes.
+   */
   themeSub: Subscription;
+  /**
+   * Styles for the component based on the current theme.
+   */
   themeStyles!: {
     backgroundColor: string;
     color: string;
     border: string;
   };
 
+  /**
+   * Creates an instance of LoginComponent.
+   * @param themeService The service for managing themes.
+   * @param authStateService The service for managing authentication state.
+   * @param router The Angular router.
+   */
   constructor(private readonly themeService: ThemeService, private readonly authStateService: AuthStateService, private readonly router: Router) {
     this.themeSub = this.themeService.themeColors$.pipe(filter(x => !!x)).subscribe((colors) => {
       this.themeStyles = {
@@ -41,10 +56,17 @@ export class LoginComponent implements OnDestroy {
     });
   }
 
+  /**
+   * Unsubscribes from theme changes when the component is destroyed.
+   */
   ngOnDestroy() {
     this.themeSub.unsubscribe();
   }
 
+  /**
+   * Handles the form submission for login.
+   * @param $event The login data from the form.
+   */
   onSubmit($event: LoginType) {
     const event = $event as any;
     console.log(event);

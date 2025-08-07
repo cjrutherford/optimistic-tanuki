@@ -1,6 +1,6 @@
-import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Output, HostListener, Input, OnInit } from '@angular/core';
-
+/**
+ * Component for uploading images via file input or drag-and-drop.
+ */
 @Component({
   selector: 'lib-image-upload',
   standalone: true,
@@ -45,11 +45,27 @@ import { Component, EventEmitter, Output, HostListener, Input, OnInit } from '@a
   `]
 })
 export class ImageUploadComponent implements OnInit {
+  /**
+   * Emits the base64 encoded string of the uploaded image.
+   */
   @Output() imageUpload = new EventEmitter<string>();
+  /**
+   * The current image URL or base64 string to display.
+   */
   @Input() currentImage: string | null = null;
+  /**
+   * The base64 encoded string of the selected or dropped image.
+   */
   image: string | null = null;
+  /**
+   * Indicates whether a drag operation is currently over the component.
+   */
   isDragOver = false;
 
+  /**
+   * Handles the change event of the file input.
+   * @param event The change event.
+   */
   handleImageChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -58,12 +74,19 @@ export class ImageUploadComponent implements OnInit {
     }
   }
 
+  /**
+   * Initializes the component.
+   */
   ngOnInit(): void {
     if (this.currentImage) {
       this.image = this.currentImage;
     }
   }
 
+  /**
+   * Handles the drop event for drag-and-drop functionality.
+   * @param event The drag event.
+   */
   @HostListener('drop', ['$event'])
   handleDrop(event: DragEvent): void {
     event.preventDefault();
@@ -74,18 +97,30 @@ export class ImageUploadComponent implements OnInit {
     }
   }
 
+  /**
+   * Handles the dragover event for drag-and-drop functionality.
+   * @param event The drag event.
+   */
   @HostListener('dragover', ['$event'])
   handleDragOver(event: DragEvent): void {
     event.preventDefault();
     this.isDragOver = true;
   }
 
+  /**
+   * Handles the dragleave event for drag-and-drop functionality.
+   * @param event The drag event.
+   */
   @HostListener('dragleave', ['$event'])
   handleDragLeave(event: DragEvent): void {
     event.preventDefault();
     this.isDragOver = false;
   }
 
+  /**
+   * Reads the content of a file and converts it to a base64 string.
+   * @param file The file to read.
+   */
   private readFile(file: File): void {
     const reader = new FileReader();
     reader.onloadend = () => {

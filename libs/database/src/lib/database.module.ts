@@ -5,8 +5,18 @@ export { FindOptionsBuilder } from './findOptionsBuilder';
 
 @Module({
 })
+/**
+ * The DatabaseModule provides a dynamic way to register TypeORM DataSources.
+ */
+@Module({
+})
 export class DatabaseModule implements DynamicModule {
   module!: Type<DatabaseModule>;
+  /**
+   * Registers one or more database connections dynamically.
+   * @param opts An array of objects, each containing a name for the connection and a factory function.
+   * @returns A DynamicModule that provides the database connections and repositories.
+   */
   static register(...opts: { name: string, factory: (config: ConfigService) => DataSourceOptions}[]): DynamicModule {
     const connections = [];
     const repositories: Provider[] = [];

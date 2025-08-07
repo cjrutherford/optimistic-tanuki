@@ -14,6 +14,9 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { SocialController } from '../controllers/social/social.controller';
 import { ChatGateway } from './chat-gateway/chat.gateway';
 
+/**
+ * The main application module.
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({

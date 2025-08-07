@@ -1,3 +1,8 @@
+/**
+ * Generates an array of color shades (10 shades) based on a given base color.
+ * @param color The base color in hexadecimal format (e.g., '#RRGGBB').
+ * @returns An array of tuples, where each tuple contains the shade index (as a string) and the hexadecimal color code of the shade.
+ */
 export function generateColorShades(color: string): [string, string][] {
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -31,6 +36,11 @@ export function generateColorShades(color: string): [string, string][] {
   return shades;
 }
 
+/**
+ * Generates the complementary color for a given hexadecimal color.
+ * @param hexColor The base color in hexadecimal format (e.g., '#RRGGBB').
+ * @returns The hexadecimal code of the complementary color.
+ */
 export function generateComplementaryColor(hexColor: string): string {
   // Convert hex to RGB
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexColor);
@@ -50,6 +60,14 @@ export function generateComplementaryColor(hexColor: string): string {
   return "#" + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
 }
 
+/**
+ * Generates a success-themed color based on a given base color.
+ * The hue is shifted towards green, and saturation/lightness are increased.
+ * @param baseColor The base color in hexadecimal format (e.g., '#RRGGBB').
+ * @param saturationFactor The factor by which to increase saturation (default: 0.3).
+ * @param lightnessFactor The factor by which to increase lightness (default: 0.2).
+ * @returns The hexadecimal code of the generated success color.
+ */
 export function generateSuccessColor(baseColor: string, saturationFactor = 0.3, lightnessFactor = 0.2): string {
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -130,6 +148,14 @@ export function generateSuccessColor(baseColor: string, saturationFactor = 0.3, 
   return rgbToHex(r, g, b);
 }
 
+/**
+ * Generates a danger-themed color based on a given base color.
+ * The hue is shifted towards red, and saturation/lightness are increased.
+ * @param baseColor The base color in hexadecimal format (e.g., '#RRGGBB').
+ * @param saturationFactor The factor by which to increase saturation (default: 0.3).
+ * @param lightnessFactor The factor by which to increase lightness (default: 0.2).
+ * @returns The hexadecimal code of the generated danger color.
+ */
 export function generateDangerColor(baseColor: string, saturationFactor = 0.3, lightnessFactor = 0.2): string {
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -210,6 +236,14 @@ export function generateDangerColor(baseColor: string, saturationFactor = 0.3, l
   return rgbToHex(r, g, b);
 }
 
+/**
+ * Generates a warning-themed color based on a given base color.
+ * The hue is shifted towards yellow, and saturation/lightness are increased.
+ * @param baseColor The base color in hexadecimal format (e.g., '#RRGGBB').
+ * @param saturationFactor The factor by which to increase saturation (default: 0.3).
+ * @param lightnessFactor The factor by which to increase lightness (default: 0.2).
+ * @returns The hexadecimal code of the generated warning color.
+ */
 export function generateWarningColor(baseColor: string, saturationFactor = 0.3, lightnessFactor = 0.2): string {
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

@@ -22,14 +22,39 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
     '[style.--danger]': 'danger',
   }
 })
+/**
+ * A reusable button component with theming capabilities.
+ */
 export class ButtonComponent extends Themeable {
+  /**
+   * The success color from the theme.
+   */
   success!: string;
+  /**
+   * The warning color from the theme.
+   */
   warning!: string;
+  /**
+   * The danger color from the theme.
+   */
   danger!: string;
+  /**
+   * Whether the button is disabled.
+   */
   @Input() disabled = false;
+  /**
+   * The visual variant of the button.
+   */
   @Input() variant: 'primary' | 'secondary' | 'outlined' | 'text' | 'warning' | 'danger' | 'success' | 'rounded' = 'primary';
+  /**
+   * Emits when the button is clicked.
+   */
   @Output() action = new EventEmitter<void>();
 
+  /**
+   * Applies the given theme colors to the button's styles.
+   * @param colors The theme colors to apply.
+   */
   override applyTheme(colors: ThemeColors): void {
     this.background = `linear-gradient(to bottom, ${colors.background}, ${colors.accent})`;
     this.foreground = colors.foreground;
@@ -48,6 +73,9 @@ export class ButtonComponent extends Themeable {
     this.transitionDuration = '0.3s';
   }
 
+  /**
+   * Handles the button click event.
+   */
   onClick() {
     if (!this.disabled) {
       this.action.emit();

@@ -1,8 +1,16 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
+/**
+ * Initial database migration for the chat collector service.
+ */
 export class Initial1754414956504 implements MigrationInterface {
     name = 'Initial1754414956504'
 
+    /**
+     * Applies the migration to the database.
+     * Creates 'message' and 'conversation' tables, and sets up foreign key constraints.
+     * @param queryRunner The QueryRunner instance.
+     */
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TYPE "public"."message_type_enum" AS ENUM('chat', 'info', 'warning', 'system')`);
         await queryRunner.query(`CREATE TABLE "message" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "content" character varying NOT NULL, "senderId" character varying NOT NULL, "type" "public"."message_type_enum" NOT NULL DEFAULT 'chat', "recipients" text array NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "conversationId" uuid, CONSTRAINT "PK_ba01f0a3e0123651915008bc578" PRIMARY KEY ("id"))`);
@@ -10,6 +18,11 @@ export class Initial1754414956504 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "message" ADD CONSTRAINT "FK_7cf4a4df1f2627f72bf6231635f" FOREIGN KEY ("conversationId") REFERENCES "conversation"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
     }
 
+    /**
+     * Reverts the migration from the database.
+     * Drops 'message' and 'conversation' tables, and removes foreign key constraints.
+     * @param queryRunner The QueryRunner instance.
+     */
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "message" DROP CONSTRAINT "FK_7cf4a4df1f2627f72bf6231635f"`);
         await queryRunner.query(`DROP TABLE "conversation"`);

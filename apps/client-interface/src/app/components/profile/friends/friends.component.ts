@@ -14,7 +14,14 @@ import { TileComponent } from "@optimistic-tanuki/common-ui";
     styleUrls: ['./friends.component.scss'],
     imports: [CommonModule, MatCardModule, MatListModule, MatIconModule, TileComponent],
 })
+/**
+ * Component for displaying a friend's information.
+ */
 export class FriendsComponent {
+    /**
+     * Input property for friend data.
+     * @type {{photo: string, name: string}}
+     */
     @Input() friend: {photo: string, name: string} = {
         photo: 'https://placehold.it/300x300',
         name: 'Friend',

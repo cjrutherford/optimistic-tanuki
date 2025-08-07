@@ -1,8 +1,16 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
+/**
+ * Initial database migration for the project planning service.
+ */
 export class Initial1753991364111 implements MigrationInterface {
     name = 'Initial1753991364111'
 
+    /**
+     * Applies the migration to the database.
+     * Creates tables for changes, project journals, risks, timers, tasks, and projects, and sets up foreign key constraints.
+     * @param queryRunner The QueryRunner instance.
+     */
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TYPE "public"."change_changetype_enum" AS ENUM('ADDITION', 'MODIFICATION', 'DELETION')`);
         await queryRunner.query(`CREATE TYPE "public"."change_status_enum" AS ENUM('PENDING', 'RESEARCHING', 'DISCUSSING', 'DESIGNING', 'PENDING_APPROVAL', 'IMPLEMENTING', 'COMPLETE', 'DISCARDED')`);
@@ -26,6 +34,11 @@ export class Initial1753991364111 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "task" ADD CONSTRAINT "FK_3797a20ef5553ae87af126bc2fe" FOREIGN KEY ("projectId") REFERENCES "project"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
 
+    /**
+     * Reverts the migration from the database.
+     * Drops tables and removes foreign key constraints.
+     * @param queryRunner The QueryRunner instance.
+     */
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "task" DROP CONSTRAINT "FK_3797a20ef5553ae87af126bc2fe"`);
         await queryRunner.query(`ALTER TABLE "risk" DROP CONSTRAINT "FK_920ed8a2c342ac6ae35e08ffa01"`);

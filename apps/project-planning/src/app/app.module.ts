@@ -76,4 +76,58 @@ import loadDatabase from './loadDatabase';
     }
   ],
 })
+/**
+ * The main application module for the Project Planning microservice.
+ */
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [loadConfig]
+    }),
+    LoggerModule,
+    DatabaseModule.register({ name: 'project_planning', factory: loadDatabase }),
+  ],
+  controllers: [
+    ChangeController,
+    ProjectController,
+    ProjectJournalController,
+    RiskController,
+    TaskController,
+    TimerController
+  ],
+  providers: [
+    ChangeService,
+    ProjectService,
+    ProjectJournalService,
+    RiskService,
+    TaskService,
+    TimerService,
+    {
+      provide: getRepositoryToken(Project),
+      useFactory: (connection: DataSource) => connection.getRepository(Project),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },{
+      provide: getRepositoryToken(ProjectJournal),
+      useFactory: (connection: DataSource) => connection.getRepository(ProjectJournal),
+      inject: ['PROJECT_PLANNING_CONNECTION'], 
+    },{
+      provide: getRepositoryToken(Task),
+      useFactory: (connection: DataSource) => connection.getRepository(Task),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },{
+      provide: getRepositoryToken(Risk),
+      useFactory: (connection: DataSource) => connection.getRepository(Risk),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },{
+      provide: getRepositoryToken(Change),
+      useFactory: (connection: DataSource) => connection.getRepository(Change),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },{
+      provide: getRepositoryToken(Timer),
+      useFactory: (connection: DataSource) => connection.getRepository(Timer),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    }
+  ],
+})
 export class AppModule {}

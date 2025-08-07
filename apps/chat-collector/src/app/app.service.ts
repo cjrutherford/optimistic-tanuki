@@ -5,12 +5,26 @@ import { Any, Repository } from 'typeorm';
 import { ChatMessage } from '@optimistic-tanuki/models';
 
 @Injectable()
+/**
+ * Service for handling chat-related business logic.
+ */
+@Injectable()
 export class AppService {
+  /**
+   * Creates an instance of AppService.
+   * @param messageRepository The repository for chat messages.
+   * @param conversationRepository The repository for chat conversations.
+   */
   constructor(
     @Inject(getRepositoryToken(Message)) private readonly messageRepository: Repository<Message>,
     @Inject(getRepositoryToken(Conversation)) private readonly conversationRepository: Repository<Conversation>,
   ) {}
 
+  /**
+   * Posts a new chat message.
+   * @param data The chat message data.
+   * @returns The created message.
+   */
   async postMessage(data: ChatMessage): Promise<Message> {
     const message = this.messageRepository.create({...data, type: Message[data.type]});
     await this.messageRepository.save(message);
@@ -31,6 +45,11 @@ export class AppService {
     return message;
   }
 
+  /**
+   * Retrieves chat conversations for a given profile.
+   * @param profileId The ID of the profile.
+   * @returns An array of chat conversations.
+   */
   async getConversations(profileId: string): Promise<Conversation[]> {
     return this.conversationRepository.find({ where: { participants: Any([profileId]) } });
   }

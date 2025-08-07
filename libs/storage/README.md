@@ -1,7 +1,20 @@
 # storage
 
-This library was generated with [Nx](https://nx.dev).
+This project contains the `storage` library, which provides utilities for storage (local, S3).
 
-## Running unit tests
+## Nx Targets
 
-Run `nx test storage` to execute the unit tests via [Jest](https://jestjs.io).
+Here are the available Nx targets for the `storage` project:
+
+-   **lint**: Runs ESLint on the project.
+    ```bash
+    npx nx lint storage
+    ```
+-   **test**: Runs unit tests using Jest.
+    ```bash
+    npx nx test storage
+    ```
+    -   **ci**: Runs tests in CI mode with code coverage.
+        ```bash
+        npx nx test storage --configuration=ci
+        ```

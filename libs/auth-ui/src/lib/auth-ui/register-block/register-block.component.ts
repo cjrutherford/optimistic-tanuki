@@ -22,13 +22,55 @@ import { RegisterSubmitType } from '@optimistic-tanuki/ui-models';
     '[style.--transition-duration]': 'transitionDuration',
   }
 })
+/**
+ * Component for displaying a user registration form.
+ */
+@Component({
+  selector: 'lib-register-block',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, CardComponent, ButtonComponent, TextInputComponent],
+  templateUrl: './register-block.component.html',
+  styleUrls: ['./register-block.component.scss'],
+  host: { // Added host bindings
+    '[style.--background]': 'background',
+    '[style.--foreground]': 'foreground',
+    '[style.--accent]': 'accent',
+    '[style.--complement]': 'complement',
+    '[style.--border-color]': 'borderColor',
+    '[style.--border-gradient]': 'borderGradient',
+    '[style.--transition-duration]': 'transitionDuration',
+  }
+})
 export class RegisterBlockComponent extends Themeable {
+  /**
+   * The header text for the registration block.
+   */
   @Input() registerHeader = 'Register';
+  /**
+   * The text for the registration button.
+   */
   @Input() registerButtonText = 'Register';
+  /**
+   * The call to action message.
+   */
   @Input() callToAction = 'Join us on your journey';
+  /**
+   * The source URL for the hero image.
+   */
   @Input() heroSource = 'https://source.unsplash.com/random/800x600/?nature,water'; 
+  /**
+   * Emits the registration form data when submitted.
+   */
   @Output() submitEvent = new EventEmitter<RegisterSubmitType>();
+  /**
+   * The registration form group.
+   */
   registerForm: FormGroup;
+  /**
+   * Creates an instance of RegisterBlockComponent.
+   * @param fb The FormBuilder instance.
+   * @param themeService The ThemeService instance.
+   */
   constructor(private readonly fb: FormBuilder, themeService: ThemeService) {
     super(themeService);
     this.registerForm = this.fb.group({
@@ -41,6 +83,10 @@ export class RegisterBlockComponent extends Themeable {
     });
   }
 
+  /**
+   * Applies the given theme colors to the component's styles.
+   * @param colors The theme colors to apply.
+   */
   override applyTheme(colors: ThemeColors): void {
     this.background = `linear-gradient(30deg, ${colors.accent}, ${colors.background})`;
     this.accent = colors.accent;
@@ -55,10 +101,17 @@ export class RegisterBlockComponent extends Themeable {
     this.transitionDuration = '0.5s';
   }
 
+  /**
+   * Handles changes in the form.
+   * @param e The event object.
+   */
   onFormChange(e: string) {
     console.log(e);
   }
 
+  /**
+   * Handles the form submission.
+   */
   onSubmit() {
     this.submitEvent.emit(this.registerForm.value);
   }

@@ -61,4 +61,7 @@ import loadDatabase from './loadDatabase';
     }
   ],
 })
+/**
+ * The main application module for the Authentication microservice.
+ */
 export class AppModule {}

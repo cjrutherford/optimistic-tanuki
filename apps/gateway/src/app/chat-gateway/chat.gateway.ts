@@ -7,16 +7,29 @@ import { firstValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway((Number(process.env.SOCKET_PORT) || 3300), {namespace: 'chat', cors: { origin: '*' } })
+/**
+ * WebSocket Gateway for handling chat-related events.
+ */
+@WebSocketGateway((Number(process.env.SOCKET_PORT) || 3300), {namespace: 'chat', cors: { origin: '*' } })
 export class ChatGateway {
   @WebSocketServer()
   server: Server;
 
   private connectedClients: { id: string, client: Socket }[] = [];
 
+  /**
+   * Creates an instance of ChatGateway.
+   * @param chatCollectorClient Client proxy for the chat collector microservice.
+   */
   constructor(
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE) private readonly chatCollectorClient: ClientProxy,
   ) {}
 
+  /**
+   * Handles incoming chat messages.
+   * @param payload The chat message payload.
+   * @param client The connected socket client.
+   */
   @SubscribeMessage('message')
   async handleMessage(@MessageBody() payload: ChatMessage, @ConnectedSocket() client: Socket): Promise<void> {
     const senderId = payload.senderId;
@@ -32,6 +45,11 @@ export class ChatGateway {
     }
   }
 
+  /**
+   * Handles requests to get conversations for a profile.
+   * @param payload The payload containing the profile ID.
+   * @param client The connected socket client.
+   */
   @SubscribeMessage('get_conversations')
   async handleGetConversations(@MessageBody() payload: { profileId: string }, @ConnectedSocket() client: Socket): Promise<void> {
     const senderId = payload.profileId;
@@ -42,6 +60,12 @@ export class ChatGateway {
     });
   }
 
+  /**
+   * Updates the list of connected sockets.
+   * @param senderId The ID of the sender.
+   * @param client The connected socket client.
+   * @param type The type of update (connect or disconnect).
+   */
   private updateConnectedSockets(senderId: string, client: Socket, type: 'connect' | 'disconnect') {
     if (type === 'connect') {
       if(!this.connectedClients.some(c => c.id === senderId)) {
@@ -52,6 +76,10 @@ export class ChatGateway {
     }
   }
 
+  /**
+   * Handles client disconnection.
+   * @param client The disconnected socket client.
+   */
   @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
     const disconnectedClient = this.connectedClients.find(c => c.client === client);

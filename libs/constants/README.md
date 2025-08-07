@@ -1,7 +1,20 @@
 # constants
 
-This library was generated with [Nx](https://nx.dev).
+This project contains the `constants` library, which provides shared constants across the applications.
 
-## Running unit tests
+## Nx Targets
 
-Run `nx test constants` to execute the unit tests via [Jest](https://jestjs.io).
+Here are the available Nx targets for the `constants` project:
+
+-   **lint**: Runs ESLint on the project.
+    ```bash
+    npx nx lint constants
+    ```
+-   **test**: Runs unit tests using Jest.
+    ```bash
+    npx nx test constants
+    ```
+    -   **ci**: Runs tests in CI mode with code coverage.
+        ```bash
+        npx nx test constants --configuration=ci
+        ```

@@ -5,11 +5,25 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 
+/**
+ * Service for managing user keys.
+ */
 @Injectable()
 export class KeyService {
   private readonly logger = new Logger('Auth Service | Key Service')
+  /**
+   * Creates an instance of KeyService.
+   * @param keyService The AsymmetricService for key generation.
+   */
   constructor(private readonly keyService: AsymmetricService){}
 
+  /**
+   * Generates a new key pair for a user and stores the private key.
+   * @param userId The ID of the user.
+   * @param hash The hash to use for key generation.
+   * @returns An object containing the public key and the private key's storage location.
+   * @throws Error if key generation fails.
+   */
   async generateUserKeys(userId: string, hash: string) {
     try {
     const { private: privKey, public: pubKey } = await this.keyService.generateKeyPair(hash);

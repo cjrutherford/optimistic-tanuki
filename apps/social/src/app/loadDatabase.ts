@@ -7,6 +7,11 @@ import { Link } from "../entities/link.entity";
 import { Comment } from "../entities/comment.entity";
 import FollowEntity from "../entities/Follow.entity";
 
+/**
+ * Loads the database configuration for the Social microservice.
+ * @param config The ConfigService instance.
+ * @returns PostgresConnectionOptions for TypeORM.
+ */
 const loadDatabase = (config: ConfigService) => {
     const database = config.get('database');
     const entities = [Attachment, Comment, Post, Vote, Link, FollowEntity];

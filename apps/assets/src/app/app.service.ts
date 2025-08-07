@@ -6,8 +6,17 @@ import { AssetHandle, CreateAssetDto } from '@optimistic-tanuki/models';
 import { RpcException } from '@nestjs/microservices';
 import { STORAGE_ADAPTERS, StorageAdapter } from '@optimistic-tanuki/storage';
 
+/**
+ * Service for managing assets.
+ */
 @Injectable()
 export class AppService {
+  /**
+   * Creates an instance of AppService.
+   * @param l The logger instance.
+   * @param assetRepo The repository for AssetEntity.
+   * @param storageAdapter The storage adapter for handling asset storage.
+   */
   constructor(
     private readonly l: Logger,
     @Inject(getRepositoryToken(AssetEntity))
@@ -16,6 +25,12 @@ export class AppService {
     private readonly storageAdapter: StorageAdapter,
   ) {}
 
+  /**
+   * Creates a new asset.
+   * @param data The data for creating the asset.
+   * @returns The created AssetEntity.
+   * @throws RpcException if asset creation fails.
+   */
   async createAsset(data: CreateAssetDto): Promise<AssetEntity> {
     try{
       data.name = data.name.replace(/\s+/g, '_');
@@ -38,6 +53,12 @@ export class AppService {
     }
   }
 
+  /**
+   * Removes an asset.
+   * @param data The handle of the asset to remove.
+   * @returns The removed AssetEntity.
+   * @throws RpcException if the asset is not found.
+   */
   async removeAsset(data: AssetHandle): Promise<AssetEntity> {
     this.l.log('Removing asset with data:', data);
     const asset = await this.assetRepo.findOneBy({ id: data.id });
@@ -49,6 +70,12 @@ export class AppService {
     return await this.assetRepo.remove(asset);
   }
 
+  /**
+   * Retrieves an asset.
+   * @param data The handle of the asset to retrieve.
+   * @returns The retrieved AssetEntity.
+   * @throws RpcException if the asset is not found.
+   */
   async retrieveAsset(data: AssetHandle): Promise<AssetEntity> {
     this.l.log('Retrieving asset with data:', data);
     const asset = await this.assetRepo.findOneBy({ id: data.id });
@@ -59,6 +86,12 @@ export class AppService {
     return asset;
   }
 
+  /**
+   * Reads the content of an asset.
+   * @param data The handle of the asset to read.
+   * @returns The content of the asset as a string.
+   * @throws RpcException if the asset content cannot be read.
+   */
   async readAsset(data: AssetHandle): Promise<string> {
     this.l.log('Reading asset with data:', data);
     const asset = await this.retrieveAsset(data);

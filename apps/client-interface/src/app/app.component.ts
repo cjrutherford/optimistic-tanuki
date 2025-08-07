@@ -17,6 +17,9 @@ import { GridComponent } from '@optimistic-tanuki/common-ui';
 import { ProfileService } from './profile.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models'; // Added import for ProfileDto
 
+/**
+ * The root component of the client-interface application.
+ */
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -36,6 +39,9 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models'; // Added import for P
 export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('drawer') drawer!: MatDrawer;
   private breakpointObserver = inject(BreakpointObserver);
+  /**
+   * Observable that emits true if the screen is a handset, false otherwise.
+   */
   isHandset$: Observable<boolean> = this.breakpointObserver
     .observe(Breakpoints.Handset)
     .pipe(
@@ -43,27 +49,74 @@ export class AppComponent implements OnInit, OnDestroy {
       shareReplay()
     );
 
+  /**
+   * The background color of the theme.
+   */
   background!: string;
+  /**
+   * The foreground color of the theme.
+   */
   foreground!: string;
+  /**
+   * The accent color of the theme.
+   */
   accent!: string;
+  /**
+   * The background gradient of the theme.
+   */
   backgroundGradient!: string;
 
+  /**
+   * Signal that holds the current theme name.
+   */
   themeName = signal('light-theme');
+  /**
+   * The ThemeService instance.
+   */
   themeService = inject(ThemeService);
+  /**
+   * Subscription for URL changes.
+   */
   urlSub!: Subscription;
+  /**
+   * Subscription for theme changes.
+   */
   themeSub!: Subscription;
 
+  /**
+   * The AuthStateService instance.
+   */
   public authState = inject(AuthStateService);
+  /**
+   * The ProfileService instance.
+   */
   public profileService = inject(ProfileService);
+  /**
+   * Observable that emits the current URL.
+   */
   public currentUrl$!: Observable<string>;
 
+  /**
+   * Creates an instance of AppComponent.
+   * @param router The Angular router.
+   * @param platformId The platform ID.
+   */
   constructor(
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: object // Injected PLATFORM_ID
   ) {}
+  /**
+   * The title of the application.
+   */
   title = 'client-interface';
+  /**
+   * Indicates whether the navigation is expanded.
+   */
   isNavExpanded = false;
 
+  /**
+   * Initializes the component.
+   */
   ngOnInit() {
     this.currentUrl$ = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -97,6 +150,9 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
   }
+  /**
+   * Cleans up subscriptions when the component is destroyed.
+   */
   ngOnDestroy() {
     if (this.themeSub) {
       this.themeSub.unsubscribe();
@@ -106,6 +162,9 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Toggles the navigation drawer.
+   */
   toggleNav() {
     if (!this.authState.isAuthenticated) return;
     else this.isNavExpanded = !this.isNavExpanded;

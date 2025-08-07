@@ -11,18 +11,40 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
   templateUrl: './mfa-block.component.html',
   styleUrls: ['./mfa-block.component.scss'],
 })
+/**
+ * Component for handling Multi-Factor Authentication (MFA).
+ */
 export class MfaBlockComponent {
+  /**
+   * The MFA form group.
+   */
   mfaForm: FormGroup;
+  /**
+   * Indicates whether the MFA block is in onboarding mode.
+   */
   @Input() onboarding = false;
+  /**
+   * The URL of the QR code for MFA setup.
+   */
   @Input() qrCodeUrl = '';
+  /**
+   * Emits the submitted MFA token.
+   */
   @Output() submitMfa = new EventEmitter<string>();
 
+  /**
+   * Creates an instance of MfaBlockComponent.
+   * @param fb The FormBuilder instance.
+   */
   constructor(private fb: FormBuilder) {
     this.mfaForm = this.fb.group({
       token: ['']
     });
   }
 
+  /**
+   * Handles the MFA form submission.
+   */
   onSubmit() {
     const token = this.mfaForm.value.token;
     // Logic to handle the MFA token submission

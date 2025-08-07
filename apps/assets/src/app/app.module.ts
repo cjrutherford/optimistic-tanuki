@@ -31,4 +31,7 @@ import { ConfigModule } from '@nestjs/config';
     }
   ],
 })
+/**
+ * The main application module for the Assets microservice.
+ */
 export class AppModule {}

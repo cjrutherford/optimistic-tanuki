@@ -11,19 +11,59 @@ import { NoteDto, NoteStatus, TaskDto, TaskStatus, TimerDto, TimerStatus } from 
     CommonModule, 
   ],
 })
+/**
+ * Component for displaying and managing tasks, timers, and notes.
+ */
+@Component({
+  selector: 'app-tasks',
+  templateUrl: './tasks.component.html',
+  styleUrls: ['./tasks.component.scss'],
+  standalone: true,
+  imports: [
+    CommonModule, 
+  ],
+})
 export class TasksComponent implements OnInit {
+  /**
+   * Array of tasks.
+   */
   tasks: TaskDto[] = [];
+  /**
+   * The currently selected task.
+   */
   selectedTask: TaskDto | null = null;
+  /**
+   * Array of timers.
+   */
   timers: TimerDto[] = [];
+  /**
+   * Array of notes.
+   */
   notes: NoteDto[] = [];
+  /**
+   * Filtered array of timers based on the selected task.
+   */
   filteredTimers: TimerDto[] = [];
+  /**
+   * Filtered array of notes based on the selected task.
+   */
   filteredNotes: NoteDto[] = [];
+  /**
+   * The index of the currently selected tab.
+   */
   selectedTabIndex = 0;
 
+  /**
+   * Initializes the component and loads tasks.
+   */
   ngOnInit(): void {
     this.loadTasks();
   }
 
+  /**
+   * Loads tasks, timers, and notes data.
+   * This method currently uses hardcoded data.
+   */
   loadTasks() {
     // Load tasks from the server or service
     this.tasks = [
@@ -144,6 +184,10 @@ export class TasksComponent implements OnInit {
     ];
   }
 
+  /**
+   * Selects a task and filters related timers and notes.
+   * @param task The task to select.
+   */
   selectTask(task: TaskDto) {
     this.selectedTask = task;
     this.filteredTimers = this.timers.filter(timer => timer.taskId === task.id);
@@ -151,10 +195,20 @@ export class TasksComponent implements OnInit {
     this.selectedTabIndex = 0; // Reset to the first tab
   }
 
+  /**
+   * Returns filtered timers for a given task ID.
+   * @param taskId The ID of the task.
+   * @returns An array of TimerDto related to the task.
+   */
   getFilteredTimers(taskId: string) {
     return this.timers.filter(timer => timer.taskId === taskId);
   }
 
+  /**
+   * Returns filtered notes for a given task ID.
+   * @param taskId The ID of the task.
+   * @returns An array of NoteDto related to the task.
+   */
   getFilteredNotes(taskId: string) {
     return this.notes.filter(note => note.taskId === taskId);
   }

@@ -1,19 +1,33 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, signal } from '@angular/core';
-import { ProfileDto, CreateProfileDto, UpdateProfileDto, AssetDto, CreateAssetDto } from '@optimistic-tanuki/ui-models';
-import { firstValueFrom, map, switchMap, forkJoin } from 'rxjs';
-import { AuthStateService } from './state/auth-state.service';
-import { UpdateAttachmentDto } from '@optimistic-tanuki/social-ui';
-
+/**
+ * Service for managing user profiles.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class ProfileService {
+  /**
+   * Signal that holds the current user's profiles.
+   */
   currentUserProfiles = signal<ProfileDto[]>([]);
+  /**
+   * Signal that holds all profiles.
+   */
   allProfiles = signal<ProfileDto[]>([]);
+  /**
+   * Signal that holds the currently selected user profile.
+   */
   currentUserProfile = signal<ProfileDto | null>(null);
+  /**
+   * Creates an instance of ProfileService.
+   * @param http The HttpClient instance.
+   * @param authState The AuthStateService instance.
+   */
   constructor(private readonly http: HttpClient, private readonly authState: AuthStateService) { }
 
+  /**
+   * Selects a profile as the current user profile.
+   * @param _p The profile to select.
+   */
   selectProfile(_p: ProfileDto) {
     const profile = this.currentUserProfiles().find(p => p.id === _p.id);
     if (profile) {
@@ -22,14 +36,25 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Returns the current user's profiles.
+   * @returns An array of ProfileDto.
+   */
   getCurrentUserProfiles() {
     return this.currentUserProfiles();
   }
 
+  /**
+   * Returns the currently selected user profile.
+   * @returns The current ProfileDto or null.
+   */
   getCurrentUserProfile() {
     return this.currentUserProfile();
   }
 
+  /**
+   * Retrieves all profiles from the server and updates the signals.
+   */
   async getAllProfiles() {
     const profiles = await firstValueFrom(this.http.get<ProfileDto[]>('/api/profile'));
     this.allProfiles.set(profiles);
@@ -37,12 +62,20 @@ export class ProfileService {
     localStorage.setItem('profiles', JSON.stringify(profiles));
   }
 
+  /**
+   * Retrieves a profile by its ID from the server and sets it as the current user profile.
+   * @param id The ID of the profile to retrieve.
+   */
   async getProfileById(id: string) {
     const profile = await firstValueFrom(this.http.get<ProfileDto>(`/api/profile/${id}`));
     this.currentUserProfile.set(profile);
     localStorage.setItem('selectedProfile', JSON.stringify(profile));
   }
 
+  /**
+   * Creates a new profile.
+   * @param profile The profile data to create.
+   */
   async createProfile(profile: CreateProfileDto) {
     const originalProfilePic = profile.profilePic;
     const originalCoverPic = profile.coverPic;
@@ -85,6 +118,11 @@ export class ProfileService {
     localStorage.setItem('profiles', JSON.stringify(this.currentUserProfiles()));
   }
 
+  /**
+   * Updates an existing profile.
+   * @param id The ID of the profile to update.
+   * @param profile The updated profile data.
+   */
   async updateProfile(id: string, profile: UpdateProfileDto) {
     if (profile.profilePic && !profile.profilePic.startsWith('/api/asset/')) {
       // Get the original profile to compare the current asset
@@ -137,6 +175,10 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Deletes a profile by its ID.
+   * @param id The ID of the profile to delete.
+   */
   async deleteProfile(id: string) {
     await firstValueFrom(this.http.delete<void>(`/api/profiles/${id}`));
     this.currentUserProfiles.update(profiles => profiles.filter(p => p.id !== id));
@@ -147,6 +189,9 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Loads profiles from local storage.
+   */
   loadProfilesFromLocalStorage() {
     const profiles = localStorage.getItem('profiles');
     if (profiles) {
@@ -158,12 +203,20 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Persists profiles to local storage.
+   */
   persistProfilesToLocalStorage() {
     localStorage.setItem('profiles', JSON.stringify(this.currentUserProfiles()));
     localStorage.setItem('selectedProfile', JSON.stringify(this.currentUserProfile()));
   }
 
 
+  /**
+   * Retrieves a display profile by its ID, including profile and cover pictures.
+   * @param id The ID of the profile to retrieve.
+   * @returns An Observable of the ProfileDto with profile and cover pictures.
+   */
   getDisplayProfile(id: string) {
     return this.http.get<ProfileDto>(`/api/profile/${id}`).pipe(
       switchMap(profile =>

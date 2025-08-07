@@ -1,11 +1,6 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Observable, Subject, Subscription, filter, takeUntil } from 'rxjs';
-
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ThemeColors } from './theme.interface';
-import { ThemeService } from './theme.service';
-
+/**
+ * Component for toggling themes and updating accent colors.
+ */
 @Component({
   selector: 'lib-theme-toggle',
   standalone: true,
@@ -13,33 +8,61 @@ import { ThemeService } from './theme.service';
   templateUrl: './theme.component.html',
   styleUrl: './theme.component.scss',
   host: {
-    '[style.--background]': 'background',
-    '[style.--foreground]': 'foreground',
-    '[style.--border-color]': 'borderColor',
-    '[style.--transition-duration]': 'transitionDuration',
-    '[style.--accent-color]': 'accent',
-    '[style.--complementary-color]': 'complement',
     '[class.dark]': 'theme === "dark"',
     '[class.light]': 'theme === "light"',
   }
 })
 export class ThemeToggleComponent implements OnInit, OnDestroy {
+  /**
+   * The current theme (light or dark).
+   */
   theme: 'light' | 'dark';
+  /**
+   * The current accent color.
+   */
   accentColor = '#ff4081';
+  /**
+   * The background color for styling.
+   */
   background = '#ffffff';
+  /**
+   * The foreground color for styling.
+   */
   foreground = '#000000';
+  /**
+   * The accent color for styling.
+   */
   accent = '#ff4081';
+  /**
+   * The complementary color for styling.
+   */
   complement = '#00bcd4';
+  /**
+   * The border color for styling.
+   */
   borderColor = '#cccccc';
+  /**
+   * Subject to signal component destruction for unsubscribing observables.
+   */
   destroy$: Subject<boolean> = new Subject<boolean>();
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
+  /**
+   * The duration for CSS transitions.
+   */
   transitionDuration: string = '0.3s';
 
+  /**
+   * Creates an instance of ThemeToggleComponent.
+   * @param themeService The ThemeService instance.
+   */
   constructor(private readonly themeService: ThemeService) {
     this.theme = this.themeService.getTheme();
     this.accentColor = this.themeService.getAccentColor();
   }
 
+  /**
+   * Initializes the component and subscribes to theme color changes.
+   */
   ngOnInit() {
     this.themeService.themeColors$
       .pipe(
@@ -67,16 +90,25 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * Cleans up subscriptions when the component is destroyed.
+   */
   ngOnDestroy() {
     this.destroy$.next(true);
     this.destroy$.complete();
   }
 
+  /**
+   * Toggles the current theme between 'light' and 'dark'.
+   */
   toggleTheme() {
     this.theme = this.theme === 'light' ? 'dark' : 'light';
     this.themeService.setTheme(this.theme);
   }
 
+  /**
+   * Updates the accent color based on the current value of `accentColor`.
+   */
   updateAccentColor() {
     this.themeService.setAccentColor(this.accentColor);
   }

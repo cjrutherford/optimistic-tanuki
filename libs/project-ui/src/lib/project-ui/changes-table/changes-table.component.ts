@@ -1,10 +1,6 @@
-import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
-import { Change, CreateChange } from '@optimistic-tanuki/ui-models';
-import { Component, EventEmitter, Input, Output, SimpleChanges, signal } from '@angular/core';
-
-import { ChangeFormComponent } from '../change-form/change-form.component';
-import { CommonModule } from '@angular/common';
-
+/**
+ * Component for displaying a table of changes.
+ */
 @Component({
   selector: 'lib-changes-table',
   imports: [CommonModule, TableComponent, ButtonComponent, ModalComponent, ChangeFormComponent],
@@ -12,13 +8,37 @@ import { CommonModule } from '@angular/common';
   styleUrl: './changes-table.component.scss',
 })
 export class ChangesTableComponent {
+  /**
+   * Signal that holds the table cell data.
+   */
   cells = signal<TableCell[][]>([])
+  /**
+   * Signal to control the visibility of the create/edit modal.
+   */
   showModal = signal<boolean>(false);
+  /**
+   * Signal to control the visibility of the edit modal specifically.
+   */
   showEditModal = signal<boolean>(false);
+  /**
+   * Signal that holds the currently selected change for editing.
+   */
   selectedChange = signal<Change | null>(null);
+  /**
+   * Emits when a new change is to be created.
+   */
   @Output() createChange: EventEmitter<CreateChange> = new EventEmitter<CreateChange>();
+  /**
+   * Emits when an existing change is to be edited.
+   */
   @Output() editChange: EventEmitter<Change> = new EventEmitter<Change>();
+  /**
+   * Emits when a change is to be deleted.
+   */
   @Output() deleteChange: EventEmitter<string> = new EventEmitter<string>();
+  /**
+   * Input property for the array of changes to display.
+   */
   @Input() changes: Change[] = [
     {
       id: '1',
@@ -61,6 +81,9 @@ export class ChangesTableComponent {
     },
   ]
 
+  /**
+   * Actions available for each row in the table.
+   */
   rowActions: TableRowAction[] = [
   {
     title: 'View',
@@ -104,16 +127,26 @@ export class ChangesTableComponent {
   },
   ]
 
+  /**
+   * Initializes the component and sets up cellular data.
+   */
   ngOnInit() {
     this.setCellularData();
   }
 
+  /**
+   * Handles changes to input properties and updates cellular data.
+   * @param changes The SimpleChanges object containing changed properties.
+   */
   ngOnChanges(changes: SimpleChanges) {
     if (changes['changes']) {
       this.setCellularData();
     }
   }
 
+  /**
+   * Sets the cellular data for the table based on the input changes.
+   */
   private setCellularData() {
     const currentCells: TableCell[][] = this.changes?.map((change, index) => [
       { id: change.id, heading: 'Change Description', value: change.changeDescription },
@@ -129,6 +162,10 @@ export class ChangesTableComponent {
     this.cells.set(currentCells);
   }
 
+  /**
+   * Sets the visibility of the create/edit modal.
+   * @param index Optional index of the change to edit.
+   */
   setShowModal(index?: number) {
     this.showModal.set(true);
     if (index !== undefined) {
@@ -140,11 +177,18 @@ export class ChangesTableComponent {
       this.showModal.set(true);
     }
   }
+  /**
+   * Closes the create/edit modal.
+   */
   closeModal() {
     console.log("Closing modal")
     this.showModal.set(false);
   }
 
+  /**
+   * Handles the submission of the create change form.
+   * @param change The partial change data from the form.
+   */
   onCreateFormSubmit(change: Partial<Change>) {
     const {
       changeType = 'ADDITION',
@@ -170,6 +214,10 @@ export class ChangesTableComponent {
     this.closeModal();
   }
 
+  /**
+   * Handles the submission of the edit change form.
+   * @param change The partial change data from the form.
+   */
   onEditFormSubmit(change: Partial<Change>) {
     console.log('Editing change:', change);
     const selected = this.selectedChange();
