@@ -12,11 +12,36 @@ import { CommonModule } from '@angular/common';
   templateUrl: './change-form.component.html',
   styleUrl: './change-form.component.scss',
 })
+/**
+ * Component for creating or editing a change request.
+ */
+@Component({
+  selector: 'lib-change-form',
+  imports: [CommonModule, ReactiveFormsModule, CardComponent, TextInputComponent, TextAreaComponent, ButtonComponent, SelectComponent],
+  templateUrl: './change-form.component.html',
+  styleUrl: './change-form.component.scss',
+})
 export class ChangeFormComponent {
+  /**
+   * The change object to pre-fill the form (optional).
+   */
   @Input() change: Change | null = null;
+  /**
+   * Signal indicating whether the form is in editing mode.
+   */
   isEditing = signal<boolean>(false);
+  /**
+   * The form group for the change request.
+   */
   changeForm : FormGroup;
+  /**
+   * Emits the form data when submitted.
+   */
   @Output() submitted: EventEmitter<Partial<Change>> = new EventEmitter<Partial<Change>>();
+  /**
+   * Creates an instance of ChangeFormComponent.
+   * @param fb The FormBuilder instance.
+   */
   constructor(private readonly fb: FormBuilder) {
     this.changeForm = this.fb.group({
       changeType: this.fb.control('ADDITION'),
@@ -27,6 +52,9 @@ export class ChangeFormComponent {
     });
   }
 
+  /**
+   * Initializes the component and sets up the form based on whether a change object is provided.
+   */
   ngOnInit() {
     if (this.change) {
       this.isEditing.set(true);
@@ -42,6 +70,9 @@ export class ChangeFormComponent {
     }
   }
 
+  /**
+   * Options for the change status select input.
+   */
   statusOptions = [
     { value: 'PENDING', label: 'Pending' },
     { value: 'RESEARCHING', label: 'Researching' },
@@ -53,6 +84,9 @@ export class ChangeFormComponent {
     { value: 'DISCARDED', label: 'Discarded' },
   ];
 
+  /**
+   * Options for the change type select input.
+   */
   changeTypeOptions = [
     { value: 'ADDITION', label: 'Addition' },
     { value: 'MODIFICATION', label: 'Modification' },
@@ -60,6 +94,9 @@ export class ChangeFormComponent {
   ];
 
 
+  /**
+   * Handles the form submission.
+   */
   onSubmit() {
     if (this.changeForm.valid) {
       console.log('Form Submitted!', this.changeForm.value);

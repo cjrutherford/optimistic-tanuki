@@ -18,16 +18,49 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
     "[style.--transition-duration]": 'transitionDuration',
   }
 })
+/**
+ * A reusable checkbox component with theming capabilities.
+ */
+@Component({
+  selector: 'lib-checkbox',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './checkbox.component.html',
+  styleUrls: ['./checkbox.component.scss'],
+  host: {
+    "[style.--background]": 'background',
+    "[style.--foreground]": 'foreground',
+    "[style.--accent]": 'accent',
+    "[style.--complement]": 'complement',
+    "[style.--border-color]": 'borderColor',
+    "[style.--border-gradient]": 'borderGradient',
+    "[style.--transition-duration]": 'transitionDuration',
+  }
+})
 export class CheckboxComponent extends Themeable {
+  /**
+   * The current value of the checkbox (checked or unchecked).
+   */
   @Input() value = false;
+  /**
+   * Emits when the checkbox value changes.
+   */
   @Output() changeEvent: EventEmitter<boolean> = new EventEmitter<boolean>();
 
+  /**
+   * Handles the change event of the checkbox.
+   * @param event The DOM event object.
+   */
   onCheckboxChange(event: Event) {
     const input = event.target as HTMLInputElement;
     this.value = input.checked;
     this.changeEvent.emit(this.value);
   }
 
+  /**
+   * Applies the given theme colors to the component's styles.
+   * @param colors The theme colors to apply.
+   */
   override applyTheme(colors: ThemeColors): void {;
     this.background = `linear-gradient(to bottom, ${colors.background}, ${colors.accent})`;
     this.accent = colors.accent;

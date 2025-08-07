@@ -4,6 +4,12 @@ import { AuthStateService } from './state/auth-state.service';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
+/**
+ * Intercepts HTTP requests to add an authorization token and handles 401 errors.
+ * @param req The outgoing HTTP request.
+ * @param next The next interceptor in the chain.
+ * @returns An Observable of the HTTP event.
+ */
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   const authStateService = inject(AuthStateService);
   const router = inject(Router);

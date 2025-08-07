@@ -1,82 +1,127 @@
 # OptimisticTanuki
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+This is a monorepo managed by Nx, containing several applications and libraries.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+## Current Application State
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+The project is a work in progress, focusing on a social media platform with chat, profile management, asset management, and project planning features.
 
-## Finish your CI setup
+### Key Applications:
+- **client-interface**: The main web application for the social platform.
+- **forgeofwill**: A separate web application, likely for project planning or a specific game/tool.
+- **gateway**: The API gateway for all microservices.
+- **authentication**: Microservice for user authentication and authorization.
+- **profile**: Microservice for managing user profiles.
+- **social**: Microservice for social interactions (posts, comments, likes, etc.).
+- **assets**: Microservice for managing digital assets.
+- **chat-collector**: Microservice for collecting and managing chat messages.
+- **project-planning**: Microservice for project management features.
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/7Lp8AyFq8M)
+### Key Libraries:
+- **auth-ui**: UI components related to authentication.
+- **chat-ui**: UI components for chat functionality.
+- **common-ui**: Reusable common UI components.
+- **constants**: Shared constants across the applications.
+- **database**: Database-related utilities and entities.
+- **encryption**: Utilities for encryption and hashing.
+- **form-ui**: UI components for forms.
+- **logger**: Logging utilities.
+- **message-ui**: UI components for displaying messages/notifications.
+- **models**: Shared data models/DTOs.
+- **profile-ui**: UI components for user profiles.
+- **project-ui**: UI components for project planning.
+- **social-ui**: UI components for social features.
+- **storage**: Utilities for storage (local, S3).
+- **theme-ui**: UI components and utilities for theming.
+- **ui-models**: Shared UI-specific data models.
 
+## Getting Started
 
-## Run tasks
+To set up and run the application locally, follow these steps:
 
-To run the dev server for your app, use:
+### Prerequisites
 
-```sh
+- Node.js (LTS version recommended)
+- Docker and Docker Compose
+- Nx CLI (install globally: `npm install -g nx`)
+
+### 1. Install Dependencies
+
+Navigate to the root of the project and install the Node.js dependencies:
+
+```bash
+npm install
+```
+
+### 2. Start Dockerized Services
+
+The project uses Docker Compose to manage its backend services (databases, microservices).
+
+To start all services:
+
+```bash
+docker-compose up --build -d
+```
+
+This command will build the Docker images and start all the necessary containers in detached mode.
+
+### 3. Run Database Migrations
+
+After the services are up, run the database migrations to set up the database schemas:
+
+```bash
+./setup-and-migrate.sh
+```
+
+### 4. Start the Applications
+
+You can start individual applications using Nx commands.
+
+#### Starting the main application (client-interface)
+
+To start the main client-interface application:
+
+```bash
 npx nx serve client-interface
 ```
 
-To create a production bundle:
+This will typically run the application on `http://localhost:4200`.
 
-```sh
-npx nx build client-interface
+#### Starting Forge of Will (fow)
+
+To start the Forge of Will application:
+
+```bash
+npx nx serve forgeofwill
 ```
 
-To see all available targets to run for a project, run:
+This will typically run the application on `http://localhost:4201` (or another available port).
 
-```sh
+### 5. Accessing the Applications
+
+Once the applications are running, you can access them in your web browser:
+
+- **OptimisticTanuki (client-interface)**: `http://localhost:4200`
+- **Forge of Will (fow)**: `http://localhost:4201` (check console for exact port if different)
+
+## Running Tasks
+
+Nx provides powerful commands to run various tasks for your projects.
+
+To see all available targets for a specific project (e.g., `client-interface`):
+
+```bash
 npx nx show project client-interface
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+You can replace `client-interface` with any other project name (e.g., `forgeofwill`, `authentication`, `chat-collector`) to see its specific targets.
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Common tasks include:
 
-## Add new projects
+- **Building for production**: `npx nx build <project-name>`
+- **Running tests**: `npx nx test <project-name>`
+- **Linting**: `npx nx lint <project-name>`
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+## Further Documentation
 
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
-
-```sh
-npx nx g @nx/angular:app demo
-```
-
-To generate a new library, use:
-
-```sh
-npx nx g @nx/angular:lib mylib
-```
-
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
-
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+For more detailed information on specific projects and their configurations, refer to their individual `README.md` files located within their respective project directories (e.g., `apps/client-interface/README.md`).

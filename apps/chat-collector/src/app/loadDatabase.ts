@@ -2,6 +2,11 @@ import { ConfigService } from "@nestjs/config";
 import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
 import { Conversation, Message } from "./entities";
 
+/**
+ * Loads the database configuration for the Chat Collector microservice.
+ * @param config The ConfigService instance.
+ * @returns PostgresConnectionOptions for TypeORM.
+ */
 const loadDatabase = (config: ConfigService) => {
     const database = config.get('database');
     console.log(`Database configuration: ${JSON.stringify(database)}`);

@@ -1,7 +1,20 @@
 # ui-models
 
-This library was generated with [Nx](https://nx.dev).
+This project contains the `ui-models` library, which provides shared UI-specific data models.
 
-## Running unit tests
+## Nx Targets
 
-Run `nx test ui-models` to execute the unit tests.
+Here are the available Nx targets for the `ui-models` project:
+
+-   **lint**: Runs ESLint on the project.
+    ```bash
+    npx nx lint ui-models
+    ```
+-   **test**: Runs unit tests using Jest.
+    ```bash
+    npx nx test ui-models
+    ```
+    -   **ci**: Runs tests in CI mode with code coverage.
+        ```bash
+        npx nx test ui-models --configuration=ci
+        ```

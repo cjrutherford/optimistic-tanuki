@@ -43,4 +43,37 @@ import loadDatabase from './loadDatabase';
     }
   ],
 })
+/**
+ * The main application module for the Profile microservice.
+ */
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [loadConfig],
+    }),
+    DatabaseModule.register({
+      name: 'profile',
+      factory: loadDatabase,
+    }),
+    LoggerModule,
+  ],
+  controllers: [
+    ProfilesController,
+    TimelinesController,
+  ],
+  providers: [
+    ProfileService,
+    TimelineService,
+    {
+      provide: getRepositoryToken(Profile),
+      useFactory: (ds: DataSource) => ds.getRepository(Profile),
+      inject: ['PROFILE_CONNECTION'],
+    },{
+      provide: getRepositoryToken(Timeline),
+      useFactory: (ds: DataSource) => ds.getRepository(Timeline),
+      inject: ['PROFILE_CONNECTION'],
+    }
+  ],
+})
 export class AppModule {}

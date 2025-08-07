@@ -2,6 +2,9 @@ import { Route } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard'; // Import the AuthGuard
 import { ProfileGuard } from './guards/profile.guard';
 
+/**
+ * Defines the application routes.
+ */
 export const appRoutes: Route[] = [
     {
         path: '',

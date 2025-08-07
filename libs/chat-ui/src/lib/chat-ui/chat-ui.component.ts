@@ -7,14 +7,35 @@ import { ContactBubbleComponent } from './contact-bubble/contact-bubble.componen
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { constructConversation } from '../utils';
 
+/**
+ * Represents a chat contact.
+ */
 export declare type ChatContact = {
+  /**
+   * The unique identifier for the contact.
+   */
   id: string;
+  /**
+   * The name of the contact.
+   */
   name: string;
+  /**
+   * The URL of the contact's avatar.
+   */
   avatarUrl: string;
+  /**
+   * The last message received from the contact.
+   */
   lastMessage: string;
+  /**
+   * The timestamp of the last message.
+   */
   lastMessageTime: string;
 }
 
+/**
+ * The main UI component for the chat interface.
+ */
 @Component({
   selector: 'lib-chat-ui',
   imports: [CommonModule, ChatWindowComponent, ContactBubbleComponent],
@@ -22,6 +43,9 @@ export declare type ChatContact = {
   styleUrl: './chat-ui.component.scss',
 })
 export class ChatUiComponent {
+  /**
+   * The list of chat contacts.
+   */
   @Input() contacts: ChatContact[] = [{
     id: '1',
     name: 'Johnathon Doe',
@@ -42,6 +66,9 @@ export class ChatUiComponent {
     lastMessageTime: '2023-10-01T12:10:00Z',
   }];
 
+  /**
+   * The list of chat conversations.
+   */
   @Input() conversations: ChatConversation[] = [
     {
       id: '1',
@@ -95,10 +122,22 @@ export class ChatUiComponent {
       updatedAt: new Date('2023-10-01T12:10:00Z')
     }
   ];
+  /**
+   * A signal that holds the state of each chat window.
+   */
   windowStates = signal<{ [key: string]: { windowState: ChatWindowState, conversation: ChatConversation[] } }>({});
+  /**
+   * A signal that holds the currently selected contact.
+   */
   selectedContact = signal<ChatContact | null>(null);
+  /**
+   * A signal that determines whether the modal is shown.
+   */
   showModal = signal<boolean>(false);
 
+  /**
+   * The list of user profiles.
+   */
   profiles: ProfileDto[] = [
     {
       id: '1',
@@ -141,16 +180,26 @@ export class ChatUiComponent {
     }
   ];
 
+  /**
+   * Initializes the component and syncs the window states.
+   */
   ngOnInit(){
     this.syncWindowStates();
   }
 
+  /**
+   * Detects changes to the component's inputs and syncs the window states accordingly.
+   * @param changes The changes to the component's inputs.
+   */
   ngOnChanges(changes: SimpleChanges) {
     if (changes['contacts'] || changes['conversations']) {
       this.syncWindowStates();
     } 
   }
 
+  /**
+   * Synchronizes the window states with the contacts and conversations.
+   */
   private syncWindowStates() {
     const currentStates = this.windowStates();
     this.contacts.forEach(contact => {
@@ -162,9 +211,19 @@ export class ChatUiComponent {
     this.windowStates.set(currentStates);
   }
 
+  /**
+   * Constructs a list of chat contacts from a list of profiles and messages.
+   * @param contacts The list of user profiles.
+   * @param messages The list of chat messages.
+   * @returns A list of chat contacts.
+   */
   getConversationContacts(contacts: ProfileDto[], messages: ChatMessage[]): ChatContact[] {
     return constructConversation(contacts, messages);
   }
+  /**
+   * Opens a chat window for a given contact.
+   * @param contactId The ID of the contact to open a chat with.
+   */
   openChat(contactId: string) {
     const currentState = this.windowStates()[contactId];
     if (currentState) {
@@ -174,6 +233,11 @@ export class ChatUiComponent {
     }
   }
 
+  /**
+   * Handles changes to the window state of a chat window.
+   * @param contactId The ID of the contact whose window state has changed.
+   * @param newState The new window state.
+   */
   handleWindowStateChange(contactId: string, newState: ChatWindowState) {
     const currentState = this.windowStates()[contactId];
     if (currentState) {

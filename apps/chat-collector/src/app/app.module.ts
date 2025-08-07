@@ -31,4 +31,7 @@ import { DataSource } from 'typeorm';
     }
   ],
 })
+/**
+ * The main application module for the Chat Collector microservice.
+ */
 export class AppModule {}

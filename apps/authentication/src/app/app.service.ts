@@ -15,8 +15,23 @@ import { Repositories } from '../constants';
 import { randomBytes } from 'crypto';
 import { authenticator } from 'otplib';
 
+/**
+ * Service for handling authentication-related operations.
+ */
 @Injectable()
 export class AppService {
+  /**
+   * Creates an instance of AppService.
+   * @param l The logger instance.
+   * @param userRepo The repository for UserEntity.
+   * @param tokenRepo The repository for TokenEntity.
+   * @param keyRepo The repository for KeyDatum.
+   * @param saltedHashService The service for salted hashing.
+   * @param keyService The service for key management.
+   * @param jwtSecret The JWT secret.
+   * @param totp The TOTP authenticator instance.
+   * @param jsonWebToken The JWT instance.
+   */
   constructor(
     private readonly l: Logger,
     @Inject(getRepositoryToken(UserEntity))
@@ -32,6 +47,14 @@ export class AppService {
     @Inject('jwt') private readonly jsonWebToken: typeof jwt
   ) {}
 
+  /**
+   * Handles user login.
+   * @param email The user's email.
+   * @param password The user's password.
+   * @param mfa Optional MFA token.
+   * @returns An object containing a message, code, and new token.
+   * @throws RpcException if login fails.
+   */
   async login(email: string, password: string, mfa?: string) {
     try {
       const user = await this.userRepo.findOne({
@@ -92,6 +115,17 @@ export class AppService {
     }
   }
 
+  /**
+   * Registers a new user.
+   * @param email The user's email.
+   * @param fn The user's first name.
+   * @param ln The user's last name.
+   * @param password The user's password.
+   * @param confirm The password confirmation.
+   * @param bio Optional user biography.
+   * @returns An object containing a message, code, and user data.
+   * @throws RpcException if registration fails.
+   */
   async registerUser(
     email: string,
     fn: string,
@@ -108,7 +142,7 @@ export class AppService {
       this.l.log('Checking passwords', password, confirm);
       const weakPasswordRegex =
       // eslint-disable-next-line no-useless-escape
-        /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
+        /^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
       if (!weakPasswordRegex.test(password)) {
         throw new RpcException('Password is too weak');
       }
@@ -198,6 +232,16 @@ export class AppService {
     }
   }
 
+  /**
+   * Resets a user's password.
+   * @param email The user's email.
+   * @param newPassword The new password.
+   * @param confirm The new password confirmation.
+   * @param oldPass The old password.
+   * @param mfa Optional MFA token.
+   * @returns An object indicating password reset success.
+   * @throws RpcException if password reset fails.
+   */
   async resetPassword(
     email: string,
     newPassword: string,
@@ -208,7 +252,7 @@ export class AppService {
     // Implement your password reset logic here
     const weakPasswordRegex =
     // eslint-disable-next-line no-useless-escape
-      /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
+      /^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
     if (!weakPasswordRegex.test(newPassword)) {
       throw new RpcException('Password is too weak');
     }
@@ -247,6 +291,12 @@ export class AppService {
     return { message: 'Password reset successful', code: 0 };
   }
 
+  /**
+   * Validates a given JWT token.
+   * @param token The JWT token to validate.
+   * @returns An object indicating token validity and decoded data.
+   * @throws RpcException if the token is invalid or revoked.
+   */
   async validateToken(token: string) {
     try {
       const decoded = this.jsonWebToken.verify(token, this.jwtSecret);
@@ -267,6 +317,12 @@ export class AppService {
     }
   }
 
+  /**
+   * Sets up TOTP for a user.
+   * @param userId The ID of the user.
+   * @returns An object containing a message, code, and QR code data.
+   * @throws RpcException if TOTP setup fails.
+   */
   async setupTotp(userId: string) {
     // Implement your TOTP setup logic here
     const newSecret = randomBytes(20).toString('hex');
@@ -293,6 +349,13 @@ export class AppService {
     }
   }
 
+  /**
+   * Validates a TOTP token for a user.
+   * @param userId The ID of the user.
+   * @param token The TOTP token to validate.
+   * @returns An object indicating TOTP token validity.
+   * @throws RpcException if TOTP validation fails.
+   */
   async validateTotp(userId: string, token: string) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user || !user.totpSecret) {

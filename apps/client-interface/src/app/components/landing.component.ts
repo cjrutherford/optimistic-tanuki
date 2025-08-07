@@ -16,7 +16,13 @@ import { CardComponent, GridComponent, HeadingComponent, ListComponent, TileComp
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })
+/**
+ * Component for the landing page of the application.
+ */
 export class LandingComponent {
+  /**
+   * List of features to display on the landing page.
+   */
   featureItems: string[]= [
     'Light/Dark Mode',
     'Custom Accent/Complement Colors',

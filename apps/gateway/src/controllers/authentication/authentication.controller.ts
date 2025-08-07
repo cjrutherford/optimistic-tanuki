@@ -11,9 +11,16 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { AuthCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 
+/**
+ * Controller for handling authentication-related API requests.
+ */
 @ApiTags('authentication')
 @Controller('authentication')
 export class AuthenticationController {
+  /**
+   * Creates an instance of AuthenticationController.
+   * @param authClient Client proxy for the authentication microservice.
+   */
   constructor(
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE) private readonly authClient: ClientProxy,
   ) {
@@ -22,6 +29,12 @@ export class AuthenticationController {
     }).catch(e => console.error(e));
   }
 
+  /**
+   * Handles user login.
+   * @param data The login request data.
+   * @returns A Promise that resolves to the login response.
+   * @throws HttpException if login fails.
+   */
   @Post('login')
   @ApiOperation({ summary: 'Login a user' })
   @ApiResponse({ status: 201, description: 'User logged in successfully.' })
@@ -38,6 +51,12 @@ export class AuthenticationController {
     }
   }
 
+  /**
+   * Registers a new user.
+   * @param data The registration request data.
+   * @returns A Promise that resolves to the registration response.
+   * @throws HttpException if registration fails.
+   */
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully.' })
@@ -56,6 +75,12 @@ export class AuthenticationController {
     }
   }
 
+  /**
+   * Resets a user's password.
+   * @param data The reset password request data.
+   * @returns A Promise that resolves to the password reset response.
+   * @throws HttpException if password reset fails.
+   */
   @Post('reset')
   @ApiOperation({ summary: 'Reset user password' })
   @ApiResponse({ status: 201, description: 'Password reset successfully.' })
@@ -71,6 +96,12 @@ export class AuthenticationController {
     }
   }
 
+  /**
+   * Enables multi-factor authentication for a user.
+   * @param data The enable MFA request data.
+   * @returns A Promise that resolves to the MFA enablement response.
+   * @throws HttpException if MFA enablement fails.
+   */
   @Post('enable-mfa')
   @ApiOperation({ summary: 'Enable multi-factor authentication' })
   @ApiResponse({ status: 201, description: 'MFA enabled successfully.' })
@@ -86,6 +117,12 @@ export class AuthenticationController {
     }
   }
 
+  /**
+   * Validates an authentication token.
+   * @param data The validate token request data.
+   * @returns A Promise that resolves to the token validation response.
+   * @throws HttpException if token validation fails.
+   */
   @Post('validate')
   @ApiOperation({ summary: 'Validate authentication token' })
   @ApiResponse({ status: 201, description: 'Token validated successfully.' })
@@ -101,6 +138,12 @@ export class AuthenticationController {
     }
   }
 
+  /**
+   * Validates a multi-factor authentication token.
+   * @param data The validate MFA token request data.
+   * @returns A Promise that resolves to the MFA token validation response.
+   * @throws HttpException if MFA token validation fails.
+   */
   @Post('validate-mfa')
   @ApiOperation({ summary: 'Validate multi-factor authentication token' })
   @ApiResponse({ status: 201, description: 'MFA token validated successfully.' })

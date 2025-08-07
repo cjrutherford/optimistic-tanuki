@@ -7,4 +7,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './auth-ui.component.html',
   styleUrl: './auth-ui.component.css',
 })
+/**
+ * The main authentication UI component.
+ */
 export class AuthUiComponent {}

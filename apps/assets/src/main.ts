@@ -9,6 +9,9 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app/app.module';
 
+/**
+ * Bootstraps the Assets microservice.
+ */
 async function bootstrap() {
   const configApp = await NestFactory.create(AppModule);
   const config = configApp.get(ConfigService)

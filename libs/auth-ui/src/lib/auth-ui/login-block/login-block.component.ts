@@ -22,13 +22,39 @@ import { LoginType } from '@optimistic-tanuki/ui-models';
     '[style.--transition-duration]': 'transitionDuration',
   }
 })
+/**
+ * Component for displaying a login form.
+ */
 export class LoginBlockComponent extends Themeable{
+  /**
+   * The title of the login block.
+   */
   @Input()  title = 'login-block works!'; 
+  /**
+   * The description of the login block.
+   */
   @Input()  description = 'login-block works!';
+  /**
+   * The source URL for the hero image.
+   */
   @Input() heroSrc = 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNjUyOXwwfDF8c2VhcmNofDJ8fGxvZ298ZW58MHx8fHwxNjg3NTY5NzA1&ixlib=rb-4.0.3&q=80&w=1080';
+  /**
+   * The alt text for the hero image.
+   */
   @Input() heroAlt = 'login-block works!';
+  /**
+   * Emits the login form data when submitted.
+   */
   @Output() submitEvent = new EventEmitter<LoginType>();
+  /**
+   * The login form group.
+   */
   loginForm: FormGroup;
+  /**
+   * Creates an instance of LoginBlockComponent.
+   * @param fb The FormBuilder instance.
+   * @param themeService The ThemeService instance.
+   */
   constructor(private readonly fb: FormBuilder, themeService: ThemeService) {
     super(themeService)
     this.loginForm = this.fb.group({
@@ -38,6 +64,10 @@ export class LoginBlockComponent extends Themeable{
   }
 
 
+  /**
+   * Applies the given theme colors to the component's styles.
+   * @param colors The theme colors to apply.
+   */
   override applyTheme(colors: ThemeColors): void {
     this.background = `linear-gradient(30deg, ${colors.accent}, ${colors.background})`
     this.accent = colors.accent;
@@ -53,10 +83,17 @@ export class LoginBlockComponent extends Themeable{
     this.borderColor = colors.complementary;
   }
 
+  /**
+   * Handles changes in the form.
+   * @param e The event object.
+   */
   onFormChange(e: string) {
     console.log(e);
   }
 
+  /**
+   * Handles the form submission.
+   */
   onSubmit() {
     console.log(this.loginForm.value);
     this.submitEvent.emit(this.loginForm.value);

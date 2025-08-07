@@ -33,12 +33,21 @@ export const SOCKET_HOST = 'SOCKET_HOST';
 export const SOCKET_NAMESPACE = 'SOCKET_NAMESPACE';
 export const SOCKET_IO_INSTANCE = 'SOCKET_IO_INSTANCE';
 
+/**
+ * Service for handling chat functionality via WebSockets.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class SocketChatService {
   private socket: Socket;
 
+  /**
+   * Creates an instance of the SocketChatService.
+   * @param hostUrl The URL of the socket server.
+   * @param namespace The namespace for the socket connection.
+   * @param ioInstance The Socket.IO client instance.
+   */
   constructor(
     @Inject(SOCKET_HOST) private readonly hostUrl = 'http://localhost:3000',
     @Inject(SOCKET_NAMESPACE) private readonly namespace = 'chat',
@@ -68,22 +77,41 @@ export class SocketChatService {
     });
   }
 
+  /**
+   * Retrieves the conversations for a given profile.
+   * @param profileId The ID of the profile.
+   */
   getConversations(profileId: string): void {
     this.socket.emit('get_conversations', { profileId });
   }
 
+  /**
+   * Sends a chat message.
+   * @param message The message to send.
+   */
   sendMessage(message: ChatMessage): void {
     this.socket.emit('message', message);
   }
 
+  /**
+   * Registers a callback to be invoked when a message is received.
+   * @param callback The callback function.
+   */
   onMessage(callback: (message: ChatMessage) => void): void {
     this.socket.on('message', callback);
   }
 
+  /**
+   * Registers a callback to be invoked when a conversation is received.
+   * @param callback The callback function.
+   */
   onConversations(callback: (data: ChatConversation) => void): void {
     this.socket.on('conversations', callback);
   }
 
+  /**
+   * Disconnects the socket.
+   */
   destroy(): void {
     if (this.socket) {
       this.socket.disconnect();

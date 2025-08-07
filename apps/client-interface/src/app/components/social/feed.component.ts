@@ -1,25 +1,6 @@
-import { Component, OnInit, OnDestroy, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
-import {
-  PostDto,
-  ComposeComponent,
-  PostComponent,
-  CreatePostDto,
-  CreateCommentDto,
-} from '@optimistic-tanuki/social-ui';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
-import { PostService } from '../../post.service';
-import { AttachmentService } from '../../attachment.service';
-import { filter, firstValueFrom, Subject, takeUntil } from 'rxjs';
-import { CommentService } from '../../comment.service';
-import { ProfileService } from '../../profile.service';
-import { Router } from '@angular/router';
-import { PostProfileStub, ComposeCompleteEvent } from '@optimistic-tanuki/social-ui';
-
+/**
+ * Component for displaying a social feed of posts.
+ */
 @Component({
   selector: 'app-feed',
   standalone: true,
@@ -37,14 +18,32 @@ import { PostProfileStub, ComposeCompleteEvent } from '@optimistic-tanuki/social
   styleUrls: ['./feed.component.scss'],
 })
 export class FeedComponent implements OnInit, OnDestroy {
+  /**
+   * Input property for the list of posts to display.
+   */
   @Input() posts: PostDto[] = [];
+  /**
+   * Styles for the component based on the current theme.
+   */
   themeStyles!: {
     backgroundColor: string;
     color: string;
     border: string;
   };
+  /**
+   * Subject to signal component destruction for unsubscribing observables.
+   */
   destroy$ = new Subject<void>();
 
+  /**
+   * Creates an instance of FeedComponent.
+   * @param themeService The service for managing themes.
+   * @param postService The service for managing posts.
+   * @param attachmentService The service for managing attachments.
+   * @param commentService The service for managing comments.
+   * @param profileService The service for managing user profiles.
+   * @param router The Angular router.
+   */
   constructor(
     private readonly themeService: ThemeService,
     private readonly postService: PostService,
@@ -55,6 +54,9 @@ export class FeedComponent implements OnInit, OnDestroy {
   ) {
   }
   
+  /**
+   * Initializes the component, subscribes to theme changes, and loads posts.
+   */
   ngOnInit() {
     this.themeService.themeColors$
     .pipe(
@@ -82,9 +84,16 @@ export class FeedComponent implements OnInit, OnDestroy {
       this.router.navigate(['/profile'])
     }
   }
+  /**
+   * Object to store profile stubs for posts and comments.
+   */
   profiles: { [key: string]: PostProfileStub } = {};
 
 
+  /**
+   * Loads profile stubs for all unique profile IDs found in the given posts.
+   * @param posts The array of posts to extract profile IDs from.
+   */
   private loadProfiles(posts: PostDto[]) {
     const profileIds: string[] = [
       ...new Set(
@@ -108,6 +117,10 @@ export class FeedComponent implements OnInit, OnDestroy {
     );
   }
 
+  /**
+   * Handles the creation of a new post.
+   * @param postData The data for the new post, including attachments and links.
+   */
   createdPost(postData: ComposeCompleteEvent) {
     console.log('create called.')
     const { post, attachments, links } = postData;
@@ -136,12 +149,20 @@ export class FeedComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * Cleans up subscriptions when the component is destroyed.
+   */
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
 
+  /**
+   * Handles the creation of a new comment.
+   * @param newComment The data for the new comment.
+   * @param postIndex The index of the post to which the comment belongs.
+   */
   commented(newComment: CreateCommentDto, postIndex: number) {
     console.log('🚀 ~ FeedComponent ~ commented ~ newComment:', newComment);
     newComment.postId = this.posts[postIndex].id;
@@ -162,6 +183,9 @@ export class FeedComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Handles scrolling events (currently a placeholder).
+   */
   onScroll() {
     // const length = this.posts.length;
     // this.posts.push(...Array.from({ length: 20 }, (_, i) => `Post #${length + i + 1}`));

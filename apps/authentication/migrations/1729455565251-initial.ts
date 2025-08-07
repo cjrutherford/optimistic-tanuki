@@ -1,8 +1,16 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
+/**
+ * Initial database migration for the authentication service.
+ */
 export class Initial1729455565251 implements MigrationInterface {
     name = 'Initial1729455565251'
 
+    /**
+     * Applies the migration to the database.
+     * Creates 'token', 'user_entity', and 'key_datum' tables, and sets up foreign key constraints.
+     * @param queryRunner The QueryRunner instance.
+     */
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "token" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "tokenData" text NOT NULL, "revoked" boolean NOT NULL DEFAULT false, "userId" uuid, CONSTRAINT "PK_82fae97f905930df5d62a702fc9" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "user_entity" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "email" character varying NOT NULL, "firstName" character varying NOT NULL, "lastName" character varying NOT NULL, "password" character varying NOT NULL, "bio" text NOT NULL, "keyDataId" uuid, CONSTRAINT "REL_7dacf0369b6ec1b52d24ecc9aa" UNIQUE ("keyDataId"), CONSTRAINT "PK_b54f8ea623b17094db7667d8206" PRIMARY KEY ("id"))`);
@@ -12,6 +20,11 @@ export class Initial1729455565251 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "key_datum" ADD CONSTRAINT "FK_7777c4399b78030453438faf058" FOREIGN KEY ("userId") REFERENCES "user_entity"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
 
+    /**
+     * Reverts the migration from the database.
+     * Drops 'token', 'user_entity', and 'key_datum' tables, and removes foreign key constraints.
+     * @param queryRunner The QueryRunner instance.
+     */
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "key_datum" DROP CONSTRAINT "FK_7777c4399b78030453438faf058"`);
         await queryRunner.query(`ALTER TABLE "user_entity" DROP CONSTRAINT "FK_7dacf0369b6ec1b52d24ecc9aa9"`);

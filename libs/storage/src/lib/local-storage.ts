@@ -1,19 +1,21 @@
-import * as path from 'path';
-
-import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
-import { Injectable, Logger } from '@nestjs/common';
-import { existsSync, promises as fs, mkdirSync } from 'fs';
-
-import { StorageAdapter } from './storage-adapter.interface';
-import { v4 as uuidv4 } from 'uuid';
-
+/**
+ * LocalStorageAdapter implements the StorageAdapter interface for local file system storage.
+ */
 @Injectable()
 export class LocalStorageAdapter implements StorageAdapter {
+    /**
+     * Creates an instance of LocalStorageAdapter.
+     * @param l The logger instance.
+     * @param basePath The base path for storing assets.
+     */
     constructor(private readonly l: Logger, private readonly basePath: string) { 
         this.l.log(`LocalStorageAdapter initialized with basePath: ${this.basePath}`);
         this.ensureBasePathExists();
     }
 
+    /**
+     * Ensures that the base path for storage exists, creating it if necessary.
+     */
     private ensureBasePathExists(): void {
         if (!existsSync(this.basePath)) {
             mkdirSync(path.join(this.basePath), { recursive: true });
@@ -21,6 +23,12 @@ export class LocalStorageAdapter implements StorageAdapter {
         }
     }
 
+    /**
+     * Creates a new asset in local storage.
+     * @param data The CreateAssetDto containing asset information and content.
+     * @returns A Promise that resolves to the created AssetDto.
+     * @throws Error if file content is missing or invalid, or if creation fails.
+     */
     async create(data: CreateAssetDto): Promise<AssetDto> {
         data.name = data.name.replace(/\s+/g, '_');
         console.log("🚀 ~ LocalStorageAdapter ~ create ~ data:", data)
@@ -71,6 +79,12 @@ export class LocalStorageAdapter implements StorageAdapter {
         }        
     }
 
+    /**
+     * Removes an asset from local storage.
+     * @param data The AssetDto containing information about the asset to remove.
+     * @returns A Promise that resolves when the asset is removed.
+     * @throws Error if unable to remove the asset.
+     */
     async remove(data: AssetDto): Promise<void> {
         this.ensureBasePathExists();
         this.l.log(`LocalStorageAdapter: Removing asset with data:`, data);
@@ -96,6 +110,11 @@ export class LocalStorageAdapter implements StorageAdapter {
         }
     }
 
+    /**
+     * Retrieves asset metadata from local storage.
+     * @param data The AssetDto containing information about the asset to retrieve.
+     * @returns A Promise that resolves to the retrieved AssetDto.
+     */
     async retrieve(data: AssetDto): Promise<AssetDto> {
         this.ensureBasePathExists();
         this.l.log(`LocalStorageAdapter: Retrieving asset with data:`, data);
@@ -112,6 +131,12 @@ export class LocalStorageAdapter implements StorageAdapter {
         return mockAsset; // Return mock data
     }
 
+    /**
+     * Reads the content of an asset from local storage.
+     * @param data The AssetDto containing information about the asset to read.
+     * @returns A Promise that resolves to the base64 encoded content of the asset.
+     * @throws Error if unable to read the asset content.
+     */
     async read(data: AssetDto): Promise<string> {
         this.ensureBasePathExists();
         this.l.log(`LocalStorageAdapter: Reading asset with data:`, Object.entries(data).map(([key, value]) => `${key}: ${value}`).join(', '));
@@ -130,6 +155,11 @@ export class LocalStorageAdapter implements StorageAdapter {
         }
     }
 
+    /**
+     * Determines the MIME type based on the asset type.
+     * @param type The type of the asset (e.g., 'image', 'video').
+     * @returns The corresponding MIME type string.
+     */
     private getMimeType(type: string): string {
         switch (type) {
             case 'image':

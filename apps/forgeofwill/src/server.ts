@@ -10,10 +10,22 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 
+/**
+ * The directory containing the server-side build output.
+ */
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
+/**
+ * The directory containing the browser-side build output.
+ */
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 
+/**
+ * The Express application instance.
+ */
 const app = express();
+/**
+ * The Angular Node.js application engine for server-side rendering.
+ */
 const angularApp = new AngularNodeAppEngine();
 
 /**
@@ -24,12 +36,12 @@ const angularApp = new AngularNodeAppEngine();
  * ```ts
  * app.get('/api/**', (req, res) => {
  *   // Handle API request
- * });
+ * * });
  * ```
  */
 
 /**
- * Serve static files from /browser
+ * Serves static files from the browser build output directory.
  */
 app.use(
   express.static(browserDistFolder, {
@@ -39,6 +51,9 @@ app.use(
   })
 );
 
+/**
+ * Proxies WebSocket connections for /socket.io to the gateway service.
+ */
 app.use(
   '/socket.io',
   createProxyMiddleware({
@@ -47,6 +62,9 @@ app.use(
     changeOrigin: true,
   })
 );
+/**
+ * Proxies WebSocket connections for /chat to the gateway service.
+ */
 app.use(
   '/chat',
   createProxyMiddleware({
@@ -56,6 +74,9 @@ app.use(
   })
 );
 
+/**
+ * Proxies API requests to the gateway service.
+ */
 app.use(
   '/api',
   createProxyMiddleware({
@@ -65,7 +86,7 @@ app.use(
   })
 );
 /**
- * Handle all other requests by rendering the Angular application.
+ * Handles all other requests by rendering the Angular application.
  */
 app.use('/**', (req, res, next) => {
   angularApp
@@ -77,7 +98,7 @@ app.use('/**', (req, res, next) => {
 });
 
 /**
- * Start the server if this module is the main entry point.
+ * Starts the server if this module is the main entry point.
  * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
  */
 if (isMainModule(import.meta.url)) {
