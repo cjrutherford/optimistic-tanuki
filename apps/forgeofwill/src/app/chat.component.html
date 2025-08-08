@@ -1,0 +1,16 @@
+<div class="contacts-container">
+    @for(conv of conversations(); track conv.id; let i = $index) {
+        <div style="position:relative;">
+            <lib-contact-bubble
+                [contacts]="getLoadedContacts(conv.participants)"
+                (click)="openChat(conv.id)">
+            ></lib-contact-bubble>
+            <lib-chat-window
+                [contact]="getLoadedContacts(conv.participants)"
+                [messages]="conv"
+                [windowState]="windowStates()[conv.id].windowState || 'hidden'"
+                (windowStateChange)="handleWindowStateChange(conv.id, $event)"
+            ></lib-chat-window>
+        </div>
+    }
+</div>

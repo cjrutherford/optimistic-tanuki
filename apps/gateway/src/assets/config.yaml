@@ -30,3 +30,8 @@ services:
     transport: TCP
     host: ot_project_planning
     port: 3006
+  chat_collector:
+    name: chat_collector
+    transport: TCP
+    host: ot_chat_collector
+    port: 3007

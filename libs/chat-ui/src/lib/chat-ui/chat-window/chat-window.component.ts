@@ -15,16 +15,45 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
   templateUrl: './chat-window.component.html',
   styleUrls: ['./chat-window.component.scss'],
 })
+/**
+ * Represents a single chat window.
+ */
 export class ChatWindowComponent {
+  /**
+   * The contact or contacts in the chat.
+   */
   @Input() contact: ChatContact[] | null = null;
-  @Input() messages: ChatConversation[] = [];
+  /**
+   * The messages in the chat conversation.
+   */
+  @Input() messages: ChatConversation = {
+    id: '',
+    participants: [],
+    messages: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  /**
+   * The current state of the chat window.
+   */
   @Input() windowState: ChatWindowState = 'popout';
+  /**
+   * Emits when the window state changes.
+   */
   @Output() windowStateChange: EventEmitter<ChatWindowState> = new EventEmitter<ChatWindowState>();
 
+  /**
+   * Handles changes to the window state.
+   * @param newState The new window state.
+   */
   onWindowStateChange(newState: ChatWindowState) {
     this.windowState = newState;
     this.windowStateChange.emit(newState);
   }
+
+  /**
+   * Handles closing the chat window.
+   */
   onClose() {
     this.windowState = 'hidden';
     this.windowStateChange.emit(this.windowState);

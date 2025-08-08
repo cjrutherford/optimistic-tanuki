@@ -12,11 +12,13 @@
     </div>
   </div>
   <div class="chat-window-content">
-    @if(contact && contact.length) {<lib-participants [participants]="contact"></lib-participants>
+    @if(contact && contact.length) {
+      <lib-participants [participants]="contact"></lib-participants>
+      <lib-message-list [messages]="messages.messages" [contacts]="contact"></lib-message-list>
     } @else {
       <div class="no-participants">No participants</div>
+      <lib-message-list [messages]="messages.messages" [contacts]="[]"></lib-message-list>
     }
-    <lib-message-list [messages]="messages" [contacts]="contact!"></lib-message-list>
 
   </div>
 </div>

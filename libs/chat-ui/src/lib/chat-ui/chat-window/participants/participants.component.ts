@@ -9,7 +9,13 @@ import { CommonModule } from '@angular/common';
   templateUrl: './participants.component.html',
   styleUrls: ['./participants.component.scss'],
 })
+/**
+ * Component for displaying a list of chat participants.
+ */
 export class ParticipantsComponent {
+  /**
+   * The list of participants in the chat.
+   */
   @Input() participants: ChatContact[] = [
     {
       id: '1', name: 'Alice', avatarUrl: 'https://placehold.co/60x60',
