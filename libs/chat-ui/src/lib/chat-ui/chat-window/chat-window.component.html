@@ -19,7 +19,7 @@
       <div class="no-participants">No participants</div>
       <lib-message-list [messages]="messages.messages" [contacts]="[]"></lib-message-list>
     }
-
+    <lib-compose-chat (messageSubmitted)="onMessageSubmitted($event)"></lib-compose-chat>
   </div>
 </div>
 }

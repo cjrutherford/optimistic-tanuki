@@ -36,9 +36,6 @@ export const appConfig: ApplicationConfig = {
     {
       provide: SOCKET_HOST,
       useFactory: () => {
-        // const value = typeof window !== 'undefined' && window.location.origin
-        //   ? window.location.origin
-        //   : 'http://localhost:3300';
         const value = 'http://localhost:3300';
         console.log('Socket host URL:', value);
         return value;
@@ -52,7 +49,6 @@ export const appConfig: ApplicationConfig = {
       provide: SOCKET_IO_INSTANCE,
       useValue: io,
     },
-    SocketChatService,
     AuthStateService,
     AuthenticationService,
     ProfileService,

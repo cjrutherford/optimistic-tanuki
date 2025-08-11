@@ -30,3 +30,4 @@ export {
     TimerCommands,
 } from './lib/libs/project';
 export { default as ChatCommands } from './lib/libs/chat';
+export * from './lib/libs/telos';

@@ -4,6 +4,6 @@
       <img src="{{ getContact(message.senderId)?.avatarUrl }}" alt="{{getContact(message.senderId)?.name}}'s avatar" class="avatar" />
       <span class="sender">{{ (getContact(message.senderId)?.name || message.senderId) }}:</span>
     </div>
-    <span class="text">{{ message.content }}</span>
+    <span class="text" [innerHTML]="getMessageHtml(message.content)"></span>
   </div>
 </div>

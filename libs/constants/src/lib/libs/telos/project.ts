@@ -1,0 +1,7 @@
+export const ProjectTelosCommands = {
+    CREATE: 'PROJECT:CREATE',
+    UPDATE: 'PROJECT:UPDATE',
+    DELETE: 'PROJECT:DELETE',
+    FIND: 'PROJECT:FIND',
+    FIND_ONE: 'PROJECT:FIND_ONE',
+};

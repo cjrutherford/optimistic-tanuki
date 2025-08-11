@@ -1,4 +1,4 @@
-import { Component, inject, Inject, PLATFORM_ID, signal, computed, Signal } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, signal } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { 
   ChatContact, 
@@ -7,41 +7,69 @@ import {
   ChatWindowComponent, 
   ChatWindowState, 
   ChatConversation, 
-  ContactBubbleComponent 
+  ContactBubbleComponent, 
+  SOCKET_HOST,
+  SOCKET_NAMESPACE,
+  SOCKET_IO_INSTANCE
 } from '@optimistic-tanuki/chat-ui';
 import { ProfileService } from './profile/profile.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { firstValueFrom } from 'rxjs';
+import { io } from 'socket.io-client';
 
 @Component({
   standalone: true,
   selector: 'app-chat',
   imports: [CommonModule, ChatWindowComponent, ContactBubbleComponent],
+  providers: [
+    {
+      provide: SocketChatService,
+      useFactory: (platformId: object, socketHost: string, socketNamespace: string, socketIoInstance: typeof io) => {
+        if (isPlatformBrowser(platformId)) {
+          return new SocketChatService(socketHost, socketNamespace, socketIoInstance);
+        }
+        return null;
+      },
+      deps: [PLATFORM_ID, SOCKET_HOST, SOCKET_NAMESPACE, SOCKET_IO_INSTANCE]
+    }
+  ],
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss',
 })
 export class ChatComponent {
-  socketChat?: SocketChatService;
+  socketChat?: SocketChatService | null;
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: object,
     private profileService: ProfileService,
     private readonly messageService: MessageService,
-  ) {}
+    @Inject(SocketChatService) socketChatService: SocketChatService | null = null
+  ) {
+    this.socketChat = socketChatService;
+  }
 
   ngOnInit() {
 
     if (isPlatformBrowser(this.platformId)) {
-      this.socketChat = inject(SocketChatService);
-      this.socketChat.onMessage((message) => {
-        console.log('New message received:', message);
-      });
-      this.socketChat.onConversations((data: ChatConversation[]) => {
-        console.log('Conversations update received:', data);
-        this.conversations.set(data);
-        this.updateContacts();
-        this.computeWindowStates();
-      });
+      console.log('Chat Component  Initialized in the browser. Setting up socket Connection')
+      if (this.socketChat) {
+        console.log('SocketChatService is available.');
+        this.socketChat.onMessage((message) => {
+          console.log('New message received:', message);
+        });
+        this.socketChat.onConversations((data: ChatConversation[]) => {
+          console.log('Conversations update received:', data);
+          this.conversations.set(data);
+          this.updateContacts();
+          this.computeWindowStates();
+        });
+        const profileId = this.profileService.currentUserProfile()?.id;
+        if (profileId) {
+          this.socketChat.getConversations(profileId);
+        }
+      } else {
+        console.log('SocketChatService is not available.');
+      }
       // this.socketChat.getConversations(this.profileService.currentUserProfile()!.id);
     }
   }
@@ -56,6 +84,30 @@ export class ChatComponent {
         ...this.windowStates(),
         [conversationId]: currentState,
       });
+    }
+  }
+
+  handleNewMessage($event: string, conversationId: string) {
+    const currentState = this.windowStates()[conversationId];
+    if (currentState) {
+      const newMessage: ChatMessage = {
+        id: '',
+        content: $event,
+        senderId: this.profileService.currentUserProfile()?.id || '',
+        conversationId: '',
+        recipientId: [],
+        timestamp: new Date(),
+        type: 'info'
+      };
+      this.postMessage(newMessage);
+      currentState.conversation.messages.push(newMessage);
+      this.windowStates.set({
+        ...this.windowStates(),
+        [conversationId]: currentState,
+      });
+      console.log(`New message sent for conversation ID ${conversationId}:`, newMessage);
+    } else {
+      console.warn(`No window state found for conversation ID ${conversationId}`);
     }
   }
 

@@ -5,13 +5,14 @@ import { ChatConversation, ChatMessage } from '../../types/message';
 import { CommonModule } from '@angular/common';
 import { MessageListComponent } from './message-list/message-list.component';
 import { ParticipantsComponent } from './participants/participants.component';
+import { ComposeChatComponent } from '../compose-chat/compose-chat.component';
 
 export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
 
 @Component({
   selector: 'lib-chat-window',
   standalone: true,
-  imports: [CommonModule, MessageListComponent, ParticipantsComponent],
+  imports: [CommonModule, MessageListComponent, ParticipantsComponent, ComposeChatComponent],
   templateUrl: './chat-window.component.html',
   styleUrls: ['./chat-window.component.scss'],
 })
@@ -41,6 +42,7 @@ export class ChatWindowComponent {
    * Emits when the window state changes.
    */
   @Output() windowStateChange: EventEmitter<ChatWindowState> = new EventEmitter<ChatWindowState>();
+  @Output() messageSubmitted: EventEmitter<string> = new EventEmitter<string>();
 
   /**
    * Handles changes to the window state.
@@ -49,6 +51,11 @@ export class ChatWindowComponent {
   onWindowStateChange(newState: ChatWindowState) {
     this.windowState = newState;
     this.windowStateChange.emit(newState);
+  }
+
+  onMessageSubmitted(message: string) {
+    // Handle the submitted message
+    this.messageSubmitted.emit(message);
   }
 
   /**

@@ -3,6 +3,7 @@ import { Component, Input } from '@angular/core';
 import { ChatContact } from '../../chat-ui.component';
 import { ChatMessage } from '../../../types/message';
 import { CommonModule } from '@angular/common';
+import { marked } from 'marked';
 
 @Component({
   selector: 'lib-message-list',
@@ -23,6 +24,10 @@ export class MessageListComponent {
    */
   @Input() messages: ChatMessage[] = [];
 
+
+  getMessageHtml(content: string){
+    return marked.parse(content);
+  }
   /**
    * Gets the contact information for a given sender ID.
    * @param senderId The ID of the sender.

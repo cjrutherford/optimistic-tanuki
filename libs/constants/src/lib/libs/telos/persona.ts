@@ -1,0 +1,7 @@
+export const PersonaTelosCommands = {
+    CREATE: 'PERSONA:CREATE',
+    UPDATE: 'PERSONA:UPDATE',
+    DELETE: 'PERSONA:DELETE',
+    FIND: 'PERSONA:FIND',
+    FIND_ONE: 'PERSONA:FIND_ONE',
+};

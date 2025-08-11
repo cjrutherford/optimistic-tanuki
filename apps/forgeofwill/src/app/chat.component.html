@@ -10,6 +10,7 @@
                 [messages]="conv"
                 [windowState]="windowStates()[conv.id].windowState || 'hidden'"
                 (windowStateChange)="handleWindowStateChange(conv.id, $event)"
+                (messageSubmitted)="handleNewMessage($event, conv.id)"
             ></lib-chat-window>
         </div>
     }
