@@ -3,7 +3,7 @@ const { join } = require('path');
 
 module.exports = {
   output: {
-    path: join(__dirname, '../../dist/apps/telos-docs-service'),
+    path: join(__dirname, '../../dist/apps/prompt-proxy'),
   },
   plugins: [
     new NxAppWebpackPlugin({
@@ -15,10 +15,6 @@ module.exports = {
       optimization: false,
       outputHashing: 'none',
       generatePackageJson: true,
-      additionalEntryPoints: [
-        './src/app/seed-persona.ts',
-        './src/app/benchmark-personas-and-models.ts',
-      ]
     }),
   ],
 };

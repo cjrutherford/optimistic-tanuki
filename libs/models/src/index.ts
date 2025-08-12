@@ -6,3 +6,4 @@ export * from './lib/libs/assets';
 export * from './lib/libs/project-planning';
 export * from './lib/libs/chat';
 export * from './lib/libs/telos';
+export * from './lib/libs/prompt';

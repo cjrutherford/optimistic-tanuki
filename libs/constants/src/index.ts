@@ -31,3 +31,4 @@ export {
 } from './lib/libs/project';
 export { default as ChatCommands } from './lib/libs/chat';
 export * from './lib/libs/telos';
+export * from './lib/libs/prompt';
