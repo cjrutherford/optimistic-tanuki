@@ -1,7 +1,7 @@
 listenPort: 3007
 database:
-  host: localhost
+  host: db
   port: 5432
   username: postgres
   password: postgres
-  database: ot_chat
+  database: ot_chat_collector

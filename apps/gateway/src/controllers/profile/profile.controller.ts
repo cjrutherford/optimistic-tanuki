@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Inject, Logger, Param, Post, Put, UseGua
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { 
+    AIOrchestrationCommands,
     GoalCommands, ProfileCommands, 
     ProjectCommands, ServiceTokens,
     TimelineCommands
@@ -19,6 +20,7 @@ import {
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
+import { firstValueFrom } from 'rxjs';
 
 @ApiTags('profile')
 @Controller('profile')
@@ -26,7 +28,7 @@ export class ProfileController {
     constructor(
         private readonly l: Logger,
         @Inject(ServiceTokens.PROFILE_SERVICE) private readonly client: ClientProxy,
-        @Inject(ServiceTokens.ASSETS_SERVICE) private readonly assetClient: ClientProxy
+        @Inject(ServiceTokens.AI_ORCHESTRATION_SERVICE) private readonly aiClient: ClientProxy
     ) {}
     
     @UseGuards(AuthGuard)
@@ -34,8 +36,15 @@ export class ProfileController {
     @ApiResponse({ status: 201, description: 'The profile has been successfully created.' })
     @ApiResponse({ status: 400, description: 'Bad Request.' })
     @Post()
-    createProfile(@Body() createProfileDto: CreateProfileDto) {
-        return this.client.send({ cmd: ProfileCommands.Create }, createProfileDto);
+    async createProfile(@Body() createProfileDto: CreateProfileDto) {
+        const createdProfile = await firstValueFrom(this.client.send({ cmd: ProfileCommands.Create }, createProfileDto));
+        this.l.log(`Profile created with ID: ${createdProfile.id}`);
+        firstValueFrom(this.aiClient.send({ cmd: AIOrchestrationCommands.PROFILE_INITIALIZE }, { profileId: createdProfile.id }))
+        .then(() => {
+            this.l.log(`AI orchestration initialized for profile ID: ${createdProfile.id}`);
+        });
+
+        return createdProfile;
     }
 
     @UseGuards(AuthGuard)

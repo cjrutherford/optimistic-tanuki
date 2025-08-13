@@ -1,0 +1,17 @@
+listenPort: 3010
+dependencies:
+  profile:
+    name: 'profile'
+    transport: Transport.TCP
+    host: 'localhost'
+    port: 3007
+  prompt_proxy:
+    name: 'prompt_proxy'
+    transport: Transport.TCP
+    host: 'localhost'
+    port: 3009
+  telos_docs_service:
+    name: 'telos_docs_service'
+    transport: Transport.TCP
+    host: 'localhost'
+    port: 3008

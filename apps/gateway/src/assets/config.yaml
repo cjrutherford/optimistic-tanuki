@@ -35,3 +35,13 @@ services:
     transport: TCP
     host: ot_chat_collector
     port: 3007
+  telos_docs_service:
+    name: telos_docs_service
+    transport: TCP
+    host: ot_telos_docs_service
+    port: 3008
+  ai_orchestration:
+    name: ai_orchestration
+    transport: TCP
+    host: ot_ai_orchestration
+    port: 3010

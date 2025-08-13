@@ -11,7 +11,10 @@ import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ load: [loadConfig]}),
+    ConfigModule.forRoot({ 
+      load: [loadConfig],
+      isGlobal: true,
+    }),
     DatabaseModule.register({
       name: 'chat_collector',
       factory: loadDatabase,
@@ -23,11 +26,11 @@ import { DataSource } from 'typeorm';
     {
       provide: getRepositoryToken(Message),
       useFactory: (ds: DataSource) => ds.getRepository(Message),
-      inject: ['CHAT_COLLECTOR_DATA_SOURCE'],
+      inject: ['CHAT_COLLECTOR_CONNECTION'],
     },{
       provide: getRepositoryToken(Conversation),
       useFactory: (ds: DataSource) => ds.getRepository(Conversation),
-      inject: ['CHAT_COLLECTOR_DATA_SOURCE'],
+      inject: ['CHAT_COLLECTOR_CONNECTION'],
     }
   ],
 })

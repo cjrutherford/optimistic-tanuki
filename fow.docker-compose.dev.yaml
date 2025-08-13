@@ -119,6 +119,7 @@ services:
       dockerfile: ./apps/chat-collector/Dockerfile
     volumes:
       - ./dist/apps/chat-collector:/usr/src/app
+      - ./apps/chat-collector/src/assets:/usr/src/assets # Mount assets for chat collector
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:
@@ -151,6 +152,52 @@ services:
       - ./dist/apps/assets:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
       - ../fow-assets:/usr/src/app/storage
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+
+  ai-orchestration:
+    container_name: ot_ai_orchestration
+    build:
+      context: .
+      dockerfile: ./apps/ai-orchestrator/Dockerfile
+    volumes:
+      - ./dist/apps/ai-orchestrator:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+  prompt-proxy: 
+    container_name: ot_prompt_proxy
+    build:
+      context: .
+      dockerfile: ./apps/prompt-proxy/Dockerfile
+    volumes:
+      - ./dist/apps/prompt-proxy:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+  telos-docs-service:
+    container_name: ot_telos_docs_service
+    build:
+      context: .
+      dockerfile: ./apps/telos-docs-service/Dockerfile
+    volumes:
+      - ./dist/apps/telos-docs-service:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:
       - NODE_ENV=development

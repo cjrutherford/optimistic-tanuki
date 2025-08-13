@@ -124,8 +124,39 @@ import { ChatGateway } from './chat-gateway/chat.gateway';
         });
       },
       inject: [ConfigService],
+    },{
+      provide: ServiceTokens.TELOS_DOCS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.telos_docs_service'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
     },
     ChatGateway,
+    {
+      provide: ServiceTokens.AI_ORCHESTRATION_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.ai_orchestration'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
   ],
 })
 export class AppModule {}

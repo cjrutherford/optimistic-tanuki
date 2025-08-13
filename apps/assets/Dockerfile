@@ -11,10 +11,11 @@ FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3005
-RUN npm i -g nodemon
 WORKDIR /usr/src/app
+RUN npm i -g nodemon pg
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
+RUN npm i --save pg
 COPY dist/apps/assets .
 RUN chown -R node:node .
 USER node
