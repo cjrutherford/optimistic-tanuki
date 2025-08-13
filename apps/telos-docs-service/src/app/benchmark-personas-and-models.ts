@@ -22,17 +22,34 @@ const setupBenchmarkPrompt = async (
 };
 
 const loadAvailableModels = async () => {
-  const response = await axios.get('http://localhost:11434/api/tags');
+  const response = await axios.get('http://192.168.50.148:11434/api/tags');
   return response.data.models.filter((m) => !m.name.includes('magicoder'));
 };
 
-async function generateBenchmarkResults(model: any, personas: PersonaTelosDto[]) {
+function loadIntermediateResults(filePath: string): any[] {
+  if (fs.existsSync(filePath)) {
+    const data = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(data);
+  }
+  return [];
+}
+
+async function generateBenchmarkResults(model: any, personas: PersonaTelosDto[], existingResults: any[]) {
   const results = [];
   for (const persona of personas) {
+    const existingResult = existingResults.find(
+      (r) => r.persona === persona.name && r.model === model.name
+    );
+    if (existingResult) {
+      console.log(`Skipping benchmark for ${persona.name} with model ${model.name} (already completed).`);
+      results.push(existingResult);
+      continue;
+    }
+
     const prompt = await setupBenchmarkPrompt(persona, model.name);
     const preRequest = new Date();
     const response = await axios.post(
-      'http://localhost:11434/api/chat',
+      'http://192.168.50.148:11434/api/chat',
       prompt
     );
     const postResponse = new Date();
@@ -49,92 +66,108 @@ async function generateBenchmarkResults(model: any, personas: PersonaTelosDto[])
       model: model.name,
       duration,
       response: response.data.message.content,
-      evaluations: [],
+      evaluations: [], // Placeholder for evaluations
     });
   }
   return results;
 }
 
-async function evaluateResponses(model: any, results: any[]) {
-  for (const r of results) {
-    const {
-      personaSystemPrompt,
-      userPrompt,
-      duration,
-      response,
-    } = r;
-    const ratingPrompt = {
-      model: model.name,
-      stream: false,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an expert evaluator. Rate the following system prompt and response for informativeness, relevance, and clarity on a scale of 1 (poor) to 5 (excellent). Responses should take the form of { category : value }.',
-        },
-        {
-          role: 'user',
-          content: `Original System Prompt: ${personaSystemPrompt}\nUser Prompt: ${userPrompt}\nResponse: ${response}\nDuration: ${duration}`,
-        },
-      ],
-    };
-    const startTime = new Date();
-    const result = await axios.post(
-      'http://localhost:11434/api/chat',
-      ratingPrompt
-    );
-    const endTime = new Date();
-    const evaluationDuration = endTime.getTime() - startTime.getTime();
-    console.log(
-      `Rating for ${r.persona} with model ${r.model} took ${evaluationDuration} ms`
-    );
-    console.log(result.data);
-    r.evaluations.push(result.data.message?.content || result.data.content);
+async function evaluateResponses(results: any[], models: any[], existingResults: any[]) {
+  for (const evaluationModel of models) {
+    for (const r of results) {
+      const existingEvaluation = r.evaluations.find(
+        (e: any) => e.model === evaluationModel.name
+      );
+      if (existingEvaluation) {
+        console.log(`Skipping evaluation for ${r.persona} with model ${r.model} on ${evaluationModel.name} (already completed).`);
+        continue;
+      }
+
+      const {
+        personaSystemPrompt,
+        userPrompt,
+        duration,
+        response,
+      } = r;
+      const ratingPrompt = {
+        model: evaluationModel.name,
+        stream: false,
+        messages: [
+          {
+            role: 'system',
+            content:
+              `You are an expert evaluator. You are simply interested in scoring the response. 
+              Rate the user input as a system prompt and response.
+              The goal of the evaluation is to assess the quality of the response based on the model's system prompt and the user's input.
+              Our categories of interest are informativeness, relevance, and clarity on a scale of 1 (poor) to 10 (excellent). 
+              Responses should be solely json and the key should be the category and the value should be the score.
+              `,
+          },
+          {
+            role: 'user',
+            content: `Original System Prompt: ${personaSystemPrompt}\nUser Prompt: ${userPrompt}\nResponse: ${response}\nDuration: ${duration}ms`,
+          },
+        ],
+      };
+      const startTime = new Date();
+      const result = await axios.post(
+        'http://192.168.50.148:11434/api/chat',
+        ratingPrompt
+      );
+      const endTime = new Date();
+      const evaluationDuration = endTime.getTime() - startTime.getTime();
+      console.log(
+        `Rating for ${r.persona} with model ${r.model} on ${evaluationModel.name} took ${evaluationDuration} ms`
+      );
+      console.log(result.data);
+      r.evaluations.push({
+        model: evaluationModel.name,
+        duration: evaluationDuration,
+        content: result.data.message?.content || result.data.content,
+      });
+    }
   }
 }
 
-function writeResultsToCsv(results: any[], outputFile: string) {
-  const header = 'persona,model,duration,response,evaluations\n';
-  const rows = results
-    .map(
-      (r) =>
-        `"${r.persona}","${r.model}",${r.duration},"${(
-          r.response || ''
-        ).replace(/"/g, '""')}","${(Array.isArray(r.evaluations) ? r.evaluations.join('\n\n\n') : r.evaluations || '').replace(/"/g, '""')}"`
-    )
-    .join('\n');
-  fs.writeFileSync(path.resolve(outputFile), header + rows, 'utf8');
-}
-
-function readCsvResults(filePath: string) {
-  const content = fs.readFileSync(filePath, 'utf8');
-  const lines = content.split('\n').slice(1); // skip header
-  return lines.filter(Boolean).map(line => line);
+function writeResultsToJson(results: any[], outputFile: string) {
+  fs.writeFileSync(path.resolve(outputFile), JSON.stringify(results, null, 2), 'utf8');
 }
 
 const main = async () => {
+  console.log('Loading available models...');
   const models = await loadAvailableModels();
+  console.log(`Loaded ${models.length} models.`);
+
   const personasArr = personas as PersonaTelosDto[];
-  const modelCsvFiles: string[] = [];
+  console.log(`Loaded ${personasArr.length} personas.`);
 
+  const intermediateJsonFile = 'intermediate_results.json';
+  console.log(`Checking for existing intermediate results in ${intermediateJsonFile}...`);
+  const allResults = loadIntermediateResults(intermediateJsonFile);
+  console.log(`Loaded ${allResults.length} existing results.`);
+
+  // Generate benchmark results for all models
   for (const model of models) {
-    const results = await generateBenchmarkResults(model, personasArr);
-    await evaluateResponses(model, results);
-    const modelCsv = `${model.name}_results.csv`;
-    writeResultsToCsv(results, modelCsv);
-    modelCsvFiles.push(modelCsv);
-    console.log(`Results for model ${model.name} written to ${modelCsv}`);
+    console.log(`Generating benchmark results for model: ${model.name}...`);
+    const modelResults = await generateBenchmarkResults(model, personasArr, allResults);
+    allResults.push(...modelResults);
+    console.log(`Completed benchmark results for model: ${model.name}.`);
+    writeResultsToJson(allResults, intermediateJsonFile); // Save intermediate results to JSON
+    console.log(`Intermediate results saved to ${intermediateJsonFile}.`);
   }
 
-  // After all models, combine into final CSV
-  const finalCsv = process.argv[2] || 'results.csv';
-  const header = 'persona,model,duration,response,evaluations\n';
-  let allRows: string[] = [];
-  for (const csvFile of modelCsvFiles) {
-    allRows = allRows.concat(readCsvResults(csvFile));
-  }
-  fs.writeFileSync(path.resolve(finalCsv), header + allRows.join('\n'), 'utf8');
-  console.log(`Final combined results written to ${finalCsv}`);
+  // Evaluate responses for all results
+  console.log('Starting evaluation of responses...');
+  await evaluateResponses(allResults, models, allResults);
+  console.log('Completed evaluation of responses.');
+  writeResultsToJson(allResults, intermediateJsonFile); // Save intermediate results after evaluations
+  console.log(`Intermediate results after evaluations saved to ${intermediateJsonFile}.`);
+
+  // Save all results to a single JSON file
+  const finalJson = process.argv[2] || 'final_results.json';
+  console.log(`Writing final results to JSON: ${finalJson}...`);
+  writeResultsToJson(allResults, finalJson);
+  console.log(`Final combined results written to ${finalJson}.`);
 };
 
 main();
