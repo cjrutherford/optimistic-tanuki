@@ -5,16 +5,19 @@ import { AppModule } from './app/app.module';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
+  const configApp = await NestFactory.create(AppModule);
+  const configService = configApp.get(ConfigService);
   const port = configService.get<number>('listenPort', 3009);
 
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.TCP,
-    options: { host: '0.0.0.0', port },
-  });
+  const app = await NestFactory.createMicroservice<MicroserviceOptions>(
+  AppModule,    
+    {
+      transport: Transport.TCP,
+      options: { host: '0.0.0.0', port },
+    }
+  );
 
-  await app.startAllMicroservices();
+  await app.listen();
   Logger.log(`🚀 Microservice is running on: tcp://localhost:${port}`);
 }
 

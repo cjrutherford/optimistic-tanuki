@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { AppService } from './app.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ChatCommands } from '@optimistic-tanuki/constants';
@@ -6,7 +6,7 @@ import { ChatMessage } from '@optimistic-tanuki/models';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly l: Logger, private readonly appService: AppService) {}
 
   @MessagePattern({ cmd: ChatCommands.POST_MESSAGE})
   async postMessage(@Payload() data: ChatMessage) {
@@ -15,6 +15,7 @@ export class AppController {
 
   @MessagePattern({ cmd: ChatCommands.GET_CONVERSATIONS })
   async getConversations(@Payload() data: { profileId: string }) {
+    this.l.log(`Retrieving conversations for profile ID: ${data.profileId}`);
     return await this.appService.getConversations(data.profileId);
   }
 }

@@ -14,6 +14,8 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthStateService } from './auth-state.service';
 import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
 import { ChatComponent } from './chat.component';
+import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { ProfileService } from './profile/profile.service';
 
 @Component({
   imports: [
@@ -37,11 +39,13 @@ export class AppComponent {
   constructor(
     private readonly router: Router,
     private readonly authState: AuthStateService,
+    private readonly profileService: ProfileService,
     private readonly messageService: MessageService,
   ) {
     effect(() => {
       this.messages.set(this.messageService.messages());
       console.log('Messages updated:', this.messages());
+      this.selectedProfile.set(this.profileService.currentUserProfile());
     });
   }
 
@@ -50,6 +54,7 @@ export class AppComponent {
       next: (isAuthenticated) => {
         console.log('Authentication state changed:', isAuthenticated);
         this.isAuthenticated.set(isAuthenticated);
+        this.selectedProfile.set(this.profileService.getCurrentUserProfile());
       },
       error: (error) => {
         console.error('Error checking authentication state:', error);
@@ -69,6 +74,7 @@ export class AppComponent {
   }
 
   isAuthenticated = signal<boolean>(false);
+  selectedProfile = signal<ProfileDto | null>(null);
 
   navigateTo(path: string) {
     // Implement navigation logic here, e.g., using Angular Router

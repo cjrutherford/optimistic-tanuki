@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Inject, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { GeneratePrompt } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 
@@ -11,7 +12,14 @@ export class AppService {
   ) {}
 
   async sendMessage(data: GeneratePrompt) {
-    const response = await firstValueFrom(this.httpService.post(`${this.apiUrl}/api/chat`, data));
-    return response.data;
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(`${this.apiUrl}/api/chat`, data, { timeout: 10000 })
+      );
+      return response.data;
+    } catch (error) {
+      console.trace('Error in sendMessage:', error);
+      throw new RpcException(error.message);
+    }
   }
 }

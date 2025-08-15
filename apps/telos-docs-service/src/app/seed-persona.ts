@@ -1,31 +1,26 @@
-import { ClientProxyFactory, Transport, ClientProxy } from "@nestjs/microservices";
-import { CreatePersonaTelosDto } from "@optimistic-tanuki/models";
 import personas from '../assets/personas.json';
-import { loadConfig } from "./config";
-import { firstValueFrom } from "rxjs";
-import { PersonaTelosCommands } from "@optimistic-tanuki/constants";
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+import { PersonaTelos } from "./entities";
+import { Repository } from "typeorm";
+import { getRepositoryToken } from "@nestjs/typeorm";
 
 async function main() {
-    const config = loadConfig();
-    const port = Number(config.listenPort) || 3008;
+    const app = await NestFactory.createApplicationContext(AppModule);
+    const personaTelosRepo = app.get<Repository<PersonaTelos>>(getRepositoryToken(PersonaTelos));
+    console.dir(personaTelosRepo)
 
-    const client: ClientProxy = ClientProxyFactory.create({
-        transport: Transport.TCP,
-        options: {
-            host: 'localhost',
-            port: port
+    for(const persona of personas) {
+        const existingPersona = await personaTelosRepo.findOneBy({ name: persona.name });
+        if (existingPersona) {
+            console.log(`Persona ${persona.name} already exists, skipping.`);
+            continue;
         }
-    });
 
-    await client.connect();
-
-    for (const persona of personas) {
-        const dto: CreatePersonaTelosDto = {...persona};
-
-        await firstValueFrom(client.send({ cmd: PersonaTelosCommands.CREATE }, dto))
+       const newPersona = personaTelosRepo.create(persona);
+       await personaTelosRepo.save(newPersona);
+       console.log(`Created new persona: ${newPersona.name}`);
     }
-
-    await client.close();
 }
 
 main().catch(console.error);

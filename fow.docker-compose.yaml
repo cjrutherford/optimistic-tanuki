@@ -203,3 +203,6 @@ services:
 
 volumes:
   postgres_data:
+networks:
+  ot_network:
+    driver: bridge

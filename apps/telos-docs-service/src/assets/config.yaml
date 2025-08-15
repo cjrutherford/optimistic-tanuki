@@ -4,4 +4,4 @@ database:
   port: 5432
   username: postgres
   password: postgres
-  dbName: ot_telos_docs_service
+  database: ot_telos_docs_service

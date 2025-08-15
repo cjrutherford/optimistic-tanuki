@@ -37,6 +37,7 @@ services:
     command: ["dumb-init", "nodemon", "/app/dist/apps/forgeofwill/server/server.mjs"]
     environment:
       - NODE_ENV=development
+      - NODE_OPTIONS=--enable-source-maps
 
   gateway:
     container_name: ot_gateway # Added
@@ -167,6 +168,7 @@ services:
       dockerfile: ./apps/ai-orchestrator/Dockerfile
     volumes:
       - ./dist/apps/ai-orchestrator:/usr/src/app
+      - ./apps/ai-orchestrator/src/assets:/usr/src/assets # Mount assets for AI Orchestrator
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:
@@ -182,6 +184,7 @@ services:
       dockerfile: ./apps/prompt-proxy/Dockerfile
     volumes:
       - ./dist/apps/prompt-proxy:/usr/src/app
+      - ./apps/prompt-proxy/src/assets:/usr/src/assets # Mount assets for prompt proxy
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:

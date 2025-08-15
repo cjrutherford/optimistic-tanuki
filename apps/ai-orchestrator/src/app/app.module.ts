@@ -66,6 +66,23 @@ import { ClientProxyFactory, Transport } from '@nestjs/microservices';
       },
       inject: [ConfigService]
     },
+    {
+      provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
+      useFactory: (config: ConfigService) => {
+        const options = config.get('dependencies.chat_collector');
+        if (!options) {
+          throw new Error('Chat Collector configuration not found');
+        }
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            port: options.port,
+            host: options.host,
+          }
+        });
+      },
+      inject: [ConfigService]
+    }
   ],
 })
 export class AppModule {}

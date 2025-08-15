@@ -1,0 +1,4 @@
+listenPort: 3009
+ollama:
+  apiUrl: 192.168.50.238
+  apiPort: 11434

@@ -1,9 +1,5 @@
 import {
   ApplicationConfig,
-  EnvironmentProviders,
-  inject,
-  makeEnvironmentProviders,
-  PLATFORM_ID,
   provideZoneChangeDetection,
 } from '@angular/core';
 import {
@@ -16,7 +12,6 @@ import {
   SOCKET_HOST,
   SOCKET_IO_INSTANCE,
   SOCKET_NAMESPACE,
-  SocketChatService,
 } from '@optimistic-tanuki/chat-ui';
 import { AuthStateService } from './auth-state.service';
 import { AuthenticationService } from './authentication.service';

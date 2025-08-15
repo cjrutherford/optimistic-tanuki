@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
@@ -14,15 +14,20 @@ export class ChatGateway {
   private connectedClients: { id: string, client: Socket }[] = [];
 
   constructor(
+    private readonly l: Logger,
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE) private readonly chatCollectorClient: ClientProxy,
   ) {}
 
   @SubscribeMessage('message')
   async handleMessage(@MessageBody() payload: ChatMessage, @ConnectedSocket() client: Socket): Promise<void> {
+    console.log('New Message Received');
     const senderId = payload.senderId;
     this.updateConnectedSockets(senderId, client, 'connect');
+    console.log(`Sender ID: ${senderId} connected.`);
     const messageReceipt = await firstValueFrom(this.chatCollectorClient.send({ cmd: ChatCommands.POST_MESSAGE }, payload));
+    console.log('Message Posted: ', messageReceipt);
     const recipientSockets = this.connectedClients.filter(c => payload.recipientId.includes(c.id) || c.id === senderId);
+    console.log('Updating recipient sockets...');
     for( const recipient of recipientSockets) {
       const conversations = await firstValueFrom(this.chatCollectorClient.send({ cmd: ChatCommands.GET_CONVERSATIONS }, { userId: recipient.id }));
       recipient.client.emit('conversations', {
@@ -34,12 +39,12 @@ export class ChatGateway {
 
   @SubscribeMessage('get_conversations')
   async handleGetConversations(@MessageBody() payload: { profileId: string }, @ConnectedSocket() client: Socket): Promise<void> {
+    this.l.log('starting the call to get conversations.')
     const senderId = payload.profileId;
+    this.l.log(`finding conversations for ${senderId}`);
     this.updateConnectedSockets(senderId, client, 'connect');
     const conversations = await firstValueFrom(this.chatCollectorClient.send({ cmd: ChatCommands.GET_CONVERSATIONS }, payload));
-    client.emit('conversations', {
-      conversations: conversations || [],
-    });
+    client.emit('conversations', conversations || []);
   }
 
   private updateConnectedSockets(senderId: string, client: Socket, type: 'connect' | 'disconnect') {
@@ -55,6 +60,7 @@ export class ChatGateway {
   @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
     const disconnectedClient = this.connectedClients.find(c => c.client === client);
+    console.log(`Client disconnected: ${disconnectedClient?.id}`);
     if (disconnectedClient) {
       this.updateConnectedSockets(disconnectedClient.id, client, 'disconnect');
     }

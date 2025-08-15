@@ -8,9 +8,11 @@ import loadConfig from './loadConfig';
 import loadDatabase from './loadDatabase';
 import { Conversation, Message } from './entities';
 import { DataSource } from 'typeorm';
+import { LoggerModule } from '@optimistic-tanuki/logger';
 
 @Module({
   imports: [
+    LoggerModule,
     ConfigModule.forRoot({ 
       load: [loadConfig],
       isGlobal: true,

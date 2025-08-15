@@ -31,7 +31,7 @@ export class PersonaTelosController {
     }
 
     @MessagePattern({ cmd: PersonaTelosCommands.FIND_ONE })
-    findOne(data: string) {
-        return this.personaTelosService.findOne(data);
+    findOne(data: { id: string }) {
+        return this.personaTelosService.findOne(data.id);
     }
 }

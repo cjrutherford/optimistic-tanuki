@@ -217,20 +217,7 @@ export class ProfileService {
 
 
   getDisplayProfile(id: string) {
-    return this.http.get<ProfileDto>(`/api/profile/${id}`).pipe(
-      switchMap(profile =>
-      forkJoin({
-        profilePic: this.http.get<{ profilePic: string }>(`/api/profile/${id}/photo`).pipe(map(res => res.profilePic)),
-        coverPic: this.http.get<{ coverPic: string }>(`/api/profile/${id}/cover`).pipe(map(res => res.coverPic))
-      }).pipe(
-        map(({ profilePic, coverPic }) => {
-          profile.profilePic = profilePic;
-          profile.coverPic = coverPic;
-          return profile;
-        })
-      )
-      )
-    );
+    return this.http.get<ProfileDto>(`/api/profile/${id}`);
   }
 
 }

@@ -9,7 +9,7 @@ import TurndownService from 'turndown';
 @Component({
   selector: 'lib-compose-chat',
   imports: [CommonModule, FormsModule, QuillModule, ButtonComponent],
-  providers: [TurndownService],
+  providers: [],
   templateUrl: './compose-chat.component.html',
   styleUrl: './compose-chat.component.scss',
   host: {
@@ -28,11 +28,32 @@ export class ComposeChatComponent extends Themeable{
   
 
   override applyTheme(colors: ThemeColors): void {
-    throw new Error('Method not implemented.');
+    this.background = colors.background;
+    this.foreground = colors.foreground;
+    this.accent = colors.accent;
+    this.complement = colors.complementaryShades[0][1];
+    this.borderColor = colors.accentGradients[0][1];
+    this.borderGradient = colors.complementaryGradients[0][1];
+    this.transitionDuration ='0.3s';
+    if(this.theme === 'dark') {
+      this.background = colors.background;
+      this.foreground = colors.foreground;
+      this.accent = colors.accent;
+      this.complement = colors.complementaryShades[0][1];
+      this.borderColor = colors.accentGradients[0][1];
+      this.borderGradient = colors.complementaryGradients[0][1];
+    } else {
+      this.background = colors.background;
+      this.foreground = colors.foreground;
+      this.accent = colors.accent;
+      this.complement = colors.complementaryShades[0][1];
+      this.borderColor = colors.accentGradients[0][1];
+      this.borderGradient = colors.complementaryGradients[0][1];
+    }
   }
 
   submitMessage() {
-    const turndownService = inject(TurndownService);
+    const turndownService = new TurndownService();
     let markdown = turndownService.turndown(this.content);
     markdown = markdown.replace(
       /(https?:\/\/[^\s]+)/g,

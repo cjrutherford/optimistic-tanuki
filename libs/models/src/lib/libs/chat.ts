@@ -1,8 +1,10 @@
 export class ChatMessage {
     id: string;
     conversationId: string;
+    senderName: string;
     senderId: string;
     recipientId: string[];
+    recipientName: string[];
     content: string;
     timestamp: Date;
     type: 'chat' | 'info' | 'warning' | 'system';

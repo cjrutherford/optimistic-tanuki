@@ -18,6 +18,7 @@ export const loadConfig = (): TelosDocsConfigType => {
     const configPath = path.resolve(__dirname, './assets/config.yaml');
     const configFile = readFileSync(configPath, 'utf8');
     const config = yaml.load(configFile) as TelosDocsConfigType;
+    console.log('Loaded configuration:', config);
 
     return {
         listenPort: config.listenPort,

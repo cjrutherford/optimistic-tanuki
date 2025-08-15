@@ -12,13 +12,14 @@ import { ProjectTelosService } from './project-telos/project-telos.service';
 import { ProfileTelosService } from './profile-telos/profile-telos.service';
 import loadDatabase from './database';
 import { PersonaTelosController } from './persona-telos/persona-telos.controller';
-import { PersonaTelos, ProfileTelos } from './entities';
+import { PersonaTelos, ProfileTelos, ProjectTelos } from './entities';
 import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       load: [loadConfig],
+      isGlobal: true,
     }),
     DatabaseModule.register({
       name: 'telos_docs',
@@ -47,8 +48,8 @@ import { DataSource } from 'typeorm';
       inject: ['TELOS_DOCS_CONNECTION']
     },
     {
-      provide: getRepositoryToken(ProfileTelos),
-      useFactory: (dataSource: DataSource) => dataSource.getRepository(ProfileTelos),
+      provide: getRepositoryToken(ProjectTelos),
+      useFactory: (dataSource: DataSource) => dataSource.getRepository(ProjectTelos),
       inject: ['TELOS_DOCS_CONNECTION']
     }
   ],
