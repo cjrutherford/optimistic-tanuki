@@ -1,15 +1,19 @@
 import { Route } from '@angular/router';
+import { AuthenticationGuard } from './authentication.guard';
+import { ProfileGuard } from './profile.guard';
 
 export const appRoutes: Route[] = [
     {
         path: '',
         loadComponent: () => import('./pages/projects/projects.component').then(m => m.ProjectsComponent),
         title: 'Projects',
+        canActivate: [AuthenticationGuard, ProfileGuard],
     },
     {
         path: 'profile',
         loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent),
         title: 'Profile',
+        canActivate: [AuthenticationGuard],
     },
     {
         path: 'login',

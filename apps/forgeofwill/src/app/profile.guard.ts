@@ -2,7 +2,7 @@ import { CanActivate, Router } from '@angular/router';
 import { Injectable, inject } from '@angular/core';
 
 import { AuthStateService } from './auth-state.service';
-import { ProfileService } from './profile.service';
+import { ProfileService } from './profile/profile.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,12 +10,12 @@ import { ProfileService } from './profile.service';
 export class ProfileGuard implements CanActivate {
   private router = inject(Router);
   private authStateService = inject(AuthStateService);
+  private profileService = inject(ProfileService);
   private isAuthenticated = false;
 
   constructor(
-    private readonly profileService: ProfileService,
   ) {
-    this.authStateService.isAuthenticated$.subscribe(isAuthenticated => {
+    this.authStateService.isAuthenticated$().subscribe(isAuthenticated => {
       this.isAuthenticated = isAuthenticated;
     });
 
@@ -31,6 +31,7 @@ export class ProfileGuard implements CanActivate {
         }
         return true;
       } catch (error) {
+        this.router.navigate(['/profile']);
         console.error('Error fetching profiles:', error);
         return false;
       }
