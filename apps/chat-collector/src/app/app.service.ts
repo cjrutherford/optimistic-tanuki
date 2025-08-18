@@ -13,7 +13,7 @@ export class AppService {
     @Inject(getRepositoryToken(Conversation)) private readonly conversationRepository: Repository<Conversation>,
   ) {}
 
-  async postMessage(data: ChatMessage): Promise<Message> {
+  async postMessage(data: ChatMessage): Promise<Conversation> {
     if(!data.id) {
       data.id = uuidv4();
     }
@@ -30,7 +30,7 @@ export class AppService {
     const message = this.messageRepository.create(newMessage);
     await this.messageRepository.save(message);
 
-    let conversation = await this.conversationRepository.findOne({ where: { id: data.conversationId } });
+    let conversation = await this.conversationRepository.findOne({ where: { id: data.conversationId }, relations: ['messages'] });
     if (!conversation) {
       conversation = this.conversationRepository.create({
         id: data.conversationId,
@@ -39,19 +39,36 @@ export class AppService {
         messages: [message],
         updatedAt: new Date()
       });
-    } else {
+    } else {  
       conversation.messages.push(message);
       conversation.updatedAt = new Date();
     }
     await this.conversationRepository.save(conversation);
 
-    return message;
+    return conversation;
   }
   
   async getConversations(profileId: string): Promise<Conversation[]> {
     this.l.log(`Retrieving conversations for profile ID: ${profileId}`);
-    const conversations = await this.conversationRepository.find({ where: { participants: ArrayContains([profileId]) }, relations: ['messages'] });
+    const conversations = await this.conversationRepository.find({ 
+      where: { 
+        participants: ArrayContains([profileId]) 
+      }, 
+      relations: ['messages'],
+      order: { createdAt: 'DESC'}
+    });
     this.l.log(`Found ${conversations.length} conversations for profile ID: ${profileId}`);
-    return conversations;
+    const updatedConversations = conversations.map(conversation => {
+      conversation.messages = conversation.messages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      return conversation;
+    });
+    this.l.log(`Sorted messages in each conversation for profile ID: ${profileId}`);
+    this.l.log(JSON.stringify(updatedConversations, null, 2));
+    return updatedConversations;
+  }
+
+  async getConversation(conversationId: string): Promise<Conversation | null> {
+    this.l.log(`Retrieving conversation for ID: ${conversationId}`);
+    return await this.conversationRepository.findOne({ where: { id: conversationId }, relations: ['messages'] });
   }
 }

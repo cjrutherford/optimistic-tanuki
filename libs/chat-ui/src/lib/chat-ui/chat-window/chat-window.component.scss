@@ -1,7 +1,6 @@
 
 .chat-window-container {
   position: relative;
-  width: 400px;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
@@ -23,9 +22,11 @@
 
 .chat-window-container.popout {
   position: fixed;
+  max-height: 1000px;
   bottom: 24px;
   right: 80px;
-  width: 400px;
+  min-width: 300px;
+  max-width: 800px;
   z-index: 1001;
   box-shadow: 0 4px 24px rgba(0,0,0,0.25);
 }
@@ -59,8 +60,9 @@
 }
 
 .chat-window-content {
+  max-height: 1000px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: scroll;
 }

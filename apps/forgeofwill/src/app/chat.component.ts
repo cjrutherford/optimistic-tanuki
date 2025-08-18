@@ -66,7 +66,8 @@ export class ChatComponent {
         });
         this.socketChat.onConversations((data: ChatConversation[]) => {
           console.log('Conversations update received:', data);
-          this.conversations.set(data);
+          const currentConversations = this.conversations();
+          this.conversations.set([...currentConversations, ...data]);
           this.updateContacts();
         });
         const profileId = this.profileService.currentUserProfile()?.id;
@@ -80,17 +81,17 @@ export class ChatComponent {
   handleNewMessage($event: string, conversationId: string) {
     const currentState = this.windowStates()[conversationId];
     if (currentState) {
-      const newMessage: ChatMessage = {
-        id: '',
+      const senderId = this.profileService.currentUserProfile()?.id || '';
+      const newMessage: Partial<ChatMessage> = {
         content: $event,
-        senderId: this.profileService.currentUserProfile()?.id || '',
-        conversationId: '',
-        recipientId: [],
+        senderId: senderId,
+        conversationId: conversationId,
+        recipientId: [...currentState.conversation.participants.filter(x => x !== senderId)],
         timestamp: new Date(),
-        type: 'info',
+        type: 'chat',
       };
       this.postMessage(newMessage);
-      currentState.conversation.messages.push(newMessage);
+      // currentState.conversation.messages.push({...newMessage, id: 'pending'} as ChatMessage);
       this.windowStates.set({
         ...this.windowStates(),
         [conversationId]: currentState,
@@ -234,7 +235,7 @@ export class ChatComponent {
    * Sends a chat message using the SocketChatService.
    * @param message The chat message to send.
    */
-  postMessage(message: ChatMessage) {
+  postMessage(message: Partial<ChatMessage>) {
     if (this.socketChat) {
       this.socketChat.sendMessage(message);
       console.log('Message sent:', message);

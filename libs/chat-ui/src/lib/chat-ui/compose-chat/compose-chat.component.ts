@@ -28,27 +28,16 @@ export class ComposeChatComponent extends Themeable{
   
 
   override applyTheme(colors: ThemeColors): void {
-    this.background = colors.background;
+    this.background = `radial-gradient(ellipse, ${colors.background}, ${colors.accent})`;
     this.foreground = colors.foreground;
     this.accent = colors.accent;
-    this.complement = colors.complementaryShades[0][1];
-    this.borderColor = colors.accentGradients[0][1];
-    this.borderGradient = colors.complementaryGradients[0][1];
-    this.transitionDuration ='0.3s';
-    if(this.theme === 'dark') {
-      this.background = colors.background;
-      this.foreground = colors.foreground;
-      this.accent = colors.accent;
-      this.complement = colors.complementaryShades[0][1];
-      this.borderColor = colors.accentGradients[0][1];
-      this.borderGradient = colors.complementaryGradients[0][1];
+    this.complement = colors.complementary;
+    if (this.theme === 'dark') {
+      this.borderGradient = colors.accentGradients['dark'];
+      this.borderColor = colors.complementaryShades[2][0];
     } else {
-      this.background = colors.background;
-      this.foreground = colors.foreground;
-      this.accent = colors.accent;
-      this.complement = colors.complementaryShades[0][1];
-      this.borderColor = colors.accentGradients[0][1];
-      this.borderGradient = colors.complementaryGradients[0][1];
+      this.borderGradient = colors.accentGradients['light'];
+      this.borderColor = colors.complementaryShades[2][1];
     }
   }
 

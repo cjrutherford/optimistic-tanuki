@@ -5,9 +5,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { loadConfig } from './config';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import { LoggerModule } from '@optimistic-tanuki/logger';
 
 @Module({
   imports: [
+    LoggerModule,
     ConfigModule.forRoot({
       load: [loadConfig],
     })

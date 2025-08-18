@@ -1,6 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Any, FindOptionsWhere, Like, Repository } from 'typeorm';
+import { Any, FindOptionsWhere, In, Like, Repository } from 'typeorm';
 import { PersonaTelos } from '../entities';
 import { CreatePersonaTelosDto, PersonaTelosDto, QueryPersonaTelsosDto, UpdatePersonaTelosDto } from '@optimistic-tanuki/models';
 
@@ -8,6 +8,7 @@ import { CreatePersonaTelosDto, PersonaTelosDto, QueryPersonaTelsosDto, UpdatePe
 export class PersonaTelosService {
 
     constructor(
+        private readonly l: Logger,
         @Inject(getRepositoryToken(PersonaTelos))
         private readonly personaRepository: Repository<PersonaTelos>,
     ) {}
@@ -19,7 +20,10 @@ export class PersonaTelosService {
 
     async findAll(query: QueryPersonaTelsosDto): Promise<PersonaTelosDto[]> {
         const where: FindOptionsWhere<PersonaTelos> = {};
-
+        this.l.log('Finding personas with query:', JSON.stringify(query));
+        if(query.id) {
+            where.id = In([...query.id.split(',')]);
+        }
         if (query.name) {
             where.name = query.name;
         }

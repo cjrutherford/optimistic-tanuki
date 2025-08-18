@@ -14,9 +14,11 @@ import loadDatabase from './database';
 import { PersonaTelosController } from './persona-telos/persona-telos.controller';
 import { PersonaTelos, ProfileTelos, ProjectTelos } from './entities';
 import { DataSource } from 'typeorm';
+import { LoggerModule } from '@optimistic-tanuki/logger';
 
 @Module({
   imports: [
+    LoggerModule,
     ConfigModule.forRoot({
       load: [loadConfig],
       isGlobal: true,

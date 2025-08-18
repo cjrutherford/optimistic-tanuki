@@ -58,7 +58,7 @@ export class ProfileController {
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   @Post()
   async createProfile(@Body() createProfileDto: CreateProfileDto) {
-    const createdProfile = await firstValueFrom(
+    const createdProfile: ProfileDto = await firstValueFrom(
       this.client.send({ cmd: ProfileCommands.Create }, createProfileDto)
     );
     this.l.log(`Profile created with ID: ${createdProfile.id}`);

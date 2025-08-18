@@ -4,15 +4,15 @@ FROM docker.io/node:lts-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
 COPY dist/apps/project-planning/package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev && npm i --save pg
 
 # Production image, copy all the files and run nest
 FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3002
-RUN npm i -g nodemon pg
 WORKDIR /usr/src/app
+RUN npm i -g nodemon pg
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 RUN pwd && ls -lath

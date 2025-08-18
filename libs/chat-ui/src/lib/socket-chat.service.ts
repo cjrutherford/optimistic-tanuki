@@ -89,7 +89,7 @@ export class SocketChatService {
    * Sends a chat message.
    * @param message The message to send.
    */
-  sendMessage(message: ChatMessage): void {
+  sendMessage(message: Partial<ChatMessage>): void {
     this.socket.emit('message', message);
   }
 
