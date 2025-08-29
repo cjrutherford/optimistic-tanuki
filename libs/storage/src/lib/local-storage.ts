@@ -23,7 +23,6 @@ export class LocalStorageAdapter implements StorageAdapter {
 
     async create(data: CreateAssetDto): Promise<AssetDto> {
         data.name = data.name.replace(/\s+/g, '_');
-        console.log("🚀 ~ LocalStorageAdapter ~ create ~ data:", data)
         await this.ensureBasePathExists();
         this.l.log(`LocalStorageAdapter: Creating asset with data:`, data.name, data.profileId, data.type, data.content?.length);
         const assetId = uuidv4();

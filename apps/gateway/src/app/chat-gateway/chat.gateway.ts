@@ -33,8 +33,12 @@ export class ChatGateway {
   async handleMessage(@MessageBody() payload: ChatMessage, @ConnectedSocket() client: Socket): Promise<void> {
     this.l.log('New Message Received');
     const senderId = payload.senderId;
-    const recipientIds = payload.recipientId
-    const aiRecipients = await firstValueFrom(this.telosDocsClient.send({ cmd: PersonaTelosCommands.FIND }, { id: recipientIds.join(',')}))
+    const recipientIds = payload.recipientId;
+    this.updateConnectedSockets(senderId, client, 'connect');
+    this.l.log(`Sender ID: ${senderId} connected.`);
+    const messageReceipt = await firstValueFrom(this.chatCollectorClient.send({ cmd: ChatCommands.POST_MESSAGE }, payload));
+    this.l.log('Message Posted: ', messageReceipt);
+    const aiRecipients = await firstValueFrom(this.telosDocsClient.send({ cmd: PersonaTelosCommands.FIND }, { id: recipientIds.join(',') }));
     this.l.log(`Sender ID: ${senderId}, Recipient IDs: ${recipientIds.join(', ')}`);
     if (aiRecipients && aiRecipients.length > 0) {
       this.l.log('AI recipients found, sending to AI Orchestration Service');
@@ -43,22 +47,15 @@ export class ChatGateway {
       await firstValueFrom(this.aiOrchestrationClient.send({ cmd: AIOrchestrationCommands.CONVERSATION_UPDATE }, { conversation: aiPayload, aiPersonas: aiRecipients }));
       this.l.log('AI message sent successfully.');
     } else {
-      this.l.log('No AI recipients found, proceeding with regular message handling.');
+      this.l.log('No AI recipients found, message handling complete.');
     }
-    this.updateConnectedSockets(senderId, client, 'connect');
-    this.l.log(`Sender ID: ${senderId} connected.`);
-    const messageReceipt = await firstValueFrom(this.chatCollectorClient.send({ cmd: ChatCommands.POST_MESSAGE }, payload));
-    this.l.log('Message Posted: ', messageReceipt);
     const recipientSockets = this.connectedClients.filter(c => payload.recipientId.includes(c.id) || c.id === senderId);
     this.l.log('Updating recipient sockets...');
     for( const recipient of recipientSockets) {
       this.l.log(`Notifying recipient: ${recipient.id}`);
       const conversations = await firstValueFrom(this.chatCollectorClient.send({ cmd: ChatCommands.GET_CONVERSATIONS }, { userId: recipient.id }));
       console.log(conversations);
-      recipient.client.emit('conversations', {
-        ...messageReceipt,
-        conversations: conversations || [],
-      });
+      recipient.client.emit('conversations', conversations || []);
     }
   }
 

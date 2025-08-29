@@ -29,4 +29,4 @@ export class CreateProfileTelosDto {
 
 export declare type UpdateProfileTelosDto = Partial<ProfileTelosDto>;
 
-export declare type QueryProfileTelosDto = Pick<ProfileTelosDto, 'id' | 'name' | 'description' | 'goals' | 'skills' | 'interests' | 'limitations' | 'strengths' | 'objectives' | 'coreObjective'>;
+export declare type QueryProfileTelosDto = Partial<ProfileTelosDto>;

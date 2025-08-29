@@ -85,7 +85,8 @@ export class AppService {
       await firstValueFrom(this.chatCollectorService.send({ cmd: ChatCommands.POST_MESSAGE }, chatBody));
       return [];
     } catch (error) {
-      this.l.log('Error processing new profile:', error);
+      console.trace(error);
+      this.l.error('Error processing new profile:', error.message);
       throw new RpcException('Failed to process new profile: ' + error.message);
     }
   }

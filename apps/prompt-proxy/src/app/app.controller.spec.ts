@@ -1,21 +1,43 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PromptCommands } from '@optimistic-tanuki/constants';
 
 describe('AppController', () => {
-  let app: TestingModule;
+  let appController: AppController;
+  let appService: AppService;
 
-  beforeAll(async () => {
-    app = await Test.createTestingModule({
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
+      providers: [
+        {
+          provide: AppService,
+          useValue: {
+            sendMessage: jest.fn(),
+          },
+        },
+      ],
     }).compile();
+
+    appController = module.get<AppController>(AppController);
+    appService = module.get<AppService>(AppService);
   });
 
-  describe('getData', () => {
-    it('should return "Hello API"', () => {
-      const appController = app.get<AppController>(AppController);
-      expect(appController.getData()).toEqual({ message: 'Hello API' });
+  describe('sendMessage', () => {
+    it('should call appService.sendMessage with the provided data', async () => {
+      const testData = { model: 'test-model', stream: false, messages: [] };
+      await appController.sendMessage(testData);
+      expect(appService.sendMessage).toHaveBeenCalledWith(testData);
+    });
+
+    it('should return the result from appService.sendMessage', async () => {
+      const testData = { model: 'test-model', stream: false, messages: [] };
+      const expectedResult = { message: 'AI response' };
+      jest.spyOn(appService, 'sendMessage').mockResolvedValue(expectedResult);
+
+      const result = await appController.sendMessage(testData);
+      expect(result).toEqual(expectedResult);
     });
   });
 });

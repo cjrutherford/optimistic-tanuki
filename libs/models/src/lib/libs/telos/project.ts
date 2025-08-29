@@ -29,4 +29,4 @@ export class CreateProjectTelosDto {
 
 export declare type UpdateProjectTelosDto = Partial<ProjectTelosDto>;
 
-export declare type QueryProjectTelosDto = Pick<ProjectTelosDto, 'id' | 'name' | 'description' | 'goals' | 'skills' | 'interests' | 'limitations' | 'strengths' | 'objectives' | 'coreObjective'>;
+export declare type QueryProjectTelosDto = Partial<ProjectTelosDto>;

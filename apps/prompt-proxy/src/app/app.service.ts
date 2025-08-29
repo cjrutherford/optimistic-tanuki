@@ -13,8 +13,9 @@ export class AppService {
 
   async sendMessage(data: GeneratePrompt) {
     try {
+      // Remove timeout or set to a very high value (e.g., 1 hour = 3600000 ms)
       const response = await firstValueFrom(
-        this.httpService.post(`${this.apiUrl}/api/chat`, data, { timeout: 10000 })
+        this.httpService.post(`${this.apiUrl}/api/chat`, data, { timeout: 3600000 })
       );
       return response.data;
     } catch (error) {

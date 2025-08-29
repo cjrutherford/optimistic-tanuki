@@ -17,3 +17,5 @@ export class TimerDto {
     deletedAt!: Date;
     status!: TimerStatus;
 }
+
+export type CreateTimerDto = Omit<TimerDto, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>;

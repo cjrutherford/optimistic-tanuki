@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Conversation, Message } from './entities';
+import { Conversation, Message, MessageType } from './entities';
 import { Any, ArrayContains, Repository } from 'typeorm';
 import { ChatMessage } from '@optimistic-tanuki/models';
 
@@ -14,18 +14,12 @@ export class AppService {
   ) {}
 
   async postMessage(data: ChatMessage): Promise<Conversation> {
-    if(!data.id) {
-      data.id = uuidv4();
-    }
-    if(!data.conversationId) {
-      data.conversationId = uuidv4();
-    }
     const newMessage: Partial<Message> = {
       id: data.id,
       senderId: data.senderId,
       recipients: data.recipientId,
       content: data.content,
-      type: Message[data.type]
+      type: MessageType[data.type.toUpperCase() as keyof typeof MessageType]
     };
     const message = this.messageRepository.create(newMessage);
     await this.messageRepository.save(message);

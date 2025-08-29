@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, signal } from '@angular/core';
+import { Component, computed, Inject, PLATFORM_ID, signal } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import {
   ChatContact,
@@ -86,18 +86,26 @@ export class ChatComponent {
         content: $event,
         senderId: senderId,
         conversationId: conversationId,
-        recipientId: [...currentState.conversation.participants.filter(x => x !== senderId)],
+        recipientId: [...currentState.conversation.participants.filter((x: string) => x !== senderId)],
         timestamp: new Date(),
         type: 'chat',
       };
       this.postMessage(newMessage);
-      // currentState.conversation.messages.push({...newMessage, id: 'pending'} as ChatMessage);
-      this.windowStates.set({
-        ...this.windowStates(),
-        [conversationId]: currentState,
+      // Optimistically update the conversation signal
+      this.conversations.update(currentConversations => {
+        const conversationIndex = currentConversations.findIndex(c => c.id === conversationId);
+        if (conversationIndex > -1) {
+          const updatedConversation = { ...currentConversations[conversationIndex] };
+          updatedConversation.messages = [...updatedConversation.messages, { ...newMessage, id: 'pending' } as ChatMessage];
+          const newConversations = [...currentConversations];
+          newConversations[conversationIndex] = updatedConversation;
+          return newConversations;
+        }
+        return currentConversations;
       });
+
       console.log(
-        `New message sent for conversation ID ${conversationId}:`,
+        `New message sent for conversation ID ${conversationId}`,
         newMessage
       );
     } else {
@@ -158,7 +166,6 @@ export class ChatComponent {
     };
     contacts.push(currentUserContact);
     this.contacts.set(contacts);
-    this.windowStates.set(this.computeWindowStates());
   }
   openWindows = signal<Set<string>>(new Set());
 
@@ -182,26 +189,16 @@ export class ChatComponent {
     return this.openWindows().has(conversationId);
   }
   // Computed signal for window states as a Map
-  windowStates = signal<
-    Record<
-      string,
-      { windowState: ChatWindowState; conversation: ChatConversation }
-    >
-  >({});
-
-  private computeWindowStates(): Record<
-    string,
-    { windowState: ChatWindowState; conversation: ChatConversation }
-  > {
+  windowStates = computed(() => {
     const conversations = this.conversations();
     const obj: Record<
       string,
       { windowState: ChatWindowState; conversation: ChatConversation }
     > = {};
-    const selectedConversationId = this.selectedConversation();
+    const openWindows = this.openWindows();
     conversations.forEach((conv) => {
       const windowState: ChatWindowState =
-        selectedConversationId && selectedConversationId === conv.id
+        openWindows.has(conv.id)
           ? 'popout'
           : 'hidden';
       obj[conv.id] = {
@@ -210,7 +207,7 @@ export class ChatComponent {
       };
     });
     return obj;
-  }
+  });
 
   selectedConversation = signal<string | null>(null);
   conversations = signal<ChatConversation[]>([], {
