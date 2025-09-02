@@ -3,9 +3,9 @@ import { CommonModule } from '@angular/common';
 import { HeadingComponent, TileComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
-  selector: 'dh-about',
+  selector: 'dh-resources',
   imports: [CommonModule, HeadingComponent, TileComponent],
-  templateUrl: './about.component.html',
-  styleUrl: './about.component.scss',
+  templateUrl: './resources.component.html',
+  styleUrl: './resources.component.scss',
 })
-export class AboutComponent {}
+export class ResourcesComponent {}

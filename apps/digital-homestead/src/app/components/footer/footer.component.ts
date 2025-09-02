@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HeadingComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'dh-footer',
-  imports: [CommonModule],
+  imports: [CommonModule, HeadingComponent],
   templateUrl: './footer.component.html',
   styleUrl: './footer.component.scss',
 })

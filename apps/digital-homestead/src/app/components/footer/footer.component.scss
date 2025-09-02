@@ -1,0 +1,16 @@
+.section-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    background-color: #454295;
+    color: #fff;
+    .top-row {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
+    }
+}

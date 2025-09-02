@@ -1,0 +1,35 @@
+.section-container {
+    margin: 20px auto;
+    text-align: center;
+    padding: 2rem;
+    background-color: rgba(33,33,33,0.15);
+    border: 1px solid #eee;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(33,33,33,0.15);
+    .heading-container {
+        margin-bottom: 2rem;
+    }
+
+    .blog-post-row {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+}
+
+.img {
+    img { width: 100%; height: auto; border-radius: 8px; }
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    transition: transform 0.3s;
+    margin-bottom: 40px;
+}
+
+.card-content {
+    padding: 1rem;
+    text-align: left;
+}

@@ -8,14 +8,43 @@
 
 .title {
     display: flex;
+    gap: 1rem;
     align-items: center;
+    height: 5vh;
+    padding: 0.5rem;
 }
 
 .navigation {
     display: flex;
-    align-items: center;
     gap: 1rem;
+    align-items: center;
     justify-content: space-between;
+    a {
+        font-size: 1rem;
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        background-color: #007bff;
+        color: #fff;
+        transition: background 0.2s, color 0.2s, border 0.2s;
+        cursor: pointer;
+        display: inline-block;
+
+        &:hover,
+        &.active {
+            background-color: #0056b3;
+            color: #fff;
+            text-decoration: none;
+            border-color: #0056b3;
+        }
+    }
+
+    a.active {
+        font-weight: bold;
+        text-decoration: underline;
+        color: inherit;
+    }
 
     :hover {
         text-decoration: underline;
