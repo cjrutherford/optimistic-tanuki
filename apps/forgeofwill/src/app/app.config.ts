@@ -7,7 +7,7 @@ import {
   withEventReplay,
 } from '@angular/platform-browser';
 import { io } from 'socket.io-client';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import {
   SOCKET_HOST,
   SOCKET_IO_INSTANCE,
@@ -25,14 +25,13 @@ import { provideRouter } from '@angular/router';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideClientHydration(withEventReplay()),
-    provideHttpClient(withInterceptors([authenticationInterceptor])),
+    provideHttpClient(withInterceptors([authenticationInterceptor]), withFetch()),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     {
       provide: SOCKET_HOST,
       useFactory: () => {
-        const value = 'http://localhost:3300';
-        console.log('Socket host URL:', value);
+        const value = (window as any)['env']?.SOCKET_URL || window.location.hostname;
         return value;
       },
     },

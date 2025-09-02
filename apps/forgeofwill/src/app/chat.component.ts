@@ -1,4 +1,4 @@
-import { Component, computed, Inject, PLATFORM_ID, signal } from '@angular/core';
+import { Component, computed, effect, Inject, PLATFORM_ID, signal } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import {
   ChatContact,
@@ -60,21 +60,34 @@ export class ChatComponent {
 
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
-      if (this.socketChat) {
-        this.socketChat.onMessage((message) => {
-          console.log('New message received:', message);
-        });
-        this.socketChat.onConversations((data: ChatConversation[]) => {
-          console.log('Conversations update received:', data);
-          const currentConversations = this.conversations();
-          this.conversations.set([...currentConversations, ...data]);
-          this.updateContacts();
-        });
-        const profileId = this.profileService.currentUserProfile()?.id;
-        if (profileId) {
-          this.socketChat.getConversations(profileId);
+      // Watch for current user profile changes and connect when defined
+      const checkAndConnect = async () => {
+        const profile = this.profileService.currentUserProfile();
+        if (profile && this.socketChat) {
+          this.socketChat.onMessage((message) => {
+            console.log('New message received:', message);
+          });
+          this.socketChat.onConversations((data: ChatConversation[]) => {
+            console.log('Conversations update received:', data);
+            const currentConversations = this.conversations();
+            this.conversations.set([...currentConversations, ...data]);
+            this.updateContacts();
+          });
+          this.socketChat.getConversations(profile.id);
         }
-      }
+      };
+
+      // Initial check
+      checkAndConnect();
+
+      // React to profile changes using a signal effect
+      const stopEffect = effect(() => {
+        const profile = this.profileService.currentUserProfile();
+        if (profile) {
+          checkAndConnect();
+          stopEffect.destroy();
+        }
+      });
     }
   }
 

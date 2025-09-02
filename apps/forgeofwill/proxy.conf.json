@@ -1,19 +1,19 @@
 {
   "/api": {
-    "target": "http://localhost:3000",
+    "target": "https://fow-alpha.christopherrutherford.net/api",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/socket.io": {
-    "target": "http://localhost:3300",
+    "target": "https://fow-alpha.christopherrutherford.net/socket",
     "ws": true,
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/chat": {
-    "target": "http://localhost:3300",
+    "target": "https://fow-alpha.christopherrutherford.net/socket",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
