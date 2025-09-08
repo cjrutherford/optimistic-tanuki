@@ -12,9 +12,26 @@
 
     .blog-post-row {
         display: flex;
+        flex-direction: row;
         justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 1rem;
+        gap: 50px;
+        otui-tile{
+            flex: 1;
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .blog-post-row {
+        flex-direction: column;
+        align-items: center;
+        * > otui-tile{
+            margin-top: 1rem;
+        }
+    }
+    .blog-post-card {
+        margin: 1rem;
+        width: 90%;
     }
 }
 

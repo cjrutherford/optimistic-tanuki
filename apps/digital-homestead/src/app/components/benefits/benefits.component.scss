@@ -4,14 +4,41 @@
 }
 .grid-container {
     margin: 20px;
+    .grid {
+        display: flex;
+        flex-direction: row;
+        gap: 90px;
+        justify-content: center;
+        align-items: stretch;
+        otui-tile {
+            height: 100%;
+            .spacer {
+                height: 20px;
+            }
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .grid-container {
+        .grid {
+            flex-direction: column;
+            gap: 40px;
+            otui-tile {
+                width: 100%;
+            }
+        }
+    }
 }
 
 img {
+    width: 100%;
+    max-height: 250px;
+    display: block;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    height: auto;
     object-fit: cover;
+    object-position: center;
     transition: transform 0.3s;
     margin-bottom: 40px;
 }

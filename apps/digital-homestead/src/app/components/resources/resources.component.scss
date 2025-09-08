@@ -9,6 +9,19 @@
 
 .resource-row {
     display: flex;
+    flex-direction: row;
+    justify-content: space-between;
     gap: 40px;
     margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .resource-row {
+        flex-direction: column;
+        align-items: center;
+    }
+    .resource {
+        margin: 1rem 0;
+        width: 90%;
+    }
 }
