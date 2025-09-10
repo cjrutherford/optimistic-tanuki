@@ -48,7 +48,6 @@ export class AuthGuard implements CanActivate {
     }
     const user = this.parseToken(token);
     const isAuthenticated = await this.introspectToken(token, user.userId);
-    console.log("🚀 ~ AuthGuard ~ canActivate ~ isAuthenticated:", isAuthenticated)
 
     if (!isAuthenticated) {
       throw new UnauthorizedException('Unauthorized: Token Invalid.');

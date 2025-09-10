@@ -3,7 +3,6 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TaskService } from './task.service';
 import { CreateTaskDto, QueryTaskDto, UpdateTaskDto } from '@optimistic-tanuki/models'; 
 import { TaskCommands } from '@optimistic-tanuki/constants';
-import { Query } from 'typeorm/driver/Query.js';
 
 @Controller()
 export class TaskController {
