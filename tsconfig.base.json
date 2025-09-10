@@ -17,14 +17,20 @@
     "baseUrl": ".",
     "paths": {
       "@optimistic-tanuki/auth-ui": ["libs/auth-ui/src/index.ts"],
+      "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
       "@optimistic-tanuki/encryption": ["libs/encryption/src/index.ts"],
       "@optimistic-tanuki/form-ui": ["libs/form-ui/src/index.ts"],
       "@optimistic-tanuki/logger": ["libs/logger/src/index.ts"],
+      "@optimistic-tanuki/message-ui": ["libs/message-ui/src/index.ts"],
       "@optimistic-tanuki/models": ["libs/models/src/index.ts"],
       "@optimistic-tanuki/profile-ui": ["libs/profile-ui/src/index.ts"],
+      "@optimistic-tanuki/project-ui": ["libs/project-ui/src/index.ts"],
+      "@optimistic-tanuki/prompt-generation": [
+        "libs/prompt-generation/src/index.ts"
+      ],
       "@optimistic-tanuki/social-ui": ["libs/social-ui/src/index.ts"],
       "@optimistic-tanuki/storage": ["libs/storage/src/index.ts"],
       "@optimistic-tanuki/theme-ui": ["libs/theme-ui/src/index.ts"],

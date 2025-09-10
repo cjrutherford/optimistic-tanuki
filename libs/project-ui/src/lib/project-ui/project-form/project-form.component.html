@@ -1,0 +1,7 @@
+<form [formGroup]="projectForm" (ngSubmit)="onSubmit()">
+  <otui-card>
+    <lib-text-input formControlName="projectName" label="Project Name"></lib-text-input>
+    <lib-text-area formControlName="projectDescription" label="Project Description"></lib-text-area>
+    <otui-button type="submit">Submit</otui-button>
+  </otui-card>
+</form>

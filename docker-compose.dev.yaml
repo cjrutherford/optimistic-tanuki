@@ -62,8 +62,8 @@ services:
         condition: service_started
       social:
         condition: service_started
-      tasks:
-        condition: service_started
+      # tasks:
+      #   condition: service_started
 
   profile:
     container_name: ot_profile
@@ -94,14 +94,14 @@ services:
     depends_on: # Added
       postgres:
         condition: service_healthy
-
-  tasks:
-    container_name: ot_tasks
+  
+  chat-collector:
+    container_name: ot_chat_collector
     build:
       context: .
-      dockerfile: ./apps/tasks/Dockerfile
+      dockerfile: ./apps/chat-collector/Dockerfile
     volumes:
-      - ./dist/apps/tasks:/usr/src/app
+      - ./dist/apps/chat-collector:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:
@@ -109,6 +109,21 @@ services:
     depends_on: # Added
       postgres:
         condition: service_healthy
+
+  # tasks:
+  #   container_name: ot_tasks
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/tasks/Dockerfile
+  #   volumes:
+  #     - ./dist/apps/tasks:/usr/src/app
+  #     - /usr/src/app/node_modules # Ensures node_modules from the image are used
+  #   command: ["dumb-init", "nodemon", "-L", "main.js"]
+  #   environment:
+  #     - NODE_ENV=development
+  #   depends_on: # Added
+  #     postgres:
+  #       condition: service_healthy
   
   assets:
     container_name: ot_assets

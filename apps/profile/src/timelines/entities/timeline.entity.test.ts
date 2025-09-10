@@ -9,8 +9,7 @@ describe('Timeline Entity', () => {
     timeline.title = 'Timeline Title';
     timeline.description = 'desc';
     timeline.timeStamp = now;
-    timeline.related_goal = null;
-    timeline.related_project = null;
+    
     timeline.related_profile = null;
     timeline.eventType = TimelineEventType.Posted;
 
@@ -20,8 +19,7 @@ describe('Timeline Entity', () => {
       title: 'Timeline Title',
       description: 'desc',
       timeStamp: now,
-      related_goal: null,
-      related_project: null,
+      
       related_profile: null,
       eventType: TimelineEventType.Posted,
     });

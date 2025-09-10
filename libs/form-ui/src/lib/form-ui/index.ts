@@ -3,3 +3,4 @@ export { CheckboxComponent } from './checkbox/checkbox.component';
 export { RadioButtonComponent } from './radio-button/radio-button.component';
 export { TextInputComponent } from './text-input/text-input.component';
 export { ImageUploadComponent } from './image-upload.component';
+export { SelectComponent } from './select/select.component';

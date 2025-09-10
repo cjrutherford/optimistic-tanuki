@@ -32,6 +32,11 @@ describe('ProfileComponent', () => {
     const profileServiceMock = {
       getCurrentUserProfile: jest.fn().mockReturnValue(mockProfile),
       selectProfile: jest.fn(),
+      getAllProfiles: jest.fn().mockResolvedValue([mockProfile]),
+      getCurrentUserProfiles: jest.fn().mockReturnValue([mockProfile]),
+      createProfile: jest.fn(),
+      updateProfile: jest.fn(),
+      getProfileById: jest.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -76,7 +81,12 @@ describe('ProfileComponent', () => {
           provide: ProfileService,
           useValue: {
             getCurrentUserProfile: jest.fn().mockReturnValue(of(mockProfile)),
-            selectProfile: jest.fn(),
+            selectProfile: jest.fn().mockResolvedValue(undefined),
+            getAllProfiles: jest.fn().mockResolvedValue([mockProfile]),
+            getCurrentUserProfiles: jest.fn().mockReturnValue([mockProfile]),
+            createProfile: jest.fn(),
+            updateProfile: jest.fn(),
+            getProfileById: jest.fn(),
           },
         },
       ],

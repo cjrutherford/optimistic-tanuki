@@ -1,0 +1,25 @@
+@if(windowState !== 'hidden'){
+<div class="chat-window-container" [ngClass]="windowState">
+  <div class="chat-window-header">
+    <span>Chat</span>
+    <div class="chat-window-actions">
+       @if(windowState === 'fullscreen') {
+        <button (click)="onWindowStateChange('popout')">↘️</button>
+      } @else if(windowState === 'popout') {
+        <button (click)="onWindowStateChange('fullscreen')">↗️</button>
+      }
+      <button (click)="onClose()">❌</button>
+    </div>
+  </div>
+  <div class="chat-window-content">
+    @if(contact && contact.length) {
+      <lib-participants [participants]="contact"></lib-participants>
+      <lib-message-list [messages]="messages.messages" [contacts]="contact"></lib-message-list>
+    } @else {
+      <div class="no-participants">No participants</div>
+      <lib-message-list [messages]="messages.messages" [contacts]="[]"></lib-message-list>
+    }
+    <lib-compose-chat (messageSubmitted)="onMessageSubmitted($event)"></lib-compose-chat>
+  </div>
+</div>
+}

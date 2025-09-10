@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { StorageAdapter } from './storage-adapter.interface';
 import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
+import { Injectable, Logger } from '@nestjs/common';
 import { S3Service, S3ServiceOptions } from './s3.service'; // Import S3Service and its options
+
+import { StorageAdapter } from './storage-adapter.interface';
 import { v4 as uuidv4 } from 'uuid'; // Import UUID for generating unique IDs
 
 // Rename S3StorageOptions to S3NetworkOptions to avoid confusion with S3ServiceOptions
@@ -29,7 +30,7 @@ export class NetworkStorageAdapter implements StorageAdapter {
     }
 
     try {
-        await this.s3Service.uploadObject(s3Key, data.content, data.type); // Use S3Service
+        await this.s3Service.uploadObject(s3Key, data.content as Buffer, data.type); // Use S3Service
 
         const createdAsset: AssetDto = {
             id: newAssetId, // Use provided ID or generate one if needed
@@ -73,7 +74,7 @@ export class NetworkStorageAdapter implements StorageAdapter {
         const fileContent = await this.s3Service.getObject(s3Key); // Use S3Service
         return fileContent;
     } catch (error) {
-        this.l.error(`NetworkStorageAdapter (S3): Failed to read asset content from ${data.storagePath}: ${error.message}`);
+        this.l.error(`NetworkStorageAdapter (S3): Failed to read asset content from ${data.storagePath}: ${(error as any).message}`);
         throw error;
     }
   }

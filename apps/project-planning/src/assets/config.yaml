@@ -1,0 +1,7 @@
+listenPort: 3006
+database:
+  host: db
+  port: 5432
+  name: ot_project_planning
+  username: postgres
+  password: postgres

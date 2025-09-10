@@ -1,0 +1,18 @@
+<div class="compose-editor-container">
+  <quill-editor
+    [(ngModel)]="content"
+    [modules]="{
+      toolbar: [
+        ['bold', 'italic', 'underline'],
+        ['link']
+      ]
+    }"
+    (onContentChanged)="onContentChanged($event)"
+    [style.background]="background"
+    [style.color]="foreground"
+    [style.borderColor]="borderColor"
+  ></quill-editor>
+  <otui-button (click)="submitMessage()" [style.background]="accent">
+    Send
+  </otui-button>
+</div>

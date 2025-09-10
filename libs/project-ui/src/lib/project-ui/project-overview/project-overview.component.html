@@ -1,0 +1,49 @@
+<otui-card>
+    <h2>Project Overview {{ projectName() }}</h2>
+    <div class="column-container">
+        <div class="row-container">
+            <lib-summary-block
+                title="Unresolved Tasks"
+                [count]="taskCount()"
+                (onClick)="showDetails('tasks')"
+            ></lib-summary-block>
+            <lib-summary-block
+                title="Unresolved Risks"
+                [count]="riskCount()"
+                (onClick)="showDetails('risks')"
+            ></lib-summary-block>
+            <lib-summary-block
+                title="Pending Changes"
+                [count]="changeCount()"
+                (onClick)="showDetails('changes')"
+            ></lib-summary-block>
+        </div>
+        @if (detailsShown()) {
+            <div class="row-container">
+                <otui-tile class="parent-container">
+                    @if (shownDetails() === 'tasks') {
+                        <lib-tasks-table [tasks]="project.tasks" style="width: 100%; height: 100%;" ></lib-tasks-table>
+                    } @else if (shownDetails() === 'risks') {
+                        <lib-risks-table [risks]="project.risks" style="width: 100%; height: 100%;" ></lib-risks-table>
+                    } @else if (shownDetails() === 'changes') {
+                        <lib-changes-table [changes]="project.changes" style="width: 100%; height: 100%;" ></lib-changes-table>
+                    }
+                    <otui-button (click)="hideDetails()" class="close-button">X</otui-button>
+                </otui-tile>
+            </div>
+        }
+        <div class="row-container">
+            <otui-tile style="grid-column: span 3;">
+                <h3>AI Project Summary</h3>
+                <p>An Overview of the project provided by your AI Project Manager.</p>
+            </otui-tile>
+        </div>
+        <div class="row-container">
+            <otui-tile style="grid-column: span 3; grid-row: span 3">
+                <h3>Project Journal</h3>
+                <p>Recent updates and notes about the project.</p>
+                <lib-project-journal-table style="width: 100%; height: 100%;"></lib-project-journal-table>
+            </otui-tile>
+        </div>
+    </div>
+</otui-card>

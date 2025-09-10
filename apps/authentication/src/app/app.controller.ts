@@ -74,9 +74,9 @@ export class AppController {
       return userReg;
     } catch (e) {
       if (e instanceof RpcException) {
-        return { status: 'error', message: e.message, code: 1 };
+        throw e;
       }
-      return { status: 'error', message: e.message, code: 1 };
+      throw new RpcException(e);
     }
   }
 

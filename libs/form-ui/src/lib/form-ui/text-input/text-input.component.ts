@@ -27,14 +27,14 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
   },
 })
 export class TextInputComponent extends Themeable implements ControlValueAccessor {
-  @Input() type: 'text' | 'password' | 'obscured' = 'text';
+  @Input() type: 'text' | 'password' | 'obscured' | 'date' = 'text';
   @Input() label = '';  
   @Input() labelPosition: 'top' | 'left' | 'right' | 'bottom' = 'top';
   @Output() valueChange = new EventEmitter<string>();
 
   value = '';
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  onChange?:(value: string) => void = (value: string) => { console.log(value); };
+  onChange?:(value: string) => void = (value: string) => { /*console.log(value);*/ };
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   onTouched?:(value: string) => void = () => {};
 

@@ -1,0 +1,32 @@
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #fafafa;
+}
+.message {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: baseline;
+  .profile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 4px;
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin-bottom: 4px;
+      object-fit: cover;
+    }
+  }
+}
+.sender {
+  font-weight: bold;
+  margin-right: 8px;
+  color: #1976d2;
+}
+.text {
+  color: #333;
+}

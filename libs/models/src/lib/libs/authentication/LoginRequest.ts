@@ -1,9 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export default class LoginRequest {
   @ApiProperty()
-  email: string;
+  email!: string;
   @ApiProperty()
-  password: string;
+  password!: string;
   @ApiPropertyOptional({ default: false })
   mfa?:string;
 }

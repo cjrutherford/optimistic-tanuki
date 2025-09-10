@@ -1,0 +1,116 @@
+<div style="margin-left: 16px; margin-right: 16px">
+  <lib-project-selector
+    [projects]="projects()"
+    (projectSelected)="onProjectSelected($event)"
+    (createProject)="onCreateProject()"
+    (editProject)="onEditProject($event)"
+    (deleteProject)="onDeleteProject()"
+  ></lib-project-selector>
+  @if(selectedProject()) {
+
+  <otui-card>
+    <h2>Project Overview {{ selectedProject()!.name }}</h2>
+    <div class="column-container">
+      <div class="row-container">
+        <lib-summary-block
+          title="Unresolved Tasks"
+          [count]="taskCount()"
+          (onClick)="showDetails('tasks')"
+        ></lib-summary-block>
+        <lib-summary-block
+          title="Unresolved Risks"
+          [count]="riskCount()"
+          (onClick)="showDetails('risks')"
+        ></lib-summary-block>
+        <lib-summary-block
+          title="Pending Changes"
+          [count]="changeCount()"
+          (onClick)="showDetails('changes')"
+        ></lib-summary-block>
+      </div>
+      @if (detailsShown()) {
+      <div class="row-container">
+        <otui-tile class="parent-container">
+          @if (shownDetails() === 'tasks') {
+          <lib-tasks-table
+            (deleteTask)="onDeleteTask($event)"
+            (editTask)="onEditTask($event)"
+            (createTask)="onCreateTask($event)"
+            [tasks]="selectedProject()!.tasks"
+            style="width: 100%; height: 100%"
+          ></lib-tasks-table>
+          } @else if (shownDetails() === 'risks') {
+          <lib-risks-table
+            (createRisk)="onCreateRisk($event)"
+            (editRisk)="onEditRisk($event)"
+            (deleteRisk)="onDeleteRisk($event)"
+            [risks]="selectedProject()!.risks"
+            style="width: 100%; height: 100%"
+          ></lib-risks-table>
+          } @else if (shownDetails() === 'changes') {
+          <lib-changes-table
+            (createChange)="onCreateChange($event)"
+            (editChange)="onEditChange($event)"
+            (deleteChange)="onDeleteChange($event)"
+            [changes]="selectedProject()!.changes"
+            style="width: 100%; height: 100%"
+          ></lib-changes-table>
+          }
+          <otui-button (click)="hideDetails()" class="close-button"
+            >X</otui-button
+          >
+        </otui-tile>
+      </div>
+      }
+      <div class="row-container">
+        <otui-tile style="grid-column: span 3">
+          <h3>AI Project Summary</h3>
+          <p>An Overview of the project provided by your AI Project Manager.</p>
+        </otui-tile>
+      </div>
+      <div class="row-container">
+        <otui-tile style="grid-column: span 3; grid-row: span 3">
+          <h3>Project Journal</h3>
+          <p>Recent updates and notes about the project.</p>
+          <lib-project-journal-table
+            (createJournalEntry)="onCreateJournalEntry($event)"
+            (editJournalEntry)="onUpdateJournalEntry($event)"
+            (deleteJournalEntry)="onDeleteJournalEntry($event)"
+            style="width: 100%; height: 100%"
+            [journals]="selectedProject()!.journalEntries"
+          ></lib-project-journal-table>
+        </otui-tile>
+      </div>
+    </div>
+  </otui-card>
+
+  <!-- <lib-project-overview
+          [project]="selectedProject()!"
+        >
+        </lib-project-overview> -->
+  } @else {
+  <div class="no-project">
+    <p>
+      No project selected. Please select or create a project to view details.
+    </p>
+  </div>
+  }
+</div>
+
+@if(showCreateModal()) {
+<otui-modal
+  [title]="'Create Project'"
+  (closeModal)="showCreateModal.set(false)"
+>
+  <lib-project-form (submitEvent)="onProjectCreated($event)">
+  </lib-project-form>
+</otui-modal>
+} @if(showEditModal() && selectedProject() !== undefined) {
+<otui-modal [title]="'Edit Project'" (closeModal)="showEditModal.set(false)">
+  <lib-project-form
+    [project]="selectedProject()"
+    (submitEvent)="onProjectUpdated($event)"
+  >
+  </lib-project-form>
+</otui-modal>
+}

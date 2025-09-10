@@ -73,8 +73,8 @@ services:
         condition: service_started
       social:
         condition: service_started
-      tasks:
-        condition: service_started
+      # tasks:
+      #   condition: service_started
     # Command will be inherited from Dockerfile's CMD
 
   profile:
@@ -105,20 +105,32 @@ services:
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
 
-  tasks:
-    container_name: ot_tasks
+  # tasks:
+  #   container_name: ot_tasks
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/tasks/Dockerfile
+  #   ports:
+  #     - "3004:3004"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     db-setup: # Ensures db-setup is completed before starting tasks
+  #       condition: service_completed_successfully
+  #   # Command will be inherited from Dockerfile\'s CMD
+  chat-collector:
+    container_name: ot_chat_collector
     build:
       context: .
-      dockerfile: ./apps/tasks/Dockerfile
+      dockerfile: ./apps/chat-collector/Dockerfile
     ports:
-      - "3004:3004"
+      - "3007:3007"
     depends_on:
       postgres:
         condition: service_healthy
-      db-setup: # Ensures db-setup is completed before starting tasks
+      db-setup: # Ensures db-setup is completed before starting chat-collector
         condition: service_completed_successfully
-    # Command will be inherited from Dockerfile\'s CMD
-  
+    # Command will be inherited from Dockerfile\'s CMD 
   assets:
     container_name: ot_assets
     build:

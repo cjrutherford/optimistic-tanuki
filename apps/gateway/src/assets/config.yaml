@@ -1,5 +1,10 @@
 listenPort: 3000
 services:
+  asset:
+    name: asset
+    transport: TCP
+    host: ot_asset
+    port: 3005
   authentication:
     name: authentication
     transport: TCP
@@ -20,8 +25,23 @@ services:
     transport: TCP
     host: ot_tasks
     port: 3004
-  asset:
-    name: asset
+  project_planning:
+    name: project_planning
     transport: TCP
-    host: ot_assets
-    port: 3005
+    host: ot_project_planning
+    port: 3006
+  chat_collector:
+    name: chat_collector
+    transport: TCP
+    host: ot_chat_collector
+    port: 3007
+  telos_docs_service:
+    name: telos_docs_service
+    transport: TCP
+    host: ot_telos_docs_service
+    port: 3008
+  ai_orchestration:
+    name: ai_orchestration
+    transport: TCP
+    host: ot_ai_orchestration
+    port: 3010

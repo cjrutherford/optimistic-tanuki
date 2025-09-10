@@ -4,8 +4,6 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding-top: 10%; // Keep specific padding for register if needed, or adjust like login
-    // height: 100vh; /* Optional: Full viewport height like login */
 }
 .card-outer { // Copied from login-block.component.scss
     background: var(--border-gradient);
@@ -23,6 +21,9 @@
     background: var(--background);
     border-radius: 8px; // Adjusted from 8px to match inner radius expectation
     box-shadow: 0 4px 8px var(--complement); // Consider removing if outer provides shadow
+    @media(max-width: 600px) {
+        flex-direction: column; // Ensure mobile responsiveness like login
+    }
     .hero { // Copied from login-block.component.scss
         display: flex;
         flex-direction: column;
@@ -31,6 +32,10 @@
         margin-top: 20px;
         margin-bottom: 20px;
         padding: 20px 60px;
+        @media(max-width: 600px) {
+            padding: 5px; // Reduced padding for mobile
+            margin: 0; // Remove margin for better fit on small screens
+        }
     }
     .form { // Copied from login-block.component.scss
         display: flex;
@@ -54,8 +59,3 @@
         }
     }
 }
-
-// Remove old styles like .register-card, .outer-card (replaced by .card-inner, .card-outer)
-// Remove old .hero, .form styles (replaced by copied versions)
-// Remove .inputs class usage if form > * selector is sufficient
-// Remove .bio-container styles if bio field is not currently used or needs different styling

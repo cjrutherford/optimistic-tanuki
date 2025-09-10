@@ -1,0 +1,21 @@
+{
+  "/api": {
+    "target": "https://fow-alpha.christopherrutherford.net/api",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/socket.io": {
+    "target": "https://fow-alpha.christopherrutherford.net/socket",
+    "ws": true,
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/chat": {
+    "target": "https://fow-alpha.christopherrutherford.net/socket",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

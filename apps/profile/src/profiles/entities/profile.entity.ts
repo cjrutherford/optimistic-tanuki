@@ -1,8 +1,6 @@
 /* istanbul ignore file */
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
-import { Goal } from "../../goals/entities/goal.entity";
-import { Project } from "../../projects/entities/project.entity";
 import { Timeline } from "../../timelines/entities/timeline.entity";
 
 @Entity()
@@ -43,10 +41,4 @@ export class Profile {
 
     @Column({ default: () => 'CURRENT_TIMESTAMP' })
     created_at: Date;
-
-    @OneToMany(type => Goal, goal => goal.related_profile)
-    goals: Goal[];
-
-    @OneToMany(type => Project, project => project.related_profile)
-    projects: Project[];
 }

@@ -1,0 +1,22 @@
+listenPort: 3010
+dependencies:
+  profile:
+    name: 'profile'
+    transport: Transport.TCP
+    host: ot_profile
+    port: 3002
+  chat_collector:
+    name: 'chat-collector'
+    transport: Transport.TCP
+    host: ot_chat_collector
+    port: 3007
+  prompt_proxy:
+    name: 'prompt_proxy'
+    transport: Transport.TCP
+    host: ot_prompt_proxy
+    port: 3009
+  telos_docs_service:
+    name: 'telos_docs_service'
+    transport: Transport.TCP
+    host: ot_telos_docs_service
+    port: 3008

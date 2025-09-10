@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 import { importProvidersFrom } from '@angular/core';
 import { HttpClientTestingModule, provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+
 
 describe('AppComponent', () => {
   beforeEach(async () => {

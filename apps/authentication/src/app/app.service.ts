@@ -51,7 +51,7 @@ export class AppService {
       const valid = await this.saltedHashService.validateHash(
         password,
         storedHash,
-        user.keyData.salt,
+        user.keyData?.salt,
       );
 
       if (!valid) {
@@ -85,7 +85,10 @@ export class AppService {
       return { message: 'Login successful', code: 0, data: { newToken: tk } };
     } catch (e) {
       console.error('Error in login:', e);
-      throw new RpcException(e);
+      if (e instanceof RpcException) {
+        throw e;
+      }
+      throw new RpcException(e.message);
     }
   }
 
@@ -233,7 +236,7 @@ export class AppService {
       if (!isValidMfa) {
         throw new RpcException('Invalid MFA token');
       }
-    } else if (user.totpSecret !== undefined && mfa === undefined) {
+    } else if (user.totpSecret !== null && mfa === undefined) {
       throw new RpcException('MFA token is required for this user.');
     }
 

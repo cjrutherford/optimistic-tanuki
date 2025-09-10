@@ -1,0 +1,77 @@
+{
+  "name": "project-planning",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/project-planning/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "webpack-cli build",
+        "args": ["node-env=production"],
+        "packageJson": {
+          "pg": "^8.16.0"
+        }
+      },
+      "configurations": {
+        "development": {
+          "args": ["node-env=development"]
+        }
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "project-planning:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "project-planning:build:development"
+        },
+        "production": {
+          "buildTarget": "project-planning:build:production"
+        }
+      }
+    },
+    "test": {
+      "options": {
+        "passWithNoTests": true
+      }
+    }
+  },
+  "typeorm:migration:generate": {
+    "executor": "nx:run-commands",
+    "options": {
+      "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:generate migrations/%npm_config_name%",
+      "cwd": "apps/project-planning",
+      "env": {
+        "TS_NODE_PROJECT": "tsconfig.app.json"
+      }
+    }
+  },
+  "typeorm:migration:run": {
+    "executor": "nx:run-commands",
+    "options": {
+      "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:run",
+      "cwd": "apps/project-planning",
+      "env": {
+        "TS_NODE_PROJECT": "tsconfig.app.json"
+      }
+    }
+  },
+  "typeorm:migration:revert": {
+    "executor": "nx:run-commands",
+    "options": {
+      "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:revert",
+      "cwd": "apps/project-planning",
+      "env": {
+        "TS_NODE_PROJECT": "tsconfig.app.json"
+      }
+    }
+  }
+}

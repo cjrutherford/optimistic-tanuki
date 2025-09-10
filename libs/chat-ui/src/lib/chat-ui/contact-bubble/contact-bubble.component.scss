@@ -1,0 +1,60 @@
+.contact-bubble {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: var(--color-background);
+  box-shadow: var(--shadow-elevation-1);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: var(--color-hover-background);
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px;
+    object-fit: cover;
+  }
+
+  .name {
+    font-size: 8px;
+    font-weight: bold;
+    color: var(--color-text-primary);
+  }
+}
+
+.contact-popup {
+  position: absolute;
+  top: 0;
+  right: 100%;
+  transform: translateX(-8px); // slight gap from parent
+  background: var(--background);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-color);
+  z-index: 10;
+  white-space: nowrap;
+
+  .contact-name {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--foreground);
+  }
+
+  .contact-last-message {
+    font-size: 12px;
+    color: var(--foreground);
+  }
+
+  .contact-last-message-time {
+    font-size: 8px;
+    color: var(--foreground);
+  }
+}

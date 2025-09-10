@@ -18,6 +18,7 @@ describe('AppController', () => {
             createAsset: jest.fn(),
             removeAsset: jest.fn(),
             retrieveAsset: jest.fn(),
+            readAsset: jest.fn(),
           },
         },
       ],
@@ -66,15 +67,15 @@ describe('AppController', () => {
     });
   });
 
-  describe('readAsset', () => {
-    it('should call appService.retrieveAsset with the correct data', async () => {
+    describe('readAsset', () => {
+    it('should call appService.readAsset with the correct data', async () => {
       const handle: AssetHandle = { id: '1' } as any;
-      const result = { id: '1', name: 'test', type: 'image' };
-      (appService.retrieveAsset as jest.Mock).mockResolvedValue(result);
+      const result = 'base64encodedstring';
+      (appService.readAsset as jest.Mock).mockResolvedValue(result);
 
       const response = await appController.readAsset(handle);
 
-      expect(appService.retrieveAsset).toHaveBeenCalledWith(handle);
+      expect(appService.readAsset).toHaveBeenCalledWith(handle);
       expect(response).toEqual(result);
     });
   });

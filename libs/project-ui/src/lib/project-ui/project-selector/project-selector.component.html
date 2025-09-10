@@ -1,0 +1,19 @@
+<otui-card>
+  <div class="flex-row">
+      <form [formGroup]="projectForm" class="flex-column">
+      <lib-select
+        [options]="projectOptions()"
+        formControlName="project"
+      ></lib-select>
+      </form>
+    <otui-button variant="primary" (click)="onCreateClick()"
+      >Create</otui-button
+    >
+    <otui-button variant="warning" (click)="editProject.emit()"
+      >Edit</otui-button
+    >
+    <otui-button variant="danger" (click)="deleteProject.emit()"
+      >Delete</otui-button
+    >
+  </div>
+</otui-card>

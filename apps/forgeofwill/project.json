@@ -1,0 +1,147 @@
+{
+  "name": "forgeofwill",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/forgeofwill/src",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/forgeofwill",
+        "index": "apps/forgeofwill/src/index.html",
+        "browser": "apps/forgeofwill/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/forgeofwill/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/forgeofwill/public"
+          }
+        ],
+        "styles": ["apps/forgeofwill/src/styles.scss"],
+        "scripts": [],
+        "server": "apps/forgeofwill/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/forgeofwill/src/server.ts"
+        },
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "sourceMap": true,
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "4kb",
+              "maximumError": "8kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "forgeofwill:build:production"
+        },
+        "development": {
+          "buildTarget": "forgeofwill:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular-devkit/build-angular:extract-i18n",
+      "options": {
+        "buildTarget": "forgeofwill:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/forgeofwill/jest.config.ts"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "forgeofwill:build",
+        "port": 4200,
+        "staticFilePath": "dist/apps/forgeofwill/browser",
+        "spa": true
+      }
+    },
+    "storybook": {
+      "executor": "@storybook/angular:start-storybook",
+      "options": {
+        "port": 4400,
+        "configDir": "apps/forgeofwill/.storybook",
+        "browserTarget": "forgeofwill:build",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "build-storybook": {
+      "executor": "@storybook/angular:build-storybook",
+      "outputs": ["{options.outputDir}"],
+      "options": {
+        "outputDir": "dist/storybook/forgeofwill",
+        "configDir": "apps/forgeofwill/.storybook",
+        "browserTarget": "forgeofwill:build",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "test-storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test-storybook -c apps/forgeofwill/.storybook --url=http://localhost:4400"
+      }
+    },
+    "static-storybook": {
+      "executor": "@nx/web:file-server",
+      "dependsOn": ["build-storybook"],
+      "options": {
+        "buildTarget": "forgeofwill:build-storybook",
+        "staticFilePath": "dist/storybook/forgeofwill",
+        "spa": true
+      },
+      "configurations": {
+        "ci": {
+          "buildTarget": "forgeofwill:build-storybook:ci"
+        }
+      }
+    }
+  }
+}

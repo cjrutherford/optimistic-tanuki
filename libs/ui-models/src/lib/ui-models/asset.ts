@@ -3,6 +3,7 @@ export interface CreateAssetDto {
     profileId: string;
     type: 'image' | 'video' | 'audio' | 'document';
     content?: string; // Optional content for in-memory operations
+    fileExtension?: string; // Optional file extension for in-memory operations
 }
 
 export declare type AssetDto = {

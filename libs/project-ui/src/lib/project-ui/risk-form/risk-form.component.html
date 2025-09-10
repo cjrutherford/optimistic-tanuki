@@ -1,0 +1,21 @@
+<form [formGroup]="riskForm" (ngSubmit)="onSubmit()">
+  <otui-card>
+    <!-- <lib-text-input formControlName="title" label="Title"></lib-text-input> -->
+    <lib-text-area formControlName="description" label="Description"></lib-text-area>
+    <label for="impact">Impact</label>
+    <lib-select
+      id="impact"
+      formControlName="impact"
+      [options]="impactOptions"
+      label="Impact">
+    </lib-select>
+    <label for="likelihood">Likelihood</label>
+    <lib-select
+      id="likelihood"
+      formControlName="likelihood"
+      [options]="likelihoodOptions"
+      label="Likelihood">
+    </lib-select>
+    <otui-button type="submit">Submit</otui-button>
+  </otui-card>
+</form>

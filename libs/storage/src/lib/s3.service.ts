@@ -1,5 +1,6 @@
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Injectable, Logger } from '@nestjs/common';
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+
 import { Readable } from 'stream';
 
 export interface S3ServiceOptions {
@@ -61,7 +62,7 @@ export class S3Service {
     try {
         await this.s3Client.send(new DeleteObjectCommand(deleteParams));
         this.l.log(`S3Service: Object deleted successfully: s3://${this.bucketName}/${key}`);
-    } catch (error) {
+    } catch (error: any) {
         if (error.name === 'NoSuchKey') {
              this.l.warn(`S3Service: Attempted to delete non-existent object at s3://${this.bucketName}/${key}`);
         } else {
@@ -85,16 +86,16 @@ export class S3Service {
         }
 
         const stream = response.Body as Readable;
-        const chunks: Buffer[] = [];
+        const chunks: Uint8Array[] = [];
         for await (const chunk of stream) {
-            chunks.push(chunk as Buffer);
+            chunks.push(chunk as Uint8Array);
         }
         const fileContent = Buffer.concat(chunks);
 
         this.l.log(`S3Service: Object content retrieved from s3://${this.bucketName}/${key}`);
         return fileContent;
 
-    } catch (error) {
+    } catch (error: any) {
         this.l.error(`S3Service: Failed to get object from s3://${this.bucketName}/${key}: ${error.message}`);
         throw error;
     }

@@ -1,8 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 
 export function loadTheme(platformId: object): { theme: 'light' | 'dark'; accentColor: string } {
-  console.log('Loading theme from storage...', platformId);
-  console.log('isPlatformBrowser:', isPlatformBrowser(platformId));
   if (isPlatformBrowser(platformId)) {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
     const savedAccentColor = localStorage.getItem('accentColor') || '#3f51b5';

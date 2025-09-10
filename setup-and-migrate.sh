@@ -6,7 +6,7 @@ export POSTGRES_PASSWORD=postgres
 export POSTGRES_HOST=${POSTGRES_HOST:-127.0.0.1}
 export POSTGRES_PORT=5432
 export NODE_ENV=development
-export ADDITIONAL_DBS=ot_authentication,ot_profile,ot_social,ot_tasks,ot_assets
+export ADDITIONAL_DBS=ot_authentication,ot_profile,ot_social,ot_assets,ot_project_planning,ot_chat_collector,ot_telos_docs_service
 
 # Run database creation script
 sh ./create-dbs.sh
@@ -15,7 +15,7 @@ sh ./create-dbs.sh
 # Loop through the ADDITIONAL_DBS, extract the app name, and set POSTGRES_DB
 for db_with_prefix in $(echo $ADDITIONAL_DBS | tr ',' ' '); do
   # Remove the 'ot_' prefix to get the app name
-  app_name=$(echo $db_with_prefix | sed 's/^ot_//')
+  app_name=$(echo $db_with_prefix | sed 's/^ot_//' | tr '_' '-')
   export POSTGRES_DB=$db_with_prefix
 
   echo "Running migrations for $app_name (Database: $POSTGRES_DB)"

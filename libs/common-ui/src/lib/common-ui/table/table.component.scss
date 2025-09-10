@@ -1,36 +1,45 @@
 .table-row {
   display: flex;
   align-items: center;
-  border: 1px solid var(--accent-shade-lighten-50, #b1baec);
-  border-radius: 8px;
-  padding: 10px;
-  background-color: var(--accent-shade-darken-10, #5969c3);
+  border: 4px solid var(--border-color, #b1baec);
+  border-radius: 4px;
+  padding: 20px;
+  margin: 10px;
+  background: var(--background-gradient, #5969c3);
+  color: var(--foreground, #fff);
+  box-shadow: inset 0 0 1em rgba(0, 0, 0, 0.1);
+  transition: box-shadow var(--transition-duration, 0.3s) ease-in-out;
+  overflow-x: auto;
+
+  &:hover {
+    box-shadow: 2px 4px 8px 6px var(--border-gradient, #b1baec);
+  }
 }
 
 .table-cell {
   flex: 1;
   padding: 8px;
   font-size: 14px;
-  color: var(--foreground-color, #fff);
+  color: var(--foreground, #fff);
 }
 
 .badge-cell {
-  background-color: var(--accent-shade-lighten-70, #d0d5f3);
+  background-color: var(--accent, #b1baec);
   border-radius: 4px;
   padding: 4px 8px;
-  color: var(--foreground-color, #fff);
+  color: var(--foreground, #fff);
 }
 
 .table-head {
   font-size: 14px;
   font-weight: bold;
   text-transform: capitalize; /* Make heading values Title Case */
-  color: var(--foreground-color, #fff);
+  color: var(--foreground, #fff);
 }
 
 .table-value {
   font-size: 14px; /* Ensure values have equal font size */
-  color: var(--foreground-color, #fff);
+  color: var(--foreground, #fff);
 }
 
 .actions-cell {
@@ -41,8 +50,8 @@
     position: absolute;
     top: 100%;
     left: 0;
-    background-color: var(--foreground-color, #fff);
-    border: 1px solid var(--accent-shade-lighten-50, #b1baec);
+    background-color: var(--foreground, #fff);
+    border: 1px solid var(--border-color, #b1baec);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     z-index: 10;
     padding: 10px;
@@ -70,17 +79,48 @@
   margin-top: 5px;
 }
 
+.actions-cell.flex-row-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
 .actions-list button {
   padding: 5px 10px;
   font-size: 14px;
   cursor: pointer;
   border: none;
   border-radius: 4px;
-  background-color: var(--accent-color, #007bff);
-  color: var(--foreground-color, #fff);
+  background-color: var(--accent, #007bff);
+  color: var(--foreground, #fff);
   transition: background-color 0.3s;
 
   &:hover {
-    background-color: var(--accent-shade-1, #0056b3);
+    background-color: var(--complement, #0056b3);
   }
+}
+.table-value.overflowable {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  display: inline-block;
+  vertical-align: middle;
+  transition: max-width 0.3s;
+}
+.table-value.expanded {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  max-width: none;
+}
+.expand-btn {
+  margin-left: 8px;
+  background: none;
+  border: none;
+  color: var(--accent, #007bff);
+  cursor: pointer;
+  font-size: 0.9em;
+  padding: 0;
+  vertical-align: middle;
 }

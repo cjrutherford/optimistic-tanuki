@@ -23,9 +23,6 @@ describe('S3Service', () => {
   beforeEach(async () => {
     // Reset mocks before each test
     (S3Client as jest.Mock).mockClear();
-    (PutObjectCommand as jest.Mock).mockClear();
-    (DeleteObjectCommand as jest.Mock).mockClear();
-    (GetObjectCommand as jest.Mock).mockClear();
 
     // Create a mock S3Client instance
     mockS3Client = {

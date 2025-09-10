@@ -1,0 +1,208 @@
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    container_name: db # Changed back from ot_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  db-setup:
+    image: node:lts-alpine
+    container_name: db-setup
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    restart: "no"
+
+  authentication:
+    container_name: ot_authentication
+    build:
+      context: .
+      dockerfile: ./apps/authentication/Dockerfile
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting authentication
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+
+  forgeofwill:
+    container_name: ot_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/forgeofwill/Dockerfile
+    ports:
+      - "8080:4000" # Changed from 8080:80
+    # Command will be inherited from Dockerfile's CMD (now a Node.js server)
+    # depends_on: # Add if it needs gateway or other services to be up first for production
+
+  gateway:
+    container_name: ot_gateway
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres: # Ensures postgres (db) is healthy
+        condition: service_healthy
+      authentication:
+        condition: service_started
+      forgeofwill: # Added
+        condition: service_started # Added
+      profile:
+        condition: service_started
+      social:
+        condition: service_started
+      # tasks:
+      #   condition: service_started
+    # Command will be inherited from Dockerfile's CMD
+
+  profile:
+    container_name: ot_profile
+    build:
+      context: .
+      dockerfile: ./apps/profile/Dockerfile
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting profile
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+  project-planning:
+    container_name: ot_project_planning
+    build:
+      context: .
+      dockerfile: ./apps/project-planning/Dockerfile
+    ports:
+      - "3006:3006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting profile
+        condition: service_completed_successfully
+
+  social:
+    container_name: ot_social
+    build:
+      context: .
+      dockerfile: ./apps/social/Dockerfile
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting social
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+  
+  chat-collector:
+    container_name: ot_chat_collector
+    build:
+      context: .
+      dockerfile: ./apps/chat-collector/Dockerfile
+    ports:
+      - "3007:3007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting chat-collector
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+
+  # tasks:
+  #   container_name: ot_tasks
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/tasks/Dockerfile
+  #   ports:
+  #     - "3004:3004"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     db-setup: # Ensures db-setup is completed before starting tasks
+  #       condition: service_completed_successfully
+  #   # Command will be inherited from Dockerfile\'s CMD
+  
+  assets:
+    container_name: ot_asset
+    build:
+      context: .
+      dockerfile: ./apps/assets/Dockerfile
+    ports:
+      - "3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting asset
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+
+  prompt-proxy:
+    container_name: ot_prompt_proxy
+    build:
+      context: .
+      dockerfile: ./apps/prompt-proxy/Dockerfile
+    ports:
+      - "3008:3008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting prompt-proxy
+        condition: service_completed_successfully
+  ai-orchestration:
+    container_name: ot_ai_orchestration
+    build:
+      context: .
+      dockerfile: ./apps/ai-orchestrator/Dockerfile
+    ports:
+      - "3010:3010"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting ai-orchestration
+        condition: service_completed_successfully
+      prompt-proxy:
+        condition: service_started
+      telos-docs-service:
+        condition: service_started
+
+  telos-docs-service:
+    container_name: ot_telos_docs_service
+    build:
+      context: .
+      dockerfile: ./apps/telos-docs-service/Dockerfile
+    ports:
+      - "3009:3009"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting telos_docs_service
+        condition: service_completed_successfully
+
+volumes:
+  postgres_data:
+networks:
+  ot_network:
+    driver: bridge

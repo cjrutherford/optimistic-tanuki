@@ -1,9 +1,7 @@
 /* istanbul ignore file */
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
-import { Goal } from "../../goals/entities/goal.entity";
 import { Profile } from "../../profiles/entities/profile.entity";
-import { Project } from "../../projects/entities/project.entity";
 
 export enum TimelineEventType {
     AddedGoal = 'AddedGoal',
@@ -37,12 +35,6 @@ export class Timeline {
 
     @Column({ default: () => 'CURRENT_TIMESTAMP' })
     timeStamp: Date;
-
-    @ManyToOne(type => Goal, goal => goal.timeLineEvents)
-    related_goal: Goal;
-
-    @ManyToOne(type => Project, project => project.timeLineEvents)
-    related_project: Project;
 
     @ManyToOne(type => Profile, profile => profile.timeLineEvents)
     related_profile: Profile;

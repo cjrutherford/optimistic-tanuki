@@ -1,12 +1,12 @@
 <div class="toggle-container">
-  <form action="none" style="display: flex; align-items: center; width: 100%; justify-content: space-around">
+  <form action="none">
     <div class="theme-switch">
-      <span class="theme-label">Light</span>
+      <div class="theme-label">☀</div>
       <label class="switch">
         <input type="checkbox" [checked]="theme === 'dark'" (change)="toggleTheme()">
-        <span class="slider round"></span>
+        <span class="slider round">️</span>
       </label>
-      <span class="theme-label">Dark</span>
+      <div class="theme-label">🌙</div>
     </div>
     <div class="accent-picker">
       <input type="color" name="accent-color" [(ngModel)]="accentColor" (change)="updateAccentColor()" />

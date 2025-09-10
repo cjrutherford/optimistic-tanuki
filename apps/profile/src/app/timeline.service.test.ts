@@ -74,8 +74,6 @@ describe('TimelineService', () => {
                 title: createTimelineDto.name,
                 description: createTimelineDto.description,
                 timeStamp: new Date(),
-                related_goal: null,
-                related_project: null,
                 related_profile: null,
                 eventType: TimelineEventType.Posted,
             };
@@ -108,8 +106,6 @@ describe('TimelineService', () => {
                 title: updateTimelineDto.name,
                 description: updateTimelineDto.description,
                 timeStamp: new Date(),
-                related_goal: null,
-                related_project: null,
                 related_profile: null,
                 eventType: TimelineEventType.Posted,
             };
