@@ -5,14 +5,7 @@
     margin: 0;
     padding: 0;
     width: 100%;
-}
-
-.main-body {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
     min-height: 100vh;
-    width: 100%;
     padding-bottom: 5rem; // Adjust this to match the footer height
 }
 
