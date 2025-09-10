@@ -1,0 +1,12 @@
+<otui-card>   
+  <img [src]="bannerImage" alt="Blog Post Banner" class="banner-image" />
+  <div class="content">
+    <otui-heading [size]="'2rem'" class="post-title" [text]="title"></otui-heading>
+    @if(excerpt) {<p class="excerpt">{{ excerpt }}</p>}
+    @if(authorName || publishDate) {<div class="author-info">
+      <span class="author-name">By {{ authorName }}</span> | 
+      <span class="publish-date">{{ publishDate }}</span>
+    </div>}
+    @if(readMoreLink !== '#'){<otui-button variant="primary" class="post-button" (click)="onReadMoreClick()">Read More</otui-button>}
+  </div>
+</otui-card>

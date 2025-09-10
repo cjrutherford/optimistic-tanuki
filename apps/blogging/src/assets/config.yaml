@@ -1,0 +1,7 @@
+listenPort: 3008
+database:
+  host: db
+  port: 5432
+  username: postgres
+  password: postgres
+  name: ot_blogging

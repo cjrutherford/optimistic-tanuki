@@ -16,6 +16,9 @@
 .heading-container {
     text-align: center;
     margin-bottom: 2rem;
+    > * {
+        margin: 0.5rem 0;
+    }
 }
 
 .profile {

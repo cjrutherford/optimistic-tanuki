@@ -33,3 +33,9 @@ export { default as ChatCommands } from './lib/libs/chat';
 export * from './lib/libs/telos';
 export * from './lib/libs/prompt';
 export * from './lib/libs/ai-orchestration';
+
+export {
+    ContactCommands,
+    EventCommands,
+    PostCommands as BlogPostCommands
+} from './lib/libs/blog';

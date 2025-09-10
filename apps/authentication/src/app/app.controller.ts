@@ -124,7 +124,6 @@ export class AppController {
       }
       const { token } = data;
       const tokenValidation = await this.appService.validateToken(token);
-      console.log('Token validation result:', tokenValidation);
       return tokenValidation;
     } catch (e) {
       if (e instanceof RpcException) {

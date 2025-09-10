@@ -21,7 +21,6 @@ export class AuthGuard implements CanActivate {
     const response = await firstValueFrom(
       this.authService.send({ cmd: AuthCommands.Validate }, { token, userId })
     );
-    console.log(response);
     // Assuming the response contains a field `isValid` to indicate token validity
     return response && response.isValid;
   }

@@ -34,7 +34,20 @@ describe('ProfileController', () => {
           useValue: {
             send: jest.fn().mockImplementation(() => of({})),
           }
-        }
+        },
+        {
+          provide: ServiceTokens.AI_ORCHESTRATION_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          }
+        },
+        {
+          provide: ServiceTokens.TELOS_DOCS_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          }
+        },
+        
       ]
     })
     .overrideGuard(AuthGuard)
@@ -64,7 +77,7 @@ describe('ProfileController', () => {
      };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    const createResponse = await firstValueFrom(controller.createProfile(createProfileDto));
+    const createResponse = await controller.createProfile(createProfileDto);
     expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Create }, createProfileDto);
     expect(createResponse).toEqual({});
   });
@@ -73,7 +86,7 @@ describe('ProfileController', () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    const getResponse = await firstValueFrom(controller.getProfile(id));
+    const getResponse = await controller.getProfile(id);
     expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Get }, { id });
     expect(getResponse).toEqual({});
   });

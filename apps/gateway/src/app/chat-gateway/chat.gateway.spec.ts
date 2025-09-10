@@ -1,12 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatGateway } from './chat.gateway';
+import { LoggerModule } from '@optimistic-tanuki/logger'
 
 describe('ChatGateway', () => {
   let gateway: ChatGateway;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ChatGateway],
+      imports: [LoggerModule],
+      providers: [
+        ChatGateway,
+        { provide: 'CHAT_COLLECTOR_SERVICE', useValue: { send: jest.fn() } },
+        { provide: 'AI_ORCHESTRATION_SERVICE', useValue: { send: jest.fn() } },
+        { provide: 'TELOS_DOCS_SERVICE', useValue: { send: jest.fn() } },
+      ],
     }).compile();
 
     gateway = module.get<ChatGateway>(ChatGateway);

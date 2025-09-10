@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AboutComponent } from '../about/about.component';
-import { HeroComponent } from '../hero/hero.component';
+import { HeroSectionComponent } from '../hero/hero.component';
 import { BlogSectionComponent } from '../blog-section/blog-section.component';
 import { CommunityComponent } from '../community/community.component';
 import { ContactComponent } from '../contact/contact.component';
@@ -13,7 +13,7 @@ import { ResourcesComponent } from '../resources/resources.component';
   selector: 'dh-main-page',
   imports: [
     CommonModule,
-    HeroComponent,
+    HeroSectionComponent,
     AboutComponent,
     BenefitsComponent,
     CommunityComponent,

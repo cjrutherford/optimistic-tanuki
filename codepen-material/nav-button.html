@@ -1,0 +1,379 @@
+<html>
+  <head>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=PT+Sans+Narrow&display=swap');
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        background-color: #080a0f;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+
+      nav {
+        background-color: #1a2030;
+        border: 1px solid #252e45;
+        border-radius: 100px;
+        display: flex;
+        flex-wrap: wrap;
+
+        a {
+          border-radius: 100px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'ff-chambers-sans-web', sans-serif;
+          font-weight: 500;
+          font-size: 2.5rem;
+          text-decoration: none;
+          position: relative;
+          margin: 8px 8px 8px 0;
+          padding: 22px 22px;
+          overflow: hidden;
+
+          &:first-child {
+            margin-left: 8px;
+          }
+
+          &:hover {
+            .label {
+              bottom: 7px;
+              opacity: 1;
+            }
+          }
+
+          .icon {
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            mix-blend-mode: exclusion;
+          }
+
+          .label {
+            color: #fff;
+            position: absolute;
+            bottom: -14px;
+            font-family: 'PT Sans Narrow', serif;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 1rem;
+            mix-blend-mode: exclusion;
+            opacity: 0;
+            z-index: 1;
+            transition: bottom 200ms ease, opacity 200ms ease;
+            text-transform: lowercase;
+          }
+
+          svg {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            transition: box-shadow 25ms 25ms;
+
+            rect {
+              shape-rendering: crispEdges;
+              z-index: 0;
+            }
+
+            .blue rect {
+              fill: #05eafa;
+              mix-blend-mode: color-dodge;
+            }
+
+            .pink rect {
+              fill: #f52cb9;
+            }
+          }
+
+          &.active {
+            .label {
+              bottom: 7px;
+              opacity: 1;
+            }
+          }
+        }
+      }
+
+      @media (max-width: 1023px) {
+        nav {
+          flex-direction: column;
+
+          a {
+            margin: 8px;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <a href="#">
+        <span class="label">Home</span>
+        <box-icon class="icon" name="home" color="white" size="50px"></box-icon>
+        <svg height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
+          <g class="pink">
+            <rect x="0" width="6" height="100" y="100%" />
+            <rect x="6" width="6" height="100" y="100%" />
+            <rect x="12" width="6" height="100" y="100%" />
+            <rect x="18" width="6" height="100" y="100%" />
+            <rect x="24" width="6" height="100" y="100%" />
+            <rect x="30" width="6" height="100" y="100%" />
+            <rect x="36" width="6" height="100" y="100%" />
+            <rect x="42" width="6" height="100" y="100%" />
+            <rect x="48" width="6" height="100" y="100%" />
+            <rect x="54" width="6" height="100" y="100%" />
+            <rect x="60" width="6" height="100" y="100%" />
+            <rect x="66" width="6" height="100" y="100%" />
+            <rect x="72" width="6" height="100" y="100%" />
+            <rect x="78" width="6" height="100" y="100%" />
+            <rect x="84" width="6" height="100" y="100%" />
+            <rect x="90" width="6" height="100" y="100%" />
+          </g>
+          <g class="blue">
+            <rect x="0" width="6" height="100" y="100%" />
+            <rect x="6" width="6" height="100" y="100%" />
+            <rect x="12" width="6" height="100" y="100%" />
+            <rect x="18" width="6" height="100" y="100%" />
+            <rect x="24" width="6" height="100" y="100%" />
+            <rect x="30" width="6" height="100" y="100%" />
+            <rect x="36" width="6" height="100" y="100%" />
+            <rect x="42" width="6" height="100" y="100%" />
+            <rect x="48" width="6" height="100" y="100%" />
+            <rect x="54" width="6" height="100" y="100%" />
+            <rect x="60" width="6" height="100" y="100%" />
+            <rect x="66" width="6" height="100" y="100%" />
+            <rect x="72" width="6" height="100" y="100%" />
+            <rect x="78" width="6" height="100" y="100%" />
+            <rect x="84" width="6" height="100" y="100%" />
+            <rect x="90" width="6" height="100" y="100%" />
+          </g>
+        </svg>
+      </a>
+      <a href="#">
+        <span class="label">Code</span>
+        <box-icon
+          class="icon"
+          name="code-alt"
+          color="white"
+          size="50px"
+        ></box-icon>
+        <svg height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
+          <g class="pink">
+            <rect x="0" width="6" height="100" y="100%" />
+            <rect x="6" width="6" height="100" y="100%" />
+            <rect x="12" width="6" height="100" y="100%" />
+            <rect x="18" width="6" height="100" y="100%" />
+            <rect x="24" width="6" height="100" y="100%" />
+            <rect x="30" width="6" height="100" y="100%" />
+            <rect x="36" width="6" height="100" y="100%" />
+            <rect x="42" width="6" height="100" y="100%" />
+            <rect x="48" width="6" height="100" y="100%" />
+            <rect x="54" width="6" height="100" y="100%" />
+            <rect x="60" width="6" height="100" y="100%" />
+            <rect x="66" width="6" height="100" y="100%" />
+            <rect x="72" width="6" height="100" y="100%" />
+            <rect x="78" width="6" height="100" y="100%" />
+            <rect x="84" width="6" height="100" y="100%" />
+            <rect x="90" width="6" height="100" y="100%" />
+          </g>
+          <g class="blue">
+            <rect x="0" width="6" height="100" y="100%" />
+            <rect x="6" width="6" height="100" y="100%" />
+            <rect x="12" width="6" height="100" y="100%" />
+            <rect x="18" width="6" height="100" y="100%" />
+            <rect x="24" width="6" height="100" y="100%" />
+            <rect x="30" width="6" height="100" y="100%" />
+            <rect x="36" width="6" height="100" y="100%" />
+            <rect x="42" width="6" height="100" y="100%" />
+            <rect x="48" width="6" height="100" y="100%" />
+            <rect x="54" width="6" height="100" y="100%" />
+            <rect x="60" width="6" height="100" y="100%" />
+            <rect x="66" width="6" height="100" y="100%" />
+            <rect x="72" width="6" height="100" y="100%" />
+            <rect x="78" width="6" height="100" y="100%" />
+            <rect x="84" width="6" height="100" y="100%" />
+            <rect x="90" width="6" height="100" y="100%" />
+          </g>
+        </svg>
+      </a>
+      <a href="#">
+        <span class="label">About</span>
+        <box-icon
+          class="icon"
+          name="user-circle"
+          color="white"
+          size="50px"
+        ></box-icon>
+        <svg height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
+          <g class="pink">
+            <rect x="0" width="6" height="100" y="100%" />
+            <rect x="6" width="6" height="100" y="100%" />
+            <rect x="12" width="6" height="100" y="100%" />
+            <rect x="18" width="6" height="100" y="100%" />
+            <rect x="24" width="6" height="100" y="100%" />
+            <rect x="30" width="6" height="100" y="100%" />
+            <rect x="36" width="6" height="100" y="100%" />
+            <rect x="42" width="6" height="100" y="100%" />
+            <rect x="48" width="6" height="100" y="100%" />
+            <rect x="54" width="6" height="100" y="100%" />
+            <rect x="60" width="6" height="100" y="100%" />
+            <rect x="66" width="6" height="100" y="100%" />
+            <rect x="72" width="6" height="100" y="100%" />
+            <rect x="78" width="6" height="100" y="100%" />
+            <rect x="84" width="6" height="100" y="100%" />
+            <rect x="90" width="6" height="100" y="100%" />
+          </g>
+          <g class="blue">
+            <rect x="0" width="6" height="100" y="100%" />
+            <rect x="6" width="6" height="100" y="100%" />
+            <rect x="12" width="6" height="100" y="100%" />
+            <rect x="18" width="6" height="100" y="100%" />
+            <rect x="24" width="6" height="100" y="100%" />
+            <rect x="30" width="6" height="100" y="100%" />
+            <rect x="36" width="6" height="100" y="100%" />
+            <rect x="42" width="6" height="100" y="100%" />
+            <rect x="48" width="6" height="100" y="100%" />
+            <rect x="54" width="6" height="100" y="100%" />
+            <rect x="60" width="6" height="100" y="100%" />
+            <rect x="66" width="6" height="100" y="100%" />
+            <rect x="72" width="6" height="100" y="100%" />
+            <rect x="78" width="6" height="100" y="100%" />
+            <rect x="84" width="6" height="100" y="100%" />
+            <rect x="90" width="6" height="100" y="100%" />
+          </g>
+        </svg>
+      </a>
+      <a href="#">
+        <span class="label">Obituary</span>
+        <box-icon
+          class="icon"
+          name="ghost"
+          color="white"
+          size="50px"
+        ></box-icon>
+        <svg height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
+          <g class="pink">
+            <rect x="0" width="6" height="100" y="100%" />
+            <rect x="6" width="6" height="100" y="100%" />
+            <rect x="12" width="6" height="100" y="100%" />
+            <rect x="18" width="6" height="100" y="100%" />
+            <rect x="24" width="6" height="100" y="100%" />
+            <rect x="30" width="6" height="100" y="100%" />
+            <rect x="36" width="6" height="100" y="100%" />
+            <rect x="42" width="6" height="100" y="100%" />
+            <rect x="48" width="6" height="100" y="100%" />
+            <rect x="54" width="6" height="100" y="100%" />
+            <rect x="60" width="6" height="100" y="100%" />
+            <rect x="66" width="6" height="100" y="100%" />
+            <rect x="72" width="6" height="100" y="100%" />
+            <rect x="78" width="6" height="100" y="100%" />
+            <rect x="84" width="6" height="100" y="100%" />
+            <rect x="90" width="6" height="100" y="100%" />
+          </g>
+          <g class="blue">
+            <rect x="0" width="6" height="100" y="100%" />
+            <rect x="6" width="6" height="100" y="100%" />
+            <rect x="12" width="6" height="100" y="100%" />
+            <rect x="18" width="6" height="100" y="100%" />
+            <rect x="24" width="6" height="100" y="100%" />
+            <rect x="30" width="6" height="100" y="100%" />
+            <rect x="36" width="6" height="100" y="100%" />
+            <rect x="42" width="6" height="100" y="100%" />
+            <rect x="48" width="6" height="100" y="100%" />
+            <rect x="54" width="6" height="100" y="100%" />
+            <rect x="60" width="6" height="100" y="100%" />
+            <rect x="66" width="6" height="100" y="100%" />
+            <rect x="72" width="6" height="100" y="100%" />
+            <rect x="78" width="6" height="100" y="100%" />
+            <rect x="84" width="6" height="100" y="100%" />
+            <rect x="90" width="6" height="100" y="100%" />
+          </g>
+        </svg>
+      </a>
+    </nav>
+
+    <script>
+      class NavigationEffect {
+        constructor(navigation) {
+          this.previous = null;
+          this.current = null;
+          this.navigation = navigation;
+          this.anchors = this.navigation.querySelectorAll('a');
+
+          this.anchors.forEach((anchor) => {
+            anchor.addEventListener('click', (e) => {
+              this.handlePrevious();
+              this.handleCurrent(anchor);
+            });
+          });
+        }
+
+        handleCurrent(current) {
+          this.current = current;
+          this.current.classList.toggle('active');
+          const nodes = this.getNodes(this.current);
+
+          gsap.to(nodes[0], {
+            duration: 1.8,
+            ease: 'elastic.out(1.4, 0.4)',
+            yPercent: '-100',
+            stagger: 0.008,
+            overwrite: true,
+          });
+
+          gsap.to(nodes[1], {
+            duration: 1.8,
+            ease: 'elastic.out(1.4, 0.4)',
+            yPercent: '-100',
+            stagger: 0.008,
+            overwrite: true,
+          });
+        }
+
+        handlePrevious() {
+          this.previous = document.querySelector('.active');
+          if (this.previous) {
+            this.previous.classList.toggle('active');
+            const nodes = this.getNodes(this.previous);
+            gsap.to(nodes[0], {
+              duration: 0.2,
+              ease: 'power1.out',
+              yPercent: '100',
+              overwrite: true,
+              stagger: 0.012,
+            });
+
+            gsap.to(nodes[1], {
+              duration: 0.2,
+              ease: 'power1.out',
+              yPercent: '100',
+              overwrite: true,
+              delay: 0.02,
+              stagger: 0.012,
+            });
+          }
+        }
+
+        getNodes(item) {
+          return [
+            gsap.utils.shuffle(gsap.utils.selector(item)('.blue rect')),
+            gsap.utils.shuffle(gsap.utils.selector(item)('.pink rect')),
+          ];
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        gsap.registerPlugin(EasePack);
+        new NavigationEffect(document.querySelector('nav'));
+      });
+    </script>
+  </body>
+</html>

@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GridComponent, HeadingComponent, TileComponent } from '@optimistic-tanuki/common-ui';
+import { BlogPostCardComponent } from '@optimistic-tanuki/blogging-ui';
 
 @Component({
   selector: 'dh-benefits',
-  imports: [CommonModule, HeadingComponent, TileComponent, GridComponent],
+  imports: [CommonModule, HeadingComponent, TileComponent, BlogPostCardComponent],
   templateUrl: './benefits.component.html',
   styleUrl: './benefits.component.scss',
 })

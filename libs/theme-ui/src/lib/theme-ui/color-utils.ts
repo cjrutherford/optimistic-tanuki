@@ -1,4 +1,4 @@
-export function generateColorShades(color: string): [string, string][] {
+export function generateColorShades(color: string, limit?: number): [string, string][] {
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
@@ -27,6 +27,9 @@ export function generateColorShades(color: string): [string, string][] {
   for (let i = 0; i < 10; i++) {
     const factor = (i - 5) / 5 * 0.1;
     shades.push([i.toString(), lightenDarkenColor(color, factor)]);
+  }
+  if (limit) {
+    return shades.slice(0, limit);
   }
   return shades;
 }

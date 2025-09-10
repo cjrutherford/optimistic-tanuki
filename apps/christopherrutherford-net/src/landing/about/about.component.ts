@@ -15,7 +15,7 @@ import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-u
     '[style.--border-gradient]': 'borderGradient'
   },
   providers: [ThemeService],
-  imports: [CommonModule, ProfilePhotoComponent, HeadingComponent, CardComponent, TileComponent],
+  imports: [CommonModule, HeadingComponent, CardComponent],
   templateUrl: './about.component.html',
   styleUrl: './about.component.scss',
 })

@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Variantable, VariantOptions, VariantType } from '../interfaces/variantable.interface';
+import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
 
 @Component({
   selector: 'otui-card',
@@ -9,7 +11,7 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
   templateUrl: './card.component.html',
   styleUrls: ['./card.component.scss'],
   host: {
-    'class.theme': 'theme',
+    '[class.theme]': 'theme',
     '[style.--background]': 'background',
     '[style.--foreground]': 'foreground',
     '[style.--accent]': 'accent',
@@ -17,23 +19,103 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
     '[style.--border-color]': 'borderColor',
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
+    '[style.--variant]': 'variant',
+    '[style.--background-filter]': 'backgroundFilter',
+    '[style.--border-width]': 'borderWidth',
+    '[style.--border-radius]': 'borderRadius',
+    '[style.--border-style]': 'borderStyle',
+    '[style.--background-gradient]': 'backgroundGradient',
+    '[style.--svg-pattern]': 'svgPattern',
+    '[style.--glow-filter]': 'glowFilter',
+    '[style.--gradient-type]': 'gradientType',
+    '[style.--gradient-stops]': 'gradientStops',
+    '[style.--gradient-colors]': 'gradientColors',
+    '[style.--animation]': 'animation',
+    '[style.--hover-box-shadow]': 'hoverBoxShadow',
+    '[style.--hover-gradient]': 'hoverGradient',
+    '[style.--hover-glow-filter]': 'hoverGlowFilter',
+    '[style.--inset-shadow]': 'insetShadow',
+    '[style.--body-gradient]': 'bodyGradient',
+    '[style.--background-pattern]': 'backgroundPattern',
+    '[class.glass-effect]': 'glassEffect',
   },
 })
-export class CardComponent extends Themeable {
+export class CardComponent extends Variantable implements Themeable, OnChanges {
+
+  @Input() glassEffect = false;
+  @Input() CardVariant: VariantType = 'default';
+
+  // Variant properties
+  variant!: string;
+  backgroundFilter!: string;
+  borderWidth!: string;
+  borderRadius!: string;
+  borderStyle!: string;
+  backgroundGradient!: string;
+  svgPattern!: string;
+  glowFilter!: string;
+  gradientType!: string;
+  gradientStops!: string;
+  gradientColors!: string;
+  animation!: string;
+  hoverBoxShadow!: string;
+  hoverGradient!: string;
+  hoverGlowFilter!: string;
+  insetShadow!: string;
+  bodyGradient!: string;
+  backgroundPattern!: string;
+
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['CardVariant'] && this.themeColors) {
+      const currentVariant = changes['CardVariant'].currentValue;
+      const options = getDefaultVariantOptions(this.themeColors, currentVariant);
+      this.setVariantOptions(options);
+      this.applyVariant(this.themeColors, options);
+    }
+  }
+
+  override applyVariant(colors: ThemeColors, options?: VariantOptions): void {
+    const opts = options ?? getDefaultVariantOptions(colors, this.CardVariant);
+    this.setVariantOptions(opts);
+  }
+
   override applyTheme(colors: ThemeColors): void {
-    // Use a softer gradient: background -> accent (60%) -> accent lighten (100%)
-    const accentLight = colors.accentShades?.[1] ?? colors.accent;
-    this.background = `linear-gradient(to bottom, ${colors.background}, ${colors.accent})`;
+    this.themeColors = colors;
+    this.background = colors.background;
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;
-    if (this.theme === 'dark') {
-      this.borderGradient = colors.accentGradients['dark'];
-      this.borderColor = colors.complementaryShades[2][0];
-    } else {
-      this.borderGradient = colors.accentGradients['light'];
-      this.borderColor = colors.complementaryShades[2][1];
-    }
-    this.transitionDuration = '0.3s';
+    this.borderColor = colors.accent;
+    const options = getDefaultVariantOptions(colors, this.CardVariant);
+    this.setVariantOptions(options);
+    this.applyVariant(colors, options);
+  }
+
+  private setVariantOptions(options: VariantOptions) {
+    this.variant = options.variant ?? this.variant ?? 'default';
+    this.backgroundFilter = options.backgroundFilter ?? this.backgroundFilter ?? 'none';
+    this.borderWidth = options.borderWidth ?? this.borderWidth ?? '1px';
+    this.borderRadius = options.borderRadius ?? this.borderRadius ?? '8px';
+    this.borderStyle = options.borderStyle ?? this.borderStyle ?? 'solid';
+    this.backgroundGradient = options.backgroundGradient ?? this.backgroundGradient ?? 'none';
+    this.svgPattern = options.svgPattern ?? this.svgPattern ?? '';
+    this.glowFilter = options.glowFilter ?? this.glowFilter ?? 'none';
+    this.gradientType = options.gradientType ?? this.gradientType ?? 'linear';
+    this.gradientStops = options.gradientStops !== undefined
+      ? (Array.isArray(options.gradientStops) ? options.gradientStops.join(', ') : options.gradientStops)
+      : this.gradientStops ?? '0%, 100%';
+    this.gradientColors = options.gradientColors !== undefined
+      ? (Array.isArray(options.gradientColors) ? options.gradientColors.join(', ') : options.gradientColors)
+      : this.gradientColors ?? '#fff, #eee';
+    this.animation = options.animation ?? this.animation ?? 'none';
+    this.hoverBoxShadow = options.hoverBoxShadow ?? this.hoverBoxShadow ?? '0 2px 8px rgba(0,0,0,0.1)';
+    this.hoverGradient = options.hoverGradient ?? this.hoverGradient ?? 'none';
+    this.hoverGlowFilter = options.hoverGlowFilter ?? this.hoverGlowFilter ?? 'none';
+    this.insetShadow = options.insetShadow ?? this.insetShadow ?? 'none';
+    this.bodyGradient = options.bodyGradient ?? this.bodyGradient ?? 'none';
+    this.backgroundPattern = options.backgroundPattern ?? this.backgroundPattern ?? '';
+    this.borderGradient = options.borderGradient ?? this.borderGradient ?? 'none';
+    this.transitionDuration = options.transitionDuration ?? this.transitionDuration ?? '0.3s';
   }
 }

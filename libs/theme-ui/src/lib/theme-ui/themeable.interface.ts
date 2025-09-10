@@ -15,6 +15,7 @@ export abstract class Themeable implements OnInit, OnDestroy {
   borderColor = '#dee2e6';
   borderGradient = 'linear-gradient(to right, #007bff, #6610f2)';
   transitionDuration = '0.3s';
+  themeColors?: ThemeColors;
   protected destroy$ = new Subject<void>();
 
   constructor(protected readonly themeService: ThemeService) {}

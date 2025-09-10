@@ -69,8 +69,18 @@ export class ChatComponent {
           });
           this.socketChat.onConversations((data: ChatConversation[]) => {
             console.log('Conversations update received:', data);
-            const currentConversations = this.conversations();
-            this.conversations.set([...currentConversations, ...data]);
+            this.conversations.update((conversations) => {
+              const updatedConversations = [...conversations];
+              data.forEach((newConv) => {
+                const index = updatedConversations.findIndex((c) => c.id === newConv.id);
+                if (index > -1) {
+                  updatedConversations[index] = newConv;
+                } else {
+                  updatedConversations.push(newConv);
+                }
+              });
+              return updatedConversations;
+            });
             this.updateContacts();
           });
           this.socketChat.getConversations(profile.id);

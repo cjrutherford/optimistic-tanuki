@@ -1,34 +1,8 @@
-<otui-card style="padding: 0">
-  <div
-    [style.borderRadius]="'0.5rem'"
-    class="hero-banner"
-  >
-    <div class="hero-banner-filter">
-        <otui-grid [columns]="3" [rows]="4">
-                <otui-heading style="grid-column: 1 / -1; padding: 0; text-align: center;"
-                  [text]="'Christopher Rutherford'"
-                  [size]="'4em'"
-                  [color]="'#fff'"
-                ></otui-heading>
-                <otui-heading 
-                    style="grid-column: 1 / -1; padding: 0; text-align: center;"
-                    [text]="'Crafting Robust Software Solutions & Forging Collaborative Communities'"
-                    [size]="'3em'"
-                    [color]="'#fff'"></otui-heading>
-                <otui-heading 
-                    style="grid-column: 1 / -1; padding: 0"
-                    [text]="'Specializing in self-hostable managed application services for individuals and groups, and dedicated to empowering non-profits and the independent workforce.'"
-                    [size]="'1.5em'"
-                    [color]="'#fff'"></otui-heading>
-                <otui-button
-                    style="grid-column: 1 / 2; padding: 0; width: 100%"
-                    [variant]="'primary'"
-                > Explore Managed Hosting Services</otui-button>
-                <otui-button
-                    style="grid-column: 3 / 4; padding: 0; width: 100%"
-                    [variant]="'primary'"
-            > Partner on a Non-Profit Initiative</otui-button>
-        </otui-grid>
-    </div>
-  </div>
-</otui-card>
+<lib-hero
+  [title]="'Christopher Rutherford'"
+  [subtitle]="'Crafting Robust Software Solutions & Forging Collaborative Communities'"
+  [description]="'Specializing in self-hostable managed application services for individuals and groups, and dedicated to empowering non-profits and the independent workforce.'"
+  [buttonText]="'Contact Me'"
+  [imageUrl]="'assets/images/starfield.jpg'"
+></lib-hero>
+

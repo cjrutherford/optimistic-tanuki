@@ -1,7 +1,18 @@
 .projectGrid {
-  position: relative; /* For absolute positioning of SVG background */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: stretch;
+  align-items: stretch;
+  gap: 40px;
+  padding: 10px;
   margin: 2px;
-  max-height: 50vh;
+  > * {
+    flex: 1 1 calc(33% - 32px); /* 3 items per row with some gap */
+    box-sizing: border-box;
+    min-width: 250px; /* Ensure a minimum width for smaller screens */
+    max-width: 400px; /* Optional: limit max width */
+  }
 }
 .svg-background-in-div {
   position: absolute; /* Positioned relative to .content */
