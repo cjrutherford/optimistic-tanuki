@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 export class GridComponent implements OnInit, OnChanges {
   @Input() columns?: number;
   @Input() rows?: number;
+  @Input() gap = '20px';
 
   gridTemplateRows = '';
   gridTemplateColumns = '';

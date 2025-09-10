@@ -1,0 +1,66 @@
+.section-container {
+  margin: 20px auto;
+  text-align: center;
+  padding: 2rem;
+  background-color: rgba(33, 33, 33, 0.15);
+  border: 1px solid #eee;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(33, 33, 33, 0.15);
+  .heading-container {
+    margin-bottom: 2rem;
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+    margin: 0 auto;
+    padding: 30px;
+    border-radius: 10px;
+    gap: 1rem;
+    width: 60%;
+    background: rgba(22, 22, 22, 0.1);
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: left;
+      input,
+      textarea {
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+    }
+    .action {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-start;
+        align-items: center;
+    }
+  }
+}
+.row {
+  .form-group {
+      width: 100%;
+      text-align: left;
+  }
+  width: 100%;
+  justify-content: stretch;
+  align-items: center;
+  gap: 40px;
+  flex-direction: row;
+  display: flex;
+}
+
+@media screen and (max-width: 768px) {
+  .row {
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+  }
+  .section-container {
+      form {
+          width: 90%;
+      }
+  }
+}

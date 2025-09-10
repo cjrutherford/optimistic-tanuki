@@ -1,0 +1,42 @@
+.content-overlay {
+    width: 100%;
+    // max-height: 40vh;
+    position: relative;
+    z-index: 1;
+    color: white;
+    text-align: center;
+    margin: 0; 
+    padding: 0;
+    background-image: url('/assets/dh.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 10px;
+
+    // &::before {
+    //     content: '';
+    //     position: absolute;
+    //     top: 0; left: 0; right: 0; bottom: 0;
+    //     background: rgba(0, 0, 0, 0.4); // Adjust opacity as needed
+    //     z-index: -1;
+    //     pointer-events: none;
+    //     border-radius: 10px;
+    // }
+
+    .content-body {
+        height: 90%;
+        border-radius: 10px;
+        position: relative;
+        z-index: 1;
+        background: rgba(30, 30, 30, 0.75);
+        color: #fff;
+        margin: 0;
+        padding: 1rem 2rem;
+        p {
+            font-size: 14pt;
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 60vw;
+        }
+    }
+}

@@ -1,0 +1,29 @@
+.section-heading {
+    margin-bottom: 1rem;
+    width: 90%;
+    background: rgba(33,33,33,0.15);
+    margin: 20px auto;
+    padding: 40px;
+    border-radius: 8px;
+}
+.benefit-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+}
+@media (max-width: 768px) {
+    .benefit-row {
+        flex-direction: column;
+        align-items: center;
+    }
+    .benefit {
+        margin: 1rem 0;
+        width: 90%;
+    }
+}
+.benefit {
+    flex: 1;
+    margin: 0 1rem;
+    padding: 1rem;
+    p{color: #fff;}
+}

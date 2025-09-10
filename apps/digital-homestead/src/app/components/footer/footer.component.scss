@@ -1,0 +1,27 @@
+.section-container {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    background: var(--background);
+    color: var(--foreground);
+    .top-row {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .section-container {
+        padding: 1rem;
+        .top-row {
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+    }
+}
