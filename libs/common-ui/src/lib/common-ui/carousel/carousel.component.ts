@@ -1,11 +1,16 @@
+import { CommonModule } from '@angular/common';
 import { Component, Input, ContentChildren, QueryList, AfterContentInit, ElementRef } from '@angular/core';
 
 @Component({
   selector: 'lib-carousel',
+  imports: [CommonModule],
+  standalone: true,
   template: `
     <div class="carousel">
-      <div class="carousel-inner" [style.transform]="getTransform()">
-        <ng-content></ng-content>
+      <div class="carousel-inner" [style.transform]="getTransform()" [style.gap]="gap">
+        <div *ngFor="let item of visibleItemsArray" class="carousel-item">
+          <ng-container *ngTemplateOutlet="item.template"></ng-container>
+        </div>
       </div>
       <button class="carousel-control prev" (click)="prev()">&#10094;</button>
       <button class="carousel-control next" (click)="next()">&#10095;</button>
@@ -21,9 +26,10 @@ import { Component, Input, ContentChildren, QueryList, AfterContentInit, Element
     .carousel-inner {
       display: flex;
       transition: transform 0.5s ease;
+      overflow: hidden;
     }
-    ::ng-deep .carousel-inner > * {
-      flex: 0 0 calc(60% / var(--visible-items, 1));
+    .carousel-item {
+      flex: 0 0 calc(100% / var(--visible-items, 1));
       height: 100%;
       box-sizing: border-box;
     }
@@ -31,10 +37,12 @@ import { Component, Input, ContentChildren, QueryList, AfterContentInit, Element
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: none;
+      background: rgba(0, 0, 0, 0.5);
       border: none;
       font-size: 2rem;
+      color: white;
       cursor: pointer;
+      z-index: 1;
     }
     .carousel-control.prev {
       left: 0;
@@ -49,17 +57,23 @@ export class CarouselComponent implements AfterContentInit {
   @ContentChildren('carouselItem') items!: QueryList<ElementRef>;
   @Input() visibleItems = 1;
   private currentIndex = 0;
+  visibleItemsArray: ElementRef[] = [];
+  gap = '10px';
 
   ngAfterContentInit() {
-    if (this.items.length < this.visibleItems) {
+    this.updateVisibleItems();
+
+    if (this.items.length < 0) {
       console.warn('Not enough items to display in the carousel');
     }
+    console.log(this.items);
+    console.log(this.visibleItems);
+  }
 
-    // Dynamically set CSS variable for visible items
-    const carouselInner = (this.items.first?.nativeElement as HTMLElement)?.parentElement;
-    if (carouselInner) {
-      carouselInner.style.setProperty('--visible-items', this.visibleItems.toString());
-    }
+  private updateVisibleItems(): void {
+    const start = this.currentIndex;
+    const end = this.currentIndex + this.visibleItems;
+    this.visibleItemsArray = this.items.toArray().slice(start, end);
   }
 
   getTransform(): string {
@@ -69,12 +83,23 @@ export class CarouselComponent implements AfterContentInit {
   next(): void {
     if (this.currentIndex < this.items.length - this.visibleItems) {
       this.currentIndex++;
+      this.updateVisibleItems();
+      this.updateTransform();
     }
   }
 
   prev(): void {
     if (this.currentIndex > 0) {
       this.currentIndex--;
+      this.updateVisibleItems();
+      this.updateTransform();
+    }
+  }
+
+  private updateTransform(): void {
+    const carouselInner = this.items.first?.nativeElement.parentElement;
+    if (carouselInner) {
+      carouselInner.style.transform = `translateX(-${this.currentIndex * (100 / this.visibleItems)}%)`;
     }
   }
 }

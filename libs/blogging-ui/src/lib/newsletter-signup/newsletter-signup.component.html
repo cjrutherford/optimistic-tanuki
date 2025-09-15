@@ -1,0 +1,15 @@
+<otui-modal>
+    <otui-card>
+        <div class="row">
+            <div class="img">
+                <img [src]="bannerImage" alt="Newsletter Banner" />
+            </div>
+            <div class="form">
+                <otui-heading [text]="'Sign up for Updates!'"></otui-heading>
+                <lib-text-input [label]="'Email Address'" (valueChange)="onEmailChange($event)"></lib-text-input>
+                <otui-button (click)="onSubscribe()">Subscribe</otui-button>
+                <otui-button (click)="onClose()">Close</otui-button>
+            </div>
+        </div>
+    </otui-card>
+</otui-modal>

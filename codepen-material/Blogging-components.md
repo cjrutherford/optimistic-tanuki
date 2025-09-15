@@ -20,13 +20,13 @@ This document outlines a plan for implementing reusable components for blogs and
     - Uses: `card`, `button`, `heading`, `button` (from `common-ui`)
 - [x] **Author Profile Component**  
     - Uses: `card`, `profile-photo`, `heading` (from `common-ui`)
-- [ ] **Comments Section Component**  
-    - Uses: `comment-list`, `comment`, `compose` (from `social-ui`)
-- [ ] **Newsletter Signup Component**  
+- [ ] ~~**Comments Section Component**~~  
+    - ~~Uses: `comment-list`, `comment`, `compose` (from `social-ui`)~~
+- [x] **Newsletter Signup Component**  
     - Uses: `modal`, `button`, `input` (from `common-ui`)
-- [ ] **Contact Component**  
+- [x] **Contact Component**  
     - Uses: `card`, `button`, `input` (from `common-ui`)
-- [ ] **Featured Posts Carousel**  
+- [x] **Featured Posts Carousel**  
     - Uses: `carousel` (from `common-ui`), `post` (from `social-ui`)
 - [ ] **Tag/Category List**  
     - Uses: `list` (from `common-ui`)

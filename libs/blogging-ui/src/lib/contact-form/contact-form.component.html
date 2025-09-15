@@ -1,0 +1,35 @@
+<otui-card>
+  <div class="row">
+    <div class="img">
+      <img [src]="bannerImage" alt="Newsletter Banner" />
+    </div>
+    <div class="form">
+      <otui-heading [text]="'Reach out!'"></otui-heading>
+      <div class="row">
+        <lib-text-input
+          [label]="'Name'"
+          (valueChange)="onNameChange($event)"
+        ></lib-text-input>
+        <lib-text-input
+          [label]="'Email Address'"
+          (valueChange)="onEmailChange($event)"
+        ></lib-text-input>
+      </div>
+      @if(subjects.length > 0) {
+      <lib-select
+        [label]="'Subject'"
+        [options]="subjects"
+        (valueChange)="onSubjectChange($event)"
+      ></lib-select>
+      }
+      <lib-text-area
+        [label]="'Your Message'"
+        (valueChange)="onMessageChange($event)"
+      ></lib-text-area>
+      <div class="row">
+          <otui-button (click)="onSubscribe()">Subscribe</otui-button>
+          <otui-button (click)="onClose()">Close</otui-button>
+      </div>
+    </div>
+  </div>
+</otui-card>

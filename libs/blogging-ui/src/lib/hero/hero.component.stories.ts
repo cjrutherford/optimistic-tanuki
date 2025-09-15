@@ -11,11 +11,15 @@ export default meta;
 type Story = StoryObj<HeroComponent>;
 
 export const Primary: Story = {
-  args: {},
+  args: {
+    imageUrl: 'https://picsum.photos/1200/300',
+  },
 };
 
 export const Heading: Story = {
-  args: {},
+  args: {
+    imageUrl: 'https://picsum.photos/1200/300',
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     expect(canvas.getByText(/hero works!/gi)).toBeTruthy();
