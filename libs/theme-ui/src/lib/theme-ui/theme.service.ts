@@ -6,6 +6,7 @@ import {
   generateDangerColor,
   generateWarningColor,
   generateSuccessColor,
+  generateTertiaryColor,
 } from './color-utils';
 import { loadTheme, saveTheme } from './theme-storage';
 import { ThemeColors } from './theme.interface';
@@ -108,6 +109,10 @@ export class ThemeService {
       '--accent-color',
       themeColors.accent,
     );
+    document.documentElement.style.setProperty(
+      '--tertiary-color',
+      themeColors.tertiaryShades[2][1],
+    );
 
     // themeColors.accentShades.forEach(([index, shade]: [string, string]) => {
     //   document.documentElement.style.setProperty(
@@ -195,6 +200,7 @@ export class ThemeService {
     const accentShades = generateColorShades(this.accentColor);
     const complementaryColor = this.complementColor ? this.complementColor : generateComplementaryColor(this.accentColor);
     const complementaryShades = generateColorShades(complementaryColor);
+    const tertiaryColor = generateTertiaryColor(this.accentColor);
     const successColor = generateSuccessColor(this.accentColor);
     const successShades = generateColorShades(successColor);
     const dangerColor = generateDangerColor(this.accentColor);
@@ -211,6 +217,9 @@ export class ThemeService {
       complementary: complementaryColor,
       complementaryShades,
       complementaryGradients: this.generateGradients(complementaryShades),
+      tertiary: tertiaryColor,
+      tertiaryShades: generateColorShades(tertiaryColor),
+      tertiaryGradients: this.generateGradients(generateColorShades(tertiaryColor)),
       success: successColor,
       successShades,
       successGradients: this.generateGradients(successShades),

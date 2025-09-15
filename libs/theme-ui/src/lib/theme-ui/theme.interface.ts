@@ -11,6 +11,9 @@ export interface ThemeColors {
   complementary: string;
   complementaryShades: [string, string][];
   complementaryGradients: ThemeGradients;
+  tertiary: string;
+  tertiaryShades: [string, string][];
+  tertiaryGradients: ThemeGradients;
   success: string;
   successShades: [string, string][];
   successGradients: ThemeGradients;
