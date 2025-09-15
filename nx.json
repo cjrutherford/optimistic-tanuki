@@ -55,7 +55,7 @@
         "{projectRoot}/tsconfig.storybook.json"
       ]
     },
-    "@nx/js:tsc": {
+    "@angular-devkit/build-angular:browser": {
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]

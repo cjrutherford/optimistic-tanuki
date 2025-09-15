@@ -17,6 +17,7 @@ import { isPlatformBrowser } from '@angular/common';
 export class ThemeService {
   private _theme: 'light' | 'dark';
   private accentColor: string;
+  private complementColor?: string;
   theme: BehaviorSubject<'light' | 'dark' | undefined> = new BehaviorSubject<'light' | 'dark' | undefined>(undefined);
   private themeColors: BehaviorSubject<ThemeColors | undefined> = new BehaviorSubject<ThemeColors | undefined>(undefined);
 
@@ -47,7 +48,7 @@ export class ThemeService {
     this._theme = theme;
     this.theme.next(theme);
     if (isPlatformBrowser(this.platformId)) {
-      saveTheme(this.platformId, theme, this.accentColor);
+      saveTheme(this.platformId, theme, this.accentColor, this.complementColor || generateComplementaryColor(this.accentColor));
       document.documentElement.style.setProperty(
         '--background-color',
         theme === 'light' ? '#fff' : '#333',
@@ -63,10 +64,11 @@ export class ThemeService {
     }
   }
 
-  setAccentColor(color: string) {
-    this.accentColor = color;
+  setAccentColor(accent: string, complement?: string) {
+    this.accentColor = accent;
+    this.complementColor = complement;
     if (isPlatformBrowser(this.platformId)) {
-      saveTheme(this.platformId, this._theme, color);
+      saveTheme(this.platformId, this._theme, accent, complement || generateComplementaryColor(accent));
       this.applyThemeColors();
     } else {
       // For SSR, update themeColors if other parts of the app might read it
@@ -191,7 +193,7 @@ export class ThemeService {
 
   private generateThemeColors(): ThemeColors {
     const accentShades = generateColorShades(this.accentColor);
-    const complementaryColor = generateComplementaryColor(this.accentColor);
+    const complementaryColor = this.complementColor ? this.complementColor : generateComplementaryColor(this.accentColor);
     const complementaryShades = generateColorShades(complementaryColor);
     const successColor = generateSuccessColor(this.accentColor);
     const successShades = generateColorShades(successColor);
