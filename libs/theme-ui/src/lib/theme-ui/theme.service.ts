@@ -194,7 +194,7 @@ export class ThemeService {
   private generateThemeColors(): ThemeColors {
     const accentShades = generateColorShades(this.accentColor);
     const complementaryColor = this.complementColor ? this.complementColor : generateComplementaryColor(this.accentColor);
-    const complementaryShades = generateColorShades(this.complementColor || complementaryColor);
+    const complementaryShades = generateColorShades(complementaryColor);
     const successColor = generateSuccessColor(this.accentColor);
     const successShades = generateColorShades(successColor);
     const dangerColor = generateDangerColor(this.accentColor);
