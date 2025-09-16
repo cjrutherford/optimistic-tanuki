@@ -79,14 +79,16 @@
             top: 0;
             right: 0;
             width: 70vw;
-            height: 100vh;
-            background: #fff;
-            box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+            // height: 100vh;
+            background: var(--background-gradient);
             flex-direction: column;
             align-items: flex-start;
-            padding: 2rem 1rem;
+            padding: 80px 40px;
             z-index: 1000;
-
+            border-radius: 10px;
+            box-shadow:
+                3px 6px 18px 16px var(--accent) 20px var(--complementary),
+                0 0 20px 4px var(--tertiary);
             a {
                 display: block;
                 width: 100%;

@@ -1,6 +1,7 @@
 .row {
     display: flex;
     flex-direction: row;
+    width: 100%;
     gap: 1rem;
     .img {
         flex: 1;
@@ -22,5 +23,16 @@
         padding: 1rem;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .row {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        .img, .form {
+            width: 100%;
+        }
     }
 }

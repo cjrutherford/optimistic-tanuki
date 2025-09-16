@@ -7,7 +7,13 @@
     ></otui-heading>
     <p>We'd love to hear from you! Fill out the form below to reach out.</p>
   </div>
-  <form [formGroup]="contactForm">
+  <lib-contact-form
+    [title]="'Contact Us'"
+    [buttonText]="'Send Message'"
+    [bannerImage]="'https://fastly.picsum.photos/id/993/1200/300.jpg?hmac=iO9xcbT5POafAJm1iPMcP9IM6OQYPlJ7FSae8PlVntw'"
+    (submit)="onContactFormSubmit($event)"
+  ></lib-contact-form>
+  <!-- <form [formGroup]="contactForm">
     <div class="row">
       <div class="form-group">
         <label for="name">Name</label>
@@ -30,5 +36,5 @@
     <div class="action">
         <otui-button (click)="onSubmit()">Send Message</otui-button>
     </div>
-  </form>
+  </form> -->
 </div>

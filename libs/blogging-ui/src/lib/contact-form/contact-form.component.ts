@@ -20,6 +20,8 @@ import { FormBuilder, FormGroup } from '@angular/forms';
   styleUrl: './contact-form.component.scss',
 })
 export class ContactFormComponent {
+  @Input() title = 'Reach out!';
+  @Input() buttonText = 'Subscribe';
   @Input() subjects: { value: string; label: string }[] = [];
   @Input() bannerImage = 'https://picsum.photos/1200/300';
   @Output() submit = new EventEmitter<void>();

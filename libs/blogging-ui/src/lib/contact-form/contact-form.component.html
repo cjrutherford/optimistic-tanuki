@@ -4,13 +4,15 @@
       <img [src]="bannerImage" alt="Newsletter Banner" />
     </div>
     <div class="form">
-      <otui-heading [text]="'Reach out!'"></otui-heading>
+      <otui-heading [text]="title"></otui-heading>
       <div class="row">
         <lib-text-input
+          style="flex: 1"
           [label]="'Name'"
           (valueChange)="onNameChange($event)"
         ></lib-text-input>
         <lib-text-input
+          style="flex: 1"
           [label]="'Email Address'"
           (valueChange)="onEmailChange($event)"
         ></lib-text-input>
@@ -26,8 +28,8 @@
         (valueChange)="onMessageChange($event)"
       ></lib-text-area>
       <div class="row">
-          <otui-button (click)="onSubscribe()">Subscribe</otui-button>
-          <otui-button (click)="onClose()">Close</otui-button>
+          <otui-button style="flex: 1;"(click)="onSubscribe()">{{buttonText}}</otui-button>
+          <!-- <otui-button style="flex: 1;"(click)="onClose()">Close</otui-button> -->
       </div>
     </div>
   </div>

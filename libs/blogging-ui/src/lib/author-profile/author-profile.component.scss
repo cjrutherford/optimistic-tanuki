@@ -13,3 +13,14 @@
     margin-left: 20px;
     flex-direction: column;
 }
+
+@media screen and (max-width: 768px) {
+    .contents {
+        flex-direction: column;
+        text-align: center;
+        justify-content: center;
+    }
+    .bio {
+        margin: 20px 0 0 0;
+    }
+}

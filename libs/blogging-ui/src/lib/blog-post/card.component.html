@@ -8,5 +8,6 @@
       <span class="publish-date">{{ publishDate }}</span>
     </div>}
     @if(readMoreLink !== '#'){<otui-button variant="primary" class="post-button" (click)="onReadMoreClick()">Read More</otui-button>}
+    @if(secondaryButtonText) {<otui-button variant="secondary" class="post-button" (click)="onSecondaryButtonClick()">{{ secondaryButtonText }}</otui-button>}
   </div>
 </otui-card>

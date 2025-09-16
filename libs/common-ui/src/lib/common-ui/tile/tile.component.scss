@@ -8,7 +8,6 @@
     width: 100%;
     height: 100%;
     position: relative;
-    z-index: 1; // Ensure content is above all glow/overlay layers
     background: var(--background-filter, rgba(255, 255, 255, 0.5));
     border-radius: var(--border-radius, 4px);
     animation: pulse-halo 16s infinite ease;

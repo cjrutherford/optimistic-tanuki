@@ -1,9 +1,9 @@
 <div class="message-list">
-  <div *ngFor="let message of messages" class="message">
+  <div *ngFor="let message of messages; let i = index" class="message">
     <div class="profile">
       <img src="{{ getContact(message.senderId)?.avatarUrl }}" alt="{{getContact(message.senderId)?.name}}'s avatar" class="avatar" />
       <span class="sender">{{ (getContact(message.senderId)?.name || message.senderId) }}:</span>
     </div>
-    <span class="text" [innerHTML]="getMessageHtml(message.content)"></span>
+    <span class="text" [class.sender]="i === messages.length - 1" [innerHTML]="getMessageHtml(message.content)"></span>
   </div>
 </div>

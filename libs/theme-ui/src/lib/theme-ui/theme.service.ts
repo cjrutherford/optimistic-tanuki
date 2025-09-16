@@ -110,6 +110,10 @@ export class ThemeService {
       themeColors.accent,
     );
     document.documentElement.style.setProperty(
+      '--complementary-color',
+      themeColors.complementary,
+    );
+    document.documentElement.style.setProperty(
       '--tertiary-color',
       themeColors.tertiaryShades[2][1],
     );

@@ -1,9 +1,14 @@
 .heading-container {
-    margin: 40px;
+    margin: 40px auto;
     text-align: center;
+    width: 90%;
+    background: rgba(255,255,255,0.3);
+    color: var(--foreground);
+    padding: 40px;
+    border-radius: 8px;
 }
 .grid-container {
-    margin: 20px;
+    margin: 20px 40px;
     .grid {
         display: flex;
         flex-direction: row;

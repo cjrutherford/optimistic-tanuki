@@ -7,7 +7,12 @@
   border-radius: 10px;
   box-shadow: 0 2px 4px rgba(33, 33, 33, 0.15);
   .heading-container {
-    margin-bottom: 2rem;
+    width: 90%;
+    background: rgba(255,255,255,0.3);
+    color: var(--foreground);
+    margin: 40px auto;
+    padding: 40px;
+    border-radius: 8px;
   }
   form {
     display: flex;

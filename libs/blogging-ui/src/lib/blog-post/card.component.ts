@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent, CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
 
@@ -15,8 +15,14 @@ export class BlogPostCardComponent {
   @Input() authorName = '';
   @Input() publishDate = '';
   @Input() readMoreLink = '#';
+  @Input() secondaryButtonText = '';
+  @Output() secondaryButtonAction: EventEmitter<void> = new EventEmitter<void>();
 
   onReadMoreClick() {
     window.open(this.readMoreLink, '_blank');
+  }
+
+  onSecondaryButtonClick() {
+    this.secondaryButtonAction.emit();
   }
 }
