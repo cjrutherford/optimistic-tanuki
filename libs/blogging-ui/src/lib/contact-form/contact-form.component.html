@@ -17,7 +17,6 @@
       </div>
       @if(subjects.length > 0) {
       <lib-select
-        [label]="'Subject'"
         [options]="subjects"
         (valueChange)="onSubjectChange($event)"
       ></lib-select>

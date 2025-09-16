@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
 import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { FormBuilder, FormGroup } from '@angular/forms';
 
@@ -13,12 +13,14 @@ import { FormBuilder, FormGroup } from '@angular/forms';
     SelectComponent,
     ButtonComponent,
     TextAreaComponent,
+    HeadingComponent,
+    SelectComponent,
   ],
   templateUrl: './contact-form.component.html',
   styleUrl: './contact-form.component.scss',
 })
 export class ContactFormComponent {
-  @Input() subjects: string[] = [];
+  @Input() subjects: { value: string; label: string }[] = [];
   @Input() bannerImage = 'https://picsum.photos/1200/300';
   @Output() submit = new EventEmitter<void>();
   contactForm: FormGroup;
@@ -46,8 +48,9 @@ export class ContactFormComponent {
     this.contactForm.patchValue({ message });
   }
 
-  onSubjectChange(subject: string) {
-    this.contactForm.patchValue({ subject });
+  onSubjectChange(subject: Event) {
+    const selectElement = subject.target as HTMLSelectElement;
+    this.contactForm.patchValue({ subject: selectElement.value });
   }
 
   onSubscribe() {
