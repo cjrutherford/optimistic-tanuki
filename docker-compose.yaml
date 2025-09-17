@@ -43,17 +43,38 @@ services:
         condition: service_healthy
       db-setup: # Ensures db-setup is completed before starting authentication
         condition: service_completed_successfully
-    # Command will be inherited from Dockerfile\'s CMD
 
-  client-interface:
+  ot-client-interface:
     container_name: ot_client_interface # Added
     build:
       context: .
       dockerfile: ./apps/client-interface/Dockerfile
     ports:
-      - "8080:4000" # Changed from 8080:80
-    # Command will be inherited from Dockerfile's CMD (now a Node.js server)
-    # depends_on: # Add if it needs gateway or other services to be up first for production
+      - "8080:4000" 
+
+  forgeofwill-client-interface:
+    container_name: fow_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/forgeofwill/Dockerfile
+    ports:
+      - "8081:4000"
+  
+  digital-homestead-client-interface:
+    container_name: dh_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/digital-homestead/Dockerfile
+    ports:
+      - "8082:4000"
+
+  crdn-client-interface:
+    container_name: crdn_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/christopherrutherford-net/Dockerfile
+    ports:
+      - "8083:4000"
 
   gateway:
     container_name: ot_gateway
@@ -67,8 +88,12 @@ services:
         condition: service_healthy
       authentication:
         condition: service_started
-      client-interface: # Added
-        condition: service_started # Added
+      ot-client-interface: 
+        condition: service_started 
+      forgeofwill-client-interface:
+        condition: service_started 
+      digital-homestead-client-interface:
+        condition: service_started 
       profile:
         condition: service_started
       social:
@@ -142,6 +167,20 @@ services:
       postgres:
         condition: service_healthy
       db-setup: # Ensures db-setup is completed before starting asset
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+
+  blogging:
+    container_name: ot_blogging
+    build:
+      context: .
+      dockerfile: ./apps/blogging/Dockerfile
+    ports:
+      - "3008:3008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting blogging
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
 

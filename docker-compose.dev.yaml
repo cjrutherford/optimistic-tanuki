@@ -14,7 +14,7 @@ services:
       postgres:
         condition: service_healthy
 
-  client-interface:
+  ot-client-interface:
     container_name: ot_client_interface # Added
     build:
       context: .
@@ -38,6 +38,48 @@ services:
     environment:
       - NODE_ENV=development
 
+  forgeofwill-client-interface:
+    container_name: fow_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/forgeofwill/Dockerfile
+    volumes:
+      - ./apps/forgeofwill:/app/apps/forgeofwill
+      - ./libs:/app/libs
+      - ./dist/apps/forgeofwill:/app/dist/apps/forgeofwill
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "/app/dist/apps/forgeofwill/server/server.mjs"]
+    environment:
+      - NODE_ENV=development
+
+  digital-homestead-client-interface:
+    container_name: dh_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/digital-homestead/Dockerfile
+    volumes:
+      - ./apps/digital-homestead:/app/apps/digital-homestead
+      - ./libs:/app/libs
+      - ./dist/apps/digital-homestead:/app/dist/apps/digital-homestead
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "/app/dist/apps/digital-homestead/server/server.mjs"]
+    environment:
+      - NODE_ENV=development
+
+  crdn-client-interface:
+    container_name: crdn_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/christopherrutherford-net/Dockerfile
+    volumes:
+      - ./apps/christopherrutherford-net:/app/apps/christopherrutherford-net
+      - ./libs:/app/libs
+      - ./dist/apps/christopherrutherford-net:/app/dist/apps/christopherrutherford-net
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "/app/dist/apps/christopherrutherford-net/server/server.mjs"]
+    environment:
+      - NODE_ENV=development
+
   gateway:
     container_name: ot_gateway # Added
     build:
@@ -56,7 +98,11 @@ services:
         condition: service_healthy # Added
       authentication:
         condition: service_started
-      client-interface:
+      ot-client-interface:
+        condition: service_started
+      forgeofwill-client-interface:
+        condition: service_started
+      digital-homestead-client-interface:
         condition: service_started
       profile:
         condition: service_started
@@ -79,6 +125,7 @@ services:
     depends_on: # Added
       postgres:
         condition: service_healthy
+  
 
   social:
     container_name: ot_social
@@ -136,6 +183,21 @@ services:
     command: ["dumb-init", "nodemon", "-L", "main.js"]
     environment:
       - NODE_ENV=development
-    depends_on: # Added
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  blogging:
+    container_name: ot_blogging
+    build:
+      context: .
+      dockerfile: ./apps/blogging/Dockerfile
+    volumes:
+      - ./dist/apps/blogging:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on:
       postgres:
         condition: service_healthy

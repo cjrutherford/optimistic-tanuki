@@ -23,7 +23,12 @@
           }
         ],
         "styles": ["apps/digital-homestead/src/styles.scss"],
-        "scripts": []
+        "scripts": [],
+        "server": "apps/digital-homestead/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/digital-homestead/src/server.ts"
+        },
+        "outputMode": "server"
       },
       "configurations": {
         "production": {
