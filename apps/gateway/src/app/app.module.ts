@@ -13,6 +13,7 @@ import { ProjectPlanningController } from '../controllers/project-planning/proje
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { SocialController } from '../controllers/social/social.controller';
 import { ChatGateway } from './chat-gateway/chat.gateway';
+import { ContactController } from '../controllers/blogging/contact.controller';
 
 @Module({
   imports: [
@@ -28,6 +29,8 @@ import { ChatGateway } from './chat-gateway/chat.gateway';
     SocialController,
     AssetController,
     ProjectPlanningController,
+    ContactController,
+
   ],
   providers: [
     AuthGuard,
@@ -157,6 +160,23 @@ import { ChatGateway } from './chat-gateway/chat.gateway';
       },
       inject: [ConfigService],
     },
+    {
+      provide: ServiceTokens.BLOG_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.blogging'
+        );
+        console.log('Blog Service Config:', serviceConfig);
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    }
   ],
 })
 export class AppModule {}

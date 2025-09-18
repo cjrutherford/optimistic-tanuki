@@ -1,10 +1,5 @@
 listenPort: 3000
 services:
-  asset:
-    name: asset
-    transport: TCP
-    host: ot_asset
-    port: 3005
   authentication:
     name: authentication
     transport: TCP
@@ -25,6 +20,11 @@ services:
     transport: TCP
     host: ot_tasks
     port: 3004
+  asset:
+    name: asset
+    transport: TCP
+    host: ot_asset
+    port: 3005
   project_planning:
     name: project_planning
     transport: TCP
@@ -45,3 +45,8 @@ services:
     transport: TCP
     host: ot_ai_orchestration
     port: 3010
+  blogging:
+    name: blogging
+    transport: TCP
+    host: ot_blogging
+    port: 3011

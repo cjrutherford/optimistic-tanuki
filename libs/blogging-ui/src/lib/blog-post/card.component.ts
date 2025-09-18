@@ -14,6 +14,7 @@ export class BlogPostCardComponent {
   @Input() excerpt = '';
   @Input() authorName = '';
   @Input() publishDate = '';
+  @Input() readMoreText = 'Read More';
   @Input() readMoreLink = '#';
   @Input() secondaryButtonText = '';
   @Output() secondaryButtonAction: EventEmitter<void> = new EventEmitter<void>();

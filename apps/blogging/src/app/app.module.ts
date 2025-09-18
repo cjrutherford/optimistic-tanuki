@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseModule } from '@optimistic-tanuki/database';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DatabaseModule } from '@optimistic-tanuki/database';
+import { LoggerModule } from '@optimistic-tanuki/logger';
 import { EventController, PostController, ContactController } from './controllers';
 import { EventService, PostService, ContactService } from './services';
 import config from './config'
@@ -11,6 +12,7 @@ import { Contact, Event, Post } from './entities'
 
 @Module({
   imports: [
+    LoggerModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [config]

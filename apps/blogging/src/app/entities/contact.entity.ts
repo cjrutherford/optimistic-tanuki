@@ -14,12 +14,15 @@ export class Contact {
     @Column()
     email: string;
 
-    @Column()
-    phone: string;
+    @Column({ nullable: true, default: null })
+    phone?: string;
 
     @Column({ default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
     @Column({ default: () => 'CURRENT_TIMESTAMP' })
     updatedAt: Date;
+
+    @Column({ default: false })
+    addressed: boolean;
 }

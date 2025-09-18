@@ -176,7 +176,7 @@ services:
       context: .
       dockerfile: ./apps/blogging/Dockerfile
     ports:
-      - "3008:3008"
+      - "3011:3011"
     depends_on:
       postgres:
         condition: service_healthy

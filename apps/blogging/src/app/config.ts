@@ -15,5 +15,5 @@ export declare type BloggingConfigType = {
 
 // This function can be expanded to load and parse configuration files as needed.
 export default () => {
-    return load(readFileSync(join(__dirname, '../assets/config.yaml'), 'utf8')) as BloggingConfigType;
+    return load(readFileSync(join(__dirname, './assets/config.yaml'), 'utf8')) as BloggingConfigType;
 }

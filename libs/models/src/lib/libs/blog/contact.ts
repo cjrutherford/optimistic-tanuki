@@ -6,7 +6,7 @@ export interface ContactDto {
     name: string;
     message: string;
     email: string;
-    phone: string;
+    phone?: string;
     createdAt: Date;
     updatedAt: Date;
 }

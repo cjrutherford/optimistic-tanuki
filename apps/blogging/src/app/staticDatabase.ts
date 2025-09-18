@@ -2,7 +2,9 @@ import { DataSource } from "typeorm";
 import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
-import { Post, Event, Contact } from './entities';
+import { Post } from "./entities/post.entity";
+import { Event } from "./entities/event.entity";
+import { Contact } from "./entities/contact.entity";
 
 const config = yaml.load(fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')) as Record<string, any>;
 const { database: {

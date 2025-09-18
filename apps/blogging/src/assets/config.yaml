@@ -1,7 +1,7 @@
-listenPort: 3008
+listenPort: 3011
 database:
   host: db
   port: 5432
   username: postgres
   password: postgres
-  name: ot_blogging
+  database: ot_blogging

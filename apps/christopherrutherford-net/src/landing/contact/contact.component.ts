@@ -2,14 +2,18 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { TileComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
+import { ContactService } from '../../app/contact.service';
 
 @Component({
   selector: 'app-contact',
+  providers: [ContactService],
   imports: [CommonModule, ContactFormComponent, TileComponent, HeadingComponent],
   templateUrl: './contact.component.html',
   styleUrl: './contact.component.scss',
 })
 export class ContactComponent {
+  constructor(private contactService: ContactService) {}
+
   subjects = [
     { value: 'general', label: 'General Inquiry' },
     { value: 'support', label: 'Support' },
@@ -17,8 +21,17 @@ export class ContactComponent {
     { value: 'other', label: 'Other' },
   ];
 
-  onContactFormSubmit() {
+  onContactFormSubmit($event: {name: string, email: string, subject: string, message: string}) {
+    console.log('Contact form submission event:', $event);
     // Handle form submission logic here
-    console.log('Contact form submitted');
+    console.log('Contact form submitted', $event);
+    this.contactService.postContact($event).subscribe({
+      next: (response) => {
+        console.log('Form submission successful', response);
+      },
+      error: (error) => {
+        console.error('Form submission error', error);
+      }
+    });
   }
 }
