@@ -9,7 +9,7 @@ button {
   transition: background-color ease-in-out 0.3s, box-shadow ease-in-out 0.3s;
 
   &.primary {
-    background-color: var(--accent, #007bff);
+    background-color: var(--complement, #007bff);
     color: var(--foreground, #fff);
     border: 3px solid var(--complement, #0056b3);
     

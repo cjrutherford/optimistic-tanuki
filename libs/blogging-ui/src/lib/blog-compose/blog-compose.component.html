@@ -1,0 +1,35 @@
+<otui-card
+  class="compose-card"
+  [class.dragover]="isDragOver"
+  (dragenter)="handleDragEnter($event)"
+  (dragover)="handleDragOver($event)"
+  (dragleave)="handleDragLeave($event)"
+  (drop)="handleDrop($event)"
+  [variantOverrides]="{ background: backgroundGradient }"
+>
+  <form>
+    <label for="title">Title</label>
+    <lib-text-input
+      id="title"
+      [type]="'text'"
+      [(ngModel)]="title"
+      [ngModelOptions]="{ standalone: true }"
+      placeholder="Enter title"
+    ></lib-text-input>
+
+    <label for="content">Content</label>
+    <quill-editor
+      id="quillEditor"
+      #quillEditor
+      class="editor"
+      [theme]="'snow'"
+      [(ngModel)]="content"
+      [ngModelOptions]="{ standalone: true }"
+      [modules]="quillModules"
+      placeholder="What's on your mind?"
+      (onContentChanged)="onContentChange($event)"
+    ></quill-editor>
+
+    <otui-button (action)="onPostSubmit()">Submit</otui-button>
+  </form>
+</otui-card>

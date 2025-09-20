@@ -98,9 +98,20 @@ services:
         condition: service_started
       social:
         condition: service_started
-      # tasks:
-      #   condition: service_started
-    # Command will be inherited from Dockerfile's CMD
+      chat-collector:
+        condition: service_started
+      assets:
+        condition: service_started
+      prompt-proxy:
+        condition: service_started
+      ai-orchestration:
+        condition: service_started
+      telos-docs-service:
+        condition: service_started
+      blogging:
+        condition: service_started
+      project-planning:
+        condition: service_started
 
   profile:
     container_name: ot_profile
@@ -169,7 +180,47 @@ services:
       db-setup: # Ensures db-setup is completed before starting asset
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
+  prompt-proxy:
+    container_name: ot_prompt_proxy
+    build:
+      context: .
+      dockerfile: ./apps/prompt-proxy/Dockerfile
+    ports:
+      - "3008:3008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting prompt-proxy
+        condition: service_completed_successfully
+  ai-orchestration:
+    container_name: ot_ai_orchestration
+    build:
+      context: .
+      dockerfile: ./apps/ai-orchestrator/Dockerfile
+    ports:
+      - "3010:3010"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting ai-orchestration
+        condition: service_completed_successfully
+      prompt-proxy:
+        condition: service_started
+      telos-docs-service:
+        condition: service_started
 
+  telos-docs-service:
+    container_name: ot_telos_docs_service
+    build:
+      context: .
+      dockerfile: ./apps/telos-docs-service/Dockerfile
+    ports:
+      - "3009:3009"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting telos_docs_service
+        condition: service_completed_successfully
   blogging:
     container_name: ot_blogging
     build:
@@ -183,6 +234,18 @@ services:
       db-setup: # Ensures db-setup is completed before starting blogging
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
+  project-planning:
+    container_name: ot_project_planning
+    build:
+      context: .
+      dockerfile: ./apps/project-planning/Dockerfile
+    ports:
+      - "3006:3006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting profile
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:

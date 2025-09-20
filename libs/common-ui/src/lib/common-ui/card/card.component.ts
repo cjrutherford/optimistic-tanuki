@@ -44,6 +44,7 @@ export class CardComponent extends Variantable implements Themeable, OnChanges {
 
   @Input() glassEffect = false;
   @Input() CardVariant: VariantType = 'default';
+  @Input() variantOverrides?: VariantOptions;
 
   // Variant properties
   variant!: string;
@@ -69,7 +70,9 @@ export class CardComponent extends Variantable implements Themeable, OnChanges {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['CardVariant'] && this.themeColors) {
       const currentVariant = changes['CardVariant'].currentValue;
-      const options = getDefaultVariantOptions(this.themeColors, currentVariant);
+      const options = (this.variantOverrides 
+        ? { ...getDefaultVariantOptions(this.themeColors, currentVariant), ...this.variantOverrides } 
+        : getDefaultVariantOptions(this.themeColors, currentVariant));
       this.setVariantOptions(options);
       this.applyVariant(this.themeColors, options);
     }

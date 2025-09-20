@@ -2,7 +2,7 @@
     <h2>Your Profiles:</h2>
     <div class="profile-grid-flex"> <!-- Replaced otui-grid with a div and new class -->
     @for (p of profiles; track p.id) {
-            <otui-tile class="real-profile" [class.active]="p.id === internalSelectedProfile()?.id">
+            <div class="real-profile" [class.active]="p.id === internalSelectedProfile()?.id">
                 <h2>{{p.profileName}}</h2>
                 <div class="profile-photo-badge-wrapper">
                     <lib-profile-photo src="{{p.profilePic}}" alt="{{p.profileName}}'s picture" />
@@ -18,15 +18,15 @@
                     }
                     <button class="profile-badge right-badge edit-profile-button" (click)="openProfileDialog(p)" title="Edit Profile">✏️</button>
                 </div>
-            </otui-tile>
+            </div>
         }
-        <otui-tile class="add-profile">
+        <div class="add-profile">
             <h2>New Profile</h2>
             <div class="add-profile-photo-container">
                 <lib-profile-photo src="https://placehold.co/100x100/grey/white?text=New" alt="Add new profile" />
                 <button class="profile-badge left-badge add-profile-bubble-button" (click)="openProfileDialog()" title="Add New Profile">+</button>
             </div>
-        </otui-tile>
+        </div>
     </div>
 </otui-card>
 
