@@ -36,7 +36,7 @@ describe('NewsletterSignupComponent', () => {
   });
 
   it('should emit signUp event and reset email on submit when email is set', () => {
-    spyOn(component.signUp, 'emit');
+    jest.spyOn(component.signUp, 'emit');
     component.email = 'test@example.com';
     component.isModalOpen = true;
     component.submit();
@@ -46,7 +46,7 @@ describe('NewsletterSignupComponent', () => {
   });
 
   it('should not emit signUp event or reset modal/email if email is empty', () => {
-    spyOn(component.signUp, 'emit');
+    jest.spyOn(component.signUp, 'emit');
     component.email = '';
     component.isModalOpen = true;
     component.submit();

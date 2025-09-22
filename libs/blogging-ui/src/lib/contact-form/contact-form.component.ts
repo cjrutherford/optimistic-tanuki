@@ -24,7 +24,7 @@ export class ContactFormComponent {
   @Input() buttonText = 'Subscribe';
   @Input() subjects: { value: string; label: string }[] = [];
   @Input() bannerImage = 'https://picsum.photos/1200/300';
-  @Output() submit = new EventEmitter<{name: string, email: string, subject: string, message: string}>();
+  @Output() formSubmit = new EventEmitter<{name: string, email: string, subject: string, message: string}>();
   contactForm: FormGroup;
 
   constructor(private fb: FormBuilder) {
@@ -56,7 +56,7 @@ export class ContactFormComponent {
   }
 
   onSubscribe() {
-    this.submit.emit(this.contactForm.value);
+    this.formSubmit.emit(this.contactForm.value);
   }
 
   onClose() {

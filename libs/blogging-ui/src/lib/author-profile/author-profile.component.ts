@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardComponent, GlassContainerComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
+import { CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 
 @Component({
