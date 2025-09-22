@@ -68,11 +68,9 @@ interface PostData {
   imports: [
     CommonModule,
     FormsModule,
-    TiptapEditorDirective,
     CardComponent,
     TextInputComponent,
     ButtonComponent,
-    MatIconModule,
     ContextMenuComponent,
     ComponentSelectorComponent,
     PropertyEditorComponent,
@@ -92,7 +90,7 @@ interface PostData {
     '[style.--local-border-gradient]': 'borderGradient',
     '[style.--local-transition-duration]': 'transitionDuration',
   },
-  providers: [ComponentInjectionService]
+  providers: [ComponentInjectionService, TiptapEditorDirective]
 })
 export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy, AfterViewInit, ComponentInjectionAPI {
   @Output() postSubmitted: EventEmitter<PostData> = new EventEmitter<PostData>();
@@ -101,11 +99,10 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     file: File;
   }>();
 
-  override readonly themeService: ThemeService;
-
   @ViewChild('componentContainer', { read: ViewContainerRef })
   componentContainer!: ViewContainerRef;
 
+  override readonly themeService: ThemeService;
   backgroundGradient = 'linear-gradient(to right, #5969c3, #59c360)';
   isDragOver = false;
   title = '';
@@ -128,9 +125,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   selectedComponentInstance: InjectedComponentInstance | null = null;
   selectedComponentProperties: PropertyDefinition[] = [];
 
-  constructor(private componentInjectionService: ComponentInjectionService, _themeService: ThemeService) {
-    super(_themeService);
-    this.themeService = _themeService;
+  constructor(private componentInjectionService: ComponentInjectionService, _theme: ThemeService) {
+    super(_theme);
+    this.themeService = _theme;
   }
 
   @HostListener('document:click')
