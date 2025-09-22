@@ -15,6 +15,7 @@ import MagicUrl from 'quill-magic-url';
 import ImageCompress from 'quill-image-compress';
 import Cursors from 'quill-cursors';
 import Placeholder from 'quill-placeholder-module';
+import Resize from 'quill-resize-module';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
 import { GradientBuilder } from 'libs/common-ui/src/lib/common-ui/gradient-builder';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
@@ -25,6 +26,7 @@ Quill.register('modules/imageCompress', ImageCompress);
 Quill.register('modules/cursors', Cursors);
 Quill.register('modules/placeholder', Placeholder);
 Quill.register('modules/magicUrl', MagicUrl);
+Quill.register('modules/resize', Resize);
 
 // Builder for Quill modules
 class QuillModulesBuilder {
@@ -98,6 +100,8 @@ export class BlogComposeComponent extends Themeable {
   quillModules = new QuillModulesBuilder()
     .withModule('magicUrl', true)
     .withModule('imageCompress', { quality: 0.7, maxWidth: 800, maxHeight: 600 })
+    .withModule('placeholder', { placeholder: 'Compose an epic...' })
+    .withModule('resize', { modules: ['Resize', 'DisplaySize', 'Toolbar'] })
     .build();
 
   onContentChange(event: any) {
