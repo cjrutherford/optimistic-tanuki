@@ -25,13 +25,14 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
   styleUrl: './select.component.scss',
   standalone: true,
   host: {
-    '[style.--background]': 'background',
-    '[style.--foreground]': 'foreground',
-    '[style.--accent]': 'accent',
-    '[style.--complement]': 'complement',
-    '[style.--border-color]': 'borderColor',
-    '[style.--border-gradient]': 'borderGradient',
-    '[style.--transition-duration]': 'transitionDuration',
+    // Using standardized local variables with fallbacks
+    '[style.--local-background]': 'background',
+    '[style.--local-foreground]': 'foreground',
+    '[style.--local-accent]': 'accent',
+    '[style.--local-complement]': 'complement',
+    '[style.--local-border-color]': 'borderColor',
+    '[style.--local-border-gradient]': 'borderGradient',
+    '[style.--local-transition-duration]': 'transitionDuration',
   },
 })
 export class SelectComponent extends Themeable implements ControlValueAccessor {
@@ -43,15 +44,19 @@ export class SelectComponent extends Themeable implements ControlValueAccessor {
   ];
 
   override applyTheme(colors: ThemeColors): void {
+    // Use standardized color assignments with design tokens
     this.background = `linear-gradient(to bottom, ${colors.background}, ${colors.accent})`;
     this.accent = colors.accent;
     this.foreground = colors.foreground;
     this.borderColor = colors.complementary;
     this.complement = colors.complementary;
+    this.transitionDuration = '0.15s'; // Use standardized duration
+    
+    // Use numbered shades instead of hardcoded shade access
     if (this.theme === 'dark') {
-      this.borderColor = colors.complementaryShades[6][1];
+      this.borderColor = colors.complementaryShades[6][1]; // Darker shade
     } else {
-      this.borderColor = colors.complementaryShades[2][1];
+      this.borderColor = colors.complementaryShades[2][1]; // Lighter shade
     }
   }
 

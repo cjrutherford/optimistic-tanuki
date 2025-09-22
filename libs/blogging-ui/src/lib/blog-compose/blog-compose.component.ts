@@ -82,14 +82,15 @@ interface PostData {
   styleUrls: ['./blog-compose.component.scss'],
   host: {
     '[class.theme]': 'theme',
-    '[style.--background]': 'background',
-    '[style.--background-gradient]': 'backgroundGradient',
-    '[style.--foreground]': 'foreground',
-    '[style.--accent]': 'accent',
-    '[style.--complement]': 'complement',
-    '[style.--border-color]': 'borderColor',
-    '[style.--border-gradient]': 'borderGradient',
-    '[style.--transition-duration]': 'transitionDuration',
+    // Using standardized local variables with fallbacks
+    '[style.--local-background]': 'background',
+    '[style.--local-background-gradient]': 'backgroundGradient',
+    '[style.--local-foreground]': 'foreground',
+    '[style.--local-accent]': 'accent',
+    '[style.--local-complement]': 'complement',
+    '[style.--local-border-color]': 'borderColor',
+    '[style.--local-border-gradient]': 'borderGradient',
+    '[style.--local-transition-duration]': 'transitionDuration',
   },
   providers: [ComponentInjectionService]
 })
@@ -506,6 +507,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   }
 
   override applyTheme(colors: ThemeColors): void {
+    // Use standardized color assignments
     this.background = colors.background;
     this.backgroundGradient = new GradientBuilder()
       .setType('radial')
@@ -514,6 +516,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;
+    
+    // Use standardized gradient names and numbered shades
     if (this.theme === 'dark') {
       this.borderGradient = colors.accentGradients['dark'];
       this.borderColor = colors.complementaryShades[2][1];
@@ -521,7 +525,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       this.borderGradient = colors.accentGradients['light'];
       this.borderColor = colors.complementaryShades[2][1];
     }
-    this.transitionDuration = '0.3s';
+    this.transitionDuration = '0.15s'; // Use standardized duration
   }
 
 }

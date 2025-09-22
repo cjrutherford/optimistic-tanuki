@@ -8,6 +8,8 @@ export * from './lib/theme-ui/color-utils';
 export * from './lib/theme-ui/theme-palettes';
 export * from './lib/theme-ui/design-tokens';
 export * from './lib/theme-ui/palette-selector.component';
+export * from './lib/theme-ui/theme-host-bindings.directive';
+export * from './lib/theme-ui/theme-variable.service';
 
 // Re-export utilities SCSS for import usage
 export const UTILITIES_SCSS_PATH = './lib/theme-ui/utilities.scss';

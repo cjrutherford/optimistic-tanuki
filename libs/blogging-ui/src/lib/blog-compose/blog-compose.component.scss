@@ -16,12 +16,12 @@ form {
   padding: var(--spacing-sm, 8px);
   border-radius: var(--border-radius-lg, 8px);
   margin-bottom: var(--spacing-xs, 4px);
-  background: var(--background-gradient);
+  background: var(--local-background-gradient, var(--background-gradient));
   box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
 
   button {
-    background: var(--complement);
-    color: var(--foreground);
+    background: var(--local-complement, var(--complement));
+    color: var(--local-foreground, var(--foreground));
     border: none;
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
     border-radius: var(--border-radius-md, 4px);
@@ -30,14 +30,14 @@ form {
     transition: all 0.15s ease-in-out;
 
     &:hover {
-      background-color: var(--complement);
-      color: var(--background);
+      background-color: var(--local-complement, var(--complement));
+      color: var(--local-background, var(--background));
       box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
     }
 
     &.is-active {
-      background-color: var(--accent);
-      color: var(--background);
+      background-color: var(--local-accent, var(--accent));
+      color: var(--local-background, var(--background));
     }
     
     &.component-btn {
@@ -45,27 +45,27 @@ form {
       align-items: center;
       gap: var(--spacing-xs, 4px);
       font-weight: 500;
-      background-color: var(--accent);
-      color: var(--background);
+      background-color: var(--local-accent, var(--accent));
+      color: var(--local-background, var(--background));
       
       &:hover {
-        background-color: var(--complement);
-        color: var(--foreground);
+        background-color: var(--local-complement, var(--complement));
+        color: var(--local-foreground, var(--foreground));
       }
     }
   }
   
   .toolbar-separator {
     width: 1px;
-    background-color: var(--complement, #c0af4b);
+    background-color: var(--local-complement, var(--complement, #c0af4b));
     margin: 0 var(--spacing-xs, 4px);
   }
 }
 
 .tiptap-editor-styles ::ng-deep .ProseMirror {
-  border: 2px solid var(--complement);
-  background: var(--background-gradient);
-  color: var(--foreground);
+  border: 2px solid var(--local-complement, var(--complement));
+  background: var(--local-background-gradient, var(--background-gradient));
+  color: var(--local-foreground, var(--foreground));
   font-family: 'Roboto', sans-serif;
   border-radius: var(--border-radius-lg, 8px);
   box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
@@ -75,7 +75,7 @@ form {
 
   &:focus {
     outline: none;
-    border-color: var(--accent);
+    border-color: var(--local-accent, var(--accent));
     box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
   }
 }
@@ -99,7 +99,7 @@ button {
   transition: border-color 0.15s ease-in-out;
   
   &.dragover {
-    border-color: var(--complement);
+    border-color: var(--local-complement, var(--complement));
     background-color: rgba(0, 0, 0, 0.1);
   }
 }
@@ -120,8 +120,8 @@ button {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--background-gradient);
-      color: var(--foreground);
+      background: var(--local-background-gradient, var(--background-gradient));
+      color: var(--local-foreground, var(--foreground));
       padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
       border-radius: var(--border-radius-lg, 8px);
       box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
@@ -130,49 +130,49 @@ button {
       font-weight: bold;
       animation: pulse 12s infinite;
     }
-    border-color: var(--complement);
+    border-color: var(--local-complement, var(--complement));
     background-color: rgba(0, 0, 0, 0.1);
   }
 }
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 5px var(--accent);
-    background: radial-gradient(circle, var(--accent) 20%, var(--complement));
+    box-shadow: 0 0 5px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 20%, var(--local-complement, var(--complement)));
   }
   40% {
-    box-shadow: 0 0 15px var(--accent);
-    background: radial-gradient(circle, var(--accent) 60%, var(--complement));
+    box-shadow: 0 0 15px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 60%, var(--local-complement, var(--complement)));
   }
   60% {
-    box-shadow: 0 0 20px var(--accent);
-    background: radial-gradient(circle, var(--accent) 80%, var(--complement));
+    box-shadow: 0 0 20px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 80%, var(--local-complement, var(--complement)));
   }
   80% {
-    box-shadow: 0 0 15px var(--accent);
-    background: radial-gradient(circle, var(--accent) 60%, var(--complement));
+    box-shadow: 0 0 15px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 60%, var(--local-complement, var(--complement)));
   }
   100% {
-    box-shadow: 0 0 5px var(--accent);
-    background: radial-gradient(circle, var(--accent) 20%, var(--complement));
+    box-shadow: 0 0 5px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 20%, var(--local-complement, var(--complement)));
   }
 }
 
 /* Component injection styles */
 .injected-components-container {
   margin: var(--spacing-md, 16px) 0;
-  border: 2px dashed var(--complement, #c0af4b);
+  border: 2px dashed var(--local-complement, var(--complement, #c0af4b));
   border-radius: var(--border-radius-lg, 8px);
   padding: var(--spacing-md, 16px);
   min-height: 100px;
-  background-color: var(--background, #ffffff);
+  background-color: var(--local-background, var(--background, #ffffff));
   transition: all 0.15s ease-in-out;
   
   &:empty {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--foreground);
+    color: var(--local-foreground, var(--foreground));
     opacity: 0.6;
     font-style: italic;
     
