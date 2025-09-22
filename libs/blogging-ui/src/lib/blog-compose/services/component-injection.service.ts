@@ -1,10 +1,11 @@
-import { Injectable, ComponentRef, ViewContainerRef, EventEmitter } from '@angular/core';
+import { Injectable, ComponentRef, ViewContainerRef, EventEmitter, ComponentFactory, createComponent } from '@angular/core';
 import { 
   InjectableComponent, 
   InjectedComponentInstance, 
   ComponentInjectionEvent,
   ComponentInjectionAPI 
 } from '../interfaces/component-injection.interface';
+import { ComponentWrapperComponent } from '../components/component-wrapper.component';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,13 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   private registeredComponents = new Map<string, InjectableComponent>();
   private activeComponents = new Map<string, InjectedComponentInstance>();
   private viewContainer: ViewContainerRef | null = null;
+  
+  // Callback functions for wrapper events
+  private onEditCallback?: (instance: InjectedComponentInstance) => void;
+  private onDeleteCallback?: (instance: InjectedComponentInstance) => void;
+  private onMoveUpCallback?: (instance: InjectedComponentInstance) => void;
+  private onMoveDownCallback?: (instance: InjectedComponentInstance) => void;
+  private onSelectionCallback?: (instance: InjectedComponentInstance) => void;
   
   /**
    * Event emitter for component injection events
@@ -24,6 +32,23 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
    */
   setViewContainer(viewContainer: ViewContainerRef): void {
     this.viewContainer = viewContainer;
+  }
+
+  /**
+   * Set callback functions for wrapper events
+   */
+  setWrapperCallbacks(callbacks: {
+    onEdit?: (instance: InjectedComponentInstance) => void;
+    onDelete?: (instance: InjectedComponentInstance) => void;
+    onMoveUp?: (instance: InjectedComponentInstance) => void;
+    onMoveDown?: (instance: InjectedComponentInstance) => void;
+    onSelection?: (instance: InjectedComponentInstance) => void;
+  }): void {
+    this.onEditCallback = callbacks.onEdit;
+    this.onDeleteCallback = callbacks.onDelete;
+    this.onMoveUpCallback = callbacks.onMoveUp;
+    this.onMoveDownCallback = callbacks.onMoveDown;
+    this.onSelectionCallback = callbacks.onSelection;
   }
 
   /**
@@ -79,7 +104,10 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     // Generate unique instance ID
     const instanceId = `${componentId}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-    // Create component instance
+    // Create wrapper component
+    const wrapperRef = this.viewContainer.createComponent(ComponentWrapperComponent);
+    
+    // Create the actual component within the wrapper
     const componentRef = this.viewContainer.createComponent(componentDef.component);
 
     // Set initial data if provided
@@ -96,17 +124,47 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     const instance: InjectedComponentInstance = {
       instanceId,
       componentDef,
-      componentRef,
+      componentRef: wrapperRef, // Store wrapper ref as main ref
       position: position !== undefined ? { index: position } : undefined,
       data: { ...componentDef.data, ...data }
     };
 
-    // Store the instance
+    // Configure wrapper component
+    wrapperRef.instance.componentInstance = instance;
+    
+    // Set up wrapper event handlers
+    wrapperRef.instance.editRequested.subscribe((inst: InjectedComponentInstance) => {
+      this.onEditCallback?.(inst);
+    });
+    
+    wrapperRef.instance.deleteRequested.subscribe((inst: InjectedComponentInstance) => {
+      this.onDeleteCallback?.(inst);
+    });
+    
+    wrapperRef.instance.moveUpRequested.subscribe((inst: InjectedComponentInstance) => {
+      this.onMoveUpCallback?.(inst);
+    });
+    
+    wrapperRef.instance.moveDownRequested.subscribe((inst: InjectedComponentInstance) => {
+      this.onMoveDownCallback?.(inst);
+    });
+    
+    wrapperRef.instance.selectionChanged.subscribe((inst: InjectedComponentInstance) => {
+      this.onSelectionCallback?.(inst);
+    });
+
+    // Append the actual component to the wrapper
+    const wrapperElement = wrapperRef.location.nativeElement;
+    const componentElement = componentRef.location.nativeElement;
+    wrapperElement.appendChild(componentElement);
+
+    // Store the instance (with additional reference to the inner component)
+    instance.data._innerComponentRef = componentRef;
     this.activeComponents.set(instanceId, instance);
 
     // Move to specific position if requested
     if (position !== undefined) {
-      this.moveComponentToPosition(componentRef, position);
+      this.moveComponentToPosition(wrapperRef, position);
     }
 
     // Emit event

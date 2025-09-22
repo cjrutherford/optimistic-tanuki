@@ -65,6 +65,15 @@
   (closed)="hideComponentSelector()"
 ></lib-component-selector>
 
+<!-- Property editor -->
+<lib-property-editor
+  [isVisible]="isPropertyEditorVisible"
+  [componentInstance]="selectedComponentInstance"
+  [propertyDefinitions]="selectedComponentProperties"
+  (propertiesUpdated)="onPropertiesUpdated($event)"
+  (closed)="hidePropertyEditor()"
+></lib-property-editor>
+
 <!-- Context menu -->
 <lib-context-menu
   *ngIf="isContextMenuVisible"

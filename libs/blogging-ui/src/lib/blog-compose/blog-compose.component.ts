@@ -44,6 +44,16 @@ import { CalloutBoxComponent } from './components/example-components/callout-box
 import { CodeSnippetComponent } from './components/example-components/code-snippet.component';
 import { ImageGalleryComponent } from './components/example-components/image-gallery.component';
 
+// Existing blogging components
+import { HeroComponent } from '../hero/hero.component';
+import { FeaturedPostsComponent } from '../featured-posts/featured-posts.component';
+import { NewsletterSignupComponent } from '../newsletter-signup/newsletter-signup.component';
+
+// Property editing system
+import { PropertyEditorComponent, PropertyDefinition } from './components/property-editor.component';
+import { ComponentWrapperComponent } from './components/component-wrapper.component';
+import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
+
 interface PostData {
   title: string;
   content: string;
@@ -65,6 +75,8 @@ interface PostData {
     MatIconModule,
     ContextMenuComponent,
     ComponentSelectorComponent,
+    PropertyEditorComponent,
+    ComponentWrapperComponent,
   ],
   templateUrl: './blog-compose.component.html',
   styleUrls: ['./blog-compose.component.scss'],
@@ -108,6 +120,11 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   isComponentSelectorVisible = false;
   registeredComponents: InjectableComponent[] = [];
 
+  // Property editing properties
+  isPropertyEditorVisible = false;
+  selectedComponentInstance: InjectedComponentInstance | null = null;
+  selectedComponentProperties: PropertyDefinition[] = [];
+
   constructor(private componentInjectionService: ComponentInjectionService) {
     super();
   }
@@ -115,11 +132,21 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   @HostListener('document:click')
   onDocumentClick(): void {
     this.isContextMenuVisible = false;
+    this.selectedComponentInstance = null;
   }
 
   ngAfterViewInit(): void {
     if (this.componentContainer) {
       this.componentInjectionService.setViewContainer(this.componentContainer);
+      
+      // Set up wrapper event callbacks
+      this.componentInjectionService.setWrapperCallbacks({
+        onEdit: (instance) => this.onComponentEdit(instance),
+        onDelete: (instance) => this.onComponentDelete(instance),
+        onMoveUp: (instance) => this.onComponentMoveUp(instance),
+        onMoveDown: (instance) => this.onComponentMoveDown(instance),
+        onSelection: (instance) => this.onComponentSelection(instance)
+      });
     }
     this.initializeDefaultComponents();
   }
@@ -205,6 +232,57 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       }
     });
 
+    // Add existing blogging components
+    this.registerComponent({
+      id: 'hero',
+      name: 'Hero Section',
+      description: 'Eye-catching hero section with title, description, and call-to-action',
+      component: HeroComponent,
+      category: 'Layout',
+      icon: 'landscape',
+      data: {
+        title: 'Welcome to Our Blog!',
+        subtitle: '',
+        description: 'Discover the latest news, tips, and stories from our community.',
+        buttonText: 'Get Started',
+        imageUrl: 'https://via.placeholder.com/600x400'
+      }
+    });
+
+    this.registerComponent({
+      id: 'featured-posts',
+      name: 'Featured Posts',
+      description: 'Showcase featured blog posts in an interactive carousel',
+      component: FeaturedPostsComponent,
+      category: 'Content',
+      icon: 'featured_play_list',
+      data: {
+        visibleItems: 3,
+        featuredPosts: [
+          {
+            title: 'Understanding Microservices Architecture',
+            bannerImage: 'https://picsum.photos/id/1011/800/400',
+            excerpt: 'A deep dive into the principles and benefits of microservices.',
+            authorName: 'Jane Doe',
+            publishDate: '2024-05-10',
+            readMoreLink: '/blog/microservices-architecture'
+          }
+        ]
+      }
+    });
+
+    this.registerComponent({
+      id: 'newsletter-signup',
+      name: 'Newsletter Signup',
+      description: 'Collect email subscriptions with an attractive signup form',
+      component: NewsletterSignupComponent,
+      category: 'Interactive',
+      icon: 'email',
+      data: {
+        bannerImage: 'https://picsum.photos/1200/300'
+      }
+    });
+
     this.registeredComponents = this.getRegisteredComponents();
   }
 
@@ -267,6 +345,92 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     } catch (error) {
       console.error('Error injecting component:', error);
     }
+  }
+
+  // Property editing methods
+  onComponentEdit(instance: InjectedComponentInstance): void {
+    this.selectedComponentInstance = instance;
+    this.selectedComponentProperties = COMPONENT_PROPERTY_DEFINITIONS[instance.componentDef.id] || [];
+    this.isPropertyEditorVisible = true;
+  }
+
+  onComponentDelete(instance: InjectedComponentInstance): void {
+    this.removeComponent(instance.instanceId);
+    if (this.selectedComponentInstance?.instanceId === instance.instanceId) {
+      this.selectedComponentInstance = null;
+    }
+  }
+
+  onComponentMoveUp(instance: InjectedComponentInstance): void {
+    const activeComponents = this.getActiveComponents();
+    const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+    if (currentIndex > 0) {
+      this.moveComponent(instance.instanceId, currentIndex - 1);
+    }
+  }
+
+  onComponentMoveDown(instance: InjectedComponentInstance): void {
+    const activeComponents = this.getActiveComponents();
+    const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+    if (currentIndex < activeComponents.length - 1) {
+      this.moveComponent(instance.instanceId, currentIndex + 1);
+    }
+  }
+
+  onComponentSelection(instance: InjectedComponentInstance): void {
+    this.selectedComponentInstance = instance;
+  }
+
+  onPropertiesUpdated(updatedData: any): void {
+    if (this.selectedComponentInstance) {
+      // Handle output configuration
+      const outputConfigs: any = {};
+      this.selectedComponentProperties.forEach(prop => {
+        if (prop.isOutput) {
+          const url = updatedData[prop.key + '_url'];
+          if (url) {
+            outputConfigs[prop.key] = {
+              url,
+              schema: prop.outputSchema
+            };
+          }
+          // Remove temporary keys
+          delete updatedData[prop.key + '_url'];
+          delete updatedData[prop.key + '_schema'];
+        }
+      });
+
+      // Store output configurations separately
+      const finalData = { ...updatedData };
+      if (Object.keys(outputConfigs).length > 0) {
+        finalData._outputConfigs = outputConfigs;
+      }
+
+      // Update the inner component properties
+      const innerComponentRef = this.selectedComponentInstance.data._innerComponentRef;
+      if (innerComponentRef) {
+        Object.keys(finalData).forEach(key => {
+          if (key !== '_innerComponentRef' && key !== '_outputConfigs' && 
+              innerComponentRef.instance[key] !== undefined) {
+            innerComponentRef.instance[key] = finalData[key];
+          }
+        });
+        innerComponentRef.changeDetectorRef.detectChanges();
+      }
+
+      this.updateComponent(this.selectedComponentInstance.instanceId, finalData);
+      this.hidePropertyEditor();
+    }
+  }
+
+  hidePropertyEditor(): void {
+    this.isPropertyEditorVisible = false;
+    this.selectedComponentInstance = null;
+    this.selectedComponentProperties = [];
+  }
+
+  isComponentSelected(instance: InjectedComponentInstance): boolean {
+    return this.selectedComponentInstance?.instanceId === instance.instanceId;
   }
 
   onFileSelected(event: Event): void {

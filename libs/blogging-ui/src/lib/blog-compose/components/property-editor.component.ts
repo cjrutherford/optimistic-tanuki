@@ -1,0 +1,386 @@
+import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { TextInputComponent } from '@optimistic-tanuki/form-ui';
+import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
+
+export interface PropertyDefinition {
+  key: string;
+  type: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'url';
+  label: string;
+  description?: string;
+  defaultValue?: any;
+  isOutput?: boolean;
+  outputSchema?: any; // JSON schema for output data
+}
+
+@Component({
+  selector: 'lib-property-editor',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    ButtonComponent,
+    CardComponent,
+    TextInputComponent
+  ],
+  template: `
+    <otui-card class="property-editor" *ngIf="isVisible">
+      <div class="editor-header">
+        <h3>Edit Component Properties</h3>
+        <button (click)="onClose()" class="close-btn">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      
+      <div class="component-info" *ngIf="componentInstance">
+        <h4>{{ componentInstance.componentDef.name }}</h4>
+        <p *ngIf="componentInstance.componentDef.description">
+          {{ componentInstance.componentDef.description }}
+        </p>
+      </div>
+      
+      <div class="properties-form" *ngIf="propertyDefinitions.length > 0">
+        <div class="property-group" *ngFor="let prop of propertyDefinitions">
+          <label [for]="prop.key" class="property-label">
+            {{ prop.label }}
+            <span class="output-indicator" *ngIf="prop.isOutput">📤</span>
+          </label>
+          <p class="property-description" *ngIf="prop.description">
+            {{ prop.description }}
+          </p>
+          
+          <!-- Input Properties -->
+          <div *ngIf="!prop.isOutput" [ngSwitch]="prop.type">
+            <!-- String input -->
+            <lib-text-input
+              *ngSwitchCase="'string'"
+              [id]="prop.key"
+              [type]="'text'"
+              [(ngModel)]="editedData[prop.key]"
+              [placeholder]="getPlaceholder(prop)"
+            ></lib-text-input>
+            
+            <!-- Number input -->
+            <lib-text-input
+              *ngSwitchCase="'number'"
+              [id]="prop.key"
+              [type]="'number'"
+              [(ngModel)]="editedData[prop.key]"
+              [placeholder]="getPlaceholder(prop)"
+            ></lib-text-input>
+            
+            <!-- Boolean input -->
+            <div *ngSwitchCase="'boolean'" class="checkbox-container">
+              <input
+                type="checkbox"
+                [id]="prop.key"
+                [(ngModel)]="editedData[prop.key]"
+                class="checkbox-input"
+              />
+              <label [for]="prop.key" class="checkbox-label">
+                {{ prop.label }}
+              </label>
+            </div>
+            
+            <!-- URL input -->
+            <lib-text-input
+              *ngSwitchCase="'url'"
+              [id]="prop.key"
+              [type]="'url'"
+              [(ngModel)]="editedData[prop.key]"
+              [placeholder]="'https://example.com'"
+            ></lib-text-input>
+            
+            <!-- Array input (JSON) -->
+            <textarea
+              *ngSwitchCase="'array'"
+              [id]="prop.key"
+              [(ngModel)]="editedData[prop.key + '_json']"
+              (ngModelChange)="updateArrayFromJson(prop.key, $event)"
+              class="json-input"
+              [placeholder]="getArrayPlaceholder(prop)"
+            ></textarea>
+            
+            <!-- Object input (JSON) -->
+            <textarea
+              *ngSwitchCase="'object'"
+              [id]="prop.key"
+              [(ngModel)]="editedData[prop.key + '_json']"
+              (ngModelChange)="updateObjectFromJson(prop.key, $event)"
+              class="json-input"
+              [placeholder]="getObjectPlaceholder(prop)"
+            ></textarea>
+          </div>
+          
+          <!-- Output Properties -->
+          <div *ngIf="prop.isOutput" class="output-config">
+            <lib-text-input
+              [id]="prop.key + '_url'"
+              [type]="'url'"
+              [(ngModel)]="editedData[prop.key + '_url']"
+              [placeholder]="'https://api.example.com/webhook'"
+              label="Webhook URL"
+            ></lib-text-input>
+            
+            <div class="output-schema">
+              <label>Expected Data Schema:</label>
+              <textarea
+                [id]="prop.key + '_schema'"
+                [(ngModel)]="editedData[prop.key + '_schema']"
+                class="json-input"
+                readonly
+                [value]="getOutputSchemaString(prop)"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="editor-actions">
+        <otui-button variant="secondary" (action)="onClose()">Cancel</otui-button>
+        <otui-button (action)="onSave()">Save Changes</otui-button>
+      </div>
+    </otui-card>
+  `,
+  styles: [`
+    .property-editor {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      max-height: 80vh;
+      z-index: 1000;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color, #e0e0e0);
+    }
+    
+    .editor-header h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 4px;
+    }
+    
+    .close-btn:hover {
+      background-color: var(--accent, #f0f0f0);
+    }
+    
+    .component-info {
+      padding: 1rem;
+      background-color: var(--background-secondary, #f8f9fa);
+      border-bottom: 1px solid var(--border-color, #e0e0e0);
+    }
+    
+    .component-info h4 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+    }
+    
+    .component-info p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--foreground-secondary, #666);
+    }
+    
+    .properties-form {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      max-height: 400px;
+    }
+    
+    .property-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .property-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+    }
+    
+    .output-indicator {
+      font-size: 0.8rem;
+    }
+    
+    .property-description {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.8rem;
+      color: var(--foreground-secondary, #666);
+    }
+    
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .checkbox-input {
+      width: 16px;
+      height: 16px;
+    }
+    
+    .checkbox-label {
+      font-size: 0.9rem;
+    }
+    
+    .json-input {
+      width: 100%;
+      min-height: 80px;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      resize: vertical;
+    }
+    
+    .output-config {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .output-schema label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+    }
+    
+    .editor-actions {
+      padding: 1rem;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+  `]
+})
+export class PropertyEditorComponent implements OnInit {
+  @Input() isVisible = false;
+  @Input() componentInstance: InjectedComponentInstance | null = null;
+  @Input() propertyDefinitions: PropertyDefinition[] = [];
+  @Output() propertiesUpdated = new EventEmitter<any>();
+  @Output() closed = new EventEmitter<void>();
+
+  editedData: any = {};
+
+  ngOnInit(): void {
+    this.initializeEditedData();
+  }
+
+  ngOnChanges(): void {
+    this.initializeEditedData();
+  }
+
+  private initializeEditedData(): void {
+    if (this.componentInstance && this.propertyDefinitions.length > 0) {
+      this.editedData = { ...this.componentInstance.data };
+      
+      // Initialize JSON strings for complex types
+      this.propertyDefinitions.forEach(prop => {
+        if (prop.type === 'array' || prop.type === 'object') {
+          const value = this.editedData[prop.key];
+          this.editedData[prop.key + '_json'] = value ? JSON.stringify(value, null, 2) : '';
+        }
+        
+        if (prop.isOutput) {
+          // Initialize output configuration
+          this.editedData[prop.key + '_url'] = this.editedData[prop.key + '_url'] || '';
+          this.editedData[prop.key + '_schema'] = this.getOutputSchemaString(prop);
+        }
+      });
+    }
+  }
+
+  getPlaceholder(prop: PropertyDefinition): string {
+    if (prop.defaultValue !== undefined) {
+      return String(prop.defaultValue);
+    }
+    switch (prop.type) {
+      case 'string': return 'Enter text...';
+      case 'number': return '0';
+      case 'url': return 'https://example.com';
+      default: return '';
+    }
+  }
+
+  getArrayPlaceholder(prop: PropertyDefinition): string {
+    const example = prop.defaultValue || ['item1', 'item2'];
+    return JSON.stringify(example, null, 2);
+  }
+
+  getObjectPlaceholder(prop: PropertyDefinition): string {
+    const example = prop.defaultValue || { key: 'value' };
+    return JSON.stringify(example, null, 2);
+  }
+
+  getOutputSchemaString(prop: PropertyDefinition): string {
+    if (prop.outputSchema) {
+      return JSON.stringify(prop.outputSchema, null, 2);
+    }
+    return JSON.stringify({ [prop.key]: 'value' }, null, 2);
+  }
+
+  updateArrayFromJson(key: string, jsonString: string): void {
+    try {
+      const parsed = JSON.parse(jsonString);
+      if (Array.isArray(parsed)) {
+        this.editedData[key] = parsed;
+      }
+    } catch (e) {
+      // Invalid JSON, keep original value
+    }
+  }
+
+  updateObjectFromJson(key: string, jsonString: string): void {
+    try {
+      const parsed = JSON.parse(jsonString);
+      if (typeof parsed === 'object' && parsed !== null) {
+        this.editedData[key] = parsed;
+      }
+    } catch (e) {
+      // Invalid JSON, keep original value
+    }
+  }
+
+  onSave(): void {
+    // Clean up temporary JSON strings
+    const cleanedData = { ...this.editedData };
+    this.propertyDefinitions.forEach(prop => {
+      if (prop.type === 'array' || prop.type === 'object') {
+        delete cleanedData[prop.key + '_json'];
+      }
+    });
+
+    this.propertiesUpdated.emit(cleanedData);
+  }
+
+  onClose(): void {
+    this.closed.emit();
+  }
+}
