@@ -37,13 +37,35 @@
       <button type="button" (click)="editor.chain().focus().addRowAfter().run()">Add Row After</button>
       <button type="button" (click)="editor.chain().focus().deleteRow().run()">Delete Row</button>
       <button type="button" (click)="editor.chain().focus().deleteTable().run()">Delete Table</button>
+      
+      <!-- Component injection toolbar -->
+      <div class="toolbar-separator"></div>
+      <button type="button" (click)="showComponentSelector()" class="component-btn" title="Insert Component">
+        <mat-icon>extension</mat-icon> 
+        <span>Components</span>
+      </button>
     </div>
     <input type="file" #imageInput hidden (change)="onFileSelected($event)" accept="image/*" />
     <tiptap-editor [editor]="editor" [(ngModel)]="content" [ngModelOptions]="{ standalone: true }" class="tiptap-editor-styles"></tiptap-editor>
 
+    <!-- Content projection container for injected components -->
+    <div class="injected-components-container">
+      <div #componentContainer></div>
+    </div>
+
     <otui-button (action)="onPostSubmit()">Submit</otui-button>
   </form>
 </otui-card>
+
+<!-- Component injection selector -->
+<lib-component-selector
+  [isVisible]="isComponentSelectorVisible"
+  [components]="registeredComponents"
+  (componentSelected)="onComponentSelected($event)"
+  (closed)="hideComponentSelector()"
+></lib-component-selector>
+
+<!-- Context menu -->
 <lib-context-menu
   *ngIf="isContextMenuVisible"
   [x]="contextMenuX"

@@ -37,6 +37,26 @@ form {
       background-color: var(--accent);
       color: var(--background);
     }
+    
+    &.component-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 500;
+      background-color: var(--accent);
+      color: var(--background);
+      
+      &:hover {
+        background-color: var(--complement);
+        color: var(--foreground);
+      }
+    }
+  }
+  
+  .toolbar-separator {
+    width: 1px;
+    background-color: var(--border-color, #e0e0e0);
+    margin: 0 4px;
   }
 }
 
@@ -153,4 +173,40 @@ button {
             var(--complement)
         );
     }
+}
+
+// Component injection styles
+.injected-components-container {
+  margin: 1rem 0;
+  border: 2px dashed var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 1rem;
+  min-height: 100px;
+  background-color: var(--background, #fafafa);
+  transition: all 0.3s ease;
+  
+  &:empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--foreground-secondary, #666);
+    font-style: italic;
+    
+    &::after {
+      content: 'Injected components will appear here';
+    }
+  }
+  
+  &:has(> *) {
+    border-style: solid;
+    background-color: transparent;
+  }
+}
+
+.injected-components-container > * {
+  margin-bottom: 1rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
 }

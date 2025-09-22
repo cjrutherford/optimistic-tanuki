@@ -1,0 +1,16 @@
+.blog-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.blog-page-container h1 {
+  color: var(--foreground, #333);
+  margin-bottom: 1rem;
+}
+
+.blog-page-container p {
+  color: var(--foreground-secondary, #666);
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}

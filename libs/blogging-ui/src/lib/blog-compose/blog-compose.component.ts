@@ -5,6 +5,9 @@ import {
   OnDestroy,
   OnInit,
   HostListener,
+  ViewChild,
+  ViewContainerRef,
+  AfterViewInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,11 +30,26 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { ContextMenuComponent } from '../context-menu/context-menu.component';
 
+// Component injection system imports
+import { ComponentInjectionService } from './services/component-injection.service';
+import { ComponentSelectorComponent } from './components/component-selector.component';
+import { 
+  InjectableComponent, 
+  InjectedComponentInstance,
+  ComponentInjectionAPI 
+} from './interfaces/component-injection.interface';
+
+// Example components
+import { CalloutBoxComponent } from './components/example-components/callout-box.component';
+import { CodeSnippetComponent } from './components/example-components/code-snippet.component';
+import { ImageGalleryComponent } from './components/example-components/image-gallery.component';
+
 interface PostData {
   title: string;
   content: string;
   links: { url: string }[];
   attachments: File[];
+  injectedComponents?: InjectedComponentInstance[];
 }
 
 @Component({
@@ -46,6 +64,7 @@ interface PostData {
     ButtonComponent,
     MatIconModule,
     ContextMenuComponent,
+    ComponentSelectorComponent,
   ],
   templateUrl: './blog-compose.component.html',
   styleUrls: ['./blog-compose.component.scss'],
@@ -60,13 +79,17 @@ interface PostData {
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
   },
+  providers: [ComponentInjectionService]
 })
-export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy {
+export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy, AfterViewInit, ComponentInjectionAPI {
   @Output() postSubmitted: EventEmitter<PostData> = new EventEmitter<PostData>();
   @Output() attachmentAdded = new EventEmitter<{
     placeholderId: string;
     file: File;
   }>();
+
+  @ViewChild('componentContainer', { read: ViewContainerRef })
+  componentContainer!: ViewContainerRef;
 
   backgroundGradient = 'linear-gradient(to right, #5969c3, #59c360)';
   isDragOver = false;
@@ -81,9 +104,24 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   contextMenuX = 0;
   contextMenuY = 0;
 
+  // Component injection properties
+  isComponentSelectorVisible = false;
+  registeredComponents: InjectableComponent[] = [];
+
+  constructor(private componentInjectionService: ComponentInjectionService) {
+    super();
+  }
+
   @HostListener('document:click')
   onDocumentClick(): void {
     this.isContextMenuVisible = false;
+  }
+
+  ngAfterViewInit(): void {
+    if (this.componentContainer) {
+      this.componentInjectionService.setViewContainer(this.componentContainer);
+    }
+    this.initializeDefaultComponents();
   }
 
   override ngOnInit(): void {
@@ -121,6 +159,114 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
 
   override ngOnDestroy(): void {
     this.editor.destroy();
+    this.componentInjectionService.clearAllComponents();
+  }
+
+  // Component injection system initialization
+  private initializeDefaultComponents(): void {
+    this.registerComponent({
+      id: 'callout-box',
+      name: 'Callout Box',
+      description: 'Highlight important information with colored callout boxes',
+      component: CalloutBoxComponent,
+      category: 'Content',
+      icon: 'info',
+      data: {
+        type: 'info',
+        title: 'Important Note',
+        content: 'This is an important callout box.'
+      }
+    });
+
+    this.registerComponent({
+      id: 'code-snippet',
+      name: 'Code Snippet',
+      description: 'Display formatted code with syntax highlighting',
+      component: CodeSnippetComponent,
+      category: 'Content',
+      icon: 'code',
+      data: {
+        title: 'Example Code',
+        language: 'javascript',
+        code: 'console.log("Hello, World!");'
+      }
+    });
+
+    this.registerComponent({
+      id: 'image-gallery',
+      name: 'Image Gallery',
+      description: 'Create responsive image galleries',
+      component: ImageGalleryComponent,
+      category: 'Media',
+      icon: 'photo_library',
+      data: {
+        title: 'Sample Gallery',
+        columns: 3
+      }
+    });
+
+    this.registeredComponents = this.getRegisteredComponents();
+  }
+
+  // Component injection API implementation
+  registerComponent(component: InjectableComponent): void {
+    this.componentInjectionService.registerComponent(component);
+    this.registeredComponents = this.getRegisteredComponents();
+  }
+
+  unregisterComponent(componentId: string): void {
+    this.componentInjectionService.unregisterComponent(componentId);
+    this.registeredComponents = this.getRegisteredComponents();
+  }
+
+  getRegisteredComponents(): InjectableComponent[] {
+    return this.componentInjectionService.getRegisteredComponents();
+  }
+
+  getComponentsByCategory(category: string): InjectableComponent[] {
+    return this.componentInjectionService.getComponentsByCategory(category);
+  }
+
+  async injectComponent(componentId: string, data?: any, position?: number): Promise<InjectedComponentInstance> {
+    return this.componentInjectionService.injectComponent(componentId, data, position);
+  }
+
+  removeComponent(instanceId: string): void {
+    this.componentInjectionService.removeComponent(instanceId);
+  }
+
+  updateComponent(instanceId: string, data: any): void {
+    this.componentInjectionService.updateComponent(instanceId, data);
+  }
+
+  getActiveComponents(): InjectedComponentInstance[] {
+    return this.componentInjectionService.getActiveComponents();
+  }
+
+  getComponent(instanceId: string): InjectedComponentInstance | undefined {
+    return this.componentInjectionService.getComponent(instanceId);
+  }
+
+  moveComponent(instanceId: string, newPosition: number): void {
+    this.componentInjectionService.moveComponent(instanceId, newPosition);
+  }
+
+  // UI event handlers
+  showComponentSelector(): void {
+    this.isComponentSelectorVisible = true;
+  }
+
+  hideComponentSelector(): void {
+    this.isComponentSelectorVisible = false;
+  }
+
+  async onComponentSelected(component: InjectableComponent): Promise<void> {
+    try {
+      await this.injectComponent(component.id);
+      this.hideComponentSelector();
+    } catch (error) {
+      console.error('Error injecting component:', error);
+    }
   }
 
   onFileSelected(event: Event): void {
@@ -188,6 +334,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       content: this.content,
       links: this.links,
       attachments: this.attachments,
+      injectedComponents: this.getActiveComponents(),
     });
   }
 
