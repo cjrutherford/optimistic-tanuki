@@ -8,9 +8,11 @@ import {
   generateSuccessColor,
   generateTertiaryColor,
 } from './color-utils';
-import { loadTheme, saveTheme } from './theme-storage';
-import { ThemeColors } from './theme.interface';
+import { loadTheme, saveTheme, SavedTheme } from './theme-storage';
+import { ThemeColors, ColorPalette } from './theme.interface';
 import { isPlatformBrowser } from '@angular/common';
+import { PREDEFINED_PALETTES, getPaletteByName } from './theme-palettes';
+import { DEFAULT_DESIGN_TOKENS, generateDesignTokenCSSVariables } from './design-tokens';
 
 @Injectable({
   providedIn: 'root',
@@ -18,62 +20,80 @@ import { isPlatformBrowser } from '@angular/common';
 export class ThemeService {
   private _theme: 'light' | 'dark';
   private accentColor: string;
-  private complementColor?: string;
+  private complementColor: string;
+  private paletteMode: 'custom' | 'predefined' = 'custom';
+  private selectedPalette?: ColorPalette;
+  
   theme: BehaviorSubject<'light' | 'dark' | undefined> = new BehaviorSubject<'light' | 'dark' | undefined>(undefined);
   private themeColors: BehaviorSubject<ThemeColors | undefined> = new BehaviorSubject<ThemeColors | undefined>(undefined);
+  private availablePalettes: BehaviorSubject<ColorPalette[]> = new BehaviorSubject<ColorPalette[]>(PREDEFINED_PALETTES);
 
   constructor(@Inject(PLATFORM_ID) private platformId: object) {
     if(isPlatformBrowser(this.platformId)) {
       const storedTheme = loadTheme(this.platformId);
       this._theme = storedTheme.theme;
       this.accentColor = storedTheme.accentColor;
+      this.complementColor = storedTheme.complementColor;
+      this.paletteMode = storedTheme.paletteMode;
+      
+      if (this.paletteMode === 'predefined' && storedTheme.paletteName) {
+        this.selectedPalette = getPaletteByName(storedTheme.paletteName);
+        if (this.selectedPalette) {
+          this.accentColor = this.selectedPalette.accent;
+          this.complementColor = this.selectedPalette.complementary;
+        }
+      }
 
       this.theme.next(this._theme);
-      // The call to generateThemeColors and applyThemeColors is already guarded
       this.themeColors.next(this.generateThemeColors());
       this.applyThemeColors();
-   } else {
-    // Initialize default values for SSR, actual application of these will be skipped if not browser
-    this._theme = 'light';
-    this.accentColor = '#3f51b5';
-    this.theme.next(this._theme);
-    // themeColors will be based on these defaults for SSR if needed by other logic
-    this.themeColors.next(this.generateThemeColors());
-   }
+    } else {
+      // Initialize default values for SSR
+      this._theme = 'light';
+      this.accentColor = '#3f51b5';
+      this.complementColor = '#c0af4b';
+      this.theme.next(this._theme);
+      this.themeColors.next(this.generateThemeColors());
+    }
   }
 
   theme$() {
     return this.theme.asObservable();
   }
+  
+  get themeColors$() {
+    return this.themeColors.asObservable();
+  }
+
+  get availablePalettes$() {
+    return this.availablePalettes.asObservable();
+  }
+
   setTheme(theme: 'light' | 'dark') {
     this._theme = theme;
     this.theme.next(theme);
-    if (isPlatformBrowser(this.platformId)) {
-      saveTheme(this.platformId, theme, this.accentColor, this.complementColor || generateComplementaryColor(this.accentColor));
-      document.documentElement.style.setProperty(
-        '--background-color',
-        theme === 'light' ? '#fff' : '#333',
-      );
-      document.documentElement.style.setProperty(
-        '--foreground-color',
-        theme === 'light' ? '#333' : '#fff',
-      );
-      this.applyThemeColors();
-    } else {
-      // For SSR, update themeColors if other parts of the app might read it
-      this.themeColors.next(this.generateThemeColors());
-    }
+    this.saveCurrentTheme();
+    this.applyThemeColors();
   }
 
   setAccentColor(accent: string, complement?: string) {
     this.accentColor = accent;
-    this.complementColor = complement;
-    if (isPlatformBrowser(this.platformId)) {
-      saveTheme(this.platformId, this._theme, accent, complement || generateComplementaryColor(accent));
+    this.complementColor = complement || generateComplementaryColor(accent);
+    this.paletteMode = 'custom';
+    this.selectedPalette = undefined;
+    this.saveCurrentTheme();
+    this.applyThemeColors();
+  }
+
+  setPalette(paletteName: string) {
+    const palette = getPaletteByName(paletteName);
+    if (palette) {
+      this.selectedPalette = palette;
+      this.accentColor = palette.accent;
+      this.complementColor = palette.complementary;
+      this.paletteMode = 'predefined';
+      this.saveCurrentTheme();
       this.applyThemeColors();
-    } else {
-      // For SSR, update themeColors if other parts of the app might read it
-      this.themeColors.next(this.generateThemeColors());
     }
   }
 
@@ -85,126 +105,107 @@ export class ThemeService {
     return this.accentColor;
   }
 
-  get themeColors$() {
-    return this.themeColors.asObservable();
+  getComplementaryColor(): string {
+    return this.complementColor;
+  }
+
+  getCurrentPalette(): ColorPalette | undefined {
+    return this.selectedPalette;
+  }
+
+  getPaletteMode(): 'custom' | 'predefined' {
+    return this.paletteMode;
+  }
+
+  private saveCurrentTheme() {
+    const themeData: SavedTheme = {
+      theme: this._theme,
+      accentColor: this.accentColor,
+      complementColor: this.complementColor,
+      paletteMode: this.paletteMode,
+      paletteName: this.selectedPalette?.name
+    };
+    
+    if (isPlatformBrowser(this.platformId)) {
+      saveTheme(this.platformId, themeData);
+    }
   }
 
   private applyThemeColors() {
     const themeColors = this.generateThemeColors();
     this.themeColors.next(themeColors);
+    
     if (!isPlatformBrowser(this.platformId)) {
-      // If not in browser, we don't apply styles
       return;
     }
-    // This method is now only called if isPlatformBrowser is true
-    document.documentElement.style.setProperty(
-      '--background-color',
-      themeColors.background,
-    );
-    document.documentElement.style.setProperty(
-      '--foreground-color',
-      themeColors.foreground,
-    );
-    document.documentElement.style.setProperty(
-      '--accent-color',
-      themeColors.accent,
-    );
-    document.documentElement.style.setProperty(
-      '--complementary-color',
-      themeColors.complementary,
-    );
-    document.documentElement.style.setProperty(
-      '--tertiary-color',
-      themeColors.tertiaryShades[2][1],
-    );
 
-    // themeColors.accentShades.forEach(([index, shade]: [string, string]) => {
-    //   document.documentElement.style.setProperty(
-    //     `--accent-shade-${index}`,
-    //     shade,
-    //   );
-    // });
-    // Object.keys(themeColors.accentGradients).forEach((subKey) => {
-    //   document.documentElement.style.setProperty(
-    //     `--accent-gradient-${subKey}`,
-    //     themeColors.accentGradients[subKey],
-    //   );
-    // });
+    // Apply design tokens
+    const designTokens = generateDesignTokenCSSVariables(DEFAULT_DESIGN_TOKENS);
+    Object.entries(designTokens).forEach(([property, value]) => {
+      document.documentElement.style.setProperty(property, value);
+    });
 
-    // document.documentElement.style.setProperty(
-    //   '--complementary-color',
-    //   themeColors.complementary,
-    // );
-    // themeColors.complementaryShades.forEach(([index, shade]: [string, string]) => {
-    //   document.documentElement.style.setProperty(
-    //     `--complementary-shade-${index}`,
-    //     shade,
-    //   );
-    // });
-    // Object.keys(themeColors.complementaryGradients).forEach((subKey) => {
-    //   document.documentElement.style.setProperty(
-    //     `--complementary-gradient-${subKey}`,
-    //     themeColors.complementaryGradients[subKey],
-    //   );
-    // });
+    // Apply theme colors - using standardized naming convention
+    document.documentElement.style.setProperty('--background', themeColors.background);
+    document.documentElement.style.setProperty('--foreground', themeColors.foreground);
+    document.documentElement.style.setProperty('--accent', themeColors.accent);
+    document.documentElement.style.setProperty('--complement', themeColors.complementary);
+    document.documentElement.style.setProperty('--tertiary', themeColors.tertiary);
+    document.documentElement.style.setProperty('--success', themeColors.success);
+    document.documentElement.style.setProperty('--danger', themeColors.danger);
+    document.documentElement.style.setProperty('--warning', themeColors.warning);
 
-    // document.documentElement.style.setProperty(
-    //   '--success-color',
-    //   themeColors.success,
-    // );
-    // themeColors.successShades.forEach(([index, shade]: [string, string]) => {
-    //   document.documentElement.style.setProperty(
-    //     `--success-shade-${index}`,
-    //     shade,
-    //   );
-    // });
-    // Object.keys(themeColors.successGradients).forEach((subKey) => {
-    //   document.documentElement.style.setProperty(
-    //     `--success-gradient-${subKey}`,
-    //     themeColors.successGradients[subKey],
-    //   );
-    // });
+    // Apply color shades
+    this.applyColorShades('accent', themeColors.accentShades);
+    this.applyColorShades('complement', themeColors.complementaryShades);
+    this.applyColorShades('tertiary', themeColors.tertiaryShades);
+    this.applyColorShades('success', themeColors.successShades);
+    this.applyColorShades('danger', themeColors.dangerShades);
+    this.applyColorShades('warning', themeColors.warningShades);
 
-    // document.documentElement.style.setProperty(
-    //   '--danger-color',
-    //   themeColors.danger,
-    // );
-    // themeColors.dangerShades.forEach(([index, shade]: [string, string]) => {
-    //   document.documentElement.style.setProperty(
-    //     `--danger-shade-${index}`,
-    //     shade,
-    //   );
-    // });
-    // Object.keys(themeColors.dangerGradients).forEach((subKey) => {
-    //   document.documentElement.style.setProperty(
-    //     `--danger-gradient-${subKey}`,
-    //     themeColors.dangerGradients[subKey],
-    //   );
-    // });
+    // Apply gradients
+    this.applyGradients('accent', themeColors.accentGradients);
+    this.applyGradients('complement', themeColors.complementaryGradients);
+    this.applyGradients('tertiary', themeColors.tertiaryGradients);
+    this.applyGradients('success', themeColors.successGradients);
+    this.applyGradients('danger', themeColors.dangerGradients);
+    this.applyGradients('warning', themeColors.warningGradients);
+  }
 
-    // document.documentElement.style.setProperty(
-    //   '--warning-color',
-    //   themeColors.warning,
-    // );
-    // themeColors.warningShades.forEach(([index, shade]: [string, string]) => {
-    //   document.documentElement.style.setProperty(
-    //     `--warning-shade-${index}`,
-    //     shade,
-    //   );
-    // });
-    // Object.keys(themeColors.warningGradients).forEach((subKey) => {
-    //   document.documentElement.style.setProperty(
-    //     `--warning-gradient-${subKey}`,
-    //     themeColors.warningGradients[subKey],
-    //   );
-    // });
+  private applyColorShades(colorName: string, shades: [string, string][]) {
+    shades.forEach(([index, shade]) => {
+      document.documentElement.style.setProperty(`--${colorName}-${index}`, shade);
+    });
+  }
+
+  private applyGradients(colorName: string, gradients: { [key: string]: string }) {
+    Object.entries(gradients).forEach(([gradientType, gradient]) => {
+      document.documentElement.style.setProperty(`--${colorName}-gradient-${gradientType}`, gradient);
+    });
   }
 
   private generateThemeColors(): ThemeColors {
+    // Use palette colors if available, otherwise generate from accent
+    let background = this._theme === 'light' ? '#ffffff' : '#1a1a2e';
+    let foreground = this._theme === 'light' ? '#212121' : '#ffffff';
+
+    if (this.selectedPalette) {
+      if (this.selectedPalette.background) {
+        background = this._theme === 'light' 
+          ? this.selectedPalette.background.light 
+          : this.selectedPalette.background.dark;
+      }
+      if (this.selectedPalette.foreground) {
+        foreground = this._theme === 'light' 
+          ? this.selectedPalette.foreground.light 
+          : this.selectedPalette.foreground.dark;
+      }
+    }
+
     const accentShades = generateColorShades(this.accentColor);
-    const complementaryColor = this.complementColor ? this.complementColor : generateComplementaryColor(this.accentColor);
-    const complementaryShades = generateColorShades(complementaryColor);
-    const tertiaryColor = generateTertiaryColor(this.accentColor);
+    const complementaryShades = generateColorShades(this.complementColor);
+    const tertiaryColor = this.selectedPalette?.tertiary || generateTertiaryColor(this.accentColor);
+    const tertiaryShades = generateColorShades(tertiaryColor);
     const successColor = generateSuccessColor(this.accentColor);
     const successShades = generateColorShades(successColor);
     const dangerColor = generateDangerColor(this.accentColor);
@@ -213,17 +214,17 @@ export class ThemeService {
     const warningShades = generateColorShades(warningColor);
 
     return {
-      background: this._theme === 'light' ? '#fff' : '#333',
-      foreground: this._theme === 'light' ? '#333' : '#fff',
+      background,
+      foreground,
       accent: this.accentColor,
       accentShades,
       accentGradients: this.generateGradients(accentShades),
-      complementary: complementaryColor,
+      complementary: this.complementColor,
       complementaryShades,
       complementaryGradients: this.generateGradients(complementaryShades),
       tertiary: tertiaryColor,
-      tertiaryShades: generateColorShades(tertiaryColor),
-      tertiaryGradients: this.generateGradients(generateColorShades(tertiaryColor)),
+      tertiaryShades,
+      tertiaryGradients: this.generateGradients(tertiaryShades),
       success: successColor,
       successShades,
       successGradients: this.generateGradients(successShades),
@@ -239,11 +240,10 @@ export class ThemeService {
   private generateGradients(shades: [string, string][]): {
     [key: string]: string;
   } {
-    const cycles = Array.from({ length: 5 }, (_, i) => i);
     return {
       light: `linear-gradient(135deg, ${shades[0][1]}, ${shades[1][1]}, ${shades[2][1]}, ${shades[3][1]}, ${shades[4][1]})`,
       dark: `linear-gradient(135deg, ${shades[5][1]}, ${shades[6][1]}, ${shades[7][1]}, ${shades[8][1]}, ${shades[9][1]})`,
-      fastCycle: `linear-gradient(45deg, ${cycles.map(() => shades.map(([, shade]) => shade)).join(', ')})`,
+      fastCycle: `linear-gradient(45deg, ${shades.map(([, shade]) => shade).join(', ')})`,
     };
   }
 }

@@ -9,13 +9,14 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
   templateUrl: './checkbox.component.html',
   styleUrls: ['./checkbox.component.scss'],
   host: {
-    "[style.--background]": 'background',
-    "[style.--foreground]": 'foreground',
-    "[style.--accent]": 'accent',
-    "[style.--complement]": 'complement',
-    "[style.--border-color]": 'borderColor',
-    "[style.--border-gradient]": 'borderGradient',
-    "[style.--transition-duration]": 'transitionDuration',
+    // Using standardized local variables with fallbacks
+    "[style.--local-background]": 'background',
+    "[style.--local-foreground]": 'foreground',
+    "[style.--local-accent]": 'accent',
+    "[style.--local-complement]": 'complement',
+    "[style.--local-border-color]": 'borderColor',
+    "[style.--local-border-gradient]": 'borderGradient',
+    "[style.--local-transition-duration]": 'transitionDuration',
   }
 })
 export class CheckboxComponent extends Themeable {
@@ -28,12 +29,16 @@ export class CheckboxComponent extends Themeable {
     this.changeEvent.emit(this.value);
   }
 
-  override applyTheme(colors: ThemeColors): void {;
+  override applyTheme(colors: ThemeColors): void {
+    // Use standardized color assignments with design tokens
     this.background = `linear-gradient(to bottom, ${colors.background}, ${colors.accent})`;
     this.accent = colors.accent;
     this.foreground = colors.foreground;
     this.borderColor = colors.complementary;
     this.complement = colors.complementary;
+    this.transitionDuration = '0.15s'; // Use standardized duration
+    
+    // Use numbered shades and standardized gradient names
     if (this.theme === 'dark') {
       this.borderColor = colors.complementaryShades[6][1];
       this.borderGradient = colors.complementaryGradients['dark'];
@@ -41,8 +46,5 @@ export class CheckboxComponent extends Themeable {
       this.borderColor = colors.complementaryShades[2][1];
       this.borderGradient = colors.accentGradients['light'];
     }
-    this.transitionDuration = '0.3s';
-
-      
   }
 }

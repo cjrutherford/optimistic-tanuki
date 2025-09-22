@@ -21,14 +21,15 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
   styleUrls: ['./text-area.component.scss'],
   host: {
     'class.theme': 'theme',
-    '[style.--background]': 'background',
-    '[style.--background-gradient]': 'backgroundGradient',
-    '[style.--foreground]': 'foreground',
-    '[style.--accent]': 'accent',
-    '[style.--complement]': 'complement',
-    '[style.--border-color]': 'borderColor',
-    '[style.--border-gradient]': 'borderGradient',
-    '[style.--transition-duration]': 'transitionDuration',
+    // Using standardized local variables with fallbacks
+    '[style.--local-background]': 'background',
+    '[style.--local-background-gradient]': 'backgroundGradient',
+    '[style.--local-foreground]': 'foreground',
+    '[style.--local-accent]': 'accent',
+    '[style.--local-complement]': 'complement',
+    '[style.--local-border-color]': 'borderColor',
+    '[style.--local-border-gradient]': 'borderGradient',
+    '[style.--local-transition-duration]': 'transitionDuration',
   },
   providers: [
     {
@@ -44,12 +45,16 @@ export class TextAreaComponent
 {
   backgroundGradient?: string;
   override applyTheme(colors: ThemeColors): void {
+    // Use standardized color assignments with numbered shades
     const accentLight = colors.accentShades?.[1][1] ?? colors.accent;
     this.background = colors.background;
     this.backgroundGradient = `linear-gradient(to bottom, ${colors.accent}, ${colors.background}, ${colors.background}, ${accentLight})`;
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;
+    this.transitionDuration = '0.15s'; // Use standardized duration
+    
+    // Use standardized gradient names
     if (this.theme === 'dark') {
       this.borderGradient = colors.accentGradients['dark'];
       this.borderColor = colors.complementaryShades[2][1];

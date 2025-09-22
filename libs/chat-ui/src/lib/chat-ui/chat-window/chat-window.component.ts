@@ -36,15 +36,16 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
   styleUrls: ['./chat-window.component.scss'],
   host: {
     '[class.theme]': 'theme',
-    '[style.--background]': 'background',
-    '[style.--foreground]': 'foreground',
-    '[style.--accent]': 'accent',
-    '[style.--accent-transparent]': 'accentTransparent',
-    '[style.--complement]': 'complement',
-    '[style.--complement-transparent]': 'complementTransparent',
-    '[style.--border-color]': 'borderColor',
-    '[style.--border-gradient]': 'borderGradient',
-    '[style.--transition-duration]': 'transitionDuration',
+    // Using standardized local variables with fallbacks
+    '[style.--local-background]': 'background',
+    '[style.--local-foreground]': 'foreground',
+    '[style.--local-accent]': 'accent',
+    '[style.--local-accent-transparent]': 'accentTransparent',
+    '[style.--local-complement]': 'complement',
+    '[style.--local-complement-transparent]': 'complementTransparent',
+    '[style.--local-border-color]': 'borderColor',
+    '[style.--local-border-gradient]': 'borderGradient',
+    '[style.--local-transition-duration]': 'transitionDuration',
   },
 })
 /**
@@ -106,6 +107,7 @@ export class ChatWindowComponent
     this.scrollToBottom();
   }
   override applyTheme(colors: ThemeColors): void {
+    // Use standardized color assignments with design tokens
     this.themeColors = colors;
     this.background = colors.background;
     this.foreground = colors.foreground;
@@ -126,7 +128,7 @@ export class ChatWindowComponent
         direction: 'to right',
       })
       .build();
-    this.transitionDuration = '0.3s';
+    this.transitionDuration = '0.15s'; // Use standardized duration
   }
   /**
    * Handles closing the chat window.

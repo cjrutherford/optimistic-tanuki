@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors, ThemeVariableService } from '@optimistic-tanuki/theme-ui';
 import { Variantable, VariantOptions, VariantType } from '../interfaces/variantable.interface';
 import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
 
@@ -12,31 +12,33 @@ import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
   styleUrls: ['./card.component.scss'],
   host: {
     '[class.theme]': 'theme',
-    '[style.--background]': 'background',
-    '[style.--foreground]': 'foreground',
-    '[style.--accent]': 'accent',
-    '[style.--complement]': 'complement',
-    '[style.--border-color]': 'borderColor',
-    '[style.--border-gradient]': 'borderGradient',
-    '[style.--transition-duration]': 'transitionDuration',
-    '[style.--variant]': 'variant',
-    '[style.--background-filter]': 'backgroundFilter',
-    '[style.--border-width]': 'borderWidth',
-    '[style.--border-radius]': 'borderRadius',
-    '[style.--border-style]': 'borderStyle',
-    '[style.--background-gradient]': 'backgroundGradient',
-    '[style.--svg-pattern]': 'svgPattern',
-    '[style.--glow-filter]': 'glowFilter',
-    '[style.--gradient-type]': 'gradientType',
-    '[style.--gradient-stops]': 'gradientStops',
-    '[style.--gradient-colors]': 'gradientColors',
-    '[style.--animation]': 'animation',
-    '[style.--hover-box-shadow]': 'hoverBoxShadow',
-    '[style.--hover-gradient]': 'hoverGradient',
-    '[style.--hover-glow-filter]': 'hoverGlowFilter',
-    '[style.--inset-shadow]': 'insetShadow',
-    '[style.--body-gradient]': 'bodyGradient',
-    '[style.--background-pattern]': 'backgroundPattern',
+    // Using standardized variable names with local scope
+    '[style.--local-background]': 'background',
+    '[style.--local-foreground]': 'foreground', 
+    '[style.--local-accent]': 'accent',
+    '[style.--local-complement]': 'complement',
+    '[style.--local-tertiary]': 'tertiary',
+    '[style.--local-border-color]': 'borderColor',
+    '[style.--local-border-gradient]': 'borderGradient',
+    '[style.--local-transition-duration]': 'transitionDuration',
+    '[style.--local-variant]': 'variant',
+    '[style.--local-background-filter]': 'backgroundFilter',
+    '[style.--local-border-width]': 'borderWidth',
+    '[style.--local-border-radius]': 'borderRadius',
+    '[style.--local-border-style]': 'borderStyle',
+    '[style.--local-background-gradient]': 'backgroundGradient',
+    '[style.--local-svg-pattern]': 'svgPattern',
+    '[style.--local-glow-filter]': 'glowFilter',
+    '[style.--local-gradient-type]': 'gradientType',
+    '[style.--local-gradient-stops]': 'gradientStops',
+    '[style.--local-gradient-colors]': 'gradientColors',
+    '[style.--local-animation]': 'animation',
+    '[style.--local-hover-box-shadow]': 'hoverBoxShadow',
+    '[style.--local-hover-gradient]': 'hoverGradient',
+    '[style.--local-hover-glow-filter]': 'hoverGlowFilter',
+    '[style.--local-inset-shadow]': 'insetShadow',
+    '[style.--local-body-gradient]': 'bodyGradient',
+    '[style.--local-background-pattern]': 'backgroundPattern',
     '[class.glass-effect]': 'glassEffect',
   },
 })
@@ -66,6 +68,9 @@ export class CardComponent extends Variantable implements Themeable, OnChanges {
   bodyGradient!: string;
   backgroundPattern!: string;
 
+  constructor(private themeVariableService: ThemeVariableService) {
+    super();
+  }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['CardVariant'] && this.themeColors) {
@@ -85,11 +90,14 @@ export class CardComponent extends Variantable implements Themeable, OnChanges {
 
   override applyTheme(colors: ThemeColors): void {
     this.themeColors = colors;
+    // Use standardized color assignments
     this.background = colors.background;
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;
-    this.borderColor = colors.accent;
+    this.tertiary = colors.tertiary;
+    this.borderColor = colors.complementary;
+    
     const options = getDefaultVariantOptions(colors, this.CardVariant);
     this.setVariantOptions(options);
     this.applyVariant(colors, options);
@@ -99,7 +107,7 @@ export class CardComponent extends Variantable implements Themeable, OnChanges {
     this.variant = options.variant ?? this.variant ?? 'default';
     this.backgroundFilter = options.backgroundFilter ?? this.backgroundFilter ?? 'none';
     this.borderWidth = options.borderWidth ?? this.borderWidth ?? '1px';
-    this.borderRadius = options.borderRadius ?? this.borderRadius ?? '8px';
+    this.borderRadius = options.borderRadius ?? this.borderRadius ?? 'var(--border-radius-lg, 8px)';
     this.borderStyle = options.borderStyle ?? this.borderStyle ?? 'solid';
     this.backgroundGradient = options.backgroundGradient ?? this.backgroundGradient ?? 'none';
     this.svgPattern = options.svgPattern ?? this.svgPattern ?? '';
@@ -110,15 +118,15 @@ export class CardComponent extends Variantable implements Themeable, OnChanges {
       : this.gradientStops ?? '0%, 100%';
     this.gradientColors = options.gradientColors !== undefined
       ? (Array.isArray(options.gradientColors) ? options.gradientColors.join(', ') : options.gradientColors)
-      : this.gradientColors ?? '#fff, #eee';
+      : this.gradientColors ?? 'var(--accent), var(--complement)';
     this.animation = options.animation ?? this.animation ?? 'none';
-    this.hoverBoxShadow = options.hoverBoxShadow ?? this.hoverBoxShadow ?? '0 2px 8px rgba(0,0,0,0.1)';
+    this.hoverBoxShadow = options.hoverBoxShadow ?? this.hoverBoxShadow ?? 'var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1))';
     this.hoverGradient = options.hoverGradient ?? this.hoverGradient ?? 'none';
     this.hoverGlowFilter = options.hoverGlowFilter ?? this.hoverGlowFilter ?? 'none';
     this.insetShadow = options.insetShadow ?? this.insetShadow ?? 'none';
     this.bodyGradient = options.bodyGradient ?? this.bodyGradient ?? 'none';
     this.backgroundPattern = options.backgroundPattern ?? this.backgroundPattern ?? '';
     this.borderGradient = options.borderGradient ?? this.borderGradient ?? 'none';
-    this.transitionDuration = options.transitionDuration ?? this.transitionDuration ?? '0.3s';
+    this.transitionDuration = options.transitionDuration ?? this.transitionDuration ?? '0.15s';
   }
 }

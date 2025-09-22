@@ -12,14 +12,15 @@ import { RegisterSubmitType } from '@optimistic-tanuki/ui-models';
   imports: [CommonModule, ReactiveFormsModule, CardComponent, ButtonComponent, TextInputComponent],
   templateUrl: './register-block.component.html',
   styleUrls: ['./register-block.component.scss'],
-  host: { // Added host bindings
-    '[style.--background]': 'background',
-    '[style.--foreground]': 'foreground',
-    '[style.--accent]': 'accent',
-    '[style.--complement]': 'complement',
-    '[style.--border-color]': 'borderColor',
-    '[style.--border-gradient]': 'borderGradient',
-    '[style.--transition-duration]': 'transitionDuration',
+  host: { 
+    // Using standardized local variables with fallbacks
+    '[style.--local-background]': 'background',
+    '[style.--local-foreground]': 'foreground',
+    '[style.--local-accent]': 'accent',
+    '[style.--local-complement]': 'complement',
+    '[style.--local-border-color]': 'borderColor',
+    '[style.--local-border-gradient]': 'borderGradient',
+    '[style.--local-transition-duration]': 'transitionDuration',
   }
 })
 export class RegisterBlockComponent extends Themeable {
@@ -42,17 +43,21 @@ export class RegisterBlockComponent extends Themeable {
   }
 
   override applyTheme(colors: ThemeColors): void {
+    // Use standardized color assignments with design tokens
     this.background = `linear-gradient(30deg, ${colors.accent}, ${colors.background})`;
     this.accent = colors.accent;
     this.borderColor = colors.complementary;
+    
+    // Use standardized gradient names
     if (this.theme === 'dark') {
       this.borderGradient = colors.complementaryGradients['dark'];
     } else {
       this.borderGradient = colors.complementaryGradients['light'];
     }
+    
     this.foreground = colors.foreground;
     this.complement = colors.complementary;
-    this.transitionDuration = '0.5s';
+    this.transitionDuration = '0.15s'; // Use standardized duration
   }
 
   onFormChange(e: string) {
