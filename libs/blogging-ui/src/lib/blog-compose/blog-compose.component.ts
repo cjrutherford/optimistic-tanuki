@@ -24,7 +24,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
 import { GradientBuilder } from '@optimistic-tanuki/common-ui';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -100,6 +100,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     file: File;
   }>();
 
+  override readonly themeService: ThemeService;
+
   @ViewChild('componentContainer', { read: ViewContainerRef })
   componentContainer!: ViewContainerRef;
 
@@ -125,8 +127,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   selectedComponentInstance: InjectedComponentInstance | null = null;
   selectedComponentProperties: PropertyDefinition[] = [];
 
-  constructor(private componentInjectionService: ComponentInjectionService) {
-    super();
+  constructor(private componentInjectionService: ComponentInjectionService, _themeService: ThemeService) {
+    super(_themeService);
+    this.themeService = _themeService;
   }
 
   @HostListener('document:click')
