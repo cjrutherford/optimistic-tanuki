@@ -6,6 +6,7 @@
     [type]="type === 'obscured' ? 'password' : type"
     [value]="value"
     (input)="onInput($event)"
+    [placeholder]="placeholder || label"
     name="{{label}}"
     />
 </div>

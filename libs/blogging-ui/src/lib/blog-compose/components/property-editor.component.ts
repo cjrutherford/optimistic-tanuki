@@ -77,7 +77,7 @@ export interface PropertyDefinition {
                       @case ('number') {
                         <lib-text-input
                           [id]="prop.key"
-                          [type]="'number'"
+                          [type]="'text'"
                           [(ngModel)]="editedData[prop.key]"
                           [placeholder]="getPlaceholder(prop)"
                         ></lib-text-input>
@@ -100,7 +100,7 @@ export interface PropertyDefinition {
                       @case ('url') {
                         <lib-text-input
                           [id]="prop.key"
-                          [type]="'url'"
+                          [type]="'text'"
                           [(ngModel)]="editedData[prop.key]"
                           [placeholder]="'https://example.com'"
                         ></lib-text-input>
@@ -133,7 +133,7 @@ export interface PropertyDefinition {
                   <div class="output-config">
                     <lib-text-input
                       [id]="prop.key + '_url'"
-                      [type]="'url'"
+                      [type]="'text'"
                       [(ngModel)]="editedData[prop.key + '_url']"
                       [placeholder]="'https://api.example.com/webhook'"
                       label="Webhook URL"

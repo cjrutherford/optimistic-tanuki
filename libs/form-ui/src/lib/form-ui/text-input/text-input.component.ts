@@ -30,6 +30,7 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 export class TextInputComponent extends Themeable implements ControlValueAccessor {
   @Input() type: 'text' | 'password' | 'obscured' | 'date' = 'text';
   @Input() label = '';  
+  @Input() placeholder = '';
   @Input() labelPosition: 'top' | 'left' | 'right' | 'bottom' = 'top';
   @Output() valueChange = new EventEmitter<string>();
 

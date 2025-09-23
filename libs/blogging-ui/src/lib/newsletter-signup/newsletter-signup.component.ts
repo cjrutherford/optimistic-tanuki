@@ -29,6 +29,14 @@ export class NewsletterSignupComponent {
     this.isModalOpen = false;
   }
 
+  onEmailChange(value: string) {
+    this.email = value;
+  }
+
+  onClose() {
+    this.closeModal();
+  }
+
   submit() {
     if (this.email) {
       this.signUp.emit(this.email);

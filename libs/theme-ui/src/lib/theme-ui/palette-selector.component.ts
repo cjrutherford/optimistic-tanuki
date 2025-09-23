@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 
-import { ThemeService } from './theme.service';
-import { PREDEFINED_PALETTES } from './theme-palettes';
+import { ThemeService, PREDEFINED_PALETTES } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'theme-palette-selector',

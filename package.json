@@ -23,6 +23,11 @@
     "prerender": "ng run christopherrutherford-net:prerender"
   },
   "private": true,
+  "overrides": {
+    "@storybook/test": {
+      "storybook": "9.1.7"
+    }
+  },
   "dependencies": {
     "@angular/animations": "20.2.4",
     "@angular/cdk": "20.2.4",
@@ -49,6 +54,8 @@
     "@nestjs/swagger": "^8.1.1",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^10.4.20",
+    "@ng-icons/core": "^32.1.0",
+    "@ng-icons/heroicons": "^32.1.0",
     "@tiptap/core": "^3.4.5",
     "@tiptap/extension-bubble-menu": "^3.4.5",
     "@tiptap/extension-color": "^3.4.5",
@@ -119,10 +126,11 @@
     "@nx/workspace": "21.5.3",
     "@playwright/test": "^1.36.0",
     "@schematics/angular": "20.2.2",
+    "@storybook/addon-docs": "9.1.7",
     "@storybook/angular": "9.1.7",
     "@storybook/jest": "^0.2.3",
-    "@storybook/test-runner": "^0.23.0",
     "@storybook/test": "^8.6.14",
+    "@storybook/test-runner": "^0.23.0",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
@@ -137,6 +145,7 @@
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-playwright": "^1.6.2",
+    "eslint-plugin-storybook": "9.1.7",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "jest-environment-node": "^29.7.0",
@@ -152,8 +161,6 @@
     "typeorm": "^0.3.24",
     "typescript": "5.9.2",
     "typescript-eslint": "^8.33.1",
-    "webpack-cli": "^5.1.4",
-    "eslint-plugin-storybook": "9.1.7",
-    "@storybook/addon-docs": "9.1.7"
+    "webpack-cli": "^5.1.4"
   }
 }

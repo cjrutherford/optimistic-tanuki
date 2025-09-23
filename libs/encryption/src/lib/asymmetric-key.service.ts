@@ -55,7 +55,7 @@ export default class AsymmetricService {
         passphrase: secret ? secret : undefined,
         padding: CryptoConstants.RSA_PKCS1_PADDING,
       },
-      Buffer.from(value),
+      new Uint8Array(Buffer.from(value)),
     );
   }
 
@@ -73,7 +73,7 @@ export default class AsymmetricService {
         passphrase: secret ? secret : undefined,
         padding: CryptoConstants.RSA_PKCS1_PADDING,
       },
-      Buffer.from(cyText),
+      new Uint8Array(Buffer.from(cyText)),
     ); //
   }
 }

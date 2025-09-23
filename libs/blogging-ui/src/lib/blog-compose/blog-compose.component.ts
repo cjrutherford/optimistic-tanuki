@@ -8,6 +8,7 @@ import {
   ViewChild,
   ViewContainerRef,
   AfterViewInit,
+  inject,
 } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
@@ -101,7 +102,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   @ViewChild('componentContainer', { read: ViewContainerRef })
   componentContainer!: ViewContainerRef;
 
-  override readonly themeService: ThemeService;
+  override readonly themeService: ThemeService = inject(ThemeService);
+  
+  // Theming properties;
   backgroundGradient = 'linear-gradient(to right, #5969c3, #59c360)';
   isDragOver = false;
   title = '';
