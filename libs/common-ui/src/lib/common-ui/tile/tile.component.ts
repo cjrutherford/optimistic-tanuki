@@ -1,13 +1,12 @@
-import { Component, ElementRef, Input, OnChanges, SimpleChanges, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   Variantable,
   VariantOptions,
   VariantType,
 } from '../interfaces/variantable.interface';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
-import { Subject } from 'rxjs';
 
 @Component({
   selector: 'otui-tile',
@@ -44,34 +43,7 @@ import { Subject } from 'rxjs';
     '[style.--background-pattern]': 'backgroundPattern',
   },
 })
-export class TileComponent extends Variantable implements Themeable, OnChanges {
-  theme: 'light' | 'dark';
-  background: string;
-  foreground: string;
-  accent: string;
-  complement: string;
-  tertiary: string;
-  success: string;
-  danger: string;
-  warning: string;
-  borderColor: string;
-  borderGradient: string;
-  transitionDuration: string;
-  themeColors?: ThemeColors | undefined;
-  protected destroy$: Subject<void>;
-  protected elementRef: ElementRef<any>;
-  ngOnInit(): void {
-    throw new Error('Method not implemented.');
-  }
-  ngOnDestroy(): void {
-    throw new Error('Method not implemented.');
-  }
-  protected setLocalCSSVariable(name: string, value: string): void {
-    throw new Error('Method not implemented.');
-  }
-  protected setLocalCSSVariables(variables: Record<string, string>): void {
-    throw new Error('Method not implemented.');
-  }
+export class TileComponent extends Variantable implements OnChanges {
   @Input() TileVariant: VariantType = 'default';
   variant!: string;
   backgroundFilter!: string;
@@ -94,21 +66,13 @@ export class TileComponent extends Variantable implements Themeable, OnChanges {
 
   // Apply the variant styles based on the provided options and theme colors
 
+  constructor(themeService: ThemeService) {
+    super(themeService);
+  }
+
   override applyVariant(colors: ThemeColors, options?: VariantOptions): void {
     const opts = options ?? getDefaultVariantOptions(colors, this.TileVariant);
     this.setVariantOptions(opts);
-  }
-
-  override applyTheme(colors: ThemeColors): void {
-    this.themeColors = colors;
-    this.background = colors.background;
-    this.foreground = colors.foreground;
-    this.accent = colors.accent;
-    this.complement = colors.complementary;
-    this.borderColor = colors.accent;
-    const options = getDefaultVariantOptions(colors, this.TileVariant);
-    this.setVariantOptions(options);
-    this.applyVariant(colors, options);
   }
 
   private setVariantOptions(options: VariantOptions) {
@@ -140,7 +104,9 @@ export class TileComponent extends Variantable implements Themeable, OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['TileVariant'] && this.themeColors) {
-      this.applyVariant(this.themeColors, this.variantOptions);
+      const currentVariant = changes['TileVariant'].currentValue;
+      const options = getDefaultVariantOptions(this.themeColors, currentVariant);
+      this.applyVariant(this.themeColors, options);
     }
   }
 }
