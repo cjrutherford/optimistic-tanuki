@@ -1,11 +1,11 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Editor } from '@tiptap/core';
 
 @Component({
   selector: 'lib-context-menu',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './context-menu.component.html',
   styleUrls: ['./context-menu.component.scss'],
 })

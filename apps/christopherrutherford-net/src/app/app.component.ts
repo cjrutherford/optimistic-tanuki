@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   imports: [RouterModule],

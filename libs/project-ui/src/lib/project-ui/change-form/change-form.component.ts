@@ -4,11 +4,11 @@ import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'lib-change-form',
-  imports: [CommonModule, ReactiveFormsModule, CardComponent, TextInputComponent, TextAreaComponent, ButtonComponent, SelectComponent],
+  imports: [ReactiveFormsModule, CardComponent, TextInputComponent, TextAreaComponent, ButtonComponent, SelectComponent],
   templateUrl: './change-form.component.html',
   styleUrl: './change-form.component.scss',
 })

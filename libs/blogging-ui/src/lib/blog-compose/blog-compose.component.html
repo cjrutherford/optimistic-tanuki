@@ -6,7 +6,7 @@
   (dragleave)="handleDragLeave($event)"
   (drop)="handleDrop($event)"
   [variantOverrides]="{ background: backgroundGradient }"
->
+  >
   <form>
     <label for="title">Title</label>
     <lib-text-input
@@ -18,40 +18,153 @@
     ></lib-text-input>
 
     <label for="content">Content</label>
-    <div class="tiptap-toolbar" *ngIf="editor">
-      <button type="button" (click)="editor.chain().focus().toggleBold().run()" [class.is-active]="editor.isActive('bold')"><mat-icon>format_bold</mat-icon></button>
-      <button type="button" (click)="editor.chain().focus().toggleItalic().run()" [class.is-active]="editor.isActive('italic')"><mat-icon>format_italic</mat-icon></button>
-      <button type="button" (click)="editor.chain().focus().toggleUnderline().run()" [class.is-active]="editor.isActive('underline')"><mat-icon>format_underline</mat-icon></button>
-      <button type="button" (click)="editor.chain().focus().toggleStrike().run()" [class.is-active]="editor.isActive('strike')"><mat-icon>format_strikethrough</mat-icon></button>
-      <button type="button" (click)="editor.chain().focus().toggleHeading({ level: 1 }).run()" [class.is-active]="editor.isActive('heading', { level: 1 })">H1</button>
-      <button type="button" (click)="editor.chain().focus().toggleHeading({ level: 2 }).run()" [class.is-active]="editor.isActive('heading', { level: 2 })">H2</button>
-      <button type="button" (click)="editor.chain().focus().toggleBulletList().run()" [class.is-active]="editor.isActive('bulletList')"><mat-icon>format_list_bulleted</mat-icon></button>
-      <button type="button" (click)="editor.chain().focus().toggleOrderedList().run()" [class.is-active]="editor.isActive('orderedList')"><mat-icon>format_list_numbered</mat-icon></button>
-      <button type="button" (click)="editor.chain().focus().toggleBlockquote().run()" [class.is-active]="editor.isActive('blockquote')"><mat-icon>format_quote</mat-icon></button>
-      <button type="button" (click)="imageInput.click()"><mat-icon>add_photo_alternate</mat-icon></button>
-      <button type="button" (click)="editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()">Insert Table</button>
-      <button type="button" (click)="editor.chain().focus().addColumnBefore().run()">Add Column Before</button>
-      <button type="button" (click)="editor.chain().focus().addColumnAfter().run()">Add Column After</button>
-      <button type="button" (click)="editor.chain().focus().deleteColumn().run()">Delete Column</button>
-      <button type="button" (click)="editor.chain().focus().addRowBefore().run()">Add Row Before</button>
-      <button type="button" (click)="editor.chain().focus().addRowAfter().run()">Add Row After</button>
-      <button type="button" (click)="editor.chain().focus().deleteRow().run()">Delete Row</button>
-      <button type="button" (click)="editor.chain().focus().deleteTable().run()">Delete Table</button>
-      
-      <!-- Component injection toolbar -->
-      <div class="toolbar-separator"></div>
-      <button type="button" (click)="showComponentSelector()" class="component-btn" title="Insert Component">
-        <mat-icon>extension</mat-icon> 
-        <span>Components</span>
-      </button>
-    </div>
-    <input type="file" #imageInput hidden (change)="onFileSelected($event)" accept="image/*" />
-    <tiptap-editor [editor]="editor" [(ngModel)]="content" [ngModelOptions]="{ standalone: true }" class="tiptap-editor-styles"></tiptap-editor>
-
-    <!-- Content projection container for injected components -->
-    <div class="injected-components-container">
-      <div #componentContainer></div>
-    </div>
+    @if (editor) {
+      <div class="tiptap-toolbar">
+        <button
+          type="button"
+          (click)="editor.chain().focus().toggleBold().run()"
+          [class.is-active]="editor.isActive('bold')"
+          >
+          <div>format_bold</div>
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().toggleItalic().run()"
+          [class.is-active]="editor.isActive('italic')"
+          >
+          <div>format_italic</div>
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().toggleUnderline().run()"
+          [class.is-active]="editor.isActive('underline')"
+          >
+          <div>format_underline</div>
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().toggleStrike().run()"
+          [class.is-active]="editor.isActive('strike')"
+          >
+          <div>format_strikethrough</div>
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().toggleHeading({ level: 1 }).run()"
+          [class.is-active]="editor.isActive('heading', { level: 1 })"
+          >
+          H1
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().toggleHeading({ level: 2 }).run()"
+          [class.is-active]="editor.isActive('heading', { level: 2 })"
+          >
+          H2
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().toggleBulletList().run()"
+          [class.is-active]="editor.isActive('bulletList')"
+          >
+          <div>format_list_bulleted</div>
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().toggleOrderedList().run()"
+          [class.is-active]="editor.isActive('orderedList')"
+          >
+          <div>format_list_numbered</div>
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().toggleBlockquote().run()"
+          [class.is-active]="editor.isActive('blockquote')"
+          >
+          <div>format_quote</div>
+        </button>
+        <button type="button" (click)="imageInput.click()">
+          <div>add_photo_alternate</div>
+        </button>
+        <button
+          type="button"
+        (click)="
+          editor
+            .chain()
+            .focus()
+            .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+            .run()
+        "
+          >
+          Insert Table
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().addColumnBefore().run()"
+          >
+          Add Column Before
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().addColumnAfter().run()"
+          >
+          Add Column After
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().deleteColumn().run()"
+          >
+          Delete Column
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().addRowBefore().run()"
+          >
+          Add Row Before
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().addRowAfter().run()"
+          >
+          Add Row After
+        </button>
+        <button type="button" (click)="editor.chain().focus().deleteRow().run()">
+          Delete Row
+        </button>
+        <button
+          type="button"
+          (click)="editor.chain().focus().deleteTable().run()"
+          >
+          Delete Table
+        </button>
+        <!-- Component injection toolbar -->
+        <div class="toolbar-separator"></div>
+        <button
+          type="button"
+          (click)="showComponentSelector()"
+          class="component-btn"
+          title="Insert Component"
+          >
+          <div>extension</div>
+          <span>Components</span>
+        </button>
+      </div>
+    }
+    <input
+      type="file"
+      #imageInput
+      hidden
+      (change)="onFileSelected($event)"
+      accept="image/*"
+      />
+    <tiptap-editor
+      [(ngModel)]="content"
+      [ngModelOptions]="{ standalone: true }"
+      class="tiptap-editor-styles"
+      >
+      <!-- Content projection container for injected components -->
+      <div class="injected-components-container" #componentContainer></div>
+    </tiptap-editor>
 
     <otui-button (action)="onPostSubmit()">Submit</otui-button>
   </form>
@@ -75,10 +188,10 @@
 ></lib-property-editor>
 
 <!-- Context menu -->
-<lib-context-menu
-  *ngIf="isContextMenuVisible"
-  [x]="contextMenuX"
-  [y]="contextMenuY"
-  [editor]="editor"
-></lib-context-menu>
-
+@if (isContextMenuVisible) {
+  <lib-context-menu
+    [x]="contextMenuX"
+    [y]="contextMenuY"
+    [editor]="editor"
+  ></lib-context-menu>
+}

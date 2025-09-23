@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TableCell, TableComponent, TableRowAction } from './table.component';
 
 import { TemplateRef } from '@angular/core';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 describe('TableComponent', () => {
   let component: TableComponent;

@@ -1,13 +1,15 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Themeable, ThemeColors, ThemeVariableService } from '@optimistic-tanuki/theme-ui';
+import { ThemeColors, ThemeService, ThemeVariableService } from '@optimistic-tanuki/theme-lib';
 import { Variantable, VariantOptions, VariantType } from '../interfaces/variantable.interface';
 import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'otui-card',
   standalone: true,
   imports: [CommonModule],
+  providers: [ThemeVariableService],
   templateUrl: './card.component.html',
   styleUrls: ['./card.component.scss'],
   host: {
@@ -42,7 +44,7 @@ import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
     '[class.glass-effect]': 'glassEffect',
   },
 })
-export class CardComponent extends Variantable implements Themeable, OnChanges {
+export class CardComponent extends Variantable implements OnChanges {
 
   @Input() glassEffect = false;
   @Input() CardVariant: VariantType = 'default';
@@ -68,9 +70,14 @@ export class CardComponent extends Variantable implements Themeable, OnChanges {
   bodyGradient!: string;
   backgroundPattern!: string;
 
-  constructor(private themeVariableService: ThemeVariableService) {
-    super();
+
+  constructor(
+    private themeVariableService: ThemeVariableService,
+    _theme: ThemeService
+  ) {
+    super(_theme);
   }
+
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['CardVariant'] && this.themeColors) {
@@ -83,24 +90,9 @@ export class CardComponent extends Variantable implements Themeable, OnChanges {
     }
   }
 
-  override applyVariant(colors: ThemeColors, options?: VariantOptions): void {
+  applyVariant(colors: ThemeColors, options?: VariantOptions): void {
     const opts = options ?? getDefaultVariantOptions(colors, this.CardVariant);
     this.setVariantOptions(opts);
-  }
-
-  override applyTheme(colors: ThemeColors): void {
-    this.themeColors = colors;
-    // Use standardized color assignments
-    this.background = colors.background;
-    this.foreground = colors.foreground;
-    this.accent = colors.accent;
-    this.complement = colors.complementary;
-    this.tertiary = colors.tertiary;
-    this.borderColor = colors.complementary;
-    
-    const options = getDefaultVariantOptions(colors, this.CardVariant);
-    this.setVariantOptions(options);
-    this.applyVariant(colors, options);
   }
 
   private setVariantOptions(options: VariantOptions) {

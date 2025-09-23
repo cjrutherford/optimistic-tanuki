@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CardComponent } from './card.component';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 describe('CardComponent', () => {
   let component: CardComponent;

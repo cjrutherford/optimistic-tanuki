@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { CardComponent, GridComponent } from '@optimistic-tanuki/common-ui';
 import { CommentDto } from '../../../models';
 import { CommentComponent } from '../comment.component';
@@ -15,7 +15,7 @@ export declare type CommentReply = {
 @Component({
   selector: 'lib-comment-list',
   standalone: true,
-  imports: [CommonModule, CardComponent, GridComponent, CommentComponent, ProfilePhotoComponent],
+  imports: [CardComponent, GridComponent, CommentComponent, ProfilePhotoComponent],
   providers: [],
   templateUrl: './comment-list.component.html',
   styleUrl: './comment-list.component.scss',

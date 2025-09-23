@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AboutComponent } from '../about/about.component';
 import { HeroSectionComponent } from '../hero/hero.component';
 import { BlogSectionComponent } from '../blog-section/blog-section.component';
@@ -12,7 +12,6 @@ import { ResourcesComponent } from '../resources/resources.component';
 @Component({
   selector: 'dh-main-page',
   imports: [
-    CommonModule,
     HeroSectionComponent,
     AboutComponent,
     BenefitsComponent,
@@ -20,8 +19,8 @@ import { ResourcesComponent } from '../resources/resources.component';
     ResourcesComponent,
     BlogSectionComponent,
     ContactComponent,
-    FooterComponent,
-  ],
+    FooterComponent
+],
   templateUrl: './main-page.component.html',
   styleUrl: './main-page.component.scss',
 })

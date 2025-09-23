@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 export const hexToRgb = (hex: string): string => {
   // Remove the leading '#' if present
@@ -27,7 +27,7 @@ export const hexToRgb = (hex: string): string => {
 
 @Component({
   selector: 'otui-glass-container',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './glass-container.component.html',
   styleUrl: './glass-container.component.scss',
   host: {

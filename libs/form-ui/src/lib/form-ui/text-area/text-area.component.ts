@@ -5,18 +5,18 @@ import {
   Output,
   forwardRef,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   ControlValueAccessor,
   NG_VALUE_ACCESSOR,
   FormsModule,
 } from '@angular/forms';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'lib-text-area',
   standalone: true,
-  imports: [CommonModule, FormsModule, FormsModule],
+  imports: [FormsModule, FormsModule],
   templateUrl: './text-area.component.html',
   styleUrls: ['./text-area.component.scss'],
   host: {

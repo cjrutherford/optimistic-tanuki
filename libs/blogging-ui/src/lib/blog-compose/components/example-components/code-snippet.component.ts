@@ -8,16 +8,22 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
   imports: [CommonModule, CardComponent, ButtonComponent],
   template: `
     <otui-card class="code-snippet">
-      <div class="code-header" *ngIf="title || language">
-        <span class="code-title" *ngIf="title">{{ title }}</span>
-        <span class="code-language" *ngIf="language">{{ language }}</span>
-        <otui-button variant="secondary" size="small" (action)="copyCode()">
-          Copy
-        </otui-button>
-      </div>
+      @if (title || language) {
+        <div class="code-header">
+          @if (title) {
+            <span class="code-title">{{ title }}</span>
+          }
+          @if (language) {
+            <span class="code-language">{{ language }}</span>
+          }
+          <otui-button variant="secondary" size="small" (action)="copyCode()">
+            Copy
+          </otui-button>
+        </div>
+      }
       <pre class="code-content"><code [ngClass]="'language-' + language">{{ code }}</code></pre>
     </otui-card>
-  `,
+    `,
   styles: [`
     .code-snippet {
       margin: 1rem 0;

@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { CardComponent, HeadingComponent, TileComponent } from '@optimistic-tanuki/common-ui';
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'app-about',
@@ -16,7 +16,7 @@ import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-u
     '[style.--local-border-gradient]': 'borderGradient'
   },
   providers: [ThemeService],
-  imports: [CommonModule, HeadingComponent, CardComponent],
+  imports: [HeadingComponent, CardComponent],
   templateUrl: './about.component.html',
   styleUrl: './about.component.scss',
 })

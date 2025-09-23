@@ -3,17 +3,17 @@ import {
   forwardRef,
   Input,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   ControlValueAccessor,
   FormsModule,
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'lib-select',
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

@@ -1,6 +1,6 @@
 import { componentWrapperDecorator, moduleMetadata, type Meta, type StoryObj } from '@storybook/angular';
 import { FeaturedPostsComponent } from './featured-posts.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ModalComponent } from './modal.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<ModalComponent> = {
@@ -45,6 +45,6 @@ export const Heading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/test heading/gi)).toBeTruthy();
+    await expect(canvas.getByText(/test heading/gi)).toBeTruthy();
   },
 };

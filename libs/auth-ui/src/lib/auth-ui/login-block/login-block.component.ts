@@ -1,15 +1,15 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'lib-login-block',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CardComponent, ButtonComponent, TextInputComponent],
+  imports: [ReactiveFormsModule, CardComponent, ButtonComponent, TextInputComponent],
   templateUrl: './login-block.component.html',
   styleUrl: './login-block.component.scss',
   host: {

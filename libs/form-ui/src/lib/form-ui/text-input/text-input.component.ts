@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'lib-text-input',

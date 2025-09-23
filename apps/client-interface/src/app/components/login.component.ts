@@ -5,10 +5,10 @@ import {
 } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { LoginRequest } from '@optimistic-tanuki/ui-models';
 import { AuthStateService } from '../state/auth-state.service';
-import { CommonModule } from '@angular/common';
+
 import { Subscription, filter } from 'rxjs';
 import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
@@ -19,9 +19,8 @@ import { LoginType } from '@optimistic-tanuki/ui-models';
   styleUrls: ['./login.component.scss'],
   standalone: true,
   imports: [
-    CommonModule, 
     LoginBlockComponent
-  ],
+],
 })
 export class LoginComponent implements OnDestroy {
   themeSub: Subscription;

@@ -4,11 +4,11 @@ import { CreateProject, Project } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'lib-project-form',
-  imports: [CommonModule, ReactiveFormsModule, CardComponent, TextInputComponent, TextAreaComponent, ButtonComponent, SelectComponent],
+  imports: [ReactiveFormsModule, CardComponent, TextInputComponent, TextAreaComponent, ButtonComponent, SelectComponent],
   templateUrl: './project-form.component.html',
   styleUrl: './project-form.component.scss',
 })

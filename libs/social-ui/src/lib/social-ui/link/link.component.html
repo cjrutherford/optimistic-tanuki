@@ -1,12 +1,16 @@
 <otui-card class="links-container">
-  <div *ngIf="links.length > 0">
-    <otui-grid [columns]="1" [rows]="links.length">
-      <div *ngFor="let link of links">
-        <a [href]="link.url" target="_blank">{{ link.url }}</a>
-        <otui-button variant="danger" (click)="removeLink(link)">X</otui-button>
-      </div>
-    </otui-grid>
-  </div>
+  @if (links.length > 0) {
+    <div>
+      <otui-grid [columns]="1" [rows]="links.length">
+        @for (link of links; track link) {
+          <div>
+            <a [href]="link.url" target="_blank">{{ link.url }}</a>
+            <otui-button variant="danger" (click)="removeLink(link)">X</otui-button>
+          </div>
+        }
+      </otui-grid>
+    </div>
+  }
   <input class="link-input" [(ngModel)]="linkValue" placeholder="Enter link" />
   <otui-button  style="margin-left: 15px;" variant="success" (click)="addLink()">Add Link</otui-button>
 </otui-card>

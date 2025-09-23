@@ -1,5 +1,5 @@
 import { Component, computed, effect, Inject, PLATFORM_ID, signal } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import {
   ChatContact,
   ChatMessage,
@@ -20,7 +20,7 @@ import { io } from 'socket.io-client';
 @Component({
   standalone: true,
   selector: 'app-chat',
-  imports: [CommonModule, ChatWindowComponent, ContactBubbleComponent],
+  imports: [ChatWindowComponent, ContactBubbleComponent],
   providers: [
     {
       provide: SocketChatService,

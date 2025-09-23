@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Output, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CreatePostDto, UpdatePostDto, CreateAttachmentDto, AttachmentDto } from '../../models';
@@ -10,7 +10,7 @@ import MagicUrl from 'quill-magic-url';
 import ImageCompress from 'quill-image-compress';
 import Cursors from 'quill-cursors';
 import Placeholder from 'quill-placeholder-module';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder } from 'libs/common-ui/src/lib/common-ui/gradient-builder';
 
 Quill.register('modules/imageCompress', ImageCompress);
@@ -29,14 +29,13 @@ export declare type ComposeCompleteEvent = {
   standalone: true,
   imports: [
     FormsModule,
-    CommonModule,
     CardComponent,
     ButtonComponent,
     ReactiveFormsModule,
     QuillEditorComponent,
     TextInputComponent,
-    QuillModule,
-  ],
+    QuillModule
+],
   templateUrl: './compose.component.html',
   styleUrls: ['./compose.component.scss'],
   // encapsulation: ViewEncapsulation.Emulated,

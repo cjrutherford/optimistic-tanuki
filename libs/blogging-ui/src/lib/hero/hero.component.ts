@@ -1,10 +1,10 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ButtonComponent, GlassContainerComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'lib-hero',
-  imports: [CommonModule, GlassContainerComponent, HeadingComponent, ButtonComponent],
+  imports: [GlassContainerComponent, HeadingComponent, ButtonComponent],
   templateUrl: './hero.component.html',
   styleUrl: './hero.component.scss',
   host: {

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { AttachmentComponent } from './attachment.component';
-import { within, userEvent } from '@storybook/testing-library';
+import { within, userEvent } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<AttachmentComponent> = {

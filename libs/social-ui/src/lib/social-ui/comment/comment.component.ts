@@ -1,15 +1,15 @@
 import { Component, EventEmitter, OnInit, Output, TemplateRef, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatDialog } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { QuillModule, QuillModules } from 'ngx-quill';
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'lib-comment',
   standalone: true,
-  imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, QuillModule],
+  imports: [FormsModule, CardComponent, ButtonComponent, QuillModule],
   providers: [],
   templateUrl: './comment.component.html',
   styleUrl: './comment.component.scss',

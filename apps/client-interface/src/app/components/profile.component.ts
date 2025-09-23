@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,13 +11,12 @@ import { UpdateProfileDto } from '@optimistic-tanuki/ui-models';
   selector: 'app-profile',
   standalone: true,
   imports: [
-    CommonModule, 
-    MatCardModule, 
-    MatListModule, 
-    MatIconModule, 
+    MatCardModule,
+    MatListModule,
+    MatIconModule,
     BannerComponent,
-    ProfileSelectorComponent,
-  ],
+    ProfileSelectorComponent
+],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })

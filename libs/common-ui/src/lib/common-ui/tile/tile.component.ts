@@ -5,7 +5,7 @@ import {
   VariantOptions,
   VariantType,
 } from '../interfaces/variantable.interface';
-import { ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
 
 @Component({
@@ -66,21 +66,13 @@ export class TileComponent extends Variantable implements OnChanges {
 
   // Apply the variant styles based on the provided options and theme colors
 
+  constructor(themeService: ThemeService) {
+    super(themeService);
+  }
+
   override applyVariant(colors: ThemeColors, options?: VariantOptions): void {
     const opts = options ?? getDefaultVariantOptions(colors, this.TileVariant);
     this.setVariantOptions(opts);
-  }
-
-  override applyTheme(colors: ThemeColors): void {
-    this.themeColors = colors;
-    this.background = colors.background;
-    this.foreground = colors.foreground;
-    this.accent = colors.accent;
-    this.complement = colors.complementary;
-    this.borderColor = colors.accent;
-    const options = getDefaultVariantOptions(colors, this.TileVariant);
-    this.setVariantOptions(options);
-    this.applyVariant(colors, options);
   }
 
   private setVariantOptions(options: VariantOptions) {
@@ -112,7 +104,9 @@ export class TileComponent extends Variantable implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['TileVariant'] && this.themeColors) {
-      this.applyVariant(this.themeColors, this.variantOptions);
+      const currentVariant = changes['TileVariant'].currentValue;
+      const options = getDefaultVariantOptions(this.themeColors, currentVariant);
+      this.applyVariant(this.themeColors, options);
     }
   }
 }

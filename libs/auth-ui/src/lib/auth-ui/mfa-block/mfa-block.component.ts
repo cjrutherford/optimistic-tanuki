@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
@@ -7,7 +7,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 @Component({
   selector: 'lib-mfa-block',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TextInputComponent, ButtonComponent, CardComponent],
+  imports: [ReactiveFormsModule, TextInputComponent, ButtonComponent, CardComponent],
   templateUrl: './mfa-block.component.html',
   styleUrls: ['./mfa-block.component.scss'],
 })

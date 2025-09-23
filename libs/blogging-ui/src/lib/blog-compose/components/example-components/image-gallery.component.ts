@@ -8,23 +8,28 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
   imports: [CommonModule, CardComponent],
   template: `
     <otui-card class="image-gallery">
-      <div class="gallery-header" *ngIf="title">
-        <h3>{{ title }}</h3>
-      </div>
-      <div class="gallery-grid" [ngClass]="'columns-' + columns">
-        <div 
-          *ngFor="let image of images; let i = index"
-          class="gallery-item"
-          (click)="selectImage(i)"
-        >
-          <img [src]="image.url" [alt]="image.alt || 'Gallery image'" />
-          <div class="image-overlay" *ngIf="image.caption">
-            <span>{{ image.caption }}</span>
-          </div>
+      @if (title) {
+        <div class="gallery-header">
+          <h3>{{ title }}</h3>
         </div>
+      }
+      <div class="gallery-grid" [ngClass]="'columns-' + columns">
+        @for (image of images; track image; let i = $index) {
+          <div
+            class="gallery-item"
+            (click)="selectImage(i)"
+            >
+            <img [src]="image.url" [alt]="image.alt || 'Gallery image'" />
+            @if (image.caption) {
+              <div class="image-overlay">
+                <span>{{ image.caption }}</span>
+              </div>
+            }
+          </div>
+        }
       </div>
     </otui-card>
-  `,
+    `,
   styles: [`
     .image-gallery {
       margin: 1rem 0;

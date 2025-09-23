@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Themeable, ThemeColors, ThemeService, PaletteSelectorComponent } from '@optimistic-tanuki/theme-ui';
+import { PaletteSelectorComponent } from './palette-selector.component';
+import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'theme-demo',
   standalone: true,
-  imports: [CommonModule, PaletteSelectorComponent, ButtonComponent, CardComponent],
+  imports: [PaletteSelectorComponent, ButtonComponent, CardComponent],
   template: `
     <div class="demo-container">
       <h1>Enhanced Theme System Demo</h1>

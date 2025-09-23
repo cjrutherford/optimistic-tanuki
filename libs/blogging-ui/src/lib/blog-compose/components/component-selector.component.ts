@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatIconModule } from '@angular/material/icon';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { InjectableComponent } from '../interfaces/component-injection.interface';
@@ -7,51 +7,57 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
 @Component({
   selector: 'lib-component-selector',
   standalone: true,
-  imports: [CommonModule, MatIconModule, ButtonComponent, CardComponent],
+  imports: [MatIconModule, ButtonComponent, CardComponent],
   template: `
-    <otui-card class="component-selector" *ngIf="isVisible">
-      <div class="selector-header">
-        <h3>Insert Component</h3>
-        <button (click)="onClose()" class="close-btn">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-      
-      <div class="component-categories" *ngIf="categories.length > 1">
-        <button 
-          *ngFor="let category of categories"
-          [class.active]="selectedCategory === category"
-          (click)="selectCategory(category)"
-          class="category-btn"
-        >
-          {{ category }}
-        </button>
-      </div>
-      
-      <div class="component-grid">
-        <div 
-          *ngFor="let component of filteredComponents"
-          class="component-item"
-          (click)="selectComponent(component)"
-        >
-          <div class="component-icon">
-            <mat-icon *ngIf="component.icon; else defaultIcon">{{ component.icon }}</mat-icon>
-            <ng-template #defaultIcon>
-              <mat-icon>extension</mat-icon>
-            </ng-template>
-          </div>
-          <div class="component-info">
-            <h4>{{ component.name }}</h4>
-            <p *ngIf="component.description">{{ component.description }}</p>
-          </div>
+    @if (isVisible) {
+      <otui-card class="component-selector">
+        <div class="selector-header">
+          <h3>Insert Component</h3>
+          <button (click)="onClose()" class="close-btn">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
-      </div>
-      
-      <div class="selector-actions">
-        <otui-button variant="secondary" (action)="onClose()">Cancel</otui-button>
-      </div>
-    </otui-card>
-  `,
+        @if (categories.length > 1) {
+          <div class="component-categories">
+            @for (category of categories; track category) {
+              <button
+                [class.active]="selectedCategory === category"
+                (click)="selectCategory(category)"
+                class="category-btn"
+                >
+                {{ category }}
+              </button>
+            }
+          </div>
+        }
+        <div class="component-grid">
+          @for (component of filteredComponents; track component) {
+            <div
+              class="component-item"
+              (click)="selectComponent(component)"
+              >
+              <div class="component-icon">
+                @if (component.icon) {
+                  <mat-icon>{{ component.icon }}</mat-icon>
+                } @else {
+                  <mat-icon>extension</mat-icon>
+                }
+              </div>
+              <div class="component-info">
+                <h4>{{ component.name }}</h4>
+                @if (component.description) {
+                  <p>{{ component.description }}</p>
+                }
+              </div>
+            </div>
+          }
+        </div>
+        <div class="selector-actions">
+          <otui-button variant="secondary" (action)="onClose()">Cancel</otui-button>
+        </div>
+      </otui-card>
+    }
+    `,
   styles: [`
     .component-selector {
       position: fixed;

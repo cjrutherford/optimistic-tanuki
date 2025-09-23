@@ -9,7 +9,7 @@ import {
   ViewContainerRef,
   AfterViewInit,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -24,7 +24,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder } from '@optimistic-tanuki/common-ui';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -66,18 +66,15 @@ interface PostData {
   selector: 'lib-blog-compose',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
-    TiptapEditorDirective,
     CardComponent,
     TextInputComponent,
     ButtonComponent,
-    MatIconModule,
     ContextMenuComponent,
     ComponentSelectorComponent,
     PropertyEditorComponent,
-    ComponentWrapperComponent,
-  ],
+    ComponentWrapperComponent
+],
   templateUrl: './blog-compose.component.html',
   styleUrls: ['./blog-compose.component.scss'],
   host: {
@@ -92,7 +89,7 @@ interface PostData {
     '[style.--local-border-gradient]': 'borderGradient',
     '[style.--local-transition-duration]': 'transitionDuration',
   },
-  providers: [ComponentInjectionService]
+  providers: [ComponentInjectionService, TiptapEditorDirective]
 })
 export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy, AfterViewInit, ComponentInjectionAPI {
   @Output() postSubmitted: EventEmitter<PostData> = new EventEmitter<PostData>();
@@ -101,11 +98,10 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     file: File;
   }>();
 
-  override readonly themeService: ThemeService;
-
   @ViewChild('componentContainer', { read: ViewContainerRef })
   componentContainer!: ViewContainerRef;
 
+  override readonly themeService: ThemeService;
   backgroundGradient = 'linear-gradient(to right, #5969c3, #59c360)';
   isDragOver = false;
   title = '';
@@ -128,9 +124,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   selectedComponentInstance: InjectedComponentInstance | null = null;
   selectedComponentProperties: PropertyDefinition[] = [];
 
-  constructor(private componentInjectionService: ComponentInjectionService, _themeService: ThemeService) {
-    super(_themeService);
-    this.themeService = _themeService;
+  constructor(private componentInjectionService: ComponentInjectionService, _theme: ThemeService) {
+    super(_theme);
   }
 
   @HostListener('document:click')

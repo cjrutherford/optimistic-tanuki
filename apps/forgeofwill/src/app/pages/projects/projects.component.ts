@@ -4,19 +4,18 @@ import { ChangesTableComponent, ProjectFormComponent, ProjectJournalTableCompone
 import { Component, computed, signal } from '@angular/core';
 
 import { ChangeService } from '../../change/change.service';
-import { CommonModule } from '@angular/common';
+
 import { JournalService } from '../../journal/journal.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ProjectService } from '../../project/project.service';
 import { RiskService } from '../../risk/risk.service';
 import { TaskService } from '../../task/task.service';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'app-projects',
   imports: [
-    CommonModule, 
-    ModalComponent, 
+    ModalComponent,
     CardComponent,
     SummaryBlockComponent,
     TasksTableComponent,
@@ -25,10 +24,10 @@ import { ThemeService } from '@optimistic-tanuki/theme-ui';
     ButtonComponent,
     TileComponent,
     ProjectJournalTableComponent,
-    ProjectSelectorComponent, 
+    ProjectSelectorComponent,
     ProjectFormComponent,
-    GlassContainerComponent,
-  ],
+    GlassContainerComponent
+],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
   host: {

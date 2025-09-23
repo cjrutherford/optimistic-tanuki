@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ButtonComponent } from './button.component';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 describe('ButtonComponent', () => {
   let component: ButtonComponent;
