@@ -44,7 +44,7 @@ import { Subject } from 'rxjs';
     '[style.--background-pattern]': 'backgroundPattern',
   },
 })
-export class TileComponent extends Variantable implements Themeable, OnChanges {
+export class TileComponent extends Variantable implements Themeable, OnChanges, OnInit, OnDestroy {
   theme: 'light' | 'dark';
   background: string;
   foreground: string;
