@@ -1,6 +1,6 @@
 import { Component, ElementRef, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Themeable, ThemeColors, ThemeService, ThemeVariableService } from '@optimistic-tanuki/theme-lib';
+import { ThemeColors, ThemeService, ThemeVariableService } from '@optimistic-tanuki/theme-lib';
 import { Variantable, VariantOptions, VariantType } from '../interfaces/variantable.interface';
 import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
 import { Subject } from 'rxjs';
@@ -44,7 +44,7 @@ import { Subject } from 'rxjs';
     '[class.glass-effect]': 'glassEffect',
   },
 })
-export class CardComponent extends Themeable implements Variantable, OnChanges {
+export class CardComponent extends Variantable implements OnChanges {
 
   @Input() glassEffect = false;
   @Input() CardVariant: VariantType = 'default';
@@ -73,11 +73,9 @@ export class CardComponent extends Themeable implements Variantable, OnChanges {
 
   constructor(
     private themeVariableService: ThemeVariableService,
-    _theme: ThemeService,
-    elementRef: ElementRef<any>
+    _theme: ThemeService
   ) {
     super(_theme);
-    this.elementRef = elementRef;
   }
 
 
@@ -95,13 +93,6 @@ export class CardComponent extends Themeable implements Variantable, OnChanges {
   applyVariant(colors: ThemeColors, options?: VariantOptions): void {
     const opts = options ?? getDefaultVariantOptions(colors, this.CardVariant);
     this.setVariantOptions(opts);
-  }
-
-  applyTheme(colors: ThemeColors): void {
-    
-    const options = getDefaultVariantOptions(colors, this.CardVariant);
-    this.setVariantOptions(options);
-    this.applyVariant(colors, options);
   }
 
   private setVariantOptions(options: VariantOptions) {
