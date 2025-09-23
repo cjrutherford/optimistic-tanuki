@@ -99,8 +99,8 @@ describe('FeedComponent', () => {
     // If FeedComponent expects actual color values, update the mock to match.
     component.ngOnInit();
     expect(component.themeStyles).toEqual({
-      backgroundColor: '#fff',
-      color: '#333',
+      backgroundColor: '#ffffff',
+      color: '#212121',
       border: '1px solid #3f51b5',
     });
   });

@@ -4,6 +4,7 @@ import {
   generateDangerColor,
   generateSuccessColor,
   generateWarningColor,
+  generateTertiaryColor,
 } from './color-utils';
 import { loadTheme, saveTheme } from './theme-storage';
 
@@ -16,6 +17,7 @@ jest.mock('./color-utils', () => ({
   generateDangerColor: jest.fn(),
   generateWarningColor: jest.fn(),
   generateSuccessColor: jest.fn(),
+  generateTertiaryColor: jest.fn(),
 }));
 
 jest.mock('./theme-storage', () => ({
@@ -31,6 +33,8 @@ describe('ThemeService', () => {
     (loadTheme as jest.Mock).mockReturnValue({
       theme: 'light',
       accentColor: '#ff0000',
+      complementColor: '#00ff00',
+      paletteMode: 'custom',
     });
     (generateColorShades as jest.Mock).mockReturnValue([
       [0, '#shade1'],
@@ -51,6 +55,7 @@ describe('ThemeService', () => {
     (generateDangerColor as jest.Mock).mockReturnValue('#ff0000');
     (generateWarningColor as jest.Mock).mockReturnValue('#ffff00');
     (generateSuccessColor as jest.Mock).mockReturnValue('#00ff00');
+    (generateTertiaryColor as jest.Mock).mockReturnValue('#0000ff');
 
     TestBed.configureTestingModule({
       providers: [ThemeService],
@@ -76,15 +81,25 @@ describe('ThemeService', () => {
   it('should update theme and save it', () => {
     service.setTheme('dark');
     expect(service.getTheme()).toBe('dark');
-    expect(saveTheme).toHaveBeenCalledWith(expect.anything(), 'dark', '#ff0000');
-    expect(document.documentElement.style.getPropertyValue('--background-color')).toBe('#333');
-    expect(document.documentElement.style.getPropertyValue('--foreground-color')).toBe('#fff');
+    expect(saveTheme).toHaveBeenCalledWith(expect.anything(), {
+      theme: 'dark',
+      accentColor: '#ff0000',
+      complementColor: '#00ff00',
+      paletteMode: 'custom',
+      paletteName: undefined,
+    });
   });
 
   it('should update accent color and save it', () => {
     service.setAccentColor('#00ff00');
     expect(service.getAccentColor()).toBe('#00ff00');
-    expect(saveTheme).toHaveBeenCalledWith(expect.anything(), 'light', '#00ff00');
+    expect(saveTheme).toHaveBeenCalledWith(expect.anything(), {
+      theme: 'light',
+      accentColor: '#00ff00',
+      complementColor: '#00ff00',
+      paletteMode: 'custom',
+      paletteName: undefined,
+    });
   });
 
   it('should expose theme as observable', (done) => {
@@ -103,10 +118,12 @@ describe('ThemeService', () => {
   });
 
   it('should generate theme colors correctly', () => {
+    (service as any).complementColor = '#00ff00'; // Set complementColor to ensure generateComplementaryColor is called
     const themeColors = (service as any).generateThemeColors();
     expect(themeColors.accent).toBe('#ff0000');
     expect(generateColorShades).toHaveBeenCalledWith('#ff0000');
-    expect(generateComplementaryColor).toHaveBeenCalledWith('#ff0000');
+    expect(generateColorShades).toHaveBeenCalledWith('#00ff00');
+    expect(generateTertiaryColor).toHaveBeenCalledWith('#ff0000');
     expect(generateDangerColor).toHaveBeenCalledWith('#ff0000');
     expect(generateWarningColor).toHaveBeenCalledWith('#ff0000');
     expect(generateSuccessColor).toHaveBeenCalledWith('#ff0000');

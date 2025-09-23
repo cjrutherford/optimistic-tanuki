@@ -78,19 +78,22 @@ describe('TextAreaComponent', () => {
       foreground: '#ffffff',
       accent: '#ff0000',
       complementary: '#00ff00',
+      tertiary: '#0000ff',
       accentShades: [['0', '#ff0000'], ['1', '#cc0000']],
       complementaryShades: [['0', '#00ff00'], ['1', '#00cc00'], ['2', '#009900']],
-      accentGradients: { dark: 'linear-gradient(to right, red, darkred)', light: 'linear-gradient(to right, pink, lightpink)' },
-      complementaryGradients: { dark: 'linear-gradient(to right, green, darkgreen)', light: 'linear-gradient(to right, lightgreen, palegreen)' },
+      tertiaryShades: [['0', '#0000ff'], ['1', '#0000cc']],
+      accentGradients: { dark: 'linear-gradient(to right, red, darkred)', light: 'linear-gradient(to right, pink, lightpink)', fastCycle: '' },
+      complementaryGradients: { dark: 'linear-gradient(to right, green, darkgreen)', light: 'linear-gradient(to right, lightgreen, palegreen)', fastCycle: '' },
+      tertiaryGradients: { dark: 'linear-gradient(to right, blue, darkblue)', light: 'linear-gradient(to right, lightblue, paleblue)', fastCycle: '' },
       success: '#00ff00',
       successShades: [['0', '#00ff00'], ['1', '#00cc00']],
-      successGradients: { dark: 'linear-gradient(to right, green, darkgreen)', light: 'linear-gradient(to right, lightgreen, palegreen)' },
+      successGradients: { dark: 'linear-gradient(to right, green, darkgreen)', light: 'linear-gradient(to right, lightgreen, palegreen)', fastCycle: '' },
       danger: '#ff0000',
       dangerShades: [['0', '#ff0000'], ['1', '#cc0000']],
-      dangerGradients: { dark: 'linear-gradient(to right, red, darkred)', light: 'linear-gradient(to right, pink, lightpink)' },
+      dangerGradients: { dark: 'linear-gradient(to right, red, darkred)', light: 'linear-gradient(to right, pink, lightpink)', fastCycle: '' },
       warning: '#ffff00',
       warningShades: [['0', '#ffff00'], ['1', '#cccc00']],
-      warningGradients: { dark: 'linear-gradient(to right, yellow, darkyellow)', light: 'linear-gradient(to right, lightyellow, paleyellow)' },
+      warningGradients: { dark: 'linear-gradient(to right, yellow, darkyellow)', light: 'linear-gradient(to right, lightyellow, paleyellow)', fastCycle: '' },
     };
 
     component.theme = 'dark';
@@ -122,12 +125,12 @@ describe('TextAreaComponent', () => {
     fixture.detectChanges();
 
     const hostElement = fixture.nativeElement;
-    expect(hostElement.style.getPropertyValue('--background')).toBe('#123456');
-    expect(hostElement.style.getPropertyValue('--foreground')).toBe('#654321');
-    expect(hostElement.style.getPropertyValue('--accent')).toBe('#abcdef');
-    expect(hostElement.style.getPropertyValue('--complement')).toBe('#fedcba');
-    expect(hostElement.style.getPropertyValue('--border-color')).toBe('#1a2b3c');
-    expect(hostElement.style.getPropertyValue('--border-gradient')).toBe('linear-gradient(to right, blue, green)');
-    expect(hostElement.style.getPropertyValue('--transition-duration')).toBe('0.5s');
+    expect(hostElement.style.getPropertyValue('--local-background')).toBe('#123456');
+    expect(hostElement.style.getPropertyValue('--local-foreground')).toBe('#654321');
+    expect(hostElement.style.getPropertyValue('--local-accent')).toBe('#abcdef');
+    expect(hostElement.style.getPropertyValue('--local-complement')).toBe('#fedcba');
+    expect(hostElement.style.getPropertyValue('--local-border-color')).toBe('#1a2b3c');
+    expect(hostElement.style.getPropertyValue('--local-border-gradient')).toBe('linear-gradient(to right, blue, green)');
+    expect(hostElement.style.getPropertyValue('--local-transition-duration')).toBe('0.5s');
   });
 });

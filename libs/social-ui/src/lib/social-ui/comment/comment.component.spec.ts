@@ -82,6 +82,7 @@ describe('CommentComponent', () => {
   });
 
   it('should apply theme correctly for dark theme', () => {
+    component.theme = 'dark';
     const colors = {
       background: '#ffffff',
       foreground: '#333333',

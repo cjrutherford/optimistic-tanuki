@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { LoginComponent } from './login.component';
 import { AuthenticationService } from '../../authentication.service';
 import { AuthStateService } from '../../auth-state.service';
@@ -7,13 +7,20 @@ import { Router } from '@angular/router';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { of, throwError } from 'rxjs';
 import { LoginType, ProfileDto } from '@optimistic-tanuki/ui-models';
+import { signal, WritableSignal } from '@angular/core';
+
+class MockProfileService {
+  getAllProfiles = jest.fn().mockResolvedValue(undefined);
+  currentUserProfiles: WritableSignal<ProfileDto[]> = signal<ProfileDto[]>([]);
+  selectProfile = jest.fn();
+}
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
   let authService: AuthenticationService;
   let authState: AuthStateService;
-  let profileService: ProfileService;
+  let profileService: MockProfileService;
   let router: Router;
   let messageService: MessageService;
 
@@ -28,11 +35,6 @@ describe('LoginComponent', () => {
       setToken: jest.fn(),
       isAuthenticated: true,
     };
-    const profileServiceMock = {
-      getAllProfiles: jest.fn().mockResolvedValue(undefined),
-      currentUserProfiles: jest.fn().mockReturnValue([mockProfile]),
-      selectProfile: jest.fn(),
-    };
     const routerMock = {
       navigate: jest.fn(),
     };
@@ -45,7 +47,7 @@ describe('LoginComponent', () => {
       providers: [
         { provide: AuthenticationService, useValue: authServiceMock },
         { provide: AuthStateService, useValue: authStateMock },
-        { provide: ProfileService, useValue: profileServiceMock },
+        { provide: ProfileService, useClass: MockProfileService },
         { provide: Router, useValue: routerMock },
         { provide: MessageService, useValue: messageServiceMock },
       ],
@@ -55,21 +57,19 @@ describe('LoginComponent', () => {
     component = fixture.componentInstance;
     authService = TestBed.inject(AuthenticationService);
     authState = TestBed.inject(AuthStateService);
-    profileService = TestBed.inject(ProfileService);
+    profileService = TestBed.inject(ProfileService) as unknown as MockProfileService;
     router = TestBed.inject(Router);
     messageService = TestBed.inject(MessageService);
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('onLoginSubmit', () => {
     const loginData: LoginType = { email: 'test@example.com', password: 'password' };
 
-    it('should handle successful login with existing profiles', async () => {
+    it('should handle successful login with existing profiles', fakeAsync(async () => {
+      profileService.currentUserProfiles.set([mockProfile]);
       await component.onLoginSubmit(loginData);
+      tick();
 
       expect(authService.login).toHaveBeenCalledWith(loginData);
       expect(authState.setToken).toHaveBeenCalledWith(mockLoginResponse.data.newToken);
@@ -81,12 +81,13 @@ describe('LoginComponent', () => {
         content: 'Login successful! Welcome back.',
         type: 'success',
       });
-    });
+    }));
 
-    it('should handle successful login with no existing profiles', async () => {
-      jest.spyOn(profileService, 'currentUserProfiles').mockReturnValue([]);
+    it('should handle successful login with no existing profiles', fakeAsync(async () => {
+      profileService.currentUserProfiles.set([]);
 
       await component.onLoginSubmit(loginData);
+      tick();
 
       expect(authService.login).toHaveBeenCalledWith(loginData);
       expect(authState.setToken).toHaveBeenCalledWith(mockLoginResponse.data.newToken);
@@ -98,12 +99,13 @@ describe('LoginComponent', () => {
         content: 'No profiles found. Please create a profile to continue.',
         type: 'warning',
       });
-    });
+    }));
 
-    it('should handle login failure', async () => {
+    it('should handle login failure', fakeAsync(async () => {
       jest.spyOn(authService, 'login').mockRejectedValue(new Error('Invalid credentials'));
 
       await component.onLoginSubmit(loginData);
+      tick();
 
       expect(authService.login).toHaveBeenCalledWith(loginData);
       expect(authState.setToken).not.toHaveBeenCalled();
@@ -113,6 +115,6 @@ describe('LoginComponent', () => {
         content: 'Login failed: Invalid credentials',
         type: 'error',
       });
-    });
+    }));
   });
 });

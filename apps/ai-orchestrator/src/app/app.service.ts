@@ -86,7 +86,7 @@ export class AppService {
       return [];
     } catch (error) {
       console.trace(error);
-      this.l.error('Error processing new profile:', error.message);
+      this.l.error('Error processing new profile:', error);
       throw new RpcException('Failed to process new profile: ' + error.message);
     }
   }

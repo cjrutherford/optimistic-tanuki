@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MainPageComponent } from './main-page.component';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { ContactService } from '../../contact.service';
+import { of } from 'rxjs';
 
 describe('MainPageComponent', () => {
   let component: MainPageComponent;
@@ -7,7 +10,15 @@ describe('MainPageComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MainPageComponent],
+      imports: [MainPageComponent, HttpClientTestingModule],
+      providers: [
+        {
+          provide: ContactService,
+          useValue: {
+            postContact: jest.fn(() => of({}))
+          }
+        }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(MainPageComponent);

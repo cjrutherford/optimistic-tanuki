@@ -1,14 +1,39 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ContactComponent } from './contact.component';
-import { CommonModule } from '@angular/common';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { ContactService } from '../../contact.service';
+import { of } from 'rxjs';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { By } from '@angular/platform-browser';
+
+import { HeadingComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { ReactiveFormsModule } from '@angular/forms';
+import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
+
+// Remove MockLibContactFormComponent as per new instructions
 
 describe('ContactComponent', () => {
   let component: ContactComponent;
   let fixture: ComponentFixture<ContactComponent>;
+  let mockContactService: Partial<ContactService>;
 
   beforeEach(async () => {
+    mockContactService = {
+      postContact: jest.fn(() => of({}))
+    };
+
     await TestBed.configureTestingModule({
-      imports: [ContactComponent],
+      imports: [
+        ContactComponent,
+        HttpClientTestingModule,
+        HeadingComponent,
+        ButtonComponent,
+        ReactiveFormsModule,
+        ContactFormComponent,
+      ],
+      providers: [
+        { provide: ContactService, useValue: mockContactService }
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContactComponent);
@@ -20,38 +45,21 @@ describe('ContactComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('ContactComponent', () => {
-    let component: ContactComponent;
-    let fixture: ComponentFixture<ContactComponent>;
+  it('should have subjects array', () => {
+    expect(component.subjects).toEqual([
+      { value: 'general', label: 'General Inquiry' },
+      { value: 'support', label: 'Support' },
+      { value: 'feedback', label: 'Feedback' },
+      { value: 'other', label: 'Other' }
+    ]);
+  });
 
-    beforeEach(async () => {
-      await TestBed.configureTestingModule({
-        imports: [CommonModule],
-        declarations: [ContactComponent]
-      }).compileComponents();
-
-      fixture = TestBed.createComponent(ContactComponent);
-      component = fixture.componentInstance;
-      fixture.detectChanges();
-    });
-
-    it('should create', () => {
-      expect(component).toBeTruthy();
-    });
-
-    it('should have subjects array', () => {
-      expect(component.subjects).toEqual([
-        { value: 'general', label: 'General Inquiry' },
-        { value: 'support', label: 'Support' },
-        { value: 'feedback', label: 'Feedback' },
-        { value: 'other', label: 'Other' }
-      ]);
-    });
-
-    it('should call onContactFormSubmit when form is submitted', () => {
-      const submitButton = fixture.nativeElement.querySelector('button[type="submit"]');
-      submitButton.click();
-      expect(component.onContactFormSubmit).toHaveBeenCalledTimes(1);
-    });
+  it('should call onContactFormSubmit when form is submitted', () => {
+    jest.spyOn(component, 'onContactFormSubmit');
+    const contactFormDebugElement = fixture.debugElement.query(By.directive(ContactFormComponent));
+    const contactForm = contactFormDebugElement.componentInstance as ContactFormComponent;
+    const formData = { name: 'Test', email: 'test@example.com', subject: 'general', message: 'Hello' };
+    contactForm.formSubmit.emit(formData);
+    expect(component.onContactFormSubmit).toHaveBeenCalledWith(formData);
   });
 });

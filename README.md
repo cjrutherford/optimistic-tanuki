@@ -10,6 +10,26 @@ The workspace is organized into the following directories:
 - `libs`: Contains shared libraries used by the applications.
 - `tools`: Contains scripts and other tools for the workspace.
 
+## Project Applications
+
+Here's a list of the individual applications within this workspace:
+
+*   [AI Orchestrator](apps/ai-orchestrator/README.md)
+*   [Assets](apps/assets/README.md)
+*   [Authentication](apps/authentication/README.md)
+*   [Blogging](apps/blogging/README.md)
+*   [Chat Collector](apps/chat-collector/README.md)
+*   [Christopher Rutherford .NET](apps/christopherrutherford-net/README.md)
+*   [Client Interface](apps/client-interface/README.md)
+*   [Digital Homestead](apps/digital-homestead/README.md)
+*   [Forge of Will](apps/forgeofwill/README.md)
+*   [Gateway](apps/gateway/README.md)
+*   [Profile](apps/profile/README.md)
+*   [Project Planning](apps/project-planning/README.md)
+*   [Prompt Proxy](apps/prompt-proxy/README.md)
+*   [Social](apps/social/README.md)
+*   [Telos Docs Service](apps/telos-docs-service/README.md)
+
 ## Running the Applications
 
 There are two main application stacks that can be run using Docker Compose.

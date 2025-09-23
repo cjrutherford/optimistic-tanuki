@@ -1,4 +1,4 @@
-import { Component, computed, effect, Inject, PLATFORM_ID, signal } from '@angular/core';
+import { Component, computed, effect, Inject, PLATFORM_ID, signal, EnvironmentInjector, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
   ChatContact,
@@ -47,6 +47,7 @@ import { io } from 'socket.io-client';
 })
 export class ChatComponent {
   socketChat?: SocketChatService | null;
+  private injector = inject(EnvironmentInjector);
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: object,
@@ -91,12 +92,14 @@ export class ChatComponent {
       checkAndConnect();
 
       // React to profile changes using a signal effect
-      const stopEffect = effect(() => {
-        const profile = this.profileService.currentUserProfile();
-        if (profile) {
-          checkAndConnect();
-          stopEffect.destroy();
-        }
+      runInInjectionContext(this.injector, () => {
+        const stopEffect = effect(() => {
+          const profile = this.profileService.currentUserProfile();
+          if (profile) {
+            checkAndConnect();
+            stopEffect.destroy();
+          }
+        });
       });
     }
   }
