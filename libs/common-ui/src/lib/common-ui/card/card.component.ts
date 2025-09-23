@@ -44,7 +44,7 @@ import { Subject } from 'rxjs';
     '[class.glass-effect]': 'glassEffect',
   },
 })
-export class CardComponent extends Themeable implements Variantable, OnChanges {
+export class CardComponent extends Variantable implements Themeable, OnChanges {
 
   @Input() glassEffect = false;
   @Input() CardVariant: VariantType = 'default';
@@ -97,7 +97,7 @@ export class CardComponent extends Themeable implements Variantable, OnChanges {
     this.setVariantOptions(opts);
   }
 
-  applyTheme(colors: ThemeColors): void {
+  override applyTheme(colors: ThemeColors): void {
     
     const options = getDefaultVariantOptions(colors, this.CardVariant);
     this.setVariantOptions(options);

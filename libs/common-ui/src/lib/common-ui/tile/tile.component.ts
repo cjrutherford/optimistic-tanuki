@@ -45,33 +45,6 @@ import { Subject } from 'rxjs';
   },
 })
 export class TileComponent extends Variantable implements Themeable, OnChanges, OnInit, OnDestroy {
-  theme: 'light' | 'dark';
-  background: string;
-  foreground: string;
-  accent: string;
-  complement: string;
-  tertiary: string;
-  success: string;
-  danger: string;
-  warning: string;
-  borderColor: string;
-  borderGradient: string;
-  transitionDuration: string;
-  themeColors?: ThemeColors | undefined;
-  protected destroy$: Subject<void>;
-  protected elementRef: ElementRef<any>;
-  ngOnInit(): void {
-    throw new Error('Method not implemented.');
-  }
-  ngOnDestroy(): void {
-    throw new Error('Method not implemented.');
-  }
-  protected setLocalCSSVariable(name: string, value: string): void {
-    throw new Error('Method not implemented.');
-  }
-  protected setLocalCSSVariables(variables: Record<string, string>): void {
-    throw new Error('Method not implemented.');
-  }
   @Input() TileVariant: VariantType = 'default';
   variant!: string;
   backgroundFilter!: string;
