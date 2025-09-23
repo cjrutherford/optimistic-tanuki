@@ -126,7 +126,6 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
 
   constructor(private componentInjectionService: ComponentInjectionService, _theme: ThemeService) {
     super(_theme);
-    this.themeService = _theme;
   }
 
   @HostListener('document:click')
