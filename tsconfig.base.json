@@ -34,6 +34,7 @@
       ],
       "@optimistic-tanuki/social-ui": ["libs/social-ui/src/index.ts"],
       "@optimistic-tanuki/storage": ["libs/storage/src/index.ts"],
+      "@optimistic-tanuki/theme-lib": ["libs/theme-lib/src/index.ts"],
       "@optimistic-tanuki/theme-ui": ["libs/theme-ui/src/index.ts"],
       "@optimistic-tanuki/ui-models": ["libs/ui-models/src/index.ts"]
     }

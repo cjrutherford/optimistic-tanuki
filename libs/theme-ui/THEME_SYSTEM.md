@@ -128,7 +128,7 @@ The system includes comprehensive utility classes:
 ### Using the ThemeService
 
 ```typescript
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 export class MyComponent {
   constructor(private themeService: ThemeService) {}
@@ -223,14 +223,14 @@ Use the standardized variables in your component styles:
 
 Access predefined palettes via:
 ```typescript
-import { PREDEFINED_PALETTES, getPaletteByName } from '@optimistic-tanuki/theme-ui';
+import { PREDEFINED_PALETTES, getPaletteByName } from '@optimistic-tanuki/theme-lib';
 ```
 
 ### Design Tokens
 
 Access design tokens via:
 ```typescript
-import { DEFAULT_DESIGN_TOKENS } from '@optimistic-tanuki/theme-ui';
+import { DEFAULT_DESIGN_TOKENS } from '@optimistic-tanuki/theme-lib';
 ```
 
 ## Best Practices

@@ -1,4 +1,4 @@
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder, GradientType } from '../gradient-builder';
 import { Directive, ElementRef, HostBinding, Renderer2 } from '@angular/core';
 

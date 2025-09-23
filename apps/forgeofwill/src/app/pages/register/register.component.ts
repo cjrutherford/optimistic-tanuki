@@ -2,7 +2,7 @@ import { RegisterSubmitType, submitTypeToRegisterRequest } from '@optimistic-tan
 
 import { AuthenticationService } from '../../authentication.service';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
-import { CommonModule } from '@angular/common';
+
 import { Component } from '@angular/core';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
@@ -10,7 +10,7 @@ import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-register',
-  imports: [CommonModule, RegisterBlockComponent, CardComponent],
+  imports: [RegisterBlockComponent, CardComponent],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })

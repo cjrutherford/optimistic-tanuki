@@ -1,11 +1,11 @@
 import { Component, Input } from '@angular/core';
 
 import { ChatContact } from '../../chat-ui.component';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'lib-participants',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './participants.component.html',
   styleUrls: ['./participants.component.scss'],
 })

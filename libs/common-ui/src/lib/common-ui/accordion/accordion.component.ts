@@ -1,10 +1,10 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'otui-accordion',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './accordion.component.html',
   styleUrl: './accordion.component.scss',
 })

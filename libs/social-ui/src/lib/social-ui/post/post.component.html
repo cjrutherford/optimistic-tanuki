@@ -11,22 +11,30 @@
   </div>
   <div class="content">
     <div class="post-content" [innerHTML]="content.content"></div>
-    <div class="post-attachment" *ngIf="attachments.length > 0">
-      <h3>Attachments</h3>
-      <otui-grid [columns]="6" [rows]="attachmentRows"  class="attachment">
-        <!-- Display attachment details here -->
-        <otui-tile *ngFor="let attachment of attachments" (click)="downloadAttachment(attachment)" target="_blank">{{ attachment.name }}</otui-tile>
-      </otui-grid>
-    </div>
-    <div class="post-link" *ngIf="links.length > 0">
-      <h3>Links</h3>
-      <otui-grid [columns]="1" [rows]="links.length">
-          <otui-tile *ngFor="let link of links" class="link">
-            <!-- Display link details here -->
-            <a [href]="link.url" target="_blank">{{ link.title }}</a>
-          </otui-tile>
-      </otui-grid>
-    </div>
+    @if (attachments.length > 0) {
+      <div class="post-attachment">
+        <h3>Attachments</h3>
+        <otui-grid [columns]="6" [rows]="attachmentRows"  class="attachment">
+          <!-- Display attachment details here -->
+          @for (attachment of attachments; track attachment) {
+            <otui-tile (click)="downloadAttachment(attachment)" target="_blank">{{ attachment.name }}</otui-tile>
+          }
+        </otui-grid>
+      </div>
+    }
+    @if (links.length > 0) {
+      <div class="post-link">
+        <h3>Links</h3>
+        <otui-grid [columns]="1" [rows]="links.length">
+          @for (link of links; track link) {
+            <otui-tile class="link">
+              <!-- Display link details here -->
+              <a [href]="link.url" target="_blank">{{ link.title }}</a>
+            </otui-tile>
+          }
+        </otui-grid>
+      </div>
+    }
     <div class="actions">
       <otui-button variant="success">Like</otui-button>
       <otui-button variant="success">Share</otui-button>

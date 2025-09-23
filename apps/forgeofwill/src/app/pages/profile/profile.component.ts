@@ -2,12 +2,12 @@ import { BannerComponent, ProfilePhotoComponent, ProfileSelectorComponent } from
 import { Component, signal } from '@angular/core';
 import { CreateProfileDto, ProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
 
-import { CommonModule } from '@angular/common';
+
 import { ProfileService } from '../../profile/profile.service';
 
 @Component({
   selector: 'app-profile',
-  imports: [CommonModule, ProfileSelectorComponent, ProfilePhotoComponent, BannerComponent],
+  imports: [ProfileSelectorComponent, ProfilePhotoComponent, BannerComponent],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })

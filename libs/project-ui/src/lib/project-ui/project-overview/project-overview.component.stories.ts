@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ProjectOverviewComponent } from './project-overview.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<ProjectOverviewComponent> = {

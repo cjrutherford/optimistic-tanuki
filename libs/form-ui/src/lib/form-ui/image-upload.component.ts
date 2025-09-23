@@ -1,19 +1,21 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, EventEmitter, Output, HostListener, Input, OnInit } from '@angular/core';
 
 @Component({
   selector: 'lib-image-upload',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="upload-container" [class.dragover]="isDragOver">
       <input type="file" accept="image/*" (change)="handleImageChange($event)" />
       <div class="drop-target" (drop)="handleDrop($event)" (dragover)="handleDragOver($event)" (dragleave)="handleDragLeave($event)">
         <p>Drag and drop an image here, or click to select one</p>
       </div>
-      <img *ngIf="image" [src]="image" alt="Image preview" class="image-preview" />
+      @if (image) {
+        <img [src]="image" alt="Image preview" class="image-preview" />
+      }
     </div>
-  `,
+    `,
   styles: [`
     .upload-container {
       width: 100%;

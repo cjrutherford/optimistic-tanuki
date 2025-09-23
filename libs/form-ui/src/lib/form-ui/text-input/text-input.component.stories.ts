@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { TextInputComponent } from './text-input.component';
-import { within, userEvent } from '@storybook/testing-library';
+import { within, userEvent } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<TextInputComponent> = {

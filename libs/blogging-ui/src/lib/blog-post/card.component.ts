@@ -1,10 +1,10 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ButtonComponent, CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'lib-blog-post-card',
-  imports: [CommonModule, CardComponent, HeadingComponent, ButtonComponent],
+  imports: [CardComponent, HeadingComponent, ButtonComponent],
   templateUrl: './card.component.html',
   styleUrl: './card.component.scss',
 })

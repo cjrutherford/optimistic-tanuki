@@ -9,11 +9,13 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
   template: `
     <otui-card class="callout-box" [ngClass]="'callout-' + type">
       <div class="callout-content">
-        <div class="callout-title" *ngIf="title">{{ title }}</div>
+        @if (title) {
+          <div class="callout-title">{{ title }}</div>
+        }
         <div class="callout-text">{{ content }}</div>
       </div>
     </otui-card>
-  `,
+    `,
   styles: [`
     .callout-box {
       margin: 1rem 0;

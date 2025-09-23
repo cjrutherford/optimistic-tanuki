@@ -2,12 +2,12 @@ import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAct
 import { Component, EventEmitter, Input, Output, SimpleChange, SimpleChanges, signal } from '@angular/core';
 import { CreateProjectJournal, ProjectJournal } from '@optimistic-tanuki/ui-models';
 
-import { CommonModule } from '@angular/common';
+
 import { ProjectJournalFormComponent } from '../project-journal-form/project-journal-form.component';
 
 @Component({
   selector: 'lib-project-journal-table',
-  imports: [CommonModule, TableComponent, ButtonComponent, ModalComponent, ProjectJournalFormComponent],
+  imports: [TableComponent, ButtonComponent, ModalComponent, ProjectJournalFormComponent],
   templateUrl: './project-journal-table.component.html',
   styleUrl: './project-journal-table.component.scss',
 })

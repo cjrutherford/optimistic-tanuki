@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HeadingComponent } from '@optimistic-tanuki/common-ui';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { Subject } from 'rxjs';
 
 @Component({
   selector: 'dh-footer',
-  imports: [CommonModule, HeadingComponent],
+  imports: [HeadingComponent],
   templateUrl: './footer.component.html',
   styleUrl: './footer.component.scss',
   host: {

@@ -8,7 +8,6 @@ import {
 import { loadTheme, saveTheme } from './theme-storage';
 
 import { TestBed } from '@angular/core/testing';
-import { ThemeColors } from './theme.interface';
 import { ThemeService } from './theme.service';
 
 jest.mock('./color-utils', () => ({

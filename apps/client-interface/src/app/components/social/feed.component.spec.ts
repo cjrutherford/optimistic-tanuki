@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EventEmitter } from '@angular/core';
 import { FeedComponent } from './feed.component';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
 import { CommentService } from '../../comment.service';

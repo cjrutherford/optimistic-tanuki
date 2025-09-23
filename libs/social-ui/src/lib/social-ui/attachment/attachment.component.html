@@ -1,9 +1,11 @@
 <otui-card class="attachments-container">
   <otui-grid [columns]="6" [rows]="(attachments.length / 6) + 1">
-    <div class="attachment-item" *ngFor="let attachment of attachments">
-      {{ attachment.name }}
-      <otui-button variant="danger" (click)="removeAttachment(attachment)">Remove</otui-button>
-    </div>
+    @for (attachment of attachments; track attachment) {
+      <div class="attachment-item">
+        {{ attachment.name }}
+        <otui-button variant="danger" (click)="removeAttachment(attachment)">Remove</otui-button>
+      </div>
+    }
   </otui-grid>
   <input class="attachment-input" #newAttachment type="file" accept=".txt,.pdf,.doc,.docx,.xls,.xlsx" />
   <br />

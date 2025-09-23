@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TextAreaComponent } from './text-area.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 describe('TextAreaComponent', () => {
   let component: TextAreaComponent;

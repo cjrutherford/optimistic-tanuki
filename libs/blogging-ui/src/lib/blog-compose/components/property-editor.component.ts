@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
@@ -20,132 +20,147 @@ export interface PropertyDefinition {
   selector: 'lib-property-editor',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatIconModule,
     ButtonComponent,
     CardComponent,
     TextInputComponent
-  ],
+],
   template: `
-    <otui-card class="property-editor" *ngIf="isVisible">
-      <div class="editor-header">
-        <h3>Edit Component Properties</h3>
-        <button (click)="onClose()" class="close-btn">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-      
-      <div class="component-info" *ngIf="componentInstance">
-        <h4>{{ componentInstance.componentDef.name }}</h4>
-        <p *ngIf="componentInstance.componentDef.description">
-          {{ componentInstance.componentDef.description }}
-        </p>
-      </div>
-      
-      <div class="properties-form" *ngIf="propertyDefinitions.length > 0">
-        <div class="property-group" *ngFor="let prop of propertyDefinitions">
-          <label [for]="prop.key" class="property-label">
-            {{ prop.label }}
-            <span class="output-indicator" *ngIf="prop.isOutput">📤</span>
-          </label>
-          <p class="property-description" *ngIf="prop.description">
-            {{ prop.description }}
-          </p>
-          
-          <!-- Input Properties -->
-          <div *ngIf="!prop.isOutput" [ngSwitch]="prop.type">
-            <!-- String input -->
-            <lib-text-input
-              *ngSwitchCase="'string'"
-              [id]="prop.key"
-              [type]="'text'"
-              [(ngModel)]="editedData[prop.key]"
-              [placeholder]="getPlaceholder(prop)"
-            ></lib-text-input>
-            
-            <!-- Number input -->
-            <lib-text-input
-              *ngSwitchCase="'number'"
-              [id]="prop.key"
-              [type]="'number'"
-              [(ngModel)]="editedData[prop.key]"
-              [placeholder]="getPlaceholder(prop)"
-            ></lib-text-input>
-            
-            <!-- Boolean input -->
-            <div *ngSwitchCase="'boolean'" class="checkbox-container">
-              <input
-                type="checkbox"
-                [id]="prop.key"
-                [(ngModel)]="editedData[prop.key]"
-                class="checkbox-input"
-              />
-              <label [for]="prop.key" class="checkbox-label">
-                {{ prop.label }}
-              </label>
-            </div>
-            
-            <!-- URL input -->
-            <lib-text-input
-              *ngSwitchCase="'url'"
-              [id]="prop.key"
-              [type]="'url'"
-              [(ngModel)]="editedData[prop.key]"
-              [placeholder]="'https://example.com'"
-            ></lib-text-input>
-            
-            <!-- Array input (JSON) -->
-            <textarea
-              *ngSwitchCase="'array'"
-              [id]="prop.key"
-              [(ngModel)]="editedData[prop.key + '_json']"
-              (ngModelChange)="updateArrayFromJson(prop.key, $event)"
-              class="json-input"
-              [placeholder]="getArrayPlaceholder(prop)"
-            ></textarea>
-            
-            <!-- Object input (JSON) -->
-            <textarea
-              *ngSwitchCase="'object'"
-              [id]="prop.key"
-              [(ngModel)]="editedData[prop.key + '_json']"
-              (ngModelChange)="updateObjectFromJson(prop.key, $event)"
-              class="json-input"
-              [placeholder]="getObjectPlaceholder(prop)"
-            ></textarea>
-          </div>
-          
-          <!-- Output Properties -->
-          <div *ngIf="prop.isOutput" class="output-config">
-            <lib-text-input
-              [id]="prop.key + '_url'"
-              [type]="'url'"
-              [(ngModel)]="editedData[prop.key + '_url']"
-              [placeholder]="'https://api.example.com/webhook'"
-              label="Webhook URL"
-            ></lib-text-input>
-            
-            <div class="output-schema">
-              <label>Expected Data Schema:</label>
-              <textarea
-                [id]="prop.key + '_schema'"
-                [(ngModel)]="editedData[prop.key + '_schema']"
-                class="json-input"
-                readonly
-                [value]="getOutputSchemaString(prop)"
-              ></textarea>
-            </div>
-          </div>
+    @if (isVisible) {
+      <otui-card class="property-editor">
+        <div class="editor-header">
+          <h3>Edit Component Properties</h3>
+          <button (click)="onClose()" class="close-btn">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
-      </div>
-      
-      <div class="editor-actions">
-        <otui-button variant="secondary" (action)="onClose()">Cancel</otui-button>
-        <otui-button (action)="onSave()">Save Changes</otui-button>
-      </div>
-    </otui-card>
-  `,
+        @if (componentInstance) {
+          <div class="component-info">
+            <h4>{{ componentInstance.componentDef.name }}</h4>
+            @if (componentInstance.componentDef.description) {
+              <p>
+                {{ componentInstance.componentDef.description }}
+              </p>
+            }
+          </div>
+        }
+        @if (propertyDefinitions.length > 0) {
+          <div class="properties-form">
+            @for (prop of propertyDefinitions; track prop) {
+              <div class="property-group">
+                <label [for]="prop.key" class="property-label">
+                  {{ prop.label }}
+                  @if (prop.isOutput) {
+                    <span class="output-indicator">📤</span>
+                  }
+                </label>
+                @if (prop.description) {
+                  <p class="property-description">
+                    {{ prop.description }}
+                  </p>
+                }
+                <!-- Input Properties -->
+                @if (!prop.isOutput) {
+                  <div>
+                    @switch (prop.type) {
+                      <!-- String input -->
+                      @case ('string') {
+                        <lib-text-input
+                          [id]="prop.key"
+                          [type]="'text'"
+                          [(ngModel)]="editedData[prop.key]"
+                          [placeholder]="getPlaceholder(prop)"
+                        ></lib-text-input>
+                      }
+                      <!-- Number input -->
+                      @case ('number') {
+                        <lib-text-input
+                          [id]="prop.key"
+                          [type]="'number'"
+                          [(ngModel)]="editedData[prop.key]"
+                          [placeholder]="getPlaceholder(prop)"
+                        ></lib-text-input>
+                      }
+                      <!-- Boolean input -->
+                      @case ('boolean') {
+                        <div class="checkbox-container">
+                          <input
+                            type="checkbox"
+                            [id]="prop.key"
+                            [(ngModel)]="editedData[prop.key]"
+                            class="checkbox-input"
+                            />
+                          <label [for]="prop.key" class="checkbox-label">
+                            {{ prop.label }}
+                          </label>
+                        </div>
+                      }
+                      <!-- URL input -->
+                      @case ('url') {
+                        <lib-text-input
+                          [id]="prop.key"
+                          [type]="'url'"
+                          [(ngModel)]="editedData[prop.key]"
+                          [placeholder]="'https://example.com'"
+                        ></lib-text-input>
+                      }
+                      <!-- Array input (JSON) -->
+                      @case ('array') {
+                        <textarea
+                          [id]="prop.key"
+                          [(ngModel)]="editedData[prop.key + '_json']"
+                          (ngModelChange)="updateArrayFromJson(prop.key, $event)"
+                          class="json-input"
+                          [placeholder]="getArrayPlaceholder(prop)"
+                        ></textarea>
+                      }
+                      <!-- Object input (JSON) -->
+                      @case ('object') {
+                        <textarea
+                          [id]="prop.key"
+                          [(ngModel)]="editedData[prop.key + '_json']"
+                          (ngModelChange)="updateObjectFromJson(prop.key, $event)"
+                          class="json-input"
+                          [placeholder]="getObjectPlaceholder(prop)"
+                        ></textarea>
+                      }
+                    }
+                  </div>
+                }
+                <!-- Output Properties -->
+                @if (prop.isOutput) {
+                  <div class="output-config">
+                    <lib-text-input
+                      [id]="prop.key + '_url'"
+                      [type]="'url'"
+                      [(ngModel)]="editedData[prop.key + '_url']"
+                      [placeholder]="'https://api.example.com/webhook'"
+                      label="Webhook URL"
+                    ></lib-text-input>
+                    <div class="output-schema">
+                      <label>Expected Data Schema:</label>
+                      <textarea
+                        [id]="prop.key + '_schema'"
+                        [(ngModel)]="editedData[prop.key + '_schema']"
+                        class="json-input"
+                        readonly
+                        [value]="getOutputSchemaString(prop)"
+                      ></textarea>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+        <div class="editor-actions">
+          <otui-button variant="secondary" (action)="onClose()">Cancel</otui-button>
+          <otui-button (action)="onSave()">Save Changes</otui-button>
+        </div>
+      </otui-card>
+    }
+    `,
   styles: [`
     .property-editor {
       position: fixed;

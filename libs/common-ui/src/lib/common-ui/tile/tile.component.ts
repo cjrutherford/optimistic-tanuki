@@ -1,12 +1,13 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, SimpleChanges, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   Variantable,
   VariantOptions,
   VariantType,
 } from '../interfaces/variantable.interface';
-import { ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'otui-tile',
@@ -43,7 +44,34 @@ import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
     '[style.--background-pattern]': 'backgroundPattern',
   },
 })
-export class TileComponent extends Variantable implements OnChanges {
+export class TileComponent extends Variantable implements Themeable, OnChanges {
+  theme: 'light' | 'dark';
+  background: string;
+  foreground: string;
+  accent: string;
+  complement: string;
+  tertiary: string;
+  success: string;
+  danger: string;
+  warning: string;
+  borderColor: string;
+  borderGradient: string;
+  transitionDuration: string;
+  themeColors?: ThemeColors | undefined;
+  protected destroy$: Subject<void>;
+  protected elementRef: ElementRef<any>;
+  ngOnInit(): void {
+    throw new Error('Method not implemented.');
+  }
+  ngOnDestroy(): void {
+    throw new Error('Method not implemented.');
+  }
+  protected setLocalCSSVariable(name: string, value: string): void {
+    throw new Error('Method not implemented.');
+  }
+  protected setLocalCSSVariables(variables: Record<string, string>): void {
+    throw new Error('Method not implemented.');
+  }
   @Input() TileVariant: VariantType = 'default';
   variant!: string;
   backgroundFilter!: string;

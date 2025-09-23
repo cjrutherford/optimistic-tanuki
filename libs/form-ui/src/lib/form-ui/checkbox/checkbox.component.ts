@@ -1,11 +1,11 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'lib-checkbox',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './checkbox.component.html',
   styleUrls: ['./checkbox.component.scss'],
   host: {

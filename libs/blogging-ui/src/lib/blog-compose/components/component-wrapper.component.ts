@@ -1,42 +1,46 @@
 import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatIconModule } from '@angular/material/icon';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'lib-component-wrapper',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [MatIconModule],
   template: `
-    <div class="component-wrapper" 
-         [class.selected]="isSelected"
-         [class.hover]="isHovered"
-         (mouseenter)="onMouseEnter()"
-         (mouseleave)="onMouseLeave()"
-         (click)="onClick($event)">
-      
-      <div class="component-controls" *ngIf="isHovered || isSelected">
-        <button class="control-btn edit-btn" (click)="onEdit($event)" title="Edit Properties">
-          <mat-icon>edit</mat-icon>
-        </button>
-        <button class="control-btn delete-btn" (click)="onDelete($event)" title="Delete Component">
-          <mat-icon>delete</mat-icon>
-        </button>
-        <button class="control-btn move-up-btn" (click)="onMoveUp($event)" title="Move Up">
-          <mat-icon>keyboard_arrow_up</mat-icon>
-        </button>
-        <button class="control-btn move-down-btn" (click)="onMoveDown($event)" title="Move Down">
-          <mat-icon>keyboard_arrow_down</mat-icon>
-        </button>
-      </div>
-      
-      <div class="component-label" *ngIf="isSelected">
-        {{ componentInstance.componentDef.name }}
-      </div>
-      
+    <div class="component-wrapper"
+      [class.selected]="isSelected"
+      [class.hover]="isHovered"
+      (mouseenter)="onMouseEnter()"
+      (mouseleave)="onMouseLeave()"
+      (click)="onClick($event)">
+    
+      @if (isHovered || isSelected) {
+        <div class="component-controls">
+          <button class="control-btn edit-btn" (click)="onEdit($event)" title="Edit Properties">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button class="control-btn delete-btn" (click)="onDelete($event)" title="Delete Component">
+            <mat-icon>delete</mat-icon>
+          </button>
+          <button class="control-btn move-up-btn" (click)="onMoveUp($event)" title="Move Up">
+            <mat-icon>keyboard_arrow_up</mat-icon>
+          </button>
+          <button class="control-btn move-down-btn" (click)="onMoveDown($event)" title="Move Down">
+            <mat-icon>keyboard_arrow_down</mat-icon>
+          </button>
+        </div>
+      }
+    
+      @if (isSelected) {
+        <div class="component-label">
+          {{ componentInstance.componentDef.name }}
+        </div>
+      }
+    
       <ng-content></ng-content>
     </div>
-  `,
+    `,
   styles: [`
     .component-wrapper {
       position: relative;

@@ -1,14 +1,14 @@
 import { Component, EventEmitter, inject, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { QuillModule } from 'ngx-quill';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { FormsModule } from '@angular/forms';
 import TurndownService from 'turndown';
 
 @Component({
   selector: 'lib-compose-chat',
-  imports: [CommonModule, FormsModule, QuillModule, ButtonComponent],
+  imports: [FormsModule, QuillModule, ButtonComponent],
   providers: [],
   templateUrl: './compose-chat.component.html',
   styleUrl: './compose-chat.component.scss',

@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { BlogComposeComponent } from '@optimistic-tanuki/blogging-ui';
 
 @Component({
   selector: 'dh-blog-page',
-  imports: [CommonModule, BlogComposeComponent],
+  imports: [BlogComposeComponent],
   templateUrl: './blog-page.component.html',
   styleUrl: './blog-page.component.scss',
 })

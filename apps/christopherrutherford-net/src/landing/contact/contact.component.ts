@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { TileComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
 import { ContactService } from '../../app/contact.service';
@@ -7,7 +7,7 @@ import { ContactService } from '../../app/contact.service';
 @Component({
   selector: 'app-contact',
   providers: [ContactService],
-  imports: [CommonModule, ContactFormComponent, TileComponent, HeadingComponent],
+  imports: [ContactFormComponent, TileComponent, HeadingComponent],
   templateUrl: './contact.component.html',
   styleUrl: './contact.component.scss',
 })

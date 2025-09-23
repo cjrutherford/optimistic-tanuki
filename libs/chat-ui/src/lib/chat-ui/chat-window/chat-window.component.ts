@@ -17,7 +17,7 @@ import { CommonModule } from '@angular/common';
 import { MessageListComponent } from './message-list/message-list.component';
 import { ParticipantsComponent } from './participants/participants.component';
 import { ComposeChatComponent } from '../compose-chat/compose-chat.component';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder } from 'libs/common-ui/src/lib/common-ui/gradient-builder';
 import { hexToRgb } from 'libs/common-ui/src/lib/common-ui/glass-container.component';
 

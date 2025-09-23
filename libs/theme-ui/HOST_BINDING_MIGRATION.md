@@ -247,7 +247,7 @@ Check the fallback chain in your CSS:
 Import the new design tokens:
 
 ```typescript
-import { DEFAULT_DESIGN_TOKENS } from '@optimistic-tanuki/theme-ui';
+import { DEFAULT_DESIGN_TOKENS } from '@optimistic-tanuki/theme-lib';
 ```
 
 The enhanced theme system provides much better maintainability and flexibility while maintaining backward compatibility.

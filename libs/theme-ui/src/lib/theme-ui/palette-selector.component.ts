@@ -1,12 +1,12 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ThemeService } from './theme.service';
 import { PREDEFINED_PALETTES } from './theme-palettes';
 
 @Component({
   selector: 'theme-palette-selector',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="palette-selector">
       <h3>Theme Palettes</h3>

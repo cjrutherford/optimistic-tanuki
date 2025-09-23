@@ -9,7 +9,7 @@ import {
   ViewContainerRef,
   AfterViewInit,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -24,7 +24,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder } from '@optimistic-tanuki/common-ui';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -66,7 +66,6 @@ interface PostData {
   selector: 'lib-blog-compose',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     CardComponent,
     TextInputComponent,
@@ -74,8 +73,8 @@ interface PostData {
     ContextMenuComponent,
     ComponentSelectorComponent,
     PropertyEditorComponent,
-    ComponentWrapperComponent,
-  ],
+    ComponentWrapperComponent
+],
   templateUrl: './blog-compose.component.html',
   styleUrls: ['./blog-compose.component.scss'],
   host: {

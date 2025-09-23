@@ -1,5 +1,5 @@
 import { Component, Input, Signal, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { BlogPostCardComponent } from '../blog-post/card.component';
 import { trigger, transition, style, animate } from '@angular/animations';
 
@@ -14,7 +14,7 @@ export type PostDefinition = {
 
 @Component({
   selector: 'lib-featured-posts',
-  imports: [CommonModule, BlogPostCardComponent],
+  imports: [BlogPostCardComponent],
   templateUrl: './featured-posts.component.html',
   styleUrls: ['./featured-posts.component.scss'],
   animations: [

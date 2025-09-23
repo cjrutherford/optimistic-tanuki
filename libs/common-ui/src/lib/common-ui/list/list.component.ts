@@ -1,15 +1,17 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'otui-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <ul [class]="type">
-      <li *ngFor="let item of items">{{ item }}</li>
+      @for (item of items; track item) {
+        <li>{{ item }}</li>
+      }
     </ul>
-  `,
+    `,
   styleUrls: ['./list.component.scss']
 })
 export class ListComponent {

@@ -2,12 +2,12 @@ import { Component, Input } from '@angular/core';
 
 import { ChatContact } from '../../chat-ui.component';
 import { ChatMessage } from '../../../types/message';
-import { CommonModule } from '@angular/common';
+
 import { marked } from 'marked';
 
 @Component({
   selector: 'lib-message-list',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './message-list.component.html',
   styleUrls: ['./message-list.component.scss'],
 })
