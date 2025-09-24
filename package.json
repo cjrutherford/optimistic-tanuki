@@ -56,6 +56,7 @@
     "@nestjs/websockets": "^10.4.20",
     "@ng-icons/core": "^32.1.0",
     "@ng-icons/heroicons": "^32.1.0",
+    "@ng-icons/material-icons": "^32.1.0",
     "@tiptap/core": "^3.4.5",
     "@tiptap/extension-bubble-menu": "^3.4.5",
     "@tiptap/extension-color": "^3.4.5",
