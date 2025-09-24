@@ -20,6 +20,7 @@ import { TiptapEditorDirective } from 'ngx-tiptap';
 import Image from '@tiptap/extension-image';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
+import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
@@ -167,6 +168,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
         Image,
         Subscript,
         Superscript,
+        Underline,
         TextAlign.configure({
           types: ['heading', 'paragraph'],
         }),

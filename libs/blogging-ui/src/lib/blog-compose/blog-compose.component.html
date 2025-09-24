@@ -34,9 +34,12 @@
       accept="image/*"
       />
     @if(editor) {
-      <div class="content tiptap-editor-styles" tiptap-editor>
-        <!-- Removed ngModel binding -->
-      </div>
+      <tiptap-editor
+        [editor]="editor"
+        [(ngModel)]="content"
+        [ngModelOptions]="{ standalone: true }"
+        class="tiptap-editor-styles"
+      ></tiptap-editor>
     }
 
     <otui-button (action)="onPostSubmit()">Submit</otui-button>
