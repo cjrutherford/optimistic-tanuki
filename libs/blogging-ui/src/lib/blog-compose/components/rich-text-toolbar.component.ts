@@ -2,27 +2,15 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { 
-  heroOutlineBold,
-  heroOutlineItalic,
-  heroOutlineUnderline,
-  heroOutlineStrikethrough,
-  heroOutlineListBullet,
-  heroOutlineListNumber,
-  heroOutlineLink,
-  heroOutlinePhoto,
-  heroOutlineTable3,
-  heroOutlineQuote,
-  heroOutlineCode,
-  heroOutlineAlignLeft,
-  heroOutlineAlignCenter,
-  heroOutlineAlignRight,
-  heroOutlineAlignJustify,
-  heroOutlineH1,
-  heroOutlineH2,
-  heroOutlineH3,
-  heroOutlineUndo,
-  heroOutlineRedo,
-  heroOutlineExtension
+  heroBold,
+  heroItalic,
+  heroListBullet,
+  heroNumberedList,
+  heroLink,
+  heroPhoto,
+  heroArrowUturnLeft,
+  heroArrowUturnRight,
+  heroQueueList
 } from '@ng-icons/heroicons/outline';
 import { 
   matFormatBold,
@@ -46,9 +34,9 @@ import {
   matRedo,
   matExtension,
   matTableRows,
-  matViewColumn,
+  matTableView,
   matDeleteOutline
-} from '@ng-icons/material-icons';
+} from '@ng-icons/material-icons/baseline';
 import { Editor } from '@tiptap/core';
 
 export interface ToolbarGroup {
@@ -72,27 +60,15 @@ export interface ToolbarTool {
   providers: [
     provideIcons({
       // Heroicons
-      heroOutlineBold,
-      heroOutlineItalic,
-      heroOutlineUnderline,
-      heroOutlineStrikethrough,
-      heroOutlineListBullet,
-      heroOutlineListNumber,
-      heroOutlineLink,
-      heroOutlinePhoto,
-      heroOutlineTable3,
-      heroOutlineQuote,
-      heroOutlineCode,
-      heroOutlineAlignLeft,
-      heroOutlineAlignCenter,
-      heroOutlineAlignRight,
-      heroOutlineAlignJustify,
-      heroOutlineH1,
-      heroOutlineH2,
-      heroOutlineH3,
-      heroOutlineUndo,
-      heroOutlineRedo,
-      heroOutlineExtension,
+      heroBold,
+      heroItalic,
+      heroListBullet,
+      heroNumberedList,
+      heroLink,
+      heroPhoto,
+      heroArrowUturnLeft,
+      heroArrowUturnRight,
+      heroQueueList,
       // Material Icons
       matFormatBold,
       matFormatItalic,
@@ -115,7 +91,7 @@ export interface ToolbarTool {
       matRedo,
       matExtension,
       matTableRows,
-      matViewColumn,
+      matTableView,
       matDeleteOutline
     })
   ],
@@ -352,14 +328,14 @@ export class RichTextToolbarComponent {
           {
             id: 'addColumnBefore',
             name: 'Add Column Before',
-            icon: 'matViewColumn',
+            icon: 'matTableView',
             action: () => this.editor.chain().focus().addColumnBefore().run(),
             tooltip: 'Add Column Before'
           },
           {
             id: 'addColumnAfter',
             name: 'Add Column After',
-            icon: 'matViewColumn',
+            icon: 'matTableView',
             action: () => this.editor.chain().focus().addColumnAfter().run(),
             tooltip: 'Add Column After'
           },
