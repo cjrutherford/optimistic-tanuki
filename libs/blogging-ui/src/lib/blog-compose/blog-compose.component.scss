@@ -9,59 +9,6 @@ form {
   width: 100%;
 }
 
-.tiptap-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm, 8px);
-  padding: var(--spacing-sm, 8px);
-  border-radius: var(--border-radius-lg, 8px);
-  margin-bottom: var(--spacing-xs, 4px);
-  background: var(--local-background-gradient, var(--background-gradient));
-  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
-
-  button {
-    background: var(--local-complement, var(--complement));
-    color: var(--local-foreground, var(--foreground));
-    border: none;
-    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-    border-radius: var(--border-radius-md, 4px);
-    cursor: pointer;
-    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
-    transition: all 0.15s ease-in-out;
-
-    &:hover {
-      background-color: var(--local-complement, var(--complement));
-      color: var(--local-background, var(--background));
-      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
-    }
-
-    &.is-active {
-      background-color: var(--local-accent, var(--accent));
-      color: var(--local-background, var(--background));
-    }
-    
-    &.component-btn {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-xs, 4px);
-      font-weight: 500;
-      background-color: var(--local-accent, var(--accent));
-      color: var(--local-background, var(--background));
-      
-      &:hover {
-        background-color: var(--local-complement, var(--complement));
-        color: var(--local-foreground, var(--foreground));
-      }
-    }
-  }
-  
-  .toolbar-separator {
-    width: 1px;
-    background-color: var(--local-complement, var(--complement, #c0af4b));
-    margin: 0 var(--spacing-xs, 4px);
-  }
-}
-
 .tiptap-editor-styles ::ng-deep .ProseMirror {
   border: 2px solid var(--local-complement, var(--complement));
   background: var(--local-background-gradient, var(--background-gradient));

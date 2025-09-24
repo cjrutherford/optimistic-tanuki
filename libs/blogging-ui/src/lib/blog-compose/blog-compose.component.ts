@@ -55,6 +55,9 @@ import { PropertyEditorComponent, PropertyDefinition } from './components/proper
 import { ComponentWrapperComponent } from './components/component-wrapper.component';
 import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
 
+// Rich text toolbar
+import { RichTextToolbarComponent } from './components/rich-text-toolbar.component';
+
 interface PostData {
   title: string;
   content: string;
@@ -74,7 +77,8 @@ interface PostData {
     ContextMenuComponent,
     ComponentSelectorComponent,
     PropertyEditorComponent,
-    ComponentWrapperComponent
+    ComponentWrapperComponent,
+    RichTextToolbarComponent
 ],
   templateUrl: './blog-compose.component.html',
   styleUrls: ['./blog-compose.component.scss'],
@@ -452,6 +456,18 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     };
 
     reader.readAsDataURL(file);
+  }
+
+  onToolbarComponentsClick(): void {
+    this.showComponentSelector();
+  }
+
+  onToolbarImageUploadClick(): void {
+    // Trigger the hidden file input
+    const fileInput = document.getElementById('imageInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
   }
 
   handleDragEnter(e: Event): void {
