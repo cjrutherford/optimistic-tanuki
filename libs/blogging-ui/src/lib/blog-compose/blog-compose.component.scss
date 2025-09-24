@@ -1,5 +1,5 @@
 // Import Angular Component Node styles
-@import './extensions/angular-component-node.styles.scss';
+@use './extensions/angular-component-node.styles.scss';
 
 h3 {
   margin: var(--spacing-sm, 8px);
@@ -30,12 +30,17 @@ form {
   }
 }
 
-ngx-tiptap-editor {
+.content {
   width: calc(100% - var(--spacing-sm, 8px));
   margin: var(--spacing-xs, 4px) var(--spacing-xs, 4px) var(--spacing-md, 16px) var(--spacing-xs, 4px);
   display: block;
   flex-grow: 1;
   overflow-y: auto;
+  min-height: 300px;
+  box-shadow: inset 2px 2px 4px 6px var(--accent),
+    inset -2px -2px 4px 6px var(--complement);
+  border-radius: var(--border-radius-lg, 8px);
+  background: var(--local-background-gradient, var(--background-gradient));
 }
 
 button {

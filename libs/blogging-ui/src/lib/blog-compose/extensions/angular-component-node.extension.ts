@@ -1,7 +1,7 @@
-import { Node, mergeAttributes } from '@tiptap/core';
+import { Node, mergeAttributes, CommandProps } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import { Plugin } from '@tiptap/pm/state';
+import { Plugin, EditorState, Transaction } from '@tiptap/pm/state';
 import { ComponentRef, ViewContainerRef, Type } from '@angular/core';
 import { InjectableComponent } from '../interfaces/component-injection.interface';
 
@@ -22,7 +22,7 @@ declare module '@tiptap/core' {
       insertAngularComponent: (options: {
         componentId: string;
         instanceId: string;
-        data?: any;
+        data?: Record<string, any>;
         componentDef: InjectableComponent;
       }) => ReturnType;
       /**
@@ -30,7 +30,7 @@ declare module '@tiptap/core' {
        */
       updateAngularComponent: (options: {
         instanceId: string;
-        data: any;
+        data: Record<string, any>;
       }) => ReturnType;
       /**
        * Remove an Angular component
@@ -49,7 +49,7 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
 
   draggable: true,
 
-  addOptions() {
+  addOptions(): AngularComponentOptions {
     return {
       HTMLAttributes: {},
       viewContainerRef: undefined,
@@ -59,7 +59,7 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
     };
   },
 
-  addAttributes() {
+  addAttributes(): Record<string, any> {
     return {
       componentId: {
         default: null,
@@ -76,7 +76,7 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
     };
   },
 
-  parseHTML() {
+  parseHTML(): { tag: string }[] {
     return [
       {
         tag: 'div[data-angular-component]',
@@ -84,7 +84,7 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, any> }): [string, Record<string, any>, ...any[]] {
     return [
       'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
@@ -95,11 +95,11 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
     ];
   },
 
-  addCommands() {
+  addCommands(): Record<string, any> {
     return {
       insertAngularComponent:
-        (options) =>
-        ({ commands }) => {
+        (options: { componentId: string; instanceId: string; data?: Record<string, any>; componentDef: InjectableComponent }) =>
+        ({ commands }: CommandProps) => {
           return commands.insertContent({
             type: this.name,
             attrs: {
@@ -112,13 +112,13 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
         },
 
       updateAngularComponent:
-        (options) =>
-        ({ tr, state }) => {
+        (options: { instanceId: string; data: Record<string, any> }) =>
+        ({ tr, state }: { tr: Transaction; state: EditorState }) => {
           const { doc } = state;
           let updated = false;
 
           doc.descendants((node, pos) => {
-            if (node.type.name === this.name && node.attrs.instanceId === options.instanceId) {
+            if (node.type.name === this.name && node.attrs['instanceId'] === options.instanceId) {
               tr.setNodeMarkup(pos, undefined, {
                 ...node.attrs,
                 data: options.data,
@@ -131,13 +131,13 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
         },
 
       removeAngularComponent:
-        (instanceId) =>
-        ({ tr, state }) => {
+        (instanceId: string) =>
+        ({ tr, state }: { tr: Transaction; state: EditorState }) => {
           const { doc } = state;
           let removed = false;
 
           doc.descendants((node, pos) => {
-            if (node.type.name === this.name && node.attrs.instanceId === instanceId) {
+            if (node.type.name === this.name && node.attrs['instanceId'] === instanceId) {
               tr.delete(pos, pos + node.nodeSize);
               removed = true;
             }
@@ -148,14 +148,14 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
     };
   },
 
-  addProseMirrorPlugins() {
+  addProseMirrorPlugins(): Plugin[] {
     const options = this.options;
-    
+
     return [
       new Plugin({
         key: new PluginKey('angularComponentRenderer'),
         props: {
-          decorations: (state) => {
+          decorations: (state: EditorState): DecorationSet => {
             const decorations: Decoration[] = [];
             const { doc } = state;
 
@@ -164,54 +164,66 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
                 const decoration = Decoration.widget(pos, () => {
                   const container = document.createElement('div');
                   container.className = 'angular-component-container';
-                  container.setAttribute('data-instance-id', node.attrs.instanceId);
-                  
+                  container.setAttribute('data-instance-id', node.attrs['instanceId']);
+
                   // Add component controls
                   const controls = document.createElement('div');
                   controls.className = 'component-controls';
                   controls.innerHTML = `
                     <button class="component-edit-btn" title="Edit Component">✏️</button>
                     <button class="component-delete-btn" title="Delete Component">🗑️</button>
-                    <span class="component-label">${node.attrs.componentDef?.name || 'Component'}</span>
+                    <span class="component-label">${node.attrs['componentDef']?.name || 'Component'}</span>
                   `;
-                  
+
                   // Add event listeners
                   const editBtn = controls.querySelector('.component-edit-btn');
                   const deleteBtn = controls.querySelector('.component-delete-btn');
-                  
-                  editBtn?.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    options.onComponentEdit?.(node.attrs.instanceId);
-                  });
-                  
-                  deleteBtn?.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    options.onComponentDelete?.(node.attrs.instanceId);
-                  });
-                  
+
+                  if (editBtn) {
+                    editBtn.addEventListener('click', (e: Event) => {
+                      e.stopPropagation();
+                      if (options.onComponentEdit) {
+                        options.onComponentEdit(node.attrs['instanceId']);
+                      }
+                    });
+                  }
+
+                  if (deleteBtn) {
+                    deleteBtn.addEventListener('click', (e: Event) => {
+                      e.stopPropagation();
+                      if (options.onComponentDelete) {
+                        options.onComponentDelete(node.attrs['instanceId']);
+                      }
+                    });
+                  }
+
                   container.appendChild(controls);
-                  
+
                   // Add component content placeholder
                   const content = document.createElement('div');
                   content.className = 'component-content';
                   content.innerHTML = `
                     <div class="component-preview">
-                      <h4>${node.attrs.componentDef?.name || 'Angular Component'}</h4>
-                      <p>${node.attrs.componentDef?.description || 'Click to edit this component'}</p>
+                      <h4>${node.attrs['componentDef']?.name || 'Angular Component'}</h4>
+                      <p>${node.attrs['componentDef']?.description || 'Click to edit this component'}</p>
                     </div>
                   `;
-                  
+
                   container.appendChild(content);
-                  
+
                   // Make the container clickable
                   container.addEventListener('click', () => {
-                    options.onComponentClick?.(node.attrs.componentId, node.attrs.instanceId);
+                    if (options.onComponentClick) {
+                      options.onComponentClick(node.attrs['componentId'], node.attrs['instanceId']);
+                    }
                   });
-                  
+
                   return container;
                 });
-                
-                decorations.push(decoration);
+
+                if (decoration) {
+                  decorations.push(decoration);
+                }
               }
             });
 

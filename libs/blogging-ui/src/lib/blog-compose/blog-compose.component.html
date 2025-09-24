@@ -33,12 +33,11 @@
       (change)="onFileSelected($event)"
       accept="image/*"
       />
-    <tiptap-editor
-      [(ngModel)]="content"
-      [ngModelOptions]="{ standalone: true }"
-      class="tiptap-editor-styles"
-      >
-    </tiptap-editor>
+    @if(editor) {
+      <div class="content tiptap-editor-styles" tiptap-editor>
+        <!-- Removed ngModel binding -->
+      </div>
+    }
 
     <otui-button (action)="onPostSubmit()">Submit</otui-button>
   </form>
@@ -69,3 +68,4 @@
     [editor]="editor"
   ></lib-context-menu>
 }
+

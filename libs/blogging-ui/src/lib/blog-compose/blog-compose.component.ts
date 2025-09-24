@@ -9,9 +9,10 @@ import {
   ViewContainerRef,
   AfterViewInit,
   inject,
+  forwardRef,
 } from '@angular/core';
 
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { MatIconModule } from '@angular/material/icon';
@@ -28,7 +29,7 @@ import TableCell from '@tiptap/extension-table-cell';
 import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder } from '@optimistic-tanuki/common-ui';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { TextInputComponent } from '@optimistic-tanuki/form-ui';
+import { TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { ContextMenuComponent } from '../context-menu/context-menu.component';
 
 // Component injection system imports
@@ -81,7 +82,8 @@ interface PostData {
     ComponentSelectorComponent,
     PropertyEditorComponent,
     ComponentWrapperComponent,
-    RichTextToolbarComponent
+    RichTextToolbarComponent,
+    TextAreaComponent,
 ],
   templateUrl: './blog-compose.component.html',
   styleUrls: ['./blog-compose.component.scss'],
@@ -97,7 +99,15 @@ interface PostData {
     '[style.--local-border-gradient]': 'borderGradient',
     '[style.--local-transition-duration]': 'transitionDuration',
   },
-  providers: [ComponentInjectionService, TiptapEditorDirective]
+  providers: [
+    ComponentInjectionService, 
+    TiptapEditorDirective,
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => BlogComposeComponent),
+      multi: true,
+    }
+  ]
 })
 export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy, AfterViewInit, ComponentInjectionAPI {
   @Output() postSubmitted: EventEmitter<PostData> = new EventEmitter<PostData>();
@@ -390,14 +400,6 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     this.isComponentSelectorVisible = false;
   }
 
-  async onComponentSelected(component: InjectableComponent): Promise<void> {
-    try {
-      await this.injectComponent(component.id);
-      this.hideComponentSelector();
-    } catch (error) {
-      console.error('Error injecting component:', error);
-    }
-  }
 
   // Property editing methods
   onComponentEdit(instance: InjectedComponentInstance): void {
