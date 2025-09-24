@@ -9,9 +9,10 @@ import {
   ViewContainerRef,
   AfterViewInit,
   inject,
+  forwardRef,
 } from '@angular/core';
 
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,6 +20,7 @@ import { TiptapEditorDirective } from 'ngx-tiptap';
 import Image from '@tiptap/extension-image';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
+import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
@@ -28,7 +30,7 @@ import TableCell from '@tiptap/extension-table-cell';
 import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder } from '@optimistic-tanuki/common-ui';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { TextInputComponent } from '@optimistic-tanuki/form-ui';
+import { TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { ContextMenuComponent } from '../context-menu/context-menu.component';
 
 // Component injection system imports
@@ -55,6 +57,12 @@ import { PropertyEditorComponent, PropertyDefinition } from './components/proper
 import { ComponentWrapperComponent } from './components/component-wrapper.component';
 import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
 
+// Rich text toolbar
+import { RichTextToolbarComponent } from './components/rich-text-toolbar.component';
+
+// Angular Component Node Extension
+import { AngularComponentNode } from './extensions/angular-component-node.extension';
+
 interface PostData {
   title: string;
   content: string;
@@ -74,7 +82,10 @@ interface PostData {
     ContextMenuComponent,
     ComponentSelectorComponent,
     PropertyEditorComponent,
-    ComponentWrapperComponent
+    ComponentWrapperComponent,
+    RichTextToolbarComponent,
+    TextAreaComponent,
+    TiptapEditorDirective,
 ],
   templateUrl: './blog-compose.component.html',
   styleUrls: ['./blog-compose.component.scss'],
@@ -90,9 +101,16 @@ interface PostData {
     '[style.--local-border-gradient]': 'borderGradient',
     '[style.--local-transition-duration]': 'transitionDuration',
   },
-  providers: [ComponentInjectionService, TiptapEditorDirective]
+  providers: [
+    ComponentInjectionService, 
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => BlogComposeComponent),
+      multi: true,
+    }
+  ]
 })
-export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy, AfterViewInit, ComponentInjectionAPI {
+export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy, AfterViewInit, ComponentInjectionAPI, ControlValueAccessor {
   @Output() postSubmitted: EventEmitter<PostData> = new EventEmitter<PostData>();
   @Output() attachmentAdded = new EventEmitter<{
     placeholderId: string;
@@ -107,8 +125,30 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   // Theming properties;
   backgroundGradient = 'linear-gradient(to right, #5969c3, #59c360)';
   isDragOver = false;
-  title = '';
-  content = '';
+  
+  private _title = '';
+  private _content = '';
+  
+  get title(): string {
+    return this._title;
+  }
+  
+  set title(value: string) {
+    if (this._title !== value) {
+      this._title = value;
+      this.emitChange();
+    }
+  }
+  
+  get content(): string {
+    return this._content;
+  }
+  
+  set content(value: string) {
+    this._content = value;
+    // Don't emit change here as it's handled by editor update event
+  }
+  
   links: Array<{ url: string }> = [];
   attachments: File[] = [];
 
@@ -121,6 +161,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   // Component injection properties
   isComponentSelectorVisible = false;
   registeredComponents: InjectableComponent[] = [];
+  activeComponents = new Map<string, InjectedComponentInstance>();
 
   // Property editing properties
   isPropertyEditorVisible = false;
@@ -138,18 +179,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   }
 
   ngAfterViewInit(): void {
-    if (this.componentContainer) {
-      this.componentInjectionService.setViewContainer(this.componentContainer);
-      
-      // Set up wrapper event callbacks
-      this.componentInjectionService.setWrapperCallbacks({
-        onEdit: (instance) => this.onComponentEdit(instance),
-        onDelete: (instance) => this.onComponentDelete(instance),
-        onMoveUp: (instance) => this.onComponentMoveUp(instance),
-        onMoveDown: (instance) => this.onComponentMoveDown(instance),
-        onSelection: (instance) => this.onComponentSelection(instance)
-      });
-    }
+    // The component container is no longer needed as components are now inline in the editor
     this.initializeDefaultComponents();
   }
 
@@ -160,6 +190,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
         Image,
         Subscript,
         Superscript,
+        Underline,
         TextAlign.configure({
           types: ['heading', 'paragraph'],
         }),
@@ -169,13 +200,24 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
         TableRow,
         TableHeader,
         TableCell,
+        AngularComponentNode.configure({
+          onComponentClick: (componentId: string, instanceId: string) => {
+            this.onInlineComponentClick(componentId, instanceId);
+          },
+          onComponentDelete: (instanceId: string) => {
+            this.onInlineComponentDelete(instanceId);
+          },
+          onComponentEdit: (instanceId: string) => {
+            this.onInlineComponentEdit(instanceId);
+          },
+        }),
       ],
       editorProps: {
         attributes: {
           class: 'prosemirror-editor',
         },
       },
-      content: this.content,
+      content: this._content,
     });
 
     this.editor.view.dom.addEventListener('contextmenu', (event) => {
@@ -184,11 +226,21 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       this.contextMenuY = event.clientY;
       this.isContextMenuVisible = true;
     });
+
+    // Listen for content changes and emit for form control
+    this.editor.on('update', () => {
+      const newContent = this.editor.getHTML();
+      if (this._content !== newContent) {
+        this._content = newContent;
+        this.emitChange();
+      }
+    });
   }
 
   override ngOnDestroy(): void {
     this.editor.destroy();
-    this.componentInjectionService.clearAllComponents();
+    // Clear our inline components
+    this.activeComponents.clear();
   }
 
   // Component injection system initialization
@@ -288,8 +340,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     this.registeredComponents = this.getRegisteredComponents();
   }
 
-  // Component injection API implementation
+  // Component injection API implementation (now working with inline editor)
   registerComponent(component: InjectableComponent): void {
+    // Keep using the service for registration as it manages the component definitions
     this.componentInjectionService.registerComponent(component);
     this.registeredComponents = this.getRegisteredComponents();
   }
@@ -308,27 +361,67 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   }
 
   async injectComponent(componentId: string, data?: any, position?: number): Promise<InjectedComponentInstance> {
-    return this.componentInjectionService.injectComponent(componentId, data, position);
+    // Use our new inline injection method instead
+    const component = this.componentInjectionService.getRegisteredComponents()
+      .find(comp => comp.id === componentId);
+    
+    if (!component) {
+      throw new Error(`Component ${componentId} not found`);
+    }
+
+    const instanceId = `${componentId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Insert into TipTap editor
+    this.editor.commands.insertAngularComponent({
+      componentId,
+      instanceId,
+      data: data || component.data || {},
+      componentDef: component,
+    });
+
+    // Track the component
+    const mockComponentRef = {
+      instance: data || component.data || {},
+      changeDetectorRef: { detectChanges: () => {} },
+      destroy: () => {},
+    } as any;
+
+    const injectedInstance: InjectedComponentInstance = {
+      instanceId,
+      componentDef: component,
+      componentRef: mockComponentRef,
+      data: data || component.data || {},
+    };
+
+    this.activeComponents.set(instanceId, injectedInstance);
+    return injectedInstance;
   }
 
-  removeComponent(instanceId: string): void {
-    this.componentInjectionService.removeComponent(instanceId);
-  }
-
+  // Override component injection methods to work with inline editor
   updateComponent(instanceId: string, data: any): void {
-    this.componentInjectionService.updateComponent(instanceId, data);
+    const instance = this.activeComponents.get(instanceId);
+    if (instance) {
+      instance.data = { ...instance.data, ...data };
+      this.activeComponents.set(instanceId, instance);
+    }
   }
 
   getActiveComponents(): InjectedComponentInstance[] {
-    return this.componentInjectionService.getActiveComponents();
+    return Array.from(this.activeComponents.values());
   }
 
   getComponent(instanceId: string): InjectedComponentInstance | undefined {
-    return this.componentInjectionService.getComponent(instanceId);
+    return this.activeComponents.get(instanceId);
+  }
+
+  removeComponent(instanceId: string): void {
+    this.activeComponents.delete(instanceId);
   }
 
   moveComponent(instanceId: string, newPosition: number): void {
-    this.componentInjectionService.moveComponent(instanceId, newPosition);
+    // TipTap handles the positioning within the editor
+    // This method is kept for interface compatibility
+    console.log(`Moving component ${instanceId} to position ${newPosition}`);
   }
 
   // UI event handlers
@@ -340,14 +433,6 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     this.isComponentSelectorVisible = false;
   }
 
-  async onComponentSelected(component: InjectableComponent): Promise<void> {
-    try {
-      await this.injectComponent(component.id);
-      this.hideComponentSelector();
-    } catch (error) {
-      console.error('Error injecting component:', error);
-    }
-  }
 
   // Property editing methods
   onComponentEdit(instance: InjectedComponentInstance): void {
@@ -357,6 +442,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   }
 
   onComponentDelete(instance: InjectedComponentInstance): void {
+    // Remove from TipTap editor first
+    this.editor.commands.removeAngularComponent(instance.instanceId);
+    // Then remove from our tracking system
     this.removeComponent(instance.instanceId);
     if (this.selectedComponentInstance?.instanceId === instance.instanceId) {
       this.selectedComponentInstance = null;
@@ -421,6 +509,13 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       }
 
       this.updateComponent(this.selectedComponentInstance.instanceId, finalData);
+      
+      // Update the TipTap editor node as well
+      this.editor.commands.updateAngularComponent({
+        instanceId: this.selectedComponentInstance.instanceId,
+        data: finalData,
+      });
+      
       this.hidePropertyEditor();
     }
   }
@@ -452,6 +547,75 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     };
 
     reader.readAsDataURL(file);
+  }
+
+  onToolbarComponentsClick(): void {
+    this.showComponentSelector();
+  }
+
+  onToolbarImageUploadClick(): void {
+    // Trigger the hidden file input
+    const fileInput = document.getElementById('imageInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  // Inline component interaction methods
+  onInlineComponentClick(componentId: string, instanceId: string): void {
+    // Find the component instance and trigger edit mode
+    const instance = this.getActiveComponents().find(comp => comp.instanceId === instanceId);
+    if (instance) {
+      this.onComponentEdit(instance);
+    }
+  }
+
+  onInlineComponentDelete(instanceId: string): void {
+    // Remove from editor and component system
+    this.editor.commands.removeAngularComponent(instanceId);
+    this.removeComponent(instanceId);
+  }
+
+  onInlineComponentEdit(instanceId: string): void {
+    // Find the component instance and open property editor
+    const instance = this.getActiveComponents().find(comp => comp.instanceId === instanceId);
+    if (instance) {
+      this.onComponentEdit(instance);
+    }
+  }
+
+  // Modified component injection to work with inline editor
+  async onComponentSelected(component: InjectableComponent): Promise<void> {
+    try {
+      const instanceId = `${component.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      
+      // Insert into TipTap editor instead of separate container
+      this.editor.commands.insertAngularComponent({
+        componentId: component.id,
+        instanceId: instanceId,
+        data: component.data || {},
+        componentDef: component,
+      });
+
+      // Still track the component in our system for editing
+      const mockComponentRef = {
+        instance: component.data || {},
+        changeDetectorRef: { detectChanges: () => {} },
+        destroy: () => {},
+      } as any;
+
+      const injectedInstance: InjectedComponentInstance = {
+        instanceId,
+        componentDef: component,
+        componentRef: mockComponentRef,
+        data: component.data || {},
+      };
+
+      this.activeComponents.set(instanceId, injectedInstance);
+      this.hideComponentSelector();
+    } catch (error) {
+      console.error('Error injecting component:', error);
+    }
   }
 
   handleDragEnter(e: Event): void {
@@ -502,6 +666,51 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(),
     });
+  }
+
+  // ControlValueAccessor implementation
+  private onChange = (value: any) => {};
+  private onTouched = () => {};
+
+  writeValue(value: any): void {
+    if (value && typeof value === 'object') {
+      this._title = value.title || '';
+      this._content = value.content || '';
+      this.links = value.links || [];
+      this.attachments = value.attachments || [];
+      
+      // Update editor content if editor is available
+      if (this.editor) {
+        this.editor.commands.setContent(this._content);
+      }
+    }
+  }
+
+  registerOnChange(fn: any): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: any): void {
+    this.onTouched = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    // Handle disabled state if needed
+    if (this.editor) {
+      this.editor.setEditable(!isDisabled);
+    }
+  }
+
+  private emitChange(): void {
+    const value = {
+      title: this.title,
+      content: this.content,
+      links: this.links,
+      attachments: this.attachments,
+      injectedComponents: this.getActiveComponents(),
+    };
+    this.onChange(value);
+    this.onTouched();
   }
 
   override applyTheme(colors: ThemeColors): void {
