@@ -6,7 +6,7 @@
   (dragleave)="handleDragLeave($event)"
   (drop)="handleDrop($event)"
   [variantOverrides]="{ background: backgroundGradient }"
->
+  >
   <form>
     <label for="title">Title</label>
     <lib-text-input
@@ -18,18 +18,57 @@
     ></lib-text-input>
 
     <label for="content">Content</label>
-    <quill-editor
-      id="quillEditor"
-      #quillEditor
-      class="editor"
-      [theme]="'snow'"
-      [(ngModel)]="content"
-      [ngModelOptions]="{ standalone: true }"
-      [modules]="quillModules"
-      placeholder="What's on your mind?"
-      (onContentChanged)="onContentChange($event)"
-    ></quill-editor>
+    @if (editor) {
+      <lib-rich-text-toolbar
+        [editor]="editor"
+        (componentsClicked)="onToolbarComponentsClick()"
+        (imageUploadClicked)="onToolbarImageUploadClick()"
+      ></lib-rich-text-toolbar>
+    }
+    <input
+      type="file"
+      id="imageInput"
+      #imageInput
+      hidden
+      (change)="onFileSelected($event)"
+      accept="image/*"
+      />
+    @if(editor) {
+      <tiptap-editor
+        [editor]="editor"
+        [(ngModel)]="content"
+        [ngModelOptions]="{ standalone: true }"
+        class="tiptap-editor-styles"
+      ></tiptap-editor>
+    }
 
     <otui-button (action)="onPostSubmit()">Submit</otui-button>
   </form>
 </otui-card>
+
+<!-- Component injection selector -->
+<lib-component-selector
+  [isVisible]="isComponentSelectorVisible"
+  [components]="registeredComponents"
+  (componentSelected)="onComponentSelected($event)"
+  (closed)="hideComponentSelector()"
+></lib-component-selector>
+
+<!-- Property editor -->
+<lib-property-editor
+  [isVisible]="isPropertyEditorVisible"
+  [componentInstance]="selectedComponentInstance"
+  [propertyDefinitions]="selectedComponentProperties"
+  (propertiesUpdated)="onPropertiesUpdated($event)"
+  (closed)="hidePropertyEditor()"
+></lib-property-editor>
+
+<!-- Context menu -->
+@if (isContextMenuVisible) {
+  <lib-context-menu
+    [x]="contextMenuX"
+    [y]="contextMenuY"
+    [editor]="editor"
+  ></lib-context-menu>
+}
+

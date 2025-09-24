@@ -39,22 +39,22 @@ describe('ProjectsComponent', () => {
     };
     const taskServiceMock = {
         createTask: jest.fn().mockReturnValue(of(mockTask)),
-        updateTask: jest.fn(),
+        updateTask: jest.fn().mockReturnValue(of(mockTask)),
         deleteTask: jest.fn().mockReturnValue(of(undefined))
     };
     const riskServiceMock = {
         createRisk: jest.fn().mockReturnValue(of(mockRisk)),
-        updateRisk: jest.fn(),
+        updateRisk: jest.fn().mockReturnValue(of(mockRisk)),
         deleteRisk: jest.fn().mockReturnValue(of(undefined))
     };
     const changeServiceMock = {
         createChange: jest.fn().mockReturnValue(of(mockChange)),
-        updateChange: jest.fn(),
+        updateChange: jest.fn().mockReturnValue(of(mockChange)),
         deleteChange: jest.fn().mockReturnValue(of(undefined))
     };
     const journalServiceMock = {
         createJournalEntry: jest.fn().mockReturnValue(of(mockJournal)),
-        updateJournalEntry: jest.fn(),
+        updateJournalEntry: jest.fn().mockReturnValue(of(mockJournal)),
         deleteJournalEntry: jest.fn().mockReturnValue(of(undefined))
     };
     const messageServiceMock = { addMessage: jest.fn() };

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Component Injection System Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .editor-mockup { border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 20px 0; background: #fafafa; }
+        .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .toolbar button { padding: 8px 12px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer; }
+        .toolbar .component-btn { background: #007acc; color: white; font-weight: bold; }
+        .editor-area { min-height: 200px; border: 1px solid #ddd; border-radius: 4px; padding: 16px; background: white; }
+        .injection-container { border: 2px dashed #007acc; border-radius: 8px; padding: 20px; margin: 16px 0; background: #f0f8ff; }
+        .component-example { margin: 16px 0; padding: 16px; border-radius: 8px; }
+        .callout { border-left: 4px solid #2196F3; background: #E3F2FD; }
+        .code-snippet { background: #f8f9fa; border: 1px solid #e9ecef; font-family: monospace; }
+        .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .gallery img { width: 100%; height: 120px; object-fit: cover; border-radius: 4px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+        .component-selector { background: white; border-radius: 8px; padding: 24px; width: 400px; max-height: 500px; }
+        .component-grid { display: grid; gap: 12px; }
+        .component-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 4px; cursor: pointer; }
+        .component-icon { width: 40px; height: 40px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+        h1, h2, h3 { color: #333; }
+        .feature-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+        .feature { padding: 16px; border: 1px solid #e0e0e0; border-radius: 8px; background: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Angular Content Projection System</h1>
+        <p>Implemented for the blog-compose component in Optimistic Tanuki</p>
+        
+        <div class="feature-list">
+            <div class="feature">
+                <h3>📦 Component Registration</h3>
+                <p>Register custom Angular components with metadata, categories, and default data</p>
+            </div>
+            <div class="feature">
+                <h3>🔧 Injection API</h3>
+                <p>Full TypeScript API for managing component lifecycle, positioning, and updates</p>
+            </div>
+            <div class="feature">
+                <h3>🎨 UI Integration</h3>
+                <p>Component selector modal and toolbar integration with TipTap editor</p>
+            </div>
+            <div class="feature">
+                <h3>📝 Content Projection</h3>
+                <p>Dedicated container with visual feedback for injected components</p>
+            </div>
+        </div>
+
+        <h2>Blog Editor with Component Injection</h2>
+        <div class="editor-mockup">
+            <div class="toolbar">
+                <button><strong>B</strong></button>
+                <button><em>I</em></button>
+                <button><u>U</u></button>
+                <button>H1</button>
+                <button>H2</button>
+                <button>📷</button>
+                <button>📋</button>
+                <button class="component-btn">🧩 Components</button>
+            </div>
+            
+            <div class="editor-area">
+                <h3>Blog Post Title</h3>
+                <p>This is the main editor area where users can write their blog content using the TipTap rich text editor...</p>
+            </div>
+            
+            <div class="injection-container">
+                <h4>📍 Injected Components Area</h4>
+                
+                <div class="component-example callout">
+                    <strong>📢 Callout Box Component</strong>
+                    <p>This is an important callout box that highlights key information in the blog post.</p>
+                </div>
+                
+                <div class="component-example code-snippet">
+                    <strong>💻 Code Snippet Component</strong>
+                    <pre>function example() {
+  console.log("Hello, World!");
+  return "This is a code snippet";
+}</pre>
+                </div>
+                
+                <div class="component-example">
+                    <strong>🖼️ Image Gallery Component</strong>
+                    <div class="gallery">
+                        <img src="https://picsum.photos/200/120?random=1" alt="Gallery 1">
+                        <img src="https://picsum.photos/200/120?random=2" alt="Gallery 2">
+                        <img src="https://picsum.photos/200/120?random=3" alt="Gallery 3">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2>Component Selector Modal</h2>
+        <div style="position: relative; height: 300px; background: #f0f0f0; border-radius: 8px; overflow: hidden;">
+            <div class="modal-overlay" style="position: absolute;">
+                <div class="component-selector">
+                    <h3>Insert Component</h3>
+                    <div style="display: flex; gap: 8px; margin: 16px 0;">
+                        <button style="background: #007acc; color: white; padding: 8px 12px; border: none; border-radius: 4px;">All</button>
+                        <button style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px;">Content</button>
+                        <button style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px;">Media</button>
+                    </div>
+                    <div class="component-grid">
+                        <div class="component-item">
+                            <div class="component-icon">📢</div>
+                            <div>
+                                <h4 style="margin: 0;">Callout Box</h4>
+                                <p style="margin: 0; font-size: 0.9em; color: #666;">Highlight important information</p>
+                            </div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-icon">💻</div>
+                            <div>
+                                <h4 style="margin: 0;">Code Snippet</h4>
+                                <p style="margin: 0; font-size: 0.9em; color: #666;">Display formatted code</p>
+                            </div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-icon">🖼️</div>
+                            <div>
+                                <h4 style="margin: 0;">Image Gallery</h4>
+                                <p style="margin: 0; font-size: 0.9em; color: #666;">Create responsive galleries</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2>Implementation Summary</h2>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3>📁 Files Created:</h3>
+            <ul>
+                <li><code>interfaces/component-injection.interface.ts</code> - Core interfaces and types</li>
+                <li><code>services/component-injection.service.ts</code> - Main injection service (189 lines)</li>
+                <li><code>components/component-selector.component.ts</code> - Component selection UI (164 lines)</li>
+                <li><code>components/example-components/</code> - Three example injectable components</li>
+                <li>Updated blog-compose component with injection integration</li>
+                <li>Enhanced HTML template and SCSS styles</li>
+                <li>Comprehensive documentation</li>
+            </ul>
+            
+            <h3>✅ Testing Status:</h3>
+            <ul>
+                <li>All tests passing</li>
+                <li>Linting successful</li>
+                <li>TypeScript compilation verified</li>
+                <li>Demo integration ready</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

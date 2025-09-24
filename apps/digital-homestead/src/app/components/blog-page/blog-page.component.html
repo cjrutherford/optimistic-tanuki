@@ -1,1 +1,7 @@
-<p>blog-page works!</p>
+<div class="blog-page-container">
+  <h1>Create a New Blog Post</h1>
+  <p>Use the component injection system to add custom components to your blog post.</p>
+  
+  <lib-blog-compose (postSubmitted)="onPostSubmitted($event)">
+  </lib-blog-compose>
+</div>

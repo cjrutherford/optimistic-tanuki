@@ -1,11 +1,22 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
 import { RouterModule } from '@angular/router';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { ContactService } from './contact.service';
+import { of } from 'rxjs';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent, RouterModule.forRoot([])],
+      imports: [AppComponent, RouterModule.forRoot([]), HttpClientTestingModule],
+      providers: [
+        {
+          provide: ContactService,
+          useValue: {
+            postContact: jest.fn(() => of({}))
+          }
+        }
+      ]
     }).compileComponents();
   });
 
@@ -13,8 +24,8 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain(
-      'Welcome digital-homestead'
+    expect(compiled.querySelector('otui-heading')?.textContent).toContain(
+      'Digital Grange'
     );
   });
 

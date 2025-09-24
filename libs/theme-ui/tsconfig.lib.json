@@ -15,5 +15,5 @@
     "**/*.stories.ts",
     "**/*.stories.js"
   ],
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "../theme-lib/src/lib/theme-lib/theme-variable.service.ts", "../theme-lib/src/lib/theme-lib/theme-host-bindings.directive.ts", "../theme-lib/src/lib/theme-lib/design-tokens.ts"]
 }

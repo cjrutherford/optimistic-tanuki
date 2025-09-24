@@ -1,18 +1,17 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ButtonComponent, CardComponent, HeadingComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 @Component({
   selector: 'lib-newsletter-signup',
   imports: [
-    CommonModule, 
-    ModalComponent, 
-    ButtonComponent, 
-    TextInputComponent, 
+    ModalComponent,
+    ButtonComponent,
+    TextInputComponent,
     CardComponent,
     HeadingComponent
-  ],
+],
   templateUrl: './newsletter-signup.component.html',
   styleUrl: './newsletter-signup.component.scss',
 })
@@ -28,6 +27,14 @@ export class NewsletterSignupComponent {
 
   closeModal() {
     this.isModalOpen = false;
+  }
+
+  onEmailChange(value: string) {
+    this.email = value;
+  }
+
+  onClose() {
+    this.closeModal();
   }
 
   submit() {

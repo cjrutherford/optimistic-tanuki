@@ -39,7 +39,7 @@ describe('ProjectService', () => {
   describe('createProject', () => {
     it('should create a project successfully', () => {
       const createProjectDto: CreateProject = { name: 'Test Project', description: 'Test Desc', owner: '', createdBy: '', members: [], startDate: new Date(), endDate: new Date(), status: 'IN_PROGRESS' };
-      const expectedResponse: Project = { id: '1', ...createProjectDto, owner: mockProfile.id, createdBy: mockProfile.id, createdAt: new Date(), updatedAt: new Date(), tasks: [], risks: [], changes: [], journalEntries: [], timers: [] };
+      const expectedResponse: Project = { id: '1', ...createProjectDto, owner: mockProfile.id, createdBy: mockProfile.id, createdAt: new Date(), updatedAt: new Date(), tasks: [], risks: [], changes: [], journalEntries: [], timers: [], endDate: new Date() };
 
       service.createProject(createProjectDto).subscribe(response => {
         expect(response).toEqual(expectedResponse);

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { AccordionComponent } from './accordion.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<AccordionComponent> = {
@@ -30,6 +30,6 @@ export const Heading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/Section 1/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Section 1/gi)).toBeTruthy();
   },
 };

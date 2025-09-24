@@ -3,12 +3,12 @@ import { takeUntil, Subject } from 'rxjs';
 import { AuthStateService, UserData } from '../../state/auth-state.service';
 import { Router } from '@angular/router';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-user',
   standalone: true,
-  imports: [CommonModule, ButtonComponent],
+  imports: [ButtonComponent],
   providers: [AuthStateService],
   templateUrl: './user.component.html',
   styleUrls: ['./user.component.scss'],

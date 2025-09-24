@@ -1,9 +1,9 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'lib-ai-summary',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './ai-summary.component.html',
   styleUrl: './ai-summary.component.scss',
 })

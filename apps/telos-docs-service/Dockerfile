@@ -4,7 +4,7 @@ FROM docker.io/node:lts-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
 COPY dist/apps/telos-docs-service/package*.json ./
-RUN npm install --omit=dev && npm i --save pg
+RUN npm install --omit=dev --legacy-peer-deps && npm i --save pg
 
 # Production image, copy all the files and run nest
 FROM docker.io/node:lts-alpine AS runner

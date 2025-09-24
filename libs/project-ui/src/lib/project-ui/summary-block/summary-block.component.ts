@@ -1,11 +1,11 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-import { CommonModule } from '@angular/common';
+
 import { TileComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'lib-summary-block',
-  imports: [CommonModule, TileComponent],
+  imports: [TileComponent],
   templateUrl: './summary-block.component.html',
   styleUrl: './summary-block.component.scss',
 })

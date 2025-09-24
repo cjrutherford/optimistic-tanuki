@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { MfaBlockComponent } from './mfa-block.component';
-import { within, userEvent } from '@storybook/testing-library';
+import { within, userEvent } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<MfaBlockComponent> = {

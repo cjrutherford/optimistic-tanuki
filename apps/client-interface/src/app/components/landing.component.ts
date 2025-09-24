@@ -1,18 +1,17 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { CardComponent, GridComponent, HeadingComponent, ListComponent, TileComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
   imports: [
-    CommonModule, 
-    GridComponent, 
-    TileComponent, 
+    GridComponent,
+    TileComponent,
     HeadingComponent,
     CardComponent,
-    ListComponent,
-  ],
+    ListComponent
+],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })

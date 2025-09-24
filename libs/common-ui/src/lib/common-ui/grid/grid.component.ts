@@ -1,10 +1,10 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'otui-grid',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './grid.component.html',
   styleUrl: './grid.component.scss',
 })

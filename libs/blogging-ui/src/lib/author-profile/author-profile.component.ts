@@ -1,11 +1,11 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { CardComponent, GlassContainerComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
+
+import { CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 
 @Component({
   selector: 'lib-author-profile',
-  imports: [CommonModule, ProfilePhotoComponent, CardComponent, HeadingComponent],
+  imports: [ProfilePhotoComponent, CardComponent, HeadingComponent],
   templateUrl: './author-profile.component.html',
   styleUrls: ['./author-profile.component.scss'],
 })

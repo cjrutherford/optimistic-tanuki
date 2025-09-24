@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CreateProfileDto, ProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 
-import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 
 import { ProfileSelectorComponent } from './profile-selector.component';
 import { of } from 'rxjs';
@@ -29,6 +29,9 @@ describe('ProfileSelectorComponent', () => {
         complementaryShades: [['0', '#0f0']],
         accentGradients: { dark: 'dark-gradient', light: 'light-gradient' },
         complementaryGradients: { dark: 'dark-comp-gradient', light: 'light-comp-gradient' },
+        tertiary: '#0000ff',
+        tertiaryShades: [['0', '#0000ff']],
+        tertiaryGradients: { dark: 'dark-tertiary-gradient', light: 'light-tertiary-gradient' },
         success: '#00ff00',
         successShades: [['0', '#00ff00']],
         successGradients: { dark: 'dark-success-gradient', light: 'light-success-gradient' },
@@ -94,6 +97,9 @@ describe('ProfileSelectorComponent', () => {
       warning: '#ffff00',
       warningShades: [['0', '#ffff00']],
       warningGradients: { dark: 'dark-warning-gradient', light: 'light-warning-gradient' },
+      tertiary: '',
+      tertiaryShades: [],
+      tertiaryGradients: { dark: '', light: '' }
     };
     (mockThemeService.themeColors$ as any) = of(mockColors);
     component.ngOnInit();

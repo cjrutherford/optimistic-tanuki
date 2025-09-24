@@ -1,12 +1,15 @@
-<div 
-  *ngIf="!renderEmpty" 
-  class="grid" 
+@if (!renderEmpty) {
+  <div
+    class="grid"
   [style]="{
     'grid-template-columns': gridTemplateColumns,
     'grid-template-rows': gridTemplateRows,
     'gap': gap
   }"
->
-  <ng-content></ng-content>
-</div>
-<div *ngIf="renderEmpty"></div>
+    >
+    <ng-content></ng-content>
+  </div>
+}
+@if (renderEmpty) {
+  <div></div>
+}

@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'lib-vote',
   standalone: true,
-  imports: [CommonModule, ButtonComponent],
+  imports: [ButtonComponent],
   templateUrl: './vote.component.html',
   styleUrl: './vote.component.scss',
 })

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { GlassContainerComponent } from './glass-container.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 import { CardComponent } from './card/card.component';
 import { importProvidersFrom } from '@angular/core';

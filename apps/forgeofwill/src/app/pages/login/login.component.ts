@@ -1,7 +1,7 @@
 import { AuthStateService } from '../../auth-state.service';
 import { AuthenticationService } from '../../authentication.service';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
-import { CommonModule } from '@angular/common';
+
 import { Component } from '@angular/core';
 import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
@@ -11,7 +11,7 @@ import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, LoginBlockComponent, CardComponent],
+  imports: [LoginBlockComponent, CardComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })

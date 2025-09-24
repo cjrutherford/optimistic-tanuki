@@ -91,7 +91,7 @@ describe('AsymmetricService', () => {
       expect(result).toEqual(encryptedData);
       expect(mockedPrivateEncrypt).toHaveBeenCalledWith(
         expect.objectContaining({ key: privKey, padding: crypto.constants.RSA_PKCS1_PADDING }),
-        Buffer.from(value),
+        new Uint8Array(Buffer.from(value)),
       );
     });
 
@@ -106,7 +106,7 @@ describe('AsymmetricService', () => {
       expect(result).toEqual(encryptedData);
       expect(mockedPrivateEncrypt).toHaveBeenCalledWith(
         expect.objectContaining({ key: privKey, passphrase: secret, padding: crypto.constants.RSA_PKCS1_PADDING }),
-        Buffer.from(value),
+        new Uint8Array(Buffer.from(value)),
       );
     });
   });
@@ -122,7 +122,7 @@ describe('AsymmetricService', () => {
       expect(result).toEqual(decryptedData);
       expect(mockedPublicDecrypt).toHaveBeenCalledWith(
         expect.objectContaining({ key: pubKey, padding: crypto.constants.RSA_PKCS1_PADDING }),
-        Buffer.from(cyText),
+        new Uint8Array(Buffer.from(cyText)),
       );
     });
 
@@ -137,7 +137,7 @@ describe('AsymmetricService', () => {
       expect(result).toEqual(decryptedData);
       expect(mockedPublicDecrypt).toHaveBeenCalledWith(
         expect.objectContaining({ key: pubKey, passphrase: secret, padding: crypto.constants.RSA_PKCS1_PADDING }),
-        Buffer.from(cyText),
+        new Uint8Array(Buffer.from(cyText)),
       );
     });
   });

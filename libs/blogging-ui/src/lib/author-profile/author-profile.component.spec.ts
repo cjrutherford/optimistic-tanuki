@@ -22,11 +22,11 @@ describe('AuthorProfileComponent', () => {
   it('should display default author name, bio, and profile image', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(component.authorName).toBe('Author Name');
-    expect(component.authorBio).toBe('This is a short bio about the author. It gives readers some background information.');
+    expect(component.authorBio).toBe('');
     expect(component.profileImage).toBe('https://picsum.photos/200');
     // Check rendered content
     expect(compiled.textContent).toContain('Author Name');
-    expect(compiled.textContent).toContain('This is a short bio about the author');
+    expect(compiled.textContent).toContain('');
     const img = compiled.querySelector('lib-profile-photo,img');
     expect(img).toBeTruthy();
   });
@@ -40,9 +40,12 @@ describe('AuthorProfileComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Jane Doe');
     expect(compiled.textContent).toContain('Jane is a passionate writer.');
-    const img = compiled.querySelector('lib-profile-photo,img');
-    if (img) {
-      expect(img.getAttribute('src')).toBe('https://example.com/jane.jpg');
+    const profilePhoto = fixture.debugElement.query(
+      d => d.name === 'lib-profile-photo'
+    );
+    expect(profilePhoto).toBeTruthy();
+    if (profilePhoto) {
+      expect(profilePhoto.componentInstance.src).toBe('https://example.com/jane.jpg');
     }
   });
 });

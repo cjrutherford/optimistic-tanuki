@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
@@ -11,7 +11,7 @@ import {
   CreatePostDto,
   CreateCommentDto,
 } from '@optimistic-tanuki/social-ui';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
 import { filter, firstValueFrom, Subject, takeUntil } from 'rxjs';
@@ -24,14 +24,13 @@ import { PostProfileStub, ComposeCompleteEvent } from '@optimistic-tanuki/social
   selector: 'app-feed',
   standalone: true,
   imports: [
-    CommonModule,
     MatCardModule,
     MatButtonModule,
     MatInputModule,
     MatIconModule,
     ComposeComponent,
-    PostComponent,
-  ],
+    PostComponent
+],
   providers: [ThemeService, PostService, AttachmentService, CommentService],
   templateUrl: './feed.component.html',
   styleUrls: ['./feed.component.scss'],

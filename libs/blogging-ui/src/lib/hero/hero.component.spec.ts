@@ -20,7 +20,6 @@ describe('HeroComponent', () => {
   });
 
   it('should display default title, description, button text, and image', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
     expect(component.title).toBe('Welcome to Our Blog!');
     expect(component.description).toBe('Discover the latest news, tips, and stories from our community.');
     expect(component.buttonText).toBe('Get Started');

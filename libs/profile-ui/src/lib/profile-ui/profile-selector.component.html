@@ -1,48 +1,49 @@
 <otui-card class="outer-card"> <!-- Changed overflow-x and overflow-y -->
-    <h2>Your Profiles:</h2>
-    <div class="profile-grid-flex"> <!-- Replaced otui-grid with a div and new class -->
+  <h2>Your Profiles:</h2>
+  <div class="profile-grid-flex"> <!-- Replaced otui-grid with a div and new class -->
     @for (p of profiles; track p.id) {
-            <div class="real-profile" [class.active]="p.id === internalSelectedProfile()?.id">
-                <h2>{{p.profileName}}</h2>
-                <div class="profile-photo-badge-wrapper">
-                    <lib-profile-photo src="{{p.profilePic}}" alt="{{p.profileName}}'s picture" />
-                    @if (p.id === internalSelectedProfile()?.id) {
-                        <button class="profile-badge left-badge" title="Selected Profile" style="background: none; border: none; cursor: default;" disabled>
-                            <span style="font-size: 1.2em;">&#x2611;</span>
-                        </button>
-                    } 
-                    @else {
-                        <button class="profile-badge left-badge" (click)="selectProfile(p)" title="Select Profile" style="background: none; border: none; cursor: pointer;">
-                            <span style="font-size: 1.2em;">&#x2610;</span>
-                        </button>
-                    }
-                    <button class="profile-badge right-badge edit-profile-button" (click)="openProfileDialog(p)" title="Edit Profile">✏️</button>
-                </div>
-            </div>
+      <div class="real-profile" [class.active]="p.id === internalSelectedProfile()?.id">
+        <h2>{{p.profileName}}</h2>
+        <div class="profile-photo-badge-wrapper">
+          <lib-profile-photo src="{{p.profilePic}}" alt="{{p.profileName}}'s picture" />
+          @if (p.id === internalSelectedProfile()?.id) {
+            <button class="profile-badge left-badge" title="Selected Profile" style="background: none; border: none; cursor: default;" disabled>
+              <span style="font-size: 1.2em;">&#x2611;</span>
+            </button>
+          }
+          @else {
+          <button class="profile-badge left-badge" (click)="selectProfile(p)" title="Select Profile" style="background: none; border: none; cursor: pointer;">
+            <span style="font-size: 1.2em;">&#x2610;</span>
+          </button>
         }
-        <div class="add-profile">
-            <h2>New Profile</h2>
-            <div class="add-profile-photo-container">
-                <lib-profile-photo src="https://placehold.co/100x100/grey/white?text=New" alt="Add new profile" />
-                <button class="profile-badge left-badge add-profile-bubble-button" (click)="openProfileDialog()" title="Add New Profile">+</button>
-            </div>
-        </div>
+        <button class="profile-badge right-badge edit-profile-button" (click)="openProfileDialog(p)" title="Edit Profile">✏️</button>
+      </div>
     </div>
+  }
+  <div class="add-profile">
+    <h2>New Profile</h2>
+    <div class="add-profile-photo-container">
+      <lib-profile-photo src="https://placehold.co/100x100/grey/white?text=New" alt="Add new profile" />
+      <button class="profile-badge left-badge add-profile-bubble-button" (click)="openProfileDialog()" title="Add New Profile">+</button>
+    </div>
+  </div>
+</div>
 </otui-card>
 
-<otui-modal *ngIf="showProfileModal" [heading]="editingProfile ? 'Edit Profile' : 'New Profile'" (closeModal)="closeProfileModal()">
+@if (showProfileModal) {
+  <otui-modal [heading]="editingProfile ? 'Edit Profile' : 'New Profile'" (closeModal)="closeProfileModal()">
     <otui-card style="max-height: 70vh; overflow-y: auto;">
-        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
-          <lib-text-input label="Profile Name" formControlName="profileName"></lib-text-input>
-          <lib-image-upload label="Profile Picture" (imageUpload)="onProfilePicUpload($event)" [currentImage]="profileForm.get('profilePic')?.value"></lib-image-upload>
-          <lib-text-input label="Bio" formControlName="bio"></lib-text-input> <!-- Consider TextAreaComponent for bio -->
-          
-          <lib-image-upload label="Cover Picture" (imageUpload)="onCoverPicUpload($event)" [currentImage]="profileForm.get('coverPic')?.value"></lib-image-upload>
-          <div class="dialog-actions">
-            <otui-button variant="success" type="submit" [disabled]="profileForm.invalid">Submit</otui-button>
-            <otui-button variant="warning" type="button" (click)="cancelEdit()">Cancel</otui-button>
-          </div>
-        </form>
+      <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+        <lib-text-input label="Profile Name" formControlName="profileName"></lib-text-input>
+        <lib-image-upload label="Profile Picture" (imageUpload)="onProfilePicUpload($event)" [currentImage]="profileForm.get('profilePic')?.value"></lib-image-upload>
+        <lib-text-input label="Bio" formControlName="bio"></lib-text-input> <!-- Consider TextAreaComponent for bio -->
+        <lib-image-upload label="Cover Picture" (imageUpload)="onCoverPicUpload($event)" [currentImage]="profileForm.get('coverPic')?.value"></lib-image-upload>
+        <div class="dialog-actions">
+          <otui-button variant="success" type="submit" [disabled]="profileForm.invalid">Submit</otui-button>
+          <otui-button variant="warning" type="button" (click)="cancelEdit()">Cancel</otui-button>
+        </div>
+      </form>
     </otui-card>
-</otui-modal>
+  </otui-modal>
+}
 <!-- <otui-button variant="success" (click)="addNewProfile()">Add New Profile</otui-button> -->

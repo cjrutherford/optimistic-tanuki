@@ -14,6 +14,8 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthStateService } from './auth-state.service';
 import {
   ThemeService,
+} from '@optimistic-tanuki/theme-lib';
+import {
   ThemeToggleComponent,
 } from '@optimistic-tanuki/theme-ui';
 import { ChatComponent } from './chat.component';

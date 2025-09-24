@@ -2,12 +2,12 @@ import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAct
 import { Component, EventEmitter, Input, Output, SimpleChanges, signal } from '@angular/core';
 import { CreateRisk, Risk } from '@optimistic-tanuki/ui-models';
 
-import { CommonModule } from '@angular/common';
+
 import { RiskFormComponent } from '../risk-form/risk-form.component';
 
 @Component({
   selector: 'lib-risks-table',
-  imports: [CommonModule, TableComponent, ButtonComponent, ModalComponent, RiskFormComponent],
+  imports: [TableComponent, ButtonComponent, ModalComponent, RiskFormComponent],
   templateUrl: './risks-table.component.html',
   styleUrl: './risks-table.component.scss',
 })

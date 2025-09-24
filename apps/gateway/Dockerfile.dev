@@ -9,7 +9,7 @@ COPY nx.json ./
 COPY eslint.config.mjs .
 COPY libs ./libs
 COPY apps/gateway ./apps/gateway
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Build the app with sourcemaps (development configuration)
 RUN npx nx build gateway --configuration development --verbose
