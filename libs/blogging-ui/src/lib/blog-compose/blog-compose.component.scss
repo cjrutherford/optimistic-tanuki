@@ -1,3 +1,6 @@
+// Import Angular Component Node styles
+@import './extensions/angular-component-node.styles.scss';
+
 h3 {
   margin: var(--spacing-sm, 8px);
 }
