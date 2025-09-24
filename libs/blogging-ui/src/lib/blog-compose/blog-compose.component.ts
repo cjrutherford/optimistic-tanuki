@@ -12,7 +12,7 @@ import {
   forwardRef,
 } from '@angular/core';
 
-import { FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { MatIconModule } from '@angular/material/icon';
@@ -85,6 +85,7 @@ interface PostData {
     ComponentWrapperComponent,
     RichTextToolbarComponent,
     TextAreaComponent,
+    TiptapEditorDirective,
 ],
   templateUrl: './blog-compose.component.html',
   styleUrls: ['./blog-compose.component.scss'],
@@ -102,7 +103,6 @@ interface PostData {
   },
   providers: [
     ComponentInjectionService, 
-    TiptapEditorDirective,
     {
       provide: NG_VALUE_ACCESSOR,
       useExisting: forwardRef(() => BlogComposeComponent),
@@ -110,7 +110,7 @@ interface PostData {
     }
   ]
 })
-export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy, AfterViewInit, ComponentInjectionAPI {
+export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy, AfterViewInit, ComponentInjectionAPI, ControlValueAccessor {
   @Output() postSubmitted: EventEmitter<PostData> = new EventEmitter<PostData>();
   @Output() attachmentAdded = new EventEmitter<{
     placeholderId: string;
@@ -125,8 +125,30 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   // Theming properties;
   backgroundGradient = 'linear-gradient(to right, #5969c3, #59c360)';
   isDragOver = false;
-  title = '';
-  content = '';
+  
+  private _title = '';
+  private _content = '';
+  
+  get title(): string {
+    return this._title;
+  }
+  
+  set title(value: string) {
+    if (this._title !== value) {
+      this._title = value;
+      this.emitChange();
+    }
+  }
+  
+  get content(): string {
+    return this._content;
+  }
+  
+  set content(value: string) {
+    this._content = value;
+    // Don't emit change here as it's handled by editor update event
+  }
+  
   links: Array<{ url: string }> = [];
   attachments: File[] = [];
 
@@ -195,7 +217,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
           class: 'prosemirror-editor',
         },
       },
-      content: this.content,
+      content: this._content,
     });
 
     this.editor.view.dom.addEventListener('contextmenu', (event) => {
@@ -203,6 +225,15 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       this.contextMenuX = event.clientX;
       this.contextMenuY = event.clientY;
       this.isContextMenuVisible = true;
+    });
+
+    // Listen for content changes and emit for form control
+    this.editor.on('update', () => {
+      const newContent = this.editor.getHTML();
+      if (this._content !== newContent) {
+        this._content = newContent;
+        this.emitChange();
+      }
     });
   }
 
@@ -635,6 +666,51 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(),
     });
+  }
+
+  // ControlValueAccessor implementation
+  private onChange = (value: any) => {};
+  private onTouched = () => {};
+
+  writeValue(value: any): void {
+    if (value && typeof value === 'object') {
+      this._title = value.title || '';
+      this._content = value.content || '';
+      this.links = value.links || [];
+      this.attachments = value.attachments || [];
+      
+      // Update editor content if editor is available
+      if (this.editor) {
+        this.editor.commands.setContent(this._content);
+      }
+    }
+  }
+
+  registerOnChange(fn: any): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: any): void {
+    this.onTouched = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    // Handle disabled state if needed
+    if (this.editor) {
+      this.editor.setEditable(!isDisabled);
+    }
+  }
+
+  private emitChange(): void {
+    const value = {
+      title: this.title,
+      content: this.content,
+      links: this.links,
+      attachments: this.attachments,
+      injectedComponents: this.getActiveComponents(),
+    };
+    this.onChange(value);
+    this.onTouched();
   }
 
   override applyTheme(colors: ThemeColors): void {
