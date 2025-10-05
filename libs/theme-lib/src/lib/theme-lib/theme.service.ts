@@ -171,6 +171,12 @@ export class ThemeService {
     document.documentElement.style.setProperty('--danger', themeColors.danger);
     document.documentElement.style.setProperty('--warning', themeColors.warning);
 
+    // Legacy support for older variable names
+    document.documentElement.style.setProperty('--background-color', themeColors.background);
+    document.documentElement.style.setProperty('--foreground-color', themeColors.foreground);
+    document.documentElement.style.setProperty('--accent-color', themeColors.accent);
+    document.documentElement.style.setProperty('--complementary-color', themeColors.complementary);
+
     // Apply color shades
     this.applyColorShades('accent', themeColors.accentShades);
     this.applyColorShades('complement', themeColors.complementaryShades);
