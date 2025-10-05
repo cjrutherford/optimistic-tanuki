@@ -14,7 +14,7 @@ import { AuthStateService } from './state/auth-state.service';
 import { ToolbarComponent } from './components/toolbar.component';
 import { GridComponent } from '@optimistic-tanuki/common-ui';
 import { ProfileService } from './profile.service';
-import { ProfileDto } from '@optimistic-tanuki/ui-models'; // Added import for ProfileDto
+import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-root',
@@ -88,11 +88,16 @@ export class AppComponent implements OnInit, OnDestroy {
     //   }
     // });
 
+    // Initialize theme
+    this.themeService.setTheme(this.themeService.getTheme());
+    
     this.themeSub = this.themeService.themeColors$.subscribe((theme: ThemeColors | undefined) => {
       if (theme) {
         this.themeName.set(this.themeService.getTheme());
         this.background = theme.background;
         this.foreground = theme.foreground;
+        this.accent = theme.accent;
+        this.backgroundGradient = theme.accentGradients['light'];
       }
     });
   }

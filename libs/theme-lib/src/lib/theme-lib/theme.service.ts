@@ -86,7 +86,14 @@ export class ThemeService {
   }
 
   setPalette(paletteName: string) {
-    const palette = getPaletteByName(paletteName);
+    let palette = getPaletteByName(paletteName);
+    
+    // If not found in predefined, check custom palettes
+    if (!palette && isPlatformBrowser(this.platformId)) {
+      const customPalettes = this.loadCustomPalettes();
+      palette = customPalettes.find(p => p.name === paletteName);
+    }
+    
     if (palette) {
       this.selectedPalette = palette;
       this.accentColor = palette.accent;
@@ -95,6 +102,15 @@ export class ThemeService {
       this.saveCurrentTheme();
       this.applyThemeColors();
     }
+  }
+
+  private loadCustomPalettes(): ColorPalette[] {
+    if (!isPlatformBrowser(this.platformId)) {
+      return [];
+    }
+    
+    const saved = localStorage.getItem('customPalettes');
+    return saved ? JSON.parse(saved) : [];
   }
 
   getTheme(): 'light' | 'dark' {
@@ -154,6 +170,12 @@ export class ThemeService {
     document.documentElement.style.setProperty('--success', themeColors.success);
     document.documentElement.style.setProperty('--danger', themeColors.danger);
     document.documentElement.style.setProperty('--warning', themeColors.warning);
+
+    // Legacy support for older variable names
+    document.documentElement.style.setProperty('--background-color', themeColors.background);
+    document.documentElement.style.setProperty('--foreground-color', themeColors.foreground);
+    document.documentElement.style.setProperty('--accent-color', themeColors.accent);
+    document.documentElement.style.setProperty('--complementary-color', themeColors.complementary);
 
     // Apply color shades
     this.applyColorShades('accent', themeColors.accentShades);
