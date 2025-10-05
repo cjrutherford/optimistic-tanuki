@@ -19,7 +19,7 @@ export class AppComponent {
   ngOnInit() {
     this.themeService.setTheme('dark');
     // Use predefined palette instead of manual colors
-    this.themeService.setPalette('Ocean Breeze'); // Matches the teal theme
+    this.themeService.setPalette('Retro Gaming'); // Matches the teal theme
     
     this.themeService.themeColors$.subscribe({ next: (colors: ThemeColors | undefined) => {
       if(!colors) return;

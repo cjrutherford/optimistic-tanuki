@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "docker:build:slow": "for service in authentication client-interface gateway profile social project-planning assets forgeofwill-client-interface chat-collector prompt-proxy ai-orchestrator telos-docs-service blogging crdn-client-interface digital-homestead-client-interface; do docker compose build $service; done",
     "docker:build": "docker compose build",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",

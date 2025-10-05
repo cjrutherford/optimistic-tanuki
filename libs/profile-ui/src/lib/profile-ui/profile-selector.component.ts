@@ -15,7 +15,6 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
   imports: [
     ReactiveFormsModule,
     CardComponent,
-    TileComponent,
     TextInputComponent,
     ButtonComponent,
     ModalComponent,

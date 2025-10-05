@@ -1,4 +1,4 @@
-import { Component, computed, effect, Inject, PLATFORM_ID, signal, EnvironmentInjector, inject } from '@angular/core';
+import { Component, computed, effect, Inject, PLATFORM_ID, signal, EnvironmentInjector, inject, runInInjectionContext } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
   ChatContact,

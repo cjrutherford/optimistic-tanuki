@@ -7,7 +7,7 @@ button{
     font-family: 'Montserrat', sans-serif;
 }
 body {
-    background-color: var(--background-color);
+    background-color: var(--background);
     /* Use accent color variable for SVG fill via mask and background-color */
     -webkit-background-image: var(--background-pattern);
     background-image: var(--background-pattern);
