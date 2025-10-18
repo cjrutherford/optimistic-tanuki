@@ -6,9 +6,13 @@ on:
       - '**' # Triggers on pushes to all branches
 
 jobs:
-  build_and_push_client_interface:
-    name: Build and Push Client Interface
+  # SSR Angular apps that build themselves (multi-stage Dockerfiles)
+  build_and_push_ssr_apps:
+    name: Build and Push ${{ matrix.service }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [client-interface, forgeofwill, christopherrutherford-net, digital-homestead]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,24 +26,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Install Dependencies
-        id: install
-        run: |
-          echo "Installing dependencies for client interface"
-          npm install --legacy-peer-deps
-
-      - name: Build Nx Projects
-        id: build
-        run: |
-          echo "Building Nx project for client interface"
-          npx nx build client-interface --configuration=production
-          ls -lath && pwd
-
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: cjrutherford/optimistic_tanuki_client_interface
+          images: cjrutherford/optimistic_tanuki_${{ matrix.service }}
           tags: |
             type=ref,event=branch
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
@@ -49,16 +40,17 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./apps/client-interface/Dockerfile
+          file: ./apps/${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-  build_and_push:
+  # Backend services that need pre-built artifacts
+  build_and_push_backend_services:
     name: Build and Push ${{ matrix.service }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [assets, authentication, social, profile, tasks]
+        service: [assets, authentication, social, profile, gateway, project-planning, chat-collector, prompt-proxy, ai-orchestrator, telos-docs-service, blogging]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
