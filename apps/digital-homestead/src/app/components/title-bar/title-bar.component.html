@@ -1,19 +1,16 @@
-<otui-tile style="width: 100%; display: block;">
-    <div class="row">
-        <!-- <div class="title"> -->
-            <img src="assets/digital-grange.png" alt="Digital Grange" width="75px">
-            <otui-heading text="Digital Grange" [size]="'2em'">
-            </otui-heading>
-        <!-- </div> -->
-        <otui-button class="menu-btn" (click)="toggleMenu()">ℹ️</otui-button>
-        <div class="navigation" [class.open]="menuOpen()">
-            <a href="#about">About</a>
-            <a href="#benefits">Benefits</a>
-            <a href="#community">Community</a>
-            <a href="#resources">Resources</a>
-            <a href="#blog">Blog</a>
-            <a href="#contact">Contact</a>
-            <otui-button class="menu-btn" (click)="toggleMenu()">✖️</otui-button>
-        </div>
-    </div>
-</otui-tile>
+<otui-app-bar
+  appTitle="Digital Grange"
+  logoSrc="assets/digital-grange.png"
+  logoAlt="Digital Grange"
+  [showThemeToggle]="false"
+  [useTile]="true"
+  menuIcon="☰"
+  (menuToggle)="toggleMenu()">
+</otui-app-bar>
+
+<otui-nav-sidebar
+  [isOpen]="menuOpen()"
+  [navItems]="navItems"
+  heading="Navigation"
+  (close)="menuOpen.set(false)">
+</otui-nav-sidebar>

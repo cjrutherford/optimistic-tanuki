@@ -1,0 +1,14 @@
+@if (isOpen) {
+  <otui-modal [heading]="heading" (closeModal)="onClose()" [mode]="'sidebar-left'">
+    <otui-card>
+      <div class="nav-links">
+        <otui-button 
+          *ngFor="let item of navItems"
+          [variant]="getVariant(item)"
+          (action)="onNavItemClick(item)">
+          {{ item.label }}
+        </otui-button>
+      </div>
+    </otui-card>
+  </otui-modal>
+}

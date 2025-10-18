@@ -1,43 +1,16 @@
-<otui-card>
-  <div
-    style="display: flex; flex-direction: row; justify-content: space-between"
-  >
-    <div>
-      <otui-heading
-        [text]="'Christopher Rutherford'"
-        [size]="'2rem'"
-        [color]="'#fff'"
-      ></otui-heading>
-    </div>
-    <div class="nav-links">
-      <a href="#home"
-        ><otui-heading
-          [text]="'Home'"
-          [size]="'1.2rem'"
-          [color]="'#fff'"
-        ></otui-heading
-      ></a>
-      <a href="#about"
-        ><otui-heading
-          [text]="'About'"
-          [size]="'1.2rem'"
-          [color]="'#fff'"
-        ></otui-heading
-      ></a>
-      <a href="#projects"
-        ><otui-heading
-          [text]="'Projects'"
-          [size]="'1.2rem'"
-          [color]="'#fff'"
-        ></otui-heading
-      ></a>
-      <a href="#contact"
-        ><otui-heading
-          [text]="'Contact'"
-          [size]="'1.2rem'"
-          [color]="'#fff'"
-        ></otui-heading
-      ></a>
-    </div>
-  </div>
-</otui-card>
+<otui-app-bar
+  appTitle="Christopher Rutherford"
+  logoSrc="assets/tanuki.jpg"
+  logoAlt="Christopher Rutherford Logo"
+  [showThemeToggle]="false"
+  [useTile]="true"
+  menuIcon="☰"
+  (menuToggle)="toggleMenu()">
+</otui-app-bar>
+
+<otui-nav-sidebar
+  [isOpen]="menuOpen()"
+  [navItems]="navItems"
+  heading="Navigation"
+  (close)="menuOpen.set(false)">
+</otui-nav-sidebar>

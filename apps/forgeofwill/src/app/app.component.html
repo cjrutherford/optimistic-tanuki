@@ -1,29 +1,19 @@
-<otui-card>
-    <div class="title-bar">
-        <otui-button variant="rounded" (click)="showModal()" (keydown)="showModal()">
-            <img src="android-chrome-192x192.png" alt="User avatar" style="max-width: 75px;border-radius: 50%;" />
-        </otui-button>
-        <h1>Forge of Will</h1>
-        <lib-theme-toggle></lib-theme-toggle>
-    </div>
-</otui-card>
-@if (isModalOpen()) {
-    <otui-modal heading="Navigation" (closeModal)="showModal()" [mode]="'sidebar-left'">
-        <otui-card >
-            <div class="router-links">
-                <otui-button (action)="loginOutButton()">
-                    {{ isAuthenticated() ? 'Logout' : 'Login' }}
-                </otui-button>
-                @if (isAuthenticated()) {
-                    <otui-button (action)="navigateTo('/')">Projects</otui-button>
-                    <otui-button (action)="navigateTo('/profile')">My Profile</otui-button>
-                } @else {
-                    <otui-button (action)="navigateTo('/register')">Register</otui-button>
-                }
-            </div>
-        </otui-card>
-    </otui-modal>
-}
+<otui-app-bar
+  appTitle="Forge of Will"
+  logoSrc="android-chrome-192x192.png"
+  logoAlt="Forge of Will Logo"
+  [showThemeToggle]="true"
+  [useTile]="false"
+  (menuToggle)="showModal()">
+</otui-app-bar>
+
+<otui-nav-sidebar
+  [isOpen]="isModalOpen()"
+  [navItems]="navItems()"
+  heading="Navigation"
+  (close)="isModalOpen.set(false)">
+</otui-nav-sidebar>
+
 <router-outlet></router-outlet>
 @if (isAuthenticated() && selectedProfile()) {
     <app-chat></app-chat>
