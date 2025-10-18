@@ -1,13 +1,21 @@
 import { DynamicModule, Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { DatabaseModule } from './database.module';
 import { validateRequiredFields, validateObjectValues } from './validator';
+
+// Mock entity for testing
+class TestEntity {
+  id!: number;
+  name!: string;
+}
 
 // Mock the DataSource to prevent actual database connections
 jest.mock('typeorm', () => ({
   DataSource: jest.fn().mockImplementation(() => ({
     initialize: jest.fn().mockResolvedValue(undefined),
+    getRepository: jest.fn().mockReturnValue({}),
     // Add other mocked methods if needed by the module
   })),
 }));
@@ -48,6 +56,35 @@ describe('DatabaseModule', () => {
     // Test the factory function by calling it
     const dsInstance = await connectionProvider.useFactory(mockConfigService);
     expect(dsInstance.initialize).toHaveBeenCalled();
+  });
+
+  it('should register repositories for entities', async () => {
+    const mockConfigService = new ConfigService();
+
+    const module: DynamicModule = DatabaseModule.register({
+      name: 'test',
+      factory: (config: ConfigService) => ({
+        type: 'postgres',
+        host: 'localhost',
+        port: 5432,
+        username: 'user',
+        password: 'password',
+        database: 'testdb',
+        entities: [TestEntity],
+        synchronize: false,
+      }),
+    });
+
+    expect(module).toBeDefined();
+    expect(module.providers).toBeDefined();
+    expect(module.providers?.length).toBe(2); // Connection + 1 repository provider
+    expect(module.exports?.length).toBe(2); // Connection + 1 repository export
+
+    const connectionProvider = module.providers?.[0] as Provider & { provide: string };
+    expect(connectionProvider.provide).toEqual('TEST_CONNECTION');
+
+    const repositoryProvider = module.providers?.[1] as Provider & { provide: string | Function };
+    expect(repositoryProvider.provide).toEqual(getRepositoryToken(TestEntity));
   });
 });
 
