@@ -1,34 +1,26 @@
-import {
-  ButtonComponent,
-  CardComponent,
-  ModalComponent,
-} from '@optimistic-tanuki/common-ui';
 import { Component, effect, signal } from '@angular/core';
 import {
   MessageComponent,
   MessageService,
   MessageType,
 } from '@optimistic-tanuki/message-ui';
-import { Router, RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
 
 import { AuthStateService } from './auth-state.service';
 import {
   ThemeService,
 } from '@optimistic-tanuki/theme-lib';
-import {
-  ThemeToggleComponent,
-} from '@optimistic-tanuki/theme-ui';
 import { ChatComponent } from './chat.component';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from './profile/profile.service';
+import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui';
+import { filter } from 'rxjs';
 
 @Component({
   imports: [
     RouterModule,
-    CardComponent,
-    ButtonComponent,
-    ModalComponent,
-    ThemeToggleComponent,
+    AppBarComponent,
+    NavSidebarComponent,
     ChatComponent,
     MessageComponent,
   ],
@@ -40,6 +32,7 @@ export class AppComponent {
   title = 'forgeofwill';
   isModalOpen = signal<boolean>(false);
   messages = signal<MessageType[]>([]);
+  navItems = signal<NavItem[]>([]);
 
   constructor(
     private readonly router: Router,
@@ -61,6 +54,7 @@ export class AppComponent {
         console.log('Authentication state changed:', isAuthenticated);
         this.isAuthenticated.set(isAuthenticated);
         this.selectedProfile.set(this.profileService.getCurrentUserProfile());
+        this.updateNavItems();
       },
       error: (error) => {
         console.error('Error checking authentication state:', error);
@@ -72,6 +66,14 @@ export class AppComponent {
         });
       },
     });
+
+    // Subscribe to router events to update active state
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.updateNavItems();
+    });
+
     this.themeService.themeColors$.subscribe({
       next: (colors) => {
         if (!colors) return;
@@ -100,6 +102,39 @@ export class AppComponent {
         );
       },
     });
+  }
+
+  updateNavItems() {
+    const currentUrl = this.router.url;
+    if (this.isAuthenticated()) {
+      this.navItems.set([
+        {
+          label: 'Logout',
+          action: () => this.loginOutButton(),
+        },
+        {
+          label: 'Projects',
+          action: () => this.navigateTo('/'),
+          isActive: currentUrl === '/',
+        },
+        {
+          label: 'My Profile',
+          action: () => this.navigateTo('/profile'),
+          isActive: currentUrl === '/profile',
+        },
+      ]);
+    } else {
+      this.navItems.set([
+        {
+          label: 'Login',
+          action: () => this.loginOutButton(),
+        },
+        {
+          label: 'Register',
+          action: () => this.navigateTo('/register'),
+        },
+      ]);
+    }
   }
 
   showModal() {

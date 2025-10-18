@@ -6,8 +6,7 @@ import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { Observable, Subscription, filter } from 'rxjs';
 import { map, shareReplay, startWith } from 'rxjs/operators';
 import { AuthStateService } from './state/auth-state.service';
-import { CardComponent, ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
-import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
+import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui';
 import { ProfileService } from './profile.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
@@ -19,10 +18,8 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
   imports: [
     CommonModule,
     RouterModule,
-    CardComponent,
-    ButtonComponent,
-    ModalComponent,
-    ThemeToggleComponent,
+    AppBarComponent,
+    NavSidebarComponent,
   ],
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -48,6 +45,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isNavExpanded = signal(false);
   isAuthenticated = signal(false);
   selectedProfile = signal<ProfileDto | null>(null);
+  navItems = signal<NavItem[]>([]);
 
   ngOnInit() {
     this.currentUrl$ = this.router.events.pipe(
@@ -70,7 +68,13 @@ export class AppComponent implements OnInit, OnDestroy {
         if (isAuthenticated) {
           this.selectedProfile.set(this.profileService.getCurrentUserProfile());
         }
+        this.updateNavItems();
       },
+    });
+
+    // Subscribe to currentUrl$ to update active state
+    this.currentUrl$.subscribe(url => {
+      this.updateNavItems();
     });
 
     // Initialize theme
@@ -92,6 +96,44 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     if (this.urlSub) {
       this.urlSub.unsubscribe();
+    }
+  }
+
+  updateNavItems() {
+    const currentUrl = this.router.url;
+    if (this.isAuthenticated()) {
+      this.navItems.set([
+        {
+          label: 'Logout',
+          action: () => this.loginOutButton(),
+        },
+        {
+          label: 'Profile',
+          action: () => this.navigateTo('/profile'),
+          isActive: currentUrl === '/profile',
+        },
+        {
+          label: 'Feed',
+          action: () => this.navigateTo('/feed'),
+          isActive: currentUrl === '/feed',
+        },
+        {
+          label: 'Tasks',
+          action: () => this.navigateTo('/tasks'),
+          isActive: currentUrl === '/tasks',
+        },
+      ]);
+    } else {
+      this.navItems.set([
+        {
+          label: 'Login',
+          action: () => this.loginOutButton(),
+        },
+        {
+          label: 'Register',
+          action: () => this.navigateTo('/register'),
+        },
+      ]);
     }
   }
 

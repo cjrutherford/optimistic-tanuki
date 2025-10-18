@@ -1,38 +1,19 @@
 <div class="container" [ngStyle]="{ 'background': backgroundGradient, 'color': foreground }">
-  <otui-card>
-    <div class="title-bar">
-      <otui-button variant="rounded" (click)="toggleNav()">
-        <img src="assets/tanuki.jpg" alt="Optimistic Tanuki Logo" width="50px" style="border-radius: 50%;" />
-      </otui-button>
-      <h1>Optimistic Tanuki</h1>
-      <lib-theme-toggle></lib-theme-toggle>
-    </div>
-  </otui-card>
+  <otui-app-bar
+    appTitle="Optimistic Tanuki"
+    logoSrc="assets/tanuki.jpg"
+    logoAlt="Optimistic Tanuki Logo"
+    [showThemeToggle]="true"
+    [useTile]="false"
+    (menuToggle)="toggleNav()">
+  </otui-app-bar>
 
-  @if (isNavExpanded()) {
-    <otui-modal heading="Navigation" (closeModal)="toggleNav()" [mode]="'sidebar-left'">
-      <otui-card>
-        <div class="router-links">
-          <otui-button (action)="loginOutButton()">
-            {{ isAuthenticated() ? 'Logout' : 'Login' }}
-          </otui-button>
-          @if (isAuthenticated()) {
-            <otui-button (action)="navigateTo('/profile')" [variant]="(currentUrl$ | async) === '/profile' ? 'primary' : 'default'">
-              Profile
-            </otui-button>
-            <otui-button (action)="navigateTo('/feed')" [variant]="(currentUrl$ | async) === '/feed' ? 'primary' : 'default'">
-              Feed
-            </otui-button>
-            <otui-button (action)="navigateTo('/tasks')" [variant]="(currentUrl$ | async) === '/tasks' ? 'primary' : 'default'">
-              Tasks
-            </otui-button>
-          } @else {
-            <otui-button (action)="navigateTo('/register')">Register</otui-button>
-          }
-        </div>
-      </otui-card>
-    </otui-modal>
-  }
+  <otui-nav-sidebar
+    [isOpen]="isNavExpanded()"
+    [navItems]="navItems()"
+    heading="Navigation"
+    (close)="isNavExpanded.set(false)">
+  </otui-nav-sidebar>
 
   <div class="content">
     <router-outlet></router-outlet>

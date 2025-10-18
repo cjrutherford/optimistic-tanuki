@@ -1,20 +1,16 @@
-<otui-tile style="width: 100%; display: block;">
-    <div class="row">
-        <img src="assets/tanuki.jpg" alt="Christopher Rutherford Logo" width="75px">
-        <otui-heading text="Christopher Rutherford" [size]="'2em'">
-        </otui-heading>
-        <otui-button class="menu-btn" (click)="toggleMenu()">☰</otui-button>
-    </div>
-</otui-tile>
+<otui-app-bar
+  appTitle="Christopher Rutherford"
+  logoSrc="assets/tanuki.jpg"
+  logoAlt="Christopher Rutherford Logo"
+  [showThemeToggle]="false"
+  [useTile]="true"
+  menuIcon="☰"
+  (menuToggle)="toggleMenu()">
+</otui-app-bar>
 
-@if (menuOpen()) {
-    <otui-modal heading="Navigation" (closeModal)="toggleMenu()" [mode]="'sidebar-left'">
-        <div class="navigation">
-            <a href="#home" (click)="toggleMenu()">Home</a>
-            <a href="#about" (click)="toggleMenu()">About</a>
-            <a href="#projects" (click)="toggleMenu()">Projects</a>
-            <a href="#services" (click)="toggleMenu()">Services</a>
-            <a href="#contact" (click)="toggleMenu()">Contact</a>
-        </div>
-    </otui-modal>
-}
+<otui-nav-sidebar
+  [isOpen]="menuOpen()"
+  [navItems]="navItems"
+  heading="Navigation"
+  (close)="menuOpen.set(false)">
+</otui-nav-sidebar>

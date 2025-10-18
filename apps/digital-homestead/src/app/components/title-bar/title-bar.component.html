@@ -1,21 +1,16 @@
-<otui-tile style="width: 100%; display: block;">
-    <div class="row">
-        <img src="assets/digital-grange.png" alt="Digital Grange" width="75px">
-        <otui-heading text="Digital Grange" [size]="'2em'">
-        </otui-heading>
-        <otui-button class="menu-btn" (click)="toggleMenu()">☰</otui-button>
-    </div>
-</otui-tile>
+<otui-app-bar
+  appTitle="Digital Grange"
+  logoSrc="assets/digital-grange.png"
+  logoAlt="Digital Grange"
+  [showThemeToggle]="false"
+  [useTile]="true"
+  menuIcon="☰"
+  (menuToggle)="toggleMenu()">
+</otui-app-bar>
 
-@if (menuOpen()) {
-    <otui-modal heading="Navigation" (closeModal)="toggleMenu()" [mode]="'sidebar-left'">
-        <div class="navigation">
-            <a href="#about" (click)="toggleMenu()">About</a>
-            <a href="#benefits" (click)="toggleMenu()">Benefits</a>
-            <a href="#community" (click)="toggleMenu()">Community</a>
-            <a href="#resources" (click)="toggleMenu()">Resources</a>
-            <a href="#blog" (click)="toggleMenu()">Blog</a>
-            <a href="#contact" (click)="toggleMenu()">Contact</a>
-        </div>
-    </otui-modal>
-}
+<otui-nav-sidebar
+  [isOpen]="menuOpen()"
+  [navItems]="navItems"
+  heading="Navigation"
+  (close)="menuOpen.set(false)">
+</otui-nav-sidebar>
