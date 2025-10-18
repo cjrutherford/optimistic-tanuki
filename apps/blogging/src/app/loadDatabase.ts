@@ -1,11 +1,11 @@
 import { ConfigService } from "@nestjs/config";
 import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
-import { Post, Event, Contact } from "./entities";
+import { Post, Event, Contact, Blog } from "./entities";
 
 const loadDatabase = (config: ConfigService) => {
     const database = config.get('database');
     console.log(`Database configuration: ${JSON.stringify(database)}`);
-    const entities = [Post, Event, Contact];
+    const entities = [Post, Event, Contact, Blog];
     console.log(`Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`);
     const ormConfig: PostgresConnectionOptions = {
         type: 'postgres',

@@ -1,6 +1,19 @@
-# theme-ui
+# Theme UI
 
-This library was generated with [Nx](https://nx.dev).
+This library contains UI components for managing themes, such as a theme switcher.
+
+## Usage
+
+To use the components in this library, import the `ThemeUiModule` into your Angular module:
+
+```typescript
+import { ThemeUiModule } from '@optimistic-tanuki/theme-ui';
+
+@NgModule({
+  imports: [ThemeUiModule],
+})
+export class MyModule {}
+```
 
 ## Running unit tests
 

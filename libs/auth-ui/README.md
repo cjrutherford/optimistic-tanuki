@@ -1,7 +1,16 @@
-# auth-ui
+# Auth UI
 
-This library was generated with [Nx](https://nx.dev).
+This library contains UI components for authentication, such as login and registration forms.
 
-## Running unit tests
+## Usage
 
-Run `nx test auth-ui` to execute the unit tests.
+To use the components in this library, import the `AuthUiModule` into your Angular module:
+
+```typescript
+import { AuthUiModule } from '@optimistic-tanuki/auth-ui';
+
+@NgModule({
+  imports: [AuthUiModule],
+})
+export class MyModule {}
+```

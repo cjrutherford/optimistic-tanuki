@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Blog } from "./blog.entity";
 
 @Entity()
 export class Contact {
@@ -25,4 +26,7 @@ export class Contact {
 
     @Column({ default: false })
     addressed: boolean;
+
+    @ManyToOne(() => Blog, blog => blog.contacts)
+    blog: Blog;
 }
