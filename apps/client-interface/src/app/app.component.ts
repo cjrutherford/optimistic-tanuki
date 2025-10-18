@@ -62,7 +62,7 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.authState.isAuthenticated$().subscribe({
+    this.authState.isAuthenticated$.subscribe({
       next: (isAuthenticated) => {
         this.isAuthenticated.set(isAuthenticated);
         if (isAuthenticated) {
