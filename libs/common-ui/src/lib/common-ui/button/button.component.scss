@@ -1,15 +1,15 @@
+@import '../../styles/mixins.scss';
+
 button {
   /* Base button styles using design tokens */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  @include flex-center;
   width: 100%;
   padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
   border: none;
-  border-radius: var(--border-radius-md, 4px);
+  @include border-radius-standard(var(--border-radius-md, 4px));
   font-size: var(--font-size-base, 1rem);
   cursor: pointer;
-  transition: all 0.15s ease-in-out;
+  @include transition-base(all, 0.15s);
   color: var(--foreground);
   
   &:disabled {
@@ -171,5 +171,30 @@ button {
   &.success.fast-cycle-mode {
     background: var(--success-gradient-fastCycle);
     color: var(--foreground, #fff);
+  }
+  
+  // Additional gradient variants
+  &.gradient-glow {
+    @include gradient-background('linear', 'to right', var(--accent), var(--complement));
+    @include box-shadow-glow(var(--accent), 12px, 4px);
+    border: 2px solid transparent;
+    
+    &:hover:not(:disabled) {
+      @include box-shadow-glow(var(--complement), 16px, 6px);
+    }
+  }
+  
+  &.gradient-radial {
+    @include gradient-background('radial', 'circle', var(--accent), var(--complement));
+    
+    &:hover:not(:disabled) {
+      transform: scale(1.05);
+    }
+  }
+  
+  &.glow-on-hover {
+    &:hover:not(:disabled) {
+      @include box-shadow-glow(var(--accent), 16px, 6px);
+    }
   }
 }

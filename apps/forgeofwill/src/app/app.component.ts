@@ -122,6 +122,11 @@ export class AppComponent {
           action: () => this.navigateTo('/profile'),
           isActive: currentUrl === '/profile',
         },
+        {
+          label: 'Settings',
+          action: () => this.navigateTo('/settings'),
+          isActive: currentUrl === '/settings',
+        },
       ]);
     } else {
       this.navItems.set([

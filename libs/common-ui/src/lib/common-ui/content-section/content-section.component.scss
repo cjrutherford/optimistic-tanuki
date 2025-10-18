@@ -1,0 +1,24 @@
+@import '../../styles/mixins.scss';
+
+.content-section {
+  @include content-container(1200px, 2rem);
+  
+  h2 {
+    @include responsive-font(1.5rem, 2.5rem);
+    margin-bottom: 1.5rem;
+    color: var(--foreground, #212121);
+  }
+  
+  h3 {
+    @include responsive-font(1.25rem, 2rem);
+    margin-bottom: 1rem;
+    color: var(--foreground, #212121);
+  }
+  
+  p {
+    @include responsive-font(1rem, 1.125rem);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    color: var(--foreground, #424242);
+  }
+}

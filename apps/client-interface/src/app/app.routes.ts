@@ -25,6 +25,10 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./components/tasks/tasks.component').then(m => m.TasksComponent),
         canActivate: [AuthGuard, ProfileGuard] // Protect the tasks route
     },{
+        path: 'settings',
+        loadComponent: () => import('./components/settings.component').then(m => m.SettingsComponent),
+        canActivate: [AuthGuard] // Protect the settings route
+    },{
         path: '**',
         redirectTo: 'feed'
     }
