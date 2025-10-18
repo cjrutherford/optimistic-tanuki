@@ -2,15 +2,21 @@ import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { GradientBuilder } from '@optimistic-tanuki/common-ui';
+import { hexToRgb } from 'libs/common-ui/src/lib/common-ui/glass-container.component';
 
 @Component({
   imports: [RouterModule, TitleBarComponent],
   selector: 'dh-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
+  host: {
+    '[style.--heading-gradient]': 'headingGradient',
+  }
 })
 export class AppComponent {
   title = 'digital-homestead';
+  headingGradient = 'linear-gradient(90deg, #ff7e5f, #feb47b)'; // Example gradient
 
   constructor(private readonly themeService: ThemeService) {}
 
@@ -22,6 +28,18 @@ export class AppComponent {
     this.themeService.themeColors$.subscribe({
       next: (colors) => {
         if (!colors) return;
+        const accentRgb = hexToRgb(colors.accent);
+        const complementRgb = hexToRgb(colors.complementary);
+        const accentRgba = `rgba(${accentRgb}, 0.9)`;
+        const complementRgba = `rgba(${complementRgb}, 0.9)`;
+
+        this.headingGradient = new GradientBuilder()
+          .setType('linear')
+          .setOptions({
+            direction: '180deg',
+            colors: [accentRgba, complementRgba],
+          })
+          .build();
         
         // Only set app-specific variables, theme colors are handled by ThemeService
         const backgroundPattern = `

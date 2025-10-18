@@ -6,7 +6,7 @@ import { TcpClientOptions, Transport } from '@nestjs/microservices';
 import path from 'path';
 
 export type TcpServiceConfig = {
-    name: 'authentication' | 'profile' | 'social' | 'tasks' | 'project_planning' | 'asset' | 'chat_collector' | 'telos_docs_service' | 'ai_orchestration';
+    name: 'authentication' | 'profile' | 'social' | 'tasks' | 'project_planning' | 'asset' | 'chat_collector' | 'telos_docs_service' | 'ai_orchestration' | 'blogging';
     transport: Transport;
     options: TcpClientOptions;
     host: string;
@@ -24,6 +24,7 @@ export type Config = {
         chat_collector: TcpServiceConfig;
         telos_docs_service: TcpServiceConfig;
         ai_orchestration: TcpServiceConfig;
+        blogging: TcpServiceConfig;
     }
 };
 

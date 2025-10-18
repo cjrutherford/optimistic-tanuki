@@ -8,7 +8,7 @@
   box-shadow: 0 2px 4px rgba(33, 33, 33, 0.15);
   .heading-container {
     width: 90%;
-    background: rgba(255,255,255,0.3);
+    background: var(--heading-gradient);
     color: var(--foreground);
     margin: 40px auto;
     padding: 40px;

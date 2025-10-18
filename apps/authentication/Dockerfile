@@ -11,7 +11,7 @@ FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3001
-RUN npm i -g nodemon pg
+RUN npm i -g nodemon pg typeorm
 WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json

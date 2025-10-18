@@ -167,13 +167,15 @@ import { ContactController } from '../controllers/blogging/contact.controller';
           'services.blogging'
         );
         console.log('Blog Service Config:', serviceConfig);
-        return ClientProxyFactory.create({
+        const client = ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {
             host: serviceConfig.host,
             port: serviceConfig.port,
           },
         });
+        console.log('Blog Service Client created:', client);
+        return client;
       },
       inject: [ConfigService],
     }

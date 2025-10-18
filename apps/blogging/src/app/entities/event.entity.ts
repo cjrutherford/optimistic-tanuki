@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Blog } from "./blog.entity";
 
 @Entity()
 export class Event {
@@ -28,4 +29,7 @@ export class Event {
 
     @Column({ default: () => 'CURRENT_TIMESTAMP' })
     updatedAt: Date;
+
+    @ManyToOne(() => Blog, blog => blog.events)
+    blog: Blog;
 }

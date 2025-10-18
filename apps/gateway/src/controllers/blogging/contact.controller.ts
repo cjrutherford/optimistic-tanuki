@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 export class ContactController {
     constructor(@Inject(ServiceTokens.BLOG_SERVICE) private readonly contactService: ClientProxy, private readonly l: Logger) {
         this.l.log('ContactController initialized');
+        console.log('ContactController connecting to contactService...');
         this.contactService.connect().then(() => {
             this.l.log('ContactController connected to contactService');
         }).catch(e => this.l.error('Error connecting to contactService', e));

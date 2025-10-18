@@ -5,6 +5,7 @@ import * as yaml from 'js-yaml';
 import { Post } from "./entities/post.entity";
 import { Event } from "./entities/event.entity";
 import { Contact } from "./entities/contact.entity";
+import { Blog } from "./entities";
 
 const config = yaml.load(fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')) as Record<string, any>;
 const { database: {
@@ -21,7 +22,7 @@ const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [Post, Event, Contact];
+const entities = [Post, Event, Contact, Blog];
 
 const staticSource = new DataSource({
     type: 'postgres',
