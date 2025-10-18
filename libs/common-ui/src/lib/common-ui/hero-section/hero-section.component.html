@@ -1,0 +1,11 @@
+<div class="hero-section" 
+     [class.centered]="centerContent"
+     [style.min-height]="minHeight"
+     [style.background-color]="backgroundColor"
+     [style.background-image]="backgroundImage ? 'url(' + backgroundImage + ')' : 'none'"
+     [style.--overlay-opacity]="overlayOpacity"
+     [style.--overlay-color]="overlayColor">
+  <div class="hero-content">
+    <ng-content></ng-content>
+  </div>
+</div>

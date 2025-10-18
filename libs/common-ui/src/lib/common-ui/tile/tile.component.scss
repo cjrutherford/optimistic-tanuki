@@ -1,7 +1,9 @@
+@import '../styles/mixins.scss';
+
 .tile {
   padding: 0;
   margin: 0;
-  animation: pulse-halo 16s infinite ease;
+  @include pulse-animation(16s, (var(--accent), var(--complement)));
   .filter {
     margin: 5px;
     padding: 2rem 2rem;
@@ -9,43 +11,42 @@
     height: 100%;
     position: relative;
     background: var(--background-filter, rgba(255, 255, 255, 0.5));
-    border-radius: var(--border-radius, 4px);
-    animation: pulse-halo 16s infinite ease;
+    @include border-radius-standard(var(--border-radius, 4px));
+    @include pulse-animation(16s, (var(--accent), var(--complement)));
     :hover {
       background: var(
         --hover-background-filter,
         var(--background-filter, rgba(255, 255, 255, 0.5))
       );
-      transition: background var(--transition-duration, 0.3s);
+      @include transition-base(background, var(--transition-duration, 0.3s));
     }
   }
 }
 .default {
-  border: 4px solid var(--accent, #b1baec);
-  border-radius: 8px;
-  box-shadow: 4px 4px 6px 10px var(--accent);
-  display: flex;
-  color: var(--foreground, #fff);
-  flex-direction: column;
+  @include border-base(4px, solid, var(--accent, #b1baec));
+  @include border-radius-standard(8px);
+  @include flex-column;
   justify-content: center;
   align-items: center;
-  transition: box-shadow 0.3s ease-in-out;
+  @include transition-base(box-shadow, 0.3s);
   background: var(--background-gradient, #5969c3);
-  animation: pulse-halo 16s infinite ease;
-  box-shadow: 6px 12px 20px 8px var(--accent),
-    -6px -12px 20px 8px var(--complement) !important;
+  @include pulse-animation(16s, (var(--accent), var(--complement)));
+  color: var(--foreground, #fff);
+  @include box-shadow-multi-glow(var(--accent), var(--complement), 20px, 8px, 20px, 8px);
 }
 
 .tile.row {
-  flex-direction: row;
+  @include flex-row;
   align-items: center;
   justify-content: space-between;
-  transition: box-shadow 0.3s ease-in-out;
+  @include transition-base(box-shadow, 0.3s);
   background: var(--background, #5969c3);
+  @include box-shadow-glow(var(--accent), 6px, 10px);
   box-shadow: 4px 4px 6px 10px var(--accent), inset 0 2px 12px 0 rgba(0, 0, 0, 0.15);
 }
 
 .tile:hover {
+  @include box-shadow-inset(var(--accent), 1em, 0);
   box-shadow: inset 1px 2px 1em var(--accent), 2px 4px 8px 6px var(--complement);
 }
 
@@ -81,14 +82,15 @@
   height: 100%;
   aspect-ratio: 1 / 1;
 }
+
 :host {
   display: block;
   box-sizing: border-box;
-  border-radius: var(--border-radius, 1em);
-  border: var(--border-width, 2px) solid var(--border-color, transparent);
+  @include border-radius-standard(var(--border-radius, 1em));
+  @include border-base(var(--border-width, 2px), solid, var(--border-color, transparent));
   background: var(--background, #fff);
   color: var(--foreground, #222);
-  transition: box-shadow var(--transition-duration, 0.3s);
+  @include transition-base(box-shadow, var(--transition-duration, 0.3s));
   position: relative;
   overflow: hidden;
 }
@@ -144,45 +146,8 @@
   filter: blur(0.75em);
   content: '';
 }
-@keyframes pulse-halo {
-  0% {
-    /* Increased blur and spread, using solid colors */
-    box-shadow: 6px 12px 20px 8px var(--accent),
-      -6px -12px 20px 8px var(--complement) !important;
-  }
-  50% {
-    /* Increased offsets, blur, and spread; swapped colors */
-    box-shadow: 10px 20px 28px 16px var(--complement),
-      -10px -20px 28px 16px var(--accent) !important;
-  }
-  100% {
-    /* Return to initial state */
-    box-shadow: 6px 12px 20px 8px var(--accent),
-      -6px -12px 20px 8px var(--complement) !important;
-  }
-}
 
 .gradient-background {
-  background: var(
-    --background-gradient,
-    linear-gradient(135deg, #ffbc00, #ff0058)
-  );
-  animation: gradient-shift 10s ease infinite;
-  background-size: 200% 200%;
-  animation: background gradient-shift 5s ease-in-out infinite;
-}
-
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% 50%;
-    color: var(--complementary, #fff);
-  }
-  50% {
-    background-position: 100% 50%;
-    color: var(--accent, #222);
-  }
-  100% {
-    background-position: 0% 50%;
-    color: var(--complementary, #fff);
-  }
+  @include gradient-background('linear', '135deg', '#ffbc00', '#ff0058');
+  @include animated-gradient(10s, 200%);
 }

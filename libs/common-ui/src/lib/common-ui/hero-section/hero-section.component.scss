@@ -1,0 +1,40 @@
+@import '../styles/mixins.scss';
+
+.hero-section {
+  @include hero-section(60vh, 2rem);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  
+  @include hero-overlay(var(--overlay-opacity, 0.4), var(--overlay-color, #000));
+  
+  &.centered {
+    @include flex-center;
+  }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1200px;
+  color: var(--foreground, #fff);
+  text-align: center;
+  
+  h1 {
+    @include responsive-font(2rem, 4rem);
+    margin-bottom: 1rem;
+    font-weight: bold;
+  }
+  
+  h2 {
+    @include responsive-font(1.5rem, 2.5rem);
+    margin-bottom: 1rem;
+  }
+  
+  p {
+    @include responsive-font(1rem, 1.25rem);
+    margin-bottom: 2rem;
+  }
+}
