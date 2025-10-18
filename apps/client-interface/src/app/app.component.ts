@@ -122,6 +122,11 @@ export class AppComponent implements OnInit, OnDestroy {
           action: () => this.navigateTo('/tasks'),
           isActive: currentUrl === '/tasks',
         },
+        {
+          label: 'Settings',
+          action: () => this.navigateTo('/settings'),
+          isActive: currentUrl === '/settings',
+        },
       ]);
     } else {
       this.navItems.set([

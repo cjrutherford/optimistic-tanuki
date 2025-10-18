@@ -16,6 +16,12 @@ export const appRoutes: Route[] = [
         canActivate: [AuthenticationGuard],
     },
     {
+        path: 'settings',
+        loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent),
+        title: 'Settings',
+        canActivate: [AuthenticationGuard],
+    },
+    {
         path: 'login',
         loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent),
         title: 'Login',
