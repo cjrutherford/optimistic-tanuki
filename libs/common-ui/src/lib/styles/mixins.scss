@@ -13,15 +13,16 @@
 
 @mixin gradient-border($type: 'linear', $direction: 'to right', $width: 2px, $colors...) {
   border: $width solid transparent;
-  background: 
-    linear-gradient(var(--background, #fff), var(--background, #fff)) padding-box,
-    @if $type == 'linear' {
-      linear-gradient(#{$direction}, $colors) border-box;
-    } @else if $type == 'radial' {
-      radial-gradient(#{$direction}, $colors) border-box;
-    } @else if $type == 'conic' {
-      conic-gradient(from #{$direction}, $colors) border-box;
-    }
+  background: var(--background, #fff);
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  @if $type == 'linear' {
+    background-image: linear-gradient(var(--background, #fff), var(--background, #fff)), linear-gradient(#{$direction}, $colors);
+  } @else if $type == 'radial' {
+    background-image: linear-gradient(var(--background, #fff), var(--background, #fff)), radial-gradient(#{$direction}, $colors);
+  } @else if $type == 'conic' {
+    background-image: linear-gradient(var(--background, #fff), var(--background, #fff)), conic-gradient(from #{$direction}, $colors);
+  }
 }
 
 @mixin animated-gradient($duration: 8s, $size: 200%) {
