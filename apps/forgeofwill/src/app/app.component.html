@@ -1,7 +1,7 @@
 <otui-card>
     <div class="title-bar">
         <otui-button variant="rounded" (click)="showModal()" (keydown)="showModal()">
-            <img src="android-chrome-192x192.png" alt="User avatar" style="max-width: 75px;border-radius: 50%;" />
+            <img src="android-chrome-192x192.png" alt="Forge of Will Logo" style="max-width: 75px;border-radius: 50%;" />
         </otui-button>
         <h1>Forge of Will</h1>
         <lib-theme-toggle></lib-theme-toggle>
@@ -9,7 +9,7 @@
 </otui-card>
 @if (isModalOpen()) {
     <otui-modal heading="Navigation" (closeModal)="showModal()" [mode]="'sidebar-left'">
-        <otui-card >
+        <otui-card>
             <div class="router-links">
                 <otui-button (action)="loginOutButton()">
                     {{ isAuthenticated() ? 'Logout' : 'Login' }}

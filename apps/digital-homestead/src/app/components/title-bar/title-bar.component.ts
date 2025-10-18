@@ -1,10 +1,10 @@
 import { Component, signal } from '@angular/core';
 
-import { ButtonComponent, HeadingComponent, TileComponent } from '@optimistic-tanuki/common-ui'
+import { ButtonComponent, HeadingComponent, TileComponent, ModalComponent } from '@optimistic-tanuki/common-ui'
 
 @Component({
   selector: 'dh-title-bar',
-  imports: [HeadingComponent, TileComponent, ButtonComponent],
+  imports: [HeadingComponent, TileComponent, ButtonComponent, ModalComponent],
   templateUrl: './title-bar.component.html',
   styleUrl: './title-bar.component.scss',
 })

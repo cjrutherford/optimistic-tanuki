@@ -1,19 +1,21 @@
 <otui-tile style="width: 100%; display: block;">
     <div class="row">
-        <!-- <div class="title"> -->
-            <img src="assets/digital-grange.png" alt="Digital Grange" width="75px">
-            <otui-heading text="Digital Grange" [size]="'2em'">
-            </otui-heading>
-        <!-- </div> -->
-        <otui-button class="menu-btn" (click)="toggleMenu()">ℹ️</otui-button>
-        <div class="navigation" [class.open]="menuOpen()">
-            <a href="#about">About</a>
-            <a href="#benefits">Benefits</a>
-            <a href="#community">Community</a>
-            <a href="#resources">Resources</a>
-            <a href="#blog">Blog</a>
-            <a href="#contact">Contact</a>
-            <otui-button class="menu-btn" (click)="toggleMenu()">✖️</otui-button>
-        </div>
+        <img src="assets/digital-grange.png" alt="Digital Grange" width="75px">
+        <otui-heading text="Digital Grange" [size]="'2em'">
+        </otui-heading>
+        <otui-button class="menu-btn" (click)="toggleMenu()">☰</otui-button>
     </div>
 </otui-tile>
+
+@if (menuOpen()) {
+    <otui-modal heading="Navigation" (closeModal)="toggleMenu()" [mode]="'sidebar-left'">
+        <div class="navigation">
+            <a href="#about" (click)="toggleMenu()">About</a>
+            <a href="#benefits" (click)="toggleMenu()">Benefits</a>
+            <a href="#community" (click)="toggleMenu()">Community</a>
+            <a href="#resources" (click)="toggleMenu()">Resources</a>
+            <a href="#blog" (click)="toggleMenu()">Blog</a>
+            <a href="#contact" (click)="toggleMenu()">Contact</a>
+        </div>
+    </otui-modal>
+}
