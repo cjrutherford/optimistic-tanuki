@@ -16,6 +16,7 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 RUN npm i -g nodemon pg
 COPY ./dist/apps/chat-collector .
+RUN ls -lath 
 RUN chown -R node:node .
 USER node
 EXPOSE 3007

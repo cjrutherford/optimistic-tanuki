@@ -1,0 +1,16 @@
+.section-heading {
+  margin-bottom: 1rem;
+  width: 90%;
+  margin: 20px auto;
+  box-shadow: 0 2px 10px var(--accent, #b1baec);
+  h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  h3 {
+    font-size: 1.25rem;
+    font-weight: normal;
+    margin-bottom: 0.5rem;
+  }
+}

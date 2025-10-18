@@ -23,7 +23,7 @@ services:
   asset:
     name: asset
     transport: TCP
-    host: ot_asset
+    host: ot_assets
     port: 3005
   project_planning:
     name: project_planning

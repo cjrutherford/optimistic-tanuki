@@ -1,0 +1,5 @@
+<div class="section-heading" [style.background]="background" [style.padding]="padding" [style.border-radius]="borderRadius" [style.color]="color">
+  <h2>{{ heading }}</h2>
+  <h3 *ngIf="subheading">{{ subheading }}</h3>
+  <ng-content></ng-content>
+</div>

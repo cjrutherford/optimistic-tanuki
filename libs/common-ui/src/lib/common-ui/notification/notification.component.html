@@ -4,7 +4,7 @@
 <div class="notification-menu" *ngIf="menuVisible">
   <ul>
     <li *ngFor="let notification of notifications">
-      <div [ngClass]="notification.severity">
+      <div [ngClass]="notification.variant">
         <p>{{ notification.message }}</p>
         <div class="actions">
           <button *ngFor="let action of notification.actions" (click)="action.callback()">{{ action.label }}</button>

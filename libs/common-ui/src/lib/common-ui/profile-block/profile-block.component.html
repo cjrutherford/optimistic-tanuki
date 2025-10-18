@@ -1,0 +1,11 @@
+<div class="profile-block">
+  <img *ngIf="profileImage" [src]="profileImage" alt="{{ profileName }}" class="profile-image" />
+  <div class="profile-details">
+    <h2>{{ profileName }}</h2>
+    <p *ngIf="bio">{{ bio }}</p>
+    <div class="profile-actions">
+      <button *ngFor="let action of actions" (click)="action.callback()">{{ action.label }}</button>
+    </div>
+    <ng-content></ng-content>
+  </div>
+</div>

@@ -7,6 +7,36 @@
   color: var(--foreground, black);
   transition: background var(--transition-duration, 0.5s), color var(--transition-duration, 0.5s), border-color var(--transition-duration, 0.5s);
 
+  &.glass {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(16px) saturate(180%);
+    border: 1.5px solid var(--border-gradient, var(--border-color, #b1baec));
+    box-shadow: 0 4px 32px 0 rgba(0,0,0,0.18);
+  }
+
+  &.gradient {
+    background: linear-gradient(120deg, var(--accent, #b1baec) 0%, var(--complement, #919ee4) 100%);
+    color: var(--foreground, #fff);
+    border: 2px solid var(--border-gradient, var(--border-color, #b1baec));
+    box-shadow: 0 4px 32px 0 rgba(0,0,0,0.18);
+  }
+
+  &.sm {
+    font-size: 0.9rem;
+    max-width: 320px;
+    padding: 0.5rem 0.75rem;
+  }
+  &.md {
+    font-size: 1rem;
+    max-width: 500px;
+    padding: 1rem 1.5rem;
+  }
+  &.lg {
+    font-size: 1.15rem;
+    max-width: 800px;
+    padding: 2rem 2.5rem;
+  }
+
   &.standard-modal {
     top: 50%;
     left: 50%;
@@ -61,9 +91,14 @@
   padding: 1rem;
   border-bottom: 1px solid var(--border-color, #ccc);
   color: var(--complement, inherit);
+  background: transparent;
+  font-weight: 600;
+  font-size: 1.2em;
 }
 
 .modal-content {
   padding: 1rem;
   color: var(--foreground, inherit);
+  background: transparent;
+  border-radius: 0 0 1rem 1rem;
 }

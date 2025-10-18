@@ -25,4 +25,5 @@ for db_with_prefix in $(echo $ADDITIONAL_DBS | tr ',' ' '); do
   cd ../..
 done
 
+
 echo "Database setup and migrations complete."

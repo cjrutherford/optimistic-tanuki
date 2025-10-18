@@ -1,8 +1,12 @@
 <nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
+  <ol class="breadcrumb" [ngClass]="[variant, size]">
     <li *ngFor="let node of nodes; let i = index" class="breadcrumb-item" [ngClass]="{'d-none': i > 0 && i < nodes.length - 1 && nodes.length > 3}">
-      <a href="#" *ngIf="i < nodes.length - 1">{{ node }}</a>
-      <span *ngIf="i === nodes.length - 1">{{ node }}</span>
+      <ng-container *ngIf="i < nodes.length - 1">
+        <a href="#"><ng-content select="[breadcrumb-node-{{i}}]"></ng-content>{{ node }}</a>
+      </ng-container>
+      <ng-container *ngIf="i === nodes.length - 1">
+        <span><ng-content select="[breadcrumb-node-{{i}}]"></ng-content>{{ node }}</span>
+      </ng-container>
     </li>
     <li *ngIf="nodes.length > 3" class="breadcrumb-item">
       <span tabIndex="3" role="button" tabindex="3" (click)="togglePopup()" (keypress)="togglePopup()">...</span>

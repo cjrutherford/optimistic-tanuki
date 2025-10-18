@@ -3,13 +3,14 @@ import {
   Component,
   OnDestroy,
 } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { LoginRequest } from '@optimistic-tanuki/ui-models';
 import { AuthStateService } from '../state/auth-state.service';
 
 import { Subscription, filter } from 'rxjs';
+import { inject } from '@angular/core';
+import { MessageService } from '@optimistic-tanuki/message-ui';
 import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 
@@ -23,6 +24,7 @@ import { LoginType } from '@optimistic-tanuki/ui-models';
 ],
 })
 export class LoginComponent implements OnDestroy {
+  private readonly messageService = inject(MessageService);
   themeSub: Subscription;
   themeStyles!: {
     backgroundColor: string;
@@ -55,7 +57,21 @@ export class LoginComponent implements OnDestroy {
       console.log(response);
       this.authStateService.setToken(response.data.newToken);
       if (this.authStateService.isAuthenticated) {
-        this.router.navigate(['/feed']);
+        // Load profiles and redirect accordingly
+        import('../profile.service').then(({ ProfileService }) => {
+          const profileService = new ProfileService(null as any, this.authStateService);
+          profileService.getAllProfiles().then(() => {
+            const currentProfiles = profileService.getCurrentUserProfiles();
+            if (!currentProfiles.length) {
+              this.router.navigate(['/profile'], { state: { showProfileModal: true, profileMessage: 'No profiles found. Please create a profile to continue.' } });
+              this.messageService.addMessage({ content: 'No profiles found. Please create a profile to continue.', type: 'warning' });
+            } else {
+              profileService.selectProfile(currentProfiles[0]);
+              this.router.navigate(['/feed']);
+              this.messageService.addMessage({ content: 'Login successful! Welcome back.', type: 'success' });
+            }
+          });
+        });
       }
     }).catch(err => {
       console.error(err);

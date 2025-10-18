@@ -16,7 +16,7 @@ RUN npm i -g nodemon pg
 RUN npm i --save pg
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
-RUN pwd && ls -lath
+RUN npm i --save typeorm
 COPY ./dist/apps/profile .
 RUN chown -R node:node .
 USER node
