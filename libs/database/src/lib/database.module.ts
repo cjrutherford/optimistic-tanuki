@@ -1,7 +1,8 @@
-import { DynamicModule, Module, Provider, Type } from '@nestjs/common';
+import { DynamicModule, FactoryProvider, Logger, Module, Provider, Type } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, DataSourceOptions, EntitySchema } from 'typeorm';
+import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
+import { DataSource, DataSourceOptions, EntitySchema, Repository } from 'typeorm';
 export { FindOptionsBuilder } from './findOptionsBuilder';
 
 @Module({
@@ -16,13 +17,13 @@ export class DatabaseModule implements DynamicModule {
       const connectionName = name.toUpperCase() + '_CONNECTION';
       
       // Store entities reference for later use
-      let entitiesRef: any[] = [];
+      let entitiesRef: EntityClassOrSchema[] = [];
       
       const connection = {
         provide: connectionName,
         useFactory: async (config: ConfigService) => {
           const connectionOptions = factory(config);
-          entitiesRef = connectionOptions.entities || [];
+          entitiesRef = connectionOptions.entities as EntityClassOrSchema[] || [];
           const ds = new DataSource(connectionOptions);
           await ds.initialize();
 
@@ -37,13 +38,13 @@ export class DatabaseModule implements DynamicModule {
       const tempConfig = new ConfigService({});
       try {
         const tempOptions = factory(tempConfig);
-        const entities = tempOptions.entities || [];
+        const entities = tempOptions.entities as EntityClassOrSchema[] || [];
         
         // Create repository providers for each entity
         for (const entity of entities) {
-          const repositoryProvider: Provider = {
-            provide: getRepositoryToken(entity as Function | string | EntitySchema),
-            useFactory: (ds: DataSource) => ds.getRepository(entity as Function | string | EntitySchema),
+          const repositoryProvider: Provider<Repository<typeof entity>> = {
+            provide: getRepositoryToken(entity),
+            useFactory: (ds: DataSource) => ds.getRepository(entity),
             inject: [connectionName],
           };
           repositories.push(repositoryProvider);
@@ -53,6 +54,10 @@ export class DatabaseModule implements DynamicModule {
         console.warn(`Could not extract entities for ${name} at registration time:`, error);
       }
     }
+
+    const log = new Logger('DatabaseModule');
+    log.log(`Registered DatabaseModule with connections: ${connections.map(c => c.provide).join(', ')}`);
+    log.log(`Registered DatabaseModule with repositories: ${repositories}`);
 
     return {
       module: DatabaseModule,
