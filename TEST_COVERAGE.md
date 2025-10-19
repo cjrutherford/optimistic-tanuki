@@ -297,15 +297,35 @@ nx e2e gateway-e2e
 nx e2e authentication-e2e --configuration=ci
 ```
 
+## CI/CD Integration
+
+A GitHub Actions workflow template is provided in `.github/workflows/e2e-tests.yml.example`. 
+
+**Features**:
+- Parallel execution of microservice and UI tests
+- Matrix strategy for efficient resource usage
+- Automatic artifact upload (test results, Playwright reports)
+- Test summary generation
+- Configurable timeouts and retry logic
+
+**To enable**:
+```bash
+cp .github/workflows/e2e-tests.yml.example .github/workflows/e2e-tests.yml
+git add .github/workflows/e2e-tests.yml
+git commit -m "Enable E2E testing in CI"
+git push
+```
+
 ## Future Improvements
 
-1. **Integration with CI/CD**: Add GitHub Actions workflow for automated testing
-2. **Code Coverage Reports**: Generate and publish coverage reports
-3. **Performance Benchmarks**: Add performance baseline tracking
-4. **Visual Regression Testing**: Add screenshot comparison tests
-5. **Load Testing**: Add performance/load tests for microservices
-6. **Contract Testing**: Add Pact tests for service contracts
-7. **Mutation Testing**: Add mutation testing for test quality
+1. **Code Coverage Reports**: Generate and publish coverage reports with badges
+2. **Performance Benchmarks**: Add performance baseline tracking with trend analysis
+3. **Visual Regression Testing**: Add screenshot comparison tests using Percy or similar
+4. **Load Testing**: Add performance/load tests for microservices using k6 or Artillery
+5. **Contract Testing**: Add Pact tests for service contracts
+6. **Mutation Testing**: Add mutation testing for test quality verification
+7. **Flaky Test Detection**: Implement retry logic and flaky test reporting
+8. **Test Parallelization**: Optimize test execution time with better parallelization
 
 ## Maintenance
 

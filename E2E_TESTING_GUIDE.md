@@ -285,7 +285,27 @@ test.describe('Feature Name', () => {
 
 ## CI/CD Integration
 
-Tests can be integrated into CI/CD pipelines:
+Tests can be integrated into CI/CD pipelines.
+
+### GitHub Actions
+
+A complete GitHub Actions workflow example is provided in `.github/workflows/e2e-tests.yml.example`.
+
+To use it:
+1. Copy the file: `cp .github/workflows/e2e-tests.yml.example .github/workflows/e2e-tests.yml`
+2. Commit and push to your repository
+3. Tests will run automatically on PRs and pushes to main/develop branches
+
+Features of the example workflow:
+- Runs microservice and UI tests in parallel
+- Matrix strategy for concurrent test execution
+- Uploads test results and artifacts
+- Generates test summary
+- Configurable timeout and retry logic
+
+### Quick CI Integration
+
+For a simpler setup:
 
 ```yaml
 # Example GitHub Actions workflow
