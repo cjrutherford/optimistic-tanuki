@@ -55,6 +55,14 @@ The tool captures screenshots from these Angular applications:
    - Clearing the cache: `rm -rf ~/.cache/ms-playwright && npx playwright install chromium`
    - Installing all browsers: `npx playwright install`
 
+3. Validate your setup:
+   ```bash
+   cd tools/screenshots
+   ./validate-setup.sh
+   ```
+   
+   This will check that all dependencies are installed and the configuration is correct.
+
 ## Usage
 
 ### Option 1: Capture Screenshots for a Single App
