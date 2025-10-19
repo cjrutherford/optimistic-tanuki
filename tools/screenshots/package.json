@@ -1,0 +1,13 @@
+{
+  "name": "screenshots-tool",
+  "version": "1.0.0",
+  "description": "Playwright-based screenshot capture tool for Angular applications",
+  "scripts": {
+    "capture": "playwright test --config=playwright.config.ts",
+    "capture:headed": "playwright test --config=playwright.config.ts --headed",
+    "report": "playwright show-report playwright-report"
+  },
+  "keywords": ["playwright", "screenshots", "e2e", "angular"],
+  "author": "",
+  "license": "MIT"
+}
