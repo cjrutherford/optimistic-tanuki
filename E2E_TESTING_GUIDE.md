@@ -18,7 +18,7 @@ npm install
 
 2. Install Playwright browsers (required for UI tests):
 ```bash
-npx playwright install chromium
+npx playwright install
 ```
 
 3. Ensure Docker is running (required for microservice tests)
@@ -271,8 +271,9 @@ test.describe('Feature Name', () => {
 ### Playwright Tests
 
 **Issue**: Playwright executable not found or browser not installed
-- Run `npx playwright install chromium` to install the browser
-- If installation fails, try `npx playwright install --with-deps chromium`
+- Run `npx playwright install` to install all browsers (Chromium, Firefox, WebKit)
+- For specific browser: `npx playwright install chromium`
+- If installation fails, try `npx playwright install --with-deps`
 - Verify installation: `ls ~/.cache/ms-playwright/`
 
 **Issue**: Element not found

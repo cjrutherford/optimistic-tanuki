@@ -81,7 +81,7 @@ This project includes comprehensive end-to-end (E2E) tests for all applications 
 
 Before running tests, install Playwright browsers:
 ```bash
-npx playwright install chromium
+npx playwright install
 ```
 
 For detailed testing instructions, see the [E2E Testing Guide](./E2E_TESTING_GUIDE.md).

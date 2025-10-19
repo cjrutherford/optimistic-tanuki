@@ -281,7 +281,7 @@ This document provides an overview of the E2E test coverage for the Optimistic T
 - Docker (for microservice tests)
 - Node.js 18+
 - npm/pnpm
-- Playwright browsers (install with `npx playwright install chromium`)
+- Playwright browsers (install with `npx playwright install`)
 
 ### Running Tests
 
