@@ -232,6 +232,8 @@ This will create a `FEATURES_BREAKDOWN.md` file at the root of the workspace tha
 - Total statistics
 - Links to screenshot locations
 
+See `FEATURES_BREAKDOWN_EXAMPLE.md` for a sample of what the generated report looks like.
+
 The report provides a comprehensive overview of the features implemented in each Angular application based on the captured screenshots.
 
 ### Manual Feature Analysis
@@ -249,7 +251,9 @@ For automated feature detection, consider:
 
 ## CI/CD Integration
 
-To integrate into CI/CD pipelines:
+A GitHub Actions workflow is provided for automated screenshot capture. See `.github/workflows/capture-screenshots.yml`.
+
+To integrate into your own CI/CD pipelines:
 
 ```bash
 # Install dependencies
@@ -266,6 +270,13 @@ cd tools/screenshots
 # Archive screenshots as artifacts
 tar -czf screenshots.tar.gz ../../screenshots/
 ```
+
+The provided GitHub Actions workflow:
+- Runs on a schedule (weekly) or can be triggered manually
+- Builds and serves each Angular application
+- Captures screenshots using Playwright
+- Generates a features breakdown report
+- Uploads all artifacts for review
 
 ## Notes
 

@@ -54,3 +54,6 @@ storybook-static
 # Playwright test results and reports
 /tools/screenshots/test-results
 /tools/screenshots/playwright-report
+
+# Generated features breakdown report (regenerate with generate-features-report.sh)
+/FEATURES_BREAKDOWN.md
