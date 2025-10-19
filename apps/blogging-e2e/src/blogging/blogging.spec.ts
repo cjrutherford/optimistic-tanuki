@@ -1,5 +1,5 @@
 import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
-import { BlogCommands } from '@optimistic-tanuki/constants';
+import { BlogPostCommands, EventCommands, ContactCommands } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 
 describe('Blogging Microservice E2E', () => {
@@ -37,7 +37,7 @@ describe('Blogging Microservice E2E', () => {
         };
 
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.POST_CREATE }, testPost)
+          bloggingClient.send({ cmd: BlogPostCommands.CREATE }, testPost)
         );
 
         expect(result).toBeDefined();
@@ -57,7 +57,7 @@ describe('Blogging Microservice E2E', () => {
         };
 
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.POST_CREATE }, testPost)
+          bloggingClient.send({ cmd: BlogPostCommands.CREATE }, testPost)
         );
 
         expect(result).toBeDefined();
@@ -68,7 +68,7 @@ describe('Blogging Microservice E2E', () => {
     describe('Find Posts', () => {
       it('should find a post by id', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.POST_FIND }, {
+          bloggingClient.send({ cmd: BlogPostCommands.FIND }, {
             id: createdPostId,
           })
         );
@@ -79,7 +79,7 @@ describe('Blogging Microservice E2E', () => {
 
       it('should find all posts', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.POST_FIND_ALL }, {})
+          bloggingClient.send({ cmd: BlogPostCommands.FIND_ALL }, {})
         );
 
         expect(result).toBeDefined();
@@ -88,7 +88,7 @@ describe('Blogging Microservice E2E', () => {
 
       it('should find published posts', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.POST_FIND_PUBLISHED }, {})
+          bloggingClient.send({ cmd: BlogPostCommands.FIND_PUBLISHED }, {})
         );
 
         expect(result).toBeDefined();
@@ -99,7 +99,7 @@ describe('Blogging Microservice E2E', () => {
     describe('Update Post', () => {
       it('should update a blog post', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.POST_UPDATE }, {
+          bloggingClient.send({ cmd: BlogPostCommands.UPDATE }, {
             id: createdPostId,
             data: {
               title: 'Updated Blog Post Title',
@@ -118,7 +118,7 @@ describe('Blogging Microservice E2E', () => {
     describe('Delete Post', () => {
       it('should delete a blog post', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.POST_DELETE }, {
+          bloggingClient.send({ cmd: BlogPostCommands.DELETE }, {
             id: createdPostId,
           })
         );
@@ -128,7 +128,7 @@ describe('Blogging Microservice E2E', () => {
 
       it('should return null when finding deleted post', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.POST_FIND }, {
+          bloggingClient.send({ cmd: BlogPostCommands.FIND }, {
             id: createdPostId,
           })
         );
@@ -150,7 +150,7 @@ describe('Blogging Microservice E2E', () => {
         };
 
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.EVENT_CREATE }, testEvent)
+          bloggingClient.send({ cmd: EventCommands.CREATE }, testEvent)
         );
 
         expect(result).toBeDefined();
@@ -164,7 +164,7 @@ describe('Blogging Microservice E2E', () => {
     describe('Find Events', () => {
       it('should find an event by id', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.EVENT_FIND }, {
+          bloggingClient.send({ cmd: EventCommands.FIND }, {
             id: createdEventId,
           })
         );
@@ -175,7 +175,7 @@ describe('Blogging Microservice E2E', () => {
 
       it('should find all events', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.EVENT_FIND_ALL }, {})
+          bloggingClient.send({ cmd: EventCommands.FIND_ALL }, {})
         );
 
         expect(result).toBeDefined();
@@ -186,7 +186,7 @@ describe('Blogging Microservice E2E', () => {
     describe('Update Event', () => {
       it('should update an event', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.EVENT_UPDATE }, {
+          bloggingClient.send({ cmd: EventCommands.UPDATE }, {
             id: createdEventId,
             data: {
               title: 'Updated Event Title',
@@ -203,7 +203,7 @@ describe('Blogging Microservice E2E', () => {
     describe('Delete Event', () => {
       it('should delete an event', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: BlogCommands.EVENT_DELETE }, {
+          bloggingClient.send({ cmd: EventCommands.DELETE }, {
             id: createdEventId,
           })
         );

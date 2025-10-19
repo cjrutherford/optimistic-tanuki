@@ -69,6 +69,28 @@ To start the Forge of Will stack, run the following command:
 docker-compose -f fow.docker-compose.yaml up -d
 ```
 
+## 🧪 Testing
+
+This project includes comprehensive end-to-end (E2E) tests for all applications and microservices.
+
+- **UI Applications**: Playwright tests for Angular applications
+- **Microservices**: NestJS ClientProxy tests for TCP microservices
+- **Gateway**: HTTP API tests using Axios
+
+For detailed testing instructions, see the [E2E Testing Guide](./E2E_TESTING_GUIDE.md).
+
+### Quick Test Commands
+
+```bash
+# Run all E2E tests
+nx run-many --target=e2e --all
+
+# Run specific application tests
+nx e2e client-interface-e2e
+nx e2e authentication-e2e
+nx e2e gateway-e2e
+```
+
 ## ✨ Built With
 
 - [Angular](https://angular.io/) - Frontend framework
@@ -76,6 +98,7 @@ docker-compose -f fow.docker-compose.yaml up -d
 - [Nx](https://nx.dev/) - Monorepo management tool
 - [PostgreSQL](https://www.postgresql.org/) - Database
 - [Docker](https://www.docker.com/) - Containerization
+- [Playwright](https://playwright.dev/) - E2E testing for web applications
 
 ## 📂 Project Structure
 
