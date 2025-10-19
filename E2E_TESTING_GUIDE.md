@@ -297,6 +297,11 @@ Tests can be integrated into CI/CD pipelines:
 
 ## Additional Resources
 
+### Project Documentation
+- [Test Coverage Report](./TEST_COVERAGE.md) - Detailed breakdown of all tests
+- [Testing Quick Reference](./TESTING_QUICK_REFERENCE.md) - Quick commands and patterns
+
+### External Documentation
 - [Playwright Documentation](https://playwright.dev/)
 - [NestJS Microservices](https://docs.nestjs.com/microservices/basics)
 - [NX Testing](https://nx.dev/recipes/testing)
