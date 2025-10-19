@@ -300,12 +300,15 @@ Tests can be integrated into CI/CD pipelines.
 
 ### GitHub Actions
 
-A complete GitHub Actions workflow example is provided in `.github/workflows/e2e-tests.yml.example`.
+The GitHub Actions workflow is **now enabled** at `.github/workflows/e2e-tests.yml`.
 
-To use it:
-1. Copy the file: `cp .github/workflows/e2e-tests.yml.example .github/workflows/e2e-tests.yml`
-2. Commit and push to your repository
-3. Tests will run automatically on PRs and pushes to main/develop branches
+The workflow will:
+- Run automatically on PRs and pushes to main/develop branches
+- Execute all microservice and UI tests in parallel
+- Upload test results and artifacts
+- Generate test summaries
+
+To disable it, remove or rename the workflow file.
 
 Features of the example workflow:
 - Runs microservice and UI tests in parallel

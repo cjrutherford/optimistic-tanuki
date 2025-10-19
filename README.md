@@ -86,6 +86,8 @@ npx playwright install
 
 For detailed testing instructions, see the [E2E Testing Guide](./E2E_TESTING_GUIDE.md).
 
+For test portability and running in different environments, see the [E2E Test Portability Guide](./E2E_TEST_PORTABILITY.md).
+
 ### Quick Test Commands
 
 ```bash
