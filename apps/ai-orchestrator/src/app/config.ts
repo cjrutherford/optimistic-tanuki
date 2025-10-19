@@ -14,6 +14,7 @@ export type TcpServiceConfig = {
 export declare type OrchestratorConfigType = {
     listenPort: number;
     dependencies: {[key: string]: TcpServiceConfig};
+    'ai-enabled-services': { [key: string]: string };
 }
 
 

@@ -18,6 +18,13 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
   providers: [
     AppService,
     {
+      provide: 'ai-enabled-apps',
+      useFactory: (config: ConfigService) => {
+        return config.get<{[key: string]: string}>('ai-enabled-apps', {});
+      },
+      inject: [ConfigService],
+    },
+    {
       provide: ServiceTokens.PROMPT_PROXY,
       useFactory: (config: ConfigService) => {
         const options = config.get('dependencies.prompt_proxy')

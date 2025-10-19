@@ -57,21 +57,22 @@ export class ProfileController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   @Post()
-  async createProfile(@Body() createProfileDto: CreateProfileDto) {
+  async createProfile(@Body() createProfileDto: CreateProfileDto & { appId?: string}) {
     const createdProfile: ProfileDto = await firstValueFrom(
       this.client.send({ cmd: ProfileCommands.Create }, createProfileDto)
     );
     this.l.log(`Profile created with ID: ${createdProfile.id}`);
-    firstValueFrom(
-      this.aiClient.send(
-        { cmd: AIOrchestrationCommands.PROFILE_INITIALIZE },
-        { profileId: createdProfile.id }
-      )
-    ).then(() => {
-      this.l.log(
-        `AI orchestration initialized for profile ID: ${createdProfile.id}`
-      );
-    });
+    if (['forgeofwill'].includes(createProfileDto.appId))
+      firstValueFrom(
+        this.aiClient.send(
+          { cmd: AIOrchestrationCommands.PROFILE_INITIALIZE },
+          { profileId: createdProfile.id, appId: createProfileDto.appId }
+        )
+      ).then(() => {
+        this.l.log(
+          `AI orchestration initialized for profile ID: ${createdProfile.id}`
+        );
+      }).catch((e) => this.l.error('Error initializing AI orchestration:', e));
 
     return createdProfile;
   }
