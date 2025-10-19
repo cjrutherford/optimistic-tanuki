@@ -77,6 +77,13 @@ This project includes comprehensive end-to-end (E2E) tests for all applications 
 - **Microservices**: NestJS ClientProxy tests for TCP microservices
 - **Gateway**: HTTP API tests using Axios
 
+### Setup
+
+Before running tests, install Playwright browsers:
+```bash
+npx playwright install chromium
+```
+
 For detailed testing instructions, see the [E2E Testing Guide](./E2E_TESTING_GUIDE.md).
 
 ### Quick Test Commands

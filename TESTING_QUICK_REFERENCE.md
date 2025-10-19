@@ -4,6 +4,12 @@ Quick reference card for running and writing E2E tests in the Optimistic Tanuki 
 
 ## Quick Commands
 
+### Setup (First Time)
+```bash
+npm install
+npx playwright install chromium
+```
+
 ### Run All Tests
 ```bash
 nx run-many --target=e2e --all

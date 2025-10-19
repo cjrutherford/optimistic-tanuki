@@ -16,7 +16,12 @@ The workspace includes comprehensive E2E tests for:
 npm install
 ```
 
-2. Ensure Docker is running (required for microservice tests)
+2. Install Playwright browsers (required for UI tests):
+```bash
+npx playwright install chromium
+```
+
+3. Ensure Docker is running (required for microservice tests)
 
 ## Test Structure
 
@@ -264,6 +269,11 @@ test.describe('Feature Name', () => {
 - Verify connection credentials
 
 ### Playwright Tests
+
+**Issue**: Playwright executable not found or browser not installed
+- Run `npx playwright install chromium` to install the browser
+- If installation fails, try `npx playwright install --with-deps chromium`
+- Verify installation: `ls ~/.cache/ms-playwright/`
 
 **Issue**: Element not found
 - Add proper wait conditions (`waitForLoadState`, `waitForSelector`)
