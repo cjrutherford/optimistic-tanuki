@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { FindOneOptions, FindManyOptions } from 'typeorm';
-import { Profile } from '../profiles/entities/profile.entity';
+import { Profile, BlogRole } from '../profiles/entities/profile.entity';
 import { ProfileService } from '../app/profile.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ProfileCommands } from '@optimistic-tanuki/constants';
@@ -28,6 +28,16 @@ export class ProfilesController {
     @MessagePattern({ cmd: ProfileCommands.Update })
     async updateProfile(@Payload() data: UpdateProfileDto) {
         return await this.profileService.update(data.id, data);
+    }
+
+    @MessagePattern({ cmd: ProfileCommands.SetBlogRole })
+    async setBlogRole(@Payload() data: { profileId: string, blogRole: BlogRole }) {
+        return await this.profileService.setBlogRole(data.profileId, data.blogRole);
+    }
+
+    @MessagePattern({ cmd: ProfileCommands.GetBlogRole })
+    async getBlogRole(@Payload() userId: string) {
+        return await this.profileService.getBlogRole(userId);
     }
 
 }

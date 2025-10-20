@@ -1,8 +1,11 @@
-import { Body, Controller, Delete, Get, HttpException, Inject, Logger, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, Inject, Logger, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { BlogPostCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { BlogPostQueryDto, CreateBlogPostDto, UpdateBlogPostDto } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { AuthGuard } from '../../auth/auth.guard';
+import { BlogPermissionGuard, BlogPermission } from '../../auth/blog-permission.guard';
+import { RequireBlogPermissions } from '../../decorators/blog-permissions.decorator';
 
 @Controller('post')
 export class PostController {
@@ -15,6 +18,8 @@ export class PostController {
     }
 
     @Post()
+    @UseGuards(AuthGuard, BlogPermissionGuard)
+    @RequireBlogPermissions(BlogPermission.POST)
     async createPost(@Body() createPost: CreateBlogPostDto) {
         try {
             const post = await firstValueFrom(this.postService.send({ cmd: BlogPostCommands.CREATE }, createPost));
@@ -58,6 +63,8 @@ export class PostController {
     }
 
     @Patch('/:id')
+    @UseGuards(AuthGuard, BlogPermissionGuard)
+    @RequireBlogPermissions(BlogPermission.POST)
     async updatePost(@Param('id') id: string, @Body() updateData: UpdateBlogPostDto) {
         try {
             const updatedPost = await firstValueFrom(this.postService.send({ cmd: BlogPostCommands.UPDATE }, { id, updatePostDto: updateData }));
@@ -76,6 +83,8 @@ export class PostController {
     }
 
     @Delete('/:id')
+    @UseGuards(AuthGuard, BlogPermissionGuard)
+    @RequireBlogPermissions(BlogPermission.POST)
     async deletePost(@Param('id') id: string) {
         try {
             await firstValueFrom(this.postService.send({ cmd: BlogPostCommands.DELETE }, id));

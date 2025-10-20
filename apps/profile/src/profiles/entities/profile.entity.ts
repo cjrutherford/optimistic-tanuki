@@ -3,6 +3,12 @@ import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 import { Timeline } from "../../timelines/entities/timeline.entity";
 
+export enum BlogRole {
+    NONE = 'none',
+    POSTER = 'poster',
+    OWNER = 'owner'
+}
+
 @Entity()
 export class Profile {
 
@@ -35,6 +41,13 @@ export class Profile {
 
     @Column()
     skills: string;
+
+    @Column({ 
+        type: 'varchar',
+        enum: BlogRole,
+        default: BlogRole.NONE
+    })
+    blogRole: BlogRole;
 
     @OneToMany( type => Timeline, timeline => timeline.related_profile)
     timeLineEvents: Timeline[];
