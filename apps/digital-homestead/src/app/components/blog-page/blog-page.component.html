@@ -1,7 +1,44 @@
 <div class="blog-page-container">
-  <h1>Create a New Blog Post</h1>
-  <p>Use the component injection system to add custom components to your blog post.</p>
-  
-  <lib-blog-compose (postSubmitted)="onPostSubmitted($event)">
-  </lib-blog-compose>
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <p>Loading...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="error-state">
+    <p class="error-message">{{ error }}</p>
+    <lib-button (click)="error = null">Dismiss</lib-button>
+  </div>
+
+  <!-- Create/Edit Mode -->
+  <div *ngIf="!loading && (mode === 'create' || mode === 'edit')">
+    <div class="header">
+      <h1>{{ mode === 'create' ? 'Create a New Blog Post' : 'Edit Blog Post' }}</h1>
+      <p>Use the component injection system to add custom components to your blog post.</p>
+    </div>
+    
+    <lib-blog-compose 
+      [(ngModel)]="editorData"
+      (postSubmitted)="onPostSubmitted($event)">
+    </lib-blog-compose>
+
+    <div class="actions" *ngIf="mode === 'edit'">
+      <lib-button (click)="onCancelEdit()">Cancel</lib-button>
+    </div>
+  </div>
+
+  <!-- View Mode -->
+  <div *ngIf="!loading && mode === 'view' && post">
+    <div class="view-actions">
+      <lib-button (click)="onEditClick()">Edit Post</lib-button>
+      <lib-button (click)="router.navigate(['/blog'])">Back to Blog List</lib-button>
+    </div>
+
+    <dh-blog-viewer 
+      [title]="post.title"
+      [content]="post.content"
+      [authorId]="post.authorId"
+      [createdAt]="post.createdAt">
+    </dh-blog-viewer>
+  </div>
 </div>

@@ -14,3 +14,41 @@
   margin-bottom: 2rem;
   font-size: 1.1rem;
 }
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  font-size: 1.2rem;
+  color: var(--foreground-secondary, #666);
+}
+
+.error-state {
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+.error-message {
+  color: #c00;
+  margin: 0 0 1rem 0;
+}
+
+.view-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  justify-content: flex-end;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: flex-end;
+}
