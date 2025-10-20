@@ -1,3 +1,11 @@
+export const BlogCommands = {
+  CREATE: 'blog.create',
+  UPDATE: 'blog.update',
+  DELETE: 'blog.delete',
+  FIND: 'blog.find',
+  FIND_ALL: 'blog.findAll',
+}
+
 export const ContactCommands = {
   CREATE: 'contact.create',
   UPDATE: 'contact.update',

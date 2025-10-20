@@ -35,6 +35,7 @@ export * from './lib/libs/prompt';
 export * from './lib/libs/ai-orchestration';
 
 export {
+    BlogCommands,
     ContactCommands,
     EventCommands,
     PostCommands as BlogPostCommands
