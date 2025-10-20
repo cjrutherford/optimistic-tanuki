@@ -12,7 +12,7 @@
 
 import { DataSource } from 'typeorm';
 import { Profile, BlogRole } from '../profiles/entities/profile.entity';
-import * as config from '../app/config';
+import * as config from '../config';
 
 async function promoteBlogRole(userId: string, role: string) {
   const validRoles = ['poster', 'owner', 'none'];

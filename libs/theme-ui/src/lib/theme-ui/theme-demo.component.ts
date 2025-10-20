@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { PaletteSelectorComponent } from './palette-selector.component';
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { Themeable, ThemeService } from '@optimistic-tanuki/theme-lib';
+import { CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'theme-demo',
   standalone: true,
-  imports: [PaletteSelectorComponent, ButtonComponent, CardComponent],
+  imports: [PaletteSelectorComponent, CardComponent],
   template: `
     <div class="demo-container">
       <h1>Enhanced Theme System Demo</h1>
@@ -171,7 +171,7 @@ export class ThemeDemoComponent extends Themeable {
     super(themeService);
   }
 
-  override applyTheme(colors: ThemeColors): void {
+  override applyTheme(): void {
     // This component doesn't need any custom theme application
     // It relies entirely on CSS variables for styling
   }

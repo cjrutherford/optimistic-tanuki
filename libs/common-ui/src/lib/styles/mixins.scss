@@ -1,5 +1,7 @@
 // Common style mixins for DRY implementation across components
 
+@use 'sass:list' as list;
+
 // Gradient mixins
 @mixin gradient-background($type: 'linear', $direction: 'to bottom', $colors...) {
   @if $type == 'linear' {
@@ -178,23 +180,24 @@
 
 // Pulse animation mixin
 @mixin pulse-animation($duration: 16s, $colors: (var(--accent), var(--complement))) {
+  // Expose the two pulse colors as CSS custom properties so the root-level
+  // keyframes can reference them without needing Sass variables.
+  --pulse-color-1: #{list.nth($colors, 1)};
+  --pulse-color-2: #{list.nth($colors, 2)};
   animation: pulse-halo $duration infinite ease;
-  
+}
+
+// Root-level keyframes using CSS variables (safe to emit once at root).
+@at-root {
   @keyframes pulse-halo {
     0% {
-      box-shadow: 
-        6px 12px 20px 8px nth($colors, 1),
-        -6px -12px 20px 8px nth($colors, 2);
+      box-shadow: 6px 12px 20px 8px var(--pulse-color-1), -6px -12px 20px 8px var(--pulse-color-2);
     }
     50% {
-      box-shadow: 
-        10px 20px 28px 16px nth($colors, 2),
-        -10px -20px 28px 16px nth($colors, 1);
+      box-shadow: 10px 20px 28px 16px var(--pulse-color-2), -10px -20px 28px 16px var(--pulse-color-1);
     }
     100% {
-      box-shadow: 
-        6px 12px 20px 8px nth($colors, 1),
-        -6px -12px 20px 8px nth($colors, 2);
+      box-shadow: 6px 12px 20px 8px var(--pulse-color-1), -6px -12px 20px 8px var(--pulse-color-2);
     }
   }
 }

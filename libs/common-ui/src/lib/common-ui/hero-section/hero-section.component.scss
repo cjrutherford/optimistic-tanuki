@@ -1,4 +1,4 @@
-@import '../../styles/mixins.scss';
+@use '../../styles/mixins' as *;
 
 .hero-section {
   @include hero-section(60vh, 2rem);

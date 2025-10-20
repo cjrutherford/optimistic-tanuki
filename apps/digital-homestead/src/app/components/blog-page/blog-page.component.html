@@ -7,7 +7,7 @@
   <!-- Error State -->
   <div *ngIf="error" class="error-state">
     <p class="error-message">{{ error }}</p>
-    <lib-button (click)="error = null">Dismiss</lib-button>
+    <otui-button (click)="error = null">Dismiss</otui-button>
   </div>
 
   <!-- Create/Edit Mode -->
@@ -23,15 +23,15 @@
     </lib-blog-compose>
 
     <div class="actions" *ngIf="mode === 'edit'">
-      <lib-button (click)="onCancelEdit()">Cancel</lib-button>
+      <otui-button (click)="onCancelEdit()">Cancel</otui-button>
     </div>
   </div>
 
   <!-- View Mode -->
   <div *ngIf="!loading && mode === 'view' && post">
     <div class="view-actions">
-      <lib-button (click)="onEditClick()">Edit Post</lib-button>
-      <lib-button (click)="router.navigate(['/blog'])">Back to Blog List</lib-button>
+      <otui-button (click)="onEditClick()">Edit Post</otui-button>
+      <otui-button (click)="router.navigate(['/blog'])">Back to Blog List</otui-button>
     </div>
 
     <dh-blog-viewer 

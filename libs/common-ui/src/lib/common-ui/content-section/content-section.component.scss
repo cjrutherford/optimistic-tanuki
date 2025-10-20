@@ -1,4 +1,4 @@
-@import '../../styles/mixins.scss';
+@use '../../styles/mixins' as *;
 
 .content-section {
   @include content-container(1200px, 2rem);
