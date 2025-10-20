@@ -1,4 +1,10 @@
 export {
+    BlogDto,
+    CreateBlogDto,
+    UpdateBlogDto,
+    BlogQueryDto,
+} from './blog';
+export {
     ContactDto,
     CreateContactDto,
     UpdateContactDto,

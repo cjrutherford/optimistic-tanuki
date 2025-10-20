@@ -1,9 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { FindManyOptions, FindOneOptions, Repository } from "typeorm";
-import { Profile } from "../profiles/entities/profile.entity";
+import { Profile, BlogRole } from "../profiles/entities/profile.entity";
 import { CreateProfileDto } from "../profiles/dto/create-profile.dto";
 import { UpdateProfileDto, updateProfileDtoToPartial } from "../profiles/dto/update-profile.dto";
+import { SetBlogRoleDto } from "../profiles/dto/set-blog-role.dto";
 
 @Injectable()
 export class ProfileService {
@@ -18,6 +19,10 @@ export class ProfileService {
 
     async findOne(id: string, query?: FindOneOptions<Profile>): Promise<Profile> {
         return await this.profileRepository.findOne({ where: { id }, ...query});
+    }
+
+    async findByUserId(userId: string): Promise<Profile> {
+        return await this.profileRepository.findOne({ where: { userId } });
     }
 
     async create(profile: CreateProfileDto): Promise<Profile> {
@@ -39,5 +44,15 @@ export class ProfileService {
         const partialProfile = updateProfileDtoToPartial(profile);
         await this.profileRepository.update(id, {...partialProfile});
         return await this.profileRepository.findOne({where: { id }});
+    }
+
+    async setBlogRole(profileId: string, blogRole: BlogRole): Promise<Profile> {
+        await this.profileRepository.update(profileId, { blogRole });
+        return await this.profileRepository.findOne({ where: { id: profileId } });
+    }
+
+    async getBlogRole(userId: string): Promise<BlogRole> {
+        const profile = await this.findByUserId(userId);
+        return profile?.blogRole || BlogRole.NONE;
     }
 }

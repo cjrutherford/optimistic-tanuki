@@ -14,6 +14,9 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { SocialController } from '../controllers/social/social.controller';
 import { ChatGateway } from './chat-gateway/chat.gateway';
 import { ContactController } from '../controllers/blogging/contact.controller';
+import { PostController } from '../controllers/blogging/post.controller';
+import { EventController } from '../controllers/blogging/event.controller';
+import { BlogController } from '../controllers/blogging/blog.controller';
 
 @Module({
   imports: [
@@ -30,6 +33,9 @@ import { ContactController } from '../controllers/blogging/contact.controller';
     AssetController,
     ProjectPlanningController,
     ContactController,
+    PostController,
+    EventController,
+    BlogController,
 
   ],
   providers: [

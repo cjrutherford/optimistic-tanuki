@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PostController } from './post.controller';
+import { BlogController } from './blog.controller';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { Logger } from '@nestjs/common';
 
-describe('PostController', () => {
-  let controller: PostController;
+describe('BlogController', () => {
+  let controller: BlogController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [PostController],
+      controllers: [BlogController],
       providers: [
         {
           provide: ServiceTokens.BLOG_SERVICE,
@@ -28,7 +28,7 @@ describe('PostController', () => {
       ],
     }).compile();
 
-    controller = module.get<PostController>(PostController);
+    controller = module.get<BlogController>(BlogController);
   });
 
   it('should be defined', () => {
