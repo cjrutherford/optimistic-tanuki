@@ -275,3 +275,18 @@ services:
     depends_on: # Added
       postgres:
         condition: service_healthy
+
+  permissions:
+    container_name: ot_permissions
+    build:
+      context: .
+      dockerfile: ./apps/permissions/Dockerfile
+    volumes:
+      - ./dist/apps/permissions:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy

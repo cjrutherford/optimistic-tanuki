@@ -1,5 +1,5 @@
 {
-    "configurations": [
+  "configurations": [
     {
       "type": "node",
       "request": "attach",
@@ -9,6 +9,24 @@
       "restart": true,
       "localRoot": "${workspaceFolder}/apps/gateway",
       "remoteRoot": "/usr/src/app/apps/gateway"
-    } 
-    ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug permissions with Nx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nx", "serve", "permissions"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9229"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/apps/permissions/dist/**/*.(m|c|)js",
+        "!**/node_modules/**"
+      ]
+    }
+  ]
 }

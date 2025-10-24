@@ -50,3 +50,8 @@ services:
     transport: TCP
     host: ot_blogging
     port: 3011
+  permissions:
+    name: permissions
+    transport: TCP
+    host: ot_permissions
+    port: 3012

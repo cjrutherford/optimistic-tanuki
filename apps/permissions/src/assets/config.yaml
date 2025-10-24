@@ -1,0 +1,7 @@
+listenPort: 3012
+database:
+  host: db
+  port: 5432
+  username: postgres
+  password: postgres
+  database: ot_permissions
