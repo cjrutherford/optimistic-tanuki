@@ -30,9 +30,9 @@ export const Heading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/Option 1/gi)).toBeTruthy();
-    expect(canvas.getByText(/Option 2/gi)).toBeTruthy();
-    expect(canvas.getByText(/Option 3/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Option 1/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Option 2/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Option 3/gi)).toBeTruthy();
   },
 };
 
@@ -69,8 +69,8 @@ export const Grid: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/Option 1/gi)).toBeTruthy();
-    expect(canvas.getByText(/Option 2/gi)).toBeTruthy();
-    expect(canvas.getByText(/Option 3/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Option 1/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Option 2/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Option 3/gi)).toBeTruthy();
   },
 };

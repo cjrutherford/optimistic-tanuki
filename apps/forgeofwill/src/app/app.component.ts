@@ -1,4 +1,4 @@
-import { Component, effect, signal } from '@angular/core';
+import { Component, effect, signal, OnInit } from '@angular/core';
 import {
   MessageComponent,
   MessageService,
@@ -28,7 +28,7 @@ import { filter } from 'rxjs';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'forgeofwill';
   isModalOpen = signal<boolean>(false);
   messages = signal<MessageType[]>([]);

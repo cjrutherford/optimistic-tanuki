@@ -1,5 +1,5 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, OnInit } from '@angular/core';
 import { CreateProfileDto, ProfileDto, Task, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -12,7 +12,7 @@ import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimis
   templateUrl: './task-form.component.html',
   styleUrl: './task-form.component.scss',
 })
-export class TaskFormComponent {
+export class TaskFormComponent implements OnInit {
   @Input() task: Task | null = null;
   isEditing = signal<boolean>(false);
   @Output() formSubmit: EventEmitter<Task> = new EventEmitter<Task>();

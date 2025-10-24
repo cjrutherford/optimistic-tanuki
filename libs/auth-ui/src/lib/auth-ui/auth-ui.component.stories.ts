@@ -18,6 +18,6 @@ export const Heading: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/auth-ui works!/gi)).toBeTruthy();
+    await expect(canvas.getByText(/auth-ui works!/gi)).toBeTruthy();
   },
 };

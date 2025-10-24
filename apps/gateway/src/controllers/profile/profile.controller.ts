@@ -57,7 +57,9 @@ export class ProfileController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   @Post()
-  async createProfile(@Body() createProfileDto: CreateProfileDto & { appId?: string}) {
+  async createProfile(
+    @Body() createProfileDto: CreateProfileDto & { appId?: string }
+  ) {
     const createdProfile: ProfileDto = await firstValueFrom(
       this.client.send({ cmd: ProfileCommands.Create }, createProfileDto)
     );
@@ -68,11 +70,13 @@ export class ProfileController {
           { cmd: AIOrchestrationCommands.PROFILE_INITIALIZE },
           { profileId: createdProfile.id, appId: createProfileDto.appId }
         )
-      ).then(() => {
-        this.l.log(
-          `AI orchestration initialized for profile ID: ${createdProfile.id}`
-        );
-      }).catch((e) => this.l.error('Error initializing AI orchestration:', e));
+      )
+        .then(() => {
+          this.l.log(
+            `AI orchestration initialized for profile ID: ${createdProfile.id}`
+          );
+        })
+        .catch((e) => this.l.error('Error initializing AI orchestration:', e));
 
     return createdProfile;
   }
@@ -89,8 +93,8 @@ export class ProfileController {
     @User() user: UserDetails,
     @Param('query') query: Partial<ProfileDto>
   ) {
-    console.log(user);
-    console.log('Fetching all profiles for user:', user.userId);
+    this.l.debug(`User payload: ${JSON.stringify(user)}`);
+    this.l.log(`Fetching all profiles for user: ${user.userId}`);
     return this.client.send(
       { cmd: ProfileCommands.GetAll },
       { userId: user.userId, query }
@@ -135,9 +139,13 @@ export class ProfileController {
         email: '',
         avatarUrl: 'assets/ai-avatar.png',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
-      this.l.log(`Back-filled profile with ID: ${id}: PROFILE: '${JSON.stringify(personaProfile)}'`);
+      this.l.log(
+        `Back-filled profile with ID: ${id}: PROFILE: '${JSON.stringify(
+          personaProfile
+        )}'`
+      );
       return personaProfile;
     }
     return profile;
@@ -173,85 +181,7 @@ export class ProfileController {
     return this.client.send({ cmd: ProfileCommands.Delete }, id);
   }
 
-  // @UseGuards(AuthGuard)
-  // @ApiTags('project')
-  // @ApiOperation({ summary: 'Create a new project' })
-  // @ApiResponse({ status: 201, description: 'The project has been successfully created.' })
-  // @ApiResponse({ status: 400, description: 'Bad Request.' })
-  // @Post('project')
-  // createProject(@Body() createProjectDto: CreateProjectDto) {
-  //     return this.client.send({ cmd: ProjectCommands.Create}, createProjectDto);
-  // }
-
-  // @UseGuards(AuthGuard)
-  // @ApiTags('project')
-  // @ApiOperation({ summary: 'Get a project by ID' })
-  // @ApiResponse({ status: 200, description: 'The project has been successfully retrieved.' })
-  // @ApiResponse({ status: 404, description: 'Project not found.' })
-  // @Get('project/:id')
-  // getProject(@Param('id') id: string) {
-  //     return this.client.send({ cmd: ProjectCommands.Get }, id);
-  // }
-
-  // @UseGuards(AuthGuard)
-  // @ApiTags('project')
-  // @ApiOperation({ summary: 'Update a project by ID' })
-  // @ApiResponse({ status: 200, description: 'The project has been successfully updated.' })
-  // @ApiResponse({ status: 404, description: 'Project not found.' })
-  // @Put('project/:id')
-  // updateProject(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-  //     return this.client.send({ cmd: ProjectCommands.Update }, { id, ...updateProjectDto });
-  // }
-
-  // @UseGuards(AuthGuard)
-  // @ApiTags('project')
-  // @ApiOperation({ summary: 'Delete a project by ID' })
-  // @ApiResponse({ status: 200, description: 'The project has been successfully deleted.' })
-  // @ApiResponse({ status: 404, description: 'Project not found.' })
-  // @Delete('project/:id')
-  // deleteProject(@Param('id') id: string) {
-  //     return this.client.send({ cmd: ProjectCommands.Delete }, id);
-  // }
-
-  // @UseGuards(AuthGuard)
-  // @ApiTags('goal')
-  // @ApiOperation({ summary: 'Create a new goal' })
-  // @ApiResponse({ status: 201, description: 'The goal has been successfully created.' })
-  // @ApiResponse({ status: 400, description: 'Bad Request.' })
-  // @Post('goal')
-  // createGoal(@Body() createGoalDto: CreateGoalDto) {
-  //     return this.client.send({ cmd: GoalCommands.Create }, createGoalDto);
-  // }
-
-  // @UseGuards(AuthGuard)
-  // @ApiTags('goal')
-  // @ApiOperation({ summary: 'Get a goal by ID' })
-  // @ApiResponse({ status: 200, description: 'The goal has been successfully retrieved.' })
-  // @ApiResponse({ status: 404, description: 'Goal not found.' })
-  // @Get('goal/:id')
-  // getGoal(@Param('id') id: string) {
-  //     return this.client.send({ cmd: GoalCommands.Get }, id);
-  // }
-
-  // @UseGuards(AuthGuard)
-  // @ApiTags('goal')
-  // @ApiOperation({ summary: 'Update a goal by ID' })
-  // @ApiResponse({ status: 200, description: 'The goal has been successfully updated.' })
-  // @ApiResponse({ status: 404, description: 'Goal not found.' })
-  // @Put('goal/:id')
-  // updateGoal(@Param('id') id: string, @Body() updateGoalDto: UpdateGoalDto) {
-  //     return this.client.send({ cmd: GoalCommands.Update }, { id, ...updateGoalDto });
-  // }
-
-  // @UseGuards(AuthGuard)
-  // @ApiTags('goal')
-  // @ApiOperation({ summary: 'Delete a goal by ID' })
-  // @ApiResponse({ status: 200, description: 'The goal has been successfully deleted.' })
-  // @ApiResponse({ status: 404, description: 'Goal not found.' })
-  // @Delete('goal/:id')
-  // deleteGoal(@Param('id') id: string) {
-  //     return this.client.send({ cmd: GoalCommands.Delete }, id);
-  // }
+  // Removed unused project/goal endpoint stubs to reduce commented-out scaffolding. See git history if needed.
 
   @UseGuards(AuthGuard)
   @ApiTags('timeline')

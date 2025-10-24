@@ -7,8 +7,8 @@ test.describe('Forge of Will E2E Tests', () => {
       await page.waitForLoadState('networkidle');
       
       // Verify page loads successfully
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
 
     test('should have proper page structure', async ({ page }) => {
@@ -16,8 +16,8 @@ test.describe('Forge of Will E2E Tests', () => {
       await page.waitForLoadState('networkidle');
       
       // Check for HTML structure
-      const html = await page.locator('html');
-      expect(await html.isVisible()).toBe(true);
+      const html = page.locator('html');
+      await expect(html).toBeVisible();
     });
   });
 
@@ -37,8 +37,8 @@ test.describe('Forge of Will E2E Tests', () => {
       await page.reload();
       await page.waitForLoadState('networkidle');
       
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
   });
 
@@ -48,8 +48,8 @@ test.describe('Forge of Will E2E Tests', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
       
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
 
     test('should work on desktop viewport', async ({ page }) => {
@@ -57,8 +57,8 @@ test.describe('Forge of Will E2E Tests', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
       
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
   });
 

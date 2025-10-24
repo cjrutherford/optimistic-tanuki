@@ -6,16 +6,16 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
       
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
 
     test('should have proper document structure', async ({ page }) => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
       
-      const html = await page.locator('html');
-      expect(await html.isVisible()).toBe(true);
+      const html = page.locator('html');
+      await expect(html).toBeVisible();
     });
   });
 
@@ -25,7 +25,7 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await page.waitForLoadState('networkidle');
       
       // Check for viewport meta tag
-      const viewport = await page.locator('meta[name="viewport"]');
+      const viewport = page.locator('meta[name="viewport"]');
       expect(await viewport.count()).toBeGreaterThan(0);
     });
   });
@@ -45,8 +45,8 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await page.reload();
       await page.waitForLoadState('networkidle');
       
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
   });
 
@@ -56,8 +56,8 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
       
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
 
     test('should work on tablet viewport', async ({ page }) => {
@@ -65,8 +65,8 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
       
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
 
     test('should work on desktop viewport', async ({ page }) => {
@@ -74,8 +74,8 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
       
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
   });
 

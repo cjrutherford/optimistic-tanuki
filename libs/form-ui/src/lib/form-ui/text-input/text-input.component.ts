@@ -35,7 +35,7 @@ export class TextInputComponent extends Themeable implements ControlValueAccesso
   @Output() valueChange = new EventEmitter<string>();
 
   value = '';
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
+   
   onChange?:(value: string) => void = (value: string) => { /*console.log(value);*/ };
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   onTouched?:(value: string) => void = () => {};

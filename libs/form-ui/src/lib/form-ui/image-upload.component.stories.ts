@@ -22,6 +22,6 @@ export const Heading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/image-upload works!/gi)).toBeTruthy();
+    await expect(canvas.getByText(/image-upload works!/gi)).toBeTruthy();
   },
 };

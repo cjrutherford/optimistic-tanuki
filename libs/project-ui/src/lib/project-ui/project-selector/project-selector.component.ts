@@ -14,7 +14,7 @@ import {
   Output,
   SimpleChanges,
   computed,
-  signal,
+  signal, OnChanges, OnInit,
 } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
@@ -32,7 +32,7 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
   templateUrl: './project-selector.component.html',
   styleUrl: './project-selector.component.scss',
 })
-export class ProjectSelectorComponent {
+export class ProjectSelectorComponent implements OnChanges, OnInit {
   @Input() projects: Project[] = [];
   availableProjects = signal<Project[]>([]);
   selectedProject = signal<Project | null>(null);

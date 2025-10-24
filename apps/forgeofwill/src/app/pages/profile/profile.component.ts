@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { MessageLevelType, MessageService, MessageType } from '@optimistic-tanuki/message-ui';
 import { BannerComponent, ProfilePhotoComponent, ProfileSelectorComponent } from '@optimistic-tanuki/profile-ui';
-import { Component, signal } from '@angular/core';
+import { Component, signal, OnInit } from '@angular/core';
 import { CreateProfileDto, ProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
 
 
@@ -13,7 +13,7 @@ import { ProfileService } from '../../profile/profile.service';
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })
-export class ProfileComponent {
+export class ProfileComponent implements OnInit {
   private readonly messageService = inject(MessageService);
   availableProfiles = signal<ProfileDto[]>([]);
   selectedProfile = signal<ProfileDto | null>(null);

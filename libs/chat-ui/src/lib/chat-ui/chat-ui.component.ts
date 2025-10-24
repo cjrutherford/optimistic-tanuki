@@ -1,5 +1,5 @@
 import { ChatWindowComponent, ChatWindowState } from './chat-window/chat-window.component';
-import { Component, Input, SimpleChanges, computed, signal } from '@angular/core';
+import { Component, Input, SimpleChanges, computed, signal, OnInit, OnChanges } from '@angular/core';
 
 import { ChatConversation, ChatMessage } from '../types/message';
 
@@ -42,7 +42,7 @@ export declare type ChatContact = {
   templateUrl: './chat-ui.component.html',
   styleUrl: './chat-ui.component.scss',
 })
-export class ChatUiComponent {
+export class ChatUiComponent implements OnInit, OnChanges {
   /**
    * The list of chat contacts.
    */

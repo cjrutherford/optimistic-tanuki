@@ -36,6 +36,6 @@ export const Heading: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/vote works!/gi)).toBeTruthy();
+    await expect(canvas.getByText(/vote works!/gi)).toBeTruthy();
   },
 };

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -14,7 +14,7 @@ import { hexToRgb } from 'libs/common-ui/src/lib/common-ui/glass-container.compo
     '[style.--heading-gradient]': 'headingGradient',
   }
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'digital-homestead';
   headingGradient = 'linear-gradient(90deg, #ff7e5f, #feb47b)'; // Example gradient
 

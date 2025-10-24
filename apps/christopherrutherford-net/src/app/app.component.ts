@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { HeadingComponent } from '@optimistic-tanuki/common-ui';
@@ -9,7 +9,7 @@ import { HeadingComponent } from '@optimistic-tanuki/common-ui';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   accent = '#1abc9c';
   complementary = '#89CFF0';
   tertiary = '#e73cbf';

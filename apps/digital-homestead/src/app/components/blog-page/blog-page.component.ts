@@ -11,7 +11,13 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 @Component({
   selector: 'dh-blog-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, BlogComposeComponent, BlogViewerComponent, ButtonComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    BlogComposeComponent,
+    BlogViewerComponent,
+    ButtonComponent,
+  ],
   templateUrl: './blog-page.component.html',
   styleUrl: './blog-page.component.scss',
 })
@@ -19,7 +25,7 @@ export class BlogPageComponent implements OnInit {
   route: ActivatedRoute = inject(ActivatedRoute);
   router: Router = inject(Router);
   blogService: BlogService = inject(BlogService);
-  
+
   mode: 'create' | 'edit' | 'view' = 'create';
   postId: string | null = null;
   post: BlogPost | null = null;
@@ -35,9 +41,9 @@ export class BlogPageComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params) => {
       this.postId = params['id'] || null;
-      
+
       if (this.postId) {
         // View mode - load the post
         this.mode = 'view';
@@ -52,7 +58,7 @@ export class BlogPageComponent implements OnInit {
   loadPost(id: string): void {
     this.loading = true;
     this.error = null;
-    
+
     this.blogService.getPost(id).subscribe({
       next: (post) => {
         this.post = post;
@@ -68,7 +74,7 @@ export class BlogPageComponent implements OnInit {
         this.error = 'Failed to load post: ' + err.message;
         this.loading = false;
         console.error('Error loading post:', err);
-      }
+      },
     });
   }
 
@@ -80,7 +86,7 @@ export class BlogPageComponent implements OnInit {
     const postPayload = {
       title: postData.title,
       content: postData.content,
-      authorId: 'current-user' // TODO: Get from authentication service
+      authorId: 'current-user', // TODO: Get from authentication service
     };
 
     if (this.mode === 'edit' && this.postId) {
@@ -96,7 +102,7 @@ export class BlogPageComponent implements OnInit {
           this.error = 'Failed to update post: ' + err.message;
           this.loading = false;
           console.error('Error updating post:', err);
-        }
+        },
       });
     } else {
       // Create new post
@@ -116,7 +122,7 @@ export class BlogPageComponent implements OnInit {
           this.error = 'Failed to create post: ' + err.message;
           this.loading = false;
           console.error('Error creating post:', err);
-        }
+        },
       });
     }
   }

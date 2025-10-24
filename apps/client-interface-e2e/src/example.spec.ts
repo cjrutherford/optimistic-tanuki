@@ -14,8 +14,8 @@ test.describe('Client Interface E2E Tests', () => {
       await page.waitForLoadState('networkidle');
       
       // Check for common navigation elements
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
   });
 
@@ -54,8 +54,8 @@ test.describe('Client Interface E2E Tests', () => {
       await page.waitForLoadState('networkidle');
       
       // Verify page loads in mobile view
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
 
     test('should work on tablet viewport', async ({ page }) => {
@@ -64,8 +64,8 @@ test.describe('Client Interface E2E Tests', () => {
       await page.waitForLoadState('networkidle');
       
       // Verify page loads in tablet view
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
 
     test('should work on desktop viewport', async ({ page }) => {
@@ -74,8 +74,8 @@ test.describe('Client Interface E2E Tests', () => {
       await page.waitForLoadState('networkidle');
       
       // Verify page loads in desktop view
-      const body = await page.locator('body');
-      expect(await body.isVisible()).toBe(true);
+      const body = page.locator('body');
+      await expect(body).toBeVisible();
     });
   });
 
@@ -85,8 +85,8 @@ test.describe('Client Interface E2E Tests', () => {
       await page.waitForLoadState('networkidle');
       
       // Check for basic HTML structure
-      const html = await page.locator('html');
-      expect(await html.isVisible()).toBe(true);
+      const html = page.locator('html');
+      await expect(html).toBeVisible();
     });
 
     test('should be keyboard navigable', async ({ page }) => {

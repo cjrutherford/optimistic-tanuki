@@ -57,6 +57,6 @@ export const Interaction: Story = {
     const canvas = within(canvasElement);
     const input = canvas.getByLabelText('Interactive Input');
     await userEvent.type(input, 'Testing Input');
-    expect(input).toHaveValue('Testing Input');
+    await expect(input).toHaveValue('Testing Input');
   },
 };

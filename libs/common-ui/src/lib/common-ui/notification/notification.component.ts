@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../button/button.component';
 
@@ -20,7 +20,7 @@ export interface Notification {
   templateUrl: './notification.component.html',
   styleUrls: ['./notification.component.scss'],
 })
-export class NotificationComponent {
+export class NotificationComponent implements AfterViewInit {
   @Input() notifications: Notification[] = [];
   @Input() placement: 'top' | 'bottom' | 'left' | 'right' = 'top';
   @Input() showIcon = true;

@@ -7,7 +7,7 @@ import {
   EnvironmentInjector,
   inject,
   runInInjectionContext,
-  effect,
+  effect, OnInit,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
@@ -49,7 +49,7 @@ import { io } from 'socket.io-client';
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss',
 })
-export class ChatComponent {
+export class ChatComponent implements OnInit {
   socketChat?: SocketChatService | null;
   private injector = inject(EnvironmentInjector);
 

@@ -1,5 +1,5 @@
 import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Input, Output, SimpleChange, SimpleChanges, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChange, SimpleChanges, signal, OnInit, OnChanges } from '@angular/core';
 import { CreateProjectJournal, ProjectJournal } from '@optimistic-tanuki/ui-models';
 
 
@@ -11,7 +11,7 @@ import { ProjectJournalFormComponent } from '../project-journal-form/project-jou
   templateUrl: './project-journal-table.component.html',
   styleUrl: './project-journal-table.component.scss',
 })
-export class ProjectJournalTableComponent {
+export class ProjectJournalTableComponent implements OnInit, OnChanges {
   cells = signal<TableCell[][]>([]);
   showModal = signal<boolean>(false);
   showEditModal = signal<boolean>(false);

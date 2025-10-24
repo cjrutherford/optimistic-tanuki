@@ -1,6 +1,6 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { Change, CreateChange } from '@optimistic-tanuki/ui-models';
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 
@@ -12,7 +12,7 @@ import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimis
   templateUrl: './change-form.component.html',
   styleUrl: './change-form.component.scss',
 })
-export class ChangeFormComponent {
+export class ChangeFormComponent implements OnInit {
   @Input() change: Change | null = null;
   isEditing = signal<boolean>(false);
   changeForm : FormGroup;

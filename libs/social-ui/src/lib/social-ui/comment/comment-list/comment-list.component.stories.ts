@@ -37,6 +37,6 @@ export const Heading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/comment-list works!/gi)).toBeTruthy();
+    await expect(canvas.getByText(/comment-list works!/gi)).toBeTruthy();
   },
 };

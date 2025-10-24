@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnChanges } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -295,7 +295,7 @@ export interface PropertyDefinition {
     }
   `]
 })
-export class PropertyEditorComponent implements OnInit {
+export class PropertyEditorComponent implements OnInit, OnChanges {
   @Input() isVisible = false;
   @Input() componentInstance: InjectedComponentInstance | null = null;
   @Input() propertyDefinitions: PropertyDefinition[] = [];

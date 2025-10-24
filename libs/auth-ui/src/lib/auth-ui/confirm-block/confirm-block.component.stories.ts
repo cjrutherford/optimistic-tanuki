@@ -24,6 +24,6 @@ export const Heading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/Confirm Your Email/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Confirm Your Email/gi)).toBeTruthy();
   },
 };

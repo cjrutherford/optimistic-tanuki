@@ -21,12 +21,12 @@ describe('HeroComponent', () => {
 
   it('should display default title, description, button text, and image', () => {
     expect(component.title).toBe('Welcome to Our Blog!');
-    expect(component.description).toBe('Discover the latest news, tips, and stories from our community.');
+    expect(component.description).toBe(
+      'Discover the latest news, tips, and stories from our community.'
+    );
     expect(component.buttonText).toBe('Get Started');
     expect(component.imageUrl).toBe('https://via.placeholder.com/600x400');
-    // Optionally check rendered content if template binds these properties
-    // expect(compiled.textContent).toContain(component.title);
-    // expect(compiled.textContent).toContain(component.description);
+    // (Removed optional DOM assertions to reduce commented-out code.)
   });
 
   it('should accept custom @Input values', () => {
@@ -39,9 +39,6 @@ describe('HeroComponent', () => {
     expect(component.description).toBe('Custom Description');
     expect(component.buttonText).toBe('Custom Button');
     expect(component.imageUrl).toBe('custom-image-url.jpg');
-    // Optionally check rendered content if template binds these properties
-    // const compiled = fixture.nativeElement as HTMLElement;
-    // expect(compiled.textContent).toContain('Custom Title');
-    // expect(compiled.textContent).toContain('Custom Description');
+    // (Removed optional DOM assertions to reduce commented-out code.)
   });
 });

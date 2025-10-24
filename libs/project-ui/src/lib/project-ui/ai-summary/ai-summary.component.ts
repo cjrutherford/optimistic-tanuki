@@ -8,5 +8,5 @@ import { Component, Input } from '@angular/core';
   styleUrl: './ai-summary.component.scss',
 })
 export class AiSummaryComponent {
-  @Input() summaryText: string = '';
+  @Input() summaryText = '';
 }

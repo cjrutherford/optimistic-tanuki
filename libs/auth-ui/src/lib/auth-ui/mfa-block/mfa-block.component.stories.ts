@@ -18,7 +18,7 @@ export const Heading: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/On-board MFA Token/gi)).toBeTruthy();
+    await expect(canvas.getByText(/On-board MFA Token/gi)).toBeTruthy();
   },
 };
 
@@ -30,7 +30,7 @@ export const SubmitToken: Story = {
     await userEvent.type(input, '123456');
     const submitButton = canvas.getByRole('button', { name: /Submit/i });
     await userEvent.click(submitButton);
-    expect(console.log).toHaveBeenCalledWith('MFA Token Submitted:', '123456');
+    await expect(console.log).toHaveBeenCalledWith('MFA Token Submitted:', '123456');
   },
 };
 
@@ -41,7 +41,7 @@ export const Onboarding: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/Scan the QR Code/gi)).toBeTruthy();
-    expect(canvas.getByAltText(/QR Code/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Scan the QR Code/gi)).toBeTruthy();
+    await expect(canvas.getByAltText(/QR Code/gi)).toBeTruthy();
   },
 };

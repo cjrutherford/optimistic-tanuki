@@ -33,7 +33,7 @@ export class RegisterComponent {
   }
 
   onSubmit($event: RegisterSubmitType) { 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const formValue = $event as any;
     console.log('Form submitted:', formValue);
     const registerRequest: RegisterRequest = {
@@ -46,7 +46,7 @@ export class RegisterComponent {
     };
 
     this.authenticationService.register(registerRequest).subscribe({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       next: (response) => {
         console.log(response);
         this.router.navigate(['/login']);
