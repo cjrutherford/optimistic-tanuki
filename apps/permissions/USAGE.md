@@ -110,9 +110,10 @@ GET /permissions/user-roles/{profileId}
 
 ```typescript
 import { Controller, Post, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
-import { PermissionsGuard } from '../guards/permissions.guard';
-import { RequirePermissions } from '../decorators/permissions.decorator';
+import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { User, UserDetails } from '../../decorators/user.decorator';
 
 @Controller('blog')
 @UseGuards(AuthGuard, PermissionsGuard)
