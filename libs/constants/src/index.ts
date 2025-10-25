@@ -40,3 +40,9 @@ export {
     EventCommands,
     PostCommands as BlogPostCommands
 } from './lib/libs/blog';
+
+export {
+    PermissionCommands,
+    RoleCommands,
+    AppScopeCommands
+} from './lib/libs/permissions';

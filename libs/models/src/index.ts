@@ -8,3 +8,4 @@ export * from './lib/libs/chat';
 export * from './lib/libs/telos';
 export * from './lib/libs/prompt';
 export * from './lib/libs/blog';
+export * from './lib/libs/permissions';

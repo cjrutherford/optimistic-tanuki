@@ -17,6 +17,7 @@ import { ContactController } from '../controllers/blogging/contact.controller';
 import { PostController } from '../controllers/blogging/post.controller';
 import { EventController } from '../controllers/blogging/event.controller';
 import { BlogController } from '../controllers/blogging/blog.controller';
+import { PermissionsController } from '../controllers/permissions/permissions.controller';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { BlogController } from '../controllers/blogging/blog.controller';
     PostController,
     EventController,
     BlogController,
+    PermissionsController,
 
   ],
   providers: [
@@ -182,6 +184,22 @@ import { BlogController } from '../controllers/blogging/blog.controller';
         });
         console.log('Blog Service Client created:', client);
         return client;
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.PERMISSIONS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.permissions'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
       },
       inject: [ConfigService],
     }

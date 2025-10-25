@@ -110,6 +110,8 @@ services:
         condition: service_started
       blogging:
         condition: service_started
+      permissions:
+        condition: service_started
       project-planning:
         condition: service_started
 
@@ -232,6 +234,19 @@ services:
       postgres:
         condition: service_healthy
       db-setup: # Ensures db-setup is completed before starting blogging
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+  permissions:
+    container_name: ot_permissions
+    build:
+      context: .
+      dockerfile: ./apps/permissions/Dockerfile
+    ports:
+      - "3012:3012"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting permissions
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
   project-planning:
