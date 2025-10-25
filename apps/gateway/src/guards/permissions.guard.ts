@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ClientProxy } from '@nestjs/microservices';
-import { ServiceTokens, RoleCommands } from '@optimistic-tanuki/constants';
+import { ServiceTokens, RoleCommands, AppScopeCommands } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 import { PERMISSIONS_KEY, PermissionRequirement } from '../decorators/permissions.decorator';
 
@@ -36,50 +36,43 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    const { permissions } = requirement;
+    // Extract app scope from header
+    const appScopeName = request.headers['x-ot-appscope'];
+    
+    if (!appScopeName) {
+      throw new ForbiddenException('App scope header (X-ot-appscope) is required');
+    }
 
-    // Get all roles assigned to the user across all app scopes
-    const userRoles = await firstValueFrom(
+    // Get the app scope by name
+    const appScope = await firstValueFrom(
       this.permissionsClient.send(
-        { cmd: RoleCommands.GetUserRoles },
-        { profileId: user.profileId }
+        { cmd: AppScopeCommands.GetByName },
+        appScopeName
       )
     );
 
-    if (!userRoles || userRoles.length === 0) {
-      throw new ForbiddenException('No roles assigned to user');
+    if (!appScope) {
+      throw new ForbiddenException(`App scope not found: ${appScopeName}`);
     }
 
-    // Check if user has ANY of the required permissions in ANY of their assigned app scopes
+    const { permissions } = requirement;
+
+    // Check each required permission for the specific app scope
     for (const permission of permissions) {
-      let hasPermission = false;
-
-      // Check permission across all user's app scope assignments
-      for (const roleAssignment of userRoles) {
-        const appScopeId = roleAssignment.appScope?.id;
-        
-        if (appScopeId) {
-          const permissionCheck = await firstValueFrom(
-            this.permissionsClient.send(
-              { cmd: RoleCommands.CheckPermission },
-              {
-                profileId: user.profileId,
-                permission,
-                appScopeId,
-              }
-            )
-          );
-
-          if (permissionCheck) {
-            hasPermission = true;
-            break; // Permission found in at least one app scope
+      const hasPermission = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.CheckPermission },
+          {
+            profileId: user.profileId,
+            permission,
+            appScopeId: appScope.id,
           }
-        }
-      }
+        )
+      );
 
       if (!hasPermission) {
         throw new ForbiddenException(
-          `Permission denied: ${permission}`
+          `Permission denied: ${permission} in app scope ${appScopeName}`
         );
       }
     }

@@ -22,10 +22,12 @@ export class YourController {
   @RequirePermissions('your-app:resource:create')
   async create(@Body() dto: CreateDto) {
     // Only users with the permission can access this
-    // The guard checks across all app scopes the user has access to
+    // Requires X-ot-appscope header specifying the target app scope
   }
 }
 ```
+
+**Required Header**: All protected endpoints require `X-ot-appscope` header with the app scope name (e.g., `forgeofwill`, `global`).
 
 ### API Endpoints
 

@@ -106,6 +106,21 @@ GET /permissions/user-roles/{profileId}
 
 ## Using Guards and Decorators in Controllers
 
+### App Scope Header Requirement
+
+The `PermissionsGuard` requires the `X-ot-appscope` header to be present in all requests to protected endpoints. This header specifies which application scope the request is for, and the guard will verify permissions specifically for that scope.
+
+**Example API Request:**
+```bash
+curl -X POST http://localhost:3000/blog/posts \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "X-ot-appscope: forgeofwill" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "My Blog Post", "content": "..."}'
+```
+
+The header value should match an app scope name in the database (e.g., `global`, `forgeofwill`, `client-interface`).
+
 ### Protecting Endpoints with Permissions
 
 ```typescript
@@ -123,7 +138,7 @@ export class BlogController {
   @RequirePermissions('blog:posts:write')
   async createPost(@User() user: UserDetails, @Body() dto: CreatePostDto) {
     // Only users with blog:posts:write permission can access this
-    // The guard automatically checks across all app scopes the user has access to
+    // The guard checks permissions for the app scope specified in X-ot-appscope header
     return this.blogService.createPost(dto);
   }
 
@@ -131,6 +146,7 @@ export class BlogController {
   @RequirePermissions('blog:posts:delete')
   async deletePost(@Param('id') id: string) {
     // Only users with blog:posts:delete permission can access this
+    // Requires X-ot-appscope header with the target app scope name
     return this.blogService.deletePost(id);
   }
 

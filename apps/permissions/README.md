@@ -112,13 +112,24 @@ Use this decorator on controller methods to require specific permissions:
 @Post()
 async createPost(@User() user: UserDetails, @Body() dto: CreatePostDto) {
   // Only users with posts:write permission can access this
-  // The guard automatically checks across all app scopes the user has access to
+  // The guard checks permissions for the app scope specified in the X-ot-appscope header
 }
 ```
 
 ### PermissionsGuard
 
-The guard automatically checks permissions based on the `@RequirePermissions` decorator. It queries the permissions service to determine which app scopes and roles the user has, then verifies the required permissions across all accessible scopes.
+The guard automatically checks permissions based on the `@RequirePermissions` decorator. It extracts the app scope from the `X-ot-appscope` request header and verifies that the user has the required permissions for that specific app scope.
+
+**Required Header**: `X-ot-appscope: <app-scope-name>`
+
+Example request:
+```bash
+curl -X POST http://localhost:3000/blog/posts \
+  -H "Authorization: Bearer <token>" \
+  -H "X-ot-appscope: forgeofwill" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "My Post"}'
+```
 
 ## Database Migrations
 
