@@ -15,6 +15,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   PermissionCommands,
   RoleCommands,
+  AppScopeCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import {
@@ -23,6 +24,8 @@ import {
   CreateRoleDto,
   UpdateRoleDto,
   AssignRoleDto,
+  CreateAppScopeDto,
+  UpdateAppScopeDto,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
@@ -35,6 +38,64 @@ export class PermissionsController {
     private readonly l: Logger,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE) private readonly client: ClientProxy
   ) {}
+
+  // App Scope endpoints
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Create a new app scope' })
+  @Post('app-scope')
+  async createAppScope(@Body() createAppScopeDto: CreateAppScopeDto) {
+    return await firstValueFrom(
+      this.client.send({ cmd: AppScopeCommands.Create }, createAppScopeDto)
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get an app scope by ID' })
+  @Get('app-scope/:id')
+  async getAppScope(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.client.send({ cmd: AppScopeCommands.Get }, id)
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get an app scope by name' })
+  @Get('app-scope/by-name/:name')
+  async getAppScopeByName(@Param('name') name: string) {
+    return await firstValueFrom(
+      this.client.send({ cmd: AppScopeCommands.GetByName }, name)
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get all app scopes' })
+  @Get('app-scope')
+  async getAllAppScopes() {
+    return await firstValueFrom(
+      this.client.send({ cmd: AppScopeCommands.GetAll }, {})
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Update an app scope' })
+  @Put('app-scope/:id')
+  async updateAppScope(
+    @Param('id') id: string,
+    @Body() updateAppScopeDto: UpdateAppScopeDto
+  ) {
+    return await firstValueFrom(
+      this.client.send({ cmd: AppScopeCommands.Update }, { id, ...updateAppScopeDto })
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Delete an app scope' })
+  @Delete('app-scope/:id')
+  async deleteAppScope(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.client.send({ cmd: AppScopeCommands.Delete }, id)
+    );
+  }
 
   // Permission endpoints
   @UseGuards(AuthGuard)

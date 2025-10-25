@@ -1,7 +1,8 @@
 /* istanbul ignore file */
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Permission } from "../../permissions/entities/permission.entity";
 import { RoleAssignment } from "../../role-assignments/entities/role-assignment.entity";
+import { AppScope } from "../../app-scopes/entities/app-scope.entity";
 
 @Entity()
 export class Role {
@@ -15,8 +16,8 @@ export class Role {
     @Column()
     description: string;
 
-    @Column()
-    appScope: string; // Application scope: 'global', 'forgeofwill', 'client-interface', etc.
+    @ManyToOne(() => AppScope, { eager: true })
+    appScope: AppScope;
 
     @Column({ default: () => 'CURRENT_TIMESTAMP' })
     created_at: Date;

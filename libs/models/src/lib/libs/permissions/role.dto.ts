@@ -8,7 +8,7 @@ export class CreateRoleDto {
     description: string;
 
     @IsString()
-    appScope: string;
+    appScopeId: string;
 }
 
 export class UpdateRoleDto {
@@ -25,7 +25,7 @@ export class UpdateRoleDto {
 
     @IsOptional()
     @IsString()
-    appScope?: string;
+    appScopeId?: string;
 }
 
 export class AssignRoleDto {
@@ -36,14 +36,14 @@ export class AssignRoleDto {
     profileId: string;
 
     @IsString()
-    appScope: string;
+    appScopeId: string;
 }
 
 export class RoleDto {
     id: string;
     name: string;
     description: string;
-    appScope: string;
+    appScope?: any;
     created_at: Date;
     permissions?: any[];
 }
@@ -51,7 +51,7 @@ export class RoleDto {
 export class RoleAssignmentDto {
     id: string;
     profileId: string;
-    appScope: string;
+    appScope?: any;
     role: RoleDto;
     created_at: Date;
 }

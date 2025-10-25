@@ -19,3 +19,12 @@ export const RoleCommands = {
     GetUserRoles: 'GetUserRoles:Role',
     CheckPermission: 'CheckPermission:Role',
 }
+
+export const AppScopeCommands = {
+    Create: 'Create:AppScope',
+    Update: 'Update:AppScope',
+    Delete: 'Delete:AppScope',
+    Get: 'Get:AppScope',
+    GetByName: 'GetByName:AppScope',
+    GetAll: 'GetAll:AppScope',
+}

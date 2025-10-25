@@ -9,10 +9,13 @@ import loadDatabase from './loadDatabase';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Role } from '../roles/entities/role.entity';
 import { RoleAssignment } from '../role-assignments/entities/role-assignment.entity';
+import { AppScope } from '../app-scopes/entities/app-scope.entity';
 import { PermissionsService } from './permissions.service';
 import { RolesService } from './roles.service';
+import { AppScopesService } from './app-scopes.service';
 import { PermissionsController } from '../permissions/permissions.controller';
 import { RolesController } from '../roles/roles.controller';
+import { AppScopesController } from '../app-scopes/app-scopes.controller';
 
 @Module({
   imports: [
@@ -29,10 +32,12 @@ import { RolesController } from '../roles/roles.controller';
   controllers: [
     PermissionsController,
     RolesController,
+    AppScopesController,
   ],
   providers: [
     PermissionsService,
     RolesService,
+    AppScopesService,
     {
       provide: getRepositoryToken(Permission),
       useFactory: (ds: DataSource) => ds.getRepository(Permission),
@@ -46,6 +51,11 @@ import { RolesController } from '../roles/roles.controller';
     {
       provide: getRepositoryToken(RoleAssignment),
       useFactory: (ds: DataSource) => ds.getRepository(RoleAssignment),
+      inject: ['PERMISSIONS_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AppScope),
+      useFactory: (ds: DataSource) => ds.getRepository(AppScope),
       inject: ['PERMISSIONS_CONNECTION'],
     }
   ],

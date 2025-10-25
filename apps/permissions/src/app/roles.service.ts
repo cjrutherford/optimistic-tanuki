@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { RoleAssignment } from '../role-assignments/entities/role-assignment.entity';
+import { AppScope } from '../app-scopes/entities/app-scope.entity';
 import { CreateRoleDto, UpdateRoleDto, AssignRoleDto } from '@optimistic-tanuki/models';
 
 @Injectable()
@@ -15,29 +16,51 @@ export class RolesService {
         private permissionsRepository: Repository<Permission>,
         @InjectRepository(RoleAssignment)
         private roleAssignmentsRepository: Repository<RoleAssignment>,
+        @InjectRepository(AppScope)
+        private appScopesRepository: Repository<AppScope>,
     ) {}
 
     async createRole(createRoleDto: CreateRoleDto): Promise<Role> {
-        const role = this.rolesRepository.create(createRoleDto);
+        const appScope = await this.appScopesRepository.findOne({
+            where: { id: createRoleDto.appScopeId }
+        });
+        
+        const role = this.rolesRepository.create({
+            name: createRoleDto.name,
+            description: createRoleDto.description,
+            appScope
+        });
         return await this.rolesRepository.save(role);
     }
 
     async getRole(id: string): Promise<Role> {
         return await this.rolesRepository.findOne({ 
             where: { id },
-            relations: ['permissions', 'assignments']
+            relations: ['permissions', 'assignments', 'appScope']
         });
     }
 
     async getAllRoles(query: any): Promise<Role[]> {
         return await this.rolesRepository.find({
             ...query,
-            relations: ['permissions']
+            relations: ['permissions', 'appScope']
         });
     }
 
     async updateRole(id: string, updateRoleDto: UpdateRoleDto): Promise<Role> {
-        await this.rolesRepository.update(id, updateRoleDto);
+        const updateData: any = {
+            name: updateRoleDto.name,
+            description: updateRoleDto.description
+        };
+        
+        if (updateRoleDto.appScopeId) {
+            const appScope = await this.appScopesRepository.findOne({
+                where: { id: updateRoleDto.appScopeId }
+            });
+            updateData.appScope = appScope;
+        }
+        
+        await this.rolesRepository.update(id, updateData);
         return await this.getRole(id);
     }
 
@@ -48,7 +71,7 @@ export class RolesService {
     async addPermissionToRole(roleId: string, permissionId: string): Promise<Role> {
         const role = await this.rolesRepository.findOne({
             where: { id: roleId },
-            relations: ['permissions']
+            relations: ['permissions', 'appScope']
         });
         const permission = await this.permissionsRepository.findOne({
             where: { id: permissionId }
@@ -69,7 +92,7 @@ export class RolesService {
     async removePermissionFromRole(roleId: string, permissionId: string): Promise<Role> {
         const role = await this.rolesRepository.findOne({
             where: { id: roleId },
-            relations: ['permissions']
+            relations: ['permissions', 'appScope']
         });
 
         role.permissions = role.permissions.filter(p => p.id !== permissionId);
@@ -82,11 +105,15 @@ export class RolesService {
         const role = await this.rolesRepository.findOne({
             where: { id: assignRoleDto.roleId }
         });
+        
+        const appScope = await this.appScopesRepository.findOne({
+            where: { id: assignRoleDto.appScopeId }
+        });
 
         const assignment = this.roleAssignmentsRepository.create({
             profileId: assignRoleDto.profileId,
-            appScope: assignRoleDto.appScope,
-            role: role
+            appScope,
+            role
         });
 
         return await this.roleAssignmentsRepository.save(assignment);
@@ -96,18 +123,23 @@ export class RolesService {
         await this.roleAssignmentsRepository.delete(assignmentId);
     }
 
-    async getUserRoles(profileId: string, appScope?: string): Promise<RoleAssignment[]> {
-        const query: any = { where: { profileId }, relations: ['role', 'role.permissions'] };
+    async getUserRoles(profileId: string, appScopeId?: string): Promise<RoleAssignment[]> {
+        const queryBuilder = this.roleAssignmentsRepository
+            .createQueryBuilder('assignment')
+            .leftJoinAndSelect('assignment.role', 'role')
+            .leftJoinAndSelect('role.permissions', 'permissions')
+            .leftJoinAndSelect('assignment.appScope', 'appScope')
+            .where('assignment.profileId = :profileId', { profileId });
         
-        if (appScope) {
-            query.where.appScope = appScope;
+        if (appScopeId) {
+            queryBuilder.andWhere('appScope.id = :appScopeId', { appScopeId });
         }
 
-        return await this.roleAssignmentsRepository.find(query);
+        return await queryBuilder.getMany();
     }
 
-    async checkPermission(profileId: string, permissionName: string, appScope: string, targetId?: string): Promise<boolean> {
-        const assignments = await this.getUserRoles(profileId, appScope);
+    async checkPermission(profileId: string, permissionName: string, appScopeId: string, targetId?: string): Promise<boolean> {
+        const assignments = await this.getUserRoles(profileId, appScopeId);
 
         for (const assignment of assignments) {
             const hasPermission = assignment.role.permissions.some(p => {

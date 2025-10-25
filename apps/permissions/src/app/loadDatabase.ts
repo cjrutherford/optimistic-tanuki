@@ -2,6 +2,7 @@ import { DataSource } from "typeorm";
 import { Permission } from "../permissions/entities/permission.entity";
 import { Role } from "../roles/entities/role.entity";
 import { RoleAssignment } from "../role-assignments/entities/role-assignment.entity";
+import { AppScope } from "../app-scopes/entities/app-scope.entity";
 
 export const loadDatabase = (config: any): DataSource => {
     const { host, port, username, password, database } = config.database;
@@ -12,7 +13,7 @@ export const loadDatabase = (config: any): DataSource => {
         username,
         password,
         database: process.env.POSTGRES_DB || database,
-        entities: [Permission, Role, RoleAssignment],
+        entities: [Permission, Role, RoleAssignment, AppScope],
         synchronize: false,
     });
 }

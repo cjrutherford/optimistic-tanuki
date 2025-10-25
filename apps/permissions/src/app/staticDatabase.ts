@@ -4,6 +4,7 @@ import { DataSource } from "typeorm";
 import { Permission } from "../permissions/entities/permission.entity";
 import { Role } from "../roles/entities/role.entity";
 import { RoleAssignment } from "../role-assignments/entities/role-assignment.entity";
+import { AppScope } from "../app-scopes/entities/app-scope.entity";
 import fs from 'fs';
 import path from 'path';
 
@@ -20,7 +21,7 @@ const { database: {
 const host = process.env.POSTGRES_HOST || configHost;
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [Permission, Role, RoleAssignment];
+const entities = [Permission, Role, RoleAssignment, AppScope];
 
 const staticSource = new DataSource({
     type: 'postgres',

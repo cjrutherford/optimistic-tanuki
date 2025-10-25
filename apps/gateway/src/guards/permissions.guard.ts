@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ClientProxy } from '@nestjs/microservices';
-import { ServiceTokens, RoleCommands } from '@optimistic-tanuki/constants';
+import { ServiceTokens, RoleCommands, AppScopeCommands } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 import { PERMISSIONS_KEY, PermissionRequirement } from '../decorators/permissions.decorator';
 
@@ -36,7 +36,19 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    const { permissions, appScope } = requirement;
+    const { permissions, appScopeName } = requirement;
+
+    // Get the app scope by name
+    const appScope = await firstValueFrom(
+      this.permissionsClient.send(
+        { cmd: AppScopeCommands.GetByName },
+        appScopeName
+      )
+    );
+
+    if (!appScope) {
+      throw new ForbiddenException(`App scope not found: ${appScopeName}`);
+    }
 
     // Check each required permission
     for (const permission of permissions) {
@@ -46,14 +58,14 @@ export class PermissionsGuard implements CanActivate {
           {
             profileId: user.profileId,
             permission,
-            appScope,
+            appScopeId: appScope.id,
           }
         )
       );
 
       if (!hasPermission) {
         throw new ForbiddenException(
-          `Permission denied: ${permission} in ${appScope}`
+          `Permission denied: ${permission} in ${appScopeName}`
         );
       }
     }

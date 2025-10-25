@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Role } from "../../roles/entities/role.entity";
+import { AppScope } from "../../app-scopes/entities/app-scope.entity";
 
 @Entity()
 export class RoleAssignment {
@@ -11,8 +12,8 @@ export class RoleAssignment {
     @Column()
     profileId: string;
 
-    @Column()
-    appScope: string; // Application scope where this role applies
+    @ManyToOne(() => AppScope, { eager: true })
+    appScope: AppScope;
 
     @ManyToOne(() => Role, role => role.assignments)
     role: Role;
