@@ -108,16 +108,17 @@ The permissions service provides guards and decorators that can be used in gatew
 Use this decorator on controller methods to require specific permissions:
 
 ```typescript
-@RequirePermissions('posts:write', 'forgeofwill')
+@RequirePermissions('posts:write')
 @Post()
 async createPost(@User() user: UserDetails, @Body() dto: CreatePostDto) {
-  // Only users with posts:write permission in forgeofwill app can access this
+  // Only users with posts:write permission can access this
+  // The guard automatically checks across all app scopes the user has access to
 }
 ```
 
 ### PermissionsGuard
 
-The guard automatically checks permissions based on the `@RequirePermissions` decorator.
+The guard automatically checks permissions based on the `@RequirePermissions` decorator. It queries the permissions service to determine which app scopes and roles the user has, then verifies the required permissions across all accessible scopes.
 
 ## Database Migrations
 

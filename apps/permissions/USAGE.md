@@ -120,16 +120,17 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 export class BlogController {
   
   @Post('posts')
-  @RequirePermissions(['blog:posts:write'], 'forgeofwill')
+  @RequirePermissions('blog:posts:write')
   async createPost(@User() user: UserDetails, @Body() dto: CreatePostDto) {
-    // Only users with blog:posts:write permission in forgeofwill can access this
+    // Only users with blog:posts:write permission can access this
+    // The guard automatically checks across all app scopes the user has access to
     return this.blogService.createPost(dto);
   }
 
   @Delete('posts/:id')
-  @RequirePermissions(['blog:posts:delete'], 'forgeofwill')
+  @RequirePermissions('blog:posts:delete')
   async deletePost(@Param('id') id: string) {
-    // Only users with blog:posts:delete permission in forgeofwill can access this
+    // Only users with blog:posts:delete permission can access this
     return this.blogService.deletePost(id);
   }
 
@@ -145,9 +146,9 @@ export class BlogController {
 
 ```typescript
 @Post('admin/users')
-@RequirePermissions(['users:write', 'admin:access'], 'global')
+@RequirePermissions('users:write', 'admin:access')
 async createUser(@Body() dto: CreateUserDto) {
-  // User must have BOTH permissions
+  // User must have BOTH permissions in at least one app scope
   return this.userService.createUser(dto);
 }
 ```

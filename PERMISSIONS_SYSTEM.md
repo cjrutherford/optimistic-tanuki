@@ -19,9 +19,10 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 export class YourController {
   
   @Post()
-  @RequirePermissions(['your-app:resource:create'], 'your-app-scope')
+  @RequirePermissions('your-app:resource:create')
   async create(@Body() dto: CreateDto) {
     // Only users with the permission can access this
+    // The guard checks across all app scopes the user has access to
   }
 }
 ```
@@ -136,7 +137,7 @@ POST /permissions/assignment
 ### Protecting Endpoints
 ```typescript
 @Post('posts')
-@RequirePermissions(['blog:posts:write'], 'forgeofwill')
+@RequirePermissions('blog:posts:write')
 async createPost(@Body() dto: CreatePostDto) {
   return this.blogService.createPost(dto);
 }
