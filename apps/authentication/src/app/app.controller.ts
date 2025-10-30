@@ -9,11 +9,7 @@ import {
   ResetPasswordRequest,
   ValidateTokenRequest,
 } from '@optimistic-tanuki/models';
-import {
-  MessagePattern,
-  Payload,
-  RpcException,
-} from '@nestjs/microservices';
+import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 
 @Controller()
 export class AppController {
@@ -22,8 +18,29 @@ export class AppController {
     private readonly l: Logger
   ) {}
 
+  @MessagePattern({ cmd: AuthCommands.UserIdFromEmail })
+  async userIdFromEmail(@Payload() data: { email: string }) {
+    try {
+      const missingFields = validateRequiredFields<{ email: string }>(data, [
+        'email',
+      ]);
+      if (missingFields.length > 0) {
+        throw new RpcException(
+          `Missing required fields: ${missingFields.join(' ')}`
+        );
+      }
+      const { email } = data;
+      return await this.appService.getUserIdFromEmail(email);
+    } catch (e) {
+      if (e instanceof RpcException) {
+        throw e;
+      }
+      throw new RpcException(e);
+    }
+  }
+
   @MessagePattern({ cmd: AuthCommands.Login })
-  async login(@Payload() data: LoginRequest) {
+  async login(@Payload() data: LoginRequest & { profileId: string }) {
     try {
       this.l.log('login:', data);
       const missingFields = validateRequiredFields<LoginRequest>(data, [
@@ -37,7 +54,7 @@ export class AppController {
       }
       const { email, password, mfa } = data;
       this.l.log('login:', email, password, mfa);
-      return await this.appService.login(email, password, mfa);
+      return await this.appService.login(email, password, mfa, data.profileId);
     } catch (e) {
       if (e instanceof RpcException) {
         throw e;
@@ -133,14 +150,27 @@ export class AppController {
     }
   }
 
+  @MessagePattern({ cmd: AuthCommands.Issue })
+  async issue(@Payload() data: { userId: string; profileId?: string }) {
+    try {
+      const { userId, profileId } = data;
+      if (!userId) throw new RpcException('userId is required');
+      return await this.appService.issueToken(userId, profileId);
+    } catch (e) {
+      if (e instanceof RpcException) {
+        throw e;
+      }
+      throw new RpcException(e);
+    }
+  }
+
   @MessagePattern({ cmd: AuthCommands.EnableMultiFactor })
   async enableMfa(@Payload() data: EnableMultiFactorRequest) {
     try {
-      const missingFields = validateRequiredFields<EnableMultiFactorRequest>(data, [
-        'userId',
-        'password',
-        'initialTotp',
-      ]);
+      const missingFields = validateRequiredFields<EnableMultiFactorRequest>(
+        data,
+        ['userId', 'password', 'initialTotp']
+      );
       if (missingFields.length > 0) {
         throw new RpcException(
           `Missing required fields: ${missingFields.join(' ')}`
@@ -159,10 +189,10 @@ export class AppController {
   @MessagePattern({ cmd: AuthCommands.ValidateTotp })
   async validateTotp(@Payload() data: { userId: string; token: string }) {
     try {
-      const missingFields = validateRequiredFields<{ userId: string; token: string }>(data, [
-        'userId',
-        'token',
-      ]);
+      const missingFields = validateRequiredFields<{
+        userId: string;
+        token: string;
+      }>(data, ['userId', 'token']);
       if (missingFields.length > 0) {
         throw new RpcException(
           `Missing required fields: ${missingFields.join(' ')}`
@@ -170,6 +200,22 @@ export class AppController {
       }
       const { userId, token } = data;
       return await this.appService.validateTotp(userId, token);
+    } catch (e) {
+      if (e instanceof RpcException) {
+        throw e;
+      }
+      throw new RpcException(e);
+    }
+  }
+
+  @MessagePattern({ cmd: AuthCommands.Issue })
+  async issueToken(@Payload() data: { userId: string; profileId?: string }) {
+    try {
+      if (!data || !data.userId) {
+        throw new RpcException('Missing required fields: userId');
+      }
+      const { userId, profileId } = data;
+      return await this.appService.issueToken(userId, profileId);
     } catch (e) {
       if (e instanceof RpcException) {
         throw e;

@@ -1,6 +1,7 @@
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TcpServiceConfig, loadConfig } from '../config';
+import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 
 import { AssetController } from '../controllers/asset.controller';
 import { AuthGuard } from '../auth/auth.guard';
@@ -38,11 +39,11 @@ import { PermissionsController } from '../controllers/permissions/permissions.co
     EventController,
     BlogController,
     PermissionsController,
-
   ],
   providers: [
     AuthGuard,
     JwtService,
+    RoleInitService,
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,
       useFactory: (configService: ConfigService) => {
@@ -135,7 +136,8 @@ import { PermissionsController } from '../controllers/permissions/permissions.co
         });
       },
       inject: [ConfigService],
-    },{
+    },
+    {
       provide: ServiceTokens.TELOS_DOCS_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
@@ -171,9 +173,8 @@ import { PermissionsController } from '../controllers/permissions/permissions.co
     {
       provide: ServiceTokens.BLOG_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.blogging'
-        );
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.blogging');
         console.log('Blog Service Config:', serviceConfig);
         const client = ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -202,7 +203,7 @@ import { PermissionsController } from '../controllers/permissions/permissions.co
         });
       },
       inject: [ConfigService],
-    }
+    },
   ],
 })
 export class AppModule {}

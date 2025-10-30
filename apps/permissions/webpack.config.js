@@ -19,6 +19,9 @@ module.exports = {
       outputHashing: 'none',
       generatePackageJson: true,
       sourceMaps: true,
+      additionalEntryPoints: [
+        './src/app/seed-permissions.ts',
+      ]
     }),
   ],
 };

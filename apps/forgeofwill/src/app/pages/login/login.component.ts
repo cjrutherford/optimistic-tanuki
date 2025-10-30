@@ -21,34 +21,66 @@ export class LoginComponent {
     private readonly authState: AuthStateService,
     private readonly profileService: ProfileService,
     private readonly router: Router,
-    private readonly messageService: MessageService,
+    private readonly messageService: MessageService
   ) {}
 
   onLoginSubmit(event: LoginType) {
     console.log('Logging in user with data:', event);
-    this.authService.login(event).then((response) => {
-      console.log('Login successful:', response);
-      this.authState.setToken(response.data.newToken);
-      if(this.authState.isAuthenticated) {
-        this.profileService.getAllProfiles().then(() => {
-          console.log('Profiles loaded successfully');
-          const currentProfiles = this.profileService.currentUserProfiles();
-          console.log('Current user profiles:', currentProfiles);
-          if(!currentProfiles.length) {
-            console.warn('No profiles found for the current user. Redirecting to profile creation.');
-            // Redirect to profile creation if no profiles exist
-            this.router.navigate(['/profile'], { state: { showProfileModal: true, profileMessage: 'No profiles found. Please create a profile to continue.' } });
-            this.messageService.addMessage({ content: 'No profiles found. Please create a profile to continue.', type: 'warning' });
-          } else {
-            this.profileService.selectProfile(currentProfiles[0]);
-            this.router.navigate(['/']);
-            this.messageService.addMessage({ content: 'Login successful! Welcome back.', type: 'success' });
+    this.authService
+      .login(event)
+      .then((response) => {
+        console.log('Login successful:', response);
+        this.authState.setToken(response.data.newToken);
+        if (this.authState.isAuthenticated) {
+          const decoded = this.authState.getDecodedTokenValue();
+          if (decoded && (decoded as any).profileId === '') {
+            this.router.navigate(['/profile'], {
+              state: {
+                showProfileModal: true,
+                profileMessage: 'Please create your profile to continue.',
+              },
+            });
+            this.messageService.addMessage({
+              content: 'Please create your profile to continue.',
+              type: 'warning',
+            });
+            return;
           }
-        });
-      }
-    }).catch((error) => {
-      console.error('Login failed:', error);
-    });
-  // ...existing code...
+          this.profileService.getAllProfiles().then(() => {
+            console.log('Profiles loaded successfully');
+            const currentProfiles = this.profileService.currentUserProfiles();
+            console.log('Current user profiles:', currentProfiles);
+            if (!currentProfiles.length) {
+              console.warn(
+                'No profiles found for the current user. Redirecting to profile creation.'
+              );
+              // Redirect to profile creation if no profiles exist
+              this.router.navigate(['/profile'], {
+                state: {
+                  showProfileModal: true,
+                  profileMessage:
+                    'No profiles found. Please create a profile to continue.',
+                },
+              });
+              this.messageService.addMessage({
+                content:
+                  'No profiles found. Please create a profile to continue.',
+                type: 'warning',
+              });
+            } else {
+              this.profileService.selectProfile(currentProfiles[0]);
+              this.router.navigate(['/']);
+              this.messageService.addMessage({
+                content: 'Login successful! Welcome back.',
+                type: 'success',
+              });
+            }
+          });
+        }
+      })
+      .catch((error) => {
+        console.error('Login failed:', error);
+      });
+    // ...existing code...
   }
 }

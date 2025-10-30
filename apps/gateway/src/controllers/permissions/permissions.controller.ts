@@ -36,7 +36,8 @@ import { firstValueFrom } from 'rxjs';
 export class PermissionsController {
   constructor(
     private readonly l: Logger,
-    @Inject(ServiceTokens.PERMISSIONS_SERVICE) private readonly client: ClientProxy
+    @Inject(ServiceTokens.PERMISSIONS_SERVICE)
+    private readonly client: ClientProxy
   ) {}
 
   // App Scope endpoints
@@ -84,7 +85,10 @@ export class PermissionsController {
     @Body() updateAppScopeDto: UpdateAppScopeDto
   ) {
     return await firstValueFrom(
-      this.client.send({ cmd: AppScopeCommands.Update }, { id, ...updateAppScopeDto })
+      this.client.send(
+        { cmd: AppScopeCommands.Update },
+        { id, ...updateAppScopeDto }
+      )
     );
   }
 
@@ -133,7 +137,10 @@ export class PermissionsController {
     @Body() updatePermissionDto: UpdatePermissionDto
   ) {
     return await firstValueFrom(
-      this.client.send({ cmd: PermissionCommands.Update }, { id, ...updatePermissionDto })
+      this.client.send(
+        { cmd: PermissionCommands.Update },
+        { id, ...updatePermissionDto }
+      )
     );
   }
 
@@ -203,7 +210,10 @@ export class PermissionsController {
     @Param('permissionId') permissionId: string
   ) {
     return await firstValueFrom(
-      this.client.send({ cmd: RoleCommands.AddPermission }, { roleId, permissionId })
+      this.client.send(
+        { cmd: RoleCommands.AddPermission },
+        { roleId, permissionId }
+      )
     );
   }
 
@@ -215,7 +225,10 @@ export class PermissionsController {
     @Param('permissionId') permissionId: string
   ) {
     return await firstValueFrom(
-      this.client.send({ cmd: RoleCommands.RemovePermission }, { roleId, permissionId })
+      this.client.send(
+        { cmd: RoleCommands.RemovePermission },
+        { roleId, permissionId }
+      )
     );
   }
 
@@ -245,7 +258,10 @@ export class PermissionsController {
     @Body() data: { appScope?: string }
   ) {
     return await firstValueFrom(
-      this.client.send({ cmd: RoleCommands.GetUserRoles }, { profileId, appScope: data?.appScope })
+      this.client.send(
+        { cmd: RoleCommands.GetUserRoles },
+        { profileId, appScope: data?.appScope }
+      )
     );
   }
 
@@ -253,15 +269,17 @@ export class PermissionsController {
   @ApiOperation({ summary: 'Check user permission' })
   @Post('check-permission')
   async checkPermission(
-    @User() user: UserDetails,
-    @Body() data: { permission: string; appScope: string; targetId?: string }
+    @Body() data: { permission: string; appScope: string; targetId: string }
   ) {
     // Use the profile ID from the authenticated user
     return await firstValueFrom(
-      this.client.send({ cmd: RoleCommands.CheckPermission }, { 
-        profileId: user.profileId, 
-        ...data 
-      })
+      this.client.send(
+        { cmd: RoleCommands.CheckPermission },
+        {
+          profileId: data.targetId,
+          ...data,
+        }
+      )
     );
   }
 }

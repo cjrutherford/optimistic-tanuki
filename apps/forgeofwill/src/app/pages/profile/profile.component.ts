@@ -1,15 +1,26 @@
 import { inject } from '@angular/core';
-import { MessageLevelType, MessageService, MessageType } from '@optimistic-tanuki/message-ui';
-import { BannerComponent, ProfilePhotoComponent, ProfileSelectorComponent } from '@optimistic-tanuki/profile-ui';
+import {
+  MessageLevelType,
+  MessageService,
+  MessageType,
+} from '@optimistic-tanuki/message-ui';
+import {
+  BannerComponent,
+  ProfilePhotoComponent,
+} from '@optimistic-tanuki/profile-ui';
 import { Component, signal, OnInit } from '@angular/core';
-import { CreateProfileDto, ProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
-
+import { CommonModule } from '@angular/common';
+import {
+  CreateProfileDto,
+  ProfileDto,
+  UpdateProfileDto,
+} from '@optimistic-tanuki/ui-models';
 
 import { ProfileService } from '../../profile/profile.service';
 
 @Component({
   selector: 'app-profile',
-  imports: [ProfileSelectorComponent, ProfilePhotoComponent, BannerComponent],
+  imports: [CommonModule, ProfilePhotoComponent, BannerComponent],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })
@@ -25,19 +36,15 @@ export class ProfileComponent implements OnInit {
     const nav = window?.history?.state;
     if (nav?.showProfileModal) {
       setTimeout(() => {
-        this.openProfileModalFromSelector();
+        window.location.href = '/settings';
         if (nav.profileMessage) {
           this.showMessage(nav.profileMessage, 'warning');
         }
       }, 100);
     }
   }
-  // Helper to trigger modal in selector
-  openProfileModalFromSelector() {
-    const selector = document.querySelector('lib-profile-selector') as unknown;
-    if (selector && (selector as { openProfileDialog?: () => void }).openProfileDialog) {
-      (selector as { openProfileDialog?: () => void }).openProfileDialog?.();
-    }
+  goToSettings() {
+    window.location.href = '/settings';
   }
 
   showMessage(msg: string, type: MessageLevelType = 'info') {
@@ -75,8 +82,10 @@ export class ProfileComponent implements OnInit {
   }
 
   updateProfile(updatedProfile: UpdateProfileDto) {
-    this.profileService.updateProfile(updatedProfile.id, updatedProfile).then(() => {
-      this.loadProfiles();
-    });
+    this.profileService
+      .updateProfile(updatedProfile.id, updatedProfile)
+      .then(() => {
+        this.loadProfiles();
+      });
   }
 }

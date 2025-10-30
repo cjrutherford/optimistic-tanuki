@@ -15,9 +15,12 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   AIOrchestrationCommands,
   GoalCommands,
+  PermissionCommands,
   PersonaTelosCommands,
   ProfileCommands,
+  AuthCommands,
   ProjectCommands,
+  RoleCommands,
   ServiceTokens,
   TimelineCommands,
 } from '@optimistic-tanuki/constants';
@@ -36,17 +39,28 @@ import {
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { firstValueFrom } from 'rxjs';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { AppScope } from '../../decorators/appscope.decorator';
+import {
+  RoleInitService,
+  RoleInitBuilder,
+} from '@optimistic-tanuki/permission-lib';
 
 @ApiTags('profile')
 @Controller('profile')
+@UseGuards(AuthGuard, PermissionsGuard)
 export class ProfileController {
   constructor(
     private readonly l: Logger,
     @Inject(ServiceTokens.PROFILE_SERVICE) private readonly client: ClientProxy,
     @Inject(ServiceTokens.AI_ORCHESTRATION_SERVICE)
     private readonly aiClient: ClientProxy,
+    @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
+    private readonly authClient: ClientProxy,
     @Inject(ServiceTokens.TELOS_DOCS_SERVICE)
-    private readonly telosDocsClient: ClientProxy
+    private readonly telosDocsClient: ClientProxy,
+    private readonly roleInit: RoleInitService
   ) {}
 
   @UseGuards(AuthGuard)
@@ -58,7 +72,8 @@ export class ProfileController {
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   @Post()
   async createProfile(
-    @Body() createProfileDto: CreateProfileDto & { appId?: string }
+    @Body() createProfileDto: CreateProfileDto & { appId?: string },
+    @AppScope() appScope: string
   ) {
     const createdProfile: ProfileDto = await firstValueFrom(
       this.client.send({ cmd: ProfileCommands.Create }, createProfileDto)
@@ -77,6 +92,37 @@ export class ProfileController {
           );
         })
         .catch((e) => this.l.error('Error initializing AI orchestration:', e));
+    // this is where we will initialize the permissions for the user in the app scope we are making the profile for.
+
+    const profilePermissionsBuilder = new RoleInitBuilder()
+      .addDefaultProfileOwner(createdProfile.id, createProfileDto.userId)
+      .setScopeName(appScope)
+      .addAppScopeDefaults()
+      .addAssetOwnerPermissions();
+    this.l.log(`Initializing permissions for app scope: ${appScope}`);
+    // Build role-init options and enqueue a job to initialize the default permissions
+    // Note: CreateProfileDto may not declare `initialPermissions` in the shared models;
+    // if callers provide additional permissions they can be merged here before enqueue.
+    const roleInitOptions = profilePermissionsBuilder.build();
+    this.roleInit.enqueue(roleInitOptions);
+    // Attempt to request a refreshed token that includes the profileId so callers can switch tokens
+    try {
+      const issueResp: any = await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.Issue },
+          { userId: createProfileDto.userId, profileId: createdProfile.id }
+        )
+      );
+      const newToken = issueResp?.data?.newToken || issueResp?.newToken || null;
+      if (newToken) {
+        return { profile: createdProfile, newToken };
+      }
+    } catch (e) {
+      this.l.warn(
+        'Could not issue refreshed token for profile creation:',
+        e?.message || e
+      );
+    }
 
     return createdProfile;
   }
@@ -159,6 +205,7 @@ export class ProfileController {
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
   @Put(':id')
+  @RequirePermissions('profile:own:update')
   updateProfile(
     @Param('id') id: string,
     @Body() updateProfileDto: UpdateProfileDto
@@ -177,6 +224,7 @@ export class ProfileController {
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
   @Delete(':id')
+  @RequirePermissions('profile:own:delete')
   deleteProfile(@Param('id') id: string) {
     return this.client.send({ cmd: ProfileCommands.Delete }, id);
   }

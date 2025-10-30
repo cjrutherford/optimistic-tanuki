@@ -1,10 +1,3 @@
-<lib-profile-selector
-  [profiles]="profileService.getCurrentUserProfiles()"
-  [currentSelectedProfile]="profileService.getCurrentUserProfile()"
-  (selectedProfile)="profileService.selectProfile($event)"
-  (profileCreated)="profileService.createProfile($event)"
-  (profileUpdated)="updateProfile($event)"
-></lib-profile-selector>
 @if (profile) {
   <lib-banner class="profile-banner"
     [profileName]="profile.profileName"
@@ -12,6 +5,13 @@
     [backgroundImage]="profile.coverPic"
   >
   </lib-banner>
+} @else {
+  <otui-card>
+    <div class="no-profile">
+  <p>No profile selected. Go to Settings to create your profile.</p>
+  <otui-button (click)="goToSettings()">Open Settings</otui-button>
+    </div>
+  </otui-card>
 }
 
 <!-- <otui-card >

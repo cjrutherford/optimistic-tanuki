@@ -1,30 +1,37 @@
 import { inject } from '@angular/core';
-import { MessageLevelType, MessageService } from '@optimistic-tanuki/message-ui';
+import {
+  MessageLevelType,
+  MessageService,
+} from '@optimistic-tanuki/message-ui';
 import { Component, OnInit } from '@angular/core';
 
-import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
-import { BannerComponent, ProfileSelectorComponent } from '@optimistic-tanuki/profile-ui';
+import { BannerComponent } from '@optimistic-tanuki/profile-ui';
 import { ProfileService } from '../profile.service';
-import { UpdateProfileDto, CreateProfileDto, ProfileDto } from '@optimistic-tanuki/ui-models';
+import {
+  UpdateProfileDto,
+  CreateProfileDto,
+  ProfileDto,
+} from '@optimistic-tanuki/ui-models';
+import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
   imports: [
-    MatCardModule,
+    CardComponent,
+    ButtonComponent,
     MatListModule,
     MatIconModule,
     BannerComponent,
-    ProfileSelectorComponent
-],
+  ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })
 export class ProfileComponent implements OnInit {
   private readonly messageService = inject(MessageService);
-  profileService: ProfileService
+  profileService: ProfileService;
 
   constructor(readonly _profileService: ProfileService) {
     this.profileService = _profileService;
@@ -41,22 +48,16 @@ export class ProfileComponent implements OnInit {
         this.profileService.selectProfile(JSON.parse(profile));
       }
     });
-    // Check router state for modal trigger and message
+    // Check router state for modal trigger and message (redirect to settings)
     const nav = window?.history?.state;
     if (nav?.showProfileModal) {
+      // navigate to settings where profile editor lives
       setTimeout(() => {
-        this.openProfileModalFromSelector();
+        window.location.href = '/settings';
         if (nav.profileMessage) {
           this.showMessage(nav.profileMessage, 'warning');
         }
       }, 100);
-    }
-  }
-  // Helper to trigger modal in selector
-  openProfileModalFromSelector() {
-    const selector = document.querySelector('lib-profile-selector') as unknown;
-    if (selector && (selector as { openProfileDialog?: () => void }).openProfileDialog) {
-      (selector as { openProfileDialog?: () => void }).openProfileDialog?.();
     }
   }
 
@@ -65,7 +66,7 @@ export class ProfileComponent implements OnInit {
   }
 
   updateProfile(profile: UpdateProfileDto) {
-    const id = profile.id
+    const id = profile.id;
     this.profileService.updateProfile(id, profile).then(() => {
       this.profileService.getProfileById(id);
       this.showMessage('Profile updated and selected!', 'success');
@@ -91,6 +92,10 @@ export class ProfileComponent implements OnInit {
         }, 500);
       });
     });
+  }
+
+  goToSettings() {
+    window.location.href = '/settings';
   }
 
   get profile() {

@@ -14,4 +14,18 @@ export class BannerComponent {
   @Input() profileName = '';
   @Input() profileImage = '';
   @Input() backgroundImage = '';
+
+  // Fallback label if none provided (apps should pass the user's name from token)
+  get displayName(): string {
+    return this.profileName && this.profileName.trim().length
+      ? this.profileName
+      : 'Your Name';
+  }
+
+  // Provide a placeholder background image when none provided (keeps banner visual)
+  get backgroundStyle(): string | null {
+    return this.backgroundImage && this.backgroundImage.length
+      ? `url('${this.backgroundImage}')`
+      : null;
+  }
 }

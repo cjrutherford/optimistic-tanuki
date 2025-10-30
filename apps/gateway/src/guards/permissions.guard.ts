@@ -4,19 +4,28 @@ import {
   ExecutionContext,
   Inject,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ClientProxy } from '@nestjs/microservices';
-import { ServiceTokens, RoleCommands, AppScopeCommands } from '@optimistic-tanuki/constants';
+import {
+  ServiceTokens,
+  RoleCommands,
+  AppScopeCommands,
+} from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
-import { PERMISSIONS_KEY, PermissionRequirement } from '../decorators/permissions.decorator';
+import {
+  PERMISSIONS_KEY,
+  PermissionRequirement,
+} from '../decorators/permissions.decorator';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
-    private permissionsClient: ClientProxy
+    private permissionsClient: ClientProxy,
+    private readonly logger: Logger
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -31,16 +40,21 @@ export class PermissionsGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
+    this.logger.log(`Checking permissions for user: ${JSON.stringify(user)}`);
 
     if (!user || !user.profileId) {
+      this.logger.warn('User not authenticated or missing profileId');
       throw new ForbiddenException('User not authenticated');
     }
 
     // Extract app scope from header
     const appScopeName = request.headers['x-ot-appscope'];
-    
+
     if (!appScopeName) {
-      throw new ForbiddenException('App scope header (X-ot-appscope) is required');
+      this.logger.warn('App scope header (x-ot-appscope) is missing');
+      throw new ForbiddenException(
+        'App scope header (x-ot-appscope) is required'
+      );
     }
 
     // Get the app scope by name
@@ -52,6 +66,7 @@ export class PermissionsGuard implements CanActivate {
     );
 
     if (!appScope) {
+      this.logger.warn(`App scope not found: ${appScopeName}`);
       throw new ForbiddenException(`App scope not found: ${appScopeName}`);
     }
 
@@ -71,6 +86,9 @@ export class PermissionsGuard implements CanActivate {
       );
 
       if (!hasPermission) {
+        this.logger.warn(
+          `Permission denied: ${permission} in app scope ${appScopeName}`
+        );
         throw new ForbiddenException(
           `Permission denied: ${permission} in app scope ${appScopeName}`
         );

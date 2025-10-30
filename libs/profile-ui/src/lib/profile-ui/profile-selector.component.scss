@@ -124,3 +124,19 @@
     // to the button within .add-profile-photo-container.
     // Removed general p and button styles from here.
 }
+
+form.form-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    .left, .right {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        flex: 1; // Equal width for both sides
+    }
+    .dialog-actions {
+        display: flex;
+        flex: 2;
+    }
+}

@@ -1,7 +1,7 @@
-import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { AuthenticationService } from '../authentication.service';
-import { LoginRequest } from '@optimistic-tanuki/ui-models';
+import { LoginRequest, ProfileDto } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
 import { jwtDecode } from 'jwt-decode';
 import { isPlatformBrowser } from '@angular/common';
@@ -10,25 +10,30 @@ export interface UserData {
   userId: string;
   name: string;
   email: string;
+  profileId?: string;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthStateService {
   private tokenSubject: BehaviorSubject<string | null>;
   private isAuthenticatedSubject: BehaviorSubject<boolean>;
   private decodedTokenSubject: BehaviorSubject<UserData | null>;
   private _isAuthenticated = false;
+  private readonly namespace = 'ot-client';
+  private readonly tokenKey = `${this.namespace}-authToken`;
+  private readonly profilesKey = `${this.namespace}-profiles`;
+  private readonly selectedProfileKey = `${this.namespace}-selectedProfile`;
 
   isAuthenticated$: Observable<boolean>;
   decodedToken$: Observable<UserData | null>;
 
-  constructor(
-    private authService: AuthenticationService,
-    private http: HttpClient,
-    @Inject(PLATFORM_ID) private platformId: object
-  ) {
+  private authService = inject(AuthenticationService);
+  private http = inject(HttpClient);
+  private platformId = inject(PLATFORM_ID);
+
+  constructor() {
     if (!isPlatformBrowser(this.platformId)) {
       // Initialize with default values if not in a browser environment
       this.tokenSubject = new BehaviorSubject<string | null>(null);
@@ -39,13 +44,19 @@ export class AuthStateService {
       return;
     }
 
-    this.tokenSubject = new BehaviorSubject<string | null>(localStorage.getItem('authToken'));
-    this.isAuthenticatedSubject = new BehaviorSubject<boolean>(!!localStorage.getItem('authToken'));
-    this.decodedTokenSubject = new BehaviorSubject<UserData | null>(this.getDecodedToken());
+    this.tokenSubject = new BehaviorSubject<string | null>(
+      localStorage.getItem(this.tokenKey)
+    );
+    this.isAuthenticatedSubject = new BehaviorSubject<boolean>(
+      !!localStorage.getItem(this.tokenKey)
+    );
+    this.decodedTokenSubject = new BehaviorSubject<UserData | null>(
+      this.getDecodedToken()
+    );
     this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
     this.decodedToken$ = this.decodedTokenSubject.asObservable();
 
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(this.tokenKey);
     if (token) {
       this.setToken(token);
     }
@@ -58,11 +69,11 @@ export class AuthStateService {
     return this._isAuthenticated;
   }
 
-  login(loginRequest: LoginRequest): Promise<{data: { newToken: string }}> {
+  login(loginRequest: LoginRequest): Promise<{ data: { newToken: string } }> {
     if (!isPlatformBrowser(this.platformId)) {
       return Promise.reject('Login is not available on this platform.');
     }
-    return this.authService.login(loginRequest).then(response => {
+    return this.authService.login(loginRequest).then((response) => {
       const token = response.data.newToken;
       this.setToken(token);
       return response;
@@ -75,7 +86,7 @@ export class AuthStateService {
       console.log('setToken called on non-browser platform');
       return;
     }
-    localStorage.setItem('authToken', token);
+    localStorage.setItem(this.tokenKey, token);
     this.tokenSubject.next(token);
     this.isAuthenticatedSubject.next(true);
     this.decodedTokenSubject.next(this.getDecodedToken());
@@ -86,9 +97,9 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('profiles');
-    localStorage.removeItem('selectedProfile');
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.profilesKey);
+    localStorage.removeItem(this.selectedProfileKey);
     this.tokenSubject.next(null);
     this.isAuthenticatedSubject.next(false);
     this.decodedTokenSubject.next(null);
@@ -99,7 +110,11 @@ export class AuthStateService {
       return null;
     }
     const token = localStorage.getItem('authToken');
-    return token ? jwtDecode(token) : null;
+    if (!token) return null;
+    const decoded: any = jwtDecode(token);
+    if (decoded.profileId === undefined || decoded.profileId === null)
+      decoded.profileId = '';
+    return decoded as UserData;
   }
 
   getToken() {
@@ -114,5 +129,48 @@ export class AuthStateService {
       return null;
     }
     return this.decodedTokenSubject.value;
+  }
+  persistProfiles(profiles: ProfileDto[] | null) {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    if (profiles) {
+      localStorage.setItem(this.profilesKey, JSON.stringify(profiles));
+    } else {
+      localStorage.removeItem(this.profilesKey);
+    }
+  }
+
+  getPersistedProfiles(): ProfileDto[] | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+    const profiles = localStorage.getItem(this.profilesKey);
+    if (profiles) {
+      return JSON.parse(profiles) as ProfileDto[];
+    }
+    return null;
+  }
+
+  persistSelectedProfile(profile: ProfileDto | null) {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    if (profile) {
+      localStorage.setItem(this.selectedProfileKey, JSON.stringify(profile));
+    } else {
+      localStorage.removeItem(this.selectedProfileKey);
+    }
+  }
+
+  getPersistedSelectedProfile(): ProfileDto | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+    const profile = localStorage.getItem(this.selectedProfileKey);
+    if (profile) {
+      return JSON.parse(profile) as ProfileDto;
+    }
+    return null;
   }
 }

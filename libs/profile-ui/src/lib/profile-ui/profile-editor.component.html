@@ -1,0 +1,43 @@
+@if(open) {
+<otui-modal
+  [heading]="profile ? 'Edit Profile' : 'New Profile'"
+  (closeModal)="close()"
+  size="lg"
+>
+  <otui-card style="display: flex; flex-direction: column">
+    <form [formGroup]="profileForm" (ngSubmit)="save()" class="form-container">
+      <div class="left">
+        <lib-text-input
+          label="Profile Name"
+          formControlName="profileName"
+        ></lib-text-input>
+        <lib-image-upload
+          label="Profile Picture"
+          (imageUpload)="onProfilePicUpload($event)"
+          [currentImage]="profileForm.get('profilePic')?.value"
+        ></lib-image-upload>
+      </div>
+      <div class="right">
+        <lib-text-input label="Bio" formControlName="bio"></lib-text-input>
+        <lib-image-upload
+          label="Cover Picture"
+          (imageUpload)="onCoverPicUpload($event)"
+          [currentImage]="profileForm.get('coverPic')?.value"
+        ></lib-image-upload>
+      </div>
+    </form>
+    <div class="dialog-actions">
+      <otui-button
+        variant="success"
+        type="submit"
+        (click)="save()"
+        [disabled]="profileForm.invalid"
+        >Submit</otui-button
+      >
+      <otui-button variant="warning" type="button" (click)="close()"
+        >Cancel</otui-button
+      >
+    </div>
+  </otui-card>
+</otui-modal>
+}

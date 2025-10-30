@@ -1,8 +1,5 @@
 {
     "nxConsole.generateAiAgentRules": true,
-    "eslint.workingDirectories": [
-        "."
-    ],
     "jest.jestCommandLine": "npx jest --config=jest.config.ts",
     "cSpell.words": [
         "telos"

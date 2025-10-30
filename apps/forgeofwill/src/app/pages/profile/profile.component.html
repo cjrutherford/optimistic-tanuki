@@ -1,15 +1,30 @@
-<lib-profile-selector
-  [profiles]="availableProfiles()"
-  [currentSelectedProfile]="selectedProfile()"
-  (selectedProfile)="selectProfile($event)"
-  (profileCreated)="createProfile($event)"
-  (profileUpdated)="updateProfile($event)"
-></lib-profile-selector>
-@if (selectedProfile()) {
-  <lib-banner class="profile-banner"
-    [profileName]="selectedProfile()!.profileName"
-    [profileImage]="selectedProfile()!.profilePic"
-    [backgroundImage]="selectedProfile()!.coverPic"
-  >
-  </lib-banner>
+@if(availableProfiles().length > 0) {
+<lib-banner
+  class="profile-banner"
+  [profileName]="selectedProfile()!.profileName"
+  [profileImage]="selectedProfile()!.profilePic"
+  [backgroundImage]="selectedProfile()!.coverPic"
+>
+</lib-banner>
+
+<div class="profiles-list">
+  <div class="profile-item" *ngFor="let p of availableProfiles()">
+    <lib-profile-photo
+      [src]="p.profilePic"
+      [alt]="p.profileName"
+    ></lib-profile-photo>
+    <div class="profile-meta">
+      <h3>{{ p.profileName }}</h3>
+      <p>{{ p.bio }}</p>
+    </div>
+  </div>
+</div>
+} @else {
+<div class="no-profiles">
+  <lib-banner message="You don't have a profile yet"></lib-banner>
+  <p>Create a profile to get started with Forge of Will.</p>
+  <button class="btn btn-primary" (click)="goToSettings()">
+    Create profile
+  </button>
+</div>
 }

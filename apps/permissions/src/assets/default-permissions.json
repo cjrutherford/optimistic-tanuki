@@ -1,0 +1,447 @@
+{
+  "app_scopes": [
+    {
+      "name": "global",
+      "description": "Global scope - applies across all applications",
+      "active": true
+    },
+    {
+      "name": "forgeofwill",
+      "description": "Forge of Will application",
+      "active": true
+    },
+    {
+      "name": "client-interface",
+      "description": "Main client interface",
+      "active": true
+    },
+    {
+      "name": "digital-homestead",
+      "description": "Digital Homestead application",
+      "active": true
+    },
+    {
+      "name": "christopherrutherford-net",
+      "description": "Personal website",
+      "active": true
+    },
+    { "name": "blogging", "description": "Blogging platform", "active": true },
+    {
+      "name": "project-planning",
+      "description": "Project planning application",
+      "active": true
+    },
+    { "name": "assets", "description": "Assets service", "active": true },
+    { "name": "social", "description": "Social features", "active": true },
+    {
+      "name": "authentication",
+      "description": "Authentication service",
+      "active": true
+    },
+    { "name": "profile", "description": "Profile service", "active": true }
+  ],
+  "roles": [
+    {
+      "name": "digital_homesteader",
+      "description": "Manage own profile and blog posts from Digital Homestead",
+      "appScope": "digital-homestead"
+    },
+    {
+      "name": "digital_follower",
+      "description": "Follower: read profiles and social content for Digital Homestead",
+      "appScope": "digital-homestead"
+    },
+    {
+      "name": "client_profile_owner",
+      "description": "Owner of profile data via client-interface",
+      "appScope": "client-interface"
+    },
+    {
+      "name": "client_follower",
+      "description": "Follower role for client-interface (view/subscribe)",
+      "appScope": "client-interface"
+    },
+    {
+      "name": "client_asset_manager",
+      "description": "Manage own assets via client-interface",
+      "appScope": "client-interface"
+    },
+    {
+      "name": "forgeofwill_planner",
+      "description": "Project planner role for Forge of Will (project-planning)",
+      "appScope": "forgeofwill"
+    },
+    {
+      "name": "forgeofwill_profile_owner",
+      "description": "Profile owner role for Forge of Will (profile integration)",
+      "appScope": "forgeofwill"
+    },
+    {
+      "name": "blog_author",
+      "description": "Author role for blogging",
+      "appScope": "blogging"
+    },
+    {
+      "name": "blog_reader",
+      "description": "Reader role for blogging",
+      "appScope": "blogging"
+    },
+    {
+      "name": "asset_owner",
+      "description": "Owner of assets",
+      "appScope": "assets"
+    },
+    {
+      "name": "social_user",
+      "description": "Social user (follow/post)",
+      "appScope": "social"
+    }
+  ],
+  "permissions": [
+    {
+      "name": "profile.read",
+      "description": "Read profile",
+      "resource": "profile",
+      "action": "read",
+      "targetId": null,
+      "appScope": "client-interface"
+    },
+    {
+      "name": "profile.update",
+      "description": "Update profile",
+      "resource": "profile",
+      "action": "update",
+      "targetId": null,
+      "appScope": "client-interface"
+    },
+    {
+      "name": "profile.read",
+      "description": "Read profile (profile service)",
+      "resource": "profile",
+      "action": "read",
+      "targetId": null,
+      "appScope": "profile"
+    },
+    {
+      "name": "profile.update",
+      "description": "Update profile (profile service)",
+      "resource": "profile",
+      "action": "update",
+      "targetId": null,
+      "appScope": "profile"
+    },
+    {
+      "name": "asset.create",
+      "description": "Create asset",
+      "resource": "asset",
+      "action": "create",
+      "targetId": null,
+      "appScope": "client-interface"
+    },
+    {
+      "name": "asset.read",
+      "description": "Read asset",
+      "resource": "asset",
+      "action": "read",
+      "targetId": null,
+      "appScope": "client-interface"
+    },
+    {
+      "name": "asset.update",
+      "description": "Update asset",
+      "resource": "asset",
+      "action": "update",
+      "targetId": null,
+      "appScope": "client-interface"
+    },
+    {
+      "name": "asset.delete",
+      "description": "Delete asset",
+      "resource": "asset",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "client-interface"
+    },
+    {
+      "name": "blog.post.create",
+      "description": "Create blog post",
+      "resource": "post",
+      "action": "create",
+      "targetId": null,
+      "appScope": "blogging"
+    },
+    {
+      "name": "blog.post.read",
+      "description": "Read blog post",
+      "resource": "post",
+      "action": "read",
+      "targetId": null,
+      "appScope": "blogging"
+    },
+    {
+      "name": "blog.post.update",
+      "description": "Update blog post",
+      "resource": "post",
+      "action": "update",
+      "targetId": null,
+      "appScope": "blogging"
+    },
+    {
+      "name": "blog.post.delete",
+      "description": "Delete blog post",
+      "resource": "post",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "blogging"
+    },
+    {
+      "name": "project.create",
+      "description": "Create project",
+      "resource": "project",
+      "action": "create",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project.read",
+      "description": "Read project",
+      "resource": "project",
+      "action": "read",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project.update",
+      "description": "Update project",
+      "resource": "project",
+      "action": "update",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "task.create",
+      "description": "Create task",
+      "resource": "task",
+      "action": "create",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "task.read",
+      "description": "Read task",
+      "resource": "task",
+      "action": "read",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "task.update",
+      "description": "Update task",
+      "resource": "task",
+      "action": "update",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "social.follow",
+      "description": "Follow/unfollow users",
+      "resource": "follow",
+      "action": "create",
+      "targetId": null,
+      "appScope": "social"
+    },
+    {
+      "name": "social.post.create",
+      "description": "Create social post",
+      "resource": "post",
+      "action": "create",
+      "targetId": null,
+      "appScope": "social"
+    },
+    {
+      "name": "social.post.read",
+      "description": "Read social post",
+      "resource": "post",
+      "action": "read",
+      "targetId": null,
+      "appScope": "social"
+    }
+  ],
+  "role_permissions": [
+    {
+      "role": "digital_homesteader",
+      "permission": "profile.read",
+      "permissionAppScope": "digital-homestead"
+    },
+    {
+      "role": "digital_homesteader",
+      "permission": "blog.post.create",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "digital_homesteader",
+      "permission": "blog.post.read",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "digital_homesteader",
+      "permission": "blog.post.update",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "digital_homesteader",
+      "permission": "blog.post.delete",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "digital_follower",
+      "permission": "profile.read",
+      "permissionAppScope": "digital-homestead"
+    },
+    {
+      "role": "digital_follower",
+      "permission": "blog.post.read",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "digital_follower",
+      "permission": "social.post.read",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_profile_owner",
+      "permission": "profile.read",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "client_profile_owner",
+      "permission": "profile.update",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "client_follower",
+      "permission": "profile.read",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "client_asset_manager",
+      "permission": "asset.create",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "client_asset_manager",
+      "permission": "asset.read",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "client_asset_manager",
+      "permission": "asset.update",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "client_asset_manager",
+      "permission": "asset.delete",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project.create",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project.read",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project.update",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "task.create",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "task.read",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "task.update",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_profile_owner",
+      "permission": "profile.read",
+      "permissionAppScope": "forgeofwill_or_profile"
+    },
+    {
+      "role": "forgeofwill_profile_owner",
+      "permission": "profile.update",
+      "permissionAppScope": "forgeofwill_or_profile"
+    },
+    {
+      "role": "blog_author",
+      "permission": "blog.post.create",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "blog_author",
+      "permission": "blog.post.read",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "blog_author",
+      "permission": "blog.post.update",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "blog_author",
+      "permission": "blog.post.delete",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "blog_reader",
+      "permission": "blog.post.read",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "asset_owner",
+      "permission": "asset.create",
+      "permissionAppScope": "assets"
+    },
+    {
+      "role": "asset_owner",
+      "permission": "asset.read",
+      "permissionAppScope": "assets"
+    },
+    {
+      "role": "asset_owner",
+      "permission": "asset.update",
+      "permissionAppScope": "assets"
+    },
+    {
+      "role": "asset_owner",
+      "permission": "asset.delete",
+      "permissionAppScope": "assets"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.follow",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.post.read",
+      "permissionAppScope": "social"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+.form-container {
+  display: flex;
+  gap: 1rem;
+}
+.left, .right {
+  flex: 1 1 50%;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

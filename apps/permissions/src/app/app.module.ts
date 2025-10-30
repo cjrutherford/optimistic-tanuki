@@ -29,11 +29,7 @@ import { AppScopesController } from '../app-scopes/app-scopes.controller';
     }),
     LoggerModule,
   ],
-  controllers: [
-    PermissionsController,
-    RolesController,
-    AppScopesController,
-  ],
+  controllers: [PermissionsController, RolesController, AppScopesController],
   providers: [
     PermissionsService,
     RolesService,
@@ -57,7 +53,7 @@ import { AppScopesController } from '../app-scopes/app-scopes.controller';
       provide: getRepositoryToken(AppScope),
       useFactory: (ds: DataSource) => ds.getRepository(AppScope),
       inject: ['PERMISSIONS_CONNECTION'],
-    }
+    },
   ],
 })
 export class AppModule {}

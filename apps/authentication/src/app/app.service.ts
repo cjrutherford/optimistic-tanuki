@@ -32,7 +32,27 @@ export class AppService {
     @Inject('jwt') private readonly jsonWebToken: typeof jwt
   ) {}
 
-  async login(email: string, password: string, mfa?: string) {
+  async getUserIdFromEmail(email: string): Promise<string> {
+    try {
+      const user = await this.userRepo.findOne({ where: { email } });
+      if (!user) {
+        throw new RpcException('User not found');
+      }
+      return user.id;
+    } catch (e) {
+      if (e instanceof RpcException) {
+        throw e;
+      }
+      throw new RpcException(e);
+    }
+  }
+
+  async login(
+    email: string,
+    password: string,
+    mfa?: string,
+    profileId?: string
+  ) {
     try {
       const user = await this.userRepo.findOne({
         where: { email },
@@ -42,16 +62,12 @@ export class AppService {
         throw new RpcException('User not found');
       }
 
-      const {
-        id: userId,
-        password: storedHash,
-        totpSecret,
-      } = user;
+      const { id: userId, password: storedHash, totpSecret } = user;
 
       const valid = await this.saltedHashService.validateHash(
         password,
         storedHash,
-        user.keyData?.salt,
+        user.keyData?.salt
       );
 
       if (!valid) {
@@ -68,6 +84,8 @@ export class AppService {
       }
 
       const pl = { userId, name: `${user.firstName} ${user.lastName}`, email };
+      // make profileId a first-class claim (empty string if none)
+      (pl as any).profileId = '';
       const tk = this.jsonWebToken.sign(pl, this.jwtSecret, {
         expiresIn: '1h',
       });
@@ -79,6 +97,7 @@ export class AppService {
         userId,
         user,
         revoked: false,
+        profileId: profileId || null,
       };
       await this.tokenRepo.save(ntk);
 
@@ -107,7 +126,7 @@ export class AppService {
       this.l.log('Registering user:', email, fn, ln, bio);
       this.l.log('Checking passwords', password, confirm);
       const weakPasswordRegex =
-      // eslint-disable-next-line no-useless-escape
+        // eslint-disable-next-line no-useless-escape
         /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
       if (!weakPasswordRegex.test(password)) {
         throw new RpcException('Password is too weak');
@@ -116,8 +135,16 @@ export class AppService {
       const confirmBuffer = Buffer.from(confirm);
       if (
         !timingSafeEqual(
-          new Uint8Array(passwordBuffer.buffer, passwordBuffer.byteOffset, passwordBuffer.byteLength),
-          new Uint8Array(confirmBuffer.buffer, confirmBuffer.byteOffset, confirmBuffer.byteLength)
+          new Uint8Array(
+            passwordBuffer.buffer,
+            passwordBuffer.byteOffset,
+            passwordBuffer.byteLength
+          ),
+          new Uint8Array(
+            confirmBuffer.buffer,
+            confirmBuffer.byteOffset,
+            confirmBuffer.byteLength
+          )
         )
       ) {
         throw new RpcException('Passwords do not match');
@@ -127,16 +154,18 @@ export class AppService {
         this.l.error(`Invalid Email: ${email}`);
         throw new RpcException('Invalid Email ' + email);
       }
-      if(!fn) {
+      if (!fn) {
         this.l.error('First name is required');
         throw new RpcException('First Name is required');
       }
-      if(!ln) {
+      if (!ln) {
         this.l.error('Last name is required');
         throw new RpcException('Last Name is required');
       }
       this.l.log('Email is valid, checking for existing user');
-      const existingUser = await this.userRepo.findOne({ where: { email: email.toLowerCase() } });
+      const existingUser = await this.userRepo.findOne({
+        where: { email: email.toLowerCase() },
+      });
       this.l.log('Existing user check complete:', existingUser);
       if (existingUser) {
         console.error('User already exists');
@@ -186,7 +215,7 @@ export class AppService {
         code: 0,
         data: {
           pub: pubKey,
-          user: newUser.id,
+          user: newUser,
           privKey: privLocation,
           inventory: undefined,
         },
@@ -207,7 +236,7 @@ export class AppService {
   ) {
     // Implement your password reset logic here
     const weakPasswordRegex =
-    // eslint-disable-next-line no-useless-escape
+      // eslint-disable-next-line no-useless-escape
       /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
     if (!weakPasswordRegex.test(newPassword)) {
       throw new RpcException('Password is too weak');
@@ -303,5 +332,45 @@ export class AppService {
       throw new RpcException('Invalid TOTP token');
     }
     return { message: 'TOTP token is valid', code: 0 };
+  }
+
+  async issueToken(userId: string, profileId?: string) {
+    try {
+      const user = await this.userRepo.findOne({
+        where: { id: userId },
+        relations: ['keyData'],
+      });
+      if (!user) throw new RpcException('User not found');
+
+      const pl = {
+        userId: user.id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        profileId: profileId ?? '',
+      };
+
+      const tk = this.jsonWebToken.sign(pl, this.jwtSecret, {
+        expiresIn: '1h',
+      });
+
+      // Save token
+      const ntk = {
+        tokenData: tk,
+        userId: user.id,
+        user,
+        revoked: false,
+      };
+      await this.tokenRepo.save(ntk);
+
+      // remove sensitive fields before returning user
+      delete user.keyData;
+      delete user.password;
+
+      return { message: 'Issued token', code: 0, data: { newToken: tk } };
+    } catch (e) {
+      console.error('Error issuing token:', e);
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e.message || e);
+    }
   }
 }

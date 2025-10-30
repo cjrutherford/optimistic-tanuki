@@ -1,8 +1,40 @@
 <div class="settings-container">
   <div class="settings-header">
     <h1>{{ title }}</h1>
-    <p>Customize the appearance of your application</p>
+    <p>Personalize your experience</p>
   </div>
-  
-  <lib-theme-designer></lib-theme-designer>
+
+  <div
+    class="profile-section"
+    (click)="openProfileEditor()"
+    style="cursor: pointer"
+  >
+    <lib-banner
+      (click)="openProfileEditor()"
+      [profileName]="profileName"
+      [profileImage]="profileImage"
+      [backgroundImage]="backgroundImage"
+    ></lib-banner>
+    <p class="hint">Click the banner to edit your profile</p>
+  </div>
+
+  <div class="controls">
+    <otui-button (click)="toggleThemeDesigner()"
+      >{{ showThemeDesigner ? 'Hide' : 'Show' }} Theme Designer</otui-button
+    >
+  </div>
+
+  <div *ngIf="showThemeDesigner" class="theme-designer">
+    <lib-theme-designer></lib-theme-designer>
+  </div>
+
+  <lib-profile-editor
+    [open]="showProfileEditor"
+    [profile]="profile()"
+    (createProfile)="onCreateProfile($event)"
+    [defaultName]="profileName"
+    (updateProfile)="onUpdateProfile($event)"
+    (closeEditor)="onProfileEditorClose()"
+  >
+  </lib-profile-editor>
 </div>

@@ -124,12 +124,23 @@ export class ProfileService {
     if (tokenValue) {
       profile.userId = tokenValue.userId;
     }
-    const newProfile = await firstValueFrom(
-      this.http.post<ProfileDto>('/api/profile', {
+    const resp: any = await firstValueFrom(
+      this.http.post('/api/profile', {
         ...profile,
         appId: 'forgeofwill',
       })
     );
+    let newProfile: ProfileDto;
+    if (resp && resp.newToken) {
+      try {
+        this.authState.setToken(resp.newToken);
+      } catch (e) {
+        console.warn('Failed to set new token after profile creation', e);
+      }
+      newProfile = resp.profile as ProfileDto;
+    } else {
+      newProfile = resp as ProfileDto;
+    }
     const profilePhotoDto: CreateAssetDto = {
       name: `profile-${newProfile.profileName}-photo`,
       profileId: newProfile.id,
@@ -265,7 +276,7 @@ export class ProfileService {
     const selectedProfile = localStorage.getItem('selectedProfile');
     if (selectedProfile) {
       this.currentUserProfile.set(JSON.parse(selectedProfile));
-      this.selectProfile((JSON.parse(selectedProfile) as ProfileDto));
+      this.selectProfile(JSON.parse(selectedProfile) as ProfileDto);
     }
   }
 
