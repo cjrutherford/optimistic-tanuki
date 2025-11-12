@@ -1,6 +1,6 @@
 // ...existing code...
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { RoleInitOptions } from './permission-builder';
 import {
@@ -63,10 +63,10 @@ export class RoleInitService {
           { cmd: AppScopeCommands.GetByName },
           {
             name: item.scopeName,
-            resourceId: item.scopeResourceId,
           }
         )
       ).catch(() => null);
+      this.logger.log(appScope);
     } catch (e: unknown) {
       this.logger.debug(
         'AppScope.GetByName failed',
@@ -74,23 +74,24 @@ export class RoleInitService {
       );
     }
     if (!appScope) {
-      try {
-        appScope = await firstValueFrom(
-          this.permissionsClient.send(
-            { cmd: AppScopeCommands.Create },
-            {
-              name: item.scopeName,
-              resourceId: item.scopeResourceId,
-              description: `Auto-created scope ${item.scopeName}:${item.scopeResourceId}`,
-            }
-          )
-        ).catch(() => null);
-      } catch (e) {
-        this.logger.debug(
-          'AppScope.Create failed',
-          (e as { message: string })?.message || e
-        );
-      }
+      throw new RpcException(`AppScope ${item.scopeName} not found`);
+      // try {
+      //   appScope = await firstValueFrom(
+      //     this.permissionsClient.send(
+      //       { cmd: AppScopeCommands.Create },
+      //       {
+      //         name: item.scopeName,
+      //         resourceId: item.scopeResourceId,
+      //         description: `Auto-created scope ${item.scopeName}:${item.scopeResourceId}`,
+      //       }
+      //     )
+      //   ).catch(() => null);
+      // } catch (e) {
+      //   this.logger.debug(
+      //     'AppScope.Create failed',
+      //     (e as { message: string })?.message || e
+      //   );
+      // }
     }
     const appScopeId = appScope?.id ?? item.scopeResourceId ?? item.scopeName;
 

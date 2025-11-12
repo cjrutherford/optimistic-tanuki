@@ -1,39 +1,51 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AppScope } from '../app-scopes/entities/app-scope.entity';
-import { CreateAppScopeDto, UpdateAppScopeDto } from '@optimistic-tanuki/models';
+import {
+  CreateAppScopeDto,
+  UpdateAppScopeDto,
+} from '@optimistic-tanuki/models';
 
 @Injectable()
 export class AppScopesService {
-    constructor(
-        @InjectRepository(AppScope)
-        private appScopesRepository: Repository<AppScope>,
-    ) {}
+  constructor(
+    @InjectRepository(AppScope)
+    private appScopesRepository: Repository<AppScope>,
+    private readonly logger: Logger
+  ) {}
 
-    async createAppScope(createAppScopeDto: CreateAppScopeDto): Promise<AppScope> {
-        const appScope = this.appScopesRepository.create(createAppScopeDto);
-        return await this.appScopesRepository.save(appScope);
-    }
+  async createAppScope(
+    createAppScopeDto: CreateAppScopeDto
+  ): Promise<AppScope> {
+    const appScope = this.appScopesRepository.create(createAppScopeDto);
+    return await this.appScopesRepository.save(appScope);
+  }
 
-    async getAppScope(id: string): Promise<AppScope> {
-        return await this.appScopesRepository.findOne({ where: { id } });
-    }
+  async getAppScope(id: string): Promise<AppScope> {
+    return await this.appScopesRepository.findOne({ where: { id } });
+  }
 
-    async getAppScopeByName(name: string): Promise<AppScope> {
-        return await this.appScopesRepository.findOne({ where: { name } });
-    }
+  async getAppScopeByName(name: string): Promise<AppScope> {
+    this.logger.log(`Searching for AppScope with name: ${name}`);
+    const scope = await this.appScopesRepository.findOne({ where: { name } });
+    this.logger.log(`AppScope found: ${scope}`);
+    return scope;
+  }
 
-    async getAllAppScopes(query: any): Promise<AppScope[]> {
-        return await this.appScopesRepository.find(query);
-    }
+  async getAllAppScopes(query: any): Promise<AppScope[]> {
+    return await this.appScopesRepository.find(query);
+  }
 
-    async updateAppScope(id: string, updateAppScopeDto: UpdateAppScopeDto): Promise<AppScope> {
-        await this.appScopesRepository.update(id, updateAppScopeDto);
-        return await this.getAppScope(id);
-    }
+  async updateAppScope(
+    id: string,
+    updateAppScopeDto: UpdateAppScopeDto
+  ): Promise<AppScope> {
+    await this.appScopesRepository.update(id, updateAppScopeDto);
+    return await this.getAppScope(id);
+  }
 
-    async deleteAppScope(id: string): Promise<void> {
-        await this.appScopesRepository.delete(id);
-    }
+  async deleteAppScope(id: string): Promise<void> {
+    await this.appScopesRepository.delete(id);
+  }
 }

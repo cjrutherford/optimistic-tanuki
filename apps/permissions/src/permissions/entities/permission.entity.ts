@@ -5,12 +5,15 @@ import {
   PrimaryGeneratedColumn,
   Index,
   ManyToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
+import { AppScope } from '../../app-scopes/entities/app-scope.entity';
 // import { AppScope } from '../../app-scopes/entities/app-scope.entity';
 
 @Entity()
-@Index(['name', 'appScope', 'targetId'], { unique: true })
+@Index(['name', 'appScopeId', 'targetId'], { unique: true })
 export class Permission {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -30,8 +33,15 @@ export class Permission {
   @Column({ nullable: true })
   targetId: string; // profileId for profile-specific permissions
 
-  @Column()
-  appScope: string; // app scope for uniqueness
+  @Column({ nullable: true })
+  appScopeId: string;
+
+  @ManyToOne((type) => AppScope, (appScope) => appScope.permissions, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'appScopeId' })
+  appScope: AppScope; // app scope for uniqueness
 
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

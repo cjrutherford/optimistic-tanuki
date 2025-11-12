@@ -40,104 +40,251 @@ const seedData: SeedData = seedDataRaw as unknown as SeedData;
 
 async function main() {
   const app = await NestFactory.createApplicationContext(AppModule);
-  const appScopeRepo = app.get<Repository<AppScope>>(
-    getRepositoryToken(AppScope)
-  );
-  const permissionRepo = app.get<Repository<Permission>>(
-    getRepositoryToken(Permission)
-  );
-  const roleRepo = app.get<Repository<Role>>(getRepositoryToken(Role));
-  const roleAssignmentRepo = app.get<Repository<RoleAssignment>>(
-    getRepositoryToken(RoleAssignment)
-  );
 
-  const createdAppScopes: AppScope[] = [];
-  for (const scopeData of seedData.app_scopes) {
-    const dto: CreateAppScopeDto = {
-      name: scopeData.name,
-      description: scopeData.description,
-      active: scopeData.active,
-    };
-    const appScope = appScopeRepo.create(dto);
-    const savedAppScope = await appScopeRepo.save(appScope);
-    createdAppScopes.push(savedAppScope);
-  }
+  try {
+    const appScopeRepo = app.get<Repository<AppScope>>(
+      getRepositoryToken(AppScope)
+    );
+    const permissionRepo = app.get<Repository<Permission>>(
+      getRepositoryToken(Permission)
+    );
+    const roleRepo = app.get<Repository<Role>>(getRepositoryToken(Role));
+    const roleAssignmentRepo = app.get<Repository<RoleAssignment>>(
+      getRepositoryToken(RoleAssignment)
+    );
 
-  const createdPermissions: Permission[] = [];
-  for (const permissionData of seedData.permissions) {
-    let existing = await permissionRepo.findOne({
-      where: { name: permissionData.name },
-      relations: ['appScopes'],
-    });
-    const permissionAppScopes = permissionData.appScope
-      ? createdAppScopes.filter((s) => s.name === permissionData.appScope)
-      : [];
+    console.log('Starting seed process...');
 
-    if (existing) {
-      if (permissionAppScopes.length > 0) {
-        existing.appScopes = [
-          ...new Set([...(existing.appScopes || []), ...permissionAppScopes]),
-        ];
-        await permissionRepo.save(existing);
+    // Seed App Scopes
+    const createdAppScopes: AppScope[] = [];
+    console.log(`Processing ${seedData.app_scopes.length} app scopes...`);
+
+    for (const scopeData of seedData.app_scopes) {
+      try {
+        let existing = await appScopeRepo.findOne({
+          where: { name: scopeData.name },
+        });
+
+        if (existing) {
+          console.log(
+            `App scope "${scopeData.name}" already exists, updating...`
+          );
+          existing.description = scopeData.description;
+          existing.active = scopeData.active;
+          const updated = await appScopeRepo.save(existing);
+          createdAppScopes.push(updated);
+        } else {
+          console.log(`Creating app scope "${scopeData.name}"...`);
+          const dto: CreateAppScopeDto = {
+            name: scopeData.name,
+            description: scopeData.description,
+            active: scopeData.active,
+          };
+          const appScope = appScopeRepo.create(dto);
+          const savedAppScope = await appScopeRepo.save(appScope);
+          createdAppScopes.push(savedAppScope);
+          console.log(`App scope "${scopeData.name}" created successfully.`);
+        }
+      } catch (error) {
+        console.error(`Error processing app scope "${scopeData.name}":`, error);
+        throw new Error(
+          `Failed to seed app scope "${scopeData.name}": ${error.message}`
+        );
       }
-      continue;
     }
 
-    const permissionDto: CreatePermissionDto = {
-      name: permissionData.name,
-      description: permissionData.description,
-      resource: permissionData.resource || '',
-      action: permissionData.action || '',
-      targetId: permissionData.targetId,
-    };
+    // Seed Permissions
+    const createdPermissions: Permission[] = [];
+    console.log(`Processing ${seedData.permissions.length} permissions...`);
 
-    const permission = permissionRepo.create(permissionDto);
-    permission.appScopes = permissionAppScopes;
-    const savedPermission = await permissionRepo.save(permission);
-    createdPermissions.push(savedPermission);
-  }
+    for (const permissionData of seedData.permissions) {
+      try {
+        let existing = await permissionRepo.findOne({
+          where: { name: permissionData.name },
+        });
 
-  const createdRoles: Role[] = [];
-  for (const roleData of seedData.roles) {
-    const roleDto: CreateRoleDto = {
-      name: roleData.name,
-      description: roleData.description,
-      appScopeId:
-        createdAppScopes.find((s) => s.name === roleData.appScope)?.id || '',
-    };
+        const permissionAppScope = permissionData.appScope
+          ? createdAppScopes.find((s) => s.name === permissionData.appScope)
+          : null;
 
-    const role = roleRepo.create(roleDto);
-    const savedRole = await roleRepo.save(role);
-    createdRoles.push(savedRole);
-  }
+        if (existing) {
+          console.log(
+            `Permission "${permissionData.name}" already exists, updating...`
+          );
+          existing.description = permissionData.description;
+          existing.resource = permissionData.resource || '';
+          existing.action = permissionData.action || '';
+          existing.targetId = permissionData.targetId;
+          if (permissionAppScope) {
+            existing.appScope = permissionAppScope;
+          }
+          const updated = await permissionRepo.save(existing);
+          createdPermissions.push(updated);
+        } else {
+          console.log(`Creating permission "${permissionData.name}"...`);
+          const permissionDto: CreatePermissionDto = {
+            name: permissionData.name,
+            description: permissionData.description,
+            resource: permissionData.resource || '',
+            action: permissionData.action || '',
+            targetId: permissionData.targetId,
+          };
 
-  for (const rpData of seedData.role_permissions) {
-    const role = createdRoles.find((r) => r.name === rpData.role);
-    const permission = createdPermissions.find(
-      (p) => p.name === rpData.permission
-    );
-    const appScope = createdAppScopes.find(
-      (a) => a.name === rpData.permissionAppScope
-    );
-    if (role && permission && appScope) {
-      // Ensure appScopes is set according to Permission entity schema
-      permission.appScopes = [appScope, ...(permission.appScopes || [])];
-      await permissionRepo.save(permission);
-
-      const roleAssignment = roleAssignmentRepo.create({
-        profileId: 'system-seed',
-        appScope: appScope,
-        role: role,
-      });
-      await roleAssignmentRepo.save(roleAssignment);
+          const permission = permissionRepo.create(permissionDto);
+          permission.appScope = permissionAppScope;
+          const savedPermission = await permissionRepo.save(permission);
+          createdPermissions.push(savedPermission);
+          console.log(
+            `Permission "${permissionData.name}" created successfully.`
+          );
+        }
+      } catch (error) {
+        console.error(
+          `Error processing permission "${permissionData.name}":`,
+          error
+        );
+        throw new Error(
+          `Failed to seed permission "${permissionData.name}": ${error.message}`
+        );
+      }
     }
-  }
 
-  console.log('Seeding completed.');
-  process.exit(0);
+    // Seed Roles
+    const createdRoles: Role[] = [];
+    console.log(`Processing ${seedData.roles.length} roles...`);
+
+    for (const roleData of seedData.roles) {
+      try {
+        let existing = await roleRepo.findOne({
+          where: { name: roleData.name },
+        });
+
+        const appScope = createdAppScopes.find(
+          (s) => s.name === roleData.appScope
+        );
+
+        if (!appScope) {
+          console.warn(
+            `App scope "${roleData.appScope}" not found for role "${roleData.name}", skipping...`
+          );
+          continue;
+        }
+
+        if (existing) {
+          console.log(`Role "${roleData.name}" already exists, updating...`);
+          existing.description = roleData.description;
+          existing.appScope = appScope;
+          const updated = await roleRepo.save(existing);
+          createdRoles.push(updated);
+        } else {
+          console.log(`Creating role "${roleData.name}"...`);
+          const roleDto: CreateRoleDto = {
+            name: roleData.name,
+            description: roleData.description,
+            appScopeId: appScope.id,
+          };
+
+          const role = roleRepo.create(roleDto);
+          const savedRole = await roleRepo.save(role);
+          createdRoles.push(savedRole);
+          console.log(`Role "${roleData.name}" created successfully.`);
+        }
+      } catch (error) {
+        console.error(`Error processing role "${roleData.name}":`, error);
+        throw new Error(
+          `Failed to seed role "${roleData.name}": ${error.message}`
+        );
+      }
+    }
+
+    // Seed Role Permissions
+    console.log(
+      `Processing ${seedData.role_permissions.length} role-permission assignments...`
+    );
+
+    for (const rpData of seedData.role_permissions) {
+      try {
+        const role = createdRoles.find((r) => r.name === rpData.role);
+        const permission = createdPermissions.find(
+          (p) => p.name === rpData.permission
+        );
+        const appScope = createdAppScopes.find(
+          (a) => a.name === rpData.permissionAppScope
+        );
+
+        if (!role) {
+          console.warn(
+            `Role "${rpData.role}" not found, skipping assignment...`
+          );
+          continue;
+        }
+        if (!permission) {
+          console.warn(
+            `Permission "${rpData.permission}" not found, skipping assignment...`
+          );
+          continue;
+        }
+        if (!appScope) {
+          console.warn(
+            `App scope "${rpData.permissionAppScope}" not found, skipping assignment...`
+          );
+          continue;
+        }
+
+        // Check if role assignment already exists
+        const existingAssignment = await roleAssignmentRepo.findOne({
+          where: {
+            profileId: 'system-seed',
+            appScopeId: appScope.id,
+            roleId: role.id,
+          },
+        });
+
+        if (existingAssignment) {
+          console.log(
+            `Role assignment for role "${rpData.role}" already exists, skipping...`
+          );
+          continue;
+        }
+
+        console.log(`Creating role assignment for role "${rpData.role}"...`);
+        // Ensure appScopes is set according to Permission entity schema
+        permission.appScope = appScope;
+        await permissionRepo.save(permission);
+
+        const roleAssignment = roleAssignmentRepo.create({
+          profileId: 'system-seed',
+          appScopeId: appScope.id,
+          roleId: role.id,
+        });
+        await roleAssignmentRepo.save(roleAssignment);
+        console.log(
+          `Role assignment for role "${rpData.role}" created successfully.`
+        );
+      } catch (error) {
+        console.error(
+          `Error processing role-permission assignment for role "${rpData.role}":`,
+          error
+        );
+        throw new Error(
+          `Failed to seed role-permission assignment for role "${rpData.role}": ${error.message}`
+        );
+      }
+    }
+
+    console.log('Seeding completed successfully.');
+    await app.close();
+    process.exit(0);
+  } catch (error) {
+    console.error('Critical error during seeding:', error);
+    console.error('Stack trace:', error.stack);
+    await app.close();
+    process.exit(1);
+  }
 }
 
 main().catch((error) => {
-  console.error('Error during seeding:', error);
+  console.error('Unhandled error during seeding:', error);
+  console.error('Stack trace:', error.stack);
   process.exit(1);
 });

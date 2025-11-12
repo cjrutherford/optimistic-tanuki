@@ -27,6 +27,182 @@
         "${workspaceFolder}/apps/permissions/dist/**/*.(m|c|)js",
         "!**/node_modules/**"
       ]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Gateway (Docker)",
+      "address": "localhost",
+      "port": 9000,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/gateway",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Authentication (Docker)",
+      "address": "localhost",
+      "port": 9229,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/authentication",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Profile (Docker)",
+      "address": "localhost",
+      "port": 9230,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/profile",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Project-Planning (Docker)",
+      "address": "localhost",
+      "port": 9231,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/project-planning",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Social (Docker)",
+      "address": "localhost",
+      "port": 9232,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/social",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Chat-Collector (Docker)",
+      "address": "localhost",
+      "port": 9233,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/chat-collector",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Assets (Docker)",
+      "address": "localhost",
+      "port": 9234,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/assets",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Blogging (Docker)",
+      "address": "localhost",
+      "port": 9235,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/blogging",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to AI-Orchestration (Docker)",
+      "address": "localhost",
+      "port": 9236,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/ai-orchestrator",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Prompt-Proxy (Docker)",
+      "address": "localhost",
+      "port": 9237,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/prompt-proxy",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Telos-Docs-Service (Docker)",
+      "address": "localhost",
+      "port": 9238,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/telos-docs-service",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Permissions (Docker)",
+      "address": "localhost",
+      "port": 9239,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/permissions",
+      "remoteRoot": "/usr/src_app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Client Interface (OT) (Docker)",
+      "address": "localhost",
+      "port": 9240,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/client-interface",
+      "remoteRoot": "/app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to ForgeOfWill Client Interface (Docker)",
+      "address": "localhost",
+      "port": 9241,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/forgeofwill",
+      "remoteRoot": "/app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Digital Homestead Client Interface (Docker)",
+      "address": "localhost",
+      "port": 9242,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/digital-homestead",
+      "remoteRoot": "/app",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to CRDN Client Interface (Docker)",
+      "address": "localhost",
+      "port": 9243,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/apps/christopherrutherford-net",
+      "remoteRoot": "/app",
+      "skipFiles": ["<node_internals>/**"]
     }
   ]
 }

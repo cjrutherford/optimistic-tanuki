@@ -30,7 +30,7 @@ export class AppScope {
   @Column({ type: 'timestamp', nullable: true })
   updated_at: Date;
 
-  @ManyToMany((type) => Permission, (permission) => permission.appScopes)
+  @ManyToMany((type) => Permission, (permission) => permission.appScope)
   @JoinTable({
     name: 'app_scope_permissions',
     joinColumn: { name: 'app_scope_id', referencedColumnName: 'id' },
