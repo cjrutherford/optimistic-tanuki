@@ -1,4 +1,4 @@
-# Stage 1: Build the Angular application
+# Stage 1: Build the Angular SSR application
 FROM node:lts-alpine as builder
 
 # Set working directory
@@ -15,20 +15,32 @@ RUN npm ci --legacy-peer-deps
 # Nx needs this to build the application and its dependencies
 COPY . .
 
-# Build the owner-console application for production
+# Build the owner-console application for production with SSR
+# This will output to dist/apps/owner-console and include server/main.js
 RUN npx nx build owner-console --configuration=production
 
-# Stage 2: Serve with nginx
-FROM nginx:alpine
+# Stage 2: Create the runtime image from a slim Node.js base
+FROM node:lts-alpine
+RUN apk add --no-cache dumb-init
 
-# Copy the built application from the builder stage
-COPY --from=builder /usr/src/app/dist/apps/owner-console/browser /usr/share/nginx/html
+WORKDIR /app
 
-# Copy nginx configuration if needed
-COPY apps/owner-console/nginx.conf /etc/nginx/conf.d/default.conf
+# Set NODE_ENV to production for the runtime environment
+ENV NODE_ENV=production
 
-# Expose port 80
-EXPOSE 80
+# Copy package.json and package-lock.json again to install only production dependencies
+COPY --from=builder /usr/src/app/package.json ./
+COPY --from=builder /usr/src/app/package-lock.json ./
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Install only production dependencies.
+RUN npm ci --omit=dev --legacy-peer-deps && npm i -g nodemon
+
+# Copy the built application (server and browser bundles) from the builder stage
+# The structure should be dist/apps/owner-console/server/main.js and dist/apps/owner-console/browser/...
+COPY --from=builder /usr/src/app/dist/apps/owner-console ./dist/apps/owner-console
+
+# Expose the port the SSR server will listen on
+EXPOSE 4000
+
+# Command to run the SSR server
+CMD ["node", "/app/dist/apps/owner-console/server/server.mjs"]

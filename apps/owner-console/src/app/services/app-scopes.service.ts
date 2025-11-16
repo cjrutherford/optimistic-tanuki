@@ -7,7 +7,7 @@ import { AppScopeDto, CreateAppScopeDto, UpdateAppScopeDto } from '@optimistic-t
   providedIn: 'root',
 })
 export class AppScopesService {
-  private readonly API_URL = 'http://localhost:3000/permissions';
+  private readonly API_URL = '/api/permissions';
 
   constructor(private http: HttpClient) {}
 

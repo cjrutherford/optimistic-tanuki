@@ -7,7 +7,7 @@ import { RoleDto, CreateRoleDto, UpdateRoleDto, AssignRoleDto } from '@optimisti
   providedIn: 'root',
 })
 export class RolesService {
-  private readonly API_URL = 'http://localhost:3000/permissions';
+  private readonly API_URL = '/api/permissions';
 
   constructor(private http: HttpClient) {}
 

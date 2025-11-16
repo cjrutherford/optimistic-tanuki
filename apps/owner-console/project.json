@@ -11,6 +11,7 @@
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/owner-console",
+        "index": "apps/owner-console/src/index.html",
         "browser": "apps/owner-console/src/main.ts",
         "polyfills": ["zone.js"],
         "tsConfig": "apps/owner-console/tsconfig.app.json",
@@ -21,7 +22,13 @@
             "input": "apps/owner-console/public"
           }
         ],
-        "styles": ["apps/owner-console/src/styles.scss"]
+        "styles": ["apps/owner-console/src/styles.scss"],
+        "scripts": [],
+        "server": "apps/owner-console/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/owner-console/src/server.ts"
+        },
+        "prerender": true
       },
       "configurations": {
         "production": {

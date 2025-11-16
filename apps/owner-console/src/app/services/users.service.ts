@@ -7,7 +7,7 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
   providedIn: 'root',
 })
 export class UsersService {
-  private readonly API_URL = 'http://localhost:3000/profile';
+  private readonly API_URL = '/api/profile';
 
   constructor(private http: HttpClient) {}
 

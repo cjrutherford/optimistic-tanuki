@@ -7,7 +7,7 @@ import { PermissionDto, CreatePermissionDto, UpdatePermissionDto } from '@optimi
   providedIn: 'root',
 })
 export class PermissionsService {
-  private readonly API_URL = 'http://localhost:3000/permissions';
+  private readonly API_URL = '/api/permissions';
 
   constructor(private http: HttpClient) {}
 

@@ -82,7 +82,7 @@ services:
       context: .
       dockerfile: ./apps/owner-console/Dockerfile
     ports:
-      - '8084:80'
+      - '8084:4000'
 
   gateway:
     container_name: ot_gateway
