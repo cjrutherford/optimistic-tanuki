@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
@@ -15,13 +16,23 @@ export class AuthService {
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
 
   private hasToken(): boolean {
+    if (!isPlatformBrowser(this.platformId)) {
+      return false;
+    }
     return !!localStorage.getItem(this.TOKEN_KEY);
   }
 
   getToken(): string | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
@@ -29,7 +40,7 @@ export class AuthService {
     const loginData: LoginRequest = { email, password, mfa };
     return this.http.post<AuthResponse>(`${this.API_URL}/authentication/login`, loginData).pipe(
       tap((response) => {
-        if (response.data?.newToken) {
+        if (response.data?.newToken && isPlatformBrowser(this.platformId)) {
           localStorage.setItem(this.TOKEN_KEY, response.data.newToken);
           this.isAuthenticatedSubject.next(true);
         }
@@ -48,7 +59,7 @@ export class AuthService {
     const registerData: RegisterRequest = { email, fn, ln, password, confirm, bio };
     return this.http.post<AuthResponse>(`${this.API_URL}/authentication/register`, registerData).pipe(
       tap((response) => {
-        if (response.data?.newToken) {
+        if (response.data?.newToken && isPlatformBrowser(this.platformId)) {
           localStorage.setItem(this.TOKEN_KEY, response.data.newToken);
           this.isAuthenticatedSubject.next(true);
         }
@@ -57,7 +68,9 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem(this.TOKEN_KEY);
+    }
     this.isAuthenticatedSubject.next(false);
     this.router.navigate(['/login']);
   }
