@@ -1,33 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export interface Permission {
-  id: string;
-  name: string;
-  description: string;
-  resource: string;
-  action: string;
-  targetId?: string;
-  appScope?: any;
-  created_at?: Date;
-}
-
-export interface CreatePermissionDto {
-  name: string;
-  description: string;
-  resource: string;
-  action: string;
-  targetId?: string;
-}
-
-export interface UpdatePermissionDto {
-  name?: string;
-  description?: string;
-  resource?: string;
-  action?: string;
-  targetId?: string;
-}
+import { PermissionDto, CreatePermissionDto, UpdatePermissionDto } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root',
@@ -37,20 +11,20 @@ export class PermissionsService {
 
   constructor(private http: HttpClient) {}
 
-  getPermissions(): Observable<Permission[]> {
-    return this.http.get<Permission[]>(`${this.API_URL}/permission`);
+  getPermissions(): Observable<PermissionDto[]> {
+    return this.http.get<PermissionDto[]>(`${this.API_URL}/permission`);
   }
 
-  getPermission(id: string): Observable<Permission> {
-    return this.http.get<Permission>(`${this.API_URL}/permission/${id}`);
+  getPermission(id: string): Observable<PermissionDto> {
+    return this.http.get<PermissionDto>(`${this.API_URL}/permission/${id}`);
   }
 
-  createPermission(permission: CreatePermissionDto): Observable<Permission> {
-    return this.http.post<Permission>(`${this.API_URL}/permission`, permission);
+  createPermission(permission: CreatePermissionDto): Observable<PermissionDto> {
+    return this.http.post<PermissionDto>(`${this.API_URL}/permission`, permission);
   }
 
-  updatePermission(id: string, permission: UpdatePermissionDto): Observable<Permission> {
-    return this.http.put<Permission>(`${this.API_URL}/permission/${id}`, permission);
+  updatePermission(id: string, permission: UpdatePermissionDto): Observable<PermissionDto> {
+    return this.http.put<PermissionDto>(`${this.API_URL}/permission/${id}`, permission);
   }
 
   deletePermission(id: string): Observable<void> {

@@ -22,6 +22,7 @@ import {
   AuthCommands,
   ProfileCommands,
   ServiceTokens,
+  ALL_APP_SCOPES,
 } from '@optimistic-tanuki/constants';
 import { AppScope } from '../../decorators/appscope.decorator';
 import {
@@ -115,22 +116,8 @@ export class AuthenticationController {
       // Special handling for owner-console: assign owner roles for all app scopes
       if (appScope === 'owner-console') {
         this.logger.log(`Registering owner user for all app scopes`);
-        const allAppScopes = [
-          'global',
-          'forgeofwill',
-          'client-interface',
-          'digital-homestead',
-          'christopherrutherford-net',
-          'blogging',
-          'project-planning',
-          'assets',
-          'social',
-          'authentication',
-          'profile',
-          'owner-console',
-        ];
         
-        for (const scope of allAppScopes) {
+        for (const scope of ALL_APP_SCOPES) {
           const builder = new RoleInitBuilder()
             .setScopeName(scope)
             .setProfile(createdProfile.id)

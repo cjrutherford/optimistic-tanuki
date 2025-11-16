@@ -1,22 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export interface Profile {
-  id: string;
-  userId: string;
-  name: string;
-  coverPic?: string;
-  profilePic?: string;
-  bio?: string;
-  location?: string;
-  description?: string;
-  occupation?: string;
-  interests?: string;
-  skills?: string;
-  created_at?: Date;
-  updated_at?: Date;
-}
+import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root',
@@ -26,15 +11,15 @@ export class UsersService {
 
   constructor(private http: HttpClient) {}
 
-  getProfiles(): Observable<Profile[]> {
-    return this.http.get<Profile[]>(`${this.API_URL}`);
+  getProfiles(): Observable<ProfileDto[]> {
+    return this.http.get<ProfileDto[]>(`${this.API_URL}`);
   }
 
-  getProfile(id: string): Observable<Profile> {
-    return this.http.get<Profile>(`${this.API_URL}/${id}`);
+  getProfile(id: string): Observable<ProfileDto> {
+    return this.http.get<ProfileDto>(`${this.API_URL}/${id}`);
   }
 
-  updateProfile(id: string, profile: Partial<Profile>): Observable<Profile> {
-    return this.http.put<Profile>(`${this.API_URL}/${id}`, profile);
+  updateProfile(id: string, profile: Partial<ProfileDto>): Observable<ProfileDto> {
+    return this.http.put<ProfileDto>(`${this.API_URL}/${id}`, profile);
   }
 }

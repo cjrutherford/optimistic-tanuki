@@ -1,33 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export interface Role {
-  id: string;
-  name: string;
-  description: string;
-  appScope?: any;
-  permissions?: any[];
-  created_at?: Date;
-}
-
-export interface CreateRoleDto {
-  name: string;
-  description: string;
-  appScopeId: string;
-}
-
-export interface UpdateRoleDto {
-  name?: string;
-  description?: string;
-  appScopeId?: string;
-}
-
-export interface AssignRoleDto {
-  roleId: string;
-  profileId: string;
-  appScopeId: string;
-}
+import { RoleDto, CreateRoleDto, UpdateRoleDto, AssignRoleDto } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root',
@@ -37,20 +11,20 @@ export class RolesService {
 
   constructor(private http: HttpClient) {}
 
-  getRoles(): Observable<Role[]> {
-    return this.http.get<Role[]>(`${this.API_URL}/role`);
+  getRoles(): Observable<RoleDto[]> {
+    return this.http.get<RoleDto[]>(`${this.API_URL}/role`);
   }
 
-  getRole(id: string): Observable<Role> {
-    return this.http.get<Role>(`${this.API_URL}/role/${id}`);
+  getRole(id: string): Observable<RoleDto> {
+    return this.http.get<RoleDto>(`${this.API_URL}/role/${id}`);
   }
 
-  createRole(role: CreateRoleDto): Observable<Role> {
-    return this.http.post<Role>(`${this.API_URL}/role`, role);
+  createRole(role: CreateRoleDto): Observable<RoleDto> {
+    return this.http.post<RoleDto>(`${this.API_URL}/role`, role);
   }
 
-  updateRole(id: string, role: UpdateRoleDto): Observable<Role> {
-    return this.http.put<Role>(`${this.API_URL}/role/${id}`, role);
+  updateRole(id: string, role: UpdateRoleDto): Observable<RoleDto> {
+    return this.http.put<RoleDto>(`${this.API_URL}/role/${id}`, role);
   }
 
   deleteRole(id: string): Observable<void> {
@@ -73,7 +47,7 @@ export class RolesService {
     return this.http.delete(`${this.API_URL}/assignment/${assignmentId}`);
   }
 
-  getUserRoles(profileId: string): Observable<Role[]> {
-    return this.http.get<Role[]>(`${this.API_URL}/user-roles/${profileId}`);
+  getUserRoles(profileId: string): Observable<RoleDto[]> {
+    return this.http.get<RoleDto[]>(`${this.API_URL}/user-roles/${profileId}`);
   }
 }

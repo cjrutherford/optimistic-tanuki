@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardComponent, TableComponent, TableCell, TableRowAction, HeadingComponent } from '@optimistic-tanuki/common-ui';
-import { UsersService, Profile } from '../services/users.service';
+import { MessageComponent, MessageService } from '@optimistic-tanuki/message-ui';
+import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { UsersService } from '../services/users.service';
 import { RolesService } from '../services/roles.service';
 
 @Component({
@@ -12,13 +14,15 @@ import { RolesService } from '../services/roles.service';
     CardComponent,
     TableComponent,
     HeadingComponent,
+    MessageComponent,
   ],
   template: `
+    <lib-message></lib-message>
+    
     <otui-card>
       <otui-heading level="2">Users Management</otui-heading>
 
       <div *ngIf="loading" class="loading-message">Loading users...</div>
-      <div *ngIf="!loading && error" class="error-message">{{ error }}</div>
 
       <div *ngFor="let user of users" class="user-row">
         <otui-table
@@ -36,12 +40,6 @@ import { RolesService } from '../services/roles.service';
         text-align: center;
       }
 
-      .error-message {
-        color: #f44336;
-        padding: 1rem;
-        text-align: center;
-      }
-
       .user-row {
         margin-bottom: 0.5rem;
       }
@@ -49,13 +47,13 @@ import { RolesService } from '../services/roles.service';
   ],
 })
 export class UsersManagementComponent implements OnInit {
-  users: Profile[] = [];
+  users: ProfileDto[] = [];
   loading = false;
-  error = '';
 
   constructor(
     private usersService: UsersService,
-    private rolesService: RolesService
+    private rolesService: RolesService,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -64,21 +62,32 @@ export class UsersManagementComponent implements OnInit {
 
   loadUsers(): void {
     this.loading = true;
-    this.error = '';
+    this.messageService.clearMessages();
 
     this.usersService.getProfiles().subscribe({
       next: (users) => {
         this.users = users;
         this.loading = false;
+        
+        if (users.length === 0) {
+          this.messageService.addMessage({
+            content: 'No users found in the system.',
+            type: 'info'
+          });
+        }
       },
       error: (err) => {
-        this.error = err.error?.message || 'Failed to load users';
         this.loading = false;
+        const errorMessage = err.error?.message || err.message || 'Failed to load users. Please try again.';
+        this.messageService.addMessage({
+          content: errorMessage,
+          type: 'error'
+        });
       },
     });
   }
 
-  getUserCells(user: Profile): TableCell[] {
+  getUserCells(user: ProfileDto): TableCell[] {
     return [
       { heading: 'Name', value: user.name },
       { heading: 'User ID', value: user.userId, isOverflowable: true },
@@ -86,7 +95,7 @@ export class UsersManagementComponent implements OnInit {
     ];
   }
 
-  getUserActions(user: Profile): TableRowAction[] {
+  getUserActions(user: ProfileDto): TableRowAction[] {
     return [
       {
         title: 'Manage Roles',

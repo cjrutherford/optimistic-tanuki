@@ -6,7 +6,7 @@ export default interface RegisterRequest {
     fn: string;
     ln: string;
     confirm: string;
-    bio: string;
+    bio?: string;
 }
 
 export const submitTypeToRegisterRequest = (data: RegisterSubmitType): RegisterRequest => {

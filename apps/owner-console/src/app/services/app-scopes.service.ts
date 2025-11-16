@@ -1,27 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export interface AppScope {
-  id: string;
-  name: string;
-  description: string;
-  active: boolean;
-  created_at?: Date;
-  updated_at?: Date;
-}
-
-export interface CreateAppScopeDto {
-  name: string;
-  description: string;
-  active: boolean;
-}
-
-export interface UpdateAppScopeDto {
-  name?: string;
-  description?: string;
-  active?: boolean;
-}
+import { AppScopeDto, CreateAppScopeDto, UpdateAppScopeDto } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root',
@@ -31,24 +11,24 @@ export class AppScopesService {
 
   constructor(private http: HttpClient) {}
 
-  getAppScopes(): Observable<AppScope[]> {
-    return this.http.get<AppScope[]>(`${this.API_URL}/app-scope`);
+  getAppScopes(): Observable<AppScopeDto[]> {
+    return this.http.get<AppScopeDto[]>(`${this.API_URL}/app-scope`);
   }
 
-  getAppScope(id: string): Observable<AppScope> {
-    return this.http.get<AppScope>(`${this.API_URL}/app-scope/${id}`);
+  getAppScope(id: string): Observable<AppScopeDto> {
+    return this.http.get<AppScopeDto>(`${this.API_URL}/app-scope/${id}`);
   }
 
-  getAppScopeByName(name: string): Observable<AppScope> {
-    return this.http.get<AppScope>(`${this.API_URL}/app-scope/by-name/${name}`);
+  getAppScopeByName(name: string): Observable<AppScopeDto> {
+    return this.http.get<AppScopeDto>(`${this.API_URL}/app-scope/by-name/${name}`);
   }
 
-  createAppScope(appScope: CreateAppScopeDto): Observable<AppScope> {
-    return this.http.post<AppScope>(`${this.API_URL}/app-scope`, appScope);
+  createAppScope(appScope: CreateAppScopeDto): Observable<AppScopeDto> {
+    return this.http.post<AppScopeDto>(`${this.API_URL}/app-scope`, appScope);
   }
 
-  updateAppScope(id: string, appScope: UpdateAppScopeDto): Observable<AppScope> {
-    return this.http.put<AppScope>(`${this.API_URL}/app-scope/${id}`, appScope);
+  updateAppScope(id: string, appScope: UpdateAppScopeDto): Observable<AppScopeDto> {
+    return this.http.put<AppScopeDto>(`${this.API_URL}/app-scope/${id}`, appScope);
   }
 
   deleteAppScope(id: string): Observable<void> {

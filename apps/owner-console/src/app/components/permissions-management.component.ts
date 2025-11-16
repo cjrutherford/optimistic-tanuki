@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardComponent, TableComponent, TableCell, HeadingComponent } from '@optimistic-tanuki/common-ui';
-import { PermissionsService, Permission } from '../services/permissions.service';
+import { MessageComponent, MessageService } from '@optimistic-tanuki/message-ui';
+import { PermissionDto } from '@optimistic-tanuki/ui-models';
+import { PermissionsService } from '../services/permissions.service';
 
 @Component({
   selector: 'app-permissions-management',
@@ -11,8 +13,11 @@ import { PermissionsService, Permission } from '../services/permissions.service'
     CardComponent,
     TableComponent,
     HeadingComponent,
+    MessageComponent,
   ],
   template: `
+    <lib-message></lib-message>
+    
     <otui-card>
       <otui-heading level="2">Permissions Management</otui-heading>
 
@@ -40,10 +45,13 @@ import { PermissionsService, Permission } from '../services/permissions.service'
   ],
 })
 export class PermissionsManagementComponent implements OnInit {
-  permissions: Permission[] = [];
+  permissions: PermissionDto[] = [];
   loading = false;
 
-  constructor(private permissionsService: PermissionsService) {}
+  constructor(
+    private permissionsService: PermissionsService,
+    private messageService: MessageService
+  ) {}
 
   ngOnInit(): void {
     this.loadPermissions();
@@ -51,18 +59,32 @@ export class PermissionsManagementComponent implements OnInit {
 
   loadPermissions(): void {
     this.loading = true;
+    this.messageService.clearMessages();
+    
     this.permissionsService.getPermissions().subscribe({
       next: (permissions) => {
         this.permissions = permissions;
         this.loading = false;
+        
+        if (permissions.length === 0) {
+          this.messageService.addMessage({
+            content: 'No permissions found in the system.',
+            type: 'info'
+          });
+        }
       },
-      error: () => {
+      error: (err) => {
         this.loading = false;
+        const errorMessage = err.error?.message || err.message || 'Failed to load permissions. Please try again.';
+        this.messageService.addMessage({
+          content: errorMessage,
+          type: 'error'
+        });
       },
     });
   }
 
-  getPermissionCells(perm: Permission): TableCell[] {
+  getPermissionCells(perm: PermissionDto): TableCell[] {
     return [
       { heading: 'Name', value: perm.name },
       { heading: 'Description', value: perm.description },

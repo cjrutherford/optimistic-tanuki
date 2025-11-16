@@ -44,5 +44,7 @@ export {
 export {
     PermissionCommands,
     RoleCommands,
-    AppScopeCommands
+    AppScopeCommands,
+    ALL_APP_SCOPES,
+    AppScopeName
 } from './lib/libs/permissions';

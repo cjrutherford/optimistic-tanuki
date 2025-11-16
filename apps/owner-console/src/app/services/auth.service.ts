@@ -2,29 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-  mfa?: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  fn: string;
-  ln: string;
-  password: string;
-  confirm: string;
-  bio?: string;
-}
-
-export interface AuthResponse {
-  message: string;
-  code: number;
-  data: {
-    newToken: string;
-  };
-}
+import LoginRequest from '@optimistic-tanuki/ui-models';
+import RegisterRequest from '@optimistic-tanuki/ui-models';
+import { AuthResponse } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root',

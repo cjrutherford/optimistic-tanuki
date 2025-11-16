@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardComponent, TableComponent, TableCell, HeadingComponent } from '@optimistic-tanuki/common-ui';
-import { RolesService, Role } from '../services/roles.service';
+import { MessageComponent, MessageService } from '@optimistic-tanuki/message-ui';
+import { RoleDto } from '@optimistic-tanuki/ui-models';
+import { RolesService } from '../services/roles.service';
 
 @Component({
   selector: 'app-roles-management',
@@ -11,8 +13,11 @@ import { RolesService, Role } from '../services/roles.service';
     CardComponent,
     TableComponent,
     HeadingComponent,
+    MessageComponent,
   ],
   template: `
+    <lib-message></lib-message>
+    
     <otui-card>
       <otui-heading level="2">Roles Management</otui-heading>
 
@@ -40,10 +45,13 @@ import { RolesService, Role } from '../services/roles.service';
   ],
 })
 export class RolesManagementComponent implements OnInit {
-  roles: Role[] = [];
+  roles: RoleDto[] = [];
   loading = false;
 
-  constructor(private rolesService: RolesService) {}
+  constructor(
+    private rolesService: RolesService,
+    private messageService: MessageService
+  ) {}
 
   ngOnInit(): void {
     this.loadRoles();
@@ -51,18 +59,32 @@ export class RolesManagementComponent implements OnInit {
 
   loadRoles(): void {
     this.loading = true;
+    this.messageService.clearMessages();
+    
     this.rolesService.getRoles().subscribe({
       next: (roles) => {
         this.roles = roles;
         this.loading = false;
+        
+        if (roles.length === 0) {
+          this.messageService.addMessage({
+            content: 'No roles found in the system.',
+            type: 'info'
+          });
+        }
       },
-      error: () => {
+      error: (err) => {
         this.loading = false;
+        const errorMessage = err.error?.message || err.message || 'Failed to load roles. Please try again.';
+        this.messageService.addMessage({
+          content: errorMessage,
+          type: 'error'
+        });
       },
     });
   }
 
-  getRoleCells(role: Role): TableCell[] {
+  getRoleCells(role: RoleDto): TableCell[] {
     return [
       { heading: 'Name', value: role.name },
       { heading: 'Description', value: role.description },
