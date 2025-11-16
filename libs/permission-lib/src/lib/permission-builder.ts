@@ -119,16 +119,37 @@ export class RoleInitBuilder {
   addAppScopeDefaults() {
     switch (this.opts.scopeName) {
       case 'forgeofwill':
+        this.assignRoleToProfile('forgeofwill_standard_user');
         this.assignRoleToProfile('forgeofwill_planner');
         this.assignRoleToProfile('forgeofwill_profile_owner');
         return this;
       case 'digital-homestead':
+        this.assignRoleToProfile('digital_standard_user');
         this.assignRoleToProfile('digital_follower');
         return this;
       case 'client-interface':
         this.assignRoleToProfile('client_interface_user');
         return this;
+      case 'blogging':
+        this.assignRoleToProfile('blog_standard_user');
+        return this;
+      case 'social':
+        this.assignRoleToProfile('social_standard_user');
+        return this;
+      case 'assets':
+        this.assignRoleToProfile('asset_standard_user');
+        return this;
+      case 'project-planning':
+        this.assignRoleToProfile('project_planning_standard_user');
+        return this;
+      case 'christopherrutherford-net':
+        this.assignRoleToProfile('christopherrutherford_standard_user');
+        return this;
+      case 'owner-console':
+        this.assignRoleToProfile('owner_console_owner');
+        return this;
       default:
+        this.assignRoleToProfile('standard_user');
         return this;
     }
   }

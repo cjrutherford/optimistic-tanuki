@@ -38,9 +38,24 @@
       "description": "Authentication service",
       "active": true
     },
-    { "name": "profile", "description": "Profile service", "active": true }
+    { "name": "profile", "description": "Profile service", "active": true },
+    {
+      "name": "owner-console",
+      "description": "Owner console for system administration",
+      "active": true
+    }
   ],
   "roles": [
+    {
+      "name": "standard_user",
+      "description": "Standard user with basic read permissions",
+      "appScope": "global"
+    },
+    {
+      "name": "owner",
+      "description": "Owner with full administrative permissions",
+      "appScope": "global"
+    },
     {
       "name": "digital_homesteader",
       "description": "Manage own profile and blog posts from Digital Homestead",
@@ -50,6 +65,16 @@
       "name": "digital_follower",
       "description": "Follower: read profiles and social content for Digital Homestead",
       "appScope": "digital-homestead"
+    },
+    {
+      "name": "digital_standard_user",
+      "description": "Standard user for Digital Homestead",
+      "appScope": "digital-homestead"
+    },
+    {
+      "name": "client_interface_user",
+      "description": "Standard user for client interface",
+      "appScope": "client-interface"
     },
     {
       "name": "client_profile_owner",
@@ -67,6 +92,11 @@
       "appScope": "client-interface"
     },
     {
+      "name": "forgeofwill_standard_user",
+      "description": "Standard user for Forge of Will",
+      "appScope": "forgeofwill"
+    },
+    {
       "name": "forgeofwill_planner",
       "description": "Project planner role for Forge of Will (project-planning)",
       "appScope": "forgeofwill"
@@ -75,6 +105,11 @@
       "name": "forgeofwill_profile_owner",
       "description": "Profile owner role for Forge of Will (profile integration)",
       "appScope": "forgeofwill"
+    },
+    {
+      "name": "blog_standard_user",
+      "description": "Standard user for blogging",
+      "appScope": "blogging"
     },
     {
       "name": "blog_author",
@@ -87,14 +122,39 @@
       "appScope": "blogging"
     },
     {
+      "name": "asset_standard_user",
+      "description": "Standard user for assets",
+      "appScope": "assets"
+    },
+    {
       "name": "asset_owner",
       "description": "Owner of assets",
       "appScope": "assets"
     },
     {
+      "name": "social_standard_user",
+      "description": "Standard user for social features",
+      "appScope": "social"
+    },
+    {
       "name": "social_user",
       "description": "Social user (follow/post)",
       "appScope": "social"
+    },
+    {
+      "name": "project_planning_standard_user",
+      "description": "Standard user for project planning",
+      "appScope": "project-planning"
+    },
+    {
+      "name": "christopherrutherford_standard_user",
+      "description": "Standard user for christopherrutherford.net",
+      "appScope": "christopherrutherford-net"
+    },
+    {
+      "name": "owner_console_owner",
+      "description": "Owner with full admin rights in owner console",
+      "appScope": "owner-console"
     }
   ],
   "permissions": [
@@ -265,6 +325,118 @@
       "action": "read",
       "targetId": null,
       "appScope": "social"
+    },
+    {
+      "name": "permissions.read",
+      "description": "Read permissions",
+      "resource": "permissions",
+      "action": "read",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "permissions.create",
+      "description": "Create permissions",
+      "resource": "permissions",
+      "action": "create",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "permissions.update",
+      "description": "Update permissions",
+      "resource": "permissions",
+      "action": "update",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "permissions.delete",
+      "description": "Delete permissions",
+      "resource": "permissions",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "roles.read",
+      "description": "Read roles",
+      "resource": "roles",
+      "action": "read",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "roles.create",
+      "description": "Create roles",
+      "resource": "roles",
+      "action": "create",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "roles.update",
+      "description": "Update roles",
+      "resource": "roles",
+      "action": "update",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "roles.delete",
+      "description": "Delete roles",
+      "resource": "roles",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "users.read",
+      "description": "Read users",
+      "resource": "users",
+      "action": "read",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "users.update",
+      "description": "Update users",
+      "resource": "users",
+      "action": "update",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "appscopes.read",
+      "description": "Read app scopes",
+      "resource": "appscopes",
+      "action": "read",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "appscopes.create",
+      "description": "Create app scopes",
+      "resource": "appscopes",
+      "action": "create",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "appscopes.update",
+      "description": "Update app scopes",
+      "resource": "appscopes",
+      "action": "update",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "appscopes.delete",
+      "description": "Delete app scopes",
+      "resource": "appscopes",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "owner-console"
     }
   ],
   "role_permissions": [
@@ -440,6 +612,96 @@
     },
     {
       "role": "social_user",
+      "permission": "social.post.read",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "permissions.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "permissions.create",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "permissions.update",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "permissions.delete",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "roles.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "roles.create",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "roles.update",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "roles.delete",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "users.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "users.update",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "appscopes.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "appscopes.create",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "appscopes.update",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "appscopes.delete",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "profile.read",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "forgeofwill_standard_user",
+      "permission": "profile.read",
+      "permissionAppScope": "forgeofwill"
+    },
+    {
+      "role": "blog_standard_user",
+      "permission": "blog.post.read",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "social_standard_user",
       "permission": "social.post.read",
       "permissionAppScope": "social"
     }

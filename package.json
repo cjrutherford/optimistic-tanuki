@@ -111,6 +111,7 @@
     "@angular-devkit/build-angular": "20.2.2",
     "@angular-devkit/core": "20.2.2",
     "@angular-devkit/schematics": "20.2.2",
+    "@angular/build": "20.2.2",
     "@angular/cli": "~20.0.0",
     "@angular/compiler-cli": "20.2.4",
     "@angular/language-service": "20.2.4",
