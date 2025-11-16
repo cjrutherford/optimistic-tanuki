@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { getRepositoryToken, InjectRepository } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
 import { timingSafeEqual } from 'crypto';
 import { UserEntity } from '../user/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -29,7 +30,7 @@ export class AppService {
     private readonly keyService: KeyService,
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     @Inject('totp') private readonly totp: typeof authenticator,
-    @Inject('jwt') private readonly jsonWebToken: typeof jwt
+    @Inject('jwt') private readonly jsonWebToken: JwtService
   ) {}
 
   async getUserIdFromEmail(email: string): Promise<string> {
@@ -86,7 +87,8 @@ export class AppService {
       const pl = { userId, name: `${user.firstName} ${user.lastName}`, email };
       // make profileId a first-class claim (empty string if none)
       (pl as any).profileId = '';
-      const tk = this.jsonWebToken.sign(pl, this.jwtSecret, {
+      const tk = this.jsonWebToken.sign(pl, {
+        secret: this.jwtSecret,
         expiresIn: '1h',
       });
 
@@ -278,7 +280,12 @@ export class AppService {
 
   async validateToken(token: string) {
     try {
-      const decoded = this.jsonWebToken.verify(token, this.jwtSecret);
+      const valid = await this.jsonWebToken.verifyAsync(token, {
+        secret: this.jwtSecret,
+      });
+      if (!valid) {
+        throw new RpcException('Invalid token');
+      }
       const storedToken = await this.tokenRepo.findOne({
         where: { tokenData: token },
       });
@@ -288,7 +295,7 @@ export class AppService {
       return {
         message: 'Token is valid',
         code: 0,
-        data: decoded,
+        data: valid,
         isValid: true,
       };
     } catch (e) {
@@ -349,8 +356,9 @@ export class AppService {
         profileId: profileId ?? '',
       };
 
-      const tk = this.jsonWebToken.sign(pl, this.jwtSecret, {
+      const tk = this.jsonWebToken.sign(pl, {
         expiresIn: '1h',
+        secret: this.jwtSecret,
       });
 
       // Save token

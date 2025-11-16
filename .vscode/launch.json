@@ -154,7 +154,7 @@
       "request": "attach",
       "name": "Attach to Permissions (Docker)",
       "address": "localhost",
-      "port": 9239,
+      "port": 9243,
       "restart": true,
       "localRoot": "${workspaceFolder}/apps/permissions",
       "remoteRoot": "/usr/src_app",

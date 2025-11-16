@@ -25,7 +25,7 @@ export class AppScopesController {
   }
 
   @MessagePattern({ cmd: AppScopeCommands.GetByName })
-  async getAppScopeByName(@Payload() name: string) {
+  async getAppScopeByName(@Payload('name') name: string) {
     this.logger.log(`Getting AppScope by name: ${name}`);
     return await this.appScopesService.getAppScopeByName(name);
   }

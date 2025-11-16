@@ -55,3 +55,6 @@ services:
     transport: TCP
     host: ot_permissions
     port: 3012
+auth: 
+  jwtSecret: |
+    c3VwZXJzZWNyZXRzdHJpbmc=

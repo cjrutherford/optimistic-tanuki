@@ -15,6 +15,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { KeyService } from './key.service';
 import loadDatabase from './loadDatabase';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -30,6 +31,14 @@ import loadDatabase from './loadDatabase';
   ],
   controllers: [AppController],
   providers: [
+    {
+      provide: JwtService, 
+      useFactory: (config: ConfigService) => {
+        const secret = config.get('auth.jwt_secret') || 'default_jwt_secret';
+        return new JwtService({ secret });
+      }, 
+      inject: [ConfigService]
+    },
     AppService,
     SaltedHashService,
     KeyService,
@@ -44,21 +53,18 @@ import loadDatabase from './loadDatabase';
       inject: [ConfigService],
     },
     {
-      provide: getRepositoryToken (UserEntity),
+      provide: getRepositoryToken(UserEntity),
       useFactory: (ds: DataSource) => ds.getRepository(UserEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
-    },{
+    }, {
       provide: getRepositoryToken(TokenEntity),
       useFactory: (ds: DataSource) => ds.getRepository(TokenEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
-    },{
+    }, {
       provide: getRepositoryToken(KeyDatum),
       useFactory: (ds: DataSource) => ds.getRepository(KeyDatum),
       inject: ['AUTHENTICATION_CONNECTION'],
-    },{
-      provide: 'jwt',
-      useValue: jwt,
     }
   ],
 })
-export class AppModule {}
+export class AppModule { }

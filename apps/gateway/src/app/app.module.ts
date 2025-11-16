@@ -42,7 +42,14 @@ import { PermissionsController } from '../controllers/permissions/permissions.co
   ],
   providers: [
     AuthGuard,
-    JwtService,
+    {
+      provide: JwtService, 
+      useFactory: (config: ConfigService) => {
+        const secret = config.get('auth.jwt_secret') || 'default_jwt_secret';
+        return new JwtService({ secret });
+      }, 
+      inject: [ConfigService]
+    },
     RoleInitService,
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,

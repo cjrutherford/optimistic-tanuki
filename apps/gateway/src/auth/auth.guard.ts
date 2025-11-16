@@ -6,15 +6,19 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
-import { AuthCommands } from '@optimistic-tanuki/constants';
+import { AuthCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { UserContext } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { UserDetails } from '../decorators/user.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
-    @Inject('AUTHENTICATION_SERVICE') private authService: ClientProxy,
-    private reflector: Reflector
+    @Inject(ServiceTokens.AUTHENTICATION_SERVICE) private authService: ClientProxy,
+    private reflector: Reflector,
+    private readonly jwt: JwtService
   ) {}
 
   private async introspectToken(token: string, userId: string): Promise<boolean> {
@@ -23,15 +27,6 @@ export class AuthGuard implements CanActivate {
     );
     // Assuming the response contains a field `isValid` to indicate token validity
     return response && response.isValid;
-  }
-
-  parseToken(token: string) {
-    // Assuming the token is a JWT token
-    const payload = Buffer.from(token.split('.')[1], 'base64').toString(
-      'utf-8'
-    );
-    const data = JSON.parse(payload);
-    return data;
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -45,14 +40,23 @@ export class AuthGuard implements CanActivate {
     if (!token) {
       throw new UnauthorizedException('Unauthorized: No Token Found.');
     }
-    const user = this.parseToken(token);
+    const user = await this.jwt.verifyAsync<UserDetails>(token);
     const isAuthenticated = await this.introspectToken(token, user.userId);
 
     if (!isAuthenticated) {
       throw new UnauthorizedException('Unauthorized: Token Invalid.');
     }
 
-    request.user = user;
+    const userContext: UserContext = {
+      userId: user.userId,
+      email: user.email,
+      name: user.name,
+      profileId: user.profileId,
+      scopes: [],
+      roles: [],
+    };
+
+    request.user = userContext;
 
     return true;
   }

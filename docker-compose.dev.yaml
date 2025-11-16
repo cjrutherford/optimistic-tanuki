@@ -7,9 +7,19 @@ services:
     volumes:
       - ./dist/apps/authentication:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9229',
+        '-L',
+        'main.js',
+      ]
     environment:
       - NODE_ENV=development
+    ports:
+      - '9229:9229'
     depends_on: # Added
       postgres:
         condition: service_healthy
@@ -31,13 +41,14 @@ services:
       - /usr/src_app/node_modules # Keep node_modules from the image
     ports:
       - '8080:4000' # Match the new exposed port
-    # The command from the Dockerfile is `node dist/apps/client-interface/server/main.js`
-    # For development, you might want to use nodemon or similar for the SSR server.
-    # Example for nodemon (ensure nodemon is in your project or installed in the image for dev):
+      - '9230:9230'
     command:
       [
         'dumb-init',
         'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9230',
+        '-L',
         '/app/dist/apps/client-interface/server/server.mjs',
       ]
     environment:
@@ -53,8 +64,17 @@ services:
       - ./libs:/app/libs
       - ./dist/apps/forgeofwill:/app/dist/apps/forgeofwill
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
+    ports:
+      - '9231:9231'
     command:
-      ['dumb-init', 'nodemon', '/app/dist/apps/forgeofwill/server/server.mjs']
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9231',
+        '-L',
+        '/app/dist/apps/forgeofwill/server/server.mjs',
+      ]
     environment:
       - NODE_ENV=development
 
@@ -68,10 +88,15 @@ services:
       - ./libs:/app/libs
       - ./dist/apps/digital-homestead:/app/dist/apps/digital-homestead
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
+    ports:
+      - '9232:9232'
     command:
       [
         'dumb-init',
         'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9232',
+        '-L',
         '/app/dist/apps/digital-homestead/server/server.mjs',
       ]
     environment:
@@ -87,10 +112,15 @@ services:
       - ./libs:/app/libs
       - ./dist/apps/christopherrutherford-net:/app/dist/apps/christopherrutherford-net
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
+    ports:
+      - '9233:9233'
     command:
       [
         'dumb-init',
         'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9233',
+        '-L',
         '/app/dist/apps/christopherrutherford-net/server/server.mjs',
       ]
     environment:
@@ -102,9 +132,10 @@ services:
       context: .
       dockerfile: ./apps/gateway/Dockerfile.dev
     volumes:
-      - ./dist/apps/gateway:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', '--inspect=0.0.0.0:9000', 'main.js']
+      - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
+      - /usr/app/node_modules # Ensures node_modules from the image are used
+    command:
+      ['dumb-init', 'nodemon', '--exec', 'node --inspect=0.0.0.0:9000', '-L', 'dist/apps/gateway/main.js']
     ports:
       - '3300:3300' # expose chat socket
       - '9000:9000' # Expose the debugging port
@@ -124,6 +155,8 @@ services:
       profile:
         condition: service_started
       social:
+        condition: service_started
+      permissions:
         condition: service_started
       project-planning:
         condition: service_started
@@ -148,7 +181,17 @@ services:
     volumes:
       - ./dist/apps/profile:/usr/src_app
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9234',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9234:9234'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -163,7 +206,17 @@ services:
     volumes:
       - ./dist/apps/project-planning:/usr/src_app
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9235',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9235:9235'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -178,7 +231,17 @@ services:
     volumes:
       - ./dist/apps/social:/usr/src_app
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9236',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9236:9236'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -193,7 +256,17 @@ services:
     volumes:
       - ./dist/apps/chat-collector:/usr/src_app
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9237',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9237:9237'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -223,7 +296,17 @@ services:
     volumes:
       - ./dist/apps/assets:/usr/src_app
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9238',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9238:9238'
     environment:
       - NODE_ENV=development
     depends_on:
@@ -238,7 +321,17 @@ services:
     volumes:
       - ./dist/apps/blogging:/usr/src_app
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9239',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9239:9239'
     environment:
       - NODE_ENV=development
     depends_on:
@@ -253,7 +346,17 @@ services:
       - ./dist/apps/ai-orchestrator:/usr/src_app
       - ./apps/ai-orchestrator/src/assets:/usr/src/assets # Mount assets for AI Orchestrator
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9240',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9240:9240'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -269,7 +372,17 @@ services:
       - ./dist/apps/prompt-proxy:/usr/src_app
       - ./apps/prompt-proxy/src/assets:/usr/src/assets # Mount assets for prompt proxy
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9241',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9241:9241'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -284,7 +397,17 @@ services:
     volumes:
       - ./dist/apps/telos-docs-service:/usr/src_app
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9242',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9242:9242'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -299,7 +422,17 @@ services:
     volumes:
       - ./dist/apps/permissions:/usr/src_app
       - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '-L', 'main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9243',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9243:9243'
     environment:
       - NODE_ENV=development
     depends_on: # Added

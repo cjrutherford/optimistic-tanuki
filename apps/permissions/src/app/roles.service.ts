@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role } from '../roles/entities/role.entity';
@@ -18,9 +18,11 @@ export class RolesService {
         private roleAssignmentsRepository: Repository<RoleAssignment>,
         @InjectRepository(AppScope)
         private appScopesRepository: Repository<AppScope>,
+        private readonly l: Logger,
     ) {}
 
     async createRole(createRoleDto: CreateRoleDto): Promise<Role> {
+        this.l.log(`Creating role: ${createRoleDto.name}`);
         const appScope = await this.appScopesRepository.findOne({
             where: { id: createRoleDto.appScopeId }
         });
