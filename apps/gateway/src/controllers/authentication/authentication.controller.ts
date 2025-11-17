@@ -22,6 +22,7 @@ import {
   AuthCommands,
   ProfileCommands,
   ServiceTokens,
+  ALL_APP_SCOPES,
 } from '@optimistic-tanuki/constants';
 import { AppScope } from '../../decorators/appscope.decorator';
 import {
@@ -112,17 +113,36 @@ export class AuthenticationController {
         this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile)
       );
 
-      const profilePermissionsBuilder = new RoleInitBuilder()
-        .setScopeName(appScope)
-        .addDefaultProfileOwner(createdProfile.id, appScope)
-        .addAppScopeDefaults()
-        .addAssetOwnerPermissions();
-      this.logger.log(`Initializing permissions for app scope: ${appScope}`);
-      // Build role-init options and enqueue a job to initialize the default permissions
-      // Note: CreateProfileDto may not declare `initialPermissions` in the shared models;
-      // if callers provide additional permissions they can be merged here before enqueue.
-      const roleInitOptions = profilePermissionsBuilder.build();
-      this.roleInit.enqueue(roleInitOptions);
+      // Special handling for owner-console: assign owner roles for all app scopes
+      if (appScope === 'owner-console') {
+        this.logger.log(`Registering owner user for all app scopes`);
+        
+        for (const scope of ALL_APP_SCOPES) {
+          const builder = new RoleInitBuilder()
+            .setScopeName(scope)
+            .setProfile(createdProfile.id)
+            .addDefaultProfileOwner(createdProfile.id, scope);
+          
+          // For owner-console scope specifically, add owner role
+          if (scope === 'owner-console') {
+            builder.addAppScopeDefaults();
+          }
+          
+          const roleInitOptions = builder.build();
+          this.roleInit.enqueue(roleInitOptions);
+        }
+      } else {
+        // Standard registration flow
+        const profilePermissionsBuilder = new RoleInitBuilder()
+          .setScopeName(appScope)
+          .setProfile(createdProfile.id)
+          .addDefaultProfileOwner(createdProfile.id, appScope)
+          .addAppScopeDefaults()
+          .addAssetOwnerPermissions();
+        this.logger.log(`Initializing permissions for app scope: ${appScope}`);
+        const roleInitOptions = profilePermissionsBuilder.build();
+        this.roleInit.enqueue(roleInitOptions);
+      }
       return result;
     } catch (error) {
       console.dir(error);

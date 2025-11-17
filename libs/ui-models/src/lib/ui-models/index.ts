@@ -8,4 +8,8 @@ export { UserDto } from './User.dto';
 export { RegisterSubmitType } from './register-types';
 export { LoginType } from './login-types';
 export { CreateAssetDto, AssetDto } from './asset';
-export * from './project'
+export * from './project';
+export { PermissionDto, CreatePermissionDto, UpdatePermissionDto } from './permissions';
+export { RoleDto, CreateRoleDto, UpdateRoleDto, AssignRoleDto } from './roles';
+export type { AppScopeDto, CreateAppScopeDto, UpdateAppScopeDto } from './app-scopes';
+export { type AuthResponse } from './auth-response';

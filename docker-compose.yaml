@@ -76,6 +76,14 @@ services:
     ports:
       - '8083:4000'
 
+  owner-console:
+    container_name: owner_console
+    build:
+      context: .
+      dockerfile: ./apps/owner-console/Dockerfile
+    ports:
+      - '8084:4000'
+
   gateway:
     container_name: ot_gateway
     build:

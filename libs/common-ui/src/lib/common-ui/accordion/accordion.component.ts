@@ -30,6 +30,7 @@ export class AccordionComponent {
   @Input() borderGradient = 'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
   @Input() transitionDuration = '0.3s';
   expandedIndex = 0;
+  theme = 'dark';
 
   toggleSection(index: number) {
     if (this.expandedIndex === index && this.sections.length > 1) {
