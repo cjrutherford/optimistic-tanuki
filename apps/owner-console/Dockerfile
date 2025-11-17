@@ -27,7 +27,6 @@ WORKDIR /app
 
 # Set NODE_ENV to production for the runtime environment
 ENV NODE_ENV=production
-ENV GATEWAY_URL=http://gateway:3000
 
 # Copy package.json and package-lock.json again to install only production dependencies
 COPY --from=builder /usr/src/app/package.json ./
