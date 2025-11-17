@@ -30,7 +30,7 @@ export class AppService {
     private readonly keyService: KeyService,
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     @Inject('totp') private readonly totp: typeof authenticator,
-    @Inject('jwt') private readonly jsonWebToken: JwtService
+    private readonly jsonWebToken: JwtService
   ) {}
 
   async getUserIdFromEmail(email: string): Promise<string> {

@@ -3,9 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
-import LoginRequest from '@optimistic-tanuki/ui-models';
-import RegisterRequest from '@optimistic-tanuki/ui-models';
-import { AuthResponse } from '@optimistic-tanuki/ui-models';
+import { AuthResponse, LoginRequest, RegisterRequest } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root',

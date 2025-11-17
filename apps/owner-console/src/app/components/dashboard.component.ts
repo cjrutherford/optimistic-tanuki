@@ -20,6 +20,8 @@ import { AuthService } from '../services/auth.service';
         [showThemeToggle]="true"
         [useTile]="false"
         (menuToggle)="toggleSidebar()"
+        [logoSrc]="'/temptest-in-a-teacup.png'"
+        logoAlt="Owner Console Logo"
       ></otui-app-bar>
 
       <otui-nav-sidebar

@@ -17,9 +17,10 @@ const commonEngine = new CommonEngine();
  * API proxy - forwards API requests to the gateway
  */
 app.use('/api', createProxyMiddleware({
-  target: 'http://localhost:3000',
+  target: 'http://gateway:3000/api',
   changeOrigin: true,
-  pathRewrite: { '^/api': '' },
+  logger: true,
+  // pathRewrite: { '^/api': '' },
 }));
 
 /**

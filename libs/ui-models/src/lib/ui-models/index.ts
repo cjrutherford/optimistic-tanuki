@@ -11,5 +11,5 @@ export { CreateAssetDto, AssetDto } from './asset';
 export * from './project';
 export { PermissionDto, CreatePermissionDto, UpdatePermissionDto } from './permissions';
 export { RoleDto, CreateRoleDto, UpdateRoleDto, AssignRoleDto } from './roles';
-export { AppScopeDto, CreateAppScopeDto, UpdateAppScopeDto } from './app-scopes';
-export { AuthResponse } from './auth-response';
+export type { AppScopeDto, CreateAppScopeDto, UpdateAppScopeDto } from './app-scopes';
+export { type AuthResponse } from './auth-response';

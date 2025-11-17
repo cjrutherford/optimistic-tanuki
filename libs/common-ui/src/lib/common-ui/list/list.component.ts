@@ -37,4 +37,5 @@ export class ListComponent {
   @Input() borderColor = 'var(--border-color, #b1baec)';
   @Input() borderGradient = 'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
   @Input() transitionDuration = '0.3s';
+  theme = 'dark';
 }

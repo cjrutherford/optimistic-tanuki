@@ -75,7 +75,7 @@ export class LoginComponent {
   onLogin(loginData: LoginType): void {
     this.error = '';
 
-    this.authService.login(loginData.email, loginData.password, loginData.mfa).subscribe({
+    this.authService.login(loginData.email, loginData.password).subscribe({
       next: () => {
         this.router.navigate(['/dashboard']);
       },

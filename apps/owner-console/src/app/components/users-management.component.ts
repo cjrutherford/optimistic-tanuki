@@ -89,7 +89,7 @@ export class UsersManagementComponent implements OnInit {
 
   getUserCells(user: ProfileDto): TableCell[] {
     return [
-      { heading: 'Name', value: user.name },
+      { heading: 'Name', value: user.profileName },
       { heading: 'User ID', value: user.userId, isOverflowable: true },
       { heading: 'Bio', value: user.bio || 'N/A' },
     ];
