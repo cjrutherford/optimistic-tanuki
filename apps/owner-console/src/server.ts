@@ -15,12 +15,19 @@ const commonEngine = new CommonEngine();
 
 /**
  * API proxy - forwards API requests to the gateway
+ * Forwards /api/* to http://gateway:3000/api/* (or localhost in dev)
  */
+const gatewayUrl = process.env['GATEWAY_URL'] || 'http://localhost:3000';
 app.use('/api', createProxyMiddleware({
-  target: 'http://gateway:3000/api',
+  target: gatewayUrl,
   changeOrigin: true,
-  logger: true,
-  // pathRewrite: { '^/api': '' },
+  logLevel: 'debug',
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`[Proxy] ${req.method} ${req.url} -> ${gatewayUrl}${req.url}`);
+  },
+  onError: (err, req, res) => {
+    console.error('[Proxy Error]', err);
+  },
 }));
 
 /**
