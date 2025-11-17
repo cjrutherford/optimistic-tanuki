@@ -188,6 +188,19 @@ import { PermissionsService } from '../services/permissions.service';
   `,
   styles: [
     `
+      :host ::ng-deep otui-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
       .action-bar {
         margin-bottom: 1.5rem;
         display: flex;
