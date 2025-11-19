@@ -18,54 +18,54 @@ describe('PermissionsCacheService', () => {
   });
 
   describe('get and set', () => {
-    it('should return null for non-existent cache entry', () => {
-      const result = service.get('profile1', 'permission1', 'appScope1');
+    it('should return null for non-existent cache entry', async () => {
+      const result = await service.get('profile1', 'permission1', 'appScope1');
       expect(result).toBeNull();
     });
 
-    it('should cache and retrieve a permission check result', () => {
+    it('should cache and retrieve a permission check result', async () => {
       service.set('profile1', 'permission1', 'appScope1', true);
-      const result = service.get('profile1', 'permission1', 'appScope1');
+      const result = await service.get('profile1', 'permission1', 'appScope1');
       expect(result).toBe(true);
     });
 
-    it('should cache granted=false correctly', () => {
+    it('should cache granted=false correctly', async () => {
       service.set('profile1', 'permission1', 'appScope1', false);
-      const result = service.get('profile1', 'permission1', 'appScope1');
+      const result = await service.get('profile1', 'permission1', 'appScope1');
       expect(result).toBe(false);
     });
 
-    it('should handle targetId in cache key', () => {
+    it('should handle targetId in cache key', async () => {
       service.set('profile1', 'permission1', 'appScope1', true, 'target1');
-      const result1 = service.get('profile1', 'permission1', 'appScope1', 'target1');
-      const result2 = service.get('profile1', 'permission1', 'appScope1', 'target2');
+      const result1 = await service.get('profile1', 'permission1', 'appScope1', 'target1');
+      const result2 = await service.get('profile1', 'permission1', 'appScope1', 'target2');
       
       expect(result1).toBe(true);
       expect(result2).toBeNull();
     });
 
-    it('should differentiate between different profiles', () => {
+    it('should differentiate between different profiles', async () => {
       service.set('profile1', 'permission1', 'appScope1', true);
       service.set('profile2', 'permission1', 'appScope1', false);
       
-      expect(service.get('profile1', 'permission1', 'appScope1')).toBe(true);
-      expect(service.get('profile2', 'permission1', 'appScope1')).toBe(false);
+      expect(await service.get('profile1', 'permission1', 'appScope1')).toBe(true);
+      expect(await service.get('profile2', 'permission1', 'appScope1')).toBe(false);
     });
 
-    it('should differentiate between different permissions', () => {
+    it('should differentiate between different permissions', async () => {
       service.set('profile1', 'permission1', 'appScope1', true);
       service.set('profile1', 'permission2', 'appScope1', false);
       
-      expect(service.get('profile1', 'permission1', 'appScope1')).toBe(true);
-      expect(service.get('profile1', 'permission2', 'appScope1')).toBe(false);
+      expect(await service.get('profile1', 'permission1', 'appScope1')).toBe(true);
+      expect(await service.get('profile1', 'permission2', 'appScope1')).toBe(false);
     });
 
-    it('should differentiate between different app scopes', () => {
+    it('should differentiate between different app scopes', async () => {
       service.set('profile1', 'permission1', 'appScope1', true);
       service.set('profile1', 'permission1', 'appScope2', false);
       
-      expect(service.get('profile1', 'permission1', 'appScope1')).toBe(true);
-      expect(service.get('profile1', 'permission1', 'appScope2')).toBe(false);
+      expect(await service.get('profile1', 'permission1', 'appScope1')).toBe(true);
+      expect(await service.get('profile1', 'permission1', 'appScope2')).toBe(false);
     });
   });
 
