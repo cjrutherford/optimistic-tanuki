@@ -106,7 +106,7 @@ describe('AuthGuard', () => {
         });
 
         it('should throw UnauthorizedException if jwtService.verifyAsync rejects', async () => {
-            (jwtService.verifyAsync as jest.Mock).mockRejectedValue(new Error('Invalid JWT'));
+            (jwtService.verifyAsync as jest.Mock).mockRejectedValue(new UnauthorizedException('Invalid JWT'));
             const context = {
                 switchToHttp: () => ({
                     getRequest: () => ({
