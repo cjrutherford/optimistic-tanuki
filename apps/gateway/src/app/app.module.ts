@@ -21,6 +21,7 @@ import { BlogController } from '../controllers/blogging/blog.controller';
 import { PermissionsController } from '../controllers/permissions/permissions.controller';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
+import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
 
 @Module({
   imports: [
@@ -45,7 +46,14 @@ import { PermissionsCacheService } from '../auth/permissions-cache.service';
   providers: [
     AuthGuard,
     PermissionsGuard,
-    PermissionsCacheService,
+    {
+      provide: PermissionsCacheService,
+      useFactory: (configService: ConfigService) => {
+        const cacheProvider = CacheProviderFactory.create(configService);
+        return new PermissionsCacheService(cacheProvider);
+      },
+      inject: [ConfigService],
+    },
     {
       provide: JwtService, 
       useFactory: (config: ConfigService) => {

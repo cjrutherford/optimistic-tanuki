@@ -77,7 +77,7 @@ export class PermissionsGuard implements CanActivate {
     // Check each required permission for the specific app scope
     for (const permission of permissions) {
       // Try to get from cache first
-      let hasPermission = this.cacheService.get(
+      let hasPermission = await this.cacheService.get(
         user.profileId,
         permission,
         appScope.id
@@ -100,7 +100,7 @@ export class PermissionsGuard implements CanActivate {
         );
 
         // Cache the result
-        this.cacheService.set(
+        await this.cacheService.set(
           user.profileId,
           permission,
           appScope.id,
