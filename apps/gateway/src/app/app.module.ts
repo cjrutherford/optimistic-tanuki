@@ -19,6 +19,8 @@ import { PostController } from '../controllers/blogging/post.controller';
 import { EventController } from '../controllers/blogging/event.controller';
 import { BlogController } from '../controllers/blogging/blog.controller';
 import { PermissionsController } from '../controllers/permissions/permissions.controller';
+import { PermissionsGuard } from '../guards/permissions.guard';
+import { PermissionsCacheService } from '../auth/permissions-cache.service';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { PermissionsController } from '../controllers/permissions/permissions.co
   ],
   providers: [
     AuthGuard,
+    PermissionsGuard,
+    PermissionsCacheService,
     {
       provide: JwtService, 
       useFactory: (config: ConfigService) => {
