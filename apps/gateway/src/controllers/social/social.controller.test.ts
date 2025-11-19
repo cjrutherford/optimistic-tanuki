@@ -20,6 +20,8 @@ import {
   UpdateCommentDto,
   UpdateAttachmentDto,
 } from '@optimistic-tanuki/models';
+import { JwtService } from '@nestjs/jwt';
+import { Logger } from '@nestjs/common';
 
 describe('SocialController', () => {
   let socialController: SocialController;
@@ -40,6 +42,7 @@ describe('SocialController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SocialController],
       providers: [
+        Logger,
         {
           provide: 'AUTHENTICATION_SERVICE',
           useValue: {
@@ -51,7 +54,18 @@ describe('SocialController', () => {
           useValue: {
             send: jest.fn().mockImplementation(() => of({})),
           },
+        }, {
+          provide: 'PERMISSIONS_SERVICE',
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          },
         },
+        {
+          provide: JwtService,
+          useValue: {
+            verify: jest.fn().mockReturnValue(mockUser),
+          },
+        }
       ],
     }).compile();
 

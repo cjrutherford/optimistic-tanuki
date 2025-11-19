@@ -10,15 +10,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthCommands } from '@optimistic-tanuki/constants';
 import { AuthenticationController } from './authentication.controller';
 import { ClientProxy } from '@nestjs/microservices';
-import { HttpException } from '@nestjs/common';
+import { HttpException, Logger } from '@nestjs/common';
 import { of } from 'rxjs';
+import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 
 describe('AuthenticationController', () => {
   let controller: AuthenticationController;
   let clientProxy: ClientProxy;
+  let profileService: ClientProxy;
 
   beforeEach(async () => {
     clientProxy = {
+      send: jest.fn().mockReturnValue(of(true)),
+      connect: jest.fn().mockResolvedValue({}),
+    } as unknown as jest.Mocked<ClientProxy>;
+
+    profileService = {
       send: jest.fn().mockReturnValue(of(true)),
       connect: jest.fn().mockResolvedValue({}),
     } as unknown as jest.Mocked<ClientProxy>;
@@ -30,6 +37,18 @@ describe('AuthenticationController', () => {
           provide: 'AUTHENTICATION_SERVICE',
           useValue: clientProxy,
         },
+        {
+          provide: 'PROFILE_SERVICE',
+          useValue: profileService,
+        },
+        {
+          provide: RoleInitService,
+          useValue: {
+            initializeRoles: jest.fn().mockResolvedValue(undefined),
+            enqueue: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        Logger,
       ],
     }).compile();
 
@@ -45,7 +64,7 @@ describe('AuthenticationController', () => {
       email: 'test@test.com',
       password: 'test',
     };
-    await expect(controller.loginUser(loginRequest)).resolves.toBe(true);
+    await expect(controller.loginUser(loginRequest, 'test')).resolves.toBe(true);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Login },
       loginRequest
@@ -58,7 +77,7 @@ describe('AuthenticationController', () => {
       password: 'fail',
     };
     (clientProxy.send as jest.Mock).mockImplementationOnce(() => { throw new Error('login error'); });
-    await expect(controller.loginUser(loginRequest)).rejects.toThrow(HttpException);
+    await expect(controller.loginUser(loginRequest, 'test')).rejects.toThrow(HttpException);
   });
 
   it('should register user', async () => {
@@ -70,7 +89,9 @@ describe('AuthenticationController', () => {
       confirm: 'test',
       bio: "I'm just a test, and life is a nightmare.",
     };
-    await expect(controller.registerUser(registerRequest)).resolves.toBe(true);
+    const mockResult = { data: { user: { id: '12345' , profileId: '54321', firstName: 'Test', lastName: 'Testerson' } } };
+    jest.spyOn(clientProxy, 'send').mockReturnValueOnce(of(mockResult));
+    await expect(controller.registerUser(registerRequest, 'test')).resolves.toEqual(mockResult);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Register },
       registerRequest
@@ -87,7 +108,7 @@ describe('AuthenticationController', () => {
       bio: 'fail',
     };
     (clientProxy.send as jest.Mock).mockImplementationOnce(() => { throw new Error('register error'); });
-    await expect(controller.registerUser(registerRequest)).rejects.toThrow(HttpException);
+    await expect(controller.registerUser(registerRequest, 'test')).rejects.toThrow(HttpException);
   });
 
   it('should reset password', async () => {
