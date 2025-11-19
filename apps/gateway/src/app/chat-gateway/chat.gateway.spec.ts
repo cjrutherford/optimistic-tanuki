@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
 import { ChatGateway } from './chat.gateway';
 import { LoggerModule } from '@optimistic-tanuki/logger'
 
@@ -13,6 +14,7 @@ describe('ChatGateway', () => {
         { provide: 'CHAT_COLLECTOR_SERVICE', useValue: { send: jest.fn() } },
         { provide: 'AI_ORCHESTRATION_SERVICE', useValue: { send: jest.fn() } },
         { provide: 'TELOS_DOCS_SERVICE', useValue: { send: jest.fn() } },
+        { provide: JwtService, useValue: { verify: jest.fn() } },
       ],
     }).compile();
 

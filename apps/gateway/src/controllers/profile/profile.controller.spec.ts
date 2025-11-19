@@ -9,6 +9,7 @@ import { ProfileController } from './profile.controller';
 import { UserDetails } from '../../decorators/user.decorator';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Logger } from '@nestjs/common';
+import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 
 describe('ProfileController', () => {
   let controller: ProfileController;
@@ -47,7 +48,19 @@ describe('ProfileController', () => {
             send: jest.fn().mockImplementation(() => of({})),
           }
         },
-        
+        {
+          provide: ServiceTokens.PERMISSIONS_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          }
+        },
+        {
+          provide: RoleInitService,
+          useValue: {
+            initializeRoles: jest.fn().mockResolvedValue(undefined),
+            enqueue: jest.fn().mockResolvedValue(undefined),
+          }
+        }
       ]
     })
     .overrideGuard(AuthGuard)
@@ -77,7 +90,7 @@ describe('ProfileController', () => {
      };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    const createResponse = await controller.createProfile(createProfileDto);
+    const createResponse = await controller.createProfile(createProfileDto, 'test');
     expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Create }, createProfileDto);
     expect(createResponse).toEqual({});
   });
