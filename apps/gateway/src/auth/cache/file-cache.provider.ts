@@ -170,6 +170,7 @@ export class FileCacheProvider implements ICacheProvider {
   async delete(key: string): Promise<void> {
     try {
       const filePath = this.getFilePath(key);
+      console.log('deleting', filePath, existsSync(filePath));
       if (existsSync(filePath)) {
         await fs.unlink(filePath);
         this.cacheIndex.delete(key);
