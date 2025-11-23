@@ -28,9 +28,14 @@ export class ProfileService {
     return await this.profileRepository.findOne({ where: { userId } });
   }
 
-  async create(profile: CreateProfileDto): Promise<Profile> {
+  async findByUserIdAndAppScope(userId: string, appScope: string): Promise<Profile> {
+    return await this.profileRepository.findOne({ where: { userId, appScope } });
+  }
+
+  async create(profile: CreateProfileDto & { appScope?: string }): Promise<Profile> {
     const newProfile: Partial<Profile> = {
       userId: profile.userId,
+      appScope: profile.appScope || null,
       profileName: profile.name,
       profilePic: profile.profilePic,
       coverPic: profile.coverPic,

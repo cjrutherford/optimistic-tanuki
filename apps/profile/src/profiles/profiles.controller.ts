@@ -16,8 +16,14 @@ export class ProfilesController {
     }
 
     @MessagePattern({ cmd: ProfileCommands.Get })
-    async getProfile(@Payload() data: { id: string, query: FindOneOptions<Profile> }) {
-        return await this.profileService.findOne(data.id, data.query || {});
+    async getProfile(@Payload() data: { id?: string, userId?: string, appScope?: string, query?: FindOneOptions<Profile> }) {
+        // Support both id-based lookup and userId+appScope lookup
+        if (data.userId && data.appScope) {
+            return await this.profileService.findByUserIdAndAppScope(data.userId, data.appScope);
+        } else if (data.id) {
+            return await this.profileService.findOne(data.id, data.query || {});
+        }
+        throw new Error('Must provide either id or (userId and appScope)');
     }
 
     @MessagePattern({ cmd: ProfileCommands.GetAll })

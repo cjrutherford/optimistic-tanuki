@@ -5,9 +5,10 @@ import { EventQueryDto, CreateEventDto, UpdateEventDto } from '@optimistic-tanuk
 import { firstValueFrom } from 'rxjs';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
+import { AuthGuard } from '../../auth/auth.guard';
 
 @Controller('event')
-@UseGuards(PermissionsGuard)
+@UseGuards(AuthGuard, PermissionsGuard)
 export class EventController {
     constructor(@Inject(ServiceTokens.BLOG_SERVICE) private readonly eventService: ClientProxy, private readonly l: Logger) {
         this.l.log('EventController initialized');

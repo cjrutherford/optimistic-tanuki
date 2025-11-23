@@ -98,7 +98,7 @@ export class AuthenticationController {
         this.authClient.send({ cmd: AuthCommands.Register }, data)
       );
       console.log('Registered user:', result);
-      const newProfile: CreateProfileDto = {
+      const newProfile: CreateProfileDto & { appScope: string } = {
         userId: result.data.user.id,
         name: `${result.data.user.firstName} ${result.data.user.lastName}`,
         coverPic: '',
@@ -109,6 +109,7 @@ export class AuthenticationController {
         occupation: '',
         interests: '',
         skills: '',
+        appScope: appScope,
       };
       console.log('Creating profile for new user:', newProfile);
       const createdProfile = await firstValueFrom(
