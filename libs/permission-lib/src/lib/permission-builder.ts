@@ -118,6 +118,7 @@ export class RoleInitBuilder {
 
   addAppScopeDefaults() {
     switch (this.opts.scopeName) {
+      // Angular Applications - assign standard user roles
       case 'forgeofwill':
         this.assignRoleToProfile('forgeofwill_standard_user');
         this.assignRoleToProfile('forgeofwill_planner');
@@ -130,26 +131,26 @@ export class RoleInitBuilder {
       case 'client-interface':
         this.assignRoleToProfile('client_interface_user');
         return this;
-      case 'blogging':
-        this.assignRoleToProfile('blog_standard_user');
-        return this;
-      case 'social':
-        this.assignRoleToProfile('social_standard_user');
-        return this;
-      case 'assets':
-        this.assignRoleToProfile('asset_standard_user');
-        return this;
-      case 'project-planning':
-        this.assignRoleToProfile('project_planning_standard_user');
-        return this;
       case 'christopherrutherford-net':
         this.assignRoleToProfile('christopherrutherford_standard_user');
         return this;
       case 'owner-console':
         this.assignRoleToProfile('owner_console_owner');
         return this;
-      default:
+      case 'global':
         this.assignRoleToProfile('standard_user');
+        return this;
+      // Backend Services - no default role assignment needed
+      case 'authentication':
+      case 'profile':
+      case 'blogging':
+      case 'social':
+      case 'assets':
+      case 'project-planning':
+        // Backend services don't assign default roles
+        return this;
+      default:
+        // Fallback for unknown scopes
         return this;
     }
   }
