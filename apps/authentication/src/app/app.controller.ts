@@ -207,20 +207,4 @@ export class AppController {
       throw new RpcException(e);
     }
   }
-
-  @MessagePattern({ cmd: AuthCommands.Issue })
-  async issueToken(@Payload() data: { userId: string; profileId?: string }) {
-    try {
-      if (!data || !data.userId) {
-        throw new RpcException('Missing required fields: userId');
-      }
-      const { userId, profileId } = data;
-      return await this.appService.issueToken(userId, profileId);
-    } catch (e) {
-      if (e instanceof RpcException) {
-        throw e;
-      }
-      throw new RpcException(e);
-    }
-  }
 }

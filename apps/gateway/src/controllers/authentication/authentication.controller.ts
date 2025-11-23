@@ -61,12 +61,14 @@ export class AuthenticationController {
           { email: data.email }
         )
       );
+      this.logger.debug('loginUser effectiveUser:', effectiveUser);
       const profile = await firstValueFrom(
         this.profileClient.send(
           { cmd: ProfileCommands.Get },
           { userId: effectiveUser, appScope }
         )
       );
+      this.logger.debug(`Logging in user with profile ID: ${profile.id}`);
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Login },
@@ -116,18 +118,18 @@ export class AuthenticationController {
       // Special handling for owner-console: assign owner roles for all app scopes
       if (appScope === 'owner-console') {
         this.logger.log(`Registering owner user for all app scopes`);
-        
+
         for (const scope of ALL_APP_SCOPES) {
           const builder = new RoleInitBuilder()
             .setScopeName(scope)
             .setProfile(createdProfile.id)
             .addDefaultProfileOwner(createdProfile.id, scope);
-          
+
           // For owner-console scope specifically, add owner role
           if (scope === 'owner-console') {
             builder.addAppScopeDefaults();
           }
-          
+
           const roleInitOptions = builder.build();
           this.roleInit.enqueue(roleInitOptions);
         }

@@ -14,24 +14,16 @@ import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   AIOrchestrationCommands,
-  GoalCommands,
-  PermissionCommands,
   PersonaTelosCommands,
   ProfileCommands,
   AuthCommands,
-  ProjectCommands,
-  RoleCommands,
   ServiceTokens,
   TimelineCommands,
 } from '@optimistic-tanuki/constants';
 import {
-  CreateGoalDto,
   CreateProfileDto,
-  CreateProjectDto,
   CreateTimelineDto,
-  UpdateGoalDto,
   UpdateProfileDto,
-  UpdateProjectDto,
   UpdateTimelineDto,
   ProfileDto,
   PersonaTelosDto,

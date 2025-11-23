@@ -35,8 +35,13 @@
       "address": "localhost",
       "port": 9000,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/gateway",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app/dist/apps/gateway",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/gateway/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -55,7 +60,7 @@
       "request": "attach",
       "name": "Attach to Profile (Docker)",
       "address": "localhost",
-      "port": 9230,
+      "port": 9234,
       "restart": true,
       "localRoot": "${workspaceFolder}/apps/profile",
       "remoteRoot": "/usr/src_app",

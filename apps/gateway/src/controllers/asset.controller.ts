@@ -25,9 +25,9 @@ export class AssetController {
     private readonly assetService: ClientProxy
   ) {}
 
+  @RequirePermissions('asset:own:create')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Post('/')
-  @RequirePermissions('asset:own:create')
   async createAsset(@Body() asset: CreateAssetDto) {
     try {
       return await firstValueFrom(
