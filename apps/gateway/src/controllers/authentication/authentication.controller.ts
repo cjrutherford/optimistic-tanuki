@@ -116,20 +116,38 @@ export class AuthenticationController {
         this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile)
       );
 
-      // Special handling for owner-console: assign owner roles for all app scopes
+      // Special handling for owner-console: create profiles for all app scopes with owner roles
       if (appScope === 'owner-console') {
-        this.logger.log(`Registering owner user for all app scopes`);
+        this.logger.log(`Registering owner user - creating profiles for all app scopes`);
 
         for (const scope of ALL_APP_SCOPES) {
+          // Create a profile for each app scope
+          const scopedProfile: CreateProfileDto & { appScope: string } = {
+            userId: result.data.user.id,
+            name: `${result.data.user.firstName} ${result.data.user.lastName}`,
+            coverPic: '',
+            profilePic: '',
+            bio: '',
+            location: '',
+            description: '',
+            occupation: '',
+            interests: '',
+            skills: '',
+            appScope: scope,
+          };
+          
+          this.logger.log(`Creating profile for scope: ${scope}`);
+          const scopedCreatedProfile = await firstValueFrom(
+            this.profileClient.send({ cmd: ProfileCommands.Create }, scopedProfile)
+          );
+
+          // Assign owner-level roles for this scope
           const builder = new RoleInitBuilder()
             .setScopeName(scope)
-            .setProfile(createdProfile.id)
-            .addDefaultProfileOwner(createdProfile.id, scope);
-
-          // For owner-console scope specifically, add owner role
-          if (scope === 'owner-console') {
-            builder.addAppScopeDefaults();
-          }
+            .setProfile(scopedCreatedProfile.id)
+            .addDefaultProfileOwner(scopedCreatedProfile.id, scope)
+            .addAppScopeDefaults()
+            .addAssetOwnerPermissions();
 
           const roleInitOptions = builder.build();
           this.roleInit.enqueue(roleInitOptions);
