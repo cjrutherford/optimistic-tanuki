@@ -94,7 +94,7 @@ export class PermissionsGuard implements CanActivate {
             {
               profileId: user.profileId,
               permission,
-              appScope: appScope.id,
+              appScopeId: appScope.id,
             }
           )
         );
