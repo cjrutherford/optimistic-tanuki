@@ -1,12 +1,24 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Component, inject, signal, OnInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  OnInit,
+  OnDestroy,
+  PLATFORM_ID,
+  Inject,
+} from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { Observable, Subscription, filter } from 'rxjs';
 import { map, shareReplay, startWith } from 'rxjs/operators';
 import { AuthStateService } from './state/auth-state.service';
-import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui';
+import {
+  AppBarComponent,
+  NavSidebarComponent,
+  NavItem,
+} from '@optimistic-tanuki/navigation-ui';
 import { ProfileService } from './profile.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
@@ -15,12 +27,7 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    AppBarComponent,
-    NavSidebarComponent,
-  ],
+  imports: [CommonModule, RouterModule, AppBarComponent, NavSidebarComponent],
 })
 export class AppComponent implements OnInit, OnDestroy {
   background!: string;
@@ -73,22 +80,24 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
     // Subscribe to currentUrl$ to update active state
-    this.currentUrl$.subscribe(url => {
+    this.currentUrl$.subscribe((url) => {
       this.updateNavItems();
     });
 
     // Initialize theme
     this.themeService.setTheme(this.themeService.getTheme());
-    
-    this.themeSub = this.themeService.themeColors$.subscribe((theme: ThemeColors | undefined) => {
-      if (theme) {
-        this.themeName.set(this.themeService.getTheme());
-        this.background = theme.background;
-        this.foreground = theme.foreground;
-        this.accent = theme.accent;
-        this.backgroundGradient = theme.accentGradients['light'];
+
+    this.themeSub = this.themeService.themeColors$.subscribe(
+      (theme: ThemeColors | undefined) => {
+        if (theme) {
+          this.themeName.set(this.themeService.getTheme());
+          this.background = theme.background;
+          this.foreground = theme.foreground;
+          this.accent = theme.accent;
+          this.backgroundGradient = theme.accentGradients['light'];
+        }
       }
-    });
+    );
   }
   ngOnDestroy() {
     if (this.themeSub) {
@@ -109,8 +118,8 @@ export class AppComponent implements OnInit, OnDestroy {
         },
         {
           label: 'Profile',
-          action: () => this.navigateTo('/profile'),
-          isActive: currentUrl === '/profile',
+          action: () => this.navigateTo('/settings'),
+          isActive: currentUrl === '/settings',
         },
         {
           label: 'Feed',

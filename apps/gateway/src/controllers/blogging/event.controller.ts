@@ -1,10 +1,14 @@
-import { Body, Controller, Delete, Get, HttpException, Inject, Logger, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, Inject, Logger, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { EventCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { EventQueryDto, CreateEventDto, UpdateEventDto } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { AuthGuard } from '../../auth/auth.guard';
 
 @Controller('event')
+@UseGuards(AuthGuard, PermissionsGuard)
 export class EventController {
     constructor(@Inject(ServiceTokens.BLOG_SERVICE) private readonly eventService: ClientProxy, private readonly l: Logger) {
         this.l.log('EventController initialized');
@@ -15,6 +19,7 @@ export class EventController {
     }
 
     @Post()
+    @RequirePermissions('blog.post.create')
     async createEvent(@Body() createEvent: CreateEventDto) {
         try {
             const event = await firstValueFrom(this.eventService.send({ cmd: EventCommands.CREATE }, createEvent));
@@ -27,6 +32,7 @@ export class EventController {
     }
 
     @Post("/find")
+    @RequirePermissions('blog.post.read')
     async findAllEvents(@Body() query: EventQueryDto) {
         try {
             const events = await firstValueFrom(this.eventService.send({ cmd: EventCommands.FIND_ALL }, query));
@@ -39,6 +45,7 @@ export class EventController {
     }
 
     @Get('/:id')
+    @RequirePermissions('blog.post.read')
     async getEvent(@Param('id') id: string) {
         try {
             const event = await firstValueFrom(this.eventService.send({ cmd: EventCommands.FIND }, id));
@@ -58,6 +65,7 @@ export class EventController {
     }
 
     @Patch('/:id')
+    @RequirePermissions('blog.post.update')
     async updateEvent(@Param('id') id: string, @Body() updateData: UpdateEventDto) {
         try {
             const updatedEvent = await firstValueFrom(this.eventService.send({ cmd: EventCommands.UPDATE }, { id, updateEventDto: updateData }));
@@ -76,6 +84,7 @@ export class EventController {
     }
 
     @Delete('/:id')
+    @RequirePermissions('blog.post.delete')
     async deleteEvent(@Param('id') id: string) {
         try {
             await firstValueFrom(this.eventService.send({ cmd: EventCommands.DELETE }, id));

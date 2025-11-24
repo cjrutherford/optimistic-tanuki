@@ -67,13 +67,15 @@ export class ProfileComponent implements OnInit {
 
   updateProfile(profile: UpdateProfileDto) {
     const id = profile.id;
-    this.profileService.updateProfile(id, profile).then(() => {
-      this.profileService.getProfileById(id);
-      this.showMessage('Profile updated and selected!', 'success');
-      setTimeout(() => {
-        window.location.href = '/feed';
-      }, 500);
-    });
+    this.profileService
+      .updateProfile(id, { ...profile, bio: profile.bio ? profile.bio : '' })
+      .then(() => {
+        this.profileService.getProfileById(id);
+        this.showMessage('Profile updated and selected!', 'success');
+        setTimeout(() => {
+          window.location.href = '/feed';
+        }, 500);
+      });
   }
   selectProfile(profile: ProfileDto) {
     this.profileService.selectProfile(profile);

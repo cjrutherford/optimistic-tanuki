@@ -152,6 +152,11 @@
       "appScope": "christopherrutherford-net"
     },
     {
+      "name": "owner_console_standard_user",
+      "description": "Standard user for owner console (read-only access)",
+      "appScope": "owner-console"
+    },
+    {
       "name": "owner_console_owner",
       "description": "Owner with full admin rights in owner console",
       "appScope": "owner-console"
@@ -704,6 +709,11 @@
       "role": "social_standard_user",
       "permission": "social.post.read",
       "permissionAppScope": "social"
+    },
+    {
+      "role": "owner_console_standard_user",
+      "permission": "profile.read",
+      "permissionAppScope": "owner-console"
     }
   ]
 }

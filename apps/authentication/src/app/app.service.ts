@@ -85,8 +85,9 @@ export class AppService {
       }
 
       const pl = { userId, name: `${user.firstName} ${user.lastName}`, email };
-      // make profileId a first-class claim (empty string if none)
-      (pl as any).profileId = '';
+      // Include profileId in token if provided, otherwise empty string
+      // The profileId should be determined by the client based on appScope
+      (pl as any).profileId = profileId || '';
       const tk = this.jsonWebToken.sign(pl, {
         secret: this.jwtSecret,
         expiresIn: '1h',

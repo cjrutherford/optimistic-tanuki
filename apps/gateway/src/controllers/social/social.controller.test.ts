@@ -22,6 +22,10 @@ import {
 } from '@optimistic-tanuki/models';
 import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 
 describe('SocialController', () => {
   let socialController: SocialController;
@@ -65,9 +69,27 @@ describe('SocialController', () => {
           useValue: {
             verify: jest.fn().mockReturnValue(mockUser),
           },
-        }
+        },
+        Reflector,
+        {
+          provide: PermissionsCacheService,
+          useValue: {
+            get: jest.fn().mockResolvedValue(null),
+            set: jest.fn().mockResolvedValue(undefined),
+            invalidateProfile: jest.fn().mockResolvedValue(undefined),
+            invalidateAppScope: jest.fn().mockResolvedValue(undefined),
+            clear: jest.fn().mockResolvedValue(undefined),
+            getStats: jest.fn().mockResolvedValue({}),
+            cleanupExpired: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
-    }).compile();
+    })
+    .overrideGuard(AuthGuard)
+    .useValue({ canActivate: () => of(true) })
+    .overrideGuard(PermissionsGuard)
+    .useValue({ canActivate: () => of(true) }) // Mock PermissionsGuard
+    .compile();
 
     socialController = module.get<SocialController>(SocialController);
     clientProxy = module.get<ClientProxy>('SOCIAL_SERVICE');

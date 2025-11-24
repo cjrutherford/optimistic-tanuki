@@ -37,7 +37,9 @@ describe('AppScopesService', () => {
     }).compile();
 
     service = module.get<AppScopesService>(AppScopesService);
-    repository = module.get<Repository<AppScope>>(getRepositoryToken(AppScope));
+    repository = module.get<Repository<AppScope>>(
+      getRepositoryToken(AppScope)
+    );
   });
 
   it('should be defined', () => {

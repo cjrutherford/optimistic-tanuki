@@ -197,77 +197,73 @@ async function main() {
       }
     }
 
-    // Seed Role Permissions
+    // Seed Role Permissions (associate permissions with roles)
     console.log(
-      `Processing ${seedData.role_permissions.length} role-permission assignments...`
+      `Processing ${seedData.role_permissions.length} role-permission associations...`
     );
 
     for (const rpData of seedData.role_permissions) {
       try {
         const role = createdRoles.find((r) => r.name === rpData.role);
         const permission = createdPermissions.find(
-          (p) => p.name === rpData.permission
-        );
-        const appScope = createdAppScopes.find(
-          (a) => a.name === rpData.permissionAppScope
+          (p) => p.name === rpData.permission && p.appScope?.name === rpData.permissionAppScope
         );
 
         if (!role) {
           console.warn(
-            `Role "${rpData.role}" not found, skipping assignment...`
+            `Role "${rpData.role}" not found, skipping permission association...`
           );
           continue;
         }
         if (!permission) {
           console.warn(
-            `Permission "${rpData.permission}" not found, skipping assignment...`
-          );
-          continue;
-        }
-        if (!appScope) {
-          console.warn(
-            `App scope "${rpData.permissionAppScope}" not found, skipping assignment...`
+            `Permission "${rpData.permission}" in app scope "${rpData.permissionAppScope}" not found, skipping association...`
           );
           continue;
         }
 
-        // Check if role assignment already exists
-        const existingAssignment = await roleAssignmentRepo.findOne({
-          where: {
-            profileId: 'system-seed',
-            appScopeId: appScope.id,
-            roleId: role.id,
-          },
+        // Load role with permissions to check if permission is already associated
+        const roleWithPermissions = await roleRepo.findOne({
+          where: { id: role.id },
+          relations: ['permissions'],
         });
 
-        if (existingAssignment) {
+        if (!roleWithPermissions) {
+          console.warn(`Role "${rpData.role}" not found when loading with permissions, skipping...`);
+          continue;
+        }
+
+        // Check if permission is already associated with role
+        const alreadyHasPermission = roleWithPermissions.permissions?.some(
+          (p) => p.id === permission.id
+        );
+
+        if (alreadyHasPermission) {
           console.log(
-            `Role assignment for role "${rpData.role}" already exists, skipping...`
+            `Permission "${rpData.permission}" already associated with role "${rpData.role}", skipping...`
           );
           continue;
         }
 
-        console.log(`Creating role assignment for role "${rpData.role}"...`);
-        // Ensure appScopes is set according to Permission entity schema
-        permission.appScope = appScope;
-        await permissionRepo.save(permission);
-
-        const roleAssignment = roleAssignmentRepo.create({
-          profileId: 'system-seed',
-          appScopeId: appScope.id,
-          roleId: role.id,
-        });
-        await roleAssignmentRepo.save(roleAssignment);
+        // Add permission to role
         console.log(
-          `Role assignment for role "${rpData.role}" created successfully.`
+          `Associating permission "${rpData.permission}" with role "${rpData.role}"...`
+        );
+        if (!roleWithPermissions.permissions) {
+          roleWithPermissions.permissions = [];
+        }
+        roleWithPermissions.permissions.push(permission);
+        await roleRepo.save(roleWithPermissions);
+        console.log(
+          `Permission "${rpData.permission}" associated with role "${rpData.role}" successfully.`
         );
       } catch (error) {
         console.error(
-          `Error processing role-permission assignment for role "${rpData.role}":`,
+          `Error processing role-permission association for role "${rpData.role}" and permission "${rpData.permission}":`,
           error
         );
         throw new Error(
-          `Failed to seed role-permission assignment for role "${rpData.role}": ${error.message}`
+          `Failed to seed role-permission association for role "${rpData.role}": ${error.message}`
         );
       }
     }

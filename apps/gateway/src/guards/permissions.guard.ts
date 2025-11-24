@@ -18,6 +18,7 @@ import {
   PERMISSIONS_KEY,
   PermissionRequirement,
 } from '../decorators/permissions.decorator';
+import { PermissionsCacheService } from '../auth/permissions-cache.service';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -25,7 +26,8 @@ export class PermissionsGuard implements CanActivate {
     private reflector: Reflector,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private permissionsClient: ClientProxy,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly cacheService: PermissionsCacheService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -74,20 +76,45 @@ export class PermissionsGuard implements CanActivate {
 
     // Check each required permission for the specific app scope
     for (const permission of permissions) {
-      const hasPermission = await firstValueFrom(
-        this.permissionsClient.send(
-          { cmd: RoleCommands.CheckPermission },
-          {
-            profileId: user.profileId,
-            permission,
-            appScopeId: appScope.id,
-          }
-        )
+      // Try to get from cache first
+      let hasPermission = await this.cacheService.get(
+        user.profileId,
+        permission,
+        appScope.id
       );
+
+      // If not in cache, check with permissions service
+      if (hasPermission === null) {
+        this.logger.debug(
+          `Cache miss for permission: ${permission}, checking with permissions service`
+        );
+        hasPermission = await firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: RoleCommands.CheckPermission },
+            {
+              profileId: user.profileId,
+              permission,
+              appScopeId: appScope.id,
+            }
+          )
+        );
+
+        // Cache the result
+        await this.cacheService.set(
+          user.profileId,
+          permission,
+          appScope.id,
+          hasPermission
+        );
+      } else {
+        this.logger.debug(
+          `Cache hit for permission: ${permission}, granted=${hasPermission}`
+        );
+      }
 
       if (!hasPermission) {
         this.logger.warn(
-          `Permission denied: ${permission} in app scope ${appScopeName}`
+          `Permission denied: ${permission} in app scope ${appScopeName} for profile ${user.profileId}`
         );
         throw new ForbiddenException(
           `Permission denied: ${permission} in app scope ${appScopeName}`

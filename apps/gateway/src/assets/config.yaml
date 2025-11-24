@@ -58,3 +58,22 @@ services:
 auth: 
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=
+
+# Permissions cache configuration
+# Provider options: memory, file, redis
+permissions:
+  cache:
+    provider: memory  # Use 'file' for persistent cache or 'redis' for distributed cache
+    ttl: 300000       # Cache TTL in milliseconds (5 minutes)
+    maxSize: 10000    # Maximum cache entries (for memory/file providers)
+    
+    # File-based cache configuration (only used when provider is 'file')
+    # cacheDir: /tmp/permissions-cache
+    
+    # Redis cache configuration (only used when provider is 'redis')
+    # redis:
+    #   host: localhost
+    #   port: 6379
+    #   password: your-redis-password  # Optional
+    #   db: 0                          # Redis database number
+    #   keyPrefix: 'permissions:'      # Key prefix for cache entries

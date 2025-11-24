@@ -61,12 +61,14 @@ export class AuthenticationController {
           { email: data.email }
         )
       );
+      this.logger.debug('loginUser effectiveUser:', effectiveUser);
       const profile = await firstValueFrom(
         this.profileClient.send(
           { cmd: ProfileCommands.Get },
           { userId: effectiveUser, appScope }
         )
       );
+      this.logger.debug(`Logging in user with profile ID: ${profile.id}`);
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Login },
@@ -96,7 +98,7 @@ export class AuthenticationController {
         this.authClient.send({ cmd: AuthCommands.Register }, data)
       );
       console.log('Registered user:', result);
-      const newProfile: CreateProfileDto = {
+      const newProfile: CreateProfileDto & { appScope: string } = {
         userId: result.data.user.id,
         name: `${result.data.user.firstName} ${result.data.user.lastName}`,
         coverPic: '',
@@ -107,27 +109,46 @@ export class AuthenticationController {
         occupation: '',
         interests: '',
         skills: '',
+        appScope: appScope,
       };
       console.log('Creating profile for new user:', newProfile);
       const createdProfile = await firstValueFrom(
         this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile)
       );
 
-      // Special handling for owner-console: assign owner roles for all app scopes
+      // Special handling for owner-console: create profiles for all app scopes with owner roles
       if (appScope === 'owner-console') {
-        this.logger.log(`Registering owner user for all app scopes`);
-        
+        this.logger.log(`Registering owner user - creating profiles for all app scopes`);
+
         for (const scope of ALL_APP_SCOPES) {
+          // Create a profile for each app scope
+          const scopedProfile: CreateProfileDto & { appScope: string } = {
+            userId: result.data.user.id,
+            name: `${result.data.user.firstName} ${result.data.user.lastName}`,
+            coverPic: '',
+            profilePic: '',
+            bio: '',
+            location: '',
+            description: '',
+            occupation: '',
+            interests: '',
+            skills: '',
+            appScope: scope,
+          };
+          
+          this.logger.log(`Creating profile for scope: ${scope}`);
+          const scopedCreatedProfile = await firstValueFrom(
+            this.profileClient.send({ cmd: ProfileCommands.Create }, scopedProfile)
+          );
+
+          // Assign owner-level roles for this scope
           const builder = new RoleInitBuilder()
             .setScopeName(scope)
-            .setProfile(createdProfile.id)
-            .addDefaultProfileOwner(createdProfile.id, scope);
-          
-          // For owner-console scope specifically, add owner role
-          if (scope === 'owner-console') {
-            builder.addAppScopeDefaults();
-          }
-          
+            .setProfile(scopedCreatedProfile.id)
+            .addDefaultProfileOwner(scopedCreatedProfile.id, scope)
+            .addAppScopeDefaults()
+            .addAssetOwnerPermissions();
+
           const roleInitOptions = builder.build();
           this.roleInit.enqueue(roleInitOptions);
         }

@@ -141,20 +141,24 @@ export class RolesService {
     }
 
     async checkPermission(profileId: string, permissionName: string, appScopeId: string, targetId?: string): Promise<boolean> {
+        this.l.log(`Checking permission: ${permissionName} for profile ${profileId} in appScope ${appScopeId}`);
         const assignments = await this.getUserRoles(profileId, appScopeId);
 
         for (const assignment of assignments) {
             const hasPermission = assignment.role.permissions.some(p => {
                 const nameMatch = p.name === permissionName || p.action === permissionName;
                 const targetMatch = !targetId || p.targetId === targetId || !p.targetId;
-                return nameMatch && targetMatch;
+                const appScopeMatch = !p.appScopeId || p.appScopeId === appScopeId;
+                return nameMatch && targetMatch && appScopeMatch;
             });
 
             if (hasPermission) {
+                this.l.log(`Permission granted: ${permissionName} for profile ${profileId}`);
                 return true;
             }
         }
 
+        this.l.log(`Permission denied: ${permissionName} for profile ${profileId}`);
         return false;
     }
 }

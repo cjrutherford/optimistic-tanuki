@@ -59,7 +59,7 @@ export class RolesController {
     }
 
     @MessagePattern({ cmd: RoleCommands.CheckPermission })
-    async checkPermission(@Payload() data: { profileId: string, permission: string, appScope: string, targetId?: string }) {
-        return await this.rolesService.checkPermission(data.profileId, data.permission, data.appScope, data.targetId);
+    async checkPermission(@Payload() data: { profileId: string, permission: string, appScopeId: string, targetId?: string }) {
+        return await this.rolesService.checkPermission(data.profileId, data.permission, data.appScopeId, data.targetId);
     }
 }

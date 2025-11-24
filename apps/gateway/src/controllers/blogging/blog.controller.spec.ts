@@ -7,6 +7,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { of } from 'rxjs';
 import { PermissionsGuard } from '../../guards/permissions.guard';
+import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 
 describe('BlogController', () => {
   let controller: BlogController;
@@ -44,6 +45,18 @@ describe('BlogController', () => {
           provide: ServiceTokens.PERMISSIONS_SERVICE,
           useValue: {
             send: jest.fn().mockReturnValue(of(true)),
+          },
+        },
+        {
+          provide: PermissionsCacheService,
+          useValue: {
+            get: jest.fn().mockResolvedValue(null),
+            set: jest.fn().mockResolvedValue(undefined),
+            invalidateProfile: jest.fn().mockResolvedValue(undefined),
+            invalidateAppScope: jest.fn().mockResolvedValue(undefined),
+            clear: jest.fn().mockResolvedValue(undefined),
+            getStats: jest.fn().mockResolvedValue({}),
+            cleanupExpired: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

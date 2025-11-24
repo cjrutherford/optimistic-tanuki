@@ -1,10 +1,14 @@
-import { Body, Controller, Delete, Get, HttpException, Inject, Logger, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, Inject, Logger, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ContactCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { ContactQueryDto, CreateContactDto, UpdateContactDto } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { AuthGuard } from '../../auth/auth.guard';
 
 @Controller('contact')
+@UseGuards(AuthGuard, PermissionsGuard)
 export class ContactController {
     constructor(@Inject(ServiceTokens.BLOG_SERVICE) private readonly contactService: ClientProxy, private readonly l: Logger) {
         this.l.log('ContactController initialized');
@@ -15,6 +19,7 @@ export class ContactController {
     }
 
     @Post()
+    @RequirePermissions('blog.post.create')
     async createContact(@Body() createContact: CreateContactDto) {
         try {
             await firstValueFrom(this.contactService.send({ cmd: ContactCommands.CREATE }, createContact));
@@ -27,6 +32,7 @@ export class ContactController {
     }
 
     @Post("/find")
+    @RequirePermissions('blog.post.read')
     async findAllContacts(@Body() query: ContactQueryDto) {
         try {
             const contacts = await firstValueFrom(this.contactService.send({ cmd: ContactCommands.FIND_ALL }, query));
@@ -39,6 +45,7 @@ export class ContactController {
     }
 
     @Get('/:id')
+    @RequirePermissions('blog.post.read')
     async getContact(@Param('id') id: string) {
         try {
             const contact = await firstValueFrom(this.contactService.send({ cmd: ContactCommands.FIND }, id));
@@ -58,6 +65,7 @@ export class ContactController {
     }
 
     @Patch('/:id')
+    @RequirePermissions('blog.post.update')
     async updateContact(@Param('id') id: string, @Body() updateData: UpdateContactDto) {
         try {
             const updatedContact = await firstValueFrom(this.contactService.send({ cmd: ContactCommands.UPDATE }, { id, updateContactDto: updateData }));
@@ -76,6 +84,7 @@ export class ContactController {
     }
 
     @Delete('/:id')
+    @RequirePermissions('blog.post.delete')
     async deleteContact(@Param('id') id: string) {
         try {
             await firstValueFrom(this.contactService.send({ cmd: ContactCommands.DELETE }, id));

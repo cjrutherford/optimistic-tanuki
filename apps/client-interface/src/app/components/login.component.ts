@@ -64,7 +64,7 @@ export class LoginComponent implements OnDestroy {
         const decoded = this.authStateService.getDecodedTokenValue();
         // If profileId is empty string, show only the profile creation modal
         if (decoded && decoded.profileId === '') {
-          this.router.navigate(['/profile'], {
+          this.router.navigate(['/settings'], {
             state: {
               showProfileModal: true,
               profileMessage: 'Please create your profile to continue.',

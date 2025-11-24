@@ -15,7 +15,7 @@ module.exports = {
       optimization: false,
       outputHashing: 'none',
       generatePackageJson: true,
-      devtool: process.env.NODE_ENV === 'production' ? 'source-map' : 'eval-source-map',
+      devtool:'source-map',
     }),
   ],
 };

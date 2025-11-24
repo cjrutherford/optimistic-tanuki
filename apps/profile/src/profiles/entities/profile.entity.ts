@@ -1,5 +1,5 @@
 /* istanbul ignore file */
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn, Index } from "typeorm";
 
 import { Timeline } from "../../timelines/entities/timeline.entity";
 
@@ -10,6 +10,7 @@ export enum BlogRole {
 }
 
 @Entity()
+@Index(['userId', 'appScope'], { unique: true })
 export class Profile {
 
     @PrimaryGeneratedColumn('uuid')
@@ -17,6 +18,9 @@ export class Profile {
 
     @Column()
     userId: string;
+
+    @Column({ nullable: true })
+    appScope: string;
 
     @Column()
     profileName: string;

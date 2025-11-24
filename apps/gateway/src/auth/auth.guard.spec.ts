@@ -26,7 +26,6 @@ describe('AuthGuard', () => {
         } as unknown as JwtService; // Cast to JwtService to satisfy type checking
 
         authGuard = new AuthGuard(clientProxy, reflector, jwtService); // Instantiate AuthGuard with Reflector
-        jest.spyOn(authGuard, 'parseToken').mockResolvedValue(mockUserDetails); // Mock parseToken to return consistent user details
     });
 
     describe('canActivate', () => {
@@ -121,6 +120,25 @@ describe('AuthGuard', () => {
 
             await expect(authGuard.canActivate(context)).rejects.toThrowError(UnauthorizedException);
             expect(jwtService.verifyAsync).toHaveBeenCalledWith('malformed-token');
+        });
+
+        it('should throw UnauthorizedException if introspectToken returns a nullish value', async () => {
+            clientProxy.send = jest.fn().mockReturnValue(of(null));
+            (jwtService.verifyAsync as jest.Mock).mockResolvedValue(mockUserDetails);
+
+            const context = {
+                switchToHttp: () => ({
+                    getRequest: () => ({
+                        headers: {
+                            authorization: 'Bearer valid-token',
+                        },
+                    }),
+                }),
+                getHandler: jest.fn(),
+                getClass: jest.fn(),
+            } as unknown as jest.Mocked<ExecutionContext>;
+
+            await expect(authGuard.canActivate(context)).rejects.toThrowError(UnauthorizedException);
         });
     });
 });
