@@ -1,3 +1,21 @@
+# Development Docker Compose Override
+# This file configures services for development with debugging and hot-reload support.
+#
+# USAGE:
+# 1. Build all applications: npm run build:dev
+# 2. Start containers: docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
+# 3. For hot-reload on source changes: npm run watch:build (in a separate terminal)
+#
+# DEBUGGING:
+# - All services expose inspector ports (9000-9244) for attaching debuggers
+# - Use VS Code launch configurations in .vscode/launch.json to attach to services
+# - Source maps are enabled in all tsconfig.app.json files for breakpoint debugging
+#
+# HOT RELOAD:
+# - Containers use nodemon to restart when dist files change
+# - Run 'npm run watch:build' to rebuild on source file changes
+# - Changes flow: src/ → nx watch → dist/ → nodemon detects → service restarts
+#
 services:
   authentication:
     container_name: ot_authentication # Corrected typo

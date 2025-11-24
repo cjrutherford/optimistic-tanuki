@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
     "types": ["node"],
+    "sourceMap": true,
     "moduleResolution": "bundler"
   },
   "files": ["src/main.ts", "src/main.server.ts", "src/server.ts"],
