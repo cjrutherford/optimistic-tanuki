@@ -109,7 +109,7 @@ fi
 if grep -q "/usr/src_app" "$REPO_ROOT/.vscode/launch.json"; then
     report_error "Found incorrect path /usr/src_app in launch.json (should be /usr/src/app)"
 else
-    report_success "launch.json uses correct path /usr/src/app"
+    report_success "launch.json does not contain incorrect path /usr/src_app"
 fi
 
 echo ""
