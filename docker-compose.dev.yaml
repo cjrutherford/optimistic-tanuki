@@ -56,7 +56,7 @@ services:
       - ./apps/client-interface:/app/apps/client-interface # Mount the source code for potential rebuilds if command is adapted
       - ./libs:/app/libs # Mount libs if they are part of the build
       - ./dist/apps/client-interface:/app/dist/apps/client-interface # Mount the built dist for SSR
-      - /usr/src_app/node_modules # Keep node_modules from the image
+      - /usr/src/app/node_modules # Keep node_modules from the image
     ports:
       - '8080:4000' # Match the new exposed port
       - '9240:9240'
@@ -81,7 +81,7 @@ services:
       - ./apps/forgeofwill:/app/apps/forgeofwill
       - ./libs:/app/libs
       - ./dist/apps/forgeofwill:/app/dist/apps/forgeofwill
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     ports:
       - '9241:9241'
     command:
@@ -105,7 +105,7 @@ services:
       - ./apps/digital-homestead:/app/apps/digital-homestead
       - ./libs:/app/libs
       - ./dist/apps/digital-homestead:/app/dist/apps/digital-homestead
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     ports:
       - '9242:9242'
     command:
@@ -129,7 +129,7 @@ services:
       - ./apps/christopherrutherford-net:/app/apps/christopherrutherford-net
       - ./libs:/app/libs
       - ./dist/apps/christopherrutherford-net:/app/dist/apps/christopherrutherford-net
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     ports:
       - '9243:9243'
     command:
@@ -151,7 +151,7 @@ services:
       dockerfile: ./apps/gateway/Dockerfile.dev
     volumes:
       - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
-      - /usr/app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       ['dumb-init', 'nodemon', '--exec', 'node --inspect=0.0.0.0:9000', '-L', 'dist/apps/gateway/main.js']
     ports:
@@ -197,8 +197,8 @@ services:
       context: .
       dockerfile: ./apps/profile/Dockerfile
     volumes:
-      - ./dist/apps/profile:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/profile:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -222,8 +222,8 @@ services:
       context: .
       dockerfile: ./apps/project-planning/Dockerfile
     volumes:
-      - ./dist/apps/project-planning:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/project-planning:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -247,8 +247,8 @@ services:
       context: .
       dockerfile: ./apps/social/Dockerfile
     volumes:
-      - ./dist/apps/social:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/social:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -272,8 +272,8 @@ services:
       context: .
       dockerfile: ./apps/chat-collector/Dockerfile
     volumes:
-      - ./dist/apps/chat-collector:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/chat-collector:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -297,8 +297,8 @@ services:
   #     context: .
   #     dockerfile: ./apps/tasks/Dockerfile
   #   volumes:
-  #     - ./dist/apps/tasks:/usr/src_app
-  #     - /usr/src_app/node_modules # Ensures node_modules from the image are used
+  #     - ./dist/apps/tasks:/usr/src/app
+  #     - /usr/src/app/node_modules # Ensures node_modules from the image are used
   #   command: ["dumb-init", "nodemon", "-L", "main.js"]
   #   environment:
   #     - NODE_ENV=development
@@ -312,8 +312,8 @@ services:
       context: .
       dockerfile: ./apps/assets/Dockerfile
     volumes:
-      - ./dist/apps/assets:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/assets:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -337,8 +337,8 @@ services:
       context: .
       dockerfile: ./apps/blogging/Dockerfile
     volumes:
-      - ./dist/apps/blogging:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/blogging:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -361,9 +361,9 @@ services:
       context: .
       dockerfile: ./apps/ai-orchestrator/Dockerfile
     volumes:
-      - ./dist/apps/ai-orchestrator:/usr/src_app
+      - ./dist/apps/ai-orchestrator:/usr/src/app
       - ./apps/ai-orchestrator/src/assets:/usr/src/assets # Mount assets for AI Orchestrator
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -387,9 +387,9 @@ services:
       context: .
       dockerfile: ./apps/prompt-proxy/Dockerfile
     volumes:
-      - ./dist/apps/prompt-proxy:/usr/src_app
+      - ./dist/apps/prompt-proxy:/usr/src/app
       - ./apps/prompt-proxy/src/assets:/usr/src/assets # Mount assets for prompt proxy
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -413,8 +413,8 @@ services:
       context: .
       dockerfile: ./apps/telos-docs-service/Dockerfile
     volumes:
-      - ./dist/apps/telos-docs-service:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/telos-docs-service:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -438,8 +438,8 @@ services:
       context: .
       dockerfile: ./apps/permissions/Dockerfile
     volumes:
-      - ./dist/apps/permissions:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/permissions:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',

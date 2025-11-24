@@ -53,7 +53,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/authentication",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/authentication/**/*.js",
         "!**/node_modules/**"
@@ -69,7 +69,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/profile",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/profile/**/*.js",
         "!**/node_modules/**"
@@ -85,7 +85,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/project-planning",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/project-planning/**/*.js",
         "!**/node_modules/**"
@@ -101,7 +101,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/social",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/social/**/*.js",
         "!**/node_modules/**"
@@ -117,7 +117,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/chat-collector",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/chat-collector/**/*.js",
         "!**/node_modules/**"
@@ -133,7 +133,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/assets",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/assets/**/*.js",
         "!**/node_modules/**"
@@ -149,7 +149,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/blogging",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/blogging/**/*.js",
         "!**/node_modules/**"
@@ -165,7 +165,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/ai-orchestrator",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/ai-orchestrator/**/*.js",
         "!**/node_modules/**"
@@ -181,7 +181,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/prompt-proxy",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/prompt-proxy/**/*.js",
         "!**/node_modules/**"
@@ -197,7 +197,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/telos-docs-service",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/telos-docs-service/**/*.js",
         "!**/node_modules/**"
@@ -213,7 +213,7 @@
       "restart": true,
       "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/permissions",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
         "${workspaceFolder}/dist/apps/permissions/**/*.js",
         "!**/node_modules/**"

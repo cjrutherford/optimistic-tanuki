@@ -83,7 +83,7 @@ services:
       dockerfile: ./apps/gateway/Dockerfile.dev
     volumes:
       - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
-      - /usr/app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command: ['dumb-init', 'nodemon', '--exec', 'node --inspect=0.0.0.0:9000', '-L', 'dist/apps/gateway/main.js']
     ports:
       - "3300:3300"
@@ -111,8 +111,8 @@ services:
       context: .
       dockerfile: ./apps/profile/Dockerfile
     volumes:
-      - ./dist/apps/profile:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/profile:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -136,8 +136,8 @@ services:
       context: .
       dockerfile: ./apps/project-planning/Dockerfile
     volumes:
-      - ./dist/apps/project-planning:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/project-planning:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -161,8 +161,8 @@ services:
       context: .
       dockerfile: ./apps/social/Dockerfile
     volumes:
-      - ./dist/apps/social:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/social:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -186,9 +186,9 @@ services:
       context: .
       dockerfile: ./apps/chat-collector/Dockerfile
     volumes:
-      - ./dist/apps/chat-collector:/usr/src_app
+      - ./dist/apps/chat-collector:/usr/src/app
       - ./apps/chat-collector/src/assets:/usr/src/assets # Mount assets for chat collector
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -227,9 +227,9 @@ services:
       context: .
       dockerfile: ./apps/assets/Dockerfile
     volumes:
-      - ./dist/apps/assets:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
-      - ../fow-assets:/usr/src_app/storage
+      - ./dist/apps/assets:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+      - ../fow-assets:/usr/src/app/storage
     command:
       [
         'dumb-init',
@@ -254,9 +254,9 @@ services:
       context: .
       dockerfile: ./apps/ai-orchestrator/Dockerfile
     volumes:
-      - ./dist/apps/ai-orchestrator:/usr/src_app
+      - ./dist/apps/ai-orchestrator:/usr/src/app
       - ./apps/ai-orchestrator/src/assets:/usr/src/assets # Mount assets for AI Orchestrator
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -280,9 +280,9 @@ services:
       context: .
       dockerfile: ./apps/prompt-proxy/Dockerfile
     volumes:
-      - ./dist/apps/prompt-proxy:/usr/src_app
+      - ./dist/apps/prompt-proxy:/usr/src/app
       - ./apps/prompt-proxy/src/assets:/usr/src/assets # Mount assets for prompt proxy
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -306,8 +306,8 @@ services:
       context: .
       dockerfile: ./apps/telos-docs-service/Dockerfile
     volumes:
-      - ./dist/apps/telos-docs-service:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/telos-docs-service:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
