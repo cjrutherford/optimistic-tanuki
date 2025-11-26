@@ -8,10 +8,10 @@ import {
   OnInit,
   OnDestroy,
   OnChanges,
+  AfterViewInit,
   SimpleChanges,
   ComponentRef,
   HostListener,
-  Type,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -461,7 +461,7 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
     }
   `]
 })
-export class ComponentEditorWrapperComponent implements OnInit, OnDestroy, OnChanges {
+export class ComponentEditorWrapperComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
   @ViewChild('componentHost', { read: ViewContainerRef }) componentHost!: ViewContainerRef;
 
   @Input() componentInstance!: InjectedComponentInstance;
