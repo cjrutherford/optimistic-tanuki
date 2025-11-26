@@ -1,3 +1,21 @@
+# Development Docker Compose Override
+# This file configures services for development with debugging and hot-reload support.
+#
+# USAGE:
+# 1. Build all applications: npm run build:dev
+# 2. Start containers: docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
+# 3. For hot-reload on source changes: npm run watch:build (in a separate terminal)
+#
+# DEBUGGING:
+# - All services expose inspector ports (9000-9244) for attaching debuggers
+# - Use VS Code launch configurations in .vscode/launch.json to attach to services
+# - Source maps are enabled in all tsconfig.app.json files for breakpoint debugging
+#
+# HOT RELOAD:
+# - Containers use nodemon to restart when dist files change
+# - Run 'npm run watch:build' to rebuild on source file changes
+# - Changes flow: src/ → nx watch → dist/ → nodemon detects → service restarts
+#
 services:
   authentication:
     container_name: ot_authentication # Corrected typo
@@ -38,16 +56,16 @@ services:
       - ./apps/client-interface:/app/apps/client-interface # Mount the source code for potential rebuilds if command is adapted
       - ./libs:/app/libs # Mount libs if they are part of the build
       - ./dist/apps/client-interface:/app/dist/apps/client-interface # Mount the built dist for SSR
-      - /usr/src_app/node_modules # Keep node_modules from the image
+      - /usr/src/app/node_modules # Keep node_modules from the image
     ports:
       - '8080:4000' # Match the new exposed port
-      - '9230:9230'
+      - '9240:9240'
     command:
       [
         'dumb-init',
         'nodemon',
         '--exec',
-        'node --inspect=0.0.0.0:9230',
+        'node --inspect=0.0.0.0:9240',
         '-L',
         '/app/dist/apps/client-interface/server/server.mjs',
       ]
@@ -63,15 +81,15 @@ services:
       - ./apps/forgeofwill:/app/apps/forgeofwill
       - ./libs:/app/libs
       - ./dist/apps/forgeofwill:/app/dist/apps/forgeofwill
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     ports:
-      - '9231:9231'
+      - '9241:9241'
     command:
       [
         'dumb-init',
         'nodemon',
         '--exec',
-        'node --inspect=0.0.0.0:9231',
+        'node --inspect=0.0.0.0:9241',
         '-L',
         '/app/dist/apps/forgeofwill/server/server.mjs',
       ]
@@ -87,15 +105,15 @@ services:
       - ./apps/digital-homestead:/app/apps/digital-homestead
       - ./libs:/app/libs
       - ./dist/apps/digital-homestead:/app/dist/apps/digital-homestead
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     ports:
-      - '9232:9232'
+      - '9242:9242'
     command:
       [
         'dumb-init',
         'nodemon',
         '--exec',
-        'node --inspect=0.0.0.0:9232',
+        'node --inspect=0.0.0.0:9242',
         '-L',
         '/app/dist/apps/digital-homestead/server/server.mjs',
       ]
@@ -111,15 +129,15 @@ services:
       - ./apps/christopherrutherford-net:/app/apps/christopherrutherford-net
       - ./libs:/app/libs
       - ./dist/apps/christopherrutherford-net:/app/dist/apps/christopherrutherford-net
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     ports:
-      - '9233:9233'
+      - '9243:9243'
     command:
       [
         'dumb-init',
         'nodemon',
         '--exec',
-        'node --inspect=0.0.0.0:9233',
+        'node --inspect=0.0.0.0:9243',
         '-L',
         '/app/dist/apps/christopherrutherford-net/server/server.mjs',
       ]
@@ -133,7 +151,7 @@ services:
       dockerfile: ./apps/gateway/Dockerfile.dev
     volumes:
       - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
-      - /usr/app/node_modules # Ensures node_modules from the image are used
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       ['dumb-init', 'nodemon', '--exec', 'node --inspect=0.0.0.0:9000', '-L', 'dist/apps/gateway/main.js']
     ports:
@@ -179,8 +197,8 @@ services:
       context: .
       dockerfile: ./apps/profile/Dockerfile
     volumes:
-      - ./dist/apps/profile:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/profile:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -204,8 +222,123 @@ services:
       context: .
       dockerfile: ./apps/project-planning/Dockerfile
     volumes:
-      - ./dist/apps/project-planning:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/project-planning:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9231',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9231:9231'
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+  social:
+    container_name: ot_social
+    build:
+      context: .
+      dockerfile: ./apps/social/Dockerfile
+    volumes:
+      - ./dist/apps/social:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9232',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9232:9232'
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+  chat-collector:
+    container_name: ot_chat_collector
+    build:
+      context: .
+      dockerfile: ./apps/chat-collector/Dockerfile
+    volumes:
+      - ./dist/apps/chat-collector:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9233',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9233:9233'
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+  # tasks:
+  #   container_name: ot_tasks
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/tasks/Dockerfile
+  #   volumes:
+  #     - ./dist/apps/tasks:/usr/src/app
+  #     - /usr/src/app/node_modules # Ensures node_modules from the image are used
+  #   command: ["dumb-init", "nodemon", "-L", "main.js"]
+  #   environment:
+  #     - NODE_ENV=development
+  #   depends_on: # Added
+  #     postgres:
+  #       condition: service_healthy
+
+  assets:
+    container_name: ot_assets
+    build:
+      context: .
+      dockerfile: ./apps/assets/Dockerfile
+    volumes:
+      - ./dist/apps/assets:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9244',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9244:9244'
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  blogging:
+    container_name: ot_blogging
+    build:
+      context: .
+      dockerfile: ./apps/blogging/Dockerfile
+    volumes:
+      - ./dist/apps/blogging:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -219,18 +352,18 @@ services:
       - '9235:9235'
     environment:
       - NODE_ENV=development
-    depends_on: # Added
+    depends_on:
       postgres:
         condition: service_healthy
-
-  social:
-    container_name: ot_social
+  ai-orchestration:
+    container_name: ot_ai_orchestration
     build:
       context: .
-      dockerfile: ./apps/social/Dockerfile
+      dockerfile: ./apps/ai-orchestrator/Dockerfile
     volumes:
-      - ./dist/apps/social:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/ai-orchestrator:/usr/src/app
+      - ./apps/ai-orchestrator/src/assets:/usr/src/assets # Mount assets for AI Orchestrator
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -248,14 +381,15 @@ services:
       postgres:
         condition: service_healthy
 
-  chat-collector:
-    container_name: ot_chat_collector
+  prompt-proxy:
+    container_name: ot_prompt_proxy
     build:
       context: .
-      dockerfile: ./apps/chat-collector/Dockerfile
+      dockerfile: ./apps/prompt-proxy/Dockerfile
     volumes:
-      - ./dist/apps/chat-collector:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/prompt-proxy:/usr/src/app
+      - ./apps/prompt-proxy/src/assets:/usr/src/assets # Mount assets for prompt proxy
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -273,29 +407,14 @@ services:
       postgres:
         condition: service_healthy
 
-  # tasks:
-  #   container_name: ot_tasks
-  #   build:
-  #     context: .
-  #     dockerfile: ./apps/tasks/Dockerfile
-  #   volumes:
-  #     - ./dist/apps/tasks:/usr/src_app
-  #     - /usr/src_app/node_modules # Ensures node_modules from the image are used
-  #   command: ["dumb-init", "nodemon", "-L", "main.js"]
-  #   environment:
-  #     - NODE_ENV=development
-  #   depends_on: # Added
-  #     postgres:
-  #       condition: service_healthy
-
-  assets:
-    container_name: ot_assets
+  telos-docs-service:
+    container_name: ot_telos_docs_service
     build:
       context: .
-      dockerfile: ./apps/assets/Dockerfile
+      dockerfile: ./apps/telos-docs-service/Dockerfile
     volumes:
-      - ./dist/apps/assets:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/telos-docs-service:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -309,18 +428,18 @@ services:
       - '9238:9238'
     environment:
       - NODE_ENV=development
-    depends_on:
+    depends_on: # Added
       postgres:
         condition: service_healthy
 
-  blogging:
-    container_name: ot_blogging
+  permissions:
+    container_name: ot_permissions
     build:
       context: .
-      dockerfile: ./apps/blogging/Dockerfile
+      dockerfile: ./apps/permissions/Dockerfile
     volumes:
-      - ./dist/apps/blogging:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/permissions:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
@@ -332,107 +451,6 @@ services:
       ]
     ports:
       - '9239:9239'
-    environment:
-      - NODE_ENV=development
-    depends_on:
-      postgres:
-        condition: service_healthy
-  ai-orchestration:
-    container_name: ot_ai_orchestration
-    build:
-      context: .
-      dockerfile: ./apps/ai-orchestrator/Dockerfile
-    volumes:
-      - ./dist/apps/ai-orchestrator:/usr/src_app
-      - ./apps/ai-orchestrator/src/assets:/usr/src/assets # Mount assets for AI Orchestrator
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command:
-      [
-        'dumb-init',
-        'nodemon',
-        '--exec',
-        'node --inspect=0.0.0.0:9240',
-        '-L',
-        'main.js',
-      ]
-    ports:
-      - '9240:9240'
-    environment:
-      - NODE_ENV=development
-    depends_on: # Added
-      postgres:
-        condition: service_healthy
-
-  prompt-proxy:
-    container_name: ot_prompt_proxy
-    build:
-      context: .
-      dockerfile: ./apps/prompt-proxy/Dockerfile
-    volumes:
-      - ./dist/apps/prompt-proxy:/usr/src_app
-      - ./apps/prompt-proxy/src/assets:/usr/src/assets # Mount assets for prompt proxy
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command:
-      [
-        'dumb-init',
-        'nodemon',
-        '--exec',
-        'node --inspect=0.0.0.0:9241',
-        '-L',
-        'main.js',
-      ]
-    ports:
-      - '9241:9241'
-    environment:
-      - NODE_ENV=development
-    depends_on: # Added
-      postgres:
-        condition: service_healthy
-
-  telos-docs-service:
-    container_name: ot_telos_docs_service
-    build:
-      context: .
-      dockerfile: ./apps/telos-docs-service/Dockerfile
-    volumes:
-      - ./dist/apps/telos-docs-service:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command:
-      [
-        'dumb-init',
-        'nodemon',
-        '--exec',
-        'node --inspect=0.0.0.0:9242',
-        '-L',
-        'main.js',
-      ]
-    ports:
-      - '9242:9242'
-    environment:
-      - NODE_ENV=development
-    depends_on: # Added
-      postgres:
-        condition: service_healthy
-
-  permissions:
-    container_name: ot_permissions
-    build:
-      context: .
-      dockerfile: ./apps/permissions/Dockerfile
-    volumes:
-      - ./dist/apps/permissions:/usr/src_app
-      - /usr/src_app/node_modules # Ensures node_modules from the image are used
-    command:
-      [
-        'dumb-init',
-        'nodemon',
-        '--exec',
-        'node --inspect=0.0.0.0:9243',
-        '-L',
-        'main.js',
-      ]
-    ports:
-      - '9243:9243'
     environment:
       - NODE_ENV=development
     depends_on: # Added

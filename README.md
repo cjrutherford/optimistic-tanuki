@@ -45,6 +45,27 @@ This will start the following services:
 - `forgeofwill`: Forge of Will frontend application (port 4201)
 - `project-planning`: Project planning service (port 3006)
 
+### Development with Docker and Debugging
+
+For Docker-based development with debugging and hot-reload support, see the [Development & Debugging Guide](./DEVELOPMENT_DEBUGGING_GUIDE.md). This guide covers:
+
+- Setting up VS Code debugging for all services
+- Configuring hot-reload with `nx watch`
+- Inspector port mappings
+- Troubleshooting common issues
+
+Quick start:
+```bash
+# Build all applications
+npm run build:dev
+
+# Start development stack with debugging enabled
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
+
+# In a separate terminal: enable hot-reload
+npm run watch:build
+```
+
 ## 🚢 Deployment
 
 The applications are deployed using Docker. There are two main application stacks that can be run using Docker Compose.

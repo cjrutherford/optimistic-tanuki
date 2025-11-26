@@ -2,16 +2,6 @@
   "configurations": [
     {
       "type": "node",
-      "request": "attach",
-      "name": "Attach to Gateway in Docker",
-      "address": "localhost",
-      "port": 9000,
-      "restart": true,
-      "localRoot": "${workspaceFolder}/apps/gateway",
-      "remoteRoot": "/usr/src/app/apps/gateway"
-    },
-    {
-      "type": "node",
       "request": "launch",
       "name": "Debug permissions with Nx",
       "runtimeExecutable": "npx",
@@ -51,8 +41,13 @@
       "address": "localhost",
       "port": 9229,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/authentication",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/authentication/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -62,8 +57,13 @@
       "address": "localhost",
       "port": 9234,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/profile",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/profile/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -73,8 +73,13 @@
       "address": "localhost",
       "port": 9231,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/project-planning",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/project-planning/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -84,8 +89,13 @@
       "address": "localhost",
       "port": 9232,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/social",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/social/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -95,8 +105,13 @@
       "address": "localhost",
       "port": 9233,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/chat-collector",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/chat-collector/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -104,10 +119,15 @@
       "request": "attach",
       "name": "Attach to Assets (Docker)",
       "address": "localhost",
-      "port": 9234,
+      "port": 9244,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/assets",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/assets/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -117,8 +137,13 @@
       "address": "localhost",
       "port": 9235,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/blogging",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/blogging/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -128,8 +153,13 @@
       "address": "localhost",
       "port": 9236,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/ai-orchestrator",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/ai-orchestrator/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -139,8 +169,13 @@
       "address": "localhost",
       "port": 9237,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/prompt-proxy",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/prompt-proxy/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -150,8 +185,13 @@
       "address": "localhost",
       "port": 9238,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/telos-docs-service",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/telos-docs-service/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -159,10 +199,15 @@
       "request": "attach",
       "name": "Attach to Permissions (Docker)",
       "address": "localhost",
-      "port": 9243,
+      "port": 9239,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/permissions",
-      "remoteRoot": "/usr/src_app",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/permissions/**/*.js",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -172,8 +217,14 @@
       "address": "localhost",
       "port": 9240,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/client-interface",
       "remoteRoot": "/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/client-interface/**/*.js",
+        "${workspaceFolder}/dist/apps/client-interface/**/*.mjs",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -183,8 +234,14 @@
       "address": "localhost",
       "port": 9241,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/forgeofwill",
       "remoteRoot": "/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/forgeofwill/**/*.js",
+        "${workspaceFolder}/dist/apps/forgeofwill/**/*.mjs",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -194,8 +251,14 @@
       "address": "localhost",
       "port": 9242,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/digital-homestead",
       "remoteRoot": "/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/digital-homestead/**/*.js",
+        "${workspaceFolder}/dist/apps/digital-homestead/**/*.mjs",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     },
     {
@@ -205,8 +268,14 @@
       "address": "localhost",
       "port": 9243,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/christopherrutherford-net",
       "remoteRoot": "/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/christopherrutherford-net/**/*.js",
+        "${workspaceFolder}/dist/apps/christopherrutherford-net/**/*.mjs",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**"]
     }
   ]
