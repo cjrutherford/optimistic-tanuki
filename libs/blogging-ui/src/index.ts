@@ -12,6 +12,7 @@ export * from './lib/blog-compose/services/component-injection.service';
 export * from './lib/blog-compose/components/component-selector.component';
 export * from './lib/blog-compose/components/property-editor.component';
 export * from './lib/blog-compose/components/component-wrapper.component';
+export * from './lib/blog-compose/components/component-editor-wrapper.component';
 export * from './lib/blog-compose/configs/component-properties.config';
 
 // Example injectable components
