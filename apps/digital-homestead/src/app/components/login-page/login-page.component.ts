@@ -1,142 +1,62 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 
-import { CardComponent } from '@optimistic-tanuki/common-ui';
-import { TextInputComponent } from '@optimistic-tanuki/form-ui';
+import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
+import { LoginType } from '@optimistic-tanuki/ui-models';
 import { AuthStateService } from '../../auth-state.service';
+
+/** Default hero image for the login page - uses existing asset */
+const LOGIN_HERO_IMAGE = 'assets/digital-independence.png';
 
 @Component({
   selector: 'dh-login-page',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     RouterModule,
-    CardComponent,
-    TextInputComponent,
+    LoginBlockComponent,
   ],
   template: `
-    <div class="login-container">
-      <otui-card class="login-card">
-        <h1>Sign In</h1>
-        <p class="subtitle">Sign in to access blog editing features</p>
+    <div class="login-page">
+      <div *ngIf="error" class="error-banner">
+        {{ error }}
+      </div>
 
-        <div *ngIf="error" class="error-message">
-          {{ error }}
-        </div>
+      <lib-login-block
+        title="Digital Homestead"
+        description="Sign in to access blog editing features"
+        [heroSrc]="heroImage"
+        heroAlt="Digital Homestead"
+        (submitEvent)="onLogin($event)"
+      ></lib-login-block>
 
-        <form (ngSubmit)="onSubmit($event)">
-          <div class="form-group">
-            <label for="username">Username or Email</label>
-            <lib-text-input
-              id="username"
-              [(ngModel)]="username"
-              name="username"
-              placeholder="Enter your username"
-              [type]="'text'"
-            ></lib-text-input>
-          </div>
-
-          <div class="form-group">
-            <label for="password">Password</label>
-            <lib-text-input
-              id="password"
-              [(ngModel)]="password"
-              name="password"
-              placeholder="Enter your password"
-              [type]="'password'"
-            ></lib-text-input>
-          </div>
-
-          <div class="actions">
-            <button type="submit" class="submit-button" [disabled]="loading">
-              {{ loading ? 'Signing in...' : 'Sign In' }}
-            </button>
-          </div>
-        </form>
-
-        <div class="footer-links">
-          <a routerLink="/">Back to Home</a>
-        </div>
-      </otui-card>
+      <div class="footer-links">
+        <a routerLink="/">Back to Home</a>
+      </div>
     </div>
   `,
   styles: [`
-    .login-container {
+    .login-page {
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 2rem;
       background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     }
 
-    .login-card {
-      width: 100%;
-      max-width: 400px;
-      padding: 2rem;
-    }
-
-    h1 {
-      margin: 0 0 0.5rem 0;
-      color: var(--foreground, #333);
-      text-align: center;
-    }
-
-    .subtitle {
-      text-align: center;
-      color: var(--foreground-secondary, #666);
-      margin-bottom: 2rem;
-    }
-
-    .error-message {
+    .error-banner {
       background: #fee;
       border: 1px solid #fcc;
       color: #c00;
-      padding: 0.75rem 1rem;
+      padding: 0.75rem 1.5rem;
       border-radius: 4px;
       margin-bottom: 1rem;
       text-align: center;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      color: var(--foreground, #333);
-    }
-
-    .actions {
-      margin-top: 2rem;
-      text-align: center;
-    }
-
-    .submit-button {
+      max-width: 400px;
       width: 100%;
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-      font-weight: 500;
-      color: white;
-      background: var(--accent, #007acc);
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    .submit-button:hover:not(:disabled) {
-      background: var(--accent-dark, #005999);
-    }
-
-    .submit-button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
     }
 
     .footer-links {
@@ -158,36 +78,30 @@ export class LoginPageComponent {
   private authState: AuthStateService = inject(AuthStateService);
   private router: Router = inject(Router);
 
-  username = '';
-  password = '';
-  loading = false;
+  /** Hero image URL for the login block */
+  heroImage = LOGIN_HERO_IMAGE;
+  
   error: string | null = null;
 
-  async onSubmit(event?: Event): Promise<void> {
-    if (event) {
-      event.preventDefault();
-    }
-    
-    if (!this.username || !this.password) {
-      this.error = 'Please enter both username and password.';
-      return;
-    }
-
-    this.loading = true;
+  /**
+   * Handles login submission from the login-block component.
+   * The login-block component uses 'email' field naming, which maps to
+   * the username field in the authentication service. The gateway
+   * authentication endpoint accepts either email or username in this field.
+   */
+  async onLogin(credentials: LoginType): Promise<void> {
     this.error = null;
 
     try {
       await this.authState.login({
-        username: this.username,
-        password: this.password,
+        username: credentials.email,
+        password: credentials.password,
       });
       
       // Redirect to blog page after successful login
       this.router.navigate(['/blog']);
     } catch (err: any) {
       this.error = err?.message || 'Login failed. Please check your credentials.';
-    } finally {
-      this.loading = false;
     }
   }
 }
