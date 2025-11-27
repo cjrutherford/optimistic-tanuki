@@ -7,11 +7,29 @@
   <!-- Error State -->
   <div *ngIf="error" class="error-state">
     <p class="error-message">{{ error }}</p>
-    <otui-button (click)="error = null">Dismiss</otui-button>
+    <otui-button (action)="error = null">Dismiss</otui-button>
   </div>
 
-  <!-- Create/Edit Mode -->
-  <div *ngIf="!loading && (mode === 'create' || mode === 'edit')">
+  <!-- Permission Loading State -->
+  <div *ngIf="!loading && !permissionsLoaded && !postId" class="loading-state">
+    <p>Checking permissions...</p>
+  </div>
+
+  <!-- Read-Only Notice for Non-Privileged Users -->
+  <div *ngIf="!loading && permissionsLoaded && !canEdit && !postId" class="read-only-notice">
+    <div class="notice-content">
+      <h2>Blog Posts</h2>
+      <p *ngIf="!isAuthenticated">
+        Please <a routerLink="/login">sign in</a> to create or edit blog posts.
+      </p>
+      <p *ngIf="isAuthenticated && !hasFullAccess">
+        You have read-only access to this blog. Contact the site owner for editing permissions.
+      </p>
+    </div>
+  </div>
+
+  <!-- Create/Edit Mode (only shown if user has permission) -->
+  <div *ngIf="!loading && canEdit && (mode === 'create' || mode === 'edit')">
     <div class="header">
       <h1>{{ mode === 'create' ? 'Create a New Blog Post' : 'Edit Blog Post' }}</h1>
       <p>Use the component injection system to add custom components to your blog post.</p>
@@ -23,15 +41,16 @@
     </lib-blog-compose>
 
     <div class="actions" *ngIf="mode === 'edit'">
-      <otui-button (click)="onCancelEdit()">Cancel</otui-button>
+      <otui-button (action)="onCancelEdit()">Cancel</otui-button>
     </div>
   </div>
 
   <!-- View Mode -->
   <div *ngIf="!loading && mode === 'view' && post">
     <div class="view-actions">
-      <otui-button (click)="onEditClick()">Edit Post</otui-button>
-      <otui-button (click)="router.navigate(['/blog'])">Back to Blog List</otui-button>
+      <!-- Only show Edit button if user has permission -->
+      <otui-button *ngIf="canEdit" (action)="onEditClick()">Edit Post</otui-button>
+      <otui-button (action)="router.navigate(['/blog'])">Back to Blog List</otui-button>
     </div>
 
     <dh-blog-viewer 

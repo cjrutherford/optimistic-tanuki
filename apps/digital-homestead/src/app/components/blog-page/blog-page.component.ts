@@ -1,12 +1,15 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 
 import { BlogComposeComponent } from '@optimistic-tanuki/blogging-ui';
 import { BlogViewerComponent } from '../blog-viewer/blog-viewer.component';
 import { BlogService, BlogPost } from '../../blog.service';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { AuthStateService } from '../../auth-state.service';
+import { PermissionService } from '../../permission.service';
 
 @Component({
   selector: 'dh-blog-page',
@@ -14,6 +17,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
     BlogComposeComponent,
     BlogViewerComponent,
     ButtonComponent,
@@ -21,16 +25,25 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
   templateUrl: './blog-page.component.html',
   styleUrl: './blog-page.component.scss',
 })
-export class BlogPageComponent implements OnInit {
+export class BlogPageComponent implements OnInit, OnDestroy {
   route: ActivatedRoute = inject(ActivatedRoute);
   router: Router = inject(Router);
   blogService: BlogService = inject(BlogService);
+  authState: AuthStateService = inject(AuthStateService);
+  permissionService: PermissionService = inject(PermissionService);
 
-  mode: 'create' | 'edit' | 'view' = 'create';
+  mode: 'create' | 'edit' | 'view' = 'view'; // Default to view mode for safety
   postId: string | null = null;
   post: BlogPost | null = null;
   loading = false;
   error: string | null = null;
+
+  // Permission state
+  isAuthenticated = false;
+  hasFullAccess = false;
+  permissionsLoaded = false;
+
+  private subscriptions: Subscription[] = [];
 
   // Form data for the editor
   editorData: any = {
@@ -41,18 +54,79 @@ export class BlogPageComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.route.params.subscribe((params) => {
-      this.postId = params['id'] || null;
+    // Subscribe to authentication state
+    this.subscriptions.push(
+      this.authState.isAuthenticated$().subscribe((isAuth) => {
+        this.isAuthenticated = isAuth;
+        this.updateModeBasedOnPermissions();
+      })
+    );
 
-      if (this.postId) {
-        // View mode - load the post
-        this.mode = 'view';
-        this.loadPost(this.postId);
-      } else {
-        // Create mode
+    // Subscribe to permission state
+    this.subscriptions.push(
+      this.permissionService.hasFullAccess$().subscribe((hasAccess) => {
+        this.hasFullAccess = hasAccess;
+        this.updateModeBasedOnPermissions();
+      })
+    );
+
+    this.subscriptions.push(
+      this.permissionService.permissionsLoaded$().subscribe((loaded) => {
+        this.permissionsLoaded = loaded;
+        this.updateModeBasedOnPermissions();
+      })
+    );
+
+    // Subscribe to route params
+    this.subscriptions.push(
+      this.route.params.subscribe((params) => {
+        this.postId = params['id'] || null;
+
+        if (this.postId) {
+          // View mode - load the post
+          this.mode = 'view';
+          this.loadPost(this.postId);
+        } else {
+          // Check permissions for create mode
+          this.updateModeBasedOnPermissions();
+        }
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
+  }
+
+  /**
+   * Update the mode based on user permissions
+   * - Users with owner/full access can create/edit
+   * - Users without access can only view
+   */
+  private updateModeBasedOnPermissions(): void {
+    // If we're looking at a specific post, keep view mode
+    if (this.postId) {
+      this.mode = 'view';
+      return;
+    }
+
+    // For the blog list/create page
+    if (this.hasFullAccess) {
+      // User has permission to create
+      if (this.mode !== 'edit') {
         this.mode = 'create';
       }
-    });
+    } else {
+      // User doesn't have permission - show read-only view
+      this.mode = 'view';
+    }
+  }
+
+  /**
+   * Check if the user can edit/create blog posts
+   */
+  get canEdit(): boolean {
+    return this.isAuthenticated && this.hasFullAccess;
   }
 
   loadPost(id: string): void {
@@ -79,6 +153,18 @@ export class BlogPageComponent implements OnInit {
   }
 
   onPostSubmitted(postData: any): void {
+    // Double-check permission before submitting
+    if (!this.canEdit) {
+      this.error = 'You do not have permission to create or edit blog posts.';
+      return;
+    }
+
+    const authorId = this.authState.getProfileId();
+    if (!authorId) {
+      this.error = 'You must be logged in to create or edit blog posts.';
+      return;
+    }
+
     console.log('Post submitted:', postData);
     this.loading = true;
     this.error = null;
@@ -86,7 +172,7 @@ export class BlogPageComponent implements OnInit {
     const postPayload = {
       title: postData.title,
       content: postData.content,
-      authorId: 'current-user', // TODO: Get from authentication service
+      authorId: authorId,
     };
 
     if (this.mode === 'edit' && this.postId) {
@@ -128,6 +214,12 @@ export class BlogPageComponent implements OnInit {
   }
 
   onEditClick(): void {
+    // Check permission before allowing edit
+    if (!this.canEdit) {
+      this.error = 'You do not have permission to edit blog posts.';
+      return;
+    }
+
     this.mode = 'edit';
     if (this.post) {
       this.editorData = {

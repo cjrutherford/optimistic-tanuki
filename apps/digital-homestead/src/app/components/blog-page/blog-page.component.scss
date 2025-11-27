@@ -39,6 +39,43 @@
   margin: 0 0 1rem 0;
 }
 
+.read-only-notice {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid var(--border-color, #dee2e6);
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.read-only-notice .notice-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.read-only-notice h2 {
+  color: var(--foreground, #333);
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.read-only-notice p {
+  color: var(--foreground-secondary, #666);
+  margin-bottom: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.read-only-notice a {
+  color: var(--accent, #007acc);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.read-only-notice a:hover {
+  text-decoration: underline;
+}
+
 .view-actions {
   display: flex;
   gap: 1rem;
