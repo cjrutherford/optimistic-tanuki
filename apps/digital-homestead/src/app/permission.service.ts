@@ -3,24 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, firstValueFrom, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { isPlatformBrowser } from '@angular/common';
+import { RoleDto, PermissionDto } from '@optimistic-tanuki/ui-models';
 
 import { AuthStateService } from './auth-state.service';
-
-export interface RoleDto {
-  id: string;
-  name: string;
-  description: string;
-  appScope?: string;
-}
-
-export interface PermissionDto {
-  id: string;
-  name: string;
-  description: string;
-  resource: string;
-  action: string;
-  targetId?: string;
-}
 
 export interface UserRolesResponse {
   profileId: string;

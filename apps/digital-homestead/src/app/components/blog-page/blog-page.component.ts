@@ -1,15 +1,26 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 import { BlogComposeComponent } from '@optimistic-tanuki/blogging-ui';
 import { BlogViewerComponent } from '../blog-viewer/blog-viewer.component';
-import { BlogService, BlogPost } from '../../blog.service';
+import { BlogService } from '../../blog.service';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { AuthStateService } from '../../auth-state.service';
 import { PermissionService } from '../../permission.service';
+import { BlogPostDto } from '@optimistic-tanuki/ui-models';
+
+/** 
+ * Editor data matching the PostData interface from BlogComposeComponent 
+ */
+interface PostData {
+  title: string;
+  content: string;
+  links: { url: string }[];
+  attachments: File[];
+}
 
 @Component({
   selector: 'dh-blog-page',
@@ -25,149 +36,194 @@ import { PermissionService } from '../../permission.service';
   templateUrl: './blog-page.component.html',
   styleUrl: './blog-page.component.scss',
 })
-export class BlogPageComponent implements OnInit, OnDestroy {
-  route: ActivatedRoute = inject(ActivatedRoute);
-  router: Router = inject(Router);
-  blogService: BlogService = inject(BlogService);
-  authState: AuthStateService = inject(AuthStateService);
-  permissionService: PermissionService = inject(PermissionService);
+export class BlogPageComponent {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly blogService = inject(BlogService);
+  private readonly authState = inject(AuthStateService);
+  private readonly permissionService = inject(PermissionService);
 
-  mode: 'create' | 'edit' | 'view' = 'view'; // Default to view mode for safety
-  postId: string | null = null;
-  post: BlogPost | null = null;
-  loading = false;
-  error: string | null = null;
-
-  // Permission state
-  isAuthenticated = false;
-  hasFullAccess = false;
-  permissionsLoaded = false;
-
-  private subscriptions: Subscription[] = [];
-
-  // Form data for the editor
-  editorData: any = {
+  // Route params as signal
+  private readonly routeParams = toSignal(this.route.params, { initialValue: {} as Record<string, string> });
+  
+  // Signals for state management
+  readonly posts = signal<BlogPostDto[]>([]);
+  readonly selectedPost = signal<BlogPostDto | null>(null);
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly mode = signal<'view' | 'create' | 'edit'>('view');
+  
+  // Editor form data
+  readonly editorData = signal<PostData>({
     title: '',
     content: '',
     links: [],
     attachments: [],
-  };
+  });
 
-  ngOnInit(): void {
-    // Subscribe to authentication state
-    this.subscriptions.push(
-      this.authState.isAuthenticated$().subscribe((isAuth) => {
-        this.isAuthenticated = isAuth;
-        this.updateModeBasedOnPermissions();
-      })
-    );
+  // Auth state as signals
+  readonly isAuthenticated = toSignal(this.authState.isAuthenticated$(), { initialValue: false });
+  readonly hasFullAccess = toSignal(this.permissionService.hasFullAccess$(), { initialValue: false });
+  readonly permissionsLoaded = toSignal(this.permissionService.permissionsLoaded$(), { initialValue: false });
 
-    // Subscribe to permission state
-    this.subscriptions.push(
-      this.permissionService.hasFullAccess$().subscribe((hasAccess) => {
-        this.hasFullAccess = hasAccess;
-        this.updateModeBasedOnPermissions();
-      })
-    );
+  // Computed: can user edit
+  readonly canEdit = computed(() => this.isAuthenticated() && this.hasFullAccess());
 
-    this.subscriptions.push(
-      this.permissionService.permissionsLoaded$().subscribe((loaded) => {
-        this.permissionsLoaded = loaded;
-        this.updateModeBasedOnPermissions();
-      })
-    );
+  // Computed: get current post ID from route
+  readonly currentPostId = computed(() => {
+    const params = this.routeParams();
+    return params['id'] || null;
+  });
 
-    // Subscribe to route params
-    this.subscriptions.push(
-      this.route.params.subscribe((params) => {
-        this.postId = params['id'] || null;
+  // Flag to track if posts have been loaded
+  private postsInitialized = false;
 
-        if (this.postId) {
-          // View mode - load the post
-          this.mode = 'view';
-          this.loadPost(this.postId);
-        } else {
-          // Check permissions for create mode
-          this.updateModeBasedOnPermissions();
-        }
-      })
-    );
-  }
-
-  ngOnDestroy(): void {
-    this.subscriptions.forEach((sub) => sub.unsubscribe());
-  }
-
-  /**
-   * Update the mode based on user permissions
-   * - Users with owner/full access can create/edit
-   * - Users without access can only view
-   */
-  private updateModeBasedOnPermissions(): void {
-    // If we're looking at a specific post, keep view mode
-    if (this.postId) {
-      this.mode = 'view';
-      return;
+  // Effect to handle route changes
+  private readonly routeEffect = effect(() => {
+    const postId = this.currentPostId();
+    
+    // Load posts only once on initialization
+    if (!this.postsInitialized) {
+      this.postsInitialized = true;
+      this.loadAllPosts();
     }
-
-    // For the blog list/create page
-    if (this.hasFullAccess) {
-      // User has permission to create
-      if (this.mode !== 'edit') {
-        this.mode = 'create';
-      }
+    
+    if (postId) {
+      // Load specific post
+      this.loadPost(postId);
+      this.mode.set('view');
     } else {
-      // User doesn't have permission - show read-only view
-      this.mode = 'view';
+      // No post selected, show list view
+      this.selectedPost.set(null);
+      this.mode.set('view');
     }
+  });
+
+  /**
+   * Load all blog posts for the sidebar
+   */
+  loadAllPosts(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.blogService.getAllPosts().subscribe({
+      next: (posts) => {
+        // Sort by date descending (newest first)
+        const sortedPosts = [...posts].sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        this.posts.set(sortedPosts);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.error.set('Failed to load posts: ' + err.message);
+        this.loading.set(false);
+        console.error('Error loading posts:', err);
+      },
+    });
   }
 
   /**
-   * Check if the user can edit/create blog posts
+   * Load a specific blog post
    */
-  get canEdit(): boolean {
-    return this.isAuthenticated && this.hasFullAccess;
-  }
-
   loadPost(id: string): void {
-    this.loading = true;
-    this.error = null;
+    this.loading.set(true);
+    this.error.set(null);
 
     this.blogService.getPost(id).subscribe({
       next: (post) => {
-        this.post = post;
-        this.editorData = {
+        this.selectedPost.set(post);
+        this.editorData.set({
           title: post.title,
           content: post.content,
           links: [],
           attachments: [],
-        };
-        this.loading = false;
+        });
+        this.loading.set(false);
       },
       error: (err) => {
-        this.error = 'Failed to load post: ' + err.message;
-        this.loading = false;
+        this.error.set('Failed to load post: ' + err.message);
+        this.loading.set(false);
         console.error('Error loading post:', err);
       },
     });
   }
 
-  onPostSubmitted(postData: any): void {
-    // Double-check permission before submitting
-    if (!this.canEdit) {
-      this.error = 'You do not have permission to create or edit blog posts.';
+  /**
+   * Navigate to a specific post
+   */
+  selectPost(post: BlogPostDto): void {
+    this.router.navigate(['/blog', post.id]);
+  }
+
+  /**
+   * Start creating a new post (only if user has permission)
+   */
+  startCreatePost(): void {
+    if (!this.canEdit()) {
+      this.error.set('You do not have permission to create blog posts.');
+      return;
+    }
+    this.mode.set('create');
+    this.selectedPost.set(null);
+    this.editorData.set({
+      title: '',
+      content: '',
+      links: [],
+      attachments: [],
+    });
+  }
+
+  /**
+   * Start editing the current post (only if user has permission)
+   */
+  startEditPost(): void {
+    if (!this.canEdit()) {
+      this.error.set('You do not have permission to edit blog posts.');
+      return;
+    }
+    const post = this.selectedPost();
+    if (post) {
+      this.mode.set('edit');
+      this.editorData.set({
+        title: post.title,
+        content: post.content,
+        links: [],
+        attachments: [],
+      });
+    }
+  }
+
+  /**
+   * Cancel editing and return to view mode
+   */
+  cancelEdit(): void {
+    this.mode.set('view');
+    const postId = this.currentPostId();
+    if (postId) {
+      this.loadPost(postId);
+    } else {
+      this.router.navigate(['/blog']);
+    }
+  }
+
+  /**
+   * Handle post submission (create or update)
+   */
+  onPostSubmitted(postData: PostData): void {
+    if (!this.canEdit()) {
+      this.error.set('You do not have permission to create or edit blog posts.');
       return;
     }
 
     const authorId = this.authState.getProfileId();
     if (!authorId) {
-      this.error = 'You must be logged in to create or edit blog posts.';
+      this.error.set('You must be logged in to create or edit blog posts.');
       return;
     }
 
-    console.log('Post submitted:', postData);
-    this.loading = true;
-    this.error = null;
+    this.loading.set(true);
+    this.error.set(null);
 
     const postPayload = {
       title: postData.title,
@@ -175,18 +231,22 @@ export class BlogPageComponent implements OnInit, OnDestroy {
       authorId: authorId,
     };
 
-    if (this.mode === 'edit' && this.postId) {
+    const currentMode = this.mode();
+    const postId = this.currentPostId();
+
+    if (currentMode === 'edit' && postId) {
       // Update existing post
-      this.blogService.updatePost(this.postId, postPayload).subscribe({
+      this.blogService.updatePost(postId, postPayload).subscribe({
         next: (updatedPost) => {
-          this.post = updatedPost;
-          this.mode = 'view';
-          this.loading = false;
-          console.log('Post updated successfully');
+          this.selectedPost.set(updatedPost);
+          this.mode.set('view');
+          this.loading.set(false);
+          // Update the post in the sidebar list
+          this.updatePostInList(updatedPost);
         },
         error: (err) => {
-          this.error = 'Failed to update post: ' + err.message;
-          this.loading = false;
+          this.error.set('Failed to update post: ' + err.message);
+          this.loading.set(false);
           console.error('Error updating post:', err);
         },
       });
@@ -194,48 +254,59 @@ export class BlogPageComponent implements OnInit, OnDestroy {
       // Create new post
       this.blogService.createPost(postPayload).subscribe({
         next: (newPost) => {
-          this.post = newPost;
-          this.postId = newPost.id || null;
-          this.mode = 'view';
-          this.loading = false;
-          console.log('Post created successfully');
-          // Navigate to the new post's URL
+          this.selectedPost.set(newPost);
+          this.mode.set('view');
+          this.loading.set(false);
+          // Add the new post to the sidebar list
+          this.addPostToList(newPost);
           if (newPost.id) {
             this.router.navigate(['/blog', newPost.id]);
           }
         },
         error: (err) => {
-          this.error = 'Failed to create post: ' + err.message;
-          this.loading = false;
+          this.error.set('Failed to create post: ' + err.message);
+          this.loading.set(false);
           console.error('Error creating post:', err);
         },
       });
     }
   }
 
-  onEditClick(): void {
-    // Check permission before allowing edit
-    if (!this.canEdit) {
-      this.error = 'You do not have permission to edit blog posts.';
-      return;
-    }
-
-    this.mode = 'edit';
-    if (this.post) {
-      this.editorData = {
-        title: this.post.title,
-        content: this.post.content,
-        links: [],
-        attachments: [],
-      };
-    }
+  /**
+   * Format date for display
+   */
+  formatDate(date: Date | string): string {
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   }
 
-  onCancelEdit(): void {
-    if (this.postId) {
-      this.mode = 'view';
-    } else {
-      this.router.navigate(['/blog']);
-    }
+  /**
+   * Dismiss error message
+   */
+  dismissError(): void {
+    this.error.set(null);
+  }
+
+  /**
+   * Add a new post to the beginning of the posts list
+   */
+  private addPostToList(post: BlogPostDto): void {
+    const currentPosts = this.posts();
+    this.posts.set([post, ...currentPosts]);
+  }
+
+  /**
+   * Update an existing post in the posts list
+   */
+  private updatePostInList(updatedPost: BlogPostDto): void {
+    const currentPosts = this.posts();
+    const updatedPosts = currentPosts.map(post => 
+      post.id === updatedPost.id ? updatedPost : post
+    );
+    this.posts.set(updatedPosts);
   }
 }

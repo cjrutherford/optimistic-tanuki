@@ -13,3 +13,4 @@ export { PermissionDto, CreatePermissionDto, UpdatePermissionDto } from './permi
 export { RoleDto, CreateRoleDto, UpdateRoleDto, AssignRoleDto } from './roles';
 export type { AppScopeDto, CreateAppScopeDto, UpdateAppScopeDto } from './app-scopes';
 export { type AuthResponse } from './auth-response';
+export { BlogPostDto, CreateBlogPostDto, UpdateBlogPostDto, BlogPostQueryDto } from './blog-post';

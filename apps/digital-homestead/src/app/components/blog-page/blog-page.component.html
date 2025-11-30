@@ -1,63 +1,107 @@
 <div class="blog-page-container">
-  <!-- Loading State -->
-  <div *ngIf="loading" class="loading-state">
-    <p>Loading...</p>
-  </div>
-
   <!-- Error State -->
-  <div *ngIf="error" class="error-state">
-    <p class="error-message">{{ error }}</p>
-    <otui-button (action)="error = null">Dismiss</otui-button>
-  </div>
-
-  <!-- Permission Loading State -->
-  <div *ngIf="!loading && !permissionsLoaded && !postId" class="loading-state">
-    <p>Checking permissions...</p>
-  </div>
-
-  <!-- Read-Only Notice for Non-Privileged Users -->
-  <div *ngIf="!loading && permissionsLoaded && !canEdit && !postId" class="read-only-notice">
-    <div class="notice-content">
-      <h2>Blog Posts</h2>
-      <p *ngIf="!isAuthenticated">
-        Please <a routerLink="/login">sign in</a> to create or edit blog posts.
-      </p>
-      <p *ngIf="isAuthenticated && !hasFullAccess">
-        You have read-only access to this blog. Contact the site owner for editing permissions.
-      </p>
+  @if (error()) {
+    <div class="error-state">
+      <p class="error-message">{{ error() }}</p>
+      <otui-button (action)="dismissError()">Dismiss</otui-button>
     </div>
-  </div>
+  }
 
-  <!-- Create/Edit Mode (only shown if user has permission) -->
-  <div *ngIf="!loading && canEdit && (mode === 'create' || mode === 'edit')">
-    <div class="header">
-      <h1>{{ mode === 'create' ? 'Create a New Blog Post' : 'Edit Blog Post' }}</h1>
-      <p>Use the component injection system to add custom components to your blog post.</p>
-    </div>
-    
-    <lib-blog-compose 
-      [(ngModel)]="editorData"
-      (postSubmitted)="onPostSubmitted($event)">
-    </lib-blog-compose>
+  <div class="blog-layout">
+    <!-- Sidebar with post list -->
+    <aside class="blog-sidebar">
+      <div class="sidebar-header">
+        <h2>Blog Posts</h2>
+        @if (canEdit()) {
+          <otui-button (action)="startCreatePost()">New Post</otui-button>
+        }
+      </div>
 
-    <div class="actions" *ngIf="mode === 'edit'">
-      <otui-button (action)="onCancelEdit()">Cancel</otui-button>
-    </div>
-  </div>
+      @if (loading() && posts().length === 0) {
+        <div class="sidebar-loading">
+          <p>Loading posts...</p>
+        </div>
+      }
 
-  <!-- View Mode -->
-  <div *ngIf="!loading && mode === 'view' && post">
-    <div class="view-actions">
-      <!-- Only show Edit button if user has permission -->
-      <otui-button *ngIf="canEdit" (action)="onEditClick()">Edit Post</otui-button>
-      <otui-button (action)="router.navigate(['/blog'])">Back to Blog List</otui-button>
-    </div>
+      <nav class="post-list">
+        @for (post of posts(); track post.id) {
+          <button 
+            class="post-item" 
+            [class.active]="currentPostId() === post.id"
+            (click)="selectPost(post)">
+            <span class="post-title">{{ post.title }}</span>
+            <span class="post-date">{{ formatDate(post.createdAt) }}</span>
+          </button>
+        } @empty {
+          @if (!loading()) {
+            <p class="no-posts">No posts yet.</p>
+          }
+        }
+      </nav>
+    </aside>
 
-    <dh-blog-viewer 
-      [title]="post.title"
-      [content]="post.content"
-      [authorId]="post.authorId"
-      [createdAt]="post.createdAt">
-    </dh-blog-viewer>
+    <!-- Main content area -->
+    <main class="blog-content">
+      @if (loading()) {
+        <div class="loading-state">
+          <p>Loading...</p>
+        </div>
+      } @else {
+        <!-- View Mode: Show selected post or welcome message -->
+        @if (mode() === 'view') {
+          @if (selectedPost()) {
+            <div class="view-actions">
+              @if (canEdit()) {
+                <otui-button (action)="startEditPost()">Edit Post</otui-button>
+              }
+            </div>
+
+            <dh-blog-viewer 
+              [title]="selectedPost()!.title"
+              [content]="selectedPost()!.content"
+              [authorId]="selectedPost()!.authorId"
+              [createdAt]="selectedPost()!.createdAt">
+            </dh-blog-viewer>
+          } @else {
+            <div class="welcome-message">
+              <h1>Welcome to the Blog</h1>
+              <p>Select a post from the sidebar to read, or</p>
+              @if (!isAuthenticated()) {
+                <p><a routerLink="/login">Sign in</a> to create new posts.</p>
+              } @else if (!hasFullAccess()) {
+                <p>You have read-only access. Contact the site owner for editing permissions.</p>
+              } @else {
+                <otui-button (action)="startCreatePost()">Create a New Post</otui-button>
+              }
+            </div>
+          }
+        }
+
+        <!-- Create/Edit Mode (only shown if user has permission) -->
+        @if (mode() === 'create' || mode() === 'edit') {
+          @if (canEdit()) {
+            <div class="editor-header">
+              <h1>{{ mode() === 'create' ? 'Create a New Blog Post' : 'Edit Blog Post' }}</h1>
+              <p>Use the component injection system to add custom components to your blog post.</p>
+            </div>
+            
+            <lib-blog-compose 
+              [ngModel]="editorData()"
+              (postSubmitted)="onPostSubmitted($event)">
+            </lib-blog-compose>
+
+            <div class="editor-actions">
+              <otui-button (action)="cancelEdit()">Cancel</otui-button>
+            </div>
+          } @else {
+            <div class="access-denied">
+              <h2>Access Denied</h2>
+              <p>You do not have permission to create or edit blog posts.</p>
+              <otui-button (action)="cancelEdit()">Go Back</otui-button>
+            </div>
+          }
+        }
+      }
+    </main>
   </div>
 </div>
