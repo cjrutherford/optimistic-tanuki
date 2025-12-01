@@ -55,7 +55,8 @@ describe('AppController', () => {
       expect(appService.login).toHaveBeenCalledWith(
         'test@example.com',
         'password',
-        '123456'
+        '123456',
+        'profile123'
       );
       expect(loginResponse).toEqual({
         userId: 'userId',
