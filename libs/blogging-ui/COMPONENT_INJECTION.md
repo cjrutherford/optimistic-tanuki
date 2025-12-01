@@ -6,7 +6,10 @@ This implementation adds a powerful Angular content projection system to the `bl
 
 ### 1. Component Registration System
 - Register custom Angular components that can be injected into the editor
-- Components are organized by categories (e.g., 'Content', 'Media', 'Interactive')
+- Components are organized by categories:
+  - **Blogging**: Callout Box, Code Snippet, Image Gallery, Hero, Featured Posts, Newsletter Signup
+  - **Common UI**: Card, Button, Accordion, Modal, Hero Section, Content Section
+  - **Form UI**: Text Input, Checkbox, Select, Radio Button, Text Area
 - Each component has metadata including name, description, icon, and default data
 
 ### 2. Component Injection API
@@ -27,19 +30,25 @@ interface ComponentInjectionAPI {
 }
 ```
 
-### 3. Content Projection Areas
-- Dedicated container for injected components with visual feedback
-- Components are rendered in their own Angular context with full lifecycle support
-- Drag and drop positioning support
+### 3. Component Editor Wrapper
+The new `ComponentEditorWrapperComponent` provides:
+- **Dynamic Component Rendering**: Renders the actual Angular component inline
+- **Inline Editing Controls**: Edit, duplicate, delete, and configure buttons
+- **Quick Edit Mode**: Inline property editing without opening a modal
+- **Property Preview**: Shows key property values at a glance
+- **Selection States**: Visual feedback for hover and selection
 
 ### 4. User Interface Integration
-- **Component Selector Modal**: Browse and select from available components
+- **Component Selector Modal**: Browse and select from available components by category
 - **Toolbar Integration**: Easy access button in the TipTap editor toolbar
-- **Visual Container**: Clear indication of where components will be injected
+- **Property Editor**: Full-featured modal for editing all component properties
+- **Quick Edit Overlay**: Inline editing for common properties
 
-## Example Components Included
+## Pre-Built Injectable Components
 
-### 1. Callout Box Component
+### Blogging UI Components
+
+#### Callout Box
 Highlight important information with colored callout boxes:
 ```typescript
 @Input() type: 'info' | 'warning' | 'success' | 'error' = 'info';
@@ -47,7 +56,7 @@ Highlight important information with colored callout boxes:
 @Input() content = '';
 ```
 
-### 2. Code Snippet Component
+#### Code Snippet
 Display formatted code with syntax highlighting:
 ```typescript
 @Input() title = '';
@@ -55,12 +64,58 @@ Display formatted code with syntax highlighting:
 @Input() code = '';
 ```
 
-### 3. Image Gallery Component
+#### Image Gallery
 Create responsive image galleries:
 ```typescript
 @Input() title = '';
 @Input() columns: 1 | 2 | 3 | 4 = 3;
 @Input() images: Array<{ url: string; alt?: string; caption?: string }> = [];
+```
+
+### Common UI Components
+
+#### Card
+Styled container for organizing content:
+```typescript
+@Input() glassEffect = false;
+@Input() CardVariant: 'default' | 'glass' | 'gradient' = 'default';
+```
+
+#### Button
+Interactive button with style variants:
+```typescript
+@Input() variant: 'primary' | 'secondary' | 'outlined' | 'warning' | 'danger' = 'primary';
+@Input() disabled = false;
+```
+
+#### Accordion
+Collapsible sections for content organization:
+```typescript
+@Input() sections: { heading: string; content?: string }[] = [];
+@Input() variant: 'default' | 'glass' | 'gradient' = 'default';
+```
+
+### Form UI Components
+
+#### Text Input
+Single-line text input with labels:
+```typescript
+@Input() type: 'text' | 'password' | 'date' = 'text';
+@Input() label = '';
+@Input() placeholder = '';
+```
+
+#### Select
+Dropdown selection:
+```typescript
+@Input() options: { value: string; label: string }[] = [];
+```
+
+#### Radio Button
+Single selection within a group:
+```typescript
+@Input() options: { label: string; value: string }[] = [];
+@Input() layout: 'vertical' | 'horizontal' | 'grid' = 'vertical';
 ```
 
 ## Usage Example
@@ -112,6 +167,22 @@ blogCompose.registerComponent({
 });
 ```
 
+3. Define property configuration (optional, for property editor):
+```typescript
+// In component-properties.config.ts
+export const COMPONENT_PROPERTY_DEFINITIONS = {
+  'my-custom': [
+    {
+      key: 'customData',
+      type: 'string',
+      label: 'Custom Data',
+      description: 'The data to display',
+      defaultValue: 'Default content'
+    }
+  ]
+};
+```
+
 ## Benefits
 
 1. **Modularity**: Components are self-contained and reusable
@@ -120,6 +191,7 @@ blogCompose.registerComponent({
 4. **Performance**: Components use Angular's native rendering and change detection
 5. **Flexibility**: Components can be positioned, updated, and removed dynamically
 6. **Integration**: Seamlessly integrates with existing TipTap editor functionality
+7. **Multi-Library Support**: Use components from Blogging UI, Common UI, and Form UI
 
 ## Files Structure
 
@@ -131,11 +203,18 @@ libs/blogging-ui/src/lib/blog-compose/
 │   └── component-injection.service.ts      # Main injection service
 ├── components/
 │   ├── component-selector.component.ts     # Component selection UI
+│   ├── component-wrapper.component.ts      # Basic wrapper component
+│   ├── component-editor-wrapper.component.ts  # Enhanced editing wrapper
+│   ├── property-editor.component.ts        # Full property editor modal
 │   └── example-components/                 # Pre-built example components
 │       ├── callout-box.component.ts
 │       ├── code-snippet.component.ts
 │       └── image-gallery.component.ts
+├── configs/
+│   └── component-properties.config.ts      # Property definitions for all components
+├── extensions/
+│   └── angular-component-node.extension.ts # TipTap extension for inline components
 └── blog-compose.component.ts               # Main component with injection integration
 ```
 
-This implementation provides both programmatic APIs and user-friendly interfaces for component injection, making it easy to extend blog posts with rich, interactive content.
+This implementation provides both programmatic APIs and user-friendly interfaces for component injection, making it easy to extend blog posts with rich, interactive content from multiple UI libraries.

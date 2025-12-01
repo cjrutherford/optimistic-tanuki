@@ -141,12 +141,12 @@ export class AuthenticationController {
             this.profileClient.send({ cmd: ProfileCommands.Create }, scopedProfile)
           );
 
-          // Assign owner-level roles for this scope
+          // Assign owner-level roles for this scope with full control permissions
           const builder = new RoleInitBuilder()
             .setScopeName(scope)
             .setProfile(scopedCreatedProfile.id)
             .addDefaultProfileOwner(scopedCreatedProfile.id, scope)
-            .addAppScopeDefaults()
+            .addOwnerScopeDefaults()
             .addAssetOwnerPermissions();
 
           const roleInitOptions = builder.build();

@@ -1,6 +1,22 @@
 import { PropertyDefinition } from '../components/property-editor.component';
 
+/**
+ * Component Property Definitions
+ * 
+ * This configuration maps component IDs to their editable properties.
+ * Used by the property editor and component editor wrapper to provide
+ * configuration UI for injectable components.
+ * 
+ * Components are organized by library:
+ * - Blogging UI: callout-box, code-snippet, image-gallery, hero, featured-posts, newsletter-signup
+ * - Common UI: card, button, accordion, modal, hero-section, content-section
+ * - Form UI: text-input, checkbox, select, radio-button, text-area
+ */
 export const COMPONENT_PROPERTY_DEFINITIONS: { [componentId: string]: PropertyDefinition[] } = {
+  // ============================================
+  // BLOGGING UI COMPONENTS
+  // ============================================
+  
   'callout-box': [
     {
       key: 'type',
@@ -158,6 +174,301 @@ export const COMPONENT_PROPERTY_DEFINITIONS: { [componentId: string]: PropertyDe
       outputSchema: {
         email: 'string'
       }
+    }
+  ],
+
+  // ============================================
+  // COMMON UI COMPONENTS
+  // ============================================
+
+  'common-card': [
+    {
+      key: 'glassEffect',
+      type: 'boolean',
+      label: 'Glass Effect',
+      description: 'Enable glassmorphism visual effect',
+      defaultValue: false
+    },
+    {
+      key: 'CardVariant',
+      type: 'string',
+      label: 'Card Variant',
+      description: 'Visual style variant (default, glass, gradient, neon, etc.)',
+      defaultValue: 'default'
+    }
+  ],
+
+  'common-button': [
+    {
+      key: 'variant',
+      type: 'string',
+      label: 'Button Variant',
+      description: 'Visual style: primary, secondary, outlined, text, warning, danger, success, rounded',
+      defaultValue: 'primary'
+    },
+    {
+      key: 'disabled',
+      type: 'boolean',
+      label: 'Disabled',
+      description: 'Whether the button is disabled',
+      defaultValue: false
+    },
+    {
+      key: 'label',
+      type: 'string',
+      label: 'Button Label',
+      description: 'Text displayed on the button',
+      defaultValue: 'Click Me'
+    },
+    {
+      key: 'action',
+      type: 'string',
+      label: 'Click Action',
+      description: 'Event emitted when button is clicked',
+      isOutput: true,
+      outputSchema: {}
+    }
+  ],
+
+  'common-accordion': [
+    {
+      key: 'variant',
+      type: 'string',
+      label: 'Accordion Variant',
+      description: 'Visual style: default, glass, gradient',
+      defaultValue: 'default'
+    },
+    {
+      key: 'size',
+      type: 'string',
+      label: 'Size',
+      description: 'Accordion size: sm, md, lg',
+      defaultValue: 'md'
+    },
+    {
+      key: 'sections',
+      type: 'array',
+      label: 'Sections',
+      description: 'Array of accordion sections with heading and content',
+      defaultValue: [
+        { heading: 'Section 1', content: 'Content for section 1' },
+        { heading: 'Section 2', content: 'Content for section 2' }
+      ]
+    }
+  ],
+
+  'common-modal': [
+    {
+      key: 'heading',
+      type: 'string',
+      label: 'Modal Heading',
+      description: 'Title text for the modal',
+      defaultValue: 'Modal Title'
+    },
+    {
+      key: 'mode',
+      type: 'string',
+      label: 'Display Mode',
+      description: 'Modal mode: sidebar, sidebar-left, trough, standard-modal, captive-modal',
+      defaultValue: 'standard-modal'
+    },
+    {
+      key: 'variant',
+      type: 'string',
+      label: 'Visual Variant',
+      description: 'Visual style: default, glass, gradient',
+      defaultValue: 'default'
+    },
+    {
+      key: 'size',
+      type: 'string',
+      label: 'Size',
+      description: 'Modal size: sm, md, lg',
+      defaultValue: 'md'
+    },
+    {
+      key: 'closeModal',
+      type: 'string',
+      label: 'Close Event',
+      description: 'Event emitted when modal is closed',
+      isOutput: true,
+      outputSchema: {}
+    }
+  ],
+
+  'common-hero-section': [
+    {
+      key: 'title',
+      type: 'string',
+      label: 'Title',
+      description: 'Main title for the hero section',
+      defaultValue: 'Welcome'
+    },
+    {
+      key: 'subtitle',
+      type: 'string',
+      label: 'Subtitle',
+      description: 'Secondary text below the title',
+      defaultValue: 'Discover amazing content'
+    },
+    {
+      key: 'backgroundImage',
+      type: 'url',
+      label: 'Background Image',
+      description: 'URL for background image',
+      defaultValue: ''
+    },
+    {
+      key: 'alignment',
+      type: 'string',
+      label: 'Text Alignment',
+      description: 'Alignment of content: left, center, right',
+      defaultValue: 'center'
+    }
+  ],
+
+  'common-content-section': [
+    {
+      key: 'title',
+      type: 'string',
+      label: 'Section Title',
+      description: 'Title for the content section',
+      defaultValue: 'Content Section'
+    },
+    {
+      key: 'layout',
+      type: 'string',
+      label: 'Layout',
+      description: 'Content layout: single-column, two-column, grid',
+      defaultValue: 'single-column'
+    }
+  ],
+
+  // ============================================
+  // FORM UI COMPONENTS
+  // ============================================
+
+  'form-text-input': [
+    {
+      key: 'type',
+      type: 'string',
+      label: 'Input Type',
+      description: 'Type of input: text, password, obscured, date',
+      defaultValue: 'text'
+    },
+    {
+      key: 'label',
+      type: 'string',
+      label: 'Label',
+      description: 'Label text for the input',
+      defaultValue: 'Text Input'
+    },
+    {
+      key: 'placeholder',
+      type: 'string',
+      label: 'Placeholder',
+      description: 'Placeholder text when input is empty',
+      defaultValue: 'Enter text...'
+    },
+    {
+      key: 'labelPosition',
+      type: 'string',
+      label: 'Label Position',
+      description: 'Position of label: top, left, right, bottom',
+      defaultValue: 'top'
+    },
+    {
+      key: 'valueChange',
+      type: 'string',
+      label: 'Value Change Event',
+      description: 'Event emitted when value changes',
+      isOutput: true,
+      outputSchema: { value: 'string' }
+    }
+  ],
+
+  'form-checkbox': [
+    {
+      key: 'value',
+      type: 'boolean',
+      label: 'Checked',
+      description: 'Whether the checkbox is checked',
+      defaultValue: false
+    },
+    {
+      key: 'changeEvent',
+      type: 'string',
+      label: 'Change Event',
+      description: 'Event emitted when checkbox state changes',
+      isOutput: true,
+      outputSchema: { checked: 'boolean' }
+    }
+  ],
+
+  'form-select': [
+    {
+      key: 'options',
+      type: 'array',
+      label: 'Options',
+      description: 'Array of options with value and label properties',
+      defaultValue: [
+        { value: 'option1', label: 'Option 1' },
+        { value: 'option2', label: 'Option 2' },
+        { value: 'option3', label: 'Option 3' }
+      ]
+    }
+  ],
+
+  'form-radio-button': [
+    {
+      key: 'options',
+      type: 'array',
+      label: 'Radio Options',
+      description: 'Array of options with label and value properties',
+      defaultValue: [
+        { label: 'Option 1', value: 'option1' },
+        { label: 'Option 2', value: 'option2' }
+      ]
+    },
+    {
+      key: 'layout',
+      type: 'string',
+      label: 'Layout',
+      description: 'Layout direction: vertical, horizontal, grid',
+      defaultValue: 'vertical'
+    },
+    {
+      key: 'selected',
+      type: 'string',
+      label: 'Selected Value',
+      description: 'Currently selected value',
+      defaultValue: ''
+    },
+    {
+      key: 'selectedValue',
+      type: 'string',
+      label: 'Selection Event',
+      description: 'Event emitted when selection changes',
+      isOutput: true,
+      outputSchema: { value: 'string' }
+    }
+  ],
+
+  'form-text-area': [
+    {
+      key: 'label',
+      type: 'string',
+      label: 'Label',
+      description: 'Label text for the text area',
+      defaultValue: 'Text Area'
+    },
+    {
+      key: 'valueChange',
+      type: 'string',
+      label: 'Value Change Event',
+      description: 'Event emitted when value changes',
+      isOutput: true,
+      outputSchema: { value: 'string' }
     }
   ]
 };

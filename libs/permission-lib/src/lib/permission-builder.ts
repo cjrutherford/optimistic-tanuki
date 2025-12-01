@@ -27,6 +27,32 @@ export interface RoleInitOptions {
   assignments?: AssignmentSpec[];
 }
 
+/**
+ * Common resources that owner permissions should cover.
+ * Used by addOwnerPermissions() to grant full CRUD access.
+ */
+export const OWNER_PERMISSION_RESOURCES = [
+  'profile',
+  'asset',
+  'blog',
+  'post',
+  'comment',
+  'project',
+  'task',
+  'social',
+] as const;
+
+/**
+ * Common actions for owner permissions.
+ */
+export const OWNER_PERMISSION_ACTIONS = [
+  'create',
+  'read',
+  'update',
+  'delete',
+  'admin',
+] as const;
+
 export class RoleInitBuilder {
   private opts: RoleInitOptions = {
     permissions: [],
@@ -97,6 +123,50 @@ export class RoleInitBuilder {
     return this;
   }
 
+  /**
+   * Adds owner-level permissions for an app scope.
+   * Used when registering via owner-console to grant full control.
+   */
+  addOwnerPermissions() {
+    const appScope = this.opts.scopeName;
+    
+    // Add full CRUD permissions for all common resources
+    for (const resource of OWNER_PERMISSION_RESOURCES) {
+      for (const action of OWNER_PERMISSION_ACTIONS) {
+        this.addPermission(
+          `${resource}.${action}`,
+          resource,
+          action,
+          `${action} ${resource} (owner permission)`,
+          undefined,
+          appScope
+        );
+      }
+    }
+    
+    return this;
+  }
+
+  /**
+   * Assigns the owner role for the current app scope.
+   * Owner role grants full control over all resources in the scope.
+   */
+  assignOwnerRole() {
+    const scopeName = this.opts.scopeName;
+    const ownerRoleName = scopeName 
+      ? `${scopeName.replace(/-/g, '_')}_owner`
+      : 'app_owner';
+    
+    // Add the owner role
+    const allPermissions = (this.opts.permissions || []).map(p => p.name);
+    this.addRole(ownerRoleName, `Owner of ${scopeName || 'app'} with full control`, allPermissions);
+    
+    // Assign the owner role to the profile
+    this.assignRoleToProfile(ownerRoleName);
+    
+    return this;
+  }
+
   addRole(name: string, description?: string, permissionNames: string[] = []) {
     (this.opts.roles ?? []).push({
       name,
@@ -153,6 +223,16 @@ export class RoleInitBuilder {
         // Fallback for unknown scopes
         return this;
     }
+  }
+
+  /**
+   * Adds owner-level defaults for an app scope when registering via owner-console.
+   * This grants full control permissions instead of standard user roles.
+   */
+  addOwnerScopeDefaults() {
+    this.addOwnerPermissions();
+    this.assignOwnerRole();
+    return this;
   }
 
   addDefaultProfileOwner(profileId: string, appScope?: string) {

@@ -1,11 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BlogPageComponent } from './blog-page.component';
-import { Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-
-import { BlogComposeComponent } from '@optimistic-tanuki/blogging-ui';
-
-// Remove MockBlogComposeComponent definition
+import { provideHttpClient } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
 
 describe('BlogPageComponent', () => {
   let component: BlogPageComponent;
@@ -13,7 +9,11 @@ describe('BlogPageComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [BlogPageComponent, BlogComposeComponent],
+      imports: [BlogPageComponent],
+      providers: [
+        provideHttpClient(),
+        provideRouter([]),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(BlogPageComponent);
@@ -25,11 +25,15 @@ describe('BlogPageComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should handle post submission', () => {
-    jest.spyOn(component, 'onPostSubmitted');
-    const blogComposeComponent = fixture.debugElement.children[0].componentInstance as BlogComposeComponent;
-    const postData = { title: 'Test Post', content: 'Test Content' };
-    blogComposeComponent.postSubmitted.emit(postData);
-    expect(component.onPostSubmitted).toHaveBeenCalledWith(postData);
+  it('should default to view mode', () => {
+    expect(component.mode()).toBe('view');
+  });
+
+  it('should initialize with empty posts', () => {
+    expect(component.posts().length).toBe(0);
+  });
+
+  it('should have canEdit as false when not authenticated', () => {
+    expect(component.canEdit()).toBe(false);
   });
 });

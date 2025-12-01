@@ -29,8 +29,21 @@ import TableCell from '@tiptap/extension-table-cell';
 
 import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder } from '@optimistic-tanuki/common-ui';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
+import { 
+  ButtonComponent, 
+  CardComponent, 
+  AccordionComponent,
+  ModalComponent,
+  HeroSectionComponent,
+  ContentSectionComponent 
+} from '@optimistic-tanuki/common-ui';
+import { 
+  TextAreaComponent, 
+  TextInputComponent,
+  CheckboxComponent,
+  SelectComponent,
+  RadioButtonComponent
+} from '@optimistic-tanuki/form-ui';
 import { ContextMenuComponent } from '../context-menu/context-menu.component';
 
 // Component injection system imports
@@ -55,6 +68,7 @@ import { NewsletterSignupComponent } from '../newsletter-signup/newsletter-signu
 // Property editing system
 import { PropertyEditorComponent, PropertyDefinition } from './components/property-editor.component';
 import { ComponentWrapperComponent } from './components/component-wrapper.component';
+import { ComponentEditorWrapperComponent } from './components/component-editor-wrapper.component';
 import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
 
 // Rich text toolbar
@@ -83,6 +97,7 @@ interface PostData {
     ComponentSelectorComponent,
     PropertyEditorComponent,
     ComponentWrapperComponent,
+    ComponentEditorWrapperComponent,
     RichTextToolbarComponent,
     TextAreaComponent,
     TiptapEditorDirective,
@@ -245,12 +260,16 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
 
   // Component injection system initialization
   private initializeDefaultComponents(): void {
+    // ============================================
+    // BLOGGING UI COMPONENTS
+    // ============================================
+    
     this.registerComponent({
       id: 'callout-box',
       name: 'Callout Box',
       description: 'Highlight important information with colored callout boxes',
       component: CalloutBoxComponent,
-      category: 'Content',
+      category: 'Blogging',
       icon: 'info',
       data: {
         type: 'info',
@@ -264,7 +283,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       name: 'Code Snippet',
       description: 'Display formatted code with syntax highlighting',
       component: CodeSnippetComponent,
-      category: 'Content',
+      category: 'Blogging',
       icon: 'code',
       data: {
         title: 'Example Code',
@@ -278,7 +297,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       name: 'Image Gallery',
       description: 'Create responsive image galleries',
       component: ImageGalleryComponent,
-      category: 'Media',
+      category: 'Blogging',
       icon: 'photo_library',
       data: {
         title: 'Sample Gallery',
@@ -286,13 +305,12 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       }
     });
 
-    // Add existing blogging components
     this.registerComponent({
       id: 'hero',
       name: 'Hero Section',
       description: 'Eye-catching hero section with title, description, and call-to-action',
       component: HeroComponent,
-      category: 'Layout',
+      category: 'Blogging',
       icon: 'landscape',
       data: {
         title: 'Welcome to Our Blog!',
@@ -308,7 +326,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       name: 'Featured Posts',
       description: 'Showcase featured blog posts in an interactive carousel',
       component: FeaturedPostsComponent,
-      category: 'Content',
+      category: 'Blogging',
       icon: 'featured_play_list',
       data: {
         visibleItems: 3,
@@ -330,10 +348,177 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       name: 'Newsletter Signup',
       description: 'Collect email subscriptions with an attractive signup form',
       component: NewsletterSignupComponent,
-      category: 'Interactive',
+      category: 'Blogging',
       icon: 'email',
       data: {
         bannerImage: 'https://picsum.photos/1200/300'
+      }
+    });
+
+    // ============================================
+    // COMMON UI COMPONENTS
+    // ============================================
+
+    this.registerComponent({
+      id: 'common-card',
+      name: 'Card',
+      description: 'A styled card container for organizing content with optional glass effect',
+      component: CardComponent,
+      category: 'Common UI',
+      icon: 'dashboard',
+      data: {
+        glassEffect: false,
+        CardVariant: 'default'
+      }
+    });
+
+    this.registerComponent({
+      id: 'common-button',
+      name: 'Button',
+      description: 'Interactive button with multiple style variants',
+      component: ButtonComponent,
+      category: 'Common UI',
+      icon: 'smart_button',
+      data: {
+        variant: 'primary',
+        disabled: false,
+        label: 'Click Me'
+      }
+    });
+
+    this.registerComponent({
+      id: 'common-accordion',
+      name: 'Accordion',
+      description: 'Collapsible sections for organizing content',
+      component: AccordionComponent,
+      category: 'Common UI',
+      icon: 'view_agenda',
+      data: {
+        variant: 'default',
+        size: 'md',
+        sections: [
+          { heading: 'Section 1', content: 'Content for section 1' },
+          { heading: 'Section 2', content: 'Content for section 2' }
+        ]
+      }
+    });
+
+    this.registerComponent({
+      id: 'common-modal',
+      name: 'Modal',
+      description: 'Overlay dialog for focused content or user interactions',
+      component: ModalComponent,
+      category: 'Common UI',
+      icon: 'open_in_new',
+      data: {
+        heading: 'Modal Title',
+        mode: 'standard-modal',
+        variant: 'default',
+        size: 'md'
+      }
+    });
+
+    this.registerComponent({
+      id: 'common-hero-section',
+      name: 'Hero Section (Common)',
+      description: 'Large banner section for prominent content display',
+      component: HeroSectionComponent,
+      category: 'Common UI',
+      icon: 'view_carousel',
+      data: {
+        title: 'Welcome',
+        subtitle: 'Discover amazing content',
+        backgroundImage: '',
+        alignment: 'center'
+      }
+    });
+
+    this.registerComponent({
+      id: 'common-content-section',
+      name: 'Content Section',
+      description: 'Flexible content container with layout options',
+      component: ContentSectionComponent,
+      category: 'Common UI',
+      icon: 'article',
+      data: {
+        title: 'Content Section',
+        layout: 'single-column'
+      }
+    });
+
+    // ============================================
+    // FORM UI COMPONENTS
+    // ============================================
+
+    this.registerComponent({
+      id: 'form-text-input',
+      name: 'Text Input',
+      description: 'Single-line text input field with label and placeholder support',
+      component: TextInputComponent,
+      category: 'Form UI',
+      icon: 'text_fields',
+      data: {
+        type: 'text',
+        label: 'Text Input',
+        placeholder: 'Enter text...',
+        labelPosition: 'top'
+      }
+    });
+
+    this.registerComponent({
+      id: 'form-checkbox',
+      name: 'Checkbox',
+      description: 'Checkbox input for boolean selections',
+      component: CheckboxComponent,
+      category: 'Form UI',
+      icon: 'check_box',
+      data: {
+        value: false
+      }
+    });
+
+    this.registerComponent({
+      id: 'form-select',
+      name: 'Select Dropdown',
+      description: 'Dropdown selection with customizable options',
+      component: SelectComponent,
+      category: 'Form UI',
+      icon: 'arrow_drop_down_circle',
+      data: {
+        options: [
+          { value: 'option1', label: 'Option 1' },
+          { value: 'option2', label: 'Option 2' },
+          { value: 'option3', label: 'Option 3' }
+        ]
+      }
+    });
+
+    this.registerComponent({
+      id: 'form-radio-button',
+      name: 'Radio Button',
+      description: 'Radio button for single selection within a group',
+      component: RadioButtonComponent,
+      category: 'Form UI',
+      icon: 'radio_button_checked',
+      data: {
+        options: [
+          { label: 'Option 1', value: 'option1' },
+          { label: 'Option 2', value: 'option2' }
+        ],
+        layout: 'vertical',
+        selected: ''
+      }
+    });
+
+    this.registerComponent({
+      id: 'form-text-area',
+      name: 'Text Area',
+      description: 'Multi-line text input for longer content',
+      component: TextAreaComponent,
+      category: 'Form UI',
+      icon: 'notes',
+      data: {
+        label: 'Text Area'
       }
     });
 
