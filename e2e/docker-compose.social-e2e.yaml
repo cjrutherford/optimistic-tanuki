@@ -51,6 +51,3 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
-
-volumes:
-  postgres_data:

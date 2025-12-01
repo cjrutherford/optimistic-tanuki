@@ -143,6 +143,3 @@ services:
         condition: service_started
       blogging:
         condition: service_started
-
-volumes:
-  postgres_data:
