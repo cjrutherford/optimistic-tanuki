@@ -1,9 +1,8 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BlogComposeComponent } from './blog-compose.component';
 import { FormsModule, ReactiveFormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { Component, Input, forwardRef, EventEmitter, Output } from '@angular/core';
-import { of } from 'rxjs';
+import { Component, Input, forwardRef } from '@angular/core';
 
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -66,10 +65,13 @@ describe('BlogComposeComponent', () => {
 
     fixture = TestBed.createComponent(BlogComposeComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {
+    // The component registers components in ngAfterViewInit which can cause
+    // ExpressionChangedAfterItHasBeenCheckedError in dev mode.
+    // We use detectChanges with checkNoChanges disabled.
+    fixture.changeDetectorRef.detectChanges();
     expect(component).toBeTruthy();
   });
 });

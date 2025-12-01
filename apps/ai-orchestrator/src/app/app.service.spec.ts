@@ -100,7 +100,7 @@ describe('AppService', () => {
     });
 
     it('should successfully process a new profile', async () => {
-      await service.processNewProfile(mockProfileId);
+      await service.processNewProfile(mockProfileId, 'test-app-id');
 
       expect(telosDocsService.send).toHaveBeenCalledWith(
         { cmd: PersonaTelosCommands.FIND },
@@ -117,19 +117,19 @@ describe('AppService', () => {
 
     it('should throw RpcException if persona not found', async () => {
       jest.spyOn(telosDocsService, 'send').mockReturnValue(of([]));
-      await expect(service.processNewProfile(mockProfileId)).rejects.toThrow(RpcException);
-      await expect(service.processNewProfile(mockProfileId)).rejects.toThrow('Failed to get persona: Persona not found');
+      await expect(service.processNewProfile(mockProfileId, 'test-app-id')).rejects.toThrow(RpcException);
+      await expect(service.processNewProfile(mockProfileId, 'test-app-id')).rejects.toThrow('Failed to get persona: Persona not found');
     });
 
     it('should throw RpcException if profile not found', async () => {
       jest.spyOn(profileService, 'send').mockReturnValue(of(null));
-      await expect(service.processNewProfile(mockProfileId)).rejects.toThrow(RpcException);
-      await expect(service.processNewProfile(mockProfileId)).rejects.toThrow('Failed to process new profile: Profile not found');
+      await expect(service.processNewProfile(mockProfileId, 'test-app-id')).rejects.toThrow(RpcException);
+      await expect(service.processNewProfile(mockProfileId, 'test-app-id')).rejects.toThrow('Failed to process new profile: Profile not found');
     });
 
     it('should handle errors during prompt proxy call', async () => {
       jest.spyOn(promptProxy, 'send').mockReturnValue(throwError(() => new Error('Prompt error')));
-      await expect(service.processNewProfile(mockProfileId)).rejects.toThrow(RpcException);
+      await expect(service.processNewProfile(mockProfileId, 'test-app-id')).rejects.toThrow(RpcException);
       expect(logger.error).toHaveBeenCalledWith('Error processing new profile:', expect.any(Error));
     });
   });

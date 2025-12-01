@@ -16,7 +16,7 @@ describe('AuthStateService', () => {
   let service: AuthStateService;
   let authServiceMock: { login: jest.Mock };
   const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoiVGVzdCBVc2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-  const mockDecodedToken: UserData = { userId: '123', name: 'Test User', email: 'test@example.com' };
+  const mockDecodedToken: UserData = { userId: '123', name: 'Test User', email: 'test@example.com', profileId: 'profile123' };
 
   describe('when in a browser environment', () => {
     beforeEach(() => {

@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick, runInInjectionContext } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { of } from 'rxjs';
 import { io } from 'socket.io-client';

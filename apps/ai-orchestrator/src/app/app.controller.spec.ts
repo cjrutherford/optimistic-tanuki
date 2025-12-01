@@ -36,9 +36,9 @@ describe('AppController', () => {
 
   describe('profileInitialize', () => {
     it('should call appService.processNewProfile and return data', async () => {
-      const data = { profileId: 'test-profile-id' };
+      const data = { profileId: 'test-profile-id', appId: 'test-app-id' };
       await appController.profileInitialize(data);
-      expect(appService.processNewProfile).toHaveBeenCalledWith(data.profileId);
+      expect(appService.processNewProfile).toHaveBeenCalledWith(data.profileId, data.appId);
     });
   });
 
