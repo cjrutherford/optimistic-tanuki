@@ -22,6 +22,12 @@ jobs:
           - assets-e2e
           - blogging-e2e
           - gateway-e2e
+          - permissions-e2e
+          - project-planning-e2e
+          - chat-collector-e2e
+          - prompt-proxy-e2e
+          - telos-docs-service-e2e
+          - ai-orchestrator-e2e
       fail-fast: false
     
     steps:
@@ -69,6 +75,7 @@ jobs:
           - forgeofwill-e2e
           - digital-homestead-e2e
           - christopherrutherford-net-e2e
+          - owner-console-e2e
       fail-fast: false
     
     steps:
