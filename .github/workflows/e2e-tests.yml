@@ -48,10 +48,31 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Start E2E environment for ${{ matrix.service }}
+        run: |
+          # Check if independent docker-compose exists for this service
+          COMPOSE_FILE="e2e/docker-compose.${{ matrix.service }}.yaml"
+          if [ -f "$COMPOSE_FILE" ]; then
+            echo "Using independent compose file: $COMPOSE_FILE"
+            docker-compose -f $COMPOSE_FILE up -d
+            # Wait for services to be ready
+            sleep 30
+          fi
+        env:
+          CI: true
+
       - name: Run E2E tests for ${{ matrix.service }}
         run: npx nx e2e ${{ matrix.service }} --configuration=ci
         env:
           CI: true
+
+      - name: Stop E2E environment
+        if: always()
+        run: |
+          COMPOSE_FILE="e2e/docker-compose.${{ matrix.service }}.yaml"
+          if [ -f "$COMPOSE_FILE" ]; then
+            docker-compose -f $COMPOSE_FILE down -v
+          fi
 
       - name: Upload test results
         if: always()
@@ -119,10 +140,162 @@ jobs:
           path: test-results/${{ matrix.app }}
           retention-days: 30
 
+  # Full Browser E2E Tests using main docker-compose.yaml
+  browser-e2e-full-stack:
+    name: Full Stack Browser E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and start full environment with docker-compose
+        run: |
+          # Use the main docker-compose.yaml for full stack browser tests
+          docker-compose up -d --build
+          
+          # Wait for all services to be healthy
+          echo "Waiting for services to be ready..."
+          sleep 60
+          
+          # Check gateway health
+          curl --retry 10 --retry-delay 5 --retry-all-errors http://localhost:3000/health || echo "Gateway health check (may not exist)"
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run Digital Homestead Full Stack E2E
+        run: |
+          # Run against the dockerized digital-homestead at port 8082
+          BASE_URL=http://localhost:8082 npx nx e2e digital-homestead-e2e
+        env:
+          CI: true
+          BASE_URL: http://localhost:8082
+
+      - name: Run Owner Console Full Stack E2E
+        run: |
+          # Run against the dockerized owner-console at port 8084
+          BASE_URL=http://localhost:8084 npx nx e2e owner-console-e2e
+        env:
+          CI: true
+          BASE_URL: http://localhost:8084
+
+      - name: Collect docker logs on failure
+        if: failure()
+        run: |
+          mkdir -p docker-logs
+          docker-compose logs > docker-logs/all-services.log
+          docker-compose ps > docker-logs/services-status.txt
+
+      - name: Upload docker logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-logs
+          path: docker-logs/
+          retention-days: 7
+
+      - name: Stop full environment
+        if: always()
+        run: docker-compose down -v
+
+      - name: Upload Full Stack E2E report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-e2e-full-stack-report
+          path: |
+            dist/.playwright/apps/digital-homestead-e2e/playwright-report
+            dist/.playwright/apps/owner-console-e2e/playwright-report
+          retention-days: 30
+
+  # Cross-browser E2E Suite with Independent Docker Compose
+  browser-e2e-suite:
+    name: Cross-Browser E2E Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+        app: [digital-homestead-e2e, owner-console-e2e]
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start E2E environment for ${{ matrix.app }}
+        run: |
+          COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
+          if [ -f "$COMPOSE_FILE" ]; then
+            echo "Using compose file: $COMPOSE_FILE"
+            docker-compose -f $COMPOSE_FILE up -d --build
+            echo "Waiting for services..."
+            sleep 45
+          fi
+        env:
+          CI: true
+
+      - name: Install Playwright Browser - ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run ${{ matrix.app }} E2E tests on ${{ matrix.browser }}
+        run: npx nx e2e ${{ matrix.app }} --project=${{ matrix.browser }}
+        env:
+          CI: true
+          BASE_URL: http://localhost:4200
+
+      - name: Stop E2E environment
+        if: always()
+        run: |
+          COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
+          if [ -f "$COMPOSE_FILE" ]; then
+            docker-compose -f $COMPOSE_FILE down -v
+          fi
+
+      - name: Upload browser E2E report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-e2e-${{ matrix.app }}-${{ matrix.browser }}
+          path: |
+            dist/.playwright/apps/${{ matrix.app }}/playwright-report
+          retention-days: 30
+
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [microservices-e2e, ui-e2e]
+    needs: [microservices-e2e, ui-e2e, browser-e2e-full-stack, browser-e2e-suite]
     if: always()
     
     steps:
@@ -143,15 +316,53 @@ jobs:
           echo "### UI Tests" >> $GITHUB_STEP_SUMMARY
           ls -la artifacts/playwright-report-*/ 2>/dev/null || echo "No UI test results found" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Full Stack Browser Tests" >> $GITHUB_STEP_SUMMARY
+          ls -la artifacts/browser-e2e-full-stack-report/ 2>/dev/null || echo "No full stack browser results found" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Cross-Browser E2E Tests" >> $GITHUB_STEP_SUMMARY
+          ls -la artifacts/browser-e2e-*/ 2>/dev/null || echo "No cross-browser E2E results found" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
       - name: Check test status
         run: |
-          if [ "${{ needs.microservices-e2e.result }}" == "success" ] && [ "${{ needs.ui-e2e.result }}" == "success" ]; then
+          FAILED=false
+          
+          if [ "${{ needs.microservices-e2e.result }}" != "success" ]; then
+            echo "❌ Microservices E2E: ${{ needs.microservices-e2e.result }}"
+            FAILED=true
+          else
+            echo "✅ Microservices E2E: passed"
+          fi
+          
+          if [ "${{ needs.ui-e2e.result }}" != "success" ]; then
+            echo "❌ UI E2E: ${{ needs.ui-e2e.result }}"
+            FAILED=true
+          else
+            echo "✅ UI E2E: passed"
+          fi
+          
+          if [ "${{ needs.browser-e2e-full-stack.result }}" != "success" ]; then
+            echo "❌ Full Stack Browser E2E: ${{ needs.browser-e2e-full-stack.result }}"
+            FAILED=true
+          else
+            echo "✅ Full Stack Browser E2E: passed"
+          fi
+          
+          if [ "${{ needs.browser-e2e-suite.result }}" != "success" ]; then
+            echo "❌ Cross-Browser E2E Suite: ${{ needs.browser-e2e-suite.result }}"
+            FAILED=true
+          else
+            echo "✅ Cross-Browser E2E Suite: passed"
+          fi
+          
+          if [ "$FAILED" = true ]; then
+            echo ""
+            echo "❌ Some E2E tests failed"
+            exit 1
+          else
+            echo ""
             echo "✅ All E2E tests passed!"
             exit 0
-          else
-            echo "❌ Some E2E tests failed"
-            echo "Microservices: ${{ needs.microservices-e2e.result }}"
-            echo "UI: ${{ needs.ui-e2e.result }}"
-            exit 1
           fi
