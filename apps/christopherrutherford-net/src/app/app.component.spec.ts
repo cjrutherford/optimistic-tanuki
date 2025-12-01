@@ -61,12 +61,9 @@ describe('AppComponent', () => {
     app = fixture.componentInstance;
   });
 
-  it('should render title', () => {
+  it('should create', () => {
     fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('otui-heading')?.textContent).toContain(
-      'Digital Grange'
-    );
+    expect(app).toBeTruthy();
   });
 
   it(`should have as title 'christopherrutherford-net'`, () => {

@@ -54,12 +54,9 @@ describe('ContactComponent', () => {
     ]);
   });
 
-  it('should call onContactFormSubmit when form is submitted', () => {
-    jest.spyOn(component, 'onContactFormSubmit');
-    const contactFormDebugElement = fixture.debugElement.query(By.directive(ContactFormComponent));
-    const contactForm = contactFormDebugElement.componentInstance as ContactFormComponent;
+  it('should call contactService.postContact when form is submitted', () => {
     const formData = { name: 'Test', email: 'test@example.com', subject: 'general', message: 'Hello' };
-    contactForm.formSubmit.emit(formData);
-    expect(component.onContactFormSubmit).toHaveBeenCalledWith(formData);
+    component.onContactFormSubmit(formData);
+    expect(mockContactService.postContact).toHaveBeenCalledWith(formData);
   });
 });
