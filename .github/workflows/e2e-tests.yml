@@ -7,6 +7,11 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:
 
+# Limit default permissions for security
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   microservices-e2e:
     name: Microservices E2E Tests
