@@ -102,14 +102,17 @@ describe('ChatComponent', () => {
     }));
   });
 
-  it('should update contacts when conversations are received', fakeAsync(() => {
+  it('should update contacts when conversations are received', async () => {
     const conversationsCallback = socketChatService.onConversations.mock.calls[0][0];
     conversationsCallback([mockConversation]);
-    tick(); // for promises in updateContacts
+    
+    // Wait for the async updateContacts to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
     fixture.detectChanges();
     
+    // The current user profile should be added to contacts (even if no other participants)
     expect(component.contacts().length).toBeGreaterThan(0);
-  }));
+  });
 
   it('should manage chat window state', () => {
     component.conversations.set([mockConversation]);

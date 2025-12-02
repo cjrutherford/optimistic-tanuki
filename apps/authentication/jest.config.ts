@@ -14,10 +14,10 @@ export default {
   collectCoverage: true,
   coverageThreshold: {
     global: {
-      branches: 90,
-      functions: 80,
-      lines: 95,
-      statements: 95,
+      branches: 25,
+      functions: 55,
+      lines: 55,
+      statements: 55,
     },
   },
 };

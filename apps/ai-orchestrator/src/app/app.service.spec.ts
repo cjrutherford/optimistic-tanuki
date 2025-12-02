@@ -17,6 +17,11 @@ describe('AppService', () => {
   let chatCollectorService: ClientProxy;
   let logger: Logger;
 
+  const mockAiEnabledApps = {
+    'test-app-id': 'Test App Description',
+    'forgeofwill': 'Forge of Will application',
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -48,6 +53,10 @@ describe('AppService', () => {
         {
           provide: Logger,
           useValue: { log: jest.fn(), error: jest.fn() },
+        },
+        {
+          provide: 'ai-enabled-apps',
+          useValue: mockAiEnabledApps,
         },
       ],
     }).compile();

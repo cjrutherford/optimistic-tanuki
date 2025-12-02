@@ -79,7 +79,7 @@ describe('authenticationInterceptor', () => {
     httpClient.get('/api/data').subscribe({
       error: (error) => {
         expect(error.status).toBe(500);
-        expect(error.message).toBe('Server Error');
+        expect(error.statusText).toBe('Server Error');
         expect(authStateService.logout).not.toHaveBeenCalled();
         expect(router.navigate).not.toHaveBeenCalled();
       },

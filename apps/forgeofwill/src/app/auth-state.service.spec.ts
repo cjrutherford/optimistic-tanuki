@@ -17,6 +17,8 @@ describe('AuthStateService', () => {
   let authServiceMock: { login: jest.Mock };
   const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoiVGVzdCBVc2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
   const mockDecodedToken: UserData = { userId: '123', name: 'Test User', email: 'test@example.com', profileId: 'profile123' };
+  const tokenKey = 'fow-client-authToken';
+  const profilesKey = 'fow-client-profiles';
 
   describe('when in a browser environment', () => {
     beforeEach(() => {
@@ -57,7 +59,7 @@ describe('AuthStateService', () => {
     });
 
     it('should initialize with token from localStorage', () => {
-        localStorage.setItem('authToken', mockToken);
+        localStorage.setItem(tokenKey, mockToken);
         service = TestBed.inject(AuthStateService);
         expect(service.getToken()).toBe(mockToken);
         service.isAuthenticated$().subscribe(isAuth => expect(isAuth).toBe(true));
@@ -72,7 +74,7 @@ describe('AuthStateService', () => {
       expect(service.getToken()).toBe(mockToken);
       service.isAuthenticated$().subscribe(isAuth => expect(isAuth).toBe(true));
       service.decodedToken$().subscribe(decoded => expect(decoded).toEqual(mockDecodedToken));
-      expect(setItemSpy).toHaveBeenCalledWith('authToken', mockToken);
+      expect(setItemSpy).toHaveBeenCalledWith(tokenKey, mockToken);
     });
 
     it('should call authService.login and set token on successful login', async () => {
@@ -87,7 +89,7 @@ describe('AuthStateService', () => {
     });
 
     it('should clear token and update subjects on logout', () => {
-        localStorage.setItem('authToken', mockToken);
+        localStorage.setItem(tokenKey, mockToken);
         service = TestBed.inject(AuthStateService);
         const removeItemSpy = jest.spyOn(localStorage, 'removeItem');
 
@@ -96,7 +98,7 @@ describe('AuthStateService', () => {
         expect(service.getToken()).toBeNull();
         service.isAuthenticated$().subscribe(isAuth => expect(isAuth).toBe(false));
         service.decodedToken$().subscribe(decoded => expect(decoded).toBeNull());
-        expect(removeItemSpy).toHaveBeenCalledWith('authToken');
+        expect(removeItemSpy).toHaveBeenCalledWith(tokenKey);
     });
 
   });

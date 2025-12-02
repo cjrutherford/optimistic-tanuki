@@ -94,7 +94,7 @@ describe('ProfileService', () => {
     expect(stored).toEqual(JSON.parse(JSON.stringify(allProfiles)));
   });
 
-  it('should create a profile with assets', fakeAsync(() => {
+  it('should create a profile with assets', async () => {
     const createProfileDto: CreateProfileDto = {
         name: 'New Profile',
         description: 'A new profile',
@@ -109,31 +109,41 @@ describe('ProfileService', () => {
     };
     const createdProfile: ProfileDto = { ...mockProfile, id: '2', profileName: 'New Profile' };
     
-    service.createProfile(createProfileDto);
-    tick(); // Advance time to allow the first HTTP request to be made
+    const createPromise = service.createProfile(createProfileDto);
 
+    // First request: create profile
     const profileReq = httpMock.expectOne('/api/profile');
     expect(profileReq.request.method).toBe('POST');
     profileReq.flush(createdProfile);
-    tick(); // Advance time to allow asset requests to be made
 
+    // Wait for the profile creation to complete and first asset request to be made
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Second request: first asset (profile pic) - they are sequential, not parallel
     const assetRequest1 = httpMock.expectOne('/api/asset');
     expect(assetRequest1.request.method).toBe('POST');
     assetRequest1.flush({ ...mockAsset, id: 'asset2' });
-    tick(); // Advance time to allow the second asset request to be made
 
+    // Wait for first asset to complete and second asset request to be made
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Third request: second asset (cover pic)
     const assetRequest2 = httpMock.expectOne('/api/asset');
     expect(assetRequest2.request.method).toBe('POST');
     assetRequest2.flush({ ...mockAsset, id: 'asset3' });
-    tick(); // Advance time to allow the final PUT request to be made
 
+    // Wait for second asset to complete and update request to be made
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Fourth request: update profile with asset URLs
     const updateProfileReq = httpMock.expectOne(`/api/profile/${createdProfile.id}`);
     expect(updateProfileReq.request.method).toBe('PUT');
     updateProfileReq.flush(createdProfile);
-    tick(); // Advance time to allow the promise to resolve
+
+    await createPromise;
 
     expect(service.currentUserProfiles()).toContainEqual(createdProfile);
-  }));
+  });
 
   it('should update a profile', async () => {
     const updateDto: UpdateProfileDto = { id: '1', bio: 'Updated Bio', name: 'a', description: 'b' };
