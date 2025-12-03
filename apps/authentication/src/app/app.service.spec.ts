@@ -2,6 +2,7 @@ import * as jwt from 'jsonwebtoken';
 import * as qrcode from 'qrcode';
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
 
 import { AppService } from './app.service';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
@@ -22,6 +23,7 @@ let saltedHashService: SaltedHashService;
 let authenticator: any;
 let keyService: KeyService;
 let jwtHandle: typeof jwt;
+let jwtService: JwtService;
 
 jest.mock('qrcode', () => ({
   toDataURL: jest.fn().mockResolvedValue('qrCodeDataUrl'),
@@ -87,6 +89,14 @@ describe('AppService', () => {
             sign: jest.fn().mockReturnValue('mockToken'),
           },
         },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn().mockReturnValue('mockToken'),
+            verify: jest.fn().mockReturnValue({}),
+            verifyAsync: jest.fn().mockResolvedValue({ userId: 'someUserId', email: 'test@example.com' }),
+          },
+        },
       ],
     }).compile();
 
@@ -104,6 +114,7 @@ describe('AppService', () => {
     keyService = module.get<KeyService>(KeyService);
     authenticator = module.get('totp');
     jwtHandle = module.get('jwt');
+    jwtService = module.get<JwtService>(JwtService);
   });
 
   it('should be defined', () => {
@@ -125,17 +136,16 @@ describe('AppService', () => {
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(saltedHashService, 'validateHash').mockReturnValue(true as any);
       jest.spyOn(tokenRepo, 'save').mockResolvedValue(undefined);
-      // Make jwtHandle.sign a jest.fn so .toHaveBeenCalledWith works
-      const signSpy = jest.spyOn(jwtHandle, 'sign').mockImplementation(() => 'mockToken' as any);
+      // Use jwtService.sign instead of jwtHandle.sign since that's what the service now uses
+      const signSpy = jest.spyOn(jwtService, 'sign').mockImplementation(() => 'mockToken' as any);
 
       const result = await service.login('test@example.com', 'password');
       expect(result).toEqual({ message: 'Login successful', code: 0, data: { newToken: 'mockToken' } });
       expect(userRepo.findOne).toHaveBeenCalledWith({ where: { email: 'test@example.com' }, relations: ['keyData'] });
       expect(saltedHashService.validateHash).toHaveBeenCalledWith('password', 'hashedPassword', 'someSalt');
       expect(signSpy).toHaveBeenCalledWith(
-        { userId: 'someUserId', name: 'John Doe', email: 'test@example.com' },
-        'test-secret',
-        { expiresIn: '1h' }
+        { userId: 'someUserId', name: 'John Doe', email: 'test@example.com', profileId: '' },
+        { secret: 'test-secret', expiresIn: '1h' }
       );
       expect(tokenRepo.save).toHaveBeenCalled();
     });
@@ -246,7 +256,10 @@ describe('AppService', () => {
         code: 0,
         data: {
           pub: 'newPubKey',
-          user: 'newUserId',
+          user: expect.objectContaining({
+            id: 'newUserId',
+            email: registerRequest.email,
+          }),
           privKey: 'newPrivLocation',
           inventory: undefined,
         },
@@ -482,25 +495,23 @@ describe('AppService', () => {
     const mockStoredToken = { tokenData: mockToken, revoked: false };
 
     it('should successfully validate a token', async () => {
-      jest.spyOn(jwtHandle, 'verify').mockImplementation(() => mockDecoded);
+      jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue(mockDecoded);
       jest.spyOn(tokenRepo, 'findOne').mockResolvedValue(mockStoredToken as TokenEntity);
 
       const result = await service.validateToken(mockToken);
       expect(result).toEqual({ message: 'Token is valid', code: 0, data: mockDecoded, isValid: true });
-      expect(jwtHandle.verify).toHaveBeenCalledWith(mockToken, 'test-secret');
+      expect(jwtService.verifyAsync).toHaveBeenCalledWith(mockToken, { secret: 'test-secret' });
       expect(tokenRepo.findOne).toHaveBeenCalledWith({ where: { tokenData: mockToken } });
     });
 
     it('should throw RpcException if token is invalid (jwt.verify fails)', async () => {
-      jest.spyOn(jwtHandle, 'verify').mockImplementation(() => {
-        throw new Error('Invalid signature');
-      });
+      jest.spyOn(jwtService, 'verifyAsync').mockRejectedValue(new Error('Invalid signature'));
       await expect(service.validateToken('invalidToken')).rejects.toThrow(RpcException);
       await expect(service.validateToken('invalidToken')).rejects.toThrow('Invalid token');
     });
 
     it('should throw RpcException if token is not found in repository', async () => {
-      jest.spyOn(jwtHandle, 'verify').mockImplementation(() => mockDecoded);
+      jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue(mockDecoded);
       jest.spyOn(tokenRepo, 'findOne').mockResolvedValue(null);
       await expect(service.validateToken(mockToken)).rejects.toThrow(RpcException);
       // The service throws 'Invalid token' for all errors, so match that
@@ -508,7 +519,7 @@ describe('AppService', () => {
     });
 
     it('should throw RpcException if token is revoked', async () => {
-      jest.spyOn(jwtHandle, 'verify').mockImplementation(() => mockDecoded);
+      jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue(mockDecoded);
       jest.spyOn(tokenRepo, 'findOne').mockResolvedValue({ ...mockStoredToken, revoked: true } as TokenEntity);
       await expect(service.validateToken(mockToken)).rejects.toThrow(RpcException);
       // The service throws 'Invalid token' for all errors, so match that

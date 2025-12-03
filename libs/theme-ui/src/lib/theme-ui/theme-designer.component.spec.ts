@@ -6,15 +6,14 @@ import { of } from 'rxjs';
 describe('ThemeDesignerComponent', () => {
   let component: ThemeDesignerComponent;
   let fixture: ComponentFixture<ThemeDesignerComponent>;
-  let mockThemeService: jasmine.SpyObj<ThemeService>;
+  let mockThemeService: jest.Mocked<ThemeService>;
 
   beforeEach(async () => {
-    mockThemeService = jasmine.createSpyObj('ThemeService', [
-      'getTheme',
-      'getAccentColor',
-      'setTheme',
-      'setAccentColor',
-    ], {
+    mockThemeService = {
+      getTheme: jest.fn().mockReturnValue('light'),
+      getAccentColor: jest.fn().mockReturnValue('#3f51b5'),
+      setTheme: jest.fn(),
+      setAccentColor: jest.fn(),
       themeColors$: of({
         accent: '#3f51b5',
         complementary: '#c0af4b',
@@ -37,10 +36,7 @@ describe('ThemeDesignerComponent', () => {
         warningShades: [],
         warningGradients: {},
       }),
-    });
-    
-    mockThemeService.getTheme.and.returnValue('light');
-    mockThemeService.getAccentColor.and.returnValue('#3f51b5');
+    } as unknown as jest.Mocked<ThemeService>;
 
     await TestBed.configureTestingModule({
       imports: [ThemeDesignerComponent],

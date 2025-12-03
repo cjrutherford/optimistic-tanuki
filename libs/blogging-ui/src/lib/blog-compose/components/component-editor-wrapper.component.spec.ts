@@ -138,7 +138,7 @@ describe('ComponentEditorWrapperComponent', () => {
     component.cancelQuickEdit();
     
     expect(component.isEditing).toBe(false);
-    expect(component.editingData.title).toBe('Original');
+    expect(component.editingData['title']).toBe('Original');
   });
 
   it('should emit propertiesChanged on save', () => {

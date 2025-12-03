@@ -45,16 +45,18 @@ describe('AppController', () => {
         token: 'token',
         valid: true,
       });
-      const loginRequest: LoginRequest = {
+      const loginRequest: LoginRequest & { profileId: string } = {
         email: 'test@example.com',
         password: 'password',
         mfa: '123456',
+        profileId: 'profile123',
       };
       const loginResponse = await appController.login(loginRequest);
       expect(appService.login).toHaveBeenCalledWith(
         'test@example.com',
         'password',
-        '123456'
+        '123456',
+        'profile123'
       );
       expect(loginResponse).toEqual({
         userId: 'userId',
@@ -64,10 +66,11 @@ describe('AppController', () => {
     });
 
     it('should throw RpcException on service error', async () => {
-      const loginRequest: LoginRequest = {
+      const loginRequest: LoginRequest & { profileId: string } = {
         email: 'test@example.com',
         password: 'password',
         mfa: '123456',
+        profileId: 'profile123',
       };
       jest.spyOn(appService, 'login').mockRejectedValue(new Error('Error'));
       await expect(appController.login(loginRequest)).rejects.toThrow(
@@ -76,18 +79,20 @@ describe('AppController', () => {
     });
 
     it('should thow RpcException if missing fields', async () => {
-      const loginRequest: LoginRequest = {
+      const loginRequest: LoginRequest & { profileId: string } = {
         email: '',
         password: 'password',
         mfa: '123456',
+        profileId: 'profile123',
       };
       await expect(appController.login(loginRequest)).rejects.toThrow(
         new RpcException('Missing required fields: email')
       );
-      const loginRequest2: LoginRequest = {
+      const loginRequest2: LoginRequest & { profileId: string } = {
         email: '',
         password: '',
         mfa: '123456',
+        profileId: 'profile123',
       };
       await expect(appController.login(loginRequest2)).rejects.toThrow(
         new RpcException('Missing required fields: email password')

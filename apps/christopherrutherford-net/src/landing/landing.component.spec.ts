@@ -3,7 +3,7 @@ import { LandingComponent } from './landing.component';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ContactService } from '../app/contact.service';
 import { of } from 'rxjs';
-import { TitleBarComponent } from '../title-bar/title-bar.component';
+import { TitleBarComponent } from './title-bar/title-bar.component';
 
 describe('LandingComponent', () => {
   let component: LandingComponent;

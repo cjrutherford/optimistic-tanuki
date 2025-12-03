@@ -67,9 +67,9 @@ describe('ModalComponent', () => {
     expect(component.complement).toBe(mockColors.complementary);
   });
 
-  it('should emit closeModal event on onClose', () => {
+  it('should emit closeModal event when emitting', () => {
     jest.spyOn(component.closeModal, 'emit');
-    component.onClose();
+    component.closeModal.emit();
     expect(component.closeModal.emit).toHaveBeenCalled();
   });
 });

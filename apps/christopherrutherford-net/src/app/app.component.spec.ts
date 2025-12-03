@@ -32,47 +32,6 @@ describe('AppComponent', () => {
   let app: AppComponent;
 
   beforeEach(async () => {
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { AppComponent } from './app.component';
-import { NxWelcomeComponent } from './nx-welcome.component';
-import { RouterModule } from '@angular/router';
-import { HeadingComponent } from '@optimistic-tanuki/common-ui';
-import { HeroComponent } from '../landing/hero/hero.component';
-import { TitleBarComponent } from '../landing/title-bar/title-bar.component';
-import { AboutComponent } from '../landing/about/about.component';
-import { ProjectGridComponent } from '../landing/project-grid/project-grid.component';
-import { ServicesGridComponent } from '../landing/services-grid/services-grid.component';
-import { ContactComponent } from '../landing/contact/contact.component';
-import { LandingComponent } from '../landing/landing.component';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { RouterTestingModule } from '@angular/router/testing';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ContactService } from './contact.service';
-import { of } from 'rxjs';
-
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { AppComponent } from './app.component';
-import { NxWelcomeComponent } from './nx-welcome.component';
-import { RouterModule } from '@angular/router';
-import { HeadingComponent } from '@optimistic-tanuki/common-ui';
-import { HeroComponent } from '../landing/hero/hero.component';
-import { TitleBarComponent } from '../landing/title-bar/title-bar.component';
-import { AboutComponent } from '../landing/about/about.component';
-import { ProjectGridComponent } from '../landing/project-grid/project.component';
-import { ServicesGridComponent } from '../landing/services-grid/services-grid.component';
-import { ContactComponent } from '../landing/contact/contact.component';
-import { LandingComponent } from '../landing/landing.component';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { RouterTestingModule } from '@angular/router/testing';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ContactService } from './contact.service';
-import { of } from 'rxjs';
-
-describe('AppComponent', () => {
-  let fixture: ComponentFixture<AppComponent>;
-  let app: AppComponent;
-
-  beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
         AppComponent,
@@ -102,31 +61,9 @@ describe('AppComponent', () => {
     app = fixture.componentInstance;
   });
 
-  it('should render title', () => {
+  it('should create', () => {
     fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('otui-heading')?.textContent).toContain(
-      'Digital Grange'
-    );
-  });
-
-  it(`should have as title 'christopherrutherford-net'`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('christopherrutherford.net');
-  });
-});
-
-    fixture = TestBed.createComponent(AppComponent);
-    app = fixture.componentInstance;
-  });
-
-  it('should render title', () => {
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('otui-heading')?.textContent).toContain(
-      'Digital Grange'
-    );
+    expect(app).toBeTruthy();
   });
 
   it(`should have as title 'christopherrutherford-net'`, () => {

@@ -120,7 +120,7 @@ describe('RolesController', () => {
 
   describe('checkPermission', () => {
     it('should call service.checkPermission with correct data', async () => {
-      const data = { profileId: '1', permission: 'read', appScope: 'global', targetId: '1' };
+      const data = { profileId: '1', permission: 'read', appScopeId: 'global', targetId: '1' };
       await controller.checkPermission(data);
       expect(service.checkPermission).toHaveBeenCalledWith('1', 'read', 'global', '1');
     });
