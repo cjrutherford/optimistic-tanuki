@@ -26,7 +26,7 @@ export class PostController {
     }
 
     @MessagePattern({ cmd: BlogPostCommands.UPDATE })
-    async updatePost(@Payload() data: { id: string, updatePostDto: UpdateBlogPostDto, requestingAuthorId?: string }): Promise<BlogPostDto> {
+    async updatePost(@Payload() data: { id: string, updatePostDto: UpdateBlogPostDto, requestingAuthorId: string }): Promise<BlogPostDto> {
         return await this.postService.update(data.id, data.updatePostDto, data.requestingAuthorId);
     }
 

@@ -36,7 +36,10 @@
       }
     },
     "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
+        "jestConfig": "apps/blogging/jest.config.ts",
         "passWithNoTests": true
       }
     }

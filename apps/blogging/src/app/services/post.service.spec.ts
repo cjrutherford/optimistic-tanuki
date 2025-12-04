@@ -238,16 +238,6 @@ describe('PostService', () => {
   });
 
   describe('update', () => {
-    it('should update a post without ownership check if no requestingAuthorId provided', async () => {
-      postRepo.findOne.mockResolvedValue(mockPost);
-      postRepo.update.mockResolvedValue(undefined);
-
-      const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Updated Title' };
-      await service.update('post-1', updateDto);
-
-      expect(postRepo.update).toHaveBeenCalledWith('post-1', expect.objectContaining({ title: 'Updated Title' }));
-    });
-
     it('should update a post if requestingAuthorId matches', async () => {
       postRepo.findOne.mockResolvedValue(mockPost);
       postRepo.update.mockResolvedValue(undefined);
@@ -271,7 +261,7 @@ describe('PostService', () => {
 
       const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Updated Title' };
 
-      await expect(service.update('post-1', updateDto)).rejects.toThrow(NotFoundException);
+      await expect(service.update('post-1', updateDto, 'author-1')).rejects.toThrow(NotFoundException);
     });
 
     it('should set publishedAt when publishing a draft', async () => {
@@ -292,9 +282,42 @@ describe('PostService', () => {
       postRepo.update.mockResolvedValue(undefined);
 
       const updateDto: UpdateBlogPostDto = { id: 'post-2', title: 'New Title' };
-      await service.update('post-2', updateDto);
+      await service.update('post-2', updateDto, 'author-1');
 
       expect(postRepo.update).toHaveBeenCalledWith('post-2', expect.not.objectContaining({
+        publishedAt: expect.any(Date),
+      }));
+    });
+  });
+
+  describe('adminUpdate', () => {
+    it('should update a post without ownership check', async () => {
+      postRepo.findOne.mockResolvedValue(mockPost);
+      postRepo.update.mockResolvedValue(undefined);
+
+      const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Admin Updated Title' };
+      await service.adminUpdate('post-1', updateDto);
+
+      expect(postRepo.update).toHaveBeenCalledWith('post-1', expect.objectContaining({ title: 'Admin Updated Title' }));
+    });
+
+    it('should throw NotFoundException if post does not exist', async () => {
+      postRepo.findOne.mockResolvedValue(null);
+
+      const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Updated Title' };
+
+      await expect(service.adminUpdate('post-1', updateDto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should set publishedAt when publishing a draft via admin', async () => {
+      postRepo.findOne.mockResolvedValueOnce(mockPost).mockResolvedValueOnce({ ...mockPost, isDraft: false, publishedAt: new Date() });
+      postRepo.update.mockResolvedValue(undefined);
+
+      const updateDto: UpdateBlogPostDto = { id: 'post-1', isDraft: false };
+      await service.adminUpdate('post-1', updateDto);
+
+      expect(postRepo.update).toHaveBeenCalledWith('post-1', expect.objectContaining({
+        isDraft: false,
         publishedAt: expect.any(Date),
       }));
     });

@@ -62,8 +62,20 @@ export class BlogSectionComponent implements OnInit {
   }
 
   getExcerpt(content: string, maxLength = 150): string {
-    // Strip HTML tags and get plain text
-    const plainText = content.replace(/<[^>]*>/g, '');
+    // Strip HTML tags and get plain text using a more robust approach
+    // First, repeatedly strip tags until no more tags remain
+    let plainText = content;
+    let previousText = '';
+    
+    // Keep stripping tags until text stabilizes (handles nested/malformed tags)
+    while (plainText !== previousText) {
+      previousText = plainText;
+      plainText = plainText.replace(/<[^>]*>/g, '');
+    }
+    
+    // Additional sanitization: remove any remaining < or > characters
+    plainText = plainText.replace(/[<>]/g, '');
+    
     if (plainText.length <= maxLength) return plainText;
     return plainText.substring(0, maxLength).trim() + '...';
   }

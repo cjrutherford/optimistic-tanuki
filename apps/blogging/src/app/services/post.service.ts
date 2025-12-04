@@ -75,18 +75,44 @@ export class PostService {
     }
 
     /**
-     * Update a post with ownership check
-     * Only the original author can update the post
+     * Update a post with ownership validation.
+     * Only the original author can update the post.
+     * @param id - Post ID
+     * @param updatePostDto - Update data
+     * @param requestingAuthorId - ID of the user making the request (required for ownership check)
      */
-    async update(id: string, updatePostDto: UpdateBlogPostDto, requestingAuthorId?: string): Promise<BlogPostDto> {
+    async update(id: string, updatePostDto: UpdateBlogPostDto, requestingAuthorId: string): Promise<BlogPostDto> {
         const existingPost = await this.postRepository.findOne({ where: { id } });
         if (!existingPost) {
             throw new NotFoundException(`Post with id ${id} not found`);
         }
         
-        // Only check ownership if requestingAuthorId is provided
-        if (requestingAuthorId && existingPost.authorId !== requestingAuthorId) {
+        // Enforce ownership check - only the author can edit their own posts
+        if (existingPost.authorId !== requestingAuthorId) {
             throw new ForbiddenException('You can only edit your own posts');
+        }
+
+        // Handle publish transition
+        const updateData: Partial<Post> = { ...updatePostDto };
+        if (updatePostDto.isDraft === false && existingPost.isDraft === true) {
+            // Publishing the post
+            updateData.publishedAt = new Date();
+        }
+        
+        await this.postRepository.update(id, updateData);
+        return await this.postRepository.findOne({ where: { id } });
+    }
+
+    /**
+     * Admin update without ownership check.
+     * Use this for administrative operations only.
+     * @param id - Post ID
+     * @param updatePostDto - Update data
+     */
+    async adminUpdate(id: string, updatePostDto: UpdateBlogPostDto): Promise<BlogPostDto> {
+        const existingPost = await this.postRepository.findOne({ where: { id } });
+        if (!existingPost) {
+            throw new NotFoundException(`Post with id ${id} not found`);
         }
 
         // Handle publish transition

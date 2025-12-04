@@ -89,7 +89,13 @@ describe('BlogSectionComponent', () => {
   }));
 
   it('should limit posts to 3 on the landing page', fakeAsync(() => {
-    const manyPosts = [...mockPosts, ...mockPosts, ...mockPosts];
+    const manyPosts: BlogPostDto[] = [
+      { ...mockPosts[0], id: 'post-a' },
+      { ...mockPosts[1], id: 'post-b' },
+      { ...mockPosts[0], id: 'post-c' },
+      { ...mockPosts[1], id: 'post-d' },
+      { ...mockPosts[0], id: 'post-e' },
+    ];
     blogService.getPublishedPosts.mockReturnValue(of(manyPosts));
     
     fixture.detectChanges();

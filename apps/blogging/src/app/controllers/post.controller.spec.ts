@@ -30,6 +30,7 @@ describe('PostController', () => {
       findAll: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
+      adminUpdate: jest.fn(),
       remove: jest.fn(),
       findPublished: jest.fn(),
       findDraftsByAuthor: jest.fn(),
@@ -108,18 +109,7 @@ describe('PostController', () => {
   });
 
   describe('updatePost', () => {
-    it('should update a post', async () => {
-      const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Updated Title' };
-      const updatedPost = { ...mockPost, title: 'Updated Title' };
-      postService.update.mockResolvedValue(updatedPost);
-
-      const result = await controller.updatePost({ id: 'post-1', updatePostDto: updateDto });
-
-      expect(postService.update).toHaveBeenCalledWith('post-1', updateDto, undefined);
-      expect(result.title).toBe('Updated Title');
-    });
-
-    it('should update a post with ownership check', async () => {
+    it('should update a post with required ownership check', async () => {
       const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Updated Title' };
       const updatedPost = { ...mockPost, title: 'Updated Title' };
       postService.update.mockResolvedValue(updatedPost);
