@@ -114,6 +114,48 @@ interface PostData {
   ],
   templateUrl: './blog-compose.component.html',
   styleUrls: ['./blog-compose.component.scss'],
+  styles: [
+    `
+      .theme-config-panel {
+        margin-bottom: 1rem;
+        border: 1px solid var(--local-border-color);
+        border-radius: 8px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .theme-config-header {
+        padding: 0.75rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.1);
+        font-weight: 500;
+      }
+      .theme-config-content {
+        padding: 1rem;
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .theme-toggles {
+        display: flex;
+        gap: 0.5rem;
+      }
+      input[type='color'] {
+        width: 50px;
+        height: 30px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+    `,
+  ],
   host: {
     '[class.theme]': 'theme',
     // Using standardized local variables with fallbacks
@@ -195,6 +237,11 @@ export class BlogComposeComponent
   isComponentSelectorVisible = false;
   registeredComponents: InjectableComponent[] = [];
   activeComponents = new Map<string, InjectedComponentInstance>();
+
+  // Theme configuration properties
+  isThemeConfigVisible = false;
+  currentTheme: 'light' | 'dark' = 'light';
+  currentAccentColor = '#3f51b5';
 
   // Property editing properties
   isPropertyEditorVisible = false;
@@ -660,6 +707,20 @@ export class BlogComposeComponent
     // TipTap handles the positioning within the editor
     // This method is kept for interface compatibility
     console.log(`Moving component ${instanceId} to position ${newPosition}`);
+  }
+
+  toggleThemeConfig(): void {
+    this.isThemeConfigVisible = !this.isThemeConfigVisible;
+  }
+
+  updateTheme(theme: 'light' | 'dark'): void {
+    this.currentTheme = theme;
+    this.themeService.setTheme(theme);
+  }
+
+  updateAccentColor(color: string): void {
+    this.currentAccentColor = color;
+    this.themeService.setAccentColor(color);
   }
 
   // UI event handlers

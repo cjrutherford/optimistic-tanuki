@@ -7,6 +7,44 @@
   (drop)="handleDrop($event)"
   [variantOverrides]="{ background: backgroundGradient }"
 >
+  <!-- Theme Configuration Panel -->
+  <div class="theme-config-panel">
+    <div class="theme-config-header" (click)="toggleThemeConfig()">
+      <span>Theme Configuration</span>
+      <span class="material-icons">{{
+        isThemeConfigVisible ? 'expand_less' : 'expand_more'
+      }}</span>
+    </div>
+    @if (isThemeConfigVisible) {
+    <div class="theme-config-content">
+      <div class="form-group">
+        <label>Theme Mode</label>
+        <div class="theme-toggles">
+          <otui-button
+            [variant]="currentTheme === 'light' ? 'primary' : 'outlined'"
+            (action)="updateTheme('light')"
+            >Light</otui-button
+          >
+          <otui-button
+            [variant]="currentTheme === 'dark' ? 'primary' : 'outlined'"
+            (action)="updateTheme('dark')"
+            >Dark</otui-button
+          >
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Accent Color</label>
+        <input
+          type="color"
+          [ngModel]="currentAccentColor"
+          (ngModelChange)="updateAccentColor($event)"
+          [ngModelOptions]="{ standalone: true }"
+        />
+      </div>
+    </div>
+    }
+  </div>
+
   <form>
     <label for="title">Title</label>
     <lib-text-input
