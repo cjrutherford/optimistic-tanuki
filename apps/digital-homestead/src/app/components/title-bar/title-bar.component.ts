@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 
 import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui'
 
@@ -9,6 +10,7 @@ import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuk
   styleUrl: './title-bar.component.scss',
 })
 export class TitleBarComponent {
+  private readonly router = inject(Router);
   menuOpen = signal(false);
   navItems: NavItem[] = [
     {
@@ -32,6 +34,10 @@ export class TitleBarComponent {
       action: () => this.navigateTo('#blog'),
     },
     {
+      label: 'Blog Posts',
+      action: () => this.navigateToRoute('/blog'),
+    },
+    {
       label: 'Contact',
       action: () => this.navigateTo('#contact'),
     },
@@ -43,6 +49,11 @@ export class TitleBarComponent {
 
   navigateTo(anchor: string) {
     window.location.href = anchor;
+  }
+
+  navigateToRoute(route: string) {
+    this.router.navigate([route]);
+    this.menuOpen.set(false);
   }
 }
 

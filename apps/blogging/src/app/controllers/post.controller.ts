@@ -26,12 +26,27 @@ export class PostController {
     }
 
     @MessagePattern({ cmd: BlogPostCommands.UPDATE })
-    async updatePost(@Payload() data: { id: string, updatePostDto: UpdateBlogPostDto }): Promise<BlogPostDto> {
-        return await this.postService.update(data.id, data.updatePostDto);
+    async updatePost(@Payload() data: { id: string, updatePostDto: UpdateBlogPostDto, requestingAuthorId?: string }): Promise<BlogPostDto> {
+        return await this.postService.update(data.id, data.updatePostDto, data.requestingAuthorId);
     }
 
     @MessagePattern({ cmd: BlogPostCommands.DELETE })
     async deletePost(@Payload() id: string): Promise<void> {
         return await this.postService.remove(id);
+    }
+
+    @MessagePattern({ cmd: BlogPostCommands.FIND_PUBLISHED })
+    async findPublishedPosts(): Promise<BlogPostDto[]> {
+        return await this.postService.findPublished();
+    }
+
+    @MessagePattern({ cmd: BlogPostCommands.FIND_DRAFTS_BY_AUTHOR })
+    async findDraftsByAuthor(@Payload() authorId: string): Promise<BlogPostDto[]> {
+        return await this.postService.findDraftsByAuthor(authorId);
+    }
+
+    @MessagePattern({ cmd: BlogPostCommands.PUBLISH })
+    async publishPost(@Payload() data: { id: string, requestingAuthorId: string }): Promise<BlogPostDto> {
+        return await this.postService.publish(data.id, data.requestingAuthorId);
     }
 }

@@ -9,6 +9,8 @@ export interface BlogPostDto {
   title: string;
   content: string;
   authorId: string;
+  isDraft: boolean;
+  publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +19,7 @@ export interface CreateBlogPostDto {
   title: string;
   content: string;
   authorId: string;
+  isDraft?: boolean;
 }
 
 export interface UpdateBlogPostDto {
@@ -24,6 +27,7 @@ export interface UpdateBlogPostDto {
   title?: string;
   content?: string;
   authorId?: string;
+  isDraft?: boolean;
 }
 
 export interface BlogPostQueryDto {
@@ -31,6 +35,7 @@ export interface BlogPostQueryDto {
   title?: string;
   content?: string;
   authorId?: string;
+  isDraft?: boolean;
   createdAt?: [Date, Date];
   updatedAt?: [Date, Date];
 }

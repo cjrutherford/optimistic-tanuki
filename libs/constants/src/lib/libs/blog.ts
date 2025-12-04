@@ -28,4 +28,7 @@ export const PostCommands = {
     DELETE: 'post.delete',
     FIND: 'post.find',
     FIND_ALL: 'post.findAll',
+    FIND_PUBLISHED: 'post.findPublished',
+    FIND_DRAFTS_BY_AUTHOR: 'post.findDraftsByAuthor',
+    PUBLISH: 'post.publish',
 }

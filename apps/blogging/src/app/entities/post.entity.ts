@@ -15,6 +15,12 @@ export class Post {
   @Column()
   authorId: string;
 
+  @Column({ default: true })
+  isDraft: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  publishedAt: Date | null;
+
   @ManyToOne(() => Blog, blog => blog.posts)
   blog: Blog;
 

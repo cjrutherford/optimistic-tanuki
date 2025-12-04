@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Post } from "../entities";
 import { FindOptionsWhere, Repository, Like, Between } from "typeorm";
@@ -18,7 +18,12 @@ export class PostService {
     }
     
     async create(createPostDto: CreateBlogPostDto): Promise<BlogPostDto> {
-        const post = this.postRepository.create(createPostDto);
+        const postData = {
+            ...createPostDto,
+            isDraft: createPostDto.isDraft !== undefined ? createPostDto.isDraft : true,
+            publishedAt: createPostDto.isDraft === false ? new Date() : null,
+        };
+        const post = this.postRepository.create(postData);
         return this.postRepository.save(post);
     }
 
@@ -33,6 +38,9 @@ export class PostService {
         if (query.content !== undefined) {
             where.content = Like(`%${query.content}%`);
         }
+        if (query.isDraft !== undefined) {
+            where.isDraft = query.isDraft;
+        }
         if(query.createdAt && query.createdAt.length == 2) {
             where.createdAt = Between(new Date(query.createdAt[0]), new Date(query.createdAt[1]));
         }
@@ -42,12 +50,78 @@ export class PostService {
         return this.postRepository.find({ where });
     }
 
+    /**
+     * Find published posts only (for public consumption)
+     */
+    async findPublished(): Promise<BlogPostDto[]> {
+        return this.postRepository.find({ 
+            where: { isDraft: false },
+            order: { publishedAt: 'DESC' }
+        });
+    }
+
+    /**
+     * Find drafts for a specific author
+     */
+    async findDraftsByAuthor(authorId: string): Promise<BlogPostDto[]> {
+        return this.postRepository.find({ 
+            where: { authorId, isDraft: true },
+            order: { updatedAt: 'DESC' }
+        });
+    }
+
     async findOne(id: string): Promise<BlogPostDto> {
         return await this.postRepository.findOne({ where: { id } });
     }
 
-    async update(id: string, updatePostDto: UpdateBlogPostDto): Promise<BlogPostDto> {
-        await this.postRepository.update(id, updatePostDto);
+    /**
+     * Update a post with ownership check
+     * Only the original author can update the post
+     */
+    async update(id: string, updatePostDto: UpdateBlogPostDto, requestingAuthorId?: string): Promise<BlogPostDto> {
+        const existingPost = await this.postRepository.findOne({ where: { id } });
+        if (!existingPost) {
+            throw new NotFoundException(`Post with id ${id} not found`);
+        }
+        
+        // Only check ownership if requestingAuthorId is provided
+        if (requestingAuthorId && existingPost.authorId !== requestingAuthorId) {
+            throw new ForbiddenException('You can only edit your own posts');
+        }
+
+        // Handle publish transition
+        const updateData: Partial<Post> = { ...updatePostDto };
+        if (updatePostDto.isDraft === false && existingPost.isDraft === true) {
+            // Publishing the post
+            updateData.publishedAt = new Date();
+        }
+        
+        await this.postRepository.update(id, updateData);
+        return await this.postRepository.findOne({ where: { id } });
+    }
+
+    /**
+     * Publish a draft post (set isDraft to false and set publishedAt)
+     */
+    async publish(id: string, requestingAuthorId: string): Promise<BlogPostDto> {
+        const existingPost = await this.postRepository.findOne({ where: { id } });
+        if (!existingPost) {
+            throw new NotFoundException(`Post with id ${id} not found`);
+        }
+        
+        if (existingPost.authorId !== requestingAuthorId) {
+            throw new ForbiddenException('You can only publish your own posts');
+        }
+
+        if (!existingPost.isDraft) {
+            return existingPost; // Already published
+        }
+
+        await this.postRepository.update(id, {
+            isDraft: false,
+            publishedAt: new Date()
+        });
+        
         return await this.postRepository.findOne({ where: { id } });
     }
 
