@@ -26,7 +26,7 @@ describe('AuthenticationController', () => {
     } as unknown as jest.Mocked<ClientProxy>;
 
     profileService = {
-      send: jest.fn().mockReturnValue(of(true)),
+      send: jest.fn().mockReturnValue(of([{ id: 'profile-1', appScope: 'test' }])),
       connect: jest.fn().mockResolvedValue({}),
     } as unknown as jest.Mocked<ClientProxy>;
 
@@ -64,10 +64,14 @@ describe('AuthenticationController', () => {
       email: 'test@test.com',
       password: 'test',
     };
+    // Mock UserIdFromEmail to return a valid userId
+    (clientProxy.send as jest.Mock)
+      .mockReturnValueOnce(of({ userId: 'user-1' })) // UserIdFromEmail
+      .mockReturnValueOnce(of(true)); // Login
     await expect(controller.loginUser(loginRequest, 'test')).resolves.toBe(true);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Login },
-      loginRequest
+      { ...loginRequest, profileId: 'profile-1' }
     );
   });
 

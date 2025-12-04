@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Logger } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { Profile } from '../profiles/entities/profile.entity';
 import { CreateProfileDto } from '../profiles/dto/create-profile.dto';
@@ -24,6 +25,15 @@ describe('ProfileService', () => {
                 {
                     provide: getRepositoryToken(Profile),
                     useValue: mockProfileRepository,
+                },
+                {
+                    provide: Logger,
+                    useValue: {
+                        log: jest.fn(),
+                        debug: jest.fn(),
+                        warn: jest.fn(),
+                        error: jest.fn(),
+                    },
                 },
             ],
         }).compile();
