@@ -97,6 +97,7 @@ describe('AppService', () => {
       avatarUrl: '',
       createdAt: new Date(),
       updatedAt: new Date(),
+      appScope: 'test-app-id',
     };
     const mockPromptResponse = { message: { content: 'Welcome message---{"goals":[]}' } };
 
@@ -179,6 +180,7 @@ describe('AppService', () => {
       avatarUrl: '',
       createdAt: new Date(),
       updatedAt: new Date(),
+      appScope: 'test-app-id',
     };
     const mockPromptResponse = { message: { content: 'AI response' } };
 

@@ -1,5 +1,6 @@
 import { CreateProfileDto, UpdateProfileDto } from '@optimistic-tanuki/models';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Logger } from '@nestjs/common';
 
 import { ProfileService } from '../app/profile.service';
 import { ProfilesController } from './profiles.controller';
@@ -19,6 +20,15 @@ describe('ProfilesController', () => {
             findOne: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
+          },
+        },
+        {
+          provide: Logger,
+          useValue: {
+            log: jest.fn(),
+            debug: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
           },
         },
       ],

@@ -117,7 +117,7 @@ describe('ProfileController', () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    const getResponse = await controller.getProfile(id);
+    const getResponse = await controller.getProfile(id, 'test');
     expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Get }, { id });
     expect(getResponse).toEqual({});
   });

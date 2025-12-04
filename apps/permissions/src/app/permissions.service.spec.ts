@@ -61,7 +61,7 @@ describe('PermissionsService', () => {
 
       const result = await service.getPermission('1');
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: '1' }, relations: ['roles'] });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: '1' }, relations: ['roles', 'appScope'] });
       expect(result).toEqual(permission);
     });
   });

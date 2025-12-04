@@ -43,7 +43,7 @@ describe('RolesService', () => {
         { provide: getRepositoryToken(Permission), useFactory: mockRepo },
         { provide: getRepositoryToken(RoleAssignment), useFactory: mockRepo },
         { provide: getRepositoryToken(AppScope), useFactory: mockRepo },
-        { provide: Logger, useValue: { log: jest.fn() } },
+        { provide: Logger, useValue: { log: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn() } },
       ],
     }).compile();
 

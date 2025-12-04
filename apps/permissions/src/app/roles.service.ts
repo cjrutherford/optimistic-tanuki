@@ -161,6 +161,10 @@ export class RolesService {
       .leftJoinAndSelect('assignment.appScope', 'appScope')
       .where('assignment.profileId = :profileId', { profileId });
 
+    if (appScopeId) {
+      queryBuilder.andWhere('appScope.id = :appScopeId', { appScopeId });
+    }
+
     return await queryBuilder.getMany();
   }
 

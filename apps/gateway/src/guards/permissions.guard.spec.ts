@@ -68,11 +68,17 @@ describe('PermissionsGuard', () => {
           inject: ['ICacheProvider'],
         },
         {
-          provide: PermissionsGuard,
-          useFactory: (reflector: Reflector, permissionsClient: ClientProxy, logger: Logger, cacheService: PermissionsCacheService) => {
-            return new PermissionsGuard(reflector, permissionsClient, logger, cacheService);
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: {
+            send: jest.fn().mockReturnValue(of([{ appScope: 'global' }])),
           },
-          inject: [Reflector, ServiceTokens.PERMISSIONS_SERVICE, Logger, PermissionsCacheService],
+        },
+        {
+          provide: PermissionsGuard,
+          useFactory: (reflector: Reflector, permissionsClient: ClientProxy, logger: Logger, cacheService: PermissionsCacheService, profileService: ClientProxy) => {
+            return new PermissionsGuard(reflector, permissionsClient, logger, cacheService, profileService);
+          },
+          inject: [Reflector, ServiceTokens.PERMISSIONS_SERVICE, Logger, PermissionsCacheService, ServiceTokens.PROFILE_SERVICE],
         }
       ],
     }).compile();
@@ -191,7 +197,8 @@ describe('PermissionsGuard', () => {
 
     it('should grant access when permission check passes', async () => {
       permissionsClient.send
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope
         .mockReturnValueOnce(of(true)); // CheckPermission
 
       const context = createMockContext(
@@ -202,12 +209,13 @@ describe('PermissionsGuard', () => {
       const result = await guard.canActivate(context);
 
       expect(result).toBe(true);
-      expect(permissionsClient.send).toHaveBeenCalledTimes(2);
+      expect(permissionsClient.send).toHaveBeenCalledTimes(3);
     });
 
     it('should throw ForbiddenException when permission check fails', async () => {
       jest.spyOn(permissionsClient, 'send')
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope  
         .mockReturnValueOnce(of(false)); // CheckPermission
 
       const context = createMockContext(
@@ -226,7 +234,8 @@ describe('PermissionsGuard', () => {
       });
 
       permissionsClient.send
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' }))
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope
         .mockReturnValueOnce(of(true)) // permission1 passes
         .mockReturnValueOnce(of(false)); // permission2 fails
 
@@ -250,9 +259,11 @@ describe('PermissionsGuard', () => {
 
     it('should use cached permission result on second call', async () => {
       permissionsClient.send
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' }))
-        .mockReturnValueOnce(of(true))
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' }));
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (first call)
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope (first call)
+        .mockReturnValueOnce(of(true)) // CheckPermission (first call)
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (second call)
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })); // GetByName for fullEffectiveScope (second call)
 
       const context1 = createMockContext(
         { profileId: 'user1' },
@@ -261,7 +272,7 @@ describe('PermissionsGuard', () => {
 
       // First call - should query permissions service
       await guard.canActivate(context1);
-      expect(permissionsClient.send).toHaveBeenCalledTimes(2);
+      expect(permissionsClient.send).toHaveBeenCalledTimes(3);
 
       // Second call - should use cache
       const context2 = createMockContext(
@@ -271,15 +282,17 @@ describe('PermissionsGuard', () => {
 
       await guard.canActivate(context2);
       
-      // Only one additional call for GetByName, no CheckPermission call
-      expect(permissionsClient.send).toHaveBeenCalledTimes(3);
+      // Two additional calls for GetByName (appScope and fullEffectiveScope), no CheckPermission call
+      expect(permissionsClient.send).toHaveBeenCalledTimes(5);
     });
 
     it('should cache denied permissions', async () => {
       permissionsClient.send
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' }))
-        .mockReturnValueOnce(of(false))
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' }));
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (first call)
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope (first call)
+        .mockReturnValueOnce(of(false)) // CheckPermission (first call - denied)
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (second call)
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })); // GetByName for fullEffectiveScope (second call)
 
       const context1 = createMockContext(
         { profileId: 'user1' },
@@ -301,16 +314,18 @@ describe('PermissionsGuard', () => {
         ForbiddenException
       );
 
-      // Should have made only one CheckPermission call (cached on second)
-      expect(permissionsClient.send).toHaveBeenCalledTimes(3);
+      // Should have made one CheckPermission call on first, cached on second
+      expect(permissionsClient.send).toHaveBeenCalledTimes(5);
     });
 
     it('should differentiate cache by profile, permission, and appScope', async () => {
       permissionsClient.send
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' }))
-        .mockReturnValueOnce(of(true))
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' }))
-        .mockReturnValueOnce(of(false));
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (user1)
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope (user1)
+        .mockReturnValueOnce(of(true)) // CheckPermission (user1)
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (user2)
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope (user2)
+        .mockReturnValueOnce(of(false)); // CheckPermission (user2)
 
       // User1 - should pass
       const context1 = createMockContext(
@@ -328,7 +343,7 @@ describe('PermissionsGuard', () => {
         ForbiddenException
       );
 
-      expect(permissionsClient.send).toHaveBeenCalledTimes(4);
+      expect(permissionsClient.send).toHaveBeenCalledTimes(6);
     });
   });
 
@@ -339,8 +354,9 @@ describe('PermissionsGuard', () => {
       });
 
       permissionsClient.send
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' }))
-        .mockReturnValueOnce(throwError(() => new Error('Service error')));
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope
+        .mockReturnValueOnce(throwError(() => new Error('Service error'))); // CheckPermission throws
 
       const context = createMockContext(
         { profileId: 'user1' },

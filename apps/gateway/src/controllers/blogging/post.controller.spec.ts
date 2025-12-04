@@ -48,6 +48,12 @@ describe('PostController', () => {
           },
         },
         {
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: {
+            send: jest.fn().mockReturnValue(of([{ appScope: 'global' }])),
+          },
+        },
+        {
           provide: PermissionsCacheService,
           useValue: {
             get: jest.fn().mockResolvedValue(null),
