@@ -6,7 +6,7 @@
   (dragleave)="handleDragLeave($event)"
   (drop)="handleDrop($event)"
   [variantOverrides]="{ background: backgroundGradient }"
-  >
+>
   <form>
     <label for="title">Title</label>
     <lib-text-input
@@ -19,11 +19,11 @@
 
     <label for="content">Content</label>
     @if (editor) {
-      <lib-rich-text-toolbar
-        [editor]="editor"
-        (componentsClicked)="onToolbarComponentsClick()"
-        (imageUploadClicked)="onToolbarImageUploadClick()"
-      ></lib-rich-text-toolbar>
+    <lib-rich-text-toolbar
+      [editor]="editor"
+      (componentsClicked)="onToolbarComponentsClick()"
+      (imageUploadClicked)="onToolbarImageUploadClick()"
+    ></lib-rich-text-toolbar>
     }
     <input
       type="file"
@@ -32,14 +32,14 @@
       hidden
       (change)="onFileSelected($event)"
       accept="image/*"
-      />
+    />
     @if(editor) {
-      <tiptap-editor
-        [editor]="editor"
-        [(ngModel)]="content"
-        [ngModelOptions]="{ standalone: true }"
-        class="tiptap-editor-styles"
-      ></tiptap-editor>
+    <tiptap-editor
+      [editor]="editor"
+      [(ngModel)]="content"
+      [ngModelOptions]="{ standalone: true }"
+      class="tiptap-editor-styles"
+    ></tiptap-editor>
     }
 
     <otui-button (action)="onPostSubmit()">Submit</otui-button>
@@ -65,10 +65,12 @@
 
 <!-- Context menu -->
 @if (isContextMenuVisible) {
-  <lib-context-menu
-    [x]="contextMenuX"
-    [y]="contextMenuY"
-    [editor]="editor"
-  ></lib-context-menu>
+<lib-context-menu
+  [x]="contextMenuX"
+  [y]="contextMenuY"
+  [editor]="editor"
+></lib-context-menu>
 }
 
+<!-- Hidden container for dynamic component injection -->
+<ng-container #componentContainer></ng-container>

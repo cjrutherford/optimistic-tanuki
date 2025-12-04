@@ -43,7 +43,7 @@ export class PostController {
   }
 
   @Post()
-  @RequirePermissions('blog:post:create')
+  @RequirePermissions('blog.post.create')
   async createPost(@Body() createPost: CreateBlogPostDto) {
     try {
       const post = await firstValueFrom(
@@ -61,7 +61,7 @@ export class PostController {
   }
 
   @Post('/find')
-  @RequirePermissions('blog:post:read', 'public')
+  // @RequirePermissions('blog.post.read')
   async findAllPosts(@Body() query: BlogPostQueryDto) {
     try {
       const posts = await firstValueFrom(
@@ -79,7 +79,7 @@ export class PostController {
   }
 
   @Get('/:id')
-  @RequirePermissions('blog:post:read', 'public')
+  // @RequirePermissions('blog.post.read', 'public')
   async getPost(@Param('id') id: string) {
     try {
       const post = await firstValueFrom(
@@ -104,7 +104,7 @@ export class PostController {
   }
 
   @Patch('/:id')
-  @RequirePermissions('blog:post:update')
+  @RequirePermissions('blog.post.update')
   async updatePost(
     @Param('id') id: string,
     @Body() updateData: UpdateBlogPostDto
@@ -134,7 +134,7 @@ export class PostController {
   }
 
   @Delete('/:id')
-  @RequirePermissions('blog:post:delete')
+  @RequirePermissions('blog.post.delete')
   async deletePost(@Param('id') id: string) {
     try {
       await firstValueFrom(

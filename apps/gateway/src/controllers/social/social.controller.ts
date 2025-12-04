@@ -59,7 +59,7 @@ export class SocialController {
     type: PostDto,
   })
   @Post('post')
-  @RequirePermissions('social:post:create')
+  @RequirePermissions('social.post.create')
   async post(@User() user, @Body() postDto: CreatePostDto) {
     console.log(user);
     postDto.userId = user.userId;
@@ -82,7 +82,7 @@ export class SocialController {
     type: VoteDto,
   })
   @Post('vote')
-  @RequirePermissions('social:vote:create')
+  @RequirePermissions('social.vote.create')
   async vote(@User() user: UserDetails, @Body() voteDto: CreateVoteDto) {
     voteDto.userId = user.userId;
     const commandMap = {
@@ -107,7 +107,7 @@ export class SocialController {
     type: CommentDto,
   })
   @Post('comment')
-  @RequirePermissions('social:comment:create')
+  @RequirePermissions('social.comment.create')
   async comment(
     @User() user: UserDetails,
     @Body() commentDto: CreateCommentDto
@@ -264,7 +264,7 @@ export class SocialController {
     type: PostDto,
   })
   @Put('post/update/:id')
-  @RequirePermissions('social:post:update')
+  @RequirePermissions('social.post.update')
   async updatePost(
     @Param('id') id: string,
     @Body() updatePostDto: UpdatePostDto

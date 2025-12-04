@@ -12,10 +12,13 @@ import {
   forwardRef,
 } from '@angular/core';
 
-import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import {
+  FormsModule,
+  ControlValueAccessor,
+  NG_VALUE_ACCESSOR,
+} from '@angular/forms';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
-import { MatIconModule } from '@angular/material/icon';
 import { TiptapEditorDirective } from 'ngx-tiptap';
 import Image from '@tiptap/extension-image';
 import Subscript from '@tiptap/extension-subscript';
@@ -27,32 +30,36 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  Themeable,
+  ThemeColors,
+  ThemeService,
+} from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder } from '@optimistic-tanuki/common-ui';
-import { 
-  ButtonComponent, 
-  CardComponent, 
+import {
+  ButtonComponent,
+  CardComponent,
   AccordionComponent,
   ModalComponent,
   HeroSectionComponent,
-  ContentSectionComponent 
+  ContentSectionComponent,
 } from '@optimistic-tanuki/common-ui';
-import { 
-  TextAreaComponent, 
+import {
+  TextAreaComponent,
   TextInputComponent,
   CheckboxComponent,
   SelectComponent,
-  RadioButtonComponent
+  RadioButtonComponent,
 } from '@optimistic-tanuki/form-ui';
 import { ContextMenuComponent } from '../context-menu/context-menu.component';
 
 // Component injection system imports
 import { ComponentInjectionService } from './services/component-injection.service';
 import { ComponentSelectorComponent } from './components/component-selector.component';
-import { 
-  InjectableComponent, 
+import {
+  InjectableComponent,
   InjectedComponentInstance,
-  ComponentInjectionAPI 
+  ComponentInjectionAPI,
 } from './interfaces/component-injection.interface';
 
 // Example components
@@ -66,7 +73,10 @@ import { FeaturedPostsComponent } from '../featured-posts/featured-posts.compone
 import { NewsletterSignupComponent } from '../newsletter-signup/newsletter-signup.component';
 
 // Property editing system
-import { PropertyEditorComponent, PropertyDefinition } from './components/property-editor.component';
+import {
+  PropertyEditorComponent,
+  PropertyDefinition,
+} from './components/property-editor.component';
 import { ComponentWrapperComponent } from './components/component-wrapper.component';
 import { ComponentEditorWrapperComponent } from './components/component-editor-wrapper.component';
 import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
@@ -101,7 +111,7 @@ interface PostData {
     RichTextToolbarComponent,
     TextAreaComponent,
     TiptapEditorDirective,
-],
+  ],
   templateUrl: './blog-compose.component.html',
   styleUrls: ['./blog-compose.component.scss'],
   host: {
@@ -117,16 +127,24 @@ interface PostData {
     '[style.--local-transition-duration]': 'transitionDuration',
   },
   providers: [
-    ComponentInjectionService, 
+    ComponentInjectionService,
     {
       provide: NG_VALUE_ACCESSOR,
       useExisting: forwardRef(() => BlogComposeComponent),
       multi: true,
-    }
-  ]
+    },
+  ],
 })
-export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy, AfterViewInit, ComponentInjectionAPI, ControlValueAccessor {
-  @Output() postSubmitted: EventEmitter<PostData> = new EventEmitter<PostData>();
+export class BlogComposeComponent
+  extends Themeable
+  implements
+    OnDestroy,
+    AfterViewInit,
+    ComponentInjectionAPI,
+    ControlValueAccessor
+{
+  @Output() postSubmitted: EventEmitter<PostData> =
+    new EventEmitter<PostData>();
   @Output() attachmentAdded = new EventEmitter<{
     placeholderId: string;
     file: File;
@@ -136,34 +154,34 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   componentContainer!: ViewContainerRef;
 
   override readonly themeService: ThemeService = inject(ThemeService);
-  
+
   // Theming properties;
   backgroundGradient = 'linear-gradient(to right, #5969c3, #59c360)';
   isDragOver = false;
-  
+
   private _title = '';
   private _content = '';
-  
+
   get title(): string {
     return this._title;
   }
-  
+
   set title(value: string) {
     if (this._title !== value) {
       this._title = value;
       this.emitChange();
     }
   }
-  
+
   get content(): string {
     return this._content;
   }
-  
+
   set content(value: string) {
     this._content = value;
     // Don't emit change here as it's handled by editor update event
   }
-  
+
   links: Array<{ url: string }> = [];
   attachments: File[] = [];
 
@@ -183,7 +201,10 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   selectedComponentInstance: InjectedComponentInstance | null = null;
   selectedComponentProperties: PropertyDefinition[] = [];
 
-  constructor(private componentInjectionService: ComponentInjectionService, _theme: ThemeService) {
+  constructor(
+    private componentInjectionService: ComponentInjectionService,
+    _theme: ThemeService
+  ) {
     super(_theme);
   }
 
@@ -194,11 +215,19 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   }
 
   ngAfterViewInit(): void {
-    // The component container is no longer needed as components are now inline in the editor
-    this.initializeDefaultComponents();
-  }
+    this.componentInjectionService.setViewContainer(this.componentContainer);
 
-  override ngOnInit(): void {
+    // Set up callbacks for component wrapper events
+    this.componentInjectionService.setWrapperCallbacks({
+      onEdit: (instance) => this.onComponentEdit(instance),
+      onDelete: (instance) => this.onComponentDelete(instance),
+      onMoveUp: (instance) => this.onComponentMoveUp(instance),
+      onMoveDown: (instance) => this.onComponentMoveDown(instance),
+      onSelection: (instance) => this.onComponentSelection(instance),
+    });
+
+    this.initializeDefaultComponents();
+
     this.editor = new Editor({
       extensions: [
         StarterKit,
@@ -224,6 +253,19 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
           },
           onComponentEdit: (instanceId: string) => {
             this.onInlineComponentEdit(instanceId);
+          },
+          renderer: (
+            componentId: string,
+            instanceId: string,
+            data: Record<string, unknown>,
+            element: HTMLElement
+          ) => {
+            return this.componentInjectionService.renderComponentInto(
+              componentId,
+              instanceId,
+              data,
+              element
+            );
           },
         }),
       ],
@@ -254,8 +296,6 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
 
   override ngOnDestroy(): void {
     this.editor.destroy();
-    // Clear our inline components
-    this.activeComponents.clear();
   }
 
   // Component injection system initialization
@@ -263,7 +303,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     // ============================================
     // BLOGGING UI COMPONENTS
     // ============================================
-    
+
     this.registerComponent({
       id: 'callout-box',
       name: 'Callout Box',
@@ -274,8 +314,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       data: {
         type: 'info',
         title: 'Important Note',
-        content: 'This is an important callout box.'
-      }
+        content: 'This is an important callout box.',
+      },
     });
 
     this.registerComponent({
@@ -288,8 +328,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       data: {
         title: 'Example Code',
         language: 'javascript',
-        code: 'console.log("Hello, World!");'
-      }
+        code: 'console.log("Hello, World!");',
+      },
     });
 
     this.registerComponent({
@@ -301,24 +341,26 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       icon: 'photo_library',
       data: {
         title: 'Sample Gallery',
-        columns: 3
-      }
+        columns: 3,
+      },
     });
 
     this.registerComponent({
       id: 'hero',
       name: 'Hero Section',
-      description: 'Eye-catching hero section with title, description, and call-to-action',
+      description:
+        'Eye-catching hero section with title, description, and call-to-action',
       component: HeroComponent,
       category: 'Blogging',
       icon: 'landscape',
       data: {
         title: 'Welcome to Our Blog!',
         subtitle: '',
-        description: 'Discover the latest news, tips, and stories from our community.',
+        description:
+          'Discover the latest news, tips, and stories from our community.',
         buttonText: 'Get Started',
-        imageUrl: 'https://via.placeholder.com/600x400'
-      }
+        imageUrl: 'https://via.placeholder.com/600x400',
+      },
     });
 
     this.registerComponent({
@@ -334,13 +376,14 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
           {
             title: 'Understanding Microservices Architecture',
             bannerImage: 'https://picsum.photos/id/1011/800/400',
-            excerpt: 'A deep dive into the principles and benefits of microservices.',
+            excerpt:
+              'A deep dive into the principles and benefits of microservices.',
             authorName: 'Jane Doe',
             publishDate: '2024-05-10',
-            readMoreLink: '/blog/microservices-architecture'
-          }
-        ]
-      }
+            readMoreLink: '/blog/microservices-architecture',
+          },
+        ],
+      },
     });
 
     this.registerComponent({
@@ -351,8 +394,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       category: 'Blogging',
       icon: 'email',
       data: {
-        bannerImage: 'https://picsum.photos/1200/300'
-      }
+        bannerImage: 'https://picsum.photos/1200/300',
+      },
     });
 
     // ============================================
@@ -362,14 +405,15 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     this.registerComponent({
       id: 'common-card',
       name: 'Card',
-      description: 'A styled card container for organizing content with optional glass effect',
+      description:
+        'A styled card container for organizing content with optional glass effect',
       component: CardComponent,
       category: 'Common UI',
       icon: 'dashboard',
       data: {
         glassEffect: false,
-        CardVariant: 'default'
-      }
+        CardVariant: 'default',
+      },
     });
 
     this.registerComponent({
@@ -382,8 +426,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       data: {
         variant: 'primary',
         disabled: false,
-        label: 'Click Me'
-      }
+        label: 'Click Me',
+      },
     });
 
     this.registerComponent({
@@ -398,9 +442,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
         size: 'md',
         sections: [
           { heading: 'Section 1', content: 'Content for section 1' },
-          { heading: 'Section 2', content: 'Content for section 2' }
-        ]
-      }
+          { heading: 'Section 2', content: 'Content for section 2' },
+        ],
+      },
     });
 
     this.registerComponent({
@@ -414,8 +458,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
         heading: 'Modal Title',
         mode: 'standard-modal',
         variant: 'default',
-        size: 'md'
-      }
+        size: 'md',
+      },
     });
 
     this.registerComponent({
@@ -429,8 +473,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
         title: 'Welcome',
         subtitle: 'Discover amazing content',
         backgroundImage: '',
-        alignment: 'center'
-      }
+        alignment: 'center',
+      },
     });
 
     this.registerComponent({
@@ -442,8 +486,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       icon: 'article',
       data: {
         title: 'Content Section',
-        layout: 'single-column'
-      }
+        layout: 'single-column',
+      },
     });
 
     // ============================================
@@ -453,7 +497,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     this.registerComponent({
       id: 'form-text-input',
       name: 'Text Input',
-      description: 'Single-line text input field with label and placeholder support',
+      description:
+        'Single-line text input field with label and placeholder support',
       component: TextInputComponent,
       category: 'Form UI',
       icon: 'text_fields',
@@ -461,8 +506,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
         type: 'text',
         label: 'Text Input',
         placeholder: 'Enter text...',
-        labelPosition: 'top'
-      }
+        labelPosition: 'top',
+      },
     });
 
     this.registerComponent({
@@ -473,8 +518,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       category: 'Form UI',
       icon: 'check_box',
       data: {
-        value: false
-      }
+        value: false,
+      },
     });
 
     this.registerComponent({
@@ -488,9 +533,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
         options: [
           { value: 'option1', label: 'Option 1' },
           { value: 'option2', label: 'Option 2' },
-          { value: 'option3', label: 'Option 3' }
-        ]
-      }
+          { value: 'option3', label: 'Option 3' },
+        ],
+      },
     });
 
     this.registerComponent({
@@ -503,11 +548,11 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       data: {
         options: [
           { label: 'Option 1', value: 'option1' },
-          { label: 'Option 2', value: 'option2' }
+          { label: 'Option 2', value: 'option2' },
         ],
         layout: 'vertical',
-        selected: ''
-      }
+        selected: '',
+      },
     });
 
     this.registerComponent({
@@ -518,8 +563,8 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       category: 'Form UI',
       icon: 'notes',
       data: {
-        label: 'Text Area'
-      }
+        label: 'Text Area',
+      },
     });
 
     this.registeredComponents = this.getRegisteredComponents();
@@ -545,17 +590,24 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     return this.componentInjectionService.getComponentsByCategory(category);
   }
 
-  async injectComponent(componentId: string, data?: any, position?: number): Promise<InjectedComponentInstance> {
+  async injectComponent(
+    componentId: string,
+    data?: Record<string, unknown>,
+    position?: number
+  ): Promise<InjectedComponentInstance> {
     // Use our new inline injection method instead
-    const component = this.componentInjectionService.getRegisteredComponents()
-      .find(comp => comp.id === componentId);
-    
+    const component = this.componentInjectionService
+      .getRegisteredComponents()
+      .find((comp) => comp.id === componentId);
+
     if (!component) {
       throw new Error(`Component ${componentId} not found`);
     }
 
-    const instanceId = `${componentId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    
+    const instanceId = `${componentId}-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
+
     // Insert into TipTap editor
     this.editor.commands.insertAngularComponent({
       componentId,
@@ -564,30 +616,31 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       componentDef: component,
     });
 
-    // Track the component
-    const mockComponentRef = {
-      instance: data || component.data || {},
-      changeDetectorRef: { detectChanges: () => {} },
-      destroy: () => {},
-    } as any;
+    // Retrieve the instance from the service
+    // Since Tiptap updates are synchronous for DOM, the renderer should have been called.
+    const instance = this.componentInjectionService.getInstance(instanceId);
 
-    const injectedInstance: InjectedComponentInstance = {
-      instanceId,
-      componentDef: component,
-      componentRef: mockComponentRef,
-      data: data || component.data || {},
-    };
+    if (!instance) {
+      // Fallback if something went wrong, though it shouldn't if renderer works.
+      // We return a mock or throw.
+      throw new Error('Failed to inject component instance');
+    }
 
-    this.activeComponents.set(instanceId, injectedInstance);
-    return injectedInstance;
+    this.activeComponents.set(instanceId, instance);
+    return instance;
   }
 
   // Override component injection methods to work with inline editor
-  updateComponent(instanceId: string, data: any): void {
+  updateComponent(instanceId: string, data: Record<string, unknown>): void {
+    this.editor.commands.updateAngularComponent({
+      instanceId,
+      data,
+    });
+
+    // Also update local cache if present
     const instance = this.activeComponents.get(instanceId);
     if (instance) {
       instance.data = { ...instance.data, ...data };
-      this.activeComponents.set(instanceId, instance);
     }
   }
 
@@ -618,11 +671,11 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     this.isComponentSelectorVisible = false;
   }
 
-
   // Property editing methods
   onComponentEdit(instance: InjectedComponentInstance): void {
     this.selectedComponentInstance = instance;
-    this.selectedComponentProperties = COMPONENT_PROPERTY_DEFINITIONS[instance.componentDef.id] || [];
+    this.selectedComponentProperties =
+      COMPONENT_PROPERTY_DEFINITIONS[instance.componentDef.id] || [];
     this.isPropertyEditorVisible = true;
   }
 
@@ -638,7 +691,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
 
   onComponentMoveUp(instance: InjectedComponentInstance): void {
     const activeComponents = this.getActiveComponents();
-    const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+    const currentIndex = activeComponents.findIndex(
+      (c) => c.instanceId === instance.instanceId
+    );
     if (currentIndex > 0) {
       this.moveComponent(instance.instanceId, currentIndex - 1);
     }
@@ -646,7 +701,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
 
   onComponentMoveDown(instance: InjectedComponentInstance): void {
     const activeComponents = this.getActiveComponents();
-    const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+    const currentIndex = activeComponents.findIndex(
+      (c) => c.instanceId === instance.instanceId
+    );
     if (currentIndex < activeComponents.length - 1) {
       this.moveComponent(instance.instanceId, currentIndex + 1);
     }
@@ -660,13 +717,13 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     if (this.selectedComponentInstance) {
       // Handle output configuration
       const outputConfigs: any = {};
-      this.selectedComponentProperties.forEach(prop => {
+      this.selectedComponentProperties.forEach((prop) => {
         if (prop.isOutput) {
           const url = updatedData[prop.key + '_url'];
           if (url) {
             outputConfigs[prop.key] = {
               url,
-              schema: prop.outputSchema
+              schema: prop.outputSchema,
             };
           }
           // Remove temporary keys
@@ -682,25 +739,32 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       }
 
       // Update the inner component properties
-      const innerComponentRef = this.selectedComponentInstance.data._innerComponentRef;
+      const innerComponentRef =
+        this.selectedComponentInstance.data._innerComponentRef;
       if (innerComponentRef) {
-        Object.keys(finalData).forEach(key => {
-          if (key !== '_innerComponentRef' && key !== '_outputConfigs' && 
-              innerComponentRef.instance[key] !== undefined) {
+        Object.keys(finalData).forEach((key) => {
+          if (
+            key !== '_innerComponentRef' &&
+            key !== '_outputConfigs' &&
+            innerComponentRef.instance[key] !== undefined
+          ) {
             innerComponentRef.instance[key] = finalData[key];
           }
         });
         innerComponentRef.changeDetectorRef.detectChanges();
       }
 
-      this.updateComponent(this.selectedComponentInstance.instanceId, finalData);
-      
+      this.updateComponent(
+        this.selectedComponentInstance.instanceId,
+        finalData
+      );
+
       // Update the TipTap editor node as well
       this.editor.commands.updateAngularComponent({
         instanceId: this.selectedComponentInstance.instanceId,
         data: finalData,
       });
-      
+
       this.hidePropertyEditor();
     }
   }
@@ -749,7 +813,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   // Inline component interaction methods
   onInlineComponentClick(componentId: string, instanceId: string): void {
     // Find the component instance and trigger edit mode
-    const instance = this.getActiveComponents().find(comp => comp.instanceId === instanceId);
+    const instance = this.getActiveComponents().find(
+      (comp) => comp.instanceId === instanceId
+    );
     if (instance) {
       this.onComponentEdit(instance);
     }
@@ -763,7 +829,9 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
 
   onInlineComponentEdit(instanceId: string): void {
     // Find the component instance and open property editor
-    const instance = this.getActiveComponents().find(comp => comp.instanceId === instanceId);
+    const instance = this.getActiveComponents().find(
+      (comp) => comp.instanceId === instanceId
+    );
     if (instance) {
       this.onComponentEdit(instance);
     }
@@ -772,8 +840,10 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
   // Modified component injection to work with inline editor
   async onComponentSelected(component: InjectableComponent): Promise<void> {
     try {
-      const instanceId = `${component.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      
+      const instanceId = `${component.id}-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
+
       // Insert into TipTap editor instead of separate container
       this.editor.commands.insertAngularComponent({
         componentId: component.id,
@@ -826,8 +896,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
 
     const files = Array.from(e.dataTransfer.files);
     files.forEach((file) => {
-      const placeholderId = `upload-${Date.now()}-${Math
-        .random()
+      const placeholderId = `upload-${Date.now()}-${Math.random()
         .toString(36)
         .substring(2, 9)}`;
       this.attachmentAdded.emit({ placeholderId, file });
@@ -863,7 +932,7 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
       this._content = value.content || '';
       this.links = value.links || [];
       this.attachments = value.attachments || [];
-      
+
       // Update editor content if editor is available
       if (this.editor) {
         this.editor.commands.setContent(this._content);
@@ -903,12 +972,16 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     this.background = colors.background;
     this.backgroundGradient = new GradientBuilder()
       .setType('radial')
-      .setOptions({ shape: 'ellipse', position: 'center', colors: [colors.accent, colors.complementary] })
+      .setOptions({
+        shape: 'ellipse',
+        position: 'center',
+        colors: [colors.accent, colors.complementary],
+      })
       .build();
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;
-    
+
     // Use standardized gradient names and numbered shades
     if (this.theme === 'dark') {
       this.borderGradient = colors.accentGradients['dark'];
@@ -919,5 +992,4 @@ export class BlogComposeComponent extends Themeable implements OnInit, OnDestroy
     }
     this.transitionDuration = '0.15s'; // Use standardized duration
   }
-
 }

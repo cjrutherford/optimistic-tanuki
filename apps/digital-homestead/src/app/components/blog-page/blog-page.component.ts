@@ -7,13 +7,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { BlogComposeComponent } from '@optimistic-tanuki/blogging-ui';
 import { BlogViewerComponent } from '../blog-viewer/blog-viewer.component';
 import { BlogService } from '../../blog.service';
-import { ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { AuthStateService } from '../../auth-state.service';
 import { PermissionService } from '../../permission.service';
 import { BlogPostDto } from '@optimistic-tanuki/ui-models';
 
-/** 
- * Editor data matching the PostData interface from BlogComposeComponent 
+/**
+ * Editor data matching the PostData interface from BlogComposeComponent
  */
 interface PostData {
   title: string;
@@ -32,6 +32,7 @@ interface PostData {
     BlogComposeComponent,
     BlogViewerComponent,
     ButtonComponent,
+    CardComponent,
   ],
   templateUrl: './blog-page.component.html',
   styleUrl: './blog-page.component.scss',
@@ -44,15 +45,17 @@ export class BlogPageComponent {
   private readonly permissionService = inject(PermissionService);
 
   // Route params as signal
-  private readonly routeParams = toSignal(this.route.params, { initialValue: {} as Record<string, string> });
-  
+  private readonly routeParams = toSignal(this.route.params, {
+    initialValue: {} as Record<string, string>,
+  });
+
   // Signals for state management
   readonly posts = signal<BlogPostDto[]>([]);
   readonly selectedPost = signal<BlogPostDto | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly mode = signal<'view' | 'create' | 'edit'>('view');
-  
+
   // Editor form data
   readonly editorData = signal<PostData>({
     title: '',
@@ -62,12 +65,21 @@ export class BlogPageComponent {
   });
 
   // Auth state as signals
-  readonly isAuthenticated = toSignal(this.authState.isAuthenticated$(), { initialValue: false });
-  readonly hasFullAccess = toSignal(this.permissionService.hasFullAccess$(), { initialValue: false });
-  readonly permissionsLoaded = toSignal(this.permissionService.permissionsLoaded$(), { initialValue: false });
+  readonly isAuthenticated = toSignal(this.authState.isAuthenticated$(), {
+    initialValue: false,
+  });
+  readonly hasFullAccess = toSignal(this.permissionService.hasFullAccess$(), {
+    initialValue: false,
+  });
+  readonly permissionsLoaded = toSignal(
+    this.permissionService.permissionsLoaded$(),
+    { initialValue: false }
+  );
 
   // Computed: can user edit
-  readonly canEdit = computed(() => this.isAuthenticated() && this.hasFullAccess());
+  readonly canEdit = computed(
+    () => this.isAuthenticated() && this.hasFullAccess()
+  );
 
   // Computed: get current post ID from route
   readonly currentPostId = computed(() => {
@@ -81,13 +93,13 @@ export class BlogPageComponent {
   // Effect to handle route changes
   private readonly routeEffect = effect(() => {
     const postId = this.currentPostId();
-    
+
     // Load posts only once on initialization
     if (!this.postsInitialized) {
       this.postsInitialized = true;
       this.loadAllPosts();
     }
-    
+
     if (postId) {
       // Load specific post
       this.loadPost(postId);
@@ -109,8 +121,9 @@ export class BlogPageComponent {
     this.blogService.getAllPosts().subscribe({
       next: (posts) => {
         // Sort by date descending (newest first)
-        const sortedPosts = [...posts].sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        const sortedPosts = [...posts].sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         this.posts.set(sortedPosts);
         this.loading.set(false);
@@ -212,7 +225,9 @@ export class BlogPageComponent {
    */
   onPostSubmitted(postData: PostData): void {
     if (!this.canEdit()) {
-      this.error.set('You do not have permission to create or edit blog posts.');
+      this.error.set(
+        'You do not have permission to create or edit blog posts.'
+      );
       return;
     }
 
@@ -304,7 +319,7 @@ export class BlogPageComponent {
    */
   private updatePostInList(updatedPost: BlogPostDto): void {
     const currentPosts = this.posts();
-    const updatedPosts = currentPosts.map(post => 
+    const updatedPosts = currentPosts.map((post) =>
       post.id === updatedPost.id ? updatedPost : post
     );
     this.posts.set(updatedPosts);

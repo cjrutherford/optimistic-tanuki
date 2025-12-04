@@ -197,6 +197,7 @@ export class RolesService {
       }
 
       for (const p of assignment.role.permissions) {
+        if (permissionName === 'public') continue;
         this.l.debug('Evaluating permission:', p);
         this.l.debug('Against permissionName:', permissionName);
         this.l.debug('Against targetId:', targetId);

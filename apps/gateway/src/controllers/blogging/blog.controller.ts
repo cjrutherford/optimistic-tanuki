@@ -60,7 +60,7 @@ export class BlogController {
   }
 
   @Post('/find')
-  @RequirePermissions('read:blog', 'view:public')
+  // @RequirePermissions('read:blog', 'view:public')
   async findAllBlogs(@Body() query: BlogQueryDto) {
     try {
       const blogs = await firstValueFrom(

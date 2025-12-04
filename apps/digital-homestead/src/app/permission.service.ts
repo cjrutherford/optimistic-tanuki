@@ -1,17 +1,21 @@
 import { Injectable, inject, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, firstValueFrom, Subscription } from 'rxjs';
+import {
+  BehaviorSubject,
+  Observable,
+  of,
+  firstValueFrom,
+  Subscription,
+} from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { isPlatformBrowser } from '@angular/common';
-import { RoleDto, PermissionDto } from '@optimistic-tanuki/ui-models';
+import {
+  RoleDto,
+  PermissionDto,
+  UserRoleDto,
+} from '@optimistic-tanuki/ui-models';
 
 import { AuthStateService } from './auth-state.service';
-
-export interface UserRolesResponse {
-  profileId: string;
-  roles: RoleDto[];
-  permissions: PermissionDto[];
-}
 
 /**
  * Service to check user permissions for the digital-homestead app.
@@ -25,14 +29,19 @@ export class PermissionService implements OnDestroy {
   private authState: AuthStateService = inject(AuthStateService);
   private platformId: object = inject(PLATFORM_ID);
 
-  private userRolesSubject = new BehaviorSubject<UserRolesResponse | null>(null);
+  private userRolesSubject = new BehaviorSubject<UserRoleDto[] | null>(null);
   private hasFullAccessSubject = new BehaviorSubject<boolean>(false);
   private permissionsLoadedSubject = new BehaviorSubject<boolean>(false);
   private authSubscription: Subscription | null = null;
 
   // Roles that grant full blog editing access
-  private readonly OWNER_ROLES = ['digital_homesteader', 'owner', 'admin', 'blog_author'];
-  
+  private readonly OWNER_ROLES = [
+    'digital_homesteader',
+    'owner',
+    'admin',
+    'blog_author',
+  ];
+
   // Permission names that grant blog writing access
   private readonly WRITE_PERMISSIONS = [
     'blog.post.create',
@@ -42,13 +51,15 @@ export class PermissionService implements OnDestroy {
 
   constructor() {
     // Load permissions when user is authenticated
-    this.authSubscription = this.authState.isAuthenticated$().subscribe((isAuth) => {
-      if (isAuth) {
-        this.loadUserPermissions();
-      } else {
-        this.clearPermissions();
-      }
-    });
+    this.authSubscription = this.authState
+      .isAuthenticated$()
+      .subscribe((isAuth) => {
+        if (isAuth) {
+          this.loadUserPermissions();
+        } else {
+          this.clearPermissions();
+        }
+      });
   }
 
   ngOnDestroy(): void {
@@ -107,13 +118,17 @@ export class PermissionService implements OnDestroy {
 
     try {
       const response = await firstValueFrom(
-        this.http.get<UserRolesResponse>(`/api/permissions/user-roles/${encodedProfileId}`).pipe(
-          catchError((error) => {
-            console.error('Failed to load user permissions:', error);
-            return of(null);
-          })
-        )
+        this.http
+          .get<UserRoleDto[]>(`/api/permissions/user-roles/${encodedProfileId}`)
+          .pipe(
+            catchError((error) => {
+              console.error('Failed to load user permissions:', error);
+              return of(null);
+            })
+          )
       );
+
+      console.log('Loaded user permissions:', response);
 
       if (response) {
         this.userRolesSubject.next(response);
@@ -137,7 +152,10 @@ export class PermissionService implements OnDestroy {
     const userRoles = this.userRolesSubject.value;
     if (!userRoles) return false;
 
-    return userRoles.permissions.some((p) => p.name === permissionName);
+    return userRoles
+      .map((ut) => ut.role!.permissions as PermissionDto[])
+      .flat()
+      .some((p) => p.name === permissionName);
   }
 
   /**
@@ -147,23 +165,26 @@ export class PermissionService implements OnDestroy {
     const userRoles = this.userRolesSubject.value;
     if (!userRoles) return false;
 
-    return userRoles.roles.some((r) => r.name === roleName);
+    return userRoles.some((r) => r.role!.name === roleName);
   }
 
   /**
    * Check if user has any of the owner/full access roles or write permissions
    */
-  private checkFullAccess(userRoles: UserRolesResponse): boolean {
+  private checkFullAccess(userRoles: UserRoleDto[]): boolean {
     // Check for owner/admin roles
-    const hasOwnerRole = userRoles.roles.some((role) =>
-      this.OWNER_ROLES.includes(role.name)
-    );
+    const hasOwnerRole = userRoles
+      .map((ur) => ur.role!.name)
+      .filter((x) => x)
+      .some((role) => this.OWNER_ROLES.includes(role));
     if (hasOwnerRole) return true;
 
     // Check for write permissions
-    const hasWritePermission = userRoles.permissions.some((perm) =>
-      this.WRITE_PERMISSIONS.includes(perm.name)
-    );
+    const hasWritePermission = userRoles
+      .map((ur) => ur.role!.permissions)
+      .flat()
+      .filter((x) => x)
+      .some((perm) => this.WRITE_PERMISSIONS.includes(perm!.name));
     return hasWritePermission;
   }
 
