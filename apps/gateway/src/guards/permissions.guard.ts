@@ -12,6 +12,7 @@ import {
   ServiceTokens,
   RoleCommands,
   AppScopeCommands,
+  ProfileCommands,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -19,6 +20,7 @@ import {
   PermissionRequirement,
 } from '../decorators/permissions.decorator';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
+import { ProfileDto } from '@optimistic-tanuki/models';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -27,7 +29,9 @@ export class PermissionsGuard implements CanActivate {
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private permissionsClient: ClientProxy,
     private readonly logger: Logger,
-    private readonly cacheService: PermissionsCacheService
+    private readonly cacheService: PermissionsCacheService,
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profileService: ClientProxy
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -72,6 +76,45 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException(`App scope not found: ${appScopeName}`);
     }
 
+    const profiles: ProfileDto[] = await firstValueFrom(
+      this.profileService.send(
+        { cmd: ProfileCommands.GetAll },
+        {
+          where: {
+            id: user.profileId,
+          },
+        }
+      )
+    );
+
+    let effectiveScope = 'global';
+    const validProfiles = profiles.filter(
+      (p) => p.appScope === appScopeName || p.appScope === 'global'
+    );
+    if (validProfiles.length === 0) {
+      this.logger.warn(
+        `No valid profile found for profileId: ${user.profileId} in app scope: ${appScopeName} or global`
+      );
+      throw new ForbiddenException(
+        `No valid profile found for the specified app scope`
+      );
+    }
+    if (!validProfiles.some((p) => p.appScope === 'global')) {
+      effectiveScope = appScopeName;
+    }
+
+    const fullEffectiveScope = await firstValueFrom(
+      this.permissionsClient.send(
+        { cmd: AppScopeCommands.GetByName },
+        effectiveScope
+      )
+    );
+
+    this.logger.debug(
+      'Full Effective Scope:',
+      JSON.stringify(fullEffectiveScope)
+    );
+
     const { permissions } = requirement;
 
     // Check each required permission for the specific app scope
@@ -80,7 +123,7 @@ export class PermissionsGuard implements CanActivate {
       let hasPermission = await this.cacheService.get(
         user.profileId,
         permission,
-        appScope.id
+        fullEffectiveScope.id
       );
 
       // If not in cache, check with permissions service
@@ -94,16 +137,19 @@ export class PermissionsGuard implements CanActivate {
             {
               profileId: user.profileId,
               permission,
-              appScopeId: appScope.id,
+              profileAppScope: effectiveScope,
+              appScopeId: fullEffectiveScope.id,
             }
           )
         );
+
+        console.log(hasPermission);
 
         // Cache the result
         await this.cacheService.set(
           user.profileId,
           permission,
-          appScope.id,
+          fullEffectiveScope.id,
           hasPermission
         );
       } else {

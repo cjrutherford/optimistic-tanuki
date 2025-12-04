@@ -39,6 +39,7 @@ export class AppService {
       if (!user) {
         throw new RpcException('User not found');
       }
+      this.l.debug(`Found user ID ${user.id} for email ${email}`);
       return user.id;
     } catch (e) {
       if (e instanceof RpcException) {
@@ -344,6 +345,9 @@ export class AppService {
 
   async issueToken(userId: string, profileId?: string) {
     try {
+      this.l.debug(
+        `Issuing token for userId: ${userId}, profileId: ${profileId}`
+      );
       const user = await this.userRepo.findOne({
         where: { id: userId },
         relations: ['keyData'],

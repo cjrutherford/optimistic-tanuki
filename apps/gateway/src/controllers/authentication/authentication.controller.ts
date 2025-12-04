@@ -13,6 +13,7 @@ import {
   CreateProfileDto,
   EnableMultiFactorRequest,
   LoginRequest,
+  ProfileDto,
   RegisterRequest,
   ResetPasswordRequest,
   ValidateTokenRequest,
@@ -55,20 +56,26 @@ export class AuthenticationController {
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   async loginUser(@Body() data: LoginRequest, @AppScope() appScope: string) {
     try {
-      const effectiveUser = await firstValueFrom(
+      this.logger.debug('loginUser called with data:', JSON.stringify(data));
+      const effectiveUser: { userId: string } = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.UserIdFromEmail },
           { email: data.email }
         )
       );
       this.logger.debug('loginUser effectiveUser:', effectiveUser);
-      const profile = await firstValueFrom(
+      const profiles = await firstValueFrom(
         this.profileClient.send(
-          { cmd: ProfileCommands.Get },
-          { userId: effectiveUser, appScope }
+          { cmd: ProfileCommands.GetAll },
+          { where: { userId: effectiveUser.userId } }
         )
       );
-      this.logger.debug(`Logging in user with profile ID: ${profile.id}`);
+      this.logger.debug(`Logging in user with profile ID:`, profiles);
+      const effectiveAppScope =
+        appScope === 'owner-console' ? 'global' : appScope;
+      const profile = profiles.find(
+        (p: ProfileDto) => p.appScope === effectiveAppScope || 'global'
+      );
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Login },
@@ -78,7 +85,7 @@ export class AuthenticationController {
     } catch (error) {
       console.error('Error in loginUser:', error);
       throw new HttpException(
-        `Login failed: ${error}`,
+        `Login failed: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -109,7 +116,7 @@ export class AuthenticationController {
         occupation: '',
         interests: '',
         skills: '',
-        appScope: appScope,
+        appScope: appScope === 'owner-console' ? 'global' : appScope,
       };
       console.log('Creating profile for new user:', newProfile);
       const createdProfile = await firstValueFrom(
@@ -118,40 +125,21 @@ export class AuthenticationController {
 
       // Special handling for owner-console: create profiles for all app scopes with owner roles
       if (appScope === 'owner-console') {
-        this.logger.log(`Registering owner user - creating profiles for all app scopes`);
+        this.logger.log(
+          `Registering owner user - creating profiles for all app scopes`
+        );
 
-        for (const scope of ALL_APP_SCOPES) {
-          // Create a profile for each app scope
-          const scopedProfile: CreateProfileDto & { appScope: string } = {
-            userId: result.data.user.id,
-            name: `${result.data.user.firstName} ${result.data.user.lastName}`,
-            coverPic: '',
-            profilePic: '',
-            bio: '',
-            location: '',
-            description: '',
-            occupation: '',
-            interests: '',
-            skills: '',
-            appScope: scope,
-          };
-          
-          this.logger.log(`Creating profile for scope: ${scope}`);
-          const scopedCreatedProfile = await firstValueFrom(
-            this.profileClient.send({ cmd: ProfileCommands.Create }, scopedProfile)
-          );
+        //   // Assign owner-level roles for this scope with full control permissions
+        const builder = new RoleInitBuilder()
+          .setScopeName('global')
+          .setProfile(createdProfile.id)
+          .assignOwnerRole()
+          .addOwnerScopeDefaults()
+          .addAssetOwnerPermissions();
 
-          // Assign owner-level roles for this scope with full control permissions
-          const builder = new RoleInitBuilder()
-            .setScopeName(scope)
-            .setProfile(scopedCreatedProfile.id)
-            .addDefaultProfileOwner(scopedCreatedProfile.id, scope)
-            .addOwnerScopeDefaults()
-            .addAssetOwnerPermissions();
-
-          const roleInitOptions = builder.build();
-          this.roleInit.enqueue(roleInitOptions);
-        }
+        const roleInitOptions = builder.build();
+        this.logger.debug('RoleInitOptions:', JSON.stringify(roleInitOptions));
+        this.roleInit.enqueue(roleInitOptions);
       } else {
         // Standard registration flow
         const profilePermissionsBuilder = new RoleInitBuilder()
@@ -162,6 +150,7 @@ export class AuthenticationController {
           .addAssetOwnerPermissions();
         this.logger.log(`Initializing permissions for app scope: ${appScope}`);
         const roleInitOptions = profilePermissionsBuilder.build();
+        this.logger.debug('RoleInitOptions:', JSON.stringify(roleInitOptions));
         this.roleInit.enqueue(roleInitOptions);
       }
       return result;

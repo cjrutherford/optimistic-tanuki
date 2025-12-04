@@ -25,7 +25,7 @@ export class AssetController {
     private readonly assetService: ClientProxy
   ) {}
 
-  @RequirePermissions('asset:own:create')
+  @RequirePermissions('asset.create')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Post('/')
   async createAsset(@Body() asset: CreateAssetDto) {
@@ -40,7 +40,7 @@ export class AssetController {
 
   @UseGuards(AuthGuard, PermissionsGuard)
   @Delete('/:id')
-  @RequirePermissions('asset:own:delete')
+  @RequirePermissions('asset.delete')
   async deleteAsset(@Param('id') id: string) {
     try {
       return await firstValueFrom(

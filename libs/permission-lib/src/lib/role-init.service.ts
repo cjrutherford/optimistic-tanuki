@@ -125,8 +125,10 @@ export class RoleInitService {
     // 3) create roles and attach permissions
     const createdRoles: Record<string, any> = {};
     for (const r of item.roles || []) {
+      let role: any | null = null;
+      // Try creating role first (for newly defined roles containing permission set)
       try {
-        const role = await firstValueFrom(
+        role = await firstValueFrom(
           this.permissionsClient.send(
             { cmd: RoleCommands.Create },
             {
@@ -137,40 +139,85 @@ export class RoleInitService {
           )
         );
         createdRoles[r.name] = role;
-        for (const pname of r.permissions || []) {
-          const pid = permNameToId[pname];
-          const attachPayload: any = { roleId: role.id };
-          if (pid) attachPayload.permissionId = pid;
-          else attachPayload.permissionName = pname;
-          try {
-            await firstValueFrom(
-              this.permissionsClient.send(
-                { cmd: RoleCommands.AddPermission },
-                attachPayload
-              )
-            );
-          } catch (e) {
-            this.logger.debug(
-              `Role.AddPermission failed role=${r.name} perm=${pname}`,
-              (e as { message: string })?.message || e
-            );
-          }
-        }
       } catch (e) {
+        // Creation failed -> try to find existing role by name & scope and use it
         this.logger.debug(
           `Role.Create failed ${r.name}`,
           (e as { message: string })?.message || e
         );
+        try {
+          const existing = await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: RoleCommands.GetByName },
+              { name: r.name, scope: appScopeId }
+            )
+          ).catch(() => null);
+          if (existing) {
+            this.logger.debug(`Found existing role ${r.name} -> using it`);
+            createdRoles[r.name] = existing;
+            role = existing;
+          } else {
+            this.logger.debug(`No existing role found for ${r.name}, skipping`);
+          }
+        } catch (err) {
+          this.logger.debug(
+            `Role lookup failed for ${r.name}`,
+            (err as { message: string })?.message || err
+          );
+        }
+      }
+
+      if (!role) {
+        continue; // nothing to attach permissions to
+      }
+
+      for (const pname of r.permissions || []) {
+        const pid = permNameToId[pname];
+        const attachPayload: any = { roleId: role.id };
+        if (pid) attachPayload.permissionId = pid;
+        else attachPayload.permissionName = pname;
+        try {
+          await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: RoleCommands.AddPermission },
+              attachPayload
+            )
+          );
+        } catch (e) {
+          this.logger.debug(
+            `Role.AddPermission failed role=${r.name} perm=${pname}`,
+            (e as { message: string })?.message || e
+          );
+        }
       }
     }
 
     // 4) assign roles to profiles/users -> create RoleAssignment in permissions service
     for (const a of item.assignments || []) {
-      const role = createdRoles[a.roleName];
+      let role = createdRoles[a.roleName];
+      // If we didn't create the role in this run, attempt to lookup an existing role by name/scope
+      if (!role) {
+        try {
+          role = await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: RoleCommands.GetByName },
+              { name: a.roleName, scope: appScopeId }
+            )
+          ).catch(() => null);
+        } catch (e) {
+          this.logger.debug(
+            `Role lookup before assignment failed role=${a.roleName}`,
+            (e as { message: string })?.message || e
+          );
+          role = null;
+        }
+      }
+
       if (!role) {
         this.logger.debug(`No role for assignment ${a.roleName}`);
         continue;
       }
+
       const assignPayload: any = { roleId: role.id, appScopeId };
       if (a.profileId) assignPayload.profileId = a.profileId;
       if (a.userId) assignPayload.userId = a.userId;

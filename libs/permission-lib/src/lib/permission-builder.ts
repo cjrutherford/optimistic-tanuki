@@ -53,6 +53,27 @@ export const OWNER_PERMISSION_ACTIONS = [
   'admin',
 ] as const;
 
+const ALL_OWNER_ROLES: { [key: string]: string[] } = {
+  'digital-homestead': ['digital_homesteader'],
+  'client-interface': ['client_profile_owner', 'client_asset_manager'],
+  forgeofwill: ['forgeofwill_planner'],
+  blogging: ['blog_author'],
+  assets: ['asset_owner'],
+  social: ['social_user'],
+  'christopherrutherford-net': ['christopherrutherford_owner_user'],
+  'owner-console': ['owner_console_owner'],
+};
+
+const ALL_USER_ROLES: { [key: string]: string[] } = {
+  'digital-homestead': ['digital_standard_user'],
+  'client-interface': ['client_interface_user'],
+  forgeofwill: ['forgeofwill_standard_user'],
+  blogging: ['blog_reader'],
+  assets: ['asset_viewer'],
+  social: ['social_user'],
+  'christopherrutherford-net': ['christopherrutherford_standard_user'],
+};
+
 export class RoleInitBuilder {
   private opts: RoleInitOptions = {
     permissions: [],
@@ -127,43 +148,36 @@ export class RoleInitBuilder {
    * Adds owner-level permissions for an app scope.
    * Used when registering via owner-console to grant full control.
    */
-  addOwnerPermissions() {
-    const appScope = this.opts.scopeName;
-    
-    // Add full CRUD permissions for all common resources
-    for (const resource of OWNER_PERMISSION_RESOURCES) {
-      for (const action of OWNER_PERMISSION_ACTIONS) {
-        this.addPermission(
-          `${resource}.${action}`,
-          resource,
-          action,
-          `${action} ${resource} (owner permission)`,
-          undefined,
-          appScope
-        );
-      }
-    }
-    
-    return this;
-  }
+  // addOwnerPermissions() {
+  //   const appScope = this.opts.scopeName;
+
+  //   // Add full CRUD permissions for all common resources
+  //   for (const resource of OWNER_PERMISSION_RESOURCES) {
+  //     for (const action of OWNER_PERMISSION_ACTIONS) {
+  //       this.addPermission(
+  //         `${resource}.${action}`,
+  //         resource,
+  //         action,
+  //         `${action} ${resource} (owner permission)`,
+  //         undefined,
+  //         appScope
+  //       );
+  //     }
+  //   }
+
+  //   return this;
+  // }
 
   /**
    * Assigns the owner role for the current app scope.
    * Owner role grants full control over all resources in the scope.
    */
   assignOwnerRole() {
-    const scopeName = this.opts.scopeName;
-    const ownerRoleName = scopeName 
-      ? `${scopeName.replace(/-/g, '_')}_owner`
-      : 'app_owner';
-    
-    // Add the owner role
-    const allPermissions = (this.opts.permissions || []).map(p => p.name);
-    this.addRole(ownerRoleName, `Owner of ${scopeName || 'app'} with full control`, allPermissions);
-    
-    // Assign the owner role to the profile
-    this.assignRoleToProfile(ownerRoleName);
-    
+    for (const [, roleNames] of Object.entries(ALL_OWNER_ROLES)) {
+      for (const roleName of roleNames) {
+        this.assignRoleToProfile(roleName);
+      }
+    }
     return this;
   }
 
@@ -205,7 +219,7 @@ export class RoleInitBuilder {
         this.assignRoleToProfile('christopherrutherford_standard_user');
         return this;
       case 'owner-console':
-        this.assignRoleToProfile('owner_console_owner');
+        this.addOwnerScopeDefaults();
         return this;
       case 'global':
         this.assignRoleToProfile('standard_user');
@@ -230,7 +244,7 @@ export class RoleInitBuilder {
    * This grants full control permissions instead of standard user roles.
    */
   addOwnerScopeDefaults() {
-    this.addOwnerPermissions();
+    // this.addOwnerPermissions();
     this.assignOwnerRole();
     return this;
   }

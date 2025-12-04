@@ -32,6 +32,10 @@
         "${workspaceFolder}/dist/apps/gateway/**/*.js",
         "!**/node_modules/**"
       ],
+      "sourceMapPathOverrides": {
+        "webpack:///./*": "${workspaceFolder}/dist/apps/gateway/*",
+        "webpack:///../../*": "${workspaceFolder}/*"
+      },
       "skipFiles": ["<node_internals>/**"]
     },
     {

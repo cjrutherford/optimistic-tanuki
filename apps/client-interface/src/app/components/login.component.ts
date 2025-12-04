@@ -66,21 +66,21 @@ export class LoginComponent implements OnDestroy {
         if (decoded && decoded.profileId === '') {
           this.router.navigate(['/settings'], {
             state: {
-              showProfileModal: true,
+              showProfileModal: false,
               profileMessage: 'Please create your profile to continue.',
             },
           });
-          this.messageService.addMessage({
-            content: 'Please create your profile to continue.',
-            type: 'warning',
-          });
+          // this.messageService.addMessage({
+          //   content: 'Please create your profile to continue.',
+          //   type: 'warning',
+          // });
           return;
         }
         // Otherwise load profiles and redirect accordingly
         await this.profileService.getAllProfiles();
         const currentProfiles = this.profileService.getCurrentUserProfiles();
         if (!currentProfiles.length) {
-          this.router.navigate(['/profile'], {
+          this.router.navigate(['/settings'], {
             state: {
               showProfileModal: true,
               profileMessage:

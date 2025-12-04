@@ -86,17 +86,17 @@ export class ProfileController {
         .catch((e) => this.l.error('Error initializing AI orchestration:', e));
     // this is where we will initialize the permissions for the user in the app scope we are making the profile for.
 
-    const profilePermissionsBuilder = new RoleInitBuilder()
-      .addDefaultProfileOwner(createdProfile.id, createProfileDto.userId)
-      .setScopeName(appScope)
-      .addAppScopeDefaults()
-      .addAssetOwnerPermissions();
-    this.l.log(`Initializing permissions for app scope: ${appScope}`);
-    // Build role-init options and enqueue a job to initialize the default permissions
-    // Note: CreateProfileDto may not declare `initialPermissions` in the shared models;
-    // if callers provide additional permissions they can be merged here before enqueue.
-    const roleInitOptions = profilePermissionsBuilder.build();
-    this.roleInit.enqueue(roleInitOptions);
+    // const profilePermissionsBuilder = new RoleInitBuilder()
+    //   .addDefaultProfileOwner(createdProfile.id, createProfileDto.userId)
+    //   .setScopeName(appScope)
+    //   .addAppScopeDefaults()
+    //   .addAssetOwnerPermissions();
+    // this.l.log(`Initializing permissions for app scope: ${appScope}`);
+    // // Build role-init options and enqueue a job to initialize the default permissions
+    // // Note: CreateProfileDto may not declare `initialPermissions` in the shared models;
+    // // if callers provide additional permissions they can be merged here before enqueue.
+    // const roleInitOptions = profilePermissionsBuilder.build();
+    // this.roleInit.enqueue(roleInitOptions);
     // Attempt to request a refreshed token that includes the profileId so callers can switch tokens
     try {
       const issueResp: any = await firstValueFrom(
@@ -147,7 +147,7 @@ export class ProfileController {
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
   @Get(':id')
-  async getProfile(@Param('id') id: string) {
+  async getProfile(@Param('id') id: string, @AppScope() appScope: string) {
     const profile: ProfileDto = await firstValueFrom(
       this.client.send({ cmd: ProfileCommands.Get }, { id })
     );
@@ -175,9 +175,10 @@ export class ProfileController {
         profileName: telos.name,
         bio: '',
         email: '',
-        avatarUrl: 'assets/ai-avatar.png',
+        avatarUrl: `assets/${telos.name}-avatar.png`,
         createdAt: new Date(),
         updatedAt: new Date(),
+        appScope: appScope === 'owner-console' ? 'global' : appScope,
       };
       this.l.log(
         `Back-filled profile with ID: ${id}: PROFILE: '${JSON.stringify(
@@ -197,7 +198,7 @@ export class ProfileController {
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
   @Put(':id')
-  @RequirePermissions('profile:own:update')
+  @RequirePermissions('profile.update')
   updateProfile(
     @Param('id') id: string,
     @Body() updateProfileDto: UpdateProfileDto
@@ -216,7 +217,7 @@ export class ProfileController {
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
   @Delete(':id')
-  @RequirePermissions('profile:own:delete')
+  @RequirePermissions('profile.delete')
   deleteProfile(@Param('id') id: string) {
     return this.client.send({ cmd: ProfileCommands.Delete }, id);
   }

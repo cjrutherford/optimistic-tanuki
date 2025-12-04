@@ -30,7 +30,10 @@ export class AppController {
         );
       }
       const { email } = data;
-      return await this.appService.getUserIdFromEmail(email);
+      this.l.debug('userIdFromEmail:', email);
+      const userId = await this.appService.getUserIdFromEmail(email);
+      this.l.debug('userIdFromEmail result:', userId);
+      return userId;
     } catch (e) {
       if (e instanceof RpcException) {
         throw e;

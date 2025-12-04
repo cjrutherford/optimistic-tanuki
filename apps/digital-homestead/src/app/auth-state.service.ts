@@ -75,12 +75,20 @@ export class AuthStateService {
     return this._isAuthenticated;
   }
 
-  async login(loginRequest: LoginRequest): Promise<{ data: { newToken: string } }> {
+  async login(
+    loginRequest: LoginRequest
+  ): Promise<{ data: { newToken: string } }> {
     if (!isPlatformBrowser(this.platformId)) {
       return Promise.reject('Login is not available on this platform.');
     }
     const response = await firstValueFrom(
-      this.http.post<{ data: { newToken: string } }>('/api/authentication/login', loginRequest)
+      this.http.post<{ data: { newToken: string } }>(
+        '/api/authentication/login',
+        {
+          email: loginRequest.username,
+          password: loginRequest.password,
+        }
+      )
     );
     if (response) {
       const token = response.data.newToken;

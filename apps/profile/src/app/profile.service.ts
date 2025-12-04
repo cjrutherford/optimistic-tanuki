@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
 import { Profile, BlogRole } from '../profiles/entities/profile.entity';
@@ -13,7 +13,8 @@ import { SetBlogRoleDto } from '../profiles/dto/set-blog-role.dto';
 export class ProfileService {
   constructor(
     @Inject(getRepositoryToken(Profile))
-    private readonly profileRepository: Repository<Profile>
+    private readonly profileRepository: Repository<Profile>,
+    private readonly logger: Logger
   ) {}
 
   async findAll(query?: FindManyOptions<Profile>): Promise<Profile[]> {
@@ -28,11 +29,25 @@ export class ProfileService {
     return await this.profileRepository.findOne({ where: { userId } });
   }
 
-  async findByUserIdAndAppScope(userId: string, appScope: string): Promise<Profile> {
-    return await this.profileRepository.findOne({ where: { userId, appScope } });
+  async findByUserIdAndAppScope(
+    userId: string,
+    appScope: string
+  ): Promise<Profile> {
+    const profile = await this.profileRepository.findOne({
+      where: { userId, appScope },
+      select: ['id', 'userId', 'appScope', 'profileName', 'blogRole'],
+    });
+    this.logger.debug(
+      `findByUserIdAndAppScope userId=${userId} appScope=${appScope} => profile=${JSON.stringify(
+        profile
+      )}`
+    );
+    return profile;
   }
 
-  async create(profile: CreateProfileDto & { appScope?: string }): Promise<Profile> {
+  async create(
+    profile: CreateProfileDto & { appScope?: string }
+  ): Promise<Profile> {
     const newProfile: Partial<Profile> = {
       userId: profile.userId,
       appScope: profile.appScope || null,
