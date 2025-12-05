@@ -248,6 +248,9 @@ export class BlogComposeComponent
   selectedComponentInstance: InjectedComponentInstance | null = null;
   selectedComponentProperties: PropertyDefinition[] = [];
 
+  // Flag to track if there's pending content to set after editor init
+  private pendingContent: string | null = null;
+
   constructor(
     private componentInjectionService: ComponentInjectionService,
     _theme: ThemeService
@@ -323,6 +326,12 @@ export class BlogComposeComponent
       },
       content: this._content,
     });
+
+    // Apply pending content if writeValue was called before editor init
+    if (this.pendingContent !== null) {
+      this.editor.commands.setContent(this.pendingContent);
+      this.pendingContent = null;
+    }
 
     this.editor.view.dom.addEventListener('contextmenu', (event) => {
       event.preventDefault();
@@ -994,9 +1003,13 @@ export class BlogComposeComponent
       this.links = value.links || [];
       this.attachments = value.attachments || [];
 
-      // Update editor content if editor is available
+      // Update editor content if editor is available, otherwise queue it
       if (this.editor) {
         this.editor.commands.setContent(this._content);
+        this.pendingContent = null;
+      } else {
+        // Queue content to be set after editor initialization
+        this.pendingContent = this._content;
       }
     }
   }

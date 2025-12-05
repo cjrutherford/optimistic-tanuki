@@ -28,9 +28,15 @@
         <button
           class="post-item"
           [class.active]="currentPostId() === post.id"
+          [class.draft]="post.isDraft"
           (click)="selectPost(post)"
         >
-          <span class="post-title">{{ post.title }}</span>
+          <div class="post-item-header">
+            <span class="post-title">{{ post.title }}</span>
+            @if (post.isDraft) {
+            <span class="draft-badge">Draft</span>
+            }
+          </div>
           <span class="post-date">{{ formatDate(post.createdAt) }}</span>
         </button>
         } @empty { @if (!loading()) {
@@ -48,8 +54,19 @@
       } @else {
       <!-- View Mode: Show selected post or welcome message -->
       @if (mode() === 'view') { @if (selectedPost()) {
+      <!-- Draft indicator banner -->
+      @if (isSelectedPostDraft()) {
+      <div class="draft-banner">
+        <span class="draft-icon">📝</span>
+        <span class="draft-text">This post is a draft and is not published yet.</span>
+        @if (isPostOwner() && canEdit()) {
+        <otui-button (action)="publishDraft()">Publish Now</otui-button>
+        }
+      </div>
+      }
+
       <div class="view-actions">
-        @if (canEdit()) {
+        @if (canEdit() && isPostOwner()) {
         <otui-button (action)="startEditPost()">Edit Post</otui-button>
         }
       </div>
@@ -61,6 +78,14 @@
         [createdAt]="selectedPost()!.createdAt"
       >
       </dh-blog-viewer>
+
+      <!-- Post metadata -->
+      <div class="post-metadata">
+        @if (selectedPost()!.publishedAt) {
+        <p class="published-date">Published: {{ formatDate(selectedPost()!.publishedAt) }}</p>
+        }
+        <p class="updated-date">Last updated: {{ formatDate(selectedPost()!.updatedAt) }}</p>
+      </div>
       } @else {
       <div class="welcome-message">
         <h1>Welcome to the Blog</h1>
@@ -92,9 +117,16 @@
           Use the component injection system to add custom components to your
           blog post.
         </p>
+        @if (mode() === 'edit' && isSelectedPostDraft()) {
+        <div class="edit-draft-notice">
+          <span class="draft-icon">📝</span>
+          <span>You are editing a draft. Choose to save as draft or publish when ready.</span>
+        </div>
+        }
       </div>
 
       <lib-blog-compose
+        #blogCompose
         [ngModel]="editorData()"
         (postSubmitted)="onPostSubmitted($event)"
       >
@@ -102,6 +134,8 @@
 
       <div class="editor-actions">
         <otui-button (action)="cancelEdit()">Cancel</otui-button>
+        <otui-button (action)="saveAsDraft()">Save as Draft</otui-button>
+        <otui-button (action)="publishPost()">{{ mode() === 'edit' && !isSelectedPostDraft() ? 'Update & Publish' : 'Publish' }}</otui-button>
       </div>
       } @else {
       <div class="access-denied">

@@ -3,7 +3,29 @@
         <otui-heading [text]="'Stay Informed and Inspired'" [color]="'#000'" [size]="'24px'"></otui-heading>
         <p>Read our latest articles on digital homesteading trends, tips, and stories.</p>
     </div>
-    <div class="blog-post-row">
+    
+    @if (loading()) {
+        <div class="loading-container">
+            <p>Loading posts...</p>
+        </div>
+    } @else if (error()) {
+        <div class="error-container">
+            <p>{{ error() }}</p>
+        </div>
+    } @else if (posts().length > 0) {
+        <div class="blog-post-row">
+            @for (post of posts(); track post.id) {
+                <lib-blog-post-card
+                    [title]="post.title"
+                    [bannerImage]="'https://placehold.co/300x100'"
+                    [excerpt]="getExcerpt(post.content)"
+                    [publishDate]="formatDate(post.publishedAt)"
+                    [readMoreLink]="'/blog/' + post.id"
+                ></lib-blog-post-card>
+            }
+        </div>
+    } @else {
+        <div class="blog-post-row">
             <lib-blog-post-card
                 [title]="'The Future of Digital Homesteading'"
                 [bannerImage]="'https://placehold.co/300x100'"
@@ -19,5 +41,10 @@
                 [bannerImage]="'https://placehold.co/300x100'"
                 [excerpt]="'A step-by-step guide to help you launch your own digital homesteading journey.'"
             ></lib-blog-post-card>
+        </div>
+    }
+    
+    <div class="blog-actions">
+        <otui-button (action)="navigateToBlog()">View All Posts</otui-button>
     </div>
 </div>

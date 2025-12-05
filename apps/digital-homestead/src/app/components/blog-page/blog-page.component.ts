@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, effect } from '@angular/core';
+import { Component, inject, signal, computed, effect, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -22,6 +22,11 @@ interface PostData {
   attachments: File[];
 }
 
+/**
+ * Type for save action - determines if saving as draft or publishing
+ */
+type SaveAction = 'draft' | 'publish';
+
 @Component({
   selector: 'dh-blog-page',
   standalone: true,
@@ -38,6 +43,8 @@ interface PostData {
   styleUrl: './blog-page.component.scss',
 })
 export class BlogPageComponent {
+  @ViewChild('blogCompose') blogCompose?: BlogComposeComponent;
+  
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly blogService = inject(BlogService);
@@ -55,6 +62,7 @@ export class BlogPageComponent {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly mode = signal<'view' | 'create' | 'edit'>('view');
+  readonly pendingSaveAction = signal<SaveAction>('draft');
 
   // Editor form data
   readonly editorData = signal<PostData>({
@@ -85,6 +93,19 @@ export class BlogPageComponent {
   readonly currentPostId = computed(() => {
     const params = this.routeParams();
     return params['id'] || null;
+  });
+
+  // Computed: check if selected post is a draft
+  readonly isSelectedPostDraft = computed(() => {
+    const post = this.selectedPost();
+    return post?.isDraft ?? false;
+  });
+
+  // Computed: check if current user owns the selected post
+  readonly isPostOwner = computed(() => {
+    const post = this.selectedPost();
+    const profileId = this.authState.getProfileId();
+    return post && profileId && post.authorId === profileId;
   });
 
   // Flag to track if posts have been loaded
@@ -221,6 +242,58 @@ export class BlogPageComponent {
   }
 
   /**
+   * Save as draft - sets pending action and triggers form submission
+   */
+  saveAsDraft(): void {
+    this.pendingSaveAction.set('draft');
+    if (this.blogCompose) {
+      this.blogCompose.onPostSubmit();
+    }
+  }
+
+  /**
+   * Publish - sets pending action and triggers form submission
+   */
+  publishPost(): void {
+    this.pendingSaveAction.set('publish');
+    if (this.blogCompose) {
+      this.blogCompose.onPostSubmit();
+    }
+  }
+
+  /**
+   * Publish an existing draft post
+   */
+  publishDraft(): void {
+    const post = this.selectedPost();
+    if (!post || !post.id) {
+      this.error.set('No post selected to publish.');
+      return;
+    }
+
+    if (!this.isPostOwner()) {
+      this.error.set('You can only publish your own posts.');
+      return;
+    }
+
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.blogService.publishPost(post.id).subscribe({
+      next: (publishedPost) => {
+        this.selectedPost.set(publishedPost);
+        this.updatePostInList(publishedPost);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.error.set('Failed to publish post: ' + err.message);
+        this.loading.set(false);
+        console.error('Error publishing post:', err);
+      },
+    });
+  }
+
+  /**
    * Handle post submission (create or update)
    */
   onPostSubmitted(postData: PostData): void {
@@ -240,10 +313,14 @@ export class BlogPageComponent {
     this.loading.set(true);
     this.error.set(null);
 
+    const saveAction = this.pendingSaveAction();
+    const isDraft = saveAction === 'draft';
+
     const postPayload = {
       title: postData.title,
       content: postData.content,
       authorId: authorId,
+      isDraft: isDraft,
     };
 
     const currentMode = this.mode();
@@ -290,7 +367,8 @@ export class BlogPageComponent {
   /**
    * Format date for display
    */
-  formatDate(date: Date | string): string {
+  formatDate(date: Date | string | null): string {
+    if (!date) return '';
     const d = new Date(date);
     return d.toLocaleDateString('en-US', {
       year: 'numeric',

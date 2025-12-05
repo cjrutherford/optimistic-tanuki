@@ -4,6 +4,8 @@ export interface PostDto {
     title: string;
     content: string;
     authorId: string;
+    isDraft: boolean;
+    publishedAt: Date | null;
     createdAt: Date; // ISO string
     updatedAt: Date; // ISO string
 }
@@ -12,6 +14,7 @@ export interface CreatePostDto {
     title: string;
     content: string;
     authorId: string;
+    isDraft?: boolean;
 }
 
 export interface UpdatePostDto {
@@ -19,6 +22,7 @@ export interface UpdatePostDto {
     title?: string;
     content?: string;
     authorId?: string;
+    isDraft?: boolean;
 }
 
 export interface PostQueryDto {
@@ -26,6 +30,7 @@ export interface PostQueryDto {
     title?: string;
     content?: string;
     authorId?: string;
+    isDraft?: boolean;
     createdAt?: DateRange;
     updatedAt?: DateRange;
 }
