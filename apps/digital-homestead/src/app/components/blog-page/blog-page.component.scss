@@ -133,6 +133,15 @@
 // Main content styles
 .blog-content {
   padding: 1rem;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  
+  // Ensure all child elements respect container width
+  > * {
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
 }
 
 .loading-state {

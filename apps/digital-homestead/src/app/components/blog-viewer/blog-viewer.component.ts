@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
@@ -20,9 +20,11 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   `,
   styles: [`
     .blog-viewer {
-      max-width: 800px;
+      max-width: 100%;
       margin: 0 auto;
       padding: 2rem;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .blog-header {
@@ -35,6 +37,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       font-size: 2.5rem;
       margin: 0 0 1rem 0;
       color: var(--local-foreground, #333);
+      overflow-wrap: break-word;
     }
 
     .blog-meta {
@@ -52,6 +55,8 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       font-size: 1.1rem;
       line-height: 1.8;
       color: var(--local-foreground, #333);
+      max-width: 100%;
+      overflow-wrap: break-word;
     }
 
     .blog-content :deep(h1) {
@@ -102,6 +107,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       border-radius: 8px;
       overflow-x: auto;
       margin: 1.5rem 0;
+      max-width: 100%;
     }
 
     .blog-content :deep(pre code) {
@@ -121,8 +127,11 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
     .blog-content :deep(table) {
       width: 100%;
+      max-width: 100%;
       border-collapse: collapse;
       margin: 1.5rem 0;
+      display: block;
+      overflow-x: auto;
     }
 
     .blog-content :deep(th),
@@ -138,7 +147,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     }
   `]
 })
-export class BlogViewerComponent implements OnInit {
+export class BlogViewerComponent implements OnInit, OnChanges {
   @Input() title = '';
   @Input() content = '';
   @Input() authorId = '';
@@ -152,7 +161,9 @@ export class BlogViewerComponent implements OnInit {
     this.sanitizedContent = this.sanitizer.bypassSecurityTrustHtml(this.content);
   }
 
-  ngOnChanges() {
-    this.sanitizedContent = this.sanitizer.bypassSecurityTrustHtml(this.content);
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['content']) {
+      this.sanitizedContent = this.sanitizer.bypassSecurityTrustHtml(this.content);
+    }
   }
 }
