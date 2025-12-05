@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -12,22 +13,25 @@ import { hexToRgb } from 'libs/common-ui/src/lib/common-ui/glass-container.compo
   styleUrl: './app.component.scss',
   host: {
     '[style.--heading-gradient]': 'headingGradient',
-  }
+  },
 })
 export class AppComponent implements OnInit {
   title = 'digital-homestead';
   headingGradient = 'linear-gradient(90deg, #ff7e5f, #feb47b)'; // Example gradient
 
-  constructor(private readonly themeService: ThemeService) {}
+  constructor(
+    private readonly themeService: ThemeService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
 
   ngOnInit() {
     this.themeService.setTheme('dark');
     // Use predefined palette instead of manual colors
     this.themeService.setPalette('Cyberpunk Neon'); // Matches the digital homestead aesthetic
-    
+
     this.themeService.themeColors$.subscribe({
       next: (colors) => {
-        if (!colors) return;
+        if (!colors || !isPlatformBrowser(this.platformId)) return;
         const accentRgb = hexToRgb(colors.accent);
         const complementRgb = hexToRgb(colors.complementary);
         const accentRgba = `rgba(${accentRgb}, 0.9)`;
@@ -40,7 +44,7 @@ export class AppComponent implements OnInit {
             colors: [accentRgba, complementRgba],
           })
           .build();
-        
+
         // Only set app-specific variables, theme colors are handled by ThemeService
         const backgroundPattern = `
 <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">

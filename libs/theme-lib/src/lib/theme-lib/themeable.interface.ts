@@ -1,5 +1,11 @@
 // Enhanced themeable interface with standardized CSS variables
-import { Directive, OnDestroy, OnInit, ElementRef, inject } from '@angular/core';
+import {
+  Directive,
+  OnDestroy,
+  OnInit,
+  ElementRef,
+  inject,
+} from '@angular/core';
 import { Subject, filter, takeUntil } from 'rxjs';
 
 import { ThemeColors } from './theme.interface';
@@ -12,7 +18,7 @@ import { ThemeService } from './theme.service';
 @Directive()
 export abstract class Themeable implements OnInit, OnDestroy {
   theme: 'light' | 'dark' = 'light';
-  
+
   // Core theme colors using standardized names
   background = 'var(--background, #ffffff)';
   foreground = 'var(--foreground, #212121)';
@@ -22,26 +28,26 @@ export abstract class Themeable implements OnInit, OnDestroy {
   success = 'var(--success, #4caf50)';
   danger = 'var(--danger, #f44336)';
   warning = 'var(--warning, #ff9800)';
-  
+
   // Legacy support for existing components
   borderColor = 'var(--complement, #c0af4b)';
-  borderGradient = 'var(--complement-gradient-light, linear-gradient(135deg, #c0af4b, #3f51b5))';
+  borderGradient =
+    'var(--complement-gradient-light, linear-gradient(135deg, #c0af4b, #3f51b5))';
   transitionDuration = '0.15s';
-  
+
   themeColors?: ThemeColors;
   protected destroy$ = new Subject<void>();
   protected elementRef = inject(ElementRef);
-
-  constructor(protected readonly themeService: ThemeService) {}
+  protected readonly themeService = inject(ThemeService);
 
   ngOnInit() {
     this.themeService.themeColors$
       .pipe(
         filter(
           (value) =>
-            !!(value && value.background && value.foreground && value.accent),
+            !!(value && value.background && value.foreground && value.accent)
         ),
-        takeUntil(this.destroy$),
+        takeUntil(this.destroy$)
       )
       .subscribe({
         next: (colors: ThemeColors | undefined) => {
@@ -57,7 +63,7 @@ export abstract class Themeable implements OnInit, OnDestroy {
         },
         complete: () => {
           return;
-        }
+        },
       });
   }
 
@@ -79,12 +85,13 @@ export abstract class Themeable implements OnInit, OnDestroy {
     this.success = colors.success;
     this.danger = colors.danger;
     this.warning = colors.warning;
-    
+
     // Update legacy properties for backward compatibility
     this.borderColor = colors.complementary;
-    this.borderGradient = this.theme === 'dark' 
-      ? colors.complementaryGradients['dark']
-      : colors.complementaryGradients['light'];
+    this.borderGradient =
+      this.theme === 'dark'
+        ? colors.complementaryGradients['dark']
+        : colors.complementaryGradients['light'];
   }
 
   /**

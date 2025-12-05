@@ -1,4 +1,8 @@
-import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { AuthCommands } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 
@@ -41,22 +45,23 @@ describe('Authentication Microservice E2E', () => {
       );
 
       expect(result).toBeDefined();
-      expect(result.token).toBeDefined();
-      expect(result.user).toBeDefined();
-      expect(result.user.email).toBe(testUser.email);
-      expect(result.user.firstName).toBe(testUser.fn);
-      expect(result.user.lastName).toBe(testUser.ln);
+      expect(result.data.user).toBeDefined();
+      expect(result.data.user.email).toBe(testUser.email);
+      expect(result.data.user.firstName).toBe(testUser.fn);
+      expect(result.data.user.lastName).toBe(testUser.ln);
 
-      authToken = result.token;
-      userId = result.user.id;
+      userId = result.data.user.id;
     });
 
     it('should fail to register with missing fields', async () => {
       try {
         await firstValueFrom(
-          authClient.send({ cmd: AuthCommands.Register }, {
-            email: 'incomplete@example.com',
-          })
+          authClient.send(
+            { cmd: AuthCommands.Register },
+            {
+              email: 'incomplete@example.com',
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {
@@ -67,13 +72,16 @@ describe('Authentication Microservice E2E', () => {
     it('should fail to register with mismatched passwords', async () => {
       try {
         await firstValueFrom(
-          authClient.send({ cmd: AuthCommands.Register }, {
-            email: `mismatch-${Date.now()}@example.com`,
-            fn: 'Test',
-            ln: 'User',
-            password: 'Password123!',
-            confirm: 'DifferentPassword123!',
-          })
+          authClient.send(
+            { cmd: AuthCommands.Register },
+            {
+              email: `mismatch-${Date.now()}@example.com`,
+              fn: 'Test',
+              ln: 'User',
+              password: 'Password123!',
+              confirm: 'DifferentPassword123!',
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {
@@ -96,25 +104,31 @@ describe('Authentication Microservice E2E', () => {
   describe('Login', () => {
     it('should login with valid credentials', async () => {
       const result = await firstValueFrom(
-        authClient.send({ cmd: AuthCommands.Login }, {
-          email: testUser.email,
-          password: testUser.password,
-        })
+        authClient.send(
+          { cmd: AuthCommands.Login },
+          {
+            email: testUser.email,
+            password: testUser.password,
+          }
+        )
       );
 
       expect(result).toBeDefined();
-      expect(result.token).toBeDefined();
-      expect(result.user).toBeDefined();
-      expect(result.user.email).toBe(testUser.email);
+      expect(result.data.newToken).toBeDefined();
+
+      authToken = result.data.newToken;
     });
 
     it('should fail to login with invalid email', async () => {
       try {
         await firstValueFrom(
-          authClient.send({ cmd: AuthCommands.Login }, {
-            email: 'nonexistent@example.com',
-            password: testUser.password,
-          })
+          authClient.send(
+            { cmd: AuthCommands.Login },
+            {
+              email: 'nonexistent@example.com',
+              password: testUser.password,
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {
@@ -125,10 +139,13 @@ describe('Authentication Microservice E2E', () => {
     it('should fail to login with invalid password', async () => {
       try {
         await firstValueFrom(
-          authClient.send({ cmd: AuthCommands.Login }, {
-            email: testUser.email,
-            password: 'WrongPassword123!',
-          })
+          authClient.send(
+            { cmd: AuthCommands.Login },
+            {
+              email: testUser.email,
+              password: 'WrongPassword123!',
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {
@@ -139,9 +156,12 @@ describe('Authentication Microservice E2E', () => {
     it('should fail to login with missing fields', async () => {
       try {
         await firstValueFrom(
-          authClient.send({ cmd: AuthCommands.Login }, {
-            email: testUser.email,
-          })
+          authClient.send(
+            { cmd: AuthCommands.Login },
+            {
+              email: testUser.email,
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {
@@ -153,25 +173,31 @@ describe('Authentication Microservice E2E', () => {
   describe('Validate Token', () => {
     it('should validate a valid token', async () => {
       const result = await firstValueFrom(
-        authClient.send({ cmd: AuthCommands.Validate }, {
-          token: authToken,
-          userId: userId,
-        })
+        authClient.send(
+          { cmd: AuthCommands.Validate },
+          {
+            token: authToken,
+            userId: userId,
+          }
+        )
       );
 
       expect(result).toBeDefined();
-      expect(result.valid).toBe(true);
-      expect(result.user).toBeDefined();
-      expect(result.user.email).toBe(testUser.email);
+      expect(result.code).toBe(0);
+      expect(result.data).toBeDefined();
+      expect(result.data.email).toBe(testUser.email);
     });
 
     it('should fail to validate an invalid token', async () => {
       try {
         await firstValueFrom(
-          authClient.send({ cmd: AuthCommands.Validate }, {
-            token: 'invalid-token-12345',
-            userId: userId,
-          })
+          authClient.send(
+            { cmd: AuthCommands.Validate },
+            {
+              token: 'invalid-token-12345',
+              userId: userId,
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {
@@ -182,9 +208,12 @@ describe('Authentication Microservice E2E', () => {
     it('should fail to validate with missing fields', async () => {
       try {
         await firstValueFrom(
-          authClient.send({ cmd: AuthCommands.Validate }, {
-            token: authToken,
-          })
+          authClient.send(
+            { cmd: AuthCommands.Validate },
+            {
+              token: authToken,
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {
@@ -197,16 +226,19 @@ describe('Authentication Microservice E2E', () => {
     it('should reset password with valid credentials', async () => {
       const newPassword = 'NewPassword123!';
       const result = await firstValueFrom(
-        authClient.send({ cmd: AuthCommands.ResetPassword }, {
-          email: testUser.email,
-          oldPass: testUser.password,
-          newPass: newPassword,
-          newConf: newPassword,
-        })
+        authClient.send(
+          { cmd: AuthCommands.ResetPassword },
+          {
+            email: testUser.email,
+            oldPass: testUser.password,
+            newPass: newPassword,
+            newConf: newPassword,
+          }
+        )
       );
 
       expect(result).toBeDefined();
-      expect(result.success).toBe(true);
+      expect(result.code).toBe(0);
 
       // Update the test user's password for any subsequent tests
       testUser.password = newPassword;
@@ -216,12 +248,15 @@ describe('Authentication Microservice E2E', () => {
     it('should fail to reset password with wrong old password', async () => {
       try {
         await firstValueFrom(
-          authClient.send({ cmd: AuthCommands.ResetPassword }, {
-            email: testUser.email,
-            oldPass: 'WrongOldPassword123!',
-            newPass: 'NewPassword456!',
-            newConf: 'NewPassword456!',
-          })
+          authClient.send(
+            { cmd: AuthCommands.ResetPassword },
+            {
+              email: testUser.email,
+              oldPass: 'WrongOldPassword123!',
+              newPass: 'NewPassword456!',
+              newConf: 'NewPassword456!',
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {
@@ -232,12 +267,15 @@ describe('Authentication Microservice E2E', () => {
     it('should fail to reset password with mismatched new passwords', async () => {
       try {
         await firstValueFrom(
-          authClient.send({ cmd: AuthCommands.ResetPassword }, {
-            email: testUser.email,
-            oldPass: testUser.password,
-            newPass: 'NewPassword123!',
-            newConf: 'DifferentPassword123!',
-          })
+          authClient.send(
+            { cmd: AuthCommands.ResetPassword },
+            {
+              email: testUser.email,
+              oldPass: testUser.password,
+              newPass: 'NewPassword123!',
+              newConf: 'DifferentPassword123!',
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {
@@ -248,10 +286,13 @@ describe('Authentication Microservice E2E', () => {
     it('should fail to reset password with missing fields', async () => {
       try {
         await firstValueFrom(
-          authClient.send({ cmd: AuthCommands.ResetPassword }, {
-            email: testUser.email,
-            oldPass: testUser.password,
-          })
+          authClient.send(
+            { cmd: AuthCommands.ResetPassword },
+            {
+              email: testUser.email,
+              oldPass: testUser.password,
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {

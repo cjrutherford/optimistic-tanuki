@@ -106,10 +106,7 @@ interface PostData {
     ContextMenuComponent,
     ComponentSelectorComponent,
     PropertyEditorComponent,
-    ComponentWrapperComponent,
-    ComponentEditorWrapperComponent,
     RichTextToolbarComponent,
-    TextAreaComponent,
     TiptapEditorDirective,
   ],
   templateUrl: './blog-compose.component.html',
@@ -251,11 +248,8 @@ export class BlogComposeComponent
   // Flag to track if there's pending content to set after editor init
   private pendingContent: string | null = null;
 
-  constructor(
-    private componentInjectionService: ComponentInjectionService,
-    _theme: ThemeService
-  ) {
-    super(_theme);
+  constructor(private componentInjectionService: ComponentInjectionService) {
+    super();
   }
 
   @HostListener('document:click')

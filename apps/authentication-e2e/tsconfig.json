@@ -4,14 +4,10 @@
   "include": [],
   "references": [
     {
-      "path": "./tsconfig.spec.json",
+      "path": "./tsconfig.spec.json"
     }
   ],
   "compilerOptions": {
-    "esModuleInterop": true,
-    "paths": {
-      "@optimistic-tanuki/authentication": ["../authentication/src/index.ts"],
-      "@optimistic-tanuki/constants": ["../../libs/constants/src/index.ts"],
-    },
+    "esModuleInterop": true
   }
 }

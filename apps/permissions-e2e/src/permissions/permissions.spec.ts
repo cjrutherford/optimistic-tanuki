@@ -1,42 +1,19 @@
-import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-
-// Define command constants locally to avoid import issues
-const PermissionCommands = {
-  Create: 'permission.create',
-  Get: 'permission.get',
-  GetAll: 'permission.getAll',
-  Update: 'permission.update',
-  Delete: 'permission.delete',
-};
-
-const RoleCommands = {
-  Create: 'role.create',
-  Get: 'role.get',
-  GetAll: 'role.getAll',
-  Update: 'role.update',
-  Delete: 'role.delete',
-  AddPermission: 'role.addPermission',
-  RemovePermission: 'role.removePermission',
-  Assign: 'role.assign',
-  Unassign: 'role.unassign',
-  GetUserRoles: 'role.getUserRoles',
-  CheckPermission: 'role.checkPermission',
-};
-
-const AppScopeCommands = {
-  Create: 'appScope.create',
-  Get: 'appScope.get',
-  GetByName: 'appScope.getByName',
-  GetAll: 'appScope.getAll',
-  Update: 'appScope.update',
-  Delete: 'appScope.delete',
-};
+import {
+  PermissionCommands,
+  RoleCommands,
+  AppScopeCommands,
+} from '@optimistic-tanuki/constants';
 
 describe('Permissions Microservice E2E Tests', () => {
   let client: ClientProxy;
   const testTimestamp = Date.now();
-  
+
   // Store IDs for cleanup
   let createdPermissionId: string | null = null;
   let createdRoleId: string | null = null;
@@ -50,11 +27,14 @@ describe('Permissions Microservice E2E Tests', () => {
         port: 3012,
       },
     });
-    
+
     try {
       await client.connect();
     } catch (err) {
-      console.warn('Could not connect to permissions service. Tests will be skipped.', err);
+      console.warn(
+        'Could not connect to permissions service. Tests will be skipped.',
+        err
+      );
     }
   });
 
@@ -64,22 +44,28 @@ describe('Permissions Microservice E2E Tests', () => {
       if (createdRoleId) {
         await firstValueFrom(
           client.send({ cmd: RoleCommands.Delete }, createdRoleId)
-        ).catch(() => { /* ignore cleanup errors */ });
+        ).catch(() => {
+          /* ignore cleanup errors */
+        });
       }
       if (createdPermissionId) {
         await firstValueFrom(
           client.send({ cmd: PermissionCommands.Delete }, createdPermissionId)
-        ).catch(() => { /* ignore cleanup errors */ });
+        ).catch(() => {
+          /* ignore cleanup errors */
+        });
       }
       if (createdAppScopeId) {
         await firstValueFrom(
           client.send({ cmd: AppScopeCommands.Delete }, createdAppScopeId)
-        ).catch(() => { /* ignore cleanup errors */ });
+        ).catch(() => {
+          /* ignore cleanup errors */
+        });
       }
     } catch {
       // Ignore cleanup errors
     }
-    
+
     await client.close();
   });
 
@@ -90,9 +76,9 @@ describe('Permissions Microservice E2E Tests', () => {
           client.send({ cmd: PermissionCommands.GetAll }, {})
         );
         expect(Array.isArray(result)).toBe(true);
-      } catch {
+      } catch (error) {
         // Service not available - skip test
-        console.warn('Permissions service not available');
+        console.warn('Permissions service not available', error);
       }
     });
 
@@ -112,8 +98,11 @@ describe('Permissions Microservice E2E Tests', () => {
         expect(result).toBeDefined();
         expect(result.name).toBe(permissionData.name);
         createdPermissionId = result.id;
-      } catch {
-        console.warn('Could not create permission - service may not be available');
+      } catch (error) {
+        console.warn(
+          'Could not create permission - service may not be available',
+          error
+        );
       }
     });
 
@@ -202,7 +191,9 @@ describe('Permissions Microservice E2E Tests', () => {
 
         expect(result).toBeDefined();
       } catch {
-        console.warn('Could not add permission to role - service may not be available');
+        console.warn(
+          'Could not add permission to role - service may not be available'
+        );
       }
     });
   });
@@ -235,7 +226,9 @@ describe('Permissions Microservice E2E Tests', () => {
         expect(result.name).toBe(appScopeData.name);
         createdAppScopeId = result.id;
       } catch {
-        console.warn('Could not create app scope - service may not be available');
+        console.warn(
+          'Could not create app scope - service may not be available'
+        );
       }
     });
 
@@ -273,7 +266,11 @@ describe('Permissions Microservice E2E Tests', () => {
         const result = await firstValueFrom(
           client.send(
             { cmd: RoleCommands.Assign },
-            { roleId: createdRoleId, profileId: testProfileId, appScopeId: null }
+            {
+              roleId: createdRoleId,
+              profileId: testProfileId,
+              appScopeId: null,
+            }
           )
         );
 

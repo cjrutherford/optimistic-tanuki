@@ -23,6 +23,7 @@ import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
+import { Public } from '../../decorators/public.decorator';
 
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller('post')
@@ -73,6 +74,7 @@ export class PostController {
   }
 
   @Post('/find')
+  @Public()
   // @RequirePermissions('blog.post.read')
   async findAllPosts(@Body() query: BlogPostQueryDto) {
     try {
@@ -94,6 +96,7 @@ export class PostController {
    * Get all published posts (public access)
    */
   @Get('/published')
+  @Public()
   async getPublishedPosts() {
     try {
       const posts = await firstValueFrom(
@@ -118,7 +121,10 @@ export class PostController {
   async getDraftsByAuthor(@Param('authorId') authorId: string) {
     try {
       const posts = await firstValueFrom(
-        this.postService.send({ cmd: BlogPostCommands.FIND_DRAFTS_BY_AUTHOR }, authorId)
+        this.postService.send(
+          { cmd: BlogPostCommands.FIND_DRAFTS_BY_AUTHOR },
+          authorId
+        )
       );
       this.l.log(`Drafts for author ${authorId} retrieved successfully`);
       return posts;
@@ -139,7 +145,7 @@ export class PostController {
   async publishPost(@Param('id') id: string, @User() user: UserDetails) {
     try {
       const requestingAuthorId = this.getProfileId(user);
-      
+
       const publishedPost = await firstValueFrom(
         this.postService.send(
           { cmd: BlogPostCommands.PUBLISH },
@@ -153,7 +159,11 @@ export class PostController {
       return publishedPost;
     } catch (error) {
       this.l.error(`Error publishing post ${id}`, error);
-      if (error.status === 404 || error.status === 403 || error.status === 401) {
+      if (
+        error.status === 404 ||
+        error.status === 403 ||
+        error.status === 401
+      ) {
         throw error;
       }
       throw new HttpException(
@@ -197,7 +207,7 @@ export class PostController {
   ) {
     try {
       const requestingAuthorId = this.getProfileId(user);
-      
+
       const updatedPost = await firstValueFrom(
         this.postService.send(
           { cmd: BlogPostCommands.UPDATE },
@@ -211,7 +221,11 @@ export class PostController {
       return updatedPost;
     } catch (error) {
       this.l.error(`Error updating post ${id}`, error);
-      if (error.status === 404 || error.status === 403 || error.status === 401) {
+      if (
+        error.status === 404 ||
+        error.status === 403 ||
+        error.status === 401
+      ) {
         throw error;
       }
       throw new HttpException(

@@ -3,22 +3,22 @@ dependencies:
   profile:
     name: 'profile'
     transport: Transport.TCP
-    host: ot_profile
+    host: localhost
     port: 3002
   chat_collector:
     name: 'chat-collector'
     transport: Transport.TCP
-    host: ot_chat_collector
+    host: localhost
     port: 3007
   prompt_proxy:
     name: 'prompt_proxy'
     transport: Transport.TCP
-    host: ot_prompt_proxy
+    host: localhost
     port: 3009
   telos_docs_service:
     name: 'telos_docs_service'
     transport: Transport.TCP
-    host: ot_telos_docs_service
+    host: localhost
     port: 3008
 ai-enabled-apps:
   forgeofwill: The Forge of Will is a personal project management platform to allow users to plan, track, collaborate, and achieve their goals effectively. It combines task management, goal setting, and collaboration tools to help individuals and teams stay organized and productive.

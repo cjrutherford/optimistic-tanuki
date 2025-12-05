@@ -66,8 +66,8 @@ export class TileComponent extends Variantable implements OnChanges {
 
   // Apply the variant styles based on the provided options and theme colors
 
-  constructor(themeService: ThemeService) {
-    super(themeService);
+  constructor() {
+    super();
   }
 
   override applyVariant(colors: ThemeColors, options?: VariantOptions): void {
@@ -77,35 +77,53 @@ export class TileComponent extends Variantable implements OnChanges {
 
   private setVariantOptions(options: VariantOptions) {
     this.variant = options.variant ?? this.variant ?? 'default';
-    this.backgroundFilter = options.backgroundFilter ?? this.backgroundFilter ?? 'none';
+    this.backgroundFilter =
+      options.backgroundFilter ?? this.backgroundFilter ?? 'none';
     this.borderWidth = options.borderWidth ?? this.borderWidth ?? '1px';
     this.borderRadius = options.borderRadius ?? this.borderRadius ?? '8px';
     this.borderStyle = options.borderStyle ?? this.borderStyle ?? 'solid';
-    this.backgroundGradient = options.backgroundGradient ?? this.backgroundGradient ?? 'none';
+    this.backgroundGradient =
+      options.backgroundGradient ?? this.backgroundGradient ?? 'none';
     this.svgPattern = options.svgPattern ?? this.svgPattern ?? '';
     this.glowFilter = options.glowFilter ?? this.glowFilter ?? 'none';
     this.gradientType = options.gradientType ?? this.gradientType ?? 'linear';
-    this.gradientStops = options.gradientStops !== undefined
-      ? (Array.isArray(options.gradientStops) ? options.gradientStops.join(', ') : options.gradientStops)
-      : this.gradientStops ?? '0%, 100%';
-    this.gradientColors = options.gradientColors !== undefined
-      ? (Array.isArray(options.gradientColors) ? options.gradientColors.join(', ') : options.gradientColors)
-      : this.gradientColors ?? '#fff, #eee';
+    this.gradientStops =
+      options.gradientStops !== undefined
+        ? Array.isArray(options.gradientStops)
+          ? options.gradientStops.join(', ')
+          : options.gradientStops
+        : this.gradientStops ?? '0%, 100%';
+    this.gradientColors =
+      options.gradientColors !== undefined
+        ? Array.isArray(options.gradientColors)
+          ? options.gradientColors.join(', ')
+          : options.gradientColors
+        : this.gradientColors ?? '#fff, #eee';
     this.animation = options.animation ?? this.animation ?? 'none';
-    this.hoverBoxShadow = options.hoverBoxShadow ?? this.hoverBoxShadow ?? '0 2px 8px rgba(0,0,0,0.1)';
+    this.hoverBoxShadow =
+      options.hoverBoxShadow ??
+      this.hoverBoxShadow ??
+      '0 2px 8px rgba(0,0,0,0.1)';
     this.hoverGradient = options.hoverGradient ?? this.hoverGradient ?? 'none';
-    this.hoverGlowFilter = options.hoverGlowFilter ?? this.hoverGlowFilter ?? 'none';
+    this.hoverGlowFilter =
+      options.hoverGlowFilter ?? this.hoverGlowFilter ?? 'none';
     this.insetShadow = options.insetShadow ?? this.insetShadow ?? 'none';
     this.bodyGradient = options.bodyGradient ?? this.bodyGradient ?? 'none';
-    this.backgroundPattern = options.backgroundPattern ?? this.backgroundPattern ?? '';
-    this.borderGradient = options.borderGradient ?? this.borderGradient ?? 'none';
-    this.transitionDuration = options.transitionDuration ?? this.transitionDuration ?? '0.3s';
+    this.backgroundPattern =
+      options.backgroundPattern ?? this.backgroundPattern ?? '';
+    this.borderGradient =
+      options.borderGradient ?? this.borderGradient ?? 'none';
+    this.transitionDuration =
+      options.transitionDuration ?? this.transitionDuration ?? '0.3s';
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['TileVariant'] && this.themeColors) {
       const currentVariant = changes['TileVariant'].currentValue;
-      const options = getDefaultVariantOptions(this.themeColors, currentVariant);
+      const options = getDefaultVariantOptions(
+        this.themeColors,
+        currentVariant
+      );
       this.applyVariant(this.themeColors, options);
     }
   }

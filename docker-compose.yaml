@@ -196,7 +196,9 @@ services:
       context: .
       dockerfile: ./apps/prompt-proxy/Dockerfile
     ports:
-      - '3008:3008'
+      - '3009:3009'
+    volumes:
+      - ./apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml
     depends_on:
       postgres:
         condition: service_healthy
@@ -225,7 +227,7 @@ services:
       context: .
       dockerfile: ./apps/telos-docs-service/Dockerfile
     ports:
-      - '3009:3009'
+      - '3008:3008'
     depends_on:
       postgres:
         condition: service_healthy

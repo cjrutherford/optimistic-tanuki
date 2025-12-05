@@ -1,7 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { AppComponent } from './app.component';
-import { RouterModule } from '@angular/router';
-import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { HeadingComponent } from '@optimistic-tanuki/common-ui';
 import { HeroComponent } from '../landing/hero/hero.component';
 import { TitleBarComponent } from '../landing/title-bar/title-bar.component';
@@ -12,20 +10,9 @@ import { ContactComponent } from '../landing/contact/contact.component';
 import { LandingComponent } from '../landing/landing.component';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { NO_ERRORS_SCHEMA, Component, Input } from '@angular/core';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ContactService } from './contact.service';
 import { of } from 'rxjs';
-
-@Component({
-  selector: 'otui-heading',
-  template: '<h1 [style.color]="color" [style.font-size]="size">{{ text }}</h1>',
-  standalone: true,
-})
-class MockHeadingComponent {
-  @Input() text = '';
-  @Input() color = '';
-  @Input() size = '';
-}
 
 describe('AppComponent', () => {
   let fixture: ComponentFixture<AppComponent>;
@@ -35,7 +22,9 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         AppComponent,
-        RouterTestingModule.withRoutes([{ path: '', component: LandingComponent }]),
+        RouterTestingModule.withRoutes([
+          { path: '', component: LandingComponent },
+        ]),
         HeadingComponent,
         HeroComponent,
         TitleBarComponent,
@@ -44,17 +33,17 @@ describe('AppComponent', () => {
         ServicesGridComponent,
         ContactComponent,
         LandingComponent,
-        HttpClientTestingModule
+        HttpClientTestingModule,
       ],
       providers: [
         {
           provide: ContactService,
           useValue: {
-            postContact: jest.fn(() => of({}))
-          }
-        }
+            postContact: jest.fn(() => of({})),
+          },
+        },
       ],
-      schemas: [NO_ERRORS_SCHEMA]
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AppComponent);

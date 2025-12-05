@@ -249,7 +249,10 @@ export class AppService {
       throw new RpcException('Passwords do not match');
     }
 
-    const user = await this.userRepo.findOne({ where: { email } });
+    const user = await this.userRepo.findOne({
+      where: { email },
+      relations: ['keyData'],
+    });
     if (!user || !user.keyData) {
       throw new RpcException('User not found');
     }

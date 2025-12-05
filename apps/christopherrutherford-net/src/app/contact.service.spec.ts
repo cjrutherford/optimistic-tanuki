@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 
 import { ContactService } from './contact.service';
 
@@ -39,7 +42,7 @@ describe('ContactService', () => {
       subject: '[Christopher Rutherford net] General Inquiry',
     };
 
-    service.postContact(data).subscribe(result => {
+    service.postContact(data).subscribe((result) => {
       expect(result).toEqual(expectedResponse);
       done();
     });
@@ -64,7 +67,7 @@ describe('ContactService', () => {
       subject: '[Christopher Rutherford net] General Inquiry',
     };
 
-    service.postContact(data).subscribe(result => {
+    service.postContact(data).subscribe((result) => {
       expect(result).toEqual(expectedResponse);
       done();
     });
@@ -84,7 +87,7 @@ describe('ContactService', () => {
 
     service.postContact(data).subscribe(
       () => fail('should have failed with the network error'),
-      (error: any) => {
+      (error: unknown) => {
         expect(error).toBeTruthy();
         done();
       }

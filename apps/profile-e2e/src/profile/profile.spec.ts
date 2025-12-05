@@ -1,4 +1,8 @@
-import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { ProfileCommands } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 
@@ -8,10 +12,17 @@ describe('Profile Microservice E2E', () => {
   const testProfile = {
     userId: `test-user-${Date.now()}`,
     username: `testuser${Date.now()}`,
+    name: `Test User ${Date.now()}`,
     bio: 'Test bio for E2E testing',
     firstName: 'Test',
     lastName: 'User',
     email: `test-${Date.now()}@example.com`,
+    profilePic: 'https://example.com/profile.jpg',
+    coverPic: 'https://example.com/cover.jpg',
+    location: 'Test City',
+    occupation: 'Tester',
+    interests: 'Testing, Coding',
+    skills: 'Jest, NestJS',
   };
 
   beforeAll(async () => {
@@ -42,10 +53,9 @@ describe('Profile Microservice E2E', () => {
       expect(result).toBeDefined();
       expect(result.id).toBeDefined();
       expect(result.userId).toBe(testProfile.userId);
-      expect(result.username).toBe(testProfile.username);
+      expect(result.profileName).toBe(testProfile.name);
       expect(result.bio).toBe(testProfile.bio);
-      expect(result.firstName).toBe(testProfile.firstName);
-      expect(result.lastName).toBe(testProfile.lastName);
+      // firstName, lastName, username are not in Profile entity
 
       createdProfileId = result.id;
     });
@@ -65,10 +75,17 @@ describe('Profile Microservice E2E', () => {
       const anotherProfile = {
         userId: `test-user-${Date.now()}-2`,
         username: `testuser${Date.now()}-2`,
+        name: `Another User ${Date.now()}`,
         bio: 'Another test bio',
         firstName: 'Another',
         lastName: 'User',
         email: `test-${Date.now()}-2@example.com`,
+        profilePic: 'https://example.com/profile2.jpg',
+        coverPic: 'https://example.com/cover2.jpg',
+        location: 'Another City',
+        occupation: 'Another Tester',
+        interests: 'More Testing',
+        skills: 'More Jest',
       };
 
       const result = await firstValueFrom(
@@ -84,24 +101,30 @@ describe('Profile Microservice E2E', () => {
   describe('Get Profile', () => {
     it('should get profile by id', async () => {
       const result = await firstValueFrom(
-        profileClient.send({ cmd: ProfileCommands.Get }, {
-          id: createdProfileId,
-          query: {},
-        })
+        profileClient.send(
+          { cmd: ProfileCommands.Get },
+          {
+            id: createdProfileId,
+            query: {},
+          }
+        )
       );
 
       expect(result).toBeDefined();
       expect(result.id).toBe(createdProfileId);
       expect(result.userId).toBe(testProfile.userId);
-      expect(result.username).toBe(testProfile.username);
+      expect(result.profileName).toBe(testProfile.name);
     });
 
     it('should return null for non-existent profile', async () => {
       const result = await firstValueFrom(
-        profileClient.send({ cmd: ProfileCommands.Get }, {
-          id: 'non-existent-id-12345',
-          query: {},
-        })
+        profileClient.send(
+          { cmd: ProfileCommands.Get },
+          {
+            id: '00000000-0000-0000-0000-000000000000',
+            query: {},
+          }
+        )
       );
 
       expect(result).toBeNull();
@@ -117,7 +140,7 @@ describe('Profile Microservice E2E', () => {
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBeGreaterThan(0);
-      
+
       // Verify our created profile is in the list
       const foundProfile = result.find((p: any) => p.id === createdProfileId);
       expect(foundProfile).toBeDefined();
@@ -125,9 +148,12 @@ describe('Profile Microservice E2E', () => {
 
     it('should get profiles with query filters', async () => {
       const result = await firstValueFrom(
-        profileClient.send({ cmd: ProfileCommands.GetAll }, {
-          where: { userId: testProfile.userId },
-        })
+        profileClient.send(
+          { cmd: ProfileCommands.GetAll },
+          {
+            where: { userId: testProfile.userId },
+          }
+        )
       );
 
       expect(result).toBeDefined();
@@ -141,10 +167,13 @@ describe('Profile Microservice E2E', () => {
     it('should update profile bio', async () => {
       const updatedBio = 'Updated bio for E2E testing';
       const result = await firstValueFrom(
-        profileClient.send({ cmd: ProfileCommands.Update }, {
-          id: createdProfileId,
-          bio: updatedBio,
-        })
+        profileClient.send(
+          { cmd: ProfileCommands.Update },
+          {
+            id: createdProfileId,
+            bio: updatedBio,
+          }
+        )
       );
 
       expect(result).toBeDefined();
@@ -152,24 +181,27 @@ describe('Profile Microservice E2E', () => {
       expect(result.id).toBe(createdProfileId);
     });
 
-    it('should update profile username', async () => {
-      const updatedUsername = `updateduser${Date.now()}`;
+    it('should update profile name', async () => {
+      const updatedName = `Updated User ${Date.now()}`;
       const result = await firstValueFrom(
-        profileClient.send({ cmd: ProfileCommands.Update }, {
-          id: createdProfileId,
-          username: updatedUsername,
-        })
+        profileClient.send(
+          { cmd: ProfileCommands.Update },
+          {
+            id: createdProfileId,
+            name: updatedName,
+          }
+        )
       );
 
       expect(result).toBeDefined();
-      expect(result.username).toBe(updatedUsername);
+      expect(result.profileName).toBe(updatedName);
     });
 
     it('should update multiple profile fields', async () => {
       const updates = {
         id: createdProfileId,
-        firstName: 'Updated',
-        lastName: 'Name',
+        location: 'Updated City',
+        occupation: 'Updated Occupation',
         bio: 'Final updated bio',
       };
 
@@ -178,18 +210,21 @@ describe('Profile Microservice E2E', () => {
       );
 
       expect(result).toBeDefined();
-      expect(result.firstName).toBe(updates.firstName);
-      expect(result.lastName).toBe(updates.lastName);
+      expect(result.location).toBe(updates.location);
+      expect(result.occupation).toBe(updates.occupation);
       expect(result.bio).toBe(updates.bio);
     });
 
     it('should fail to update non-existent profile', async () => {
       try {
         await firstValueFrom(
-          profileClient.send({ cmd: ProfileCommands.Update }, {
-            id: 'non-existent-id-12345',
-            bio: 'This should fail',
-          })
+          profileClient.send(
+            { cmd: ProfileCommands.Update },
+            {
+              id: '00000000-0000-0000-0000-000000000000',
+              bio: 'This should fail',
+            }
+          )
         );
         fail('Should have thrown an error');
       } catch (error) {

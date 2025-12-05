@@ -1,9 +1,13 @@
 import { Component, signal } from '@angular/core';
 
-import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui';
+import {
+  AppBarComponent,
+  NavSidebarComponent,
+  NavItem,
+} from '@optimistic-tanuki/navigation-ui';
 
 @Component({
-  selector: 'dh-title-bar',
+  selector: 'app-title-bar',
   imports: [AppBarComponent, NavSidebarComponent],
   templateUrl: './title-bar.component.html',
   styleUrl: './title-bar.component.scss',

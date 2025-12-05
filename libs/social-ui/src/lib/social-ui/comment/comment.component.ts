@@ -1,10 +1,21 @@
-import { Component, EventEmitter, OnInit, Output, TemplateRef, ViewChild } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  OnInit,
+  Output,
+  TemplateRef,
+  ViewChild,
+} from '@angular/core';
 
 import { MatDialog } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { QuillModule, QuillModules } from 'ngx-quill';
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  Themeable,
+  ThemeColors,
+  ThemeService,
+} from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'lib-comment',
@@ -22,7 +33,7 @@ import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-l
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
     '[style.--accent-shade]': 'accentShade',
-  }
+  },
 })
 export class CommentComponent extends Themeable implements OnInit {
   @Output() commentAdded: EventEmitter<string> = new EventEmitter<string>();
@@ -30,8 +41,8 @@ export class CommentComponent extends Themeable implements OnInit {
   comment = '';
   accentShade!: string;
 
-  constructor(private dialog: MatDialog, themeService: ThemeService) {
-    super(themeService)
+  constructor(private dialog: MatDialog) {
+    super();
   }
 
   override applyTheme(colors: ThemeColors) {
@@ -40,10 +51,10 @@ export class CommentComponent extends Themeable implements OnInit {
     this.borderColor = colors.complementary;
     if (this.theme === 'dark') {
       this.borderGradient = colors.complementaryGradients['dark'];
-      this.accentShade = colors.accentShades[6][1]
+      this.accentShade = colors.accentShades[6][1];
     } else {
       this.borderGradient = colors.complementaryGradients['light'];
-      this.accentShade = colors.accentShades[2][1]
+      this.accentShade = colors.accentShades[2][1];
     }
     this.foreground = colors.foreground;
     this.complement = colors.complementary;
@@ -52,26 +63,26 @@ export class CommentComponent extends Themeable implements OnInit {
 
   modules: QuillModules = {
     toolbar: [
-      ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+      ['bold', 'italic', 'underline', 'strike'], // toggled buttons
       ['blockquote', 'code-block'],
 
-      [{ 'header': 1 }, { 'header': 2 }],               // custom button values
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
-      [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
-      [{ 'direction': 'rtl' }],                         // text direction
+      [{ header: 1 }, { header: 2 }], // custom button values
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ script: 'sub' }, { script: 'super' }], // superscript/subscript
+      [{ indent: '-1' }, { indent: '+1' }], // outdent/indent
+      [{ direction: 'rtl' }], // text direction
 
-      [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ size: ['small', false, 'large', 'huge'] }], // custom dropdown
+      [{ header: [1, 2, 3, 4, 5, 6, false] }],
 
-      [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
-      [{ 'font': [] }],
-      [{ 'align': [] }],
+      [{ color: [] }, { background: [] }], // dropdown with defaults from theme
+      [{ font: [] }],
+      [{ align: [] }],
 
-      ['clean'],                                         // remove formatting button
+      ['clean'], // remove formatting button
 
-      ['link', 'image', 'video']                         // link and image, video
-    ]
+      ['link', 'image', 'video'], // link and image, video
+    ],
   };
 
   openCommentDialog() {
@@ -81,7 +92,7 @@ export class CommentComponent extends Themeable implements OnInit {
 
   onSubmit() {
     this.commentAdded.emit(this.comment);
-    this.comment = ''
+    this.comment = '';
     this.dialog.closeAll();
   }
 

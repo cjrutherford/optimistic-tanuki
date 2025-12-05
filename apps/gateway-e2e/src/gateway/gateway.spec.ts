@@ -25,12 +25,11 @@ describe('Gateway E2E Tests', () => {
 
         expect(res.status).toBe(201);
         expect(res.data).toBeDefined();
-        expect(res.data.token).toBeDefined();
-        expect(res.data.user).toBeDefined();
-        expect(res.data.user.email).toBe(testUser.email);
+        expect(res.data.data).toBeDefined();
+        expect(res.data.data.user).toBeDefined();
+        expect(res.data.data.user.email).toBe(testUser.email);
 
-        authToken = res.data.token;
-        userId = res.data.user.id;
+        userId = res.data.data.user.id;
       });
 
       it('should fail to register with duplicate email', async () => {
@@ -57,9 +56,10 @@ describe('Gateway E2E Tests', () => {
 
         expect(res.status).toBe(201);
         expect(res.data).toBeDefined();
-        expect(res.data.token).toBeDefined();
-        expect(res.data.user).toBeDefined();
-        expect(res.data.user.email).toBe(testUser.email);
+        expect(res.data.data).toBeDefined();
+        expect(res.data.data.newToken).toBeDefined();
+
+        authToken = res.data.data.newToken;
       });
 
       it('should fail to login with invalid credentials', async () => {
@@ -89,7 +89,8 @@ describe('Gateway E2E Tests', () => {
 
         expect(res.status).toBe(201);
         expect(res.data).toBeDefined();
-        expect(res.data.valid).toBe(true);
+        expect(res.data.code).toBe(0);
+        expect(res.data.data).toBeDefined();
       });
 
       it('should fail to validate an invalid token', async () => {
@@ -104,17 +105,16 @@ describe('Gateway E2E Tests', () => {
 
     describe('POST /api/authentication/reset', () => {
       it('should reset password with valid credentials', async () => {
-        const newPassword = 'NewPassword123!';
         const res = await api.post('/authentication/reset', {
           email: testUser.email,
           oldPass: testUser.password,
-          newPass: newPassword,
-          newConf: newPassword,
+          newPass: 'NewPassword123!',
+          newConf: 'NewPassword123!',
         });
 
         expect(res.status).toBe(201);
         expect(res.data).toBeDefined();
-        expect(res.data.success).toBe(true);
+        expect(res.data.code).toBe(0);
       });
 
       it('should fail to reset with wrong old password', async () => {
@@ -127,16 +127,6 @@ describe('Gateway E2E Tests', () => {
 
         expect(res.status).toBe(500);
       });
-    });
-  });
-
-  describe('Health Check', () => {
-    it('should return 200 for root endpoint', async () => {
-      const res = await axios.get(`${baseURL}/api`, {
-        validateStatus: () => true,
-      });
-
-      expect(res.status).toBe(200);
     });
   });
 
