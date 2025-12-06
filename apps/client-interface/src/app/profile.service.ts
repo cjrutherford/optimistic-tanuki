@@ -23,6 +23,16 @@ export class ProfileService {
   private readonly authState: AuthStateService = inject(AuthStateService);
   private readonly apiBaseUrl: string = inject(API_BASE_URL);
 
+  /**
+   * Checks if a URL is an external asset URL (not yet stored on the server)
+   * @param url The URL to check
+   * @returns true if the URL is external (base64 or external URL), false if it's a server asset URL
+   */
+  private isExternalAssetUrl(url: string | undefined): boolean {
+    if (!url) return false;
+    return !url.startsWith(`${this.apiBaseUrl}/asset/`);
+  }
+
   selectProfile(_p: ProfileDto) {
     const profile = this.currentUserProfiles().find((p) => p.id === _p.id);
     if (profile) {
@@ -119,7 +129,7 @@ export class ProfileService {
   }
 
   async updateProfile(id: string, profile: UpdateProfileDto) {
-    if (profile.profilePic && !profile.profilePic.startsWith(`${this.apiBaseUrl}/asset/`)) {
+    if (this.isExternalAssetUrl(profile.profilePic)) {
       // Get the original profile to compare the current asset
       const originalProfile = await firstValueFrom(
         this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
@@ -146,7 +156,7 @@ export class ProfileService {
       );
       profile.profilePic = `${this.apiBaseUrl}/asset/${profileAsset.id}`;
     }
-    if (profile.coverPic && !profile.coverPic.startsWith(`${this.apiBaseUrl}/asset/`)) {
+    if (this.isExternalAssetUrl(profile.coverPic)) {
       const originalProfile = await firstValueFrom(
         this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
       );
