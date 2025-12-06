@@ -5,6 +5,10 @@ module.exports = {
   output: {
     path: join(__dirname, '../../dist/apps/telos-docs-service'),
   },
+  externals: {
+    // Externalize Angular dependencies to prevent bundling in Node.js scripts
+    '@angular/core': 'commonjs @angular/core',
+  },
   plugins: [
     new NxAppWebpackPlugin({
       target: 'node',
