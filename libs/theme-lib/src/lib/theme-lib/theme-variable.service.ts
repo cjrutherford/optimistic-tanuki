@@ -1,8 +1,10 @@
 import { Injectable, ElementRef } from '@angular/core';
+import { STANDARD_THEME_VARIABLES, getAllVariableNames } from './theme-config';
 
 /**
  * Service to help manage CSS variable overrides at component level
  * This provides a better way to handle host bindings and DOM-level overrides
+ * Uses standardized variable names for consistency
  */
 @Injectable({
   providedIn: 'root'
@@ -28,29 +30,30 @@ export class ThemeVariableService {
   /**
    * Create a host binding object using standardized variable names
    * This replaces the manual host binding definitions in component decorators
+   * Automatically normalizes legacy variable names to standardized names
    */
   createStandardizedHostBindings(bindings: Record<string, string>): Record<string, string> {
     const hostBindings: Record<string, string> = {};
     
-    // Map old variable names to new standardized names
+    // Map of common variations to standard variable names
     const variableMap: Record<string, string> = {
-      'accent': 'accent',
-      'accent-color': 'accent',
-      'complement': 'complement', 
-      'complementary': 'complement',
-      'complementary-color': 'complement',
-      'foreground': 'foreground',
-      'foreground-color': 'foreground',
-      'background': 'background',
-      'background-color': 'background',
-      'tertiary': 'tertiary',
-      'tertiary-color': 'tertiary',
-      'success': 'success',
-      'success-color': 'success',
-      'danger': 'danger', 
-      'danger-color': 'danger',
-      'warning': 'warning',
-      'warning-color': 'warning'
+      'accent': STANDARD_THEME_VARIABLES.ACCENT.substring(2), // Remove '--' prefix
+      'accent-color': STANDARD_THEME_VARIABLES.ACCENT.substring(2),
+      'complement': STANDARD_THEME_VARIABLES.COMPLEMENT.substring(2), 
+      'complementary': STANDARD_THEME_VARIABLES.COMPLEMENT.substring(2),
+      'complementary-color': STANDARD_THEME_VARIABLES.COMPLEMENT.substring(2),
+      'foreground': STANDARD_THEME_VARIABLES.FOREGROUND.substring(2),
+      'foreground-color': STANDARD_THEME_VARIABLES.FOREGROUND.substring(2),
+      'background': STANDARD_THEME_VARIABLES.BACKGROUND.substring(2),
+      'background-color': STANDARD_THEME_VARIABLES.BACKGROUND.substring(2),
+      'tertiary': STANDARD_THEME_VARIABLES.TERTIARY.substring(2),
+      'tertiary-color': STANDARD_THEME_VARIABLES.TERTIARY.substring(2),
+      'success': STANDARD_THEME_VARIABLES.SUCCESS.substring(2),
+      'success-color': STANDARD_THEME_VARIABLES.SUCCESS.substring(2),
+      'danger': STANDARD_THEME_VARIABLES.DANGER.substring(2), 
+      'danger-color': STANDARD_THEME_VARIABLES.DANGER.substring(2),
+      'warning': STANDARD_THEME_VARIABLES.WARNING.substring(2),
+      'warning-color': STANDARD_THEME_VARIABLES.WARNING.substring(2)
     };
 
     Object.entries(bindings).forEach(([property, value]) => {

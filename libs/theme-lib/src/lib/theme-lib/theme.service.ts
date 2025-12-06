@@ -13,6 +13,7 @@ import { ThemeColors, ColorPalette } from './theme.interface';
 import { isPlatformBrowser } from '@angular/common';
 import { PREDEFINED_PALETTES, getPaletteByName } from './theme-palettes';
 import { DEFAULT_DESIGN_TOKENS, generateDesignTokenCSSVariables } from './design-tokens';
+import { STANDARD_THEME_VARIABLES, getAllVariableNames } from './theme-config';
 
 @Injectable({
   providedIn: 'root',
@@ -161,21 +162,15 @@ export class ThemeService {
       document.documentElement.style.setProperty(property, value);
     });
 
-    // Apply theme colors - using standardized naming convention
-    document.documentElement.style.setProperty('--background', themeColors.background);
-    document.documentElement.style.setProperty('--foreground', themeColors.foreground);
-    document.documentElement.style.setProperty('--accent', themeColors.accent);
-    document.documentElement.style.setProperty('--complement', themeColors.complementary);
-    document.documentElement.style.setProperty('--tertiary', themeColors.tertiary);
-    document.documentElement.style.setProperty('--success', themeColors.success);
-    document.documentElement.style.setProperty('--danger', themeColors.danger);
-    document.documentElement.style.setProperty('--warning', themeColors.warning);
-
-    // Legacy support for older variable names
-    document.documentElement.style.setProperty('--background-color', themeColors.background);
-    document.documentElement.style.setProperty('--foreground-color', themeColors.foreground);
-    document.documentElement.style.setProperty('--accent-color', themeColors.accent);
-    document.documentElement.style.setProperty('--complementary-color', themeColors.complementary);
+    // Apply theme colors using standardized names with backward compatibility
+    this.setThemeVariable(STANDARD_THEME_VARIABLES.BACKGROUND, themeColors.background);
+    this.setThemeVariable(STANDARD_THEME_VARIABLES.FOREGROUND, themeColors.foreground);
+    this.setThemeVariable(STANDARD_THEME_VARIABLES.ACCENT, themeColors.accent);
+    this.setThemeVariable(STANDARD_THEME_VARIABLES.COMPLEMENT, themeColors.complementary);
+    this.setThemeVariable(STANDARD_THEME_VARIABLES.TERTIARY, themeColors.tertiary);
+    this.setThemeVariable(STANDARD_THEME_VARIABLES.SUCCESS, themeColors.success);
+    this.setThemeVariable(STANDARD_THEME_VARIABLES.DANGER, themeColors.danger);
+    this.setThemeVariable(STANDARD_THEME_VARIABLES.WARNING, themeColors.warning);
 
     // Apply color shades
     this.applyColorShades('accent', themeColors.accentShades);
@@ -192,6 +187,17 @@ export class ThemeService {
     this.applyGradients('success', themeColors.successGradients);
     this.applyGradients('danger', themeColors.dangerGradients);
     this.applyGradients('warning', themeColors.warningGradients);
+  }
+
+  /**
+   * Set a theme variable with support for both standard and legacy names
+   * This ensures backward compatibility while promoting standardized usage
+   */
+  private setThemeVariable(standardVariable: string, value: string) {
+    const allNames = getAllVariableNames(standardVariable);
+    allNames.forEach(varName => {
+      document.documentElement.style.setProperty(varName, value);
+    });
   }
 
   private applyColorShades(colorName: string, shades: [string, string][]) {

@@ -1,5 +1,6 @@
 export * from './lib/common-ui';
-export * from './lib/theme.interface';
+// Re-export theme interfaces from theme-lib for backward compatibility
+export type { ThemeColors, ThemeGradients } from '@optimistic-tanuki/theme-lib';
 export * from './lib/common-ui/gradient-builder';
 
 // Export SCSS mixins path for import usage

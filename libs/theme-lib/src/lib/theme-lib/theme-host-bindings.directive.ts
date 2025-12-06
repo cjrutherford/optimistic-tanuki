@@ -1,7 +1,8 @@
-import { Directive, ElementRef, Input, OnChanges, SimpleChanges, OnDestroy } from '@angular/core';
+import { Directive, ElementRef, Input, OnChanges, SimpleChanges, OnDestroy, OnInit } from '@angular/core';
 import { ThemeService } from './theme.service';
 import { ThemeColors } from './theme.interface';
 import { Subject, takeUntil } from 'rxjs';
+import { STANDARD_THEME_VARIABLES } from './theme-config';
 
 export interface HostThemeBindings {
   // Core theme colors
@@ -63,16 +64,22 @@ const FONT_SIZE_MAP = {
   selector: '[themeHostBindings]',
   standalone: true
 })
-export class ThemeHostBindingsDirective implements OnChanges, OnDestroy {
+export class ThemeHostBindingsDirective implements OnInit, OnChanges, OnDestroy {
   @Input() themeHostBindings: HostThemeBindings = {};
   @Input() useThemeColors = true; // Whether to auto-bind to theme service colors
+  @Input() useLocalScope = true; // Whether to use --local-* prefix for component-scoped variables
 
   private destroy$ = new Subject<void>();
+  private isInitialized = false;
 
   constructor(
     private elementRef: ElementRef<HTMLElement>,
     private themeService: ThemeService
-  ) {
+  ) {}
+
+  ngOnInit() {
+    this.isInitialized = true;
+    
     // Subscribe to theme changes if useThemeColors is enabled
     if (this.useThemeColors) {
       this.themeService.themeColors$
@@ -86,7 +93,7 @@ export class ThemeHostBindingsDirective implements OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['themeHostBindings']) {
+    if (changes['themeHostBindings'] && this.isInitialized) {
       this.applyBindings();
     }
   }
@@ -98,16 +105,17 @@ export class ThemeHostBindingsDirective implements OnChanges, OnDestroy {
 
   private applyThemeColors(colors: ThemeColors) {
     const element = this.elementRef.nativeElement;
+    const prefix = this.useLocalScope ? '--local-' : '--';
     
     // Apply global theme colors as CSS custom properties on this element
-    element.style.setProperty('--local-accent', colors.accent);
-    element.style.setProperty('--local-complement', colors.complementary);
-    element.style.setProperty('--local-tertiary', colors.tertiary);
-    element.style.setProperty('--local-success', colors.success);
-    element.style.setProperty('--local-danger', colors.danger);
-    element.style.setProperty('--local-warning', colors.warning);
-    element.style.setProperty('--local-background', colors.background);
-    element.style.setProperty('--local-foreground', colors.foreground);
+    this.setProperty(element, `${prefix}accent`, colors.accent);
+    this.setProperty(element, `${prefix}complement`, colors.complementary);
+    this.setProperty(element, `${prefix}tertiary`, colors.tertiary);
+    this.setProperty(element, `${prefix}success`, colors.success);
+    this.setProperty(element, `${prefix}danger`, colors.danger);
+    this.setProperty(element, `${prefix}warning`, colors.warning);
+    this.setProperty(element, `${prefix}background`, colors.background);
+    this.setProperty(element, `${prefix}foreground`, colors.foreground);
 
     // Apply any custom bindings that override the theme
     this.applyBindings();
@@ -116,28 +124,43 @@ export class ThemeHostBindingsDirective implements OnChanges, OnDestroy {
   private applyBindings() {
     const element = this.elementRef.nativeElement;
     const bindings = this.themeHostBindings;
+    const prefix = this.useLocalScope ? '--local-' : '--';
 
     // Apply core color overrides (these take precedence over theme colors)
-    if (bindings.accent) element.style.setProperty('--local-accent', bindings.accent);
-    if (bindings.complement) element.style.setProperty('--local-complement', bindings.complement);
-    if (bindings.tertiary) element.style.setProperty('--local-tertiary', bindings.tertiary);
-    if (bindings.success) element.style.setProperty('--local-success', bindings.success);
-    if (bindings.danger) element.style.setProperty('--local-danger', bindings.danger);
-    if (bindings.warning) element.style.setProperty('--local-warning', bindings.warning);
-    if (bindings.background) element.style.setProperty('--local-background', bindings.background);
-    if (bindings.foreground) element.style.setProperty('--local-foreground', bindings.foreground);
+    if (bindings.accent) this.setProperty(element, `${prefix}accent`, bindings.accent);
+    if (bindings.complement) this.setProperty(element, `${prefix}complement`, bindings.complement);
+    if (bindings.tertiary) this.setProperty(element, `${prefix}tertiary`, bindings.tertiary);
+    if (bindings.success) this.setProperty(element, `${prefix}success`, bindings.success);
+    if (bindings.danger) this.setProperty(element, `${prefix}danger`, bindings.danger);
+    if (bindings.warning) this.setProperty(element, `${prefix}warning`, bindings.warning);
+    if (bindings.background) this.setProperty(element, `${prefix}background`, bindings.background);
+    if (bindings.foreground) this.setProperty(element, `${prefix}foreground`, bindings.foreground);
 
     // Apply design token references
-    if (bindings.spacing) element.style.setProperty('--local-spacing', SPACING_MAP[bindings.spacing]);
-    if (bindings.shadow) element.style.setProperty('--local-shadow', SHADOW_MAP[bindings.shadow]);
-    if (bindings.borderRadius) element.style.setProperty('--local-border-radius', BORDER_RADIUS_MAP[bindings.borderRadius]);
-    if (bindings.fontSize) element.style.setProperty('--local-font-size', FONT_SIZE_MAP[bindings.fontSize]);
+    if (bindings.spacing) this.setProperty(element, `${prefix}spacing`, SPACING_MAP[bindings.spacing]);
+    if (bindings.shadow) this.setProperty(element, `${prefix}shadow`, SHADOW_MAP[bindings.shadow]);
+    if (bindings.borderRadius) this.setProperty(element, `${prefix}border-radius`, BORDER_RADIUS_MAP[bindings.borderRadius]);
+    if (bindings.fontSize) this.setProperty(element, `${prefix}font-size`, FONT_SIZE_MAP[bindings.fontSize]);
 
     // Apply custom variables
     if (bindings.customVars) {
       Object.entries(bindings.customVars).forEach(([key, value]) => {
-        element.style.setProperty(`--local-${key}`, value);
+        this.setProperty(element, `${prefix}${key}`, value);
       });
+    }
+  }
+
+  /**
+   * Helper method to safely set a CSS property
+   * Includes error handling for SSR and edge cases
+   */
+  private setProperty(element: HTMLElement, property: string, value: string) {
+    try {
+      if (element && element.style) {
+        element.style.setProperty(property, value);
+      }
+    } catch (error) {
+      console.warn(`Failed to set CSS property ${property}:`, error);
     }
   }
 }

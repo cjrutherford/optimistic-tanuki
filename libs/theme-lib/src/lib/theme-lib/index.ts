@@ -7,3 +7,4 @@ export * from './theme-variable.service';
 export * from './theme-host-bindings.directive';
 export * from './theme-palettes';
 export * from './design-tokens';
+export * from './theme-config';
