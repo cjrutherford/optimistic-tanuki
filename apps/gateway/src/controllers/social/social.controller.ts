@@ -407,7 +407,8 @@ export class SocialController {
         commentPostId = comment?.postId;
       } catch (error) {
         // Comment not found or error, continue with deletion
-        this.l.error(`Error fetching comment for WebSocket broadcast: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        this.l.error(`Error fetching comment for WebSocket broadcast: ${errorMessage}`);
       }
     }
     

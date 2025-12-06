@@ -35,11 +35,11 @@ export class SocialGateway {
   @WebSocketServer()
   server: Server;
 
+  private readonly l = new Logger(SocialGateway.name);
   private connectedClients: Map<string, ConnectedClient> = new Map();
   private clientToProfileMap: Map<Socket, string> = new Map();
 
   constructor(
-    private readonly l: Logger,
     @Inject(ServiceTokens.SOCIAL_SERVICE) 
     private readonly socialClient: ClientProxy,
   ) {}
@@ -73,7 +73,8 @@ export class SocialGateway {
       
       client.emit('feed', posts || []);
     } catch (error) {
-      this.l.error(`Error fetching feed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.l.error(`Error fetching feed: ${errorMessage}`);
       client.emit('error', { message: 'Failed to fetch feed' });
     }
   }
