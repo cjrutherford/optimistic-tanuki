@@ -384,7 +384,10 @@ export class SocialController {
 
   @UseGuards(AuthGuard)
   @ApiTags('comment')
-  @ApiOperation({ summary: 'Delete a comment by ID' })
+  @ApiOperation({ 
+    summary: 'Delete a comment by ID',
+    description: 'Deletes a comment. Optional postId query parameter can be provided to avoid an additional API call for WebSocket broadcasting.'
+  })
   @ApiResponse({
     status: 200,
     description: 'The comment has been successfully deleted.',

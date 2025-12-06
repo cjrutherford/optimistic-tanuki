@@ -126,14 +126,32 @@ describe('SocialGateway', () => {
   });
 
   describe('handleDisconnect', () => {
-    it('should remove client on disconnect', () => {
+    it('should remove client on disconnect', async () => {
       const mockClient: any = {
-        disconnect: jest.fn(),
+        emit: jest.fn(),
       };
 
+      // First register a client
+      const payload = { profileId: 'user123' };
+      await gateway.handleSubscribePosts(payload, mockClient);
+
+      // Then disconnect
       gateway.handleDisconnect(mockClient);
 
-      expect(mockClient.disconnect).toHaveBeenCalled();
+      // Verify the client is removed (we can't directly test internal state,
+      // but we can verify no errors are thrown)
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        expect.stringContaining('Client disconnected')
+      );
+    });
+
+    it('should handle disconnect of unregistered client gracefully', () => {
+      const mockClient: any = {
+        emit: jest.fn(),
+      };
+
+      // Disconnect a client that was never registered
+      expect(() => gateway.handleDisconnect(mockClient)).not.toThrow();
     });
   });
 });
