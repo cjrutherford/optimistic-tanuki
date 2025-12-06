@@ -298,6 +298,15 @@
   }
 }
 
+// Theme Designer section
+.theme-designer-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--surface, #f8f9fa);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #dee2e6);
+}
+
 // Responsive adjustments
 @media (max-width: 768px) {
   .blog-layout {

@@ -69,7 +69,19 @@
         @if (canEdit() && isPostOwner()) {
         <otui-button (action)="startEditPost()">Edit Post</otui-button>
         }
+        @if (canEdit()) {
+        <otui-button (action)="toggleThemeDesigner()">
+          {{ showThemeDesigner() ? 'Hide' : 'Show' }} Theme Designer
+        </otui-button>
+        }
       </div>
+      
+      <!-- Theme Designer (only visible to users with blog editing permissions) -->
+      @if (showThemeDesigner() && canEdit()) {
+      <div class="theme-designer-section">
+        <lib-theme-designer></lib-theme-designer>
+      </div>
+      }
 
       <dh-blog-viewer
         [title]="selectedPost()!.title"
