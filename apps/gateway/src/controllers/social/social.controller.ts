@@ -7,6 +7,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Optional,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -16,6 +17,7 @@ import {
   ServiceTokens,
   VoteCommands,
 } from '@optimistic-tanuki/constants';
+import { SocialGateway } from '../../app/social-gateway/social.gateway';
 import {
   AttachmentDto,
   CommentDto,
@@ -47,7 +49,8 @@ import { RequirePermissions } from '../../decorators/permissions.decorator';
 export class SocialController {
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
-    private readonly socialClient: ClientProxy
+    private readonly socialClient: ClientProxy,
+    @Optional() private readonly socialGateway?: SocialGateway
   ) {}
 
   @UseGuards(AuthGuard)
@@ -64,9 +67,16 @@ export class SocialController {
     console.log(user);
     postDto.userId = user.userId;
     console.log('Updated Post Data  ', postDto);
-    return await firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send({ cmd: PostCommands.CREATE }, postDto)
     );
+    
+    // Broadcast post created event via WebSocket
+    if (this.socialGateway && result) {
+      this.socialGateway.broadcastPostCreated(result);
+    }
+    
+    return result;
   }
 
   @UseGuards(AuthGuard)
@@ -90,12 +100,19 @@ export class SocialController {
       '0': VoteCommands.UNVOTE,
       '1': VoteCommands.UPVOTE,
     };
-    return await firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: commandMap[voteDto.value.toString()] },
         voteDto
       )
     );
+    
+    // Broadcast vote updated event via WebSocket
+    if (this.socialGateway && result) {
+      this.socialGateway.broadcastVoteUpdated(result);
+    }
+    
+    return result;
   }
 
   @UseGuards(AuthGuard)
@@ -117,9 +134,16 @@ export class SocialController {
       userId: user.userId,
     };
     console.log('🚀 ~ SocialController ~ comment ~ commentDto:', finalComment);
-    return await firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send({ cmd: CommentCommands.CREATE }, finalComment)
     );
+    
+    // Broadcast comment created event via WebSocket
+    if (this.socialGateway && result) {
+      this.socialGateway.broadcastCommentCreated(result);
+    }
+    
+    return result;
   }
 
   @UseGuards(AuthGuard)
@@ -269,12 +293,19 @@ export class SocialController {
     @Param('id') id: string,
     @Body() updatePostDto: UpdatePostDto
   ): Promise<PostDto> {
-    return await firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.UPDATE },
         { id, data: updatePostDto }
       )
     );
+    
+    // Broadcast post updated event via WebSocket
+    if (this.socialGateway && result) {
+      this.socialGateway.broadcastPostUpdated(result);
+    }
+    
+    return result;
   }
 
   @UseGuards(AuthGuard)
@@ -290,12 +321,19 @@ export class SocialController {
     @Param('id') id: string,
     @Body() updateCommentDto: UpdateCommentDto
   ): Promise<CommentDto> {
-    return await firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: CommentCommands.UPDATE },
         { id, data: updateCommentDto }
       )
     );
+    
+    // Broadcast comment updated event via WebSocket
+    if (this.socialGateway && result) {
+      this.socialGateway.broadcastCommentUpdated(result);
+    }
+    
+    return result;
   }
 
   @UseGuards(AuthGuard)
@@ -328,9 +366,16 @@ export class SocialController {
   })
   @Delete('post/:id')
   async deletePost(@Param('id') id: string): Promise<void> {
-    return await firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send({ cmd: PostCommands.DELETE }, { id })
     );
+    
+    // Broadcast post deleted event via WebSocket
+    if (this.socialGateway) {
+      this.socialGateway.broadcastPostDeleted(id);
+    }
+    
+    return result;
   }
 
   @UseGuards(AuthGuard)
@@ -342,9 +387,27 @@ export class SocialController {
   })
   @Delete('comment/:id')
   async deleteComment(@Param('id') id: string): Promise<void> {
-    return await firstValueFrom(
+    // Fetch comment first to get postId for broadcast
+    let postId: string | undefined;
+    try {
+      const comment = await firstValueFrom(
+        this.socialClient.send({ cmd: CommentCommands.FIND }, { id })
+      );
+      postId = comment?.postId;
+    } catch (error) {
+      // Comment not found or error, continue with deletion
+    }
+    
+    const result = await firstValueFrom(
       this.socialClient.send({ cmd: CommentCommands.DELETE }, { id })
     );
+    
+    // Broadcast comment deleted event via WebSocket
+    if (this.socialGateway && postId) {
+      this.socialGateway.broadcastCommentDeleted(id, postId);
+    }
+    
+    return result;
   }
 
   @UseGuards(AuthGuard)
