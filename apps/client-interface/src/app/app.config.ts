@@ -17,6 +17,7 @@ import { AuthStateService } from './state/auth-state.service';
 import { AuthenticationService } from './authentication.service';
 import { AuthInterceptor } from './http.interceptor';
 import { QuillModule } from 'ngx-quill';
+import { API_BASE_URL } from '@optimistic-tanuki/constants';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -26,6 +27,10 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     provideHttpClient(withInterceptors([AuthInterceptor])),
     importProvidersFrom(QuillModule.forRoot()),
+    {
+      provide: API_BASE_URL,
+      useValue: '/api',
+    },
     AuthStateService,
     AuthenticationService,
   ],

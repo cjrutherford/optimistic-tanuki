@@ -1,16 +1,22 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AttachmentDto, CreateAttachmentDto, UpdateAttachmentDto, SearchAttachmentDto } from '@optimistic-tanuki/social-ui';
+import { API_BASE_URL } from '@optimistic-tanuki/constants';
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class AttachmentService {
-  private baseUrl = '/api/social/attachment';
+  private baseUrl: string;
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    @Inject(API_BASE_URL) private apiBaseUrl: string,
+    private http: HttpClient
+  ) {
+    this.baseUrl = `${this.apiBaseUrl}/social/attachment`;
+  }
 
   createAttachment(attachmentDto: CreateAttachmentDto): Observable<AttachmentDto> {
     return this.http.post<AttachmentDto>(this.baseUrl, attachmentDto);

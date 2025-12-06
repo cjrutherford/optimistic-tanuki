@@ -10,6 +10,7 @@ import {
 import { firstValueFrom, map, switchMap, forkJoin } from 'rxjs';
 import { AuthStateService } from './state/auth-state.service';
 import { UpdateAttachmentDto } from '@optimistic-tanuki/social-ui';
+import { API_BASE_URL } from '@optimistic-tanuki/constants';
 
 @Injectable({
   providedIn: 'root',
@@ -20,6 +21,17 @@ export class ProfileService {
   currentUserProfile = signal<ProfileDto | null>(null);
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authState: AuthStateService = inject(AuthStateService);
+  private readonly apiBaseUrl: string = inject(API_BASE_URL);
+
+  /**
+   * Checks if a URL is an external asset URL (not yet stored on the server)
+   * @param url The URL to check
+   * @returns true if the URL is external (base64 or external URL), false if it's a server asset URL
+   */
+  private isExternalAssetUrl(url: string | undefined): boolean {
+    if (!url) return false;
+    return !url.startsWith(`${this.apiBaseUrl}/asset/`);
+  }
 
   selectProfile(_p: ProfileDto) {
     const profile = this.currentUserProfiles().find((p) => p.id === _p.id);
@@ -39,7 +51,7 @@ export class ProfileService {
 
   async getAllProfiles() {
     const profiles = await firstValueFrom(
-      this.http.get<ProfileDto[]>('/api/profile')
+      this.http.get<ProfileDto[]>(`${this.apiBaseUrl}/profile`)
     );
     this.allProfiles.set(profiles);
     this.currentUserProfiles.set(
@@ -52,7 +64,7 @@ export class ProfileService {
 
   async getProfileById(id: string) {
     const profile = await firstValueFrom(
-      this.http.get<ProfileDto>(`/api/profile/${id}`)
+      this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
     );
     this.currentUserProfile.set(profile);
     this.authState.persistSelectedProfile(profile);
@@ -68,7 +80,7 @@ export class ProfileService {
       profile.userId = tokenValue.userId;
     }
     const resp: any = await firstValueFrom(
-      this.http.post('/api/profile', profile)
+      this.http.post(`${this.apiBaseUrl}/profile`, profile)
     );
     let newProfile: ProfileDto;
     // If the gateway issued a refreshed token including profileId, it will return { profile, newToken }
@@ -95,16 +107,16 @@ export class ProfileService {
       content: originalCoverPic,
     };
     const profileAsset = await firstValueFrom(
-      this.http.post<AssetDto>(`/api/asset`, profilePhotoDto)
+      this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, profilePhotoDto)
     );
     const coverAsset = await firstValueFrom(
-      this.http.post<AssetDto>(`/api/asset`, coverPhotoDto)
+      this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, coverPhotoDto)
     );
 
-    newProfile.profilePic = `/api/asset/${profileAsset.id}`;
-    newProfile.coverPic = `/api/asset/${coverAsset.id}`;
+    newProfile.profilePic = `${this.apiBaseUrl}/asset/${profileAsset.id}`;
+    newProfile.coverPic = `${this.apiBaseUrl}/asset/${coverAsset.id}`;
     await firstValueFrom(
-      this.http.put<ProfileDto>(`/api/profile/${newProfile.id}`, {
+      this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${newProfile.id}`, {
         profilePic: newProfile.profilePic,
         coverPic: newProfile.coverPic,
       })
@@ -117,10 +129,10 @@ export class ProfileService {
   }
 
   async updateProfile(id: string, profile: UpdateProfileDto) {
-    if (profile.profilePic && !profile.profilePic.startsWith('/api/asset/')) {
+    if (this.isExternalAssetUrl(profile.profilePic)) {
       // Get the original profile to compare the current asset
       const originalProfile = await firstValueFrom(
-        this.http.get<ProfileDto>(`/api/profile/${id}`)
+        this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
       );
       const originalAssetUrl = originalProfile.profilePic;
 
@@ -140,13 +152,13 @@ export class ProfileService {
         content: profile.profilePic,
       };
       const profileAsset = await firstValueFrom(
-        this.http.post<AssetDto>('/api/asset/', newProfilePic)
+        this.http.post<AssetDto>(`${this.apiBaseUrl}/asset/`, newProfilePic)
       );
-      profile.profilePic = `/api/asset/${profileAsset.id}`;
+      profile.profilePic = `${this.apiBaseUrl}/asset/${profileAsset.id}`;
     }
-    if (profile.coverPic && !profile.coverPic.startsWith('/api/asset/')) {
+    if (this.isExternalAssetUrl(profile.coverPic)) {
       const originalProfile = await firstValueFrom(
-        this.http.get<ProfileDto>(`/api/profile/${id}`)
+        this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
       );
       const originalAssetUrl = originalProfile.coverPic;
 
@@ -163,12 +175,12 @@ export class ProfileService {
         content: profile.coverPic,
       };
       const coverAsset = await firstValueFrom(
-        this.http.post<AssetDto>('/api/asset/', newCoverPic)
+        this.http.post<AssetDto>(`${this.apiBaseUrl}/asset/`, newCoverPic)
       );
-      profile.coverPic = `/api/asset/${coverAsset.id}`;
+      profile.coverPic = `${this.apiBaseUrl}/asset/${coverAsset.id}`;
     }
     const updatedProfile = await firstValueFrom(
-      this.http.put<ProfileDto>(`/api/profile/${id}`, profile)
+      this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`, profile)
     );
     this.currentUserProfiles.update((profiles) =>
       profiles.map((p) => (p.id === id ? updatedProfile : p))
@@ -181,7 +193,7 @@ export class ProfileService {
   }
 
   async deleteProfile(id: string) {
-    await firstValueFrom(this.http.delete<void>(`/api/profiles/${id}`));
+    await firstValueFrom(this.http.delete<void>(`${this.apiBaseUrl}/profiles/${id}`));
     this.currentUserProfiles.update((profiles) =>
       profiles.filter((p) => p.id !== id)
     );
@@ -209,14 +221,14 @@ export class ProfileService {
   }
 
   getDisplayProfile(id: string) {
-    return this.http.get<ProfileDto>(`/api/profile/${id}`).pipe(
+    return this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`).pipe(
       switchMap((profile) =>
         forkJoin({
           profilePic: this.http
-            .get<{ profilePic: string }>(`/api/profile/${id}/photo`)
+            .get<{ profilePic: string }>(`${this.apiBaseUrl}/profile/${id}/photo`)
             .pipe(map((res) => res.profilePic)),
           coverPic: this.http
-            .get<{ coverPic: string }>(`/api/profile/${id}/cover`)
+            .get<{ coverPic: string }>(`${this.apiBaseUrl}/profile/${id}/cover`)
             .pipe(map((res) => res.coverPic)),
         }).pipe(
           map(({ profilePic, coverPic }) => {
