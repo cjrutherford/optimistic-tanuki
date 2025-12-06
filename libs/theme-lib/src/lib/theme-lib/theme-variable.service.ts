@@ -28,6 +28,13 @@ export class ThemeVariableService {
   }
 
   /**
+   * Helper to remove CSS variable prefix (--) from variable name
+   */
+  private removeVarPrefix(variable: string): string {
+    return variable.startsWith('--') ? variable.substring(2) : variable;
+  }
+
+  /**
    * Create a host binding object using standardized variable names
    * This replaces the manual host binding definitions in component decorators
    * Automatically normalizes legacy variable names to standardized names
@@ -37,23 +44,23 @@ export class ThemeVariableService {
     
     // Map of common variations to standard variable names
     const variableMap: Record<string, string> = {
-      'accent': STANDARD_THEME_VARIABLES.ACCENT.substring(2), // Remove '--' prefix
-      'accent-color': STANDARD_THEME_VARIABLES.ACCENT.substring(2),
-      'complement': STANDARD_THEME_VARIABLES.COMPLEMENT.substring(2), 
-      'complementary': STANDARD_THEME_VARIABLES.COMPLEMENT.substring(2),
-      'complementary-color': STANDARD_THEME_VARIABLES.COMPLEMENT.substring(2),
-      'foreground': STANDARD_THEME_VARIABLES.FOREGROUND.substring(2),
-      'foreground-color': STANDARD_THEME_VARIABLES.FOREGROUND.substring(2),
-      'background': STANDARD_THEME_VARIABLES.BACKGROUND.substring(2),
-      'background-color': STANDARD_THEME_VARIABLES.BACKGROUND.substring(2),
-      'tertiary': STANDARD_THEME_VARIABLES.TERTIARY.substring(2),
-      'tertiary-color': STANDARD_THEME_VARIABLES.TERTIARY.substring(2),
-      'success': STANDARD_THEME_VARIABLES.SUCCESS.substring(2),
-      'success-color': STANDARD_THEME_VARIABLES.SUCCESS.substring(2),
-      'danger': STANDARD_THEME_VARIABLES.DANGER.substring(2), 
-      'danger-color': STANDARD_THEME_VARIABLES.DANGER.substring(2),
-      'warning': STANDARD_THEME_VARIABLES.WARNING.substring(2),
-      'warning-color': STANDARD_THEME_VARIABLES.WARNING.substring(2)
+      'accent': this.removeVarPrefix(STANDARD_THEME_VARIABLES.ACCENT),
+      'accent-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.ACCENT),
+      'complement': this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT), 
+      'complementary': this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT),
+      'complementary-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT),
+      'foreground': this.removeVarPrefix(STANDARD_THEME_VARIABLES.FOREGROUND),
+      'foreground-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.FOREGROUND),
+      'background': this.removeVarPrefix(STANDARD_THEME_VARIABLES.BACKGROUND),
+      'background-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.BACKGROUND),
+      'tertiary': this.removeVarPrefix(STANDARD_THEME_VARIABLES.TERTIARY),
+      'tertiary-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.TERTIARY),
+      'success': this.removeVarPrefix(STANDARD_THEME_VARIABLES.SUCCESS),
+      'success-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.SUCCESS),
+      'danger': this.removeVarPrefix(STANDARD_THEME_VARIABLES.DANGER), 
+      'danger-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.DANGER),
+      'warning': this.removeVarPrefix(STANDARD_THEME_VARIABLES.WARNING),
+      'warning-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.WARNING)
     };
 
     Object.entries(bindings).forEach(([property, value]) => {

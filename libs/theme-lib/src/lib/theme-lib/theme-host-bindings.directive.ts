@@ -90,6 +90,9 @@ export class ThemeHostBindingsDirective implements OnInit, OnChanges, OnDestroy 
           }
         });
     }
+    
+    // Apply any initial bindings that were set before ngOnInit
+    this.applyBindings();
   }
 
   ngOnChanges(changes: SimpleChanges) {
