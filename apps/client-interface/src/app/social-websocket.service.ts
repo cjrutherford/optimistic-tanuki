@@ -2,36 +2,7 @@ import { Injectable, OnDestroy, inject } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { API_BASE_URL } from '@optimistic-tanuki/constants';
-
-export interface Post {
-  id: string;
-  content: string;
-  userId: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  [key: string]: any;
-}
-
-export interface Comment {
-  id: string;
-  postId: string;
-  content: string;
-  userId: string;
-  [key: string]: any;
-}
-
-export interface Vote {
-  id: string;
-  postId: string;
-  value: number;
-  userId: string;
-  [key: string]: any;
-}
-
-export interface FollowEvent {
-  followerId: string;
-  followeeId: string;
-}
+import { PostDto, CommentDto, VoteDto, FollowEventDto } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root'
@@ -39,7 +10,7 @@ export interface FollowEvent {
 export class SocialWebSocketService implements OnDestroy {
   private socket: Socket | null = null;
   private connected$ = new BehaviorSubject<boolean>(false);
-  private posts$ = new BehaviorSubject<Post[]>([]);
+  private posts$ = new BehaviorSubject<PostDto[]>([]);
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private baseReconnectDelay = 1000;
@@ -116,13 +87,13 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     // Post events
-    this.socket.on('post_created', (post: Post) => {
+    this.socket.on('post_created', (post: PostDto) => {
       console.log('Post created:', post);
       const currentPosts = this.posts$.value;
       this.posts$.next([post, ...currentPosts]);
     });
 
-    this.socket.on('post_updated', (post: Post) => {
+    this.socket.on('post_updated', (post: PostDto) => {
       console.log('Post updated:', post);
       const currentPosts = this.posts$.value;
       const index = currentPosts.findIndex(p => p.id === post.id);
@@ -139,11 +110,11 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     // Comment events
-    this.socket.on('comment_created', (comment: Comment) => {
+    this.socket.on('comment_created', (comment: CommentDto) => {
       console.log('Comment created:', comment);
     });
 
-    this.socket.on('comment_updated', (comment: Comment) => {
+    this.socket.on('comment_updated', (comment: CommentDto) => {
       console.log('Comment updated:', comment);
     });
 
@@ -152,16 +123,16 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     // Vote events
-    this.socket.on('vote_updated', (vote: Vote) => {
+    this.socket.on('vote_updated', (vote: VoteDto) => {
       console.log('Vote updated:', vote);
     });
 
     // Follow events
-    this.socket.on('user_follow', (data: FollowEvent) => {
+    this.socket.on('user_follow', (data: FollowEventDto) => {
       console.log('User followed:', data);
     });
 
-    this.socket.on('user_unfollow', (data: FollowEvent) => {
+    this.socket.on('user_unfollow', (data: FollowEventDto) => {
       console.log('User unfollowed:', data);
     });
 

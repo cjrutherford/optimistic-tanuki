@@ -36,3 +36,7 @@ export {
   UpdateBlogPostDto,
   BlogPostQueryDto,
 } from './blog-post';
+export { PostDto, CreatePostDto, UpdatePostDto } from './post';
+export { CommentDto, CreateCommentDto, UpdateCommentDto } from './comment';
+export { VoteDto, CreateVoteDto } from './vote';
+export { FollowDto, FollowEventDto } from './follow';
