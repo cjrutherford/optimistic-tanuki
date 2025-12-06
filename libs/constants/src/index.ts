@@ -1,4 +1,6 @@
-export * from './lib/libs/constants.module';
+// Note: ConstantsModule is intentionally not exported to avoid pulling NestJS dependencies
+// into browser applications. Import it directly if needed in server-side code.
+// export * from './lib/libs/constants.module';
 export { default as AuthCommands } from './lib/libs/authentication';
 export {
     ProfileCommands,
