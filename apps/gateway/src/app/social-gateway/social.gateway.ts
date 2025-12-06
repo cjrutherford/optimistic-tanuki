@@ -24,12 +24,19 @@ interface ConnectedClient {
   subscriptions: Set<string>;
 }
 
-@WebSocketGateway((Number(process.env.SOCIAL_SOCKET_PORT) || 3301), { namespace: 'social', cors: { origin: '*' } })
+@WebSocketGateway((Number(process.env.SOCIAL_SOCKET_PORT) || 3301), { 
+  namespace: 'social', 
+  cors: { 
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: true
+  } 
+})
 export class SocialGateway {
   @WebSocketServer()
   server: Server;
 
   private connectedClients: Map<string, ConnectedClient> = new Map();
+  private clientToProfileMap: Map<Socket, string> = new Map();
 
   constructor(
     private readonly l: Logger,
@@ -171,14 +178,13 @@ export class SocialGateway {
 
   @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
-    // Find and remove the disconnected client
-    for (const [profileId, connectedClient] of this.connectedClients.entries()) {
-      if (connectedClient.client === client) {
-        this.l.log(`Client disconnected: ${profileId}`);
-        this.connectedClients.delete(profileId);
-        client.disconnect();
-        break;
-      }
+    // Use reverse mapping for efficient lookup
+    const profileId = this.clientToProfileMap.get(client);
+    
+    if (profileId) {
+      this.l.log(`Client disconnected: ${profileId}`);
+      this.connectedClients.delete(profileId);
+      this.clientToProfileMap.delete(client);
     }
   }
 
@@ -227,15 +233,29 @@ export class SocialGateway {
   }
 
   private registerClient(profileId: string, client: Socket): ConnectedClient {
-    if (!this.connectedClients.has(profileId)) {
-      this.connectedClients.set(profileId, {
-        id: profileId,
-        client,
-        subscriptions: new Set<string>()
-      });
+    // Check if this profile is already connected with a different client
+    const existingClient = this.connectedClients.get(profileId);
+    if (existingClient && existingClient.client !== client) {
+      // Remove old client mapping
+      this.clientToProfileMap.delete(existingClient.client);
+      this.l.log(`Replacing existing connection for profile: ${profileId}`);
+    }
+    
+    // Register or update the client
+    const connectedClient: ConnectedClient = {
+      id: profileId,
+      client,
+      subscriptions: existingClient?.subscriptions || new Set<string>()
+    };
+    
+    this.connectedClients.set(profileId, connectedClient);
+    this.clientToProfileMap.set(client, profileId);
+    
+    if (!existingClient) {
       this.l.log(`Client registered: ${profileId}`);
     }
-    return this.connectedClients.get(profileId)!;
+    
+    return connectedClient;
   }
 
   private broadcastToSubscribers(subscription: string, event: string, data: any): void {

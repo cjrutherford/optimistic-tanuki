@@ -8,6 +8,8 @@ import {
   UseGuards,
   Req,
   Optional,
+  Query,
+  Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -47,6 +49,8 @@ import { RequirePermissions } from '../../decorators/permissions.decorator';
 @ApiTags('social')
 @Controller('social')
 export class SocialController {
+  private readonly l = new Logger(SocialController.name);
+
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
@@ -386,16 +390,22 @@ export class SocialController {
     description: 'The comment has been successfully deleted.',
   })
   @Delete('comment/:id')
-  async deleteComment(@Param('id') id: string): Promise<void> {
-    // Fetch comment first to get postId for broadcast
-    let postId: string | undefined;
-    try {
-      const comment = await firstValueFrom(
-        this.socialClient.send({ cmd: CommentCommands.FIND }, { id })
-      );
-      postId = comment?.postId;
-    } catch (error) {
-      // Comment not found or error, continue with deletion
+  async deleteComment(
+    @Param('id') id: string,
+    @Query('postId') postId?: string
+  ): Promise<void> {
+    // If postId not provided, fetch comment first to get postId for broadcast
+    let commentPostId = postId;
+    if (!commentPostId) {
+      try {
+        const comment = await firstValueFrom(
+          this.socialClient.send({ cmd: CommentCommands.FIND }, { id })
+        );
+        commentPostId = comment?.postId;
+      } catch (error) {
+        // Comment not found or error, continue with deletion
+        this.l.error(`Error fetching comment for WebSocket broadcast: ${error.message}`);
+      }
     }
     
     const result = await firstValueFrom(
@@ -403,8 +413,8 @@ export class SocialController {
     );
     
     // Broadcast comment deleted event via WebSocket
-    if (this.socialGateway && postId) {
-      this.socialGateway.broadcastCommentDeleted(id, postId);
+    if (this.socialGateway && commentPostId) {
+      this.socialGateway.broadcastCommentDeleted(id, commentPostId);
     }
     
     return result;
