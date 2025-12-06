@@ -302,10 +302,18 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
   }
 
   deletePalette(palette: ColorPalette): void {
-    if (confirm(`Are you sure you want to delete the palette "${palette.name}"?`)) {
+    // Using native confirm for now - in a production app, this should be replaced
+    // with a custom modal component for better UX and accessibility
+    const isCurrentPalette = this.isCurrentPalette(palette);
+    const message = isCurrentPalette
+      ? `Are you sure you want to delete the palette "${palette.name}"? This is your currently active palette. The theme will revert to custom colors.`
+      : `Are you sure you want to delete the palette "${palette.name}"? This action cannot be undone.`;
+      
+    if (confirm(message)) {
       try {
         this.themeService.deleteCustomPalette(palette.name);
       } catch (error: any) {
+        // Using alert for now - in production, use a toast/snackbar component
         alert(error.message || 'Failed to delete palette');
       }
     }

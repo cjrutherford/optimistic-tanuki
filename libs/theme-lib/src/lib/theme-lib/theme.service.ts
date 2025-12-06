@@ -46,6 +46,10 @@ export class ThemeService {
           // Check in custom palettes
           const customPalettes = this.loadCustomPalettes();
           this.selectedPalette = customPalettes.find(p => p.name === storedTheme.paletteName);
+          // If found in custom palettes, it's not actually predefined
+          if (this.selectedPalette) {
+            this.paletteMode = 'custom';
+          }
         }
         if (this.selectedPalette) {
           this.accentColor = this.selectedPalette.accent;

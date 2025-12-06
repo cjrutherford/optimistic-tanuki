@@ -70,7 +70,10 @@
         <otui-button (action)="startEditPost()">Edit Post</otui-button>
         }
         @if (canEdit()) {
-        <otui-button (action)="toggleThemeDesigner()">
+        <otui-button 
+          (action)="toggleThemeDesigner()"
+          [attr.aria-expanded]="showThemeDesigner()"
+        >
           {{ showThemeDesigner() ? 'Hide' : 'Show' }} Theme Designer
         </otui-button>
         }
