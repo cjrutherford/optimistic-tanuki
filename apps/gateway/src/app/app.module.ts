@@ -14,6 +14,7 @@ import { ProjectPlanningController } from '../controllers/project-planning/proje
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { SocialController } from '../controllers/social/social.controller';
 import { ChatGateway } from './chat-gateway/chat.gateway';
+import { SocialGateway } from './social-gateway/social.gateway';
 import { ContactController } from '../controllers/blogging/contact.controller';
 import { PostController } from '../controllers/blogging/post.controller';
 import { EventController } from '../controllers/blogging/event.controller';
@@ -173,6 +174,7 @@ import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
       inject: [ConfigService],
     },
     ChatGateway,
+    SocialGateway,
     {
       provide: ServiceTokens.AI_ORCHESTRATION_SERVICE,
       useFactory: (configService: ConfigService) => {
