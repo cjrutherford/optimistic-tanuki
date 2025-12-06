@@ -12,9 +12,144 @@
     </div>
   </section>
   
+  <!-- Color Palettes Management -->
+  <section class="designer-section">
+    <h3>Color Palettes</h3>
+    
+    <!-- Palette Selection -->
+    <div class="palette-selection">
+      <h4>Available Palettes</h4>
+      <div class="palettes-grid">
+        <button 
+          *ngFor="let palette of availablePalettes" 
+          (click)="applyPalette(palette)"
+          [class.active]="isCurrentPalette(palette)"
+          class="palette-btn"
+        >
+          <span class="palette-name">{{ palette.name }}</span>
+          <div class="palette-colors">
+            <span class="color-dot" [style.background]="palette.accent"></span>
+            <span class="color-dot" [style.background]="palette.complementary"></span>
+            <span class="color-dot" [style.background]="palette.tertiary"></span>
+          </div>
+          <button 
+            *ngIf="isCustomPalette(palette)"
+            (click)="startEditPalette(palette); $event.stopPropagation()"
+            class="btn-edit-palette"
+            title="Edit palette"
+          >
+            ✎
+          </button>
+          <button 
+            *ngIf="isCustomPalette(palette)"
+            (click)="deletePalette(palette); $event.stopPropagation()"
+            class="btn-delete-palette"
+            title="Delete palette"
+          >
+            ×
+          </button>
+        </button>
+      </div>
+      <button (click)="startCreatePalette()" class="btn-create-palette">
+        + Create Custom Palette
+      </button>
+    </div>
+
+    <!-- Create/Edit Palette Form -->
+    <div *ngIf="showPaletteForm" class="palette-form">
+      <h4>{{ paletteFormMode === 'create' ? 'Create' : 'Edit' }} Palette</h4>
+      <form (ngSubmit)="savePalette()">
+        <div class="form-group">
+          <label for="palette-name">Name</label>
+          <input 
+            id="palette-name" 
+            type="text" 
+            [(ngModel)]="paletteFormData.name"
+            name="paletteName"
+            required
+          >
+        </div>
+        
+        <div class="form-group">
+          <label for="palette-description">Description</label>
+          <input 
+            id="palette-description" 
+            type="text" 
+            [(ngModel)]="paletteFormData.description"
+            name="paletteDescription"
+          >
+        </div>
+        
+        <div class="form-group">
+          <label for="palette-accent">Accent Color</label>
+          <div class="color-input-wrapper">
+            <input 
+              id="palette-accent" 
+              type="color" 
+              [(ngModel)]="paletteFormData.accent"
+              name="paletteAccent"
+              required
+            >
+            <input 
+              type="text" 
+              [(ngModel)]="paletteFormData.accent"
+              name="paletteAccentText"
+              class="color-text-input"
+            >
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="palette-complementary">Complementary Color</label>
+          <div class="color-input-wrapper">
+            <input 
+              id="palette-complementary" 
+              type="color" 
+              [(ngModel)]="paletteFormData.complementary"
+              name="paletteComplementary"
+              required
+            >
+            <input 
+              type="text" 
+              [(ngModel)]="paletteFormData.complementary"
+              name="paletteComplementaryText"
+              class="color-text-input"
+            >
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="palette-tertiary">Tertiary Color</label>
+          <div class="color-input-wrapper">
+            <input 
+              id="palette-tertiary" 
+              type="color" 
+              [(ngModel)]="paletteFormData.tertiary"
+              name="paletteTertiary"
+              required
+            >
+            <input 
+              type="text" 
+              [(ngModel)]="paletteFormData.tertiary"
+              name="paletteTertiaryText"
+              class="color-text-input"
+            >
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" (click)="cancelPaletteForm()" class="btn-cancel">Cancel</button>
+          <button type="submit" class="btn-save">Save Palette</button>
+        </div>
+      </form>
+      
+      <div *ngIf="paletteFormError" class="form-error">{{ paletteFormError }}</div>
+    </div>
+  </section>
+
   <!-- Color Selection -->
   <section class="designer-section">
-    <h3>Colors</h3>
+    <h3>Custom Colors</h3>
     <div class="color-pickers">
       <div class="color-picker-group">
         <label for="accent-color">Accent Color</label>

@@ -14,6 +14,12 @@ describe('ThemeDesignerComponent', () => {
       getAccentColor: jest.fn().mockReturnValue('#3f51b5'),
       setTheme: jest.fn(),
       setAccentColor: jest.fn(),
+      setPalette: jest.fn(),
+      getCurrentPalette: jest.fn().mockReturnValue(undefined),
+      createCustomPalette: jest.fn(),
+      updateCustomPalette: jest.fn(),
+      deleteCustomPalette: jest.fn(),
+      getAllPalettes: jest.fn().mockReturnValue([]),
       themeColors$: of({
         accent: '#3f51b5',
         complementary: '#c0af4b',
@@ -36,6 +42,7 @@ describe('ThemeDesignerComponent', () => {
         warningShades: [],
         warningGradients: {},
       }),
+      availablePalettes$: of([]),
     } as unknown as jest.Mocked<ThemeService>;
 
     await TestBed.configureTestingModule({

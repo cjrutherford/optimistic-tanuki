@@ -95,6 +95,12 @@ export class DashboardComponent implements OnInit {
         isActive: this.router.url.includes('/app-scopes'),
       },
       {
+        label: 'Theme',
+        action: () => this.router.navigate(['/dashboard/theme']),
+        variant: 'text',
+        isActive: this.router.url.includes('/theme'),
+      },
+      {
         label: 'Logout',
         action: () => this.logout(),
         variant: 'danger',

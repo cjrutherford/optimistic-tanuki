@@ -1,8 +1,10 @@
 import { Injectable, ElementRef } from '@angular/core';
+import { STANDARD_THEME_VARIABLES, getAllVariableNames } from './theme-config';
 
 /**
  * Service to help manage CSS variable overrides at component level
  * This provides a better way to handle host bindings and DOM-level overrides
+ * Uses standardized variable names for consistency
  */
 @Injectable({
   providedIn: 'root'
@@ -26,31 +28,39 @@ export class ThemeVariableService {
   }
 
   /**
+   * Helper to remove CSS variable prefix (--) from variable name
+   */
+  private removeVarPrefix(variable: string): string {
+    return variable.startsWith('--') ? variable.substring(2) : variable;
+  }
+
+  /**
    * Create a host binding object using standardized variable names
    * This replaces the manual host binding definitions in component decorators
+   * Automatically normalizes legacy variable names to standardized names
    */
   createStandardizedHostBindings(bindings: Record<string, string>): Record<string, string> {
     const hostBindings: Record<string, string> = {};
     
-    // Map old variable names to new standardized names
+    // Map of common variations to standard variable names
     const variableMap: Record<string, string> = {
-      'accent': 'accent',
-      'accent-color': 'accent',
-      'complement': 'complement', 
-      'complementary': 'complement',
-      'complementary-color': 'complement',
-      'foreground': 'foreground',
-      'foreground-color': 'foreground',
-      'background': 'background',
-      'background-color': 'background',
-      'tertiary': 'tertiary',
-      'tertiary-color': 'tertiary',
-      'success': 'success',
-      'success-color': 'success',
-      'danger': 'danger', 
-      'danger-color': 'danger',
-      'warning': 'warning',
-      'warning-color': 'warning'
+      'accent': this.removeVarPrefix(STANDARD_THEME_VARIABLES.ACCENT),
+      'accent-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.ACCENT),
+      'complement': this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT), 
+      'complementary': this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT),
+      'complementary-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT),
+      'foreground': this.removeVarPrefix(STANDARD_THEME_VARIABLES.FOREGROUND),
+      'foreground-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.FOREGROUND),
+      'background': this.removeVarPrefix(STANDARD_THEME_VARIABLES.BACKGROUND),
+      'background-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.BACKGROUND),
+      'tertiary': this.removeVarPrefix(STANDARD_THEME_VARIABLES.TERTIARY),
+      'tertiary-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.TERTIARY),
+      'success': this.removeVarPrefix(STANDARD_THEME_VARIABLES.SUCCESS),
+      'success-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.SUCCESS),
+      'danger': this.removeVarPrefix(STANDARD_THEME_VARIABLES.DANGER), 
+      'danger-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.DANGER),
+      'warning': this.removeVarPrefix(STANDARD_THEME_VARIABLES.WARNING),
+      'warning-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.WARNING)
     };
 
     Object.entries(bindings).forEach(([property, value]) => {

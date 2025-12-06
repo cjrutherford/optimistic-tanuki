@@ -11,6 +11,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { AuthStateService } from '../../auth-state.service';
 import { PermissionService } from '../../permission.service';
 import { BlogPostDto } from '@optimistic-tanuki/ui-models';
+import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
 
 /**
  * Editor data matching the PostData interface from BlogComposeComponent
@@ -38,6 +39,7 @@ type SaveAction = 'draft' | 'publish';
     BlogViewerComponent,
     ButtonComponent,
     CardComponent,
+    ThemeDesignerComponent,
   ],
   templateUrl: './blog-page.component.html',
   styleUrl: './blog-page.component.scss',
@@ -63,6 +65,7 @@ export class BlogPageComponent {
   readonly error = signal<string | null>(null);
   readonly mode = signal<'view' | 'create' | 'edit'>('view');
   readonly pendingSaveAction = signal<SaveAction>('draft');
+  readonly showThemeDesigner = signal(false);
 
   // Editor form data
   readonly editorData = signal<PostData>({
@@ -401,5 +404,12 @@ export class BlogPageComponent {
       post.id === updatedPost.id ? updatedPost : post
     );
     this.posts.set(updatedPosts);
+  }
+
+  /**
+   * Toggle theme designer visibility
+   */
+  toggleThemeDesigner(): void {
+    this.showThemeDesigner.update(value => !value);
   }
 }
