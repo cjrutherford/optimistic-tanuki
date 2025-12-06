@@ -31,6 +31,9 @@ export class ThemeService {
 
   constructor(@Inject(PLATFORM_ID) private platformId: object) {
     if(isPlatformBrowser(this.platformId)) {
+      // Initialize available palettes including custom ones
+      this.updateAvailablePalettes();
+      
       const storedTheme = loadTheme(this.platformId);
       this._theme = storedTheme.theme;
       this.accentColor = storedTheme.accentColor;
@@ -39,6 +42,11 @@ export class ThemeService {
       
       if (this.paletteMode === 'predefined' && storedTheme.paletteName) {
         this.selectedPalette = getPaletteByName(storedTheme.paletteName);
+        if (!this.selectedPalette) {
+          // Check in custom palettes
+          const customPalettes = this.loadCustomPalettes();
+          this.selectedPalette = customPalettes.find(p => p.name === storedTheme.paletteName);
+        }
         if (this.selectedPalette) {
           this.accentColor = this.selectedPalette.accent;
           this.complementColor = this.selectedPalette.complementary;
@@ -112,6 +120,82 @@ export class ThemeService {
     
     const saved = localStorage.getItem('customPalettes');
     return saved ? JSON.parse(saved) : [];
+  }
+
+  private saveCustomPalettes(palettes: ColorPalette[]): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    
+    localStorage.setItem('customPalettes', JSON.stringify(palettes));
+    this.updateAvailablePalettes();
+  }
+
+  private updateAvailablePalettes(): void {
+    const customPalettes = this.loadCustomPalettes();
+    const allPalettes = [...PREDEFINED_PALETTES, ...customPalettes];
+    this.availablePalettes.next(allPalettes);
+  }
+
+  getAllPalettes(): ColorPalette[] {
+    return [...PREDEFINED_PALETTES, ...this.loadCustomPalettes()];
+  }
+
+  createCustomPalette(palette: ColorPalette): void {
+    const customPalettes = this.loadCustomPalettes();
+    
+    // Check if palette with same name already exists
+    if (customPalettes.some(p => p.name === palette.name) || 
+        PREDEFINED_PALETTES.some(p => p.name === palette.name)) {
+      throw new Error(`Palette with name "${palette.name}" already exists`);
+    }
+    
+    customPalettes.push(palette);
+    this.saveCustomPalettes(customPalettes);
+  }
+
+  updateCustomPalette(originalName: string, updatedPalette: ColorPalette): void {
+    const customPalettes = this.loadCustomPalettes();
+    const index = customPalettes.findIndex(p => p.name === originalName);
+    
+    if (index === -1) {
+      throw new Error(`Palette with name "${originalName}" not found`);
+    }
+    
+    // Check if new name conflicts with another palette
+    if (originalName !== updatedPalette.name) {
+      if (customPalettes.some((p, i) => i !== index && p.name === updatedPalette.name) ||
+          PREDEFINED_PALETTES.some(p => p.name === updatedPalette.name)) {
+        throw new Error(`Palette with name "${updatedPalette.name}" already exists`);
+      }
+    }
+    
+    customPalettes[index] = updatedPalette;
+    this.saveCustomPalettes(customPalettes);
+    
+    // If currently using this palette, update the active theme
+    if (this.selectedPalette?.name === originalName) {
+      this.setPalette(updatedPalette.name);
+    }
+  }
+
+  deleteCustomPalette(name: string): void {
+    const customPalettes = this.loadCustomPalettes();
+    const filtered = customPalettes.filter(p => p.name !== name);
+    
+    if (filtered.length === customPalettes.length) {
+      throw new Error(`Palette with name "${name}" not found`);
+    }
+    
+    this.saveCustomPalettes(filtered);
+    
+    // If currently using this palette, switch to default
+    if (this.selectedPalette?.name === name) {
+      this.paletteMode = 'custom';
+      this.selectedPalette = undefined;
+      this.saveCurrentTheme();
+      this.applyThemeColors();
+    }
   }
 
   getTheme(): 'light' | 'dark' {

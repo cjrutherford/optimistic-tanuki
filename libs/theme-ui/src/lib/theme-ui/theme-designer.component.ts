@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { ThemeService, ColorPalette } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder, GradientType } from '@optimistic-tanuki/common-ui';
 import { Subject, takeUntil } from 'rxjs';
+import { PREDEFINED_PALETTES } from '@optimistic-tanuki/theme-lib';
 
 interface GradientPreset {
   name: string;
@@ -30,6 +31,14 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
   accentColor = '#3f51b5';
   complementaryColor = '#c0af4b';
   currentTheme: 'light' | 'dark' = 'light';
+  
+  // Palette management
+  availablePalettes: ColorPalette[] = [];
+  showPaletteForm = false;
+  paletteFormMode: 'create' | 'edit' = 'create';
+  paletteFormData: ColorPalette = this.getEmptyPalette();
+  paletteFormError: string | null = null;
+  originalPaletteName: string | null = null;
   
   // Gradient configuration
   gradientTypes: GradientType[] = ['linear', 'radial', 'conic', 'repeating-linear', 'repeating-radial', 'repeating-conic'];
@@ -74,6 +83,13 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
     // Load current theme settings
     this.currentTheme = this.themeService.getTheme();
     this.accentColor = this.themeService.getAccentColor();
+    
+    // Load available palettes
+    this.themeService.availablePalettes$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(palettes => {
+        this.availablePalettes = palettes;
+      });
     
     this.themeService.themeColors$
       .pipe(takeUntil(this.destroy$))
@@ -207,5 +223,91 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
       borderRadius: '8px',
       boxShadow: this.generatedShadow,
     };
+  }
+
+  // Palette management methods
+  getEmptyPalette(): ColorPalette {
+    return {
+      name: '',
+      description: '',
+      accent: '#3f51b5',
+      complementary: '#c0af4b',
+      tertiary: '#7e57c2',
+      background: {
+        light: '#ffffff',
+        dark: '#1a1a2e'
+      },
+      foreground: {
+        light: '#212121',
+        dark: '#ffffff'
+      }
+    };
+  }
+
+  isCurrentPalette(palette: ColorPalette): boolean {
+    const currentPalette = this.themeService.getCurrentPalette();
+    return currentPalette?.name === palette.name;
+  }
+
+  isCustomPalette(palette: ColorPalette): boolean {
+    return !PREDEFINED_PALETTES.some(p => p.name === palette.name);
+  }
+
+  applyPalette(palette: ColorPalette): void {
+    this.themeService.setPalette(palette.name);
+  }
+
+  startCreatePalette(): void {
+    this.paletteFormMode = 'create';
+    this.paletteFormData = this.getEmptyPalette();
+    this.paletteFormError = null;
+    this.originalPaletteName = null;
+    this.showPaletteForm = true;
+  }
+
+  startEditPalette(palette: ColorPalette): void {
+    this.paletteFormMode = 'edit';
+    this.paletteFormData = { ...palette };
+    this.paletteFormError = null;
+    this.originalPaletteName = palette.name;
+    this.showPaletteForm = true;
+  }
+
+  cancelPaletteForm(): void {
+    this.showPaletteForm = false;
+    this.paletteFormData = this.getEmptyPalette();
+    this.paletteFormError = null;
+    this.originalPaletteName = null;
+  }
+
+  savePalette(): void {
+    this.paletteFormError = null;
+
+    // Validate form data
+    if (!this.paletteFormData.name || !this.paletteFormData.name.trim()) {
+      this.paletteFormError = 'Palette name is required';
+      return;
+    }
+
+    try {
+      if (this.paletteFormMode === 'create') {
+        this.themeService.createCustomPalette(this.paletteFormData);
+      } else if (this.paletteFormMode === 'edit' && this.originalPaletteName) {
+        this.themeService.updateCustomPalette(this.originalPaletteName, this.paletteFormData);
+      }
+      this.cancelPaletteForm();
+    } catch (error: any) {
+      this.paletteFormError = error.message || 'Failed to save palette';
+    }
+  }
+
+  deletePalette(palette: ColorPalette): void {
+    if (confirm(`Are you sure you want to delete the palette "${palette.name}"?`)) {
+      try {
+        this.themeService.deleteCustomPalette(palette.name);
+      } catch (error: any) {
+        alert(error.message || 'Failed to delete palette');
+      }
+    }
   }
 }
