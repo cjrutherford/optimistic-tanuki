@@ -1,6 +1,4 @@
-// Note: ConstantsModule is intentionally not exported to avoid pulling NestJS dependencies
-// into browser applications. Import it directly if needed in server-side code.
-// export * from './lib/libs/constants.module';
+export * from './lib/libs/constants.module';
 export { default as AuthCommands } from './lib/libs/authentication';
 export {
     ProfileCommands,
@@ -23,7 +21,6 @@ export {
     NotesCommands
 } from './lib/libs/tasks';
 export { ServiceTokens } from './lib/libs/service.tokens';
-export { API_BASE_URL } from './lib/libs/api-config.tokens';
 export { AssetCommands } from './lib/libs/asset';
 export { 
     ProjectCommands, 
