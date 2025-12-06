@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CommentDto, UpdateCommentDto, CreateCommentDto, SearchCommentDto } from '@optimistic-tanuki/social-ui';
-import { API_BASE_URL } from '@optimistic-tanuki/constants';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 
 @Injectable({

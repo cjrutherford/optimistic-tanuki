@@ -17,7 +17,7 @@ import { AuthStateService } from './state/auth-state.service';
 import { AuthenticationService } from './authentication.service';
 import { AuthInterceptor } from './http.interceptor';
 import { QuillModule } from 'ngx-quill';
-import { API_BASE_URL } from '@optimistic-tanuki/constants';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 export const appConfig: ApplicationConfig = {
   providers: [

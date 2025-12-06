@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { LoginRequest, RegisterRequest, UserDto } from '@optimistic-tanuki/ui-models';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
-import { API_BASE_URL } from '@optimistic-tanuki/constants';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 
 @Injectable({

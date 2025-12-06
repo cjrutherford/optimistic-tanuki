@@ -91,6 +91,8 @@ services:
       dockerfile: ./apps/gateway/Dockerfile
     ports:
       - '3000:3000'
+      - '3300:3300'  # Chat WebSocket
+      - '3301:3301'  # Social WebSocket
     depends_on:
       postgres: # Ensures postgres (db) is healthy
         condition: service_healthy

@@ -10,7 +10,7 @@ import {
 import { firstValueFrom, map, switchMap, forkJoin } from 'rxjs';
 import { AuthStateService } from './state/auth-state.service';
 import { UpdateAttachmentDto } from '@optimistic-tanuki/social-ui';
-import { API_BASE_URL } from '@optimistic-tanuki/constants';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root',

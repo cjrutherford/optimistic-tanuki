@@ -11,7 +11,8 @@ export {
     AttachmentCommands,
     VoteCommands,
     LinkCommands,
-    FollowCommands
+    FollowCommands,
+    SocialRealtimeCommands
 } from './lib/libs/social';
 
 export {
@@ -20,7 +21,6 @@ export {
     NotesCommands
 } from './lib/libs/tasks';
 export { ServiceTokens } from './lib/libs/service.tokens';
-export { API_BASE_URL } from './lib/libs/api-config.tokens';
 export { AssetCommands } from './lib/libs/asset';
 export { 
     ProjectCommands, 
