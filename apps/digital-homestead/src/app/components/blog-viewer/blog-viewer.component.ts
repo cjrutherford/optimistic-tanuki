@@ -1,6 +1,6 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, inject } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import DOMPurify from 'dompurify';
 
 @Component({
   selector: 'dh-blog-viewer',
@@ -153,17 +153,15 @@ export class BlogViewerComponent implements OnInit, OnChanges {
   @Input() authorId = '';
   @Input() createdAt?: Date;
   
-  sanitizedContent: SafeHtml = '';
-  
-  private sanitizer = inject(DomSanitizer);
+  sanitizedContent = '';
 
   ngOnInit() {
-    this.sanitizedContent = this.sanitizer.bypassSecurityTrustHtml(this.content);
+    this.sanitizedContent = DOMPurify.sanitize(this.content);
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['content']) {
-      this.sanitizedContent = this.sanitizer.bypassSecurityTrustHtml(this.content);
+      this.sanitizedContent = DOMPurify.sanitize(this.content);
     }
   }
 }
