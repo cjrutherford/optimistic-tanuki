@@ -9,7 +9,7 @@ const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
  */
-// require('dotenv').config();
+// (dotenv loading commented out) require('dotenv').config();
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -40,10 +40,10 @@ export default defineConfig({
       use: { ...devices['Desktop Firefox'] },
     },
 
-    {
+    /* {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
-    },
+    }, */
 
     // Uncomment for mobile browsers support
     /* {

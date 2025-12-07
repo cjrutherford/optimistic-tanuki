@@ -1,0 +1,29 @@
+@mixin glass-effect(
+  $blur: 10px,
+  $bg-color: rgba(255, 255, 255, 0.2),
+  $border-color: rgba(255, 255, 255, 0.3),
+  $radius: 10px,
+  $shadow-color: rgba(0, 0, 0, 0.1)
+) {
+  position: relative;
+  background: $bg-color;
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid $border-color;
+  border-radius: $radius;
+  box-shadow: 0 4px 16px $shadow-color;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: 
+      repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 8px),
+      linear-gradient(120deg, rgba(255, 255, 255, 0.12) 0%, transparent 100%);
+    mix-blend-mode: screen;
+    filter: blur($blur / 2);
+    z-index: 0;
+  }
+}

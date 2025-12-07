@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, UseGuards, Optional } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ServiceTokens, FollowCommands, ProfileCommands } from '@optimistic-tanuki/constants';
@@ -6,12 +6,14 @@ import { AuthGuard } from '../../../auth/auth.guard';
 import { User, UserDetails } from '../../../decorators/user.decorator';
 import { UpdateFollowDto } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { SocialGateway } from '../../../app/social-gateway/social.gateway';
 
 @Controller('follow')
 export class FollowController {
     constructor(
         @Inject(ServiceTokens.SOCIAL_SERVICE) private readonly socialClient: ClientProxy,
         @Inject(ServiceTokens.PROFILE_SERVICE) private readonly profileClient: ClientProxy,
+        @Optional() private readonly socialGateway?: SocialGateway
     ) {}
 
 
@@ -29,7 +31,14 @@ export class FollowController {
             console.log(followingProfile.userId, user.userId);
             throw new Error("You can't add a follow for someone else as the follower!")
         }
-        return await firstValueFrom(this.socialClient.send({ cmd: FollowCommands.FOLLOW }, followDto));
+        const result = await firstValueFrom(this.socialClient.send({ cmd: FollowCommands.FOLLOW }, followDto));
+        
+        // Broadcast follow event via WebSocket
+        if (this.socialGateway && result) {
+            this.socialGateway.broadcastFollowEvent(followDto.followerId, followDto.followeeId, 'follow');
+        }
+        
+        return result;
     }
 
     @UseGuards(AuthGuard)
@@ -45,7 +54,14 @@ export class FollowController {
         if(followingProfile.userId !== user.userId) {
             throw new Error("You can't remove a follow for someone else as the follower!")
         }
-        return await firstValueFrom(this.socialClient.send({ cmd: FollowCommands.UNFOLLOW }, followDto));
+        const result = await firstValueFrom(this.socialClient.send({ cmd: FollowCommands.UNFOLLOW }, followDto));
+        
+        // Broadcast unfollow event via WebSocket
+        if (this.socialGateway && result) {
+            this.socialGateway.broadcastFollowEvent(followDto.followerId, followDto.followeeId, 'unfollow');
+        }
+        
+        return result;
     }
 
     @UseGuards(AuthGuard)

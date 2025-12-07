@@ -1,3 +1,21 @@
+# Forge of Will Development Docker Compose Override
+# This file configures services for development with debugging and hot-reload support.
+#
+# USAGE:
+# 1. Build all applications: npm run build:dev
+# 2. Start containers: docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml up -d
+# 3. For hot-reload on source changes: npm run watch:build (in a separate terminal)
+#
+# DEBUGGING:
+# - All services expose inspector ports (9000-9244) for attaching debuggers
+# - Use VS Code launch configurations in .vscode/launch.json to attach to services
+# - Source maps are enabled in all tsconfig.app.json files for breakpoint debugging
+#
+# HOT RELOAD:
+# - Containers use nodemon to restart when dist files change
+# - Run 'npm run watch:build' to rebuild on source file changes
+# - Changes flow: src/ → nx watch → dist/ → nodemon detects → service restarts
+#
 services:
   authentication:
     container_name: ot_authentication # Corrected typo
@@ -7,7 +25,17 @@ services:
     volumes:
       - ./dist/apps/authentication:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9229',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9229:9229'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -15,7 +43,7 @@ services:
         condition: service_healthy
 
   forgeofwill:
-    container_name: ot_client_interface # Added
+    container_name: fow_client_interface # Added
     build:
       context: .
       dockerfile: ./apps/forgeofwill/Dockerfile
@@ -31,10 +59,19 @@ services:
       - /usr/src/app/node_modules # Keep node_modules from the image
     ports:
       - "8080:4000" # Match the new exposed port
+      - '9241:9241'
     # The command from the Dockerfile is `node dist/apps/forgeofwill/server/main.js`
     # For development, you might want to use nodemon or similar for the SSR server.
     # Example for nodemon (ensure nodemon is in your project or installed in the image for dev):
-    command: ["dumb-init", "nodemon", "/app/dist/apps/forgeofwill/server/server.mjs"]
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9241',
+        '-L',
+        '/app/dist/apps/forgeofwill/server/server.mjs',
+      ]
     environment:
       - NODE_ENV=development
       - NODE_OPTIONS=--enable-source-maps
@@ -45,9 +82,9 @@ services:
       context: .
       dockerfile: ./apps/gateway/Dockerfile.dev
     volumes:
-      - ./dist/apps/gateway:/usr/src/app
+      - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ["dumb-init", "nodemon", "-L", "--inspect=0.0.0.0:9000", "main.js"]
+    command: ['dumb-init', 'nodemon', '--exec', 'node --inspect=0.0.0.0:9000', '-L', 'dist/apps/gateway/main.js']
     ports:
       - "3300:3300"
       - "3000:3000" # Expose the main port
@@ -76,7 +113,17 @@ services:
     volumes:
       - ./dist/apps/profile:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9234',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9234:9234'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -91,7 +138,17 @@ services:
     volumes:
       - ./dist/apps/project-planning:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9231',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9231:9231'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -106,7 +163,17 @@ services:
     volumes:
       - ./dist/apps/social:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9232',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9232:9232'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -122,7 +189,17 @@ services:
       - ./dist/apps/chat-collector:/usr/src/app
       - ./apps/chat-collector/src/assets:/usr/src/assets # Mount assets for chat collector
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9233',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9233:9233'
     environment:
       - NODE_ENV=development
     depends_on:
@@ -145,7 +222,7 @@ services:
   #       condition: service_healthy
   
   assets:
-    container_name: ot_asset
+    container_name: ot_assets
     build:
       context: .
       dockerfile: ./apps/assets/Dockerfile
@@ -153,7 +230,17 @@ services:
       - ./dist/apps/assets:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
       - ../fow-assets:/usr/src/app/storage
-    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9244',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9244:9244'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -170,7 +257,17 @@ services:
       - ./dist/apps/ai-orchestrator:/usr/src/app
       - ./apps/ai-orchestrator/src/assets:/usr/src/assets # Mount assets for AI Orchestrator
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9236',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9236:9236'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -186,7 +283,17 @@ services:
       - ./dist/apps/prompt-proxy:/usr/src/app
       - ./apps/prompt-proxy/src/assets:/usr/src/assets # Mount assets for prompt proxy
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9237',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9237:9237'
     environment:
       - NODE_ENV=development
     depends_on: # Added
@@ -201,7 +308,17 @@ services:
     volumes:
       - ./dist/apps/telos-docs-service:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ["dumb-init", "nodemon", "-L", "main.js"]
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9238',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9238:9238'
     environment:
       - NODE_ENV=development
     depends_on: # Added

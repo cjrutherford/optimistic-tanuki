@@ -6,6 +6,8 @@ export const ProfileCommands = {
     GetAll: 'GetAll:Profile',
     GetPhoto: 'Get:ProfilePhoto',
     GetCover: 'Get:ProfileCover',
+    SetBlogRole: 'Set:BlogRole',
+    GetBlogRole: 'Get:BlogRole',
 }
 
 export const ProjectCommands = {

@@ -1,24 +1,43 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, signal } from '@angular/core';
-import { ProfileDto, CreateProfileDto, UpdateProfileDto, AssetDto, CreateAssetDto } from '@optimistic-tanuki/ui-models';
+import { Injectable, signal, inject } from '@angular/core';
+import {
+  ProfileDto,
+  CreateProfileDto,
+  UpdateProfileDto,
+  AssetDto,
+  CreateAssetDto,
+} from '@optimistic-tanuki/ui-models';
 import { firstValueFrom, map, switchMap, forkJoin } from 'rxjs';
 import { AuthStateService } from './state/auth-state.service';
 import { UpdateAttachmentDto } from '@optimistic-tanuki/social-ui';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ProfileService {
   currentUserProfiles = signal<ProfileDto[]>([]);
   allProfiles = signal<ProfileDto[]>([]);
   currentUserProfile = signal<ProfileDto | null>(null);
-  constructor(private readonly http: HttpClient, private readonly authState: AuthStateService) { }
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly authState: AuthStateService = inject(AuthStateService);
+  private readonly apiBaseUrl: string = inject(API_BASE_URL);
+
+  /**
+   * Checks if a URL is an external asset URL (not yet stored on the server)
+   * @param url The URL to check
+   * @returns true if the URL is external (base64 or external URL), false if it's a server asset URL
+   */
+  private isExternalAssetUrl(url: string | undefined): boolean {
+    if (!url) return false;
+    return !url.startsWith(`${this.apiBaseUrl}/asset/`);
+  }
 
   selectProfile(_p: ProfileDto) {
-    const profile = this.currentUserProfiles().find(p => p.id === _p.id);
+    const profile = this.currentUserProfiles().find((p) => p.id === _p.id);
     if (profile) {
       this.currentUserProfile.set(profile);
-      localStorage.setItem('selectedProfile', JSON.stringify(profile));
+      this.authState.persistSelectedProfile(profile);
     }
   }
 
@@ -31,16 +50,24 @@ export class ProfileService {
   }
 
   async getAllProfiles() {
-    const profiles = await firstValueFrom(this.http.get<ProfileDto[]>('/api/profile'));
+    const profiles = await firstValueFrom(
+      this.http.get<ProfileDto[]>(`${this.apiBaseUrl}/profile`)
+    );
     this.allProfiles.set(profiles);
-    this.currentUserProfiles.set(profiles.filter(p => p.userId === this.authState.getDecodedTokenValue()?.userId));
-    localStorage.setItem('profiles', JSON.stringify(profiles));
+    this.currentUserProfiles.set(
+      profiles.filter(
+        (p) => p.userId === this.authState.getDecodedTokenValue()?.userId
+      )
+    );
+    this.authState.persistProfiles(this.currentUserProfiles());
   }
 
   async getProfileById(id: string) {
-    const profile = await firstValueFrom(this.http.get<ProfileDto>(`/api/profile/${id}`));
+    const profile = await firstValueFrom(
+      this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
+    );
     this.currentUserProfile.set(profile);
-    localStorage.setItem('selectedProfile', JSON.stringify(profile));
+    this.authState.persistSelectedProfile(profile);
   }
 
   async createProfile(profile: CreateProfileDto) {
@@ -52,7 +79,21 @@ export class ProfileService {
     if (tokenValue) {
       profile.userId = tokenValue.userId;
     }
-    const newProfile = await firstValueFrom(this.http.post<ProfileDto>('/api/profile', profile));
+    const resp: any = await firstValueFrom(
+      this.http.post(`${this.apiBaseUrl}/profile`, profile)
+    );
+    let newProfile: ProfileDto;
+    // If the gateway issued a refreshed token including profileId, it will return { profile, newToken }
+    if (resp && resp.newToken) {
+      try {
+        this.authState.setToken(resp.newToken);
+      } catch (e) {
+        console.warn('Failed to set new token after profile creation', e);
+      }
+      newProfile = resp.profile as ProfileDto;
+    } else {
+      newProfile = resp as ProfileDto;
+    }
     const profilePhotoDto: CreateAssetDto = {
       name: `profile-${newProfile.profileName}-photo`,
       profileId: newProfile.id,
@@ -65,30 +106,34 @@ export class ProfileService {
       type: 'image',
       content: originalCoverPic,
     };
-    const profileAsset = await firstValueFrom(this.http.post<AssetDto>(
-      `/api/asset`, 
-      profilePhotoDto,
-    ));
-    const coverAsset = await firstValueFrom(this.http.post<AssetDto>(
-      `/api/asset`, 
-      coverPhotoDto
-    ));
+    const profileAsset = await firstValueFrom(
+      this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, profilePhotoDto)
+    );
+    const coverAsset = await firstValueFrom(
+      this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, coverPhotoDto)
+    );
 
-    newProfile.profilePic = `/api/asset/${profileAsset.id}`;
-    newProfile.coverPic = `/api/asset/${coverAsset.id}`;
-    await firstValueFrom(this.http.put<ProfileDto>(`/api/profile/${newProfile.id}`, {
-      profilePic: newProfile.profilePic,
-      coverPic: newProfile.coverPic
-    }));
-    
-    this.currentUserProfiles.update(profiles => [...profiles, newProfile]);
-    localStorage.setItem('profiles', JSON.stringify(this.currentUserProfiles()));
+    newProfile.profilePic = `${this.apiBaseUrl}/asset/${profileAsset.id}`;
+    newProfile.coverPic = `${this.apiBaseUrl}/asset/${coverAsset.id}`;
+    await firstValueFrom(
+      this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${newProfile.id}`, {
+        profilePic: newProfile.profilePic,
+        coverPic: newProfile.coverPic,
+      })
+    );
+
+    this.currentUserProfiles.update((profiles) => [...profiles, newProfile]);
+    this.currentUserProfile.set(newProfile);
+    this.authState.persistProfiles(this.currentUserProfiles());
+    this.authState.persistSelectedProfile(newProfile);
   }
 
   async updateProfile(id: string, profile: UpdateProfileDto) {
-    if (profile.profilePic && !profile.profilePic.startsWith('/api/asset/')) {
+    if (this.isExternalAssetUrl(profile.profilePic)) {
       // Get the original profile to compare the current asset
-      const originalProfile = await firstValueFrom(this.http.get<ProfileDto>(`/api/profile/${id}`));
+      const originalProfile = await firstValueFrom(
+        this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
+      );
       const originalAssetUrl = originalProfile.profilePic;
 
       // If the asset is different and exists, delete the old asset
@@ -101,16 +146,20 @@ export class ProfileService {
 
       // Create the new asset with the new image
       const newProfilePic: CreateAssetDto = {
-      name: `profile-${originalProfile.profileName}-photo`,
-      profileId: originalProfile.id,
-      type: 'image',
-      content: profile.profilePic,
+        name: `profile-${originalProfile.profileName}-photo`,
+        profileId: originalProfile.id,
+        type: 'image',
+        content: profile.profilePic,
       };
-      const profileAsset = await firstValueFrom(this.http.post<AssetDto>('/api/asset/', newProfilePic));
-      profile.profilePic = `/api/asset/${profileAsset.id}`;
+      const profileAsset = await firstValueFrom(
+        this.http.post<AssetDto>(`${this.apiBaseUrl}/asset/`, newProfilePic)
+      );
+      profile.profilePic = `${this.apiBaseUrl}/asset/${profileAsset.id}`;
     }
-    if(profile.coverPic && !profile.coverPic.startsWith('/api/asset/')) {
-      const originalProfile = await firstValueFrom(this.http.get<ProfileDto>(`/api/profile/${id}`));
+    if (this.isExternalAssetUrl(profile.coverPic)) {
+      const originalProfile = await firstValueFrom(
+        this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
+      );
       const originalAssetUrl = originalProfile.coverPic;
 
       if (originalAssetUrl && originalAssetUrl !== profile.coverPic) {
@@ -125,61 +174,70 @@ export class ProfileService {
         type: 'image',
         content: profile.coverPic,
       };
-      const coverAsset = await firstValueFrom(this.http.post<AssetDto>('/api/asset/', newCoverPic));
-      profile.coverPic = `/api/asset/${coverAsset.id}`;
+      const coverAsset = await firstValueFrom(
+        this.http.post<AssetDto>(`${this.apiBaseUrl}/asset/`, newCoverPic)
+      );
+      profile.coverPic = `${this.apiBaseUrl}/asset/${coverAsset.id}`;
     }
-    const updatedProfile = await firstValueFrom(this.http.put<ProfileDto>(`/api/profile/${id}`, profile));
-    this.currentUserProfiles.update(profiles => profiles.map(p => p.id === id ? updatedProfile : p));
-    localStorage.setItem('profiles', JSON.stringify(this.currentUserProfiles()));
+    const updatedProfile = await firstValueFrom(
+      this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`, profile)
+    );
+    this.currentUserProfiles.update((profiles) =>
+      profiles.map((p) => (p.id === id ? updatedProfile : p))
+    );
+    this.authState.persistProfiles(this.currentUserProfiles());
     if (this.currentUserProfile()?.id === id) {
       this.currentUserProfile.set(updatedProfile);
-      localStorage.setItem('selectedProfile', JSON.stringify(updatedProfile));
+      this.authState.persistSelectedProfile(updatedProfile);
     }
   }
 
   async deleteProfile(id: string) {
-    await firstValueFrom(this.http.delete<void>(`/api/profiles/${id}`));
-    this.currentUserProfiles.update(profiles => profiles.filter(p => p.id !== id));
-    localStorage.setItem('profiles', JSON.stringify(this.currentUserProfiles()));
+    await firstValueFrom(this.http.delete<void>(`${this.apiBaseUrl}/profiles/${id}`));
+    this.currentUserProfiles.update((profiles) =>
+      profiles.filter((p) => p.id !== id)
+    );
+    this.authState.persistProfiles(this.currentUserProfiles());
     if (this.currentUserProfile()?.id === id) {
       this.currentUserProfile.set(null);
-      localStorage.removeItem('selectedProfile');
+      this.authState.persistSelectedProfile(null);
     }
   }
 
   loadProfilesFromLocalStorage() {
-    const profiles = localStorage.getItem('profiles');
+    const profiles = this.authState.getPersistedProfiles();
     if (profiles) {
-      this.currentUserProfiles.set(JSON.parse(profiles));
+      this.currentUserProfiles.set(profiles);
     }
-    const selectedProfile = localStorage.getItem('selectedProfile');
+    const selectedProfile = this.authState.getPersistedSelectedProfile();
     if (selectedProfile) {
-      this.currentUserProfile.set(JSON.parse(selectedProfile));
+      this.currentUserProfile.set(selectedProfile);
     }
   }
 
   persistProfilesToLocalStorage() {
-    localStorage.setItem('profiles', JSON.stringify(this.currentUserProfiles()));
-    localStorage.setItem('selectedProfile', JSON.stringify(this.currentUserProfile()));
+    this.authState.persistProfiles(this.currentUserProfiles());
+    this.authState.persistSelectedProfile(this.currentUserProfile());
   }
 
-
   getDisplayProfile(id: string) {
-    return this.http.get<ProfileDto>(`/api/profile/${id}`).pipe(
-      switchMap(profile =>
-      forkJoin({
-        profilePic: this.http.get<{ profilePic: string }>(`/api/profile/${id}/photo`).pipe(map(res => res.profilePic)),
-        coverPic: this.http.get<{ coverPic: string }>(`/api/profile/${id}/cover`).pipe(map(res => res.coverPic))
-      }).pipe(
-        map(({ profilePic, coverPic }) => {
-          profile.profilePic = profilePic;
-          profile.coverPic = coverPic;
-          return profile;
-        })
-      )
+    return this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`).pipe(
+      switchMap((profile) =>
+        forkJoin({
+          profilePic: this.http
+            .get<{ profilePic: string }>(`${this.apiBaseUrl}/profile/${id}/photo`)
+            .pipe(map((res) => res.profilePic)),
+          coverPic: this.http
+            .get<{ coverPic: string }>(`${this.apiBaseUrl}/profile/${id}/cover`)
+            .pipe(map((res) => res.coverPic)),
+        }).pipe(
+          map(({ profilePic, coverPic }) => {
+            profile.profilePic = profilePic;
+            profile.coverPic = coverPic;
+            return profile;
+          })
+        )
       )
     );
   }
-
 }
-

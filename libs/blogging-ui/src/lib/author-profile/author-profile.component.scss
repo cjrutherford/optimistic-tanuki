@@ -1,0 +1,26 @@
+.contents {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: row;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+.bio {
+    color: #fff;
+    margin-left: 20px;
+    flex-direction: column;
+}
+
+@media screen and (max-width: 768px) {
+    .contents {
+        flex-direction: column;
+        text-align: center;
+        justify-content: center;
+    }
+    .bio {
+        margin: 20px 0 0 0;
+    }
+}

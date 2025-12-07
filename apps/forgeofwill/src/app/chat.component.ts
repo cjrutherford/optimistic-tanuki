@@ -1,5 +1,15 @@
-import { Component, computed, effect, Inject, PLATFORM_ID, signal } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import {
+  Component,
+  Inject,
+  PLATFORM_ID,
+  signal,
+  computed,
+  EnvironmentInjector,
+  inject,
+  runInInjectionContext,
+  effect, OnInit,
+} from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import {
   ChatContact,
   ChatMessage,
@@ -20,7 +30,7 @@ import { io } from 'socket.io-client';
 @Component({
   standalone: true,
   selector: 'app-chat',
-  imports: [CommonModule, ChatWindowComponent, ContactBubbleComponent],
+  imports: [ChatWindowComponent, ContactBubbleComponent],
   providers: [
     {
       provide: SocketChatService,
@@ -29,24 +39,26 @@ import { io } from 'socket.io-client';
         socketHost: string,
         socketNamespace: string,
         socketIoInstance: typeof io
-      ) => {
-        if (isPlatformBrowser(platformId)) {
-          return new SocketChatService(
-            socketHost,
-            socketNamespace,
-            socketIoInstance
-          );
-        }
-        return null;
-      },
+      ) =>
+        isPlatformBrowser(platformId)
+          ? new SocketChatService(socketHost, socketNamespace, socketIoInstance)
+          : null,
       deps: [PLATFORM_ID, SOCKET_HOST, SOCKET_NAMESPACE, SOCKET_IO_INSTANCE],
     },
   ],
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss',
 })
-export class ChatComponent {
+export class ChatComponent implements OnInit {
   socketChat?: SocketChatService | null;
+  private injector = inject(EnvironmentInjector);
+
+  contacts = signal<ChatContact[]>([]);
+  conversations = signal<ChatConversation[]>([], {
+    equal: (a, b) => JSON.stringify(a) === JSON.stringify(b),
+  });
+  openWindows = signal<Set<string>>(new Set());
+  selectedConversation = signal<string | null>(null);
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: object,
@@ -56,88 +68,51 @@ export class ChatComponent {
     socketChatService: SocketChatService | null = null
   ) {
     this.socketChat = socketChatService;
+    console.log('ChatComponent initialized with SocketChatService:', this.socketChat);
   }
 
   ngOnInit() {
-    if (isPlatformBrowser(this.platformId)) {
-      // Watch for current user profile changes and connect when defined
-      const checkAndConnect = async () => {
-        const profile = this.profileService.currentUserProfile();
-        if (profile && this.socketChat) {
-          this.socketChat.onMessage((message) => {
-            console.log('New message received:', message);
-          });
-          this.socketChat.onConversations((data: ChatConversation[]) => {
-            console.log('Conversations update received:', data);
-            const currentConversations = this.conversations();
-            this.conversations.set([...currentConversations, ...data]);
-            this.updateContacts();
-          });
-          this.socketChat.getConversations(profile.id);
-        }
-      };
+    if (!isPlatformBrowser(this.platformId) || !this.socketChat) return;
 
-      // Initial check
-      checkAndConnect();
+    const connect = async () => {
+      const profile = this.profileService.currentUserProfile();
+      if (!profile) return;
 
-      // React to profile changes using a signal effect
+      this.socketChat!.onMessage((message) => {
+        // Handle incoming messages (could add to conversation/messages)
+        console.log('New message received:', message);
+      });
+
+      this.socketChat!.onConversations((data: ChatConversation[]) => {
+        this.conversations.set(data);
+        this.updateContacts();
+      });
+
+      this.socketChat!.getConversations(profile.id);
+    };
+
+    // Initial connect
+    connect();
+
+    // React to profile changes
+    runInInjectionContext(this.injector, () => {
       const stopEffect = effect(() => {
         const profile = this.profileService.currentUserProfile();
         if (profile) {
-          checkAndConnect();
+          connect();
           stopEffect.destroy();
         }
       });
-    }
+    });
   }
 
-  handleNewMessage($event: string, conversationId: string) {
-    const currentState = this.windowStates()[conversationId];
-    if (currentState) {
-      const senderId = this.profileService.currentUserProfile()?.id || '';
-      const newMessage: Partial<ChatMessage> = {
-        content: $event,
-        senderId: senderId,
-        conversationId: conversationId,
-        recipientId: [...currentState.conversation.participants.filter((x: string) => x !== senderId)],
-        timestamp: new Date(),
-        type: 'chat',
-      };
-      this.postMessage(newMessage);
-      // Optimistically update the conversation signal
-      this.conversations.update(currentConversations => {
-        const conversationIndex = currentConversations.findIndex(c => c.id === conversationId);
-        if (conversationIndex > -1) {
-          const updatedConversation = { ...currentConversations[conversationIndex] };
-          updatedConversation.messages = [...updatedConversation.messages, { ...newMessage, id: 'pending' } as ChatMessage];
-          const newConversations = [...currentConversations];
-          newConversations[conversationIndex] = updatedConversation;
-          return newConversations;
-        }
-        return currentConversations;
-      });
-
-      console.log(
-        `New message sent for conversation ID ${conversationId}`,
-        newMessage
-      );
-    } else {
-      console.warn(
-        `No window state found for conversation ID ${conversationId}`
-      );
-    }
-  }
-
-  contacts = signal<ChatContact[]>([]);
-
-  private async updateContacts() {
+  async updateContacts() {
     const conversations = this.conversations();
     const participantIds = new Set<string>();
-    conversations.forEach((conv) => {
-      conv.participants.forEach((id) => participantIds.add(id));
-    });
+    conversations.forEach((conv) =>
+      conv.participants.forEach((id) => participantIds.add(id))
+    );
 
-    // Remove current user's profile id from contacts
     const currentUser = this.profileService.currentUserProfile();
     if (!currentUser) {
       this.contacts.set([]);
@@ -145,7 +120,6 @@ export class ChatComponent {
     }
     participantIds.delete(currentUser.id);
 
-    // Convert participantIds to array and fetch profiles in parallel
     const ids = Array.from(participantIds);
     const contacts: ChatContact[] = (
       await Promise.all(
@@ -153,22 +127,22 @@ export class ChatComponent {
           const profile = await firstValueFrom(
             this.profileService.getDisplayProfile(id)
           );
-          if (profile) {
-            return {
-              id: profile.id,
-              name: profile.profileName,
-              avatarUrl:
-                profile.profilePic ||
-                'https://pics.craiyon.com/2023-12-02/m-ncT7EvSXypl0qgvzXhWA.webp',
-              lastMessage: '',
-              lastMessageTime: new Date().toISOString(),
-            } as ChatContact;
-          }
-          return null;
+          return profile
+            ? {
+                id: profile.id,
+                name: profile.profileName,
+                avatarUrl:
+                  profile.profilePic ||
+                  'https://pics.craiyon.com/2023-12-02/m-ncT7EvSXypl0qgvzXhWA.webp',
+                lastMessage: '',
+                lastMessageTime: new Date().toISOString(),
+              }
+            : null;
         })
       )
     ).filter((c): c is ChatContact => !!c);
-    const currentUserContact: ChatContact = {
+
+    contacts.push({
       id: currentUser.id,
       name: currentUser.profileName,
       avatarUrl:
@@ -176,13 +150,11 @@ export class ChatComponent {
         'https://pics.craiyon.com/2023-12-02/m-ncT7EvSXypl0qgvzXhWA.webp',
       lastMessage: '',
       lastMessageTime: new Date().toISOString(),
-    };
-    contacts.push(currentUserContact);
+    });
+
     this.contacts.set(contacts);
   }
-  openWindows = signal<Set<string>>(new Set());
 
-  // To open a window:
   openChat(conversationId: string) {
     const open = new Set(this.openWindows());
     open.add(conversationId);
@@ -190,41 +162,26 @@ export class ChatComponent {
     this.selectedConversation.set(conversationId);
   }
 
-  // To close a window:
   closeChat(conversationId: string) {
     const open = new Set(this.openWindows());
     open.delete(conversationId);
     this.openWindows.set(open);
   }
 
-  // To check if a window is open:
   isWindowOpen(conversationId: string): boolean {
     return this.openWindows().has(conversationId);
   }
-  // Computed signal for window states as a Map
+
   windowStates = computed(() => {
     const conversations = this.conversations();
-    const obj: Record<
-      string,
-      { windowState: ChatWindowState; conversation: ChatConversation }
-    > = {};
     const openWindows = this.openWindows();
-    conversations.forEach((conv) => {
-      const windowState: ChatWindowState =
-        openWindows.has(conv.id)
-          ? 'popout'
-          : 'hidden';
+    return conversations.reduce((obj, conv) => {
       obj[conv.id] = {
-        windowState: windowState || 'hidden',
+        windowState: openWindows.has(conv.id) ? 'popout' : 'hidden',
         conversation: conv,
       };
-    });
-    return obj;
-  });
-
-  selectedConversation = signal<string | null>(null);
-  conversations = signal<ChatConversation[]>([], {
-    equal: (a, b) => JSON.stringify(a) === JSON.stringify(b),
+      return obj;
+    }, {} as Record<string, { windowState: ChatWindowState; conversation: ChatConversation }>);
   });
 
   getLoadedContacts(contactIds: string[]) {
@@ -241,16 +198,45 @@ export class ChatComponent {
     this.openWindows.set(open);
   }
 
-  /**
-   * Sends a chat message using the SocketChatService.
-   * @param message The chat message to send.
-   */
+  handleNewMessage(content: string, conversationId: string) {
+    const senderId = this.profileService.currentUserProfile()?.id || '';
+    const newMessage: Partial<ChatMessage> = {
+      content,
+      senderId,
+      conversationId,
+      recipientId:
+        this.windowStates()[conversationId]?.conversation.participants.filter(
+          (x: string) => x !== senderId
+        ) ?? [],
+      timestamp: new Date(),
+      type: 'chat',
+    };
+    this.postMessage(newMessage);
+
+    // Optimistically update conversation
+    this.conversations.update((currentConversations) => {
+      const idx = currentConversations.findIndex(
+        (c) => c.id === conversationId
+      );
+      if (idx > -1) {
+        const updatedConv = { ...currentConversations[idx] };
+        updatedConv.messages = [
+          ...updatedConv.messages,
+          { ...newMessage, id: 'pending' } as ChatMessage,
+        ];
+        const newConvs = [...currentConversations];
+        newConvs[idx] = updatedConv;
+        return newConvs;
+      }
+      return currentConversations;
+    });
+  }
+
   postMessage(message: Partial<ChatMessage>) {
     if (this.socketChat) {
       this.socketChat.sendMessage(message);
       console.log('Message sent:', message);
     } else {
-      console.error('SocketChatService is not initialized.');
       this.messageService.addMessage({
         content: 'SocketChatService is not initialized.',
         type: 'error',

@@ -1,6 +1,19 @@
-# project-ui
+# Project UI
 
-This library was generated with [Nx](https://nx.dev).
+This library contains UI components for project management, such as a Kanban board and a task list.
+
+## Usage
+
+To use the components in this library, import the `ProjectUiModule` into your Angular module:
+
+```typescript
+import { ProjectUiModule } from '@optimistic-tanuki/project-ui';
+
+@NgModule({
+  imports: [ProjectUiModule],
+})
+export class MyModule {}
+```
 
 ## Running unit tests
 

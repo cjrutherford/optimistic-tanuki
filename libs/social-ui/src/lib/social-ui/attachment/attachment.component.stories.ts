@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { AttachmentComponent } from './attachment.component';
-import { within, userEvent } from '@storybook/testing-library';
+import { within, userEvent } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<AttachmentComponent> = {
@@ -23,7 +23,7 @@ export const Heading: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/attachment works!/gi)).toBeTruthy();
+    await expect(canvas.getByText(/attachment works!/gi)).toBeTruthy();
   },
 };
 
@@ -42,6 +42,6 @@ export const Interaction: Story = {
     await userEvent.type(input, 'file3.pdf');
     await userEvent.click(addButton);
 
-    expect(canvas.getByText('file3.pdf')).toBeTruthy();
+    await expect(canvas.getByText('file3.pdf')).toBeTruthy();
   },
 };

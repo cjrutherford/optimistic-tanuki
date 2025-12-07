@@ -13,12 +13,12 @@ import { Project, Task, Risk, Change, ProjectJournal, CreateTask, CreateRisk, Cr
 describe('ProjectsComponent', () => {
   let component: ProjectsComponent;
   let fixture: ComponentFixture<ProjectsComponent>;
-  let projectService: ProjectService;
-  let taskService: TaskService;
-  let riskService: RiskService;
-  let changeService: ChangeService;
-  let journalService: JournalService;
-  let messageService: MessageService;
+  let projectService: jest.Mocked<ProjectService>;
+  let taskService: jest.Mocked<TaskService>;
+  let riskService: jest.Mocked<RiskService>;
+  let changeService: jest.Mocked<ChangeService>;
+  let journalService: jest.Mocked<JournalService>;
+  let messageService: jest.Mocked<MessageService>;
 
   const mockProject: Project = {
     id: '1', name: 'Test Project', description: '', owner: 'owner1', createdBy: 'creator1', createdAt: new Date(), updatedAt: new Date(),
@@ -39,22 +39,22 @@ describe('ProjectsComponent', () => {
     };
     const taskServiceMock = {
         createTask: jest.fn().mockReturnValue(of(mockTask)),
-        updateTask: jest.fn(),
+        updateTask: jest.fn().mockReturnValue(of(mockTask)),
         deleteTask: jest.fn().mockReturnValue(of(undefined))
     };
     const riskServiceMock = {
         createRisk: jest.fn().mockReturnValue(of(mockRisk)),
-        updateRisk: jest.fn(),
+        updateRisk: jest.fn().mockReturnValue(of(mockRisk)),
         deleteRisk: jest.fn().mockReturnValue(of(undefined))
     };
     const changeServiceMock = {
         createChange: jest.fn().mockReturnValue(of(mockChange)),
-        updateChange: jest.fn(),
+        updateChange: jest.fn().mockReturnValue(of(mockChange)),
         deleteChange: jest.fn().mockReturnValue(of(undefined))
     };
     const journalServiceMock = {
         createJournalEntry: jest.fn().mockReturnValue(of(mockJournal)),
-        updateJournalEntry: jest.fn(),
+        updateJournalEntry: jest.fn().mockReturnValue(of(mockJournal)),
         deleteJournalEntry: jest.fn().mockReturnValue(of(undefined))
     };
     const messageServiceMock = { addMessage: jest.fn() };
@@ -73,12 +73,12 @@ describe('ProjectsComponent', () => {
 
     fixture = TestBed.createComponent(ProjectsComponent);
     component = fixture.componentInstance;
-    projectService = TestBed.inject(ProjectService);
-    taskService = TestBed.inject(TaskService);
-    riskService = TestBed.inject(RiskService);
-    changeService = TestBed.inject(ChangeService);
-    journalService = TestBed.inject(JournalService);
-    messageService = TestBed.inject(MessageService);
+    projectService = TestBed.inject(ProjectService) as jest.Mocked<ProjectService>;
+    taskService = TestBed.inject(TaskService) as jest.Mocked<TaskService>;
+    riskService = TestBed.inject(RiskService) as jest.Mocked<RiskService>;
+    changeService = TestBed.inject(ChangeService) as jest.Mocked<ChangeService>;
+    journalService = TestBed.inject(JournalService) as jest.Mocked<JournalService>;
+    messageService = TestBed.inject(MessageService) as jest.Mocked<MessageService>;
     fixture.detectChanges();
   });
 

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ProfileUiComponent } from './profile-ui.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<ProfileUiComponent> = {
@@ -18,6 +18,6 @@ export const Heading: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/profile-ui works!/gi)).toBeTruthy();
+    await expect(canvas.getByText(/profile-ui works!/gi)).toBeTruthy();
   },
 };

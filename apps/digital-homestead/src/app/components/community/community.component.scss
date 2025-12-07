@@ -16,6 +16,14 @@
 .heading-container {
     text-align: center;
     margin-bottom: 2rem;
+    width: 90%;
+    background: var(--heading-gradient);
+    color: var(--background);
+    padding: 40px;
+    border-radius: 8px;
+    > * {
+        margin: 0.5rem 0;
+    }
 }
 
 .profile {

@@ -1,0 +1,8 @@
+<otui-tile>
+  <otui-heading [text]="'Get in Touch'" [size]="'2em'"></otui-heading>
+</otui-tile>
+<lib-contact-form
+    [subjects]="subjects"
+    [bannerImage]="'https://fastly.picsum.photos/id/876/1200/300.jpg?hmac=PYu7elypyS9RmFSMJwEADHRZ9VoNICcFdVHC52lEq9Y'"
+    (formSubmit)="onContactFormSubmit($event)"
+></lib-contact-form>

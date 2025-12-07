@@ -1,18 +1,18 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, OnInit } from '@angular/core';
 import { CreateProjectJournal, ProjectJournal } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
-import { CommonModule } from '@angular/common';
+
 import { TextAreaComponent } from '@optimistic-tanuki/form-ui';
 
 @Component({
   selector: 'lib-project-journal-form',
-  imports: [CommonModule, ReactiveFormsModule, TextAreaComponent, ButtonComponent, CardComponent],
+  imports: [ReactiveFormsModule, TextAreaComponent, ButtonComponent, CardComponent],
   templateUrl: './project-journal-form.component.html',
   styleUrl: './project-journal-form.component.scss',
 })
-export class ProjectJournalFormComponent {
+export class ProjectJournalFormComponent implements OnInit {
   @Input() journal: ProjectJournal | null = null;
   isEditing = signal<boolean>(false);
   journalForm: FormGroup;

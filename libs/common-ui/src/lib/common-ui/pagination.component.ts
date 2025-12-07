@@ -1,13 +1,13 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { signal, OnInit } from '@angular/core';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { ButtonComponent } from './button/button.component';
 
 @Component({
   selector: 'otui-pagination',
   standalone: true,
-  imports: [CommonModule, ButtonComponent],
+  imports: [ButtonComponent],
   templateUrl: './pagination.component.html',
   styleUrls: ['./pagination.component.scss'],
   host: {

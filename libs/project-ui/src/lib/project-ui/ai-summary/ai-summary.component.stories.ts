@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { AiSummaryComponent } from './ai-summary.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<AiSummaryComponent> = {
@@ -18,6 +18,6 @@ export const Heading: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/ai-summary works!/gi)).toBeTruthy();
+    await expect(canvas.getByText(/ai-summary works!/gi)).toBeTruthy();
   },
 };

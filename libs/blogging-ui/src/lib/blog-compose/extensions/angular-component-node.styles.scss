@@ -1,0 +1,161 @@
+/* Angular Component Node Styles */
+.angular-component-container {
+  position: relative;
+  margin: var(--spacing-md, 16px) 0;
+  border: 2px solid var(--local-complement, var(--complement, #c0af4b));
+  border-radius: var(--border-radius-lg, 8px);
+  background: var(--local-background, var(--background, #ffffff));
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--local-accent, var(--accent, #667eea));
+    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    transform: translateY(-1px);
+  }
+
+  &.selected {
+    border-color: var(--local-accent, var(--accent, #667eea));
+    box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+    background: rgba(102, 126, 234, 0.05);
+  }
+}
+
+.component-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  background: var(--local-complement, var(--complement, #c0af4b));
+  color: var(--local-background, var(--background, #ffffff));
+  border-radius: var(--border-radius-md, 4px) var(--border-radius-md, 4px) 0 0;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 500;
+
+  .component-label {
+    flex: 1;
+    text-align: center;
+    margin: 0 var(--spacing-sm, 8px);
+  }
+
+  button {
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: var(--spacing-xs, 4px);
+    border-radius: var(--border-radius-sm, 2px);
+    transition: background-color 0.15s ease-in-out;
+    font-size: 14px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    &:active {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+}
+
+.component-content {
+  padding: var(--spacing-md, 16px);
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.component-preview {
+  text-align: center;
+  color: var(--local-foreground, var(--foreground, #333333));
+
+  h4 {
+    margin: 0 0 var(--spacing-xs, 4px) 0;
+    font-size: var(--font-size-lg, 1.125rem);
+    font-weight: 600;
+    color: var(--local-accent, var(--accent, #667eea));
+  }
+
+  p {
+    margin: 0;
+    font-size: var(--font-size-sm, 0.875rem);
+    opacity: 0.8;
+    font-style: italic;
+  }
+}
+
+/* Integration with TipTap editor */
+.tiptap-editor-styles ::ng-deep {
+  .angular-component-node {
+    display: block;
+    margin: var(--spacing-md, 16px) 0;
+    
+    &[data-drag-handle] {
+      cursor: grab;
+      
+      &:active {
+        cursor: grabbing;
+      }
+    }
+  }
+}
+
+/* Dragging states */
+.angular-component-container.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+}
+
+.angular-component-container.drag-over {
+  border-color: var(--local-accent, var(--accent, #667eea));
+  background: rgba(102, 126, 234, 0.1);
+}
+
+/* Animation for component insertion */
+@keyframes componentInsert {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.angular-component-container.inserting {
+  animation: componentInsert 0.3s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .component-controls {
+    padding: var(--spacing-xs, 4px);
+    
+    .component-label {
+      font-size: var(--font-size-xs, 0.75rem);
+      margin: 0 var(--spacing-xs, 4px);
+    }
+    
+    button {
+      padding: var(--spacing-xs, 2px);
+      font-size: 12px;
+    }
+  }
+  
+  .component-content {
+    padding: var(--spacing-sm, 8px);
+    min-height: 60px;
+  }
+  
+  .component-preview {
+    h4 {
+      font-size: var(--font-size-md, 1rem);
+    }
+    
+    p {
+      font-size: var(--font-size-xs, 0.75rem);
+    }
+  }
+}

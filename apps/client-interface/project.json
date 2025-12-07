@@ -21,7 +21,8 @@
           "quill-mention",
           "quill-image-compress",
           "quill-cursors",
-          "quill-placeholder-module"
+          "quill-placeholder-module",
+          "http-proxy-middleware"
         ],
         "polyfills": [
           "zone.js"

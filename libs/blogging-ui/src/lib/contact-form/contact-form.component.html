@@ -1,0 +1,36 @@
+<otui-card>
+  <div class="row">
+    <div class="img">
+      <img [src]="bannerImage" alt="Newsletter Banner" />
+    </div>
+    <div class="form">
+      <otui-heading [text]="title"></otui-heading>
+      <div class="row">
+        <lib-text-input
+          style="flex: 1"
+          [label]="'Name'"
+          (valueChange)="onNameChange($event)"
+        ></lib-text-input>
+        <lib-text-input
+          style="flex: 1"
+          [label]="'Email Address'"
+          (valueChange)="onEmailChange($event)"
+        ></lib-text-input>
+      </div>
+      @if(subjects.length > 0) {
+      <lib-select
+        [options]="subjects"
+        (valueChange)="onSubjectChange($event)"
+      ></lib-select>
+      }
+      <lib-text-area
+        [label]="'Your Message'"
+        (valueChange)="onMessageChange($event)"
+      ></lib-text-area>
+      <div class="row">
+          <otui-button style="flex: 1;"(click)="onSubscribe()">{{buttonText}}</otui-button>
+          <!-- <otui-button style="flex: 1;"(click)="onClose()">Close</otui-button> -->
+      </div>
+    </div>
+  </div>
+</otui-card>

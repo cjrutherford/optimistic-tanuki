@@ -1,8 +1,12 @@
 <otui-card>
-  <div class="banner" [style.backgroundImage]="'url(' + backgroundImage + ')'">
+  <div class="banner" [style.backgroundImage]="backgroundStyle">
     <div class="filter-layer">
-      <lib-profile-photo class="profile-image" [src]="profileImage" alt="Profile Image" />
-      <p class="profile-name">{{ profileName }}</p>
+      <lib-profile-photo
+        class="profile-image"
+        [src]="profileImage"
+        [alt]="displayName"
+      />
+      <p class="profile-name">{{ displayName }}</p>
     </div>
   </div>
 </otui-card>

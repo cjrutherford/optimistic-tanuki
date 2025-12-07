@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enhanced Component Injection System Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .editor-mockup { border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 20px 0; background: #fafafa; }
+        .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .toolbar button { padding: 8px 12px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer; }
+        .toolbar .component-btn { background: #007acc; color: white; font-weight: bold; }
+        .editor-area { min-height: 200px; border: 1px solid #ddd; border-radius: 4px; padding: 16px; background: white; }
+        .injection-container { border: 2px dashed #007acc; border-radius: 8px; padding: 20px; margin: 16px 0; background: #f0f8ff; }
+        
+        .component-wrapper { position: relative; border: 2px solid #007acc; border-radius: 4px; margin: 16px 0; padding: 12px; background: rgba(0, 122, 204, 0.1); }
+        .component-controls { position: absolute; top: -12px; right: 8px; display: flex; gap: 4px; }
+        .control-btn { width: 24px; height: 24px; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
+        .edit-btn { background: #007acc; color: white; }
+        .delete-btn { background: #dc3545; color: white; }
+        .move-btn { background: white; border: 1px solid #ccc; }
+        .component-label { position: absolute; top: -8px; left: 8px; background: #007acc; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+        
+        .hero-demo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; border-radius: 8px; text-align: center; }
+        .featured-posts-demo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0; }
+        .post-card { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .newsletter-demo { background: linear-gradient(45deg, #ff6b6b, #ffa726); color: white; padding: 24px; border-radius: 8px; text-align: center; }
+        
+        .callout { border-left: 4px solid #2196F3; background: #E3F2FD; padding: 16px; margin: 16px 0; }
+        .code-snippet { background: #f8f9fa; border: 1px solid #e9ecef; font-family: monospace; padding: 16px; margin: 16px 0; }
+        .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0; }
+        .gallery img { width: 100%; height: 120px; object-fit: cover; border-radius: 4px; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .property-editor { background: white; border-radius: 8px; padding: 24px; width: 500px; max-height: 80vh; overflow-y: auto; }
+        .property-group { margin-bottom: 16px; }
+        .property-label { font-weight: 500; margin-bottom: 4px; display: block; }
+        .property-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .json-input { width: 100%; min-height: 60px; font-family: monospace; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+        .feature { padding: 16px; border: 1px solid #e0e0e0; border-radius: 8px; background: #f9f9f9; }
+        h1, h2, h3 { color: #333; }
+        .new-feature { background: linear-gradient(45deg, #ff6b6b, #ffa726); color: white; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Enhanced Component Injection System</h1>
+        <p>Advanced Angular content projection with property editing and additional components</p>
+        
+        <div class="feature-grid">
+            <div class="feature">
+                <h3>🎛️ Property Editor <span class="new-feature">NEW</span></h3>
+                <p>Edit component properties with type-specific inputs and output webhook configuration</p>
+            </div>
+            <div class="feature">
+                <h3>🎯 Component Wrappers <span class="new-feature">NEW</span></h3>
+                <p>Visual selection, editing controls, and positioning for injected components</p>
+            </div>
+            <div class="feature">
+                <h3>🧩 Extended Components <span class="new-feature">NEW</span></h3>
+                <p>Hero sections, featured posts, and newsletter signup components</p>
+            </div>
+            <div class="feature">
+                <h3>📡 Output Webhooks <span class="new-feature">NEW</span></h3>
+                <p>Configure webhook URLs for component events and data submission</p>
+            </div>
+        </div>
+
+        <h2>Enhanced Blog Editor</h2>
+        <div class="editor-mockup">
+            <div class="toolbar">
+                <button><strong>B</strong></button>
+                <button><em>I</em></button>
+                <button><u>U</u></button>
+                <button>H1</button>
+                <button>H2</button>
+                <button>📷</button>
+                <button>📋</button>
+                <button class="component-btn">🧩 Components</button>
+            </div>
+            
+            <div class="editor-area">
+                <h3>Blog Post Title</h3>
+                <p>Rich text editor with TipTap...</p>
+            </div>
+            
+            <div class="injection-container">
+                <h4>📍 Enhanced Injected Components</h4>
+                
+                <!-- Hero Component with wrapper -->
+                <div class="component-wrapper">
+                    <div class="component-controls">
+                        <button class="control-btn edit-btn">✏️</button>
+                        <button class="control-btn delete-btn">🗑️</button>
+                        <button class="control-btn move-btn">⬆️</button>
+                        <button class="control-btn move-btn">⬇️</button>
+                    </div>
+                    <div class="component-label">Hero Section</div>
+                    <div class="hero-demo">
+                        <h2>Welcome to Our Blog!</h2>
+                        <p>Discover the latest news, tips, and stories from our community.</p>
+                        <button style="background: white; color: #007acc; padding: 12px 24px; border: none; border-radius: 4px; font-weight: bold;">Get Started</button>
+                    </div>
+                </div>
+
+                <!-- Featured Posts Component with wrapper -->
+                <div class="component-wrapper">
+                    <div class="component-controls">
+                        <button class="control-btn edit-btn">✏️</button>
+                        <button class="control-btn delete-btn">🗑️</button>
+                        <button class="control-btn move-btn">⬆️</button>
+                        <button class="control-btn move-btn">⬇️</button>
+                    </div>
+                    <div class="component-label">Featured Posts</div>
+                    <div class="featured-posts-demo">
+                        <div class="post-card">
+                            <h4>Microservices Architecture</h4>
+                            <p>A deep dive into principles...</p>
+                            <small>Jane Doe • May 10, 2024</small>
+                        </div>
+                        <div class="post-card">
+                            <h4>Nx Workspace Best Practices</h4>
+                            <p>Tips for managing monorepos...</p>
+                            <small>John Smith • May 15, 2024</small>
+                        </div>
+                        <div class="post-card">
+                            <h4>Angular Optimization</h4>
+                            <p>Performance strategies...</p>
+                            <small>Emily Chen • May 20, 2024</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Newsletter Component with wrapper -->
+                <div class="component-wrapper">
+                    <div class="component-controls">
+                        <button class="control-btn edit-btn">✏️</button>
+                        <button class="control-btn delete-btn">🗑️</button>
+                        <button class="control-btn move-btn">⬆️</button>
+                        <button class="control-btn move-btn">⬇️</button>
+                    </div>
+                    <div class="component-label">Newsletter Signup</div>
+                    <div class="newsletter-demo">
+                        <h3>📧 Subscribe to Our Newsletter</h3>
+                        <p>Get the latest updates delivered to your inbox</p>
+                        <input type="email" placeholder="Enter your email..." style="padding: 12px; margin: 8px; border: none; border-radius: 4px; width: 300px;">
+                        <button style="background: #333; color: white; padding: 12px 24px; border: none; border-radius: 4px;">Subscribe</button>
+                    </div>
+                </div>
+
+                <!-- Original example components -->
+                <div class="component-wrapper">
+                    <div class="component-controls">
+                        <button class="control-btn edit-btn">✏️</button>
+                        <button class="control-btn delete-btn">🗑️</button>
+                        <button class="control-btn move-btn">⬆️</button>
+                        <button class="control-btn move-btn">⬇️</button>
+                    </div>
+                    <div class="component-label">Callout Box</div>
+                    <div class="callout">
+                        <strong>📢 Important Information</strong>
+                        <p>This callout box can be configured with different types and styles.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2>Enhanced Property Editor</h2>
+        <div style="position: relative; height: 400px; background: #f0f0f0; border-radius: 8px; overflow: hidden;">
+            <div class="modal-overlay" style="position: absolute;">
+                <div class="property-editor">
+                    <h3>Edit Component Properties</h3>
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                        <h4 style="margin: 0;">Hero Section</h4>
+                        <p style="margin: 4px 0 0 0; font-size: 0.9em; color: #666;">Eye-catching hero section with title, description, and call-to-action</p>
+                    </div>
+                    
+                    <div class="property-group">
+                        <label class="property-label">Hero Title</label>
+                        <input type="text" class="property-input" value="Welcome to Our Blog!" placeholder="Enter title...">
+                    </div>
+                    
+                    <div class="property-group">
+                        <label class="property-label">Description</label>
+                        <textarea class="property-input" style="height: 60px;" placeholder="Enter description...">Discover the latest news, tips, and stories from our community.</textarea>
+                    </div>
+                    
+                    <div class="property-group">
+                        <label class="property-label">Button Text</label>
+                        <input type="text" class="property-input" value="Get Started" placeholder="Enter button text...">
+                    </div>
+                    
+                    <div class="property-group">
+                        <label class="property-label">Background Image URL</label>
+                        <input type="url" class="property-input" value="https://via.placeholder.com/600x400" placeholder="https://example.com/image.jpg">
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px;">
+                        <button style="padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 4px;">Cancel</button>
+                        <button style="padding: 8px 16px; border: none; background: #007acc; color: white; border-radius: 4px;">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2>Available Components</h2>
+        <div class="feature-grid">
+            <div class="feature">
+                <h4>🌟 Hero Section</h4>
+                <p><strong>Category:</strong> Layout</p>
+                <p>Eye-catching hero section with customizable title, description, background image, and call-to-action button.</p>
+            </div>
+            <div class="feature">
+                <h4>📰 Featured Posts</h4>
+                <p><strong>Category:</strong> Content</p>
+                <p>Interactive carousel showcasing featured blog posts with navigation controls and configurable display count.</p>
+            </div>
+            <div class="feature">
+                <h4>📧 Newsletter Signup</h4>
+                <p><strong>Category:</strong> Interactive</p>
+                <p>Email subscription form with webhook integration for processing signups and customizable styling.</p>
+            </div>
+            <div class="feature">
+                <h4>📢 Callout Box</h4>
+                <p><strong>Category:</strong> Content</p>
+                <p>Highlighted information boxes with different types (info, warning, success, error) and customizable content.</p>
+            </div>
+            <div class="feature">
+                <h4>💻 Code Snippet</h4>
+                <p><strong>Category:</strong> Content</p>
+                <p>Formatted code display with syntax highlighting, copy functionality, and language selection.</p>
+            </div>
+            <div class="feature">
+                <h4>🖼️ Image Gallery</h4>
+                <p><strong>Category:</strong> Media</p>
+                <p>Responsive image galleries with configurable column layouts and caption support.</p>
+            </div>
+        </div>
+
+        <h2>Key Enhancements</h2>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3>✨ New Features:</h3>
+            <ul>
+                <li><strong>Property Editor:</strong> Type-specific input controls for component properties</li>
+                <li><strong>Component Wrappers:</strong> Visual selection and editing controls</li>
+                <li><strong>Output Webhooks:</strong> Configure URLs for component events and data submission</li>
+                <li><strong>Enhanced Components:</strong> Hero sections, featured posts, newsletter signup</li>
+                <li><strong>Visual Positioning:</strong> Move components up/down with visual controls</li>
+                <li><strong>Property Validation:</strong> JSON schema validation for complex properties</li>
+            </ul>
+            
+            <h3>🔧 Technical Improvements:</h3>
+            <ul>
+                <li>Component wrapper system for interactive editing</li>
+                <li>Property definition configuration system</li>
+                <li>Output event webhook configuration</li>
+                <li>Enhanced type safety with comprehensive interfaces</li>
+                <li>Improved component lifecycle management</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,55 +1,110 @@
+@use '../../styles/mixins' as *;
+
 .card {
-    border: 4px solid var(--border-color, #b1baec);
-    border-radius: 4px;
-    margin: 0;
-    padding: 0;
-    box-shadow: inset 0 0 1em rgba(0, 0, 0, 0.1);
-    background: var(--background);
-    color: var(--foreground, #fff);
+  /* Base card styles using design tokens with local overrides */
+  @include border-base(
+    var(--local-border-width, var(--border-width, 1px)),
+    var(--local-border-style, var(--border-style, solid)),
+    var(--local-border-color, var(--complement, #c0af4b))
+  );
+  @include border-radius-standard(var(--local-border-radius, var(--border-radius-lg, 8px)));
+  background-color: var(--local-background, var(--background, #ffffff));
+  color: var(--local-foreground, var(--foreground, #212121));
+  @include box-shadow-layered(
+    var(--local-accent, var(--accent, #3f51b5)),
+    var(--local-complement, var(--complement, #c0af4b)),
+    var(--local-background, var(--background, #1a1a2e))
+  );
+  box-shadow: var(--local-inset-shadow, var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1))),
+    0 0 24px 8px var(--local-accent, var(--accent, #3f51b5)),
+    0 0 48px 16px var(--local-complement, var(--complement, #c0af4b)),
+    0 0 96px 32px var(--local-background, var(--background, #1a1a2e));
+  @include transition-base(all, var(--local-transition-duration, 0.15s));
 
-    @keyframes pulse-shadow {
-        0% {
-            box-shadow: 0 0 10px 2px var(--accent, #ff9800);
-        }
-        50% {
-            box-shadow: 0 0 20px 8px var(--complement, #00bcd4);
-        }
-        100% {
-            box-shadow: 0 0 10px 2px var(--accent, #ff9800);
-        }
-    }
-
-    animation: pulse-shadow 10s infinite;
+  /* Support for enhanced variants */
+  background-image: var(--local-background-gradient, var(--background-gradient, none)), 
+                    var(--local-border-gradient, var(--border-gradient, none));
+  filter: var(--local-glow-filter, var(--glow-filter, none));
+  animation: var(--local-animation, var(--animation, none));
 }
+
 .card-body {
-    font-size: 1em;
-    line-height: 1.5;
-    color: var(--foreground, #fff);
-    // background: linear-gradient(to right, var(--accent), var(--complement));
+  margin: 0;
+  padding: var(--local-spacing, var(--spacing-lg, 24px));
+  position: relative;
+  background: var(--local-background-filter, var(--background-filter, rgba(255, 255, 255, 0.5)));
+  border-radius: var(--local-border-radius, var(--border-radius-lg, 8px));
+  
+  &:hover {
+    background: var(--local-hover-background-filter, var(--hover-background-filter, var(--local-background-filter, var(--background-filter, rgba(255, 255, 255, 0.5)))));
+    transition: background var(--local-transition-duration, 0.15s) ease-in-out;
+  }
 }
 
 .card:hover {
-    box-shadow: 2px 4px 8px 6px linear-gradient(to right, var(--accent), var(--complement));
-    transition: box-shadow 0.3s ease-in-out;
+  box-shadow: var(--local-hover-box-shadow, var(--hover-box-shadow, var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1))));
+  filter: var(--local-hover-glow-filter, var(--hover-glow-filter, var(--local-glow-filter, var(--glow-filter, none))));
+  @include transition-multi(
+    box-shadow var(--local-transition-duration, 0.15s) ease-in-out,
+    filter var(--local-transition-duration, 0.15s) ease-in-out
+  );
 }
 
-.card.light-mode {
-    background: var(--background);
-    color: var(--foreground, #000);
+/* Gradient background animation */
+.gradient-background {
+  @include animated-gradient(8s, 200%);
 }
 
-.card.dark-mode {
-    background: var(--background);
-    color: var(--foreground, #fff);
+/* Glow effects */
+.card-body.glow-effect::before,
+.card-body.gradient-glow::before {
+  @include glow-layer(60px, -5%, var(--z-index-base, 0));
+  display: block;
+  background: var(--local-border-gradient, var(--border-gradient, none));
 }
 
-.card.fast-cycle-mode {
-    background: var(--border-gradient);
-    color: var(--foreground, #fff);
+/* Electric border variant */
+.card.electric-border {
+  padding: var(--spacing-xl, 32px);
+  @include border-radius-standard(var(--local-border-radius, var(--border-radius-xl, 12px)));
+  @include border-base(2px, solid, var(--local-complement, var(--complement, #c0af4b)));
+  background: var(--local-background-gradient, var(--background-gradient, none));
+  @include transition-multi(
+    box-shadow var(--local-transition-duration, 0.15s) ease-in-out,
+    filter var(--local-transition-duration, 0.15s) ease-in-out
+  );
+  @include electric-border-effect(var(--local-complement, var(--complement, #c0af4b)));
 }
 
-.card-header {
-    font-size: 1.25em;
-    margin-bottom: 10px;
-    color: var(--foreground, #fff);
+/* Gradient glow card variant */
+.card.gradient-glow-card {
+  position: relative;
+  @include border-radius-standard(var(--local-border-radius, var(--border-radius-lg, 8px)));
+  @include border-base(4px, solid, var(--local-accent, var(--accent, #3f51b5)));
+  background: var(--local-background-gradient, var(--accent-gradient-light, linear-gradient(45deg, #3f51b5, #c0af4b)));
+  @include transition-multi(
+    box-shadow var(--local-transition-duration, 0.15s) ease-in-out,
+    filter var(--local-transition-duration, 0.15s) ease-in-out
+  );
+  overflow: hidden;
+}
+
+.card.gradient-glow-card .glow-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--local-background-gradient, var(--accent-gradient-light, linear-gradient(45deg, #3f51b5, #c0af4b)));
+  filter: blur(0.75em);
+  pointer-events: none;
+  z-index: var(--z-index-base, 0);
+}
+
+/* Reset z-index for all glow elements */
+.card.electric-border .glow-layer-1,
+.card.electric-border .glow-layer-2,
+.card.electric-border .overlay-1,
+.card.electric-border .overlay-2,
+.card.electric-border .background-glow,
+.card.gradient-glow-card .glow-layer {
+  pointer-events: none;
 }

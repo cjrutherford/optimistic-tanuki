@@ -1,24 +1,11 @@
 # Telos Docs Service
 
-This service manages Telos documents.
+This service is responsible for managing documentation for the Telos project. It provides a centralized location for storing and retrieving documentation, as well as for performing various operations on it, such as searching and filtering.
 
-## Configuration
+## 🚀 Getting Started
 
-The application is configured via the `apps/telos-docs-service/src/assets/config.yaml` file. The following values can be set in this file or overridden by environment variables:
+This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
 
-| Variable                | Description                   | Default Value             |
-|-------------------------|-------------------------------|---------------------------|
-| `listenPort`            | Port for the service to listen on | `3008`                    |
-| `database.host`         | Database host                 | `db`                      |
-| `database.port`         | Database port                 | `5432`                    |
-| `database.username`     | Database username             | `postgres`                |
-| `database.password`     | Database password             | `postgres`                |
-| `database.dbName`       | Database name                 | `ot_telos_docs_service`   |
+## 📝 API Reference
 
-## Running the Service
-
-To run the service, use the following command:
-
-```bash
-nx serve telos-docs-service
-```
+The Telos Docs Service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/telos-docs-service`.

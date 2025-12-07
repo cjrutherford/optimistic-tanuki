@@ -1,5 +1,7 @@
 <!-- <otui-card> -->
-    <div class="tile" [ngClass.row]="isRow">
-      <ng-content></ng-content>
+    <div class="tile" [ngClass]="variant">
+      <div class="filter">
+        <ng-content></ng-content>
+      </div>
     </div>
 <!-- </otui-card> -->

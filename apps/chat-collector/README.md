@@ -1,20 +1,11 @@
-# Chat Collector Service
+# Chat Collector
 
-This service collects and stores chat messages.
+This service is responsible for collecting and storing chat messages from various sources. It provides a centralized location for storing and retrieving chat data, as well as for performing various operations on it, such as searching and filtering.
 
-## Configuration
+## 🚀 Getting Started
 
-The application is configured via the `apps/chat-collector/src/assets/config.yaml` file. The following values can be set in this file or overridden by environment variables:
+This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
 
-| Variable                | Description                   | Default Value   |
-|-------------------------|-------------------------------|-----------------|
-| `listenPort`            | Port for the service to listen on | `3007`          |
-| `database.host`         | Database host                 | `localhost`     |
-| `database.port`         | Database port                 | `5432`          |
-| `database.username`     | Database username             | `postgres`      |
-| `database.password`     | Database password             | `postgres`      |
-| `database.database`     | Database name                 | `ot_chat`       |
+## 📝 API Reference
 
-## Running the Service
-
-The service is designed to be run in a Docker container. It exposes port `3007`.
+The Chat Collector service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/chat-collector`.

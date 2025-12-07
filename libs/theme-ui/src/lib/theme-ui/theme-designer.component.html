@@ -1,0 +1,372 @@
+<div class="theme-designer">
+  <h2>Theme Designer</h2>
+  
+  <!-- Theme Mode Toggle -->
+  <section class="designer-section">
+    <h3>Theme Mode</h3>
+    <div class="theme-toggle">
+      <label>
+        <input type="checkbox" [checked]="currentTheme === 'dark'" (change)="toggleTheme()">
+        <span>{{ currentTheme === 'dark' ? 'Dark Mode' : 'Light Mode' }}</span>
+      </label>
+    </div>
+  </section>
+  
+  <!-- Color Palettes Management -->
+  <section class="designer-section">
+    <h3>Color Palettes</h3>
+    
+    <!-- Palette Selection -->
+    <div class="palette-selection">
+      <h4>Available Palettes</h4>
+      <div class="palettes-grid">
+        <button 
+          *ngFor="let palette of availablePalettes" 
+          (click)="applyPalette(palette)"
+          [class.active]="isCurrentPalette(palette)"
+          class="palette-btn"
+        >
+          <span class="palette-name">{{ palette.name }}</span>
+          <div class="palette-colors">
+            <span class="color-dot" [style.background]="palette.accent"></span>
+            <span class="color-dot" [style.background]="palette.complementary"></span>
+            <span class="color-dot" [style.background]="palette.tertiary"></span>
+          </div>
+          <button 
+            *ngIf="isCustomPalette(palette)"
+            (click)="startEditPalette(palette); $event.stopPropagation()"
+            class="btn-edit-palette"
+            title="Edit palette"
+          >
+            ✎
+          </button>
+          <button 
+            *ngIf="isCustomPalette(palette)"
+            (click)="deletePalette(palette); $event.stopPropagation()"
+            class="btn-delete-palette"
+            title="Delete palette"
+          >
+            ×
+          </button>
+        </button>
+      </div>
+      <button (click)="startCreatePalette()" class="btn-create-palette">
+        + Create Custom Palette
+      </button>
+    </div>
+
+    <!-- Create/Edit Palette Form -->
+    <div *ngIf="showPaletteForm" class="palette-form">
+      <h4>{{ paletteFormMode === 'create' ? 'Create' : 'Edit' }} Palette</h4>
+      <form (ngSubmit)="savePalette()">
+        <div class="form-group">
+          <label for="palette-name">Name</label>
+          <input 
+            id="palette-name" 
+            type="text" 
+            [(ngModel)]="paletteFormData.name"
+            name="paletteName"
+            required
+          >
+        </div>
+        
+        <div class="form-group">
+          <label for="palette-description">Description</label>
+          <input 
+            id="palette-description" 
+            type="text" 
+            [(ngModel)]="paletteFormData.description"
+            name="paletteDescription"
+          >
+        </div>
+        
+        <div class="form-group">
+          <label for="palette-accent">Accent Color</label>
+          <div class="color-input-wrapper">
+            <input 
+              id="palette-accent" 
+              type="color" 
+              [(ngModel)]="paletteFormData.accent"
+              name="paletteAccent"
+              required
+            >
+            <input 
+              type="text" 
+              [(ngModel)]="paletteFormData.accent"
+              name="paletteAccentText"
+              class="color-text-input"
+            >
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="palette-complementary">Complementary Color</label>
+          <div class="color-input-wrapper">
+            <input 
+              id="palette-complementary" 
+              type="color" 
+              [(ngModel)]="paletteFormData.complementary"
+              name="paletteComplementary"
+              required
+            >
+            <input 
+              type="text" 
+              [(ngModel)]="paletteFormData.complementary"
+              name="paletteComplementaryText"
+              class="color-text-input"
+            >
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="palette-tertiary">Tertiary Color</label>
+          <div class="color-input-wrapper">
+            <input 
+              id="palette-tertiary" 
+              type="color" 
+              [(ngModel)]="paletteFormData.tertiary"
+              name="paletteTertiary"
+              required
+            >
+            <input 
+              type="text" 
+              [(ngModel)]="paletteFormData.tertiary"
+              name="paletteTertiaryText"
+              class="color-text-input"
+            >
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" (click)="cancelPaletteForm()" class="btn-cancel">Cancel</button>
+          <button type="submit" class="btn-save">Save Palette</button>
+        </div>
+      </form>
+      
+      <div *ngIf="paletteFormError" class="form-error">{{ paletteFormError }}</div>
+    </div>
+  </section>
+
+  <!-- Color Selection -->
+  <section class="designer-section">
+    <h3>Custom Colors</h3>
+    <div class="color-pickers">
+      <div class="color-picker-group">
+        <label for="accent-color">Accent Color</label>
+        <div class="color-input-wrapper">
+          <input 
+            id="accent-color" 
+            type="color" 
+            [(ngModel)]="accentColor" 
+            (change)="updateAccentColor()"
+          >
+          <input 
+            type="text" 
+            [(ngModel)]="accentColor" 
+            (change)="updateAccentColor()"
+            class="color-text-input"
+          >
+        </div>
+      </div>
+      
+      <div class="color-picker-group">
+        <label for="complementary-color">Complementary Color</label>
+        <div class="color-input-wrapper">
+          <input 
+            id="complementary-color" 
+            type="color" 
+            [(ngModel)]="complementaryColor" 
+            (change)="updateComplementaryColor()"
+          >
+          <input 
+            type="text" 
+            [(ngModel)]="complementaryColor" 
+            (change)="updateComplementaryColor()"
+            class="color-text-input"
+          >
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Gradient Generator -->
+  <section class="designer-section">
+    <h3>Gradient Generator</h3>
+    
+    <div class="gradient-controls">
+      <div class="control-group">
+        <label for="gradient-type">Gradient Type</label>
+        <select 
+          id="gradient-type" 
+          [(ngModel)]="selectedGradientType" 
+          (change)="updateGradient()"
+        >
+          <option *ngFor="let type of gradientTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+      
+      <div class="control-group" *ngIf="selectedGradientType.includes('linear')">
+        <label for="gradient-direction">Direction</label>
+        <select 
+          id="gradient-direction" 
+          [(ngModel)]="gradientDirection" 
+          (change)="updateGradient()"
+        >
+          <option value="to right">To Right</option>
+          <option value="to left">To Left</option>
+          <option value="to top">To Top</option>
+          <option value="to bottom">To Bottom</option>
+          <option value="to bottom right">To Bottom Right</option>
+          <option value="to bottom left">To Bottom Left</option>
+        </select>
+      </div>
+      
+      <div class="control-group" *ngIf="!selectedGradientType.includes('linear') || selectedGradientType.includes('linear')">
+        <label for="gradient-angle">Angle</label>
+        <input 
+          id="gradient-angle" 
+          type="text" 
+          [(ngModel)]="gradientAngle" 
+          (change)="updateGradient()"
+          placeholder="90deg"
+        >
+      </div>
+    </div>
+    
+    <div class="gradient-colors">
+      <h4>Colors</h4>
+      <div class="color-list">
+        <div class="color-item" *ngFor="let color of gradientColors; let i = index">
+          <input 
+            type="color" 
+            [ngModel]="color" 
+            (ngModelChange)="updateGradientColor(i, $event)"
+          >
+          <input 
+            type="text" 
+            [ngModel]="color" 
+            (ngModelChange)="updateGradientColor(i, $event)"
+            class="color-text-input"
+          >
+          <button 
+            *ngIf="gradientColors.length > 2" 
+            (click)="removeGradientColor(i)"
+            class="btn-remove"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+      <button (click)="addGradientColor()" class="btn-add">Add Color</button>
+    </div>
+    
+    <div class="gradient-preview">
+      <h4>Preview</h4>
+      <div class="preview-box" [ngStyle]="getGradientStyle()"></div>
+      <div class="preview-code">
+        <code>{{ generatedGradient }}</code>
+        <button (click)="copyGradientToClipboard()" class="btn-copy">Copy</button>
+      </div>
+    </div>
+    
+    <div class="gradient-presets">
+      <h4>Presets</h4>
+      <div class="presets-grid">
+        <button 
+          *ngFor="let preset of gradientPresets" 
+          (click)="applyGradientPreset(preset)"
+          class="preset-btn"
+        >
+          {{ preset.name }}
+        </button>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Shadow Generator -->
+  <section class="designer-section">
+    <h3>Shadow Generator</h3>
+    
+    <div class="shadow-controls">
+      <div class="control-group">
+        <label for="shadow-color">Shadow Color</label>
+        <div class="color-input-wrapper">
+          <input 
+            id="shadow-color" 
+            type="color" 
+            [(ngModel)]="shadowColor" 
+            (change)="updateShadow()"
+          >
+          <input 
+            type="text" 
+            [(ngModel)]="shadowColor" 
+            (change)="updateShadow()"
+            class="color-text-input"
+          >
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <label for="shadow-blur">Blur (px)</label>
+        <input 
+          id="shadow-blur" 
+          type="range" 
+          min="0" 
+          max="50" 
+          [(ngModel)]="shadowBlur" 
+          (change)="updateShadow()"
+        >
+        <span>{{ shadowBlur }}px</span>
+      </div>
+      
+      <div class="control-group">
+        <label for="shadow-spread">Spread (px)</label>
+        <input 
+          id="shadow-spread" 
+          type="range" 
+          min="0" 
+          max="20" 
+          [(ngModel)]="shadowSpread" 
+          (change)="updateShadow()"
+        >
+        <span>{{ shadowSpread }}px</span>
+      </div>
+      
+      <div class="control-group">
+        <label for="shadow-opacity">Opacity</label>
+        <input 
+          id="shadow-opacity" 
+          type="range" 
+          min="0" 
+          max="1" 
+          step="0.1" 
+          [(ngModel)]="shadowOpacity" 
+          (change)="updateShadow()"
+        >
+        <span>{{ shadowOpacity }}</span>
+      </div>
+    </div>
+    
+    <div class="shadow-preview">
+      <h4>Preview</h4>
+      <div class="preview-box" [ngStyle]="getShadowStyle()"></div>
+      <div class="preview-code">
+        <code>{{ generatedShadow }}</code>
+        <button (click)="copyShadowToClipboard()" class="btn-copy">Copy</button>
+      </div>
+    </div>
+    
+    <div class="shadow-presets">
+      <h4>Presets</h4>
+      <div class="presets-grid">
+        <button 
+          *ngFor="let preset of shadowPresets" 
+          (click)="applyShadowPreset(preset)"
+          class="preset-btn"
+        >
+          {{ preset.name }}
+        </button>
+      </div>
+    </div>
+  </section>
+</div>

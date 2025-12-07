@@ -11,7 +11,8 @@ export {
     AttachmentCommands,
     VoteCommands,
     LinkCommands,
-    FollowCommands
+    FollowCommands,
+    SocialRealtimeCommands
 } from './lib/libs/social';
 
 export {
@@ -33,3 +34,18 @@ export { default as ChatCommands } from './lib/libs/chat';
 export * from './lib/libs/telos';
 export * from './lib/libs/prompt';
 export * from './lib/libs/ai-orchestration';
+
+export {
+    BlogCommands,
+    ContactCommands,
+    EventCommands,
+    PostCommands as BlogPostCommands
+} from './lib/libs/blog';
+
+export {
+    PermissionCommands,
+    RoleCommands,
+    AppScopeCommands,
+    ALL_APP_SCOPES,
+    AppScopeName
+} from './lib/libs/permissions';

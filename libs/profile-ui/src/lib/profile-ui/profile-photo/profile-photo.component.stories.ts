@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ProfilePhotoComponent } from './profile-photo.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<ProfilePhotoComponent> = {
@@ -22,6 +22,6 @@ export const Heading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/profile-photo works!/gi)).toBeTruthy();
+    await expect(canvas.getByText(/profile-photo works!/gi)).toBeTruthy();
   },
 };

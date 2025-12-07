@@ -1,7 +1,14 @@
-<div *ngFor="let section of sections; let i = index" tabindex="0" class="accordion-section">
+<div *ngFor="let section of sections; let i = index" tabindex="0" class="accordion-section" [ngClass]="[variant, size]">
   <h3 (click)="toggleSection(i)" (keypress)="toggleSection(i)" tabindex="1">{{ section.heading }}</h3>
-  <div *ngIf="expandedIndex === i">
-    <p>{{ section.content }}</p>
+  <div class="accordion-content" *ngIf="expandedIndex === i">
+    <ng-container *ngIf="section.content; else projectedContent">
+      <p>{{ section.content }}</p>
+    </ng-container>
+    <ng-template #projectedContent>
+      <ng-content select="[accordion-content-{{i}}]"></ng-content>
+    </ng-template>
+    <ng-container *ngIf="section.subItems && section.subItems.length > 0">
+      <otui-accordion [sections]="section.subItems"></otui-accordion>
+    </ng-container>
   </div>
-    <otui-accordion *ngIf="section.subItems && section.subItems.length > 0" [sections]="section.subItems!"></otui-accordion>
 </div>

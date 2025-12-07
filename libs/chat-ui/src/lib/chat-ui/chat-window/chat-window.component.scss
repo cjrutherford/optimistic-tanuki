@@ -1,13 +1,13 @@
 
 .chat-window-container {
   position: relative;
-  background: #fff;
+  background: var(--border-gradient);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px var(--accent);
   display: flex;
   flex-direction: column;
   transition: all 0.3s;
-  overflow: hidden;
+  max-height: 1000px;
 }
 
 .chat-window-container.fullscreen {
@@ -40,9 +40,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--border-gradient);
+  border-bottom: 1px solid var(--border-color);
 }
+
 
 .chat-window-actions button {
   margin-left: 8px;
@@ -64,5 +65,5 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: scroll;
+  overflow-y: auto;
 }

@@ -1,23 +1,9 @@
-export interface ThemeGradients {
-  [key: string]: string;
-}
-
-export interface ThemeColors {
-  background: string;
-  foreground: string;
-  accent: string;
-  accentShades: [string, string][];
-  accentGradients: ThemeGradients;
-  complementary: string;
-  complementaryShades: [string, string][];
-  complementaryGradients: ThemeGradients;
-  success: string;
-  successShades: [string, string][];
-  successGradients: ThemeGradients;
-  danger: string;
-  dangerShades: [string, string][];
-  dangerGradients: ThemeGradients;
-  warning: string;
-  warningShades: [string, string][];
-  warningGradients: ThemeGradients;
-}
+// Re-export theme interfaces from theme-lib to maintain backward compatibility
+// This file is deprecated and will be removed in a future version
+// Please import directly from '@optimistic-tanuki/theme-lib' instead
+export type {
+  ThemeGradients,
+  ThemeColors,
+  DesignTokens,
+  ColorPalette
+} from '@optimistic-tanuki/theme-lib';

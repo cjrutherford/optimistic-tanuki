@@ -1,17 +1,17 @@
 import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Input, Output, SimpleChanges, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges, signal, OnInit, OnChanges } from '@angular/core';
 import { CreateRisk, Risk } from '@optimistic-tanuki/ui-models';
 
-import { CommonModule } from '@angular/common';
+
 import { RiskFormComponent } from '../risk-form/risk-form.component';
 
 @Component({
   selector: 'lib-risks-table',
-  imports: [CommonModule, TableComponent, ButtonComponent, ModalComponent, RiskFormComponent],
+  imports: [TableComponent, ButtonComponent, ModalComponent, RiskFormComponent],
   templateUrl: './risks-table.component.html',
   styleUrl: './risks-table.component.scss',
 })
-export class RisksTableComponent {
+export class RisksTableComponent implements OnInit, OnChanges {
   cells = signal<TableCell[][]>([]);
   showModal = signal<boolean>(false);
   showEditModal = signal<boolean>(false);

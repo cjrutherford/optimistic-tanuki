@@ -1,23 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TableCell, TableComponent, TableRowAction } from './table.component';
+import { TableComponent, TableRowAction } from './table.component';
 
-import { TemplateRef } from '@angular/core';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 describe('TableComponent', () => {
   let component: TableComponent;
   let fixture: ComponentFixture<TableComponent>;
-  let themeService: ThemeService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TableComponent],
-      providers: [ThemeService]
+      providers: [ThemeService],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TableComponent);
     component = fixture.componentInstance;
-    themeService = TestBed.inject(ThemeService);
     fixture.detectChanges();
   });
 
@@ -31,16 +28,33 @@ describe('TableComponent', () => {
       foreground: '#fff',
       accent: '#111',
       complementary: '#222',
-      accentShades: [[null, '#666'], [null, '#777'], [null, '#888'], [null, '#999'], [null, '#aaa'], [null, '#bbb'], [null, '#ccc']],
-      complementaryShades: [[null, '#ddd'], [null, '#eee'], [null, '#fff']],
-      accentGradients: { dark: 'dark-accent-gradient', light: 'light-accent-gradient' },
+      accentShades: [
+        [null, '#666'],
+        [null, '#777'],
+        [null, '#888'],
+        [null, '#999'],
+        [null, '#aaa'],
+        [null, '#bbb'],
+        [null, '#ccc'],
+      ],
+      complementaryShades: [
+        [null, '#ddd'],
+        [null, '#eee'],
+        [null, '#fff'],
+      ],
+      accentGradients: {
+        dark: 'dark-accent-gradient',
+        light: 'light-accent-gradient',
+      },
     } as any;
 
     component.theme = 'dark';
     component.applyTheme(mockColors);
 
     expect(component.background).toBe(mockColors.background);
-    expect(component.backgroundGradient).toBe(`linear-gradient(to bottom, ${mockColors.accent}, ${mockColors.background}, ${mockColors.background}, ${mockColors.accentShades[1][1]})`);
+    expect(component.backgroundGradient).toBe(
+      `linear-gradient(to bottom, ${mockColors.accent}, ${mockColors.background}, ${mockColors.background}, ${mockColors.accentShades[1][1]})`
+    );
     expect(component.foreground).toBe(mockColors.foreground);
     expect(component.accent).toBe(mockColors.accent);
     expect(component.complement).toBe(mockColors.complementary);
@@ -54,16 +68,33 @@ describe('TableComponent', () => {
       foreground: '#222',
       accent: '#abc',
       complementary: '#def',
-      accentShades: [[null, '#666'], [null, '#777'], [null, '#888'], [null, '#999'], [null, '#aaa'], [null, '#bbb'], [null, '#ccc']],
-      complementaryShades: [[null, '#ddd'], [null, '#eee'], [null, '#fff']],
-      accentGradients: { dark: 'dark-accent-gradient', light: 'light-accent-gradient' },
+      accentShades: [
+        [null, '#666'],
+        [null, '#777'],
+        [null, '#888'],
+        [null, '#999'],
+        [null, '#aaa'],
+        [null, '#bbb'],
+        [null, '#ccc'],
+      ],
+      complementaryShades: [
+        [null, '#ddd'],
+        [null, '#eee'],
+        [null, '#fff'],
+      ],
+      accentGradients: {
+        dark: 'dark-accent-gradient',
+        light: 'light-accent-gradient',
+      },
     } as any;
 
     component.theme = 'light';
     component.applyTheme(mockColors);
 
     expect(component.background).toBe(mockColors.background);
-    expect(component.backgroundGradient).toBe(`linear-gradient(to bottom, ${mockColors.accent}, ${mockColors.background}, ${mockColors.background}, ${mockColors.accentShades[1][1]})`);
+    expect(component.backgroundGradient).toBe(
+      `linear-gradient(to bottom, ${mockColors.accent}, ${mockColors.background}, ${mockColors.background}, ${mockColors.accentShades[1][1]})`
+    );
     expect(component.foreground).toBe(mockColors.foreground);
     expect(component.accent).toBe(mockColors.accent);
     expect(component.complement).toBe(mockColors.complementary);
@@ -77,12 +108,7 @@ describe('TableComponent', () => {
     expect(component.cells[0].heading).toBeUndefined();
   });
 
-  // it('should initialize table with template ref cells', () => {
-  //   const mockTemplateRef = {} as TemplateRef<HTMLElement>;
-  //   component.cells = [{ value: mockTemplateRef }];
-  //   (component as any).initializeTable();
-  //   expect(component.cellTemplates[0]).toBe(mockTemplateRef);
-  // });
+  // (Removed commented test for template ref cells — kept test suite focused)
 
   it('should add spacer cell if spacer is true', () => {
     component.spacer = true;
@@ -110,10 +136,7 @@ describe('TableComponent', () => {
     expect(component.rowExpanded).toBe(false);
   });
 
-  // it('should return true if value is TemplateRef', () => {
-  //   const mockTemplateRef = {} as TemplateRef<HTMLElement>;
-  //   expect(component.isTemplateRef(mockTemplateRef)).toBe(true);
-  // });
+  // (Removed commented helper test for TemplateRef detection)
 
   it('should return false if value is not TemplateRef', () => {
     expect(component.isTemplateRef('string')).toBe(false);

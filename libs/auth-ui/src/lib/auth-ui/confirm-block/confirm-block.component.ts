@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'lib-confirm-block',
   standalone: true,
-  imports: [CommonModule, CardComponent, ButtonComponent],
+  imports: [CardComponent, ButtonComponent],
   templateUrl: './confirm-block.component.html',
   styleUrls: ['./confirm-block.component.scss'],
 })

@@ -1,21 +1,21 @@
-import { ButtonComponent, CardComponent, ModalComponent, TileComponent } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, CardComponent, GlassContainerComponent, ModalComponent, TileComponent } from '@optimistic-tanuki/common-ui';
 import { Change, CreateChange, CreateProject, CreateProjectJournal, CreateRisk, CreateTask, Project, ProjectJournal, Risk, Task } from '@optimistic-tanuki/ui-models';
 import { ChangesTableComponent, ProjectFormComponent, ProjectJournalTableComponent, ProjectOverviewComponent, ProjectSelectorComponent, RisksTableComponent, SummaryBlockComponent, TasksTableComponent } from '@optimistic-tanuki/project-ui';
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, signal, OnInit } from '@angular/core';
 
 import { ChangeService } from '../../change/change.service';
-import { CommonModule } from '@angular/common';
+
 import { JournalService } from '../../journal/journal.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ProjectService } from '../../project/project.service';
 import { RiskService } from '../../risk/risk.service';
 import { TaskService } from '../../task/task.service';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'app-projects',
   imports: [
-    CommonModule, 
-    ModalComponent, 
+    ModalComponent,
     CardComponent,
     SummaryBlockComponent,
     TasksTableComponent,
@@ -24,13 +24,17 @@ import { TaskService } from '../../task/task.service';
     ButtonComponent,
     TileComponent,
     ProjectJournalTableComponent,
-    ProjectSelectorComponent, 
-    ProjectFormComponent
-  ],
+    ProjectSelectorComponent,
+    ProjectFormComponent,
+    GlassContainerComponent
+],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
+  host: {
+    '[style.--filter-color]': 'filterColor'
+  }
 })
-export class ProjectsComponent {
+export class ProjectsComponent implements OnInit {
   constructor(
     private readonly projectService: ProjectService,
     private readonly taskService: TaskService,
@@ -38,7 +42,10 @@ export class ProjectsComponent {
     private readonly changeService: ChangeService,
     private readonly journalService: JournalService,
     private readonly messageService: MessageService,
+    private readonly themeService: ThemeService,
   ) {}
+
+  filterColor = 'rgba(255,255,255,0.4)'
 
   projects = signal<Project[]>([]);
 
@@ -87,6 +94,8 @@ export class ProjectsComponent {
   ngOnInit() {
     console.log('ProjectsComponent initialized');
     this.loadProjects();
+    const theme = this.themeService.getTheme()
+    this.filterColor = theme === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)'
   }
 
   

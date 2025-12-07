@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EventEmitter } from '@angular/core';
 import { FeedComponent } from './feed.component';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
 import { CommentService } from '../../comment.service';
@@ -99,8 +99,8 @@ describe('FeedComponent', () => {
     // If FeedComponent expects actual color values, update the mock to match.
     component.ngOnInit();
     expect(component.themeStyles).toEqual({
-      backgroundColor: '#fff',
-      color: '#333',
+      backgroundColor: '#ffffff',
+      color: '#212121',
       border: '1px solid #3f51b5',
     });
   });

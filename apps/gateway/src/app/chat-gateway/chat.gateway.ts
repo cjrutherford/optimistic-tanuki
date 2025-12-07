@@ -49,13 +49,13 @@ export class ChatGateway {
     } else {
       this.l.log('No AI recipients found, message handling complete.');
     }
-    const recipientSockets = this.connectedClients.filter(c => payload.recipientId.includes(c.id) || c.id === senderId);
-    this.l.log('Updating recipient sockets...');
-    for( const recipient of recipientSockets) {
-      this.l.log(`Notifying recipient: ${recipient.id}`);
-      const conversations = await firstValueFrom(this.chatCollectorClient.send({ cmd: ChatCommands.GET_CONVERSATIONS }, { userId: recipient.id }));
+    const recipientSockets = this.connectedClients.filter(c => recipientIds.includes(c.id) || c.id === senderId).map(c => ({ id: c.id, client: c.client }));
+    this.l.log('Updating recipient sockets...' + JSON.stringify(recipientSockets.map(r => r.id)));
+    for( const {id, client} of recipientSockets) {
+      this.l.log(`Notifying recipient: ${id}`);
+      const conversations = await firstValueFrom(this.chatCollectorClient.send({ cmd: ChatCommands.GET_CONVERSATIONS }, { profileId: id }));
       console.log(conversations);
-      recipient.client.emit('conversations', conversations || []);
+      client.emit('conversations', conversations || []);
     }
   }
 
@@ -70,6 +70,11 @@ export class ChatGateway {
   }
 
   private updateConnectedSockets(senderId: string, client: Socket, type: 'connect' | 'disconnect') {
+    console.log(`Updating connected sockets for '${senderId}' with event type '${type}'`);
+    if(!senderId) {
+      this.l.warn('No senderId provided, cannot update connected sockets.');
+      return;
+    }
     if (type === 'connect') {
       if(!this.connectedClients.some(c => c.id === senderId)) {
         this.connectedClients.push({ id: senderId, client });
@@ -77,6 +82,7 @@ export class ChatGateway {
     } else {
       this.connectedClients = this.connectedClients.filter(c => c.id !== senderId);
     }
+    this.l.debug(`Currently connected clients: ${this.connectedClients.map(c => c.id).join(', ')}`);
   }
 
   @SubscribeMessage('disconnect')

@@ -1,48 +1,20 @@
-# chat-ui
+# Chat UI
 
-This project contains the `chat-ui` library, which provides UI components for chat functionality.
+This library contains UI components for chat functionality, such as a chat window and a message list.
 
-## Nx Targets
+## Usage
 
-Here are the available Nx targets for the `chat-ui` project:
+To use the components in this library, import the `ChatUiModule` into your Angular module:
 
--   **lint**: Runs ESLint on the project.
-    ```bash
-    npx nx lint chat-ui
-    ```
--   **build:storybook**: Builds the Storybook for the project.
-    ```bash
-    npx nx build:storybook chat-ui
-    ```
--   **serve:storybook**: Serves the Storybook for the project.
-    ```bash
-    npx nx serve:storybook chat-ui
-    ```
--   **test:storybook**: Tests the Storybook for the project.
-    ```bash
-    npx nx test:storybook chat-ui
-    ```
--   **static-storybook**: Serves the static Storybook build.
-    ```bash
-    npx nx static-storybook chat-ui
-    ```
--   **test**: Runs unit tests using Jest.
-    ```bash
-    npx nx test chat-ui
-    ```
-    -   **ci**: Runs tests in CI mode with code coverage.
-        ```bash
-        npx nx test chat-ui --configuration=ci
-        ```
--   **storybook**: Starts the Storybook development server.
-    ```bash
-    npx nx storybook chat-ui
-    ```
--   **build-storybook**: Builds the Storybook for deployment.
-    ```bash
-    npx nx build-storybook chat-ui
-    ```
--   **test-storybook**: Runs tests against the Storybook.
-    ```bash
-    npx nx test-storybook chat-ui
-    ```
+```typescript
+import { ChatUiModule } from '@optimistic-tanuki/chat-ui';
+
+@NgModule({
+  imports: [ChatUiModule],
+})
+export class MyModule {}
+```
+
+## Running unit tests
+
+Run `nx test chat-ui` to execute the unit tests.

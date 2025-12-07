@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ProfileSelectorComponent } from './profile-selector.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 import { ProfileDto } from '@optimistic-tanuki/ui-models'; // Ensure this path is correct
 

@@ -19,3 +19,12 @@ html, body {
   width: 100vw;
   max-width: 100vw;
 }
+body {
+    background-color: var(--background);
+    /* Use accent color variable for SVG fill via mask and background-color */
+    -webkit-background-image: var(--background-pattern);
+    background-image: var(--background-pattern);
+    -webkit-background-repeat: repeat;
+    background-repeat: repeat;
+    background-size: 52px 52px;
+}

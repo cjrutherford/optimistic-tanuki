@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CommentComponent } from './comment.component';
 import { MatDialog } from '@angular/material/dialog';
-import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { of } from 'rxjs';
 
 describe('CommentComponent', () => {
@@ -26,6 +26,9 @@ describe('CommentComponent', () => {
         complementary: '#cccccc',
         complementaryShades: [['0', '#ccc'], ['1', '#ddd'], ['2', '#eee'], ['3', '#fff'], ['4', '#aaa'], ['5', '#bbb'], ['6', '#ccc'], ['7', '#ddd'], ['8', '#eee'], ['9', '#fff']],
         complementaryGradients: { dark: 'dark-gradient', light: 'light-gradient', fastCycle: 'fast-complementary-cycle' },
+        tertiary: '#123456',
+        tertiaryShades: [['0', '#123'], ['1', '#234'], ['2', '#345'], ['3', '#456'], ['4', '#567'], ['5', '#678'], ['6', '#789'], ['7', '#89a'], ['8', '#9ab'], ['9', '#abc']],
+        tertiaryGradients: { light: 'light-tertiary-gradient', dark: 'dark-tertiary-gradient', fastCycle: 'fast-tertiary-cycle' },
         success: '#00ff00',
         successShades: [['0', '#0f0'], ['1', '#1f1'], ['2', '#2f2'], ['3', '#3f3'], ['4', '#4f4'], ['5', '#5f5'], ['6', '#6f6'], ['7', '#7f7'], ['8', '#8f8'], ['9', '#9f9']],
         successGradients: { light: 'light-success-gradient', dark: 'dark-success-gradient', fastCycle: 'fast-success-cycle' },
@@ -89,6 +92,9 @@ describe('CommentComponent', () => {
       complementary: '#cccccc',
       complementaryShades: [['0', '#ccc'], ['1', '#ddd'], ['2', '#eee'], ['3', '#fff'], ['4', '#aaa'], ['5', '#bbb'], ['6', '#ccc'], ['7', '#ddd'], ['8', '#eee'], ['9', '#fff']],
       complementaryGradients: { dark: 'dark-gradient', light: 'light-gradient', fastCycle: 'fast-complementary-cycle' },
+      tertiary: '#123456',
+      tertiaryShades: [['0', '#123'], ['1', '#234'], ['2', '#345'], ['3', '#456'], ['4', '#567'], ['5', '#678'], ['6', '#789'], ['7', '#89a'], ['8', '#9ab'], ['9', '#abc']],
+      tertiaryGradients: { light: 'light-tertiary-gradient', dark: 'dark-tertiary-gradient', fastCycle: 'fast-tertiary-cycle' },
       success: '#00ff00',
       successShades: [['0', '#0f0'], ['1', '#1f1'], ['2', '#2f2'], ['3', '#3f3'], ['4', '#4f4'], ['5', '#5f5'], ['6', '#6f6'], ['7', '#7f7'], ['8', '#8f8'], ['9', '#9f9']],
       successGradients: { light: 'light-success-gradient', dark: 'dark-success-gradient', fastCycle: 'fast-success-cycle' },
@@ -121,6 +127,9 @@ describe('CommentComponent', () => {
       complementary: '#cccccc',
       complementaryShades: [['0', '#ccc'], ['1', '#ddd'], ['2', '#eee'], ['3', '#fff'], ['4', '#aaa'], ['5', '#bbb'], ['6', '#ccc'], ['7', '#ddd'], ['8', '#eee'], ['9', '#fff']],
       complementaryGradients: { dark: 'dark-gradient', light: 'light-gradient', fastCycle: 'fast-complementary-cycle' },
+      tertiary: '#123456',
+      tertiaryShades: [['0', '#123'], ['1', '#234'], ['2', '#345'], ['3', '#456'], ['4', '#567'], ['5', '#678'], ['6', '#789'], ['7', '#89a'], ['8', '#9ab'], ['9', '#abc']],
+      tertiaryGradients: { light: 'light-tertiary-gradient', dark: 'dark-tertiary-gradient', fastCycle: 'fast-tertiary-cycle' },
       success: '#00ff00',
       successShades: [['0', '#0f0'], ['1', '#1f1'], ['2', '#2f2'], ['3', '#3f3'], ['4', '#4f4'], ['5', '#5f5'], ['6', '#6f6'], ['7', '#7f7'], ['8', '#8f8'], ['9', '#9f9']],
       successGradients: { light: 'light-success-gradient', dark: 'dark-success-gradient', fastCycle: 'fast-success-cycle' },

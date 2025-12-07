@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import type { Meta, StoryObj } from '@storybook/angular';
 import { TableComponent } from './table.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<TableComponent> = {
@@ -38,12 +38,12 @@ export const PriceList: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/tier 1/gi)).toBeTruthy();
-    expect(canvas.getByText(/\$10/gi)).toBeTruthy();
-    expect(canvas.getByText(/tier 2/gi)).toBeTruthy();
-    expect(canvas.getByText(/\$20/gi)).toBeTruthy();
-    expect(canvas.getByText(/tier 3/gi)).toBeTruthy();
-    expect(canvas.getByText(/\$30/gi)).toBeTruthy();
+    await expect(canvas.getByText(/tier 1/gi)).toBeTruthy();
+    await expect(canvas.getByText(/\$10/gi)).toBeTruthy();
+    await expect(canvas.getByText(/tier 2/gi)).toBeTruthy();
+    await expect(canvas.getByText(/\$20/gi)).toBeTruthy();
+    await expect(canvas.getByText(/tier 3/gi)).toBeTruthy();
+    await expect(canvas.getByText(/\$30/gi)).toBeTruthy();
   },
 };
 
@@ -63,8 +63,8 @@ export const WithBadges: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/active/gi)).toBeTruthy();
-    expect(canvas.getByText(/inactive/gi)).toBeTruthy();
+    await expect(canvas.getByText(/active/gi)).toBeTruthy();
+    await expect(canvas.getByText(/inactive/gi)).toBeTruthy();
   },
 };
 
@@ -84,8 +84,8 @@ export const WithCustomStyles: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/john doe/gi)).toBeTruthy();
-    expect(canvas.getByText(/30/gi)).toBeTruthy();
+    await expect(canvas.getByText(/john doe/gi)).toBeTruthy();
+    await expect(canvas.getByText(/30/gi)).toBeTruthy();
   },
 };
 
@@ -105,8 +105,8 @@ export const WithSpacer: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/john doe/gi)).toBeTruthy();
-    expect(canvas.getByText(/30/gi)).toBeTruthy();
+    await expect(canvas.getByText(/john doe/gi)).toBeTruthy();
+    await expect(canvas.getByText(/30/gi)).toBeTruthy();
   },
 };
 

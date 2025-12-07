@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ConfirmBlockComponent } from './confirm-block.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<ConfirmBlockComponent> = {
@@ -24,6 +24,6 @@ export const Heading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/Confirm Your Email/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Confirm Your Email/gi)).toBeTruthy();
   },
 };

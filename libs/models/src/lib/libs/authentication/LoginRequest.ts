@@ -5,5 +5,5 @@ export default class LoginRequest {
   @ApiProperty()
   password!: string;
   @ApiPropertyOptional({ default: false })
-  mfa?:string;
+  mfa?: string;
 }

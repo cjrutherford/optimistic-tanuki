@@ -1,14 +1,286 @@
 {
-    "configurations": [
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug permissions with Nx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nx", "serve", "permissions"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9229"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/apps/permissions/dist/**/*.(m|c|)js",
+        "!**/node_modules/**"
+      ]
+    },
     {
       "type": "node",
       "request": "attach",
-      "name": "Attach to Gateway in Docker",
+      "name": "Attach to Gateway (Docker)",
       "address": "localhost",
       "port": 9000,
       "restart": true,
+      "sourceMaps": true,
       "localRoot": "${workspaceFolder}/apps/gateway",
-      "remoteRoot": "/usr/src/app/apps/gateway"
-    } 
-    ]
+      "remoteRoot": "/usr/src/app/dist/apps/gateway",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/gateway/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "sourceMapPathOverrides": {
+        "webpack:///./*": "${workspaceFolder}/dist/apps/gateway/*",
+        "webpack:///../../*": "${workspaceFolder}/*"
+      },
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Authentication (Docker)",
+      "address": "localhost",
+      "port": 9229,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/authentication",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/authentication/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Profile (Docker)",
+      "address": "localhost",
+      "port": 9234,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/profile",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/profile/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Project-Planning (Docker)",
+      "address": "localhost",
+      "port": 9231,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/project-planning",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/project-planning/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Social (Docker)",
+      "address": "localhost",
+      "port": 9232,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/social",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/social/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Chat-Collector (Docker)",
+      "address": "localhost",
+      "port": 9233,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/chat-collector",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/chat-collector/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Assets (Docker)",
+      "address": "localhost",
+      "port": 9244,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/assets",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/assets/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Blogging (Docker)",
+      "address": "localhost",
+      "port": 9235,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/blogging",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/blogging/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to AI-Orchestration (Docker)",
+      "address": "localhost",
+      "port": 9236,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/ai-orchestrator",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/ai-orchestrator/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Prompt-Proxy (Docker)",
+      "address": "localhost",
+      "port": 9237,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/prompt-proxy",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/prompt-proxy/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Telos-Docs-Service (Docker)",
+      "address": "localhost",
+      "port": 9238,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/telos-docs-service",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/telos-docs-service/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Permissions (Docker)",
+      "address": "localhost",
+      "port": 9239,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/permissions",
+      "remoteRoot": "/usr/src/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/permissions/**/*.js",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Client Interface (OT) (Docker)",
+      "address": "localhost",
+      "port": 9240,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/client-interface",
+      "remoteRoot": "/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/client-interface/**/*.js",
+        "${workspaceFolder}/dist/apps/client-interface/**/*.mjs",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to ForgeOfWill Client Interface (Docker)",
+      "address": "localhost",
+      "port": 9241,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/forgeofwill",
+      "remoteRoot": "/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/forgeofwill/**/*.js",
+        "${workspaceFolder}/dist/apps/forgeofwill/**/*.mjs",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Digital Homestead Client Interface (Docker)",
+      "address": "localhost",
+      "port": 9242,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/digital-homestead",
+      "remoteRoot": "/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/digital-homestead/**/*.js",
+        "${workspaceFolder}/dist/apps/digital-homestead/**/*.mjs",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to CRDN Client Interface (Docker)",
+      "address": "localhost",
+      "port": 9243,
+      "restart": true,
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/apps/christopherrutherford-net",
+      "remoteRoot": "/app",
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/christopherrutherford-net/**/*.js",
+        "${workspaceFolder}/dist/apps/christopherrutherford-net/**/*.mjs",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
 }

@@ -1,35 +1,33 @@
-# Gateway Service
+# Gateway
 
-This service acts as a gateway to the other microservices in the system.
+This service is an API gateway that routes requests to the appropriate microservice. It provides a single point of entry for all API requests, and is responsible for tasks such as authentication, rate limiting, and logging.
 
-## Port
+## 🚀 Getting Started
 
-- **API Gateway:** `3000`
+This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
 
-## Environment Variables
+## 📝 API Reference
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT`   | Port for the gateway to listen on | `3000`  |
+The Gateway service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api-docs`.
 
-## Configuration
+## 🔌 WebSocket Endpoints
 
-The gateway is configured via the `apps/gateway/src/assets/config.yaml` file. This file contains the connection details for the microservices it communicates with.
+The Gateway service also provides WebSocket support for real-time updates:
 
-### Microservice Dependencies
+### Chat WebSocket
+- **Port:** 3300 (configurable via `SOCKET_PORT` environment variable)
+- **Namespace:** `/chat`
+- **Purpose:** Real-time chat messaging
 
-The gateway connects to the following microservices:
+### Social WebSocket
+- **Port:** 3301 (configurable via `SOCIAL_SOCKET_PORT` environment variable)
+- **Namespace:** `/social`
+- **Purpose:** Real-time social updates (posts, comments, votes, follows)
+- **Documentation:** See [Social WebSocket Client Guide](../../docs/SOCIAL_WEBSOCKET_CLIENT.md)
 
-| Service            | Host                  | Port |
-|--------------------|-----------------------|------|
-| `asset`            | `ot_asset`            | `3005` |
-| `authentication`   | `ot_authentication`   | `3001` |
-| `profile`          | `ot_profile`          | `3002` |
-| `social`           | `ot_social`           | `3003` |
-| `tasks`            | `ot_tasks`            | `3004` |
-| `project_planning` | `ot_project_planning` | `3006` |
-| `chat_collector`   | `ot_chat_collector`   | `3007` |
+## 🔧 Environment Variables
 
-## API Documentation
-
-Swagger API documentation is available at `/api-docs` when the service is running.
+- `PORT` - HTTP API port (default: 3000)
+- `SOCKET_PORT` - Chat WebSocket port (default: 3300)
+- `SOCIAL_SOCKET_PORT` - Social WebSocket port (default: 3301)
+- `CORS_ORIGIN` - CORS origin configuration for WebSocket connections (default: '*' for development)

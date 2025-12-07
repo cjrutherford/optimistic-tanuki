@@ -1,21 +1,11 @@
-# Prompt Proxy Service
+# Prompt Proxy
 
-This service acts as a proxy for prompts.
+This service is responsible for proxying requests to prompt-based AI models. It provides a unified interface for interacting with various AI models, and is responsible for tasks such as prompt engineering, caching, and rate limiting.
 
-## Port
+## 🚀 Getting Started
 
-- **API Port:** `3000`
+This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
 
-## Environment Variables
+## 📝 API Reference
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT`   | Port for the service to listen on | `3000`  |
-
-## Running the Service
-
-To run the service, use the following command:
-
-```bash
-nx serve prompt-proxy
-```
+The Prompt Proxy service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/prompt-proxy`.

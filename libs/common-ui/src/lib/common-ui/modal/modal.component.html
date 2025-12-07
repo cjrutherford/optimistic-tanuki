@@ -1,7 +1,8 @@
-<div class="modal" [ngClass]="mode">
+<div class="modal" [ngClass]="[mode, variant, size]">
   <div class="modal-header">
-    <h2>{{ heading }}</h2>
-    <otui-button (action)="onClose()">Close</otui-button>
+    <h2 *ngIf="heading">{{ heading }}</h2>
+    <ng-content select="[modal-header]"></ng-content>
+    <otui-button *ngIf="closeModal.observers.length" (action)="closeModal.emit()">Close</otui-button>
   </div>
   <div class="modal-content">
     <ng-content></ng-content>

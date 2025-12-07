@@ -11,8 +11,9 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
 
   const clonedRequest = req.clone({
     setHeaders: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+      'X-ot-appscope': 'client-interface',
+    },
   });
 
   return next(clonedRequest).pipe(

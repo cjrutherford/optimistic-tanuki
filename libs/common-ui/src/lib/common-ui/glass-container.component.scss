@@ -1,0 +1,20 @@
+@use '../styles/glass-effect.scss' as glass;
+
+.container {
+  @include glass.glass-effect(
+    var(--blur, 10px),
+    var(--background, rgba(255, 255, 255, 0.2)),
+    var(--border, rgba(255, 255, 255, 0.3)),
+    var(--radius, 15px),
+    var(--shadow-1, rgba(0, 0, 0, 0.1))
+  );
+  padding: 16px;
+  color: var(--foreground, #e5e5e5);
+  transition: box-shadow 0.3s ease-in-out, background 0.3s ease-in-out, border 0.3s ease-in-out;
+
+  &:hover {
+    box-shadow: 0 0.5px 0 1px rgba(255, 255, 255, 0.2) inset,
+      0 1px 0 0 rgba(255, 255, 255, 0.6) inset, 0 4px 24px rgba(0, 0, 0, 0.18),
+      2px 4px 16px 8px linear-gradient(to right, var(--accent), var(--complement));
+  }
+}

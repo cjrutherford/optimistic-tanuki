@@ -8,9 +8,9 @@ module.exports = async function () {
   // Start services that that the app needs to run (e.g. database, docker-compose, etc.).
   console.log('\nSetting up...\n');
 
-  execSync('docker compose -f ./apps/authentication-e2e/src/support/docker-compose.authentication-e2e.yaml up -d', {
-    stdio: 'inherit',
-  });
+  // execSync('docker compose -f ./apps/authentication-e2e/src/support/docker-compose.authentication-e2e.yaml up -d', {
+  //   stdio: 'inherit',
+  // });
 
   const host = process.env.HOST ?? '127.0.0.1';
   const port = process.env.PORT ? Number(process.env.PORT) : 3001;

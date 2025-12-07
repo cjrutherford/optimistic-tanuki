@@ -1,20 +1,11 @@
-# Social Service
+# Social
 
-This service manages social features like posts, comments, votes, and follows.
+This service is responsible for managing social media integrations. It provides a unified interface for interacting with various social media platforms, and is responsible for tasks such as posting updates, retrieving data, and managing social media accounts.
 
-## Configuration
+## 🚀 Getting Started
 
-The application is configured via the `apps/social/src/assets/config.yaml` file. The following values can be set in this file or overridden by environment variables:
+This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
 
-| Variable                | Description                   | Default Value   |
-|-------------------------|-------------------------------|-----------------|
-| `listenPort`            | Port for the service to listen on | `3003`          |
-| `database.host`         | Database host                 | `db`            |
-| `database.port`         | Database port                 | `5432`          |
-| `database.username`     | Database username             | `postgres`      |
-| `database.password`     | Database password             | `postgres`      |
-| `database.database`     | Database name                 | `ot_social`     |
+## 📝 API Reference
 
-## Running the Service
-
-The service is designed to be run in a Docker container. It exposes port `3003`.
+The Social service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/social`.

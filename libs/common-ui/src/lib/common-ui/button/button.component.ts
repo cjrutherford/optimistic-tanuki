@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'otui-button',
@@ -23,9 +23,6 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
   }
 })
 export class ButtonComponent extends Themeable {
-  success!: string;
-  warning!: string;
-  danger!: string;
   @Input() disabled = false;
   @Input() variant: 'primary' | 'secondary' | 'outlined' | 'text' | 'warning' | 'danger' | 'success' | 'rounded' = 'primary';
   @Output() action = new EventEmitter<void>();

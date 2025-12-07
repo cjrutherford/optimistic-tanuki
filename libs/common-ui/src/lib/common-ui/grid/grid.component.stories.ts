@@ -2,7 +2,7 @@ import { GridComponent } from './grid.component';
 import { TileComponent } from '../tile/tile.component'; // Import TileComponent
 import type { Meta, StoryObj } from '@storybook/angular';
 import { moduleMetadata } from '@storybook/angular';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<GridComponent> = {
@@ -91,7 +91,7 @@ export const Heading: Story = {
   }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/Tile 1/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Tile 1/gi)).toBeTruthy();
   },
 };
 

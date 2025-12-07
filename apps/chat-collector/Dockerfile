@@ -4,7 +4,7 @@ FROM docker.io/node:lts-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
 COPY dist/apps/chat-collector/package*.json ./
-RUN npm install --omit=dev && npm i --save pg
+RUN npm install --omit=dev --legacy-peer-deps && npm i --save pg
 
 # Production image, copy all the files and run nest
 FROM docker.io/node:lts-alpine AS runner
@@ -16,6 +16,7 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 RUN npm i -g nodemon pg
 COPY ./dist/apps/chat-collector .
+RUN ls -lath 
 RUN chown -R node:node .
 USER node
 EXPOSE 3007

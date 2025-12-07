@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/angular';
 
 import { MessageComponent } from './message.component';
 import { expect } from '@storybook/jest';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 
 const meta: Meta<MessageComponent> = {
   component: MessageComponent,

@@ -9,9 +9,9 @@ export class AppController {
   constructor(private readonly l: Logger, private readonly appService: AppService) {}
 
   @MessagePattern({ cmd: AIOrchestrationCommands.PROFILE_INITIALIZE })
-  async profileInitialize(data: { profileId: string }) {
+  async profileInitialize(data: { profileId: string, appId: string }) {
     this.l.log('profile initialized called. here\'s where we create the welcome chat....')
-    await this.appService.processNewProfile(data.profileId);
+    await this.appService.processNewProfile(data.profileId, data.appId);
     return data;
   }
 

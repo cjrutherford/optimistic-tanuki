@@ -40,7 +40,7 @@ describe('AppService', () => {
       expect(httpService.post).toHaveBeenCalledWith(
         'http://localhost:11434/api/chat',
         mockGeneratePrompt,
-        { timeout: 10000 }
+        { timeout: 3600000 }
       );
       expect(result).toEqual(mockResponse.data);
     });

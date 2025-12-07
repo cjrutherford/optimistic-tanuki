@@ -1,25 +1,34 @@
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  border: none;
-  border-radius: 4px;
-  color: var(--foreground);
-  transition: background-color ease-in-out 0.3s, box-shadow ease-in-out 0.3s;
+@use '../../styles/mixins' as *;
 
+button {
+  /* Base button styles using design tokens */
+  @include flex-center;
+  width: 100%;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  border: none;
+  @include border-radius-standard(var(--border-radius-md, 4px));
+  font-size: var(--font-size-base, 1rem);
+  cursor: pointer;
+  @include transition-base(all, 0.15s);
+  color: var(--foreground);
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
   &.primary {
-    background-color: var(--accent, #007bff);
+    background-color: var(--accent, #3f51b5);
     color: var(--foreground, #fff);
-    border: 3px solid var(--complement, #0056b3);
+    border: 3px solid var(--complement, #c0af4b);
     
     &:hover {
-      background-color: var(--accent-shade-darken-30, #0056b3);
-      box-shadow: 2px 2px 5px 6px var(--accent);
+      background-color: var(--accent-3, #0056b3);
+      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
     }
 
     &:disabled {
-      background-color: var(--accent-shade-lighten-70, #cccccc);
-      cursor: not-allowed;
+      background-color: var(--accent-7, #cccccc);
     }
   }
 
@@ -30,12 +39,11 @@ button {
     
     &:hover {
       background-color: var(--complement, #e0a800);
-      box-shadow: 2px 2px 5px 6px var(--warning);
+      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
     }
 
     &:disabled {
-      background-color: var(--warning-shade-lighten-70, #cccccc);
-      cursor: not-allowed;
+      background-color: var(--warning-7, #cccccc);
     }
   }
   
@@ -44,28 +52,27 @@ button {
     color: var(--foreground, #fff);
 
     &:hover {
-      box-shadow: 2px 2px 5px 6px var(--danger);
+      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
       background-color: var(--complement, #c82333);
     }
 
     &:disabled {
-      background-color: var(--danger-shade-lighten-70, #cccccc);
-      cursor: not-allowed;
+      background-color: var(--danger-7, #cccccc);
     }
   }
+  
   &.success {
     background-color: var(--success, #28a745);
     color: var(--foreground, #fff);
     border: 3px solid var(--complement, #218838);
     
     &:hover {
-      box-shadow: 2px 2px 5px 6px var(--success);
-      background-color: var(--success-complement, #218838);
+      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+      background-color: var(--success-3, #218838);
     }
 
     &:disabled {
-      background-color: var(--success-shade-lighten-70, #cccccc);
-      cursor: not-allowed;
+      background-color: var(--success-7, #cccccc);
     }
   }
 
@@ -75,13 +82,12 @@ button {
     border: 3px solid var(--accent, #5a6268);
     
     &:hover {
-      box-shadow: 2px 2px 5px 6px var(--complement);
-      background-color: var(--complement, #5a6268);
+      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+      background-color: var(--complement-3, #5a6268);
     }
 
     &:disabled {
-      background-color: var(--secondary-shade-lighten-70, #cccccc);
-      cursor: not-allowed;
+      background-color: var(--complement-7, #cccccc);
     }
   }
 
@@ -91,31 +97,30 @@ button {
     color: var(--accent, #007bff);
     
     &:hover {
-      box-shadow: 2px 2px 5px 6px var(--complement);
-      background-color: var(--accent-color, #007bff);
-      color: var(--foreground-color, #fff);
+      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+      background-color: var(--accent, #007bff);
+      color: var(--foreground, #fff);
     }
 
     &:disabled {
-      border-color: var(--accent-shade-darken-30, #cccccc);
-      color: var(--accent-shade-lighten-70, #cccccc);
-      cursor: not-allowed;
+      border-color: var(--accent-3, #cccccc);
+      color: var(--accent-7, #cccccc);
     }
   }
+  
   &.rounded {
     background-color: var(--accent, #007bff);
     color: var(--foreground, #fff);
-    border-radius: 50%;
-    padding: 5px 5px;
+    border-radius: var(--border-radius-full, 50%);
+    padding: var(--spacing-xs, 4px);
 
     &:hover {
-      background-color: var(--accent-shade-darken-30, #0056b3);
-      box-shadow: 2px 2px 5px 6px var(--accent);
+      background-color: var(--accent-3, #0056b3);
+      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
     }
 
     &:disabled {
-      background-color: var(--accent-shade-lighten-70, #cccccc);
-      cursor: not-allowed;
+      background-color: var(--accent-7, #cccccc);
     }
   }
 
@@ -129,48 +134,67 @@ button {
     }
 
     &:disabled {
-      color: var(--accent-shade-lighten-70, #cccccc);
-      cursor: not-allowed;
+      color: var(--accent-7, #cccccc);
     }
   }
 
   &.light-mode {
-    background-color: var(--accent-shade-lighten-50, #b1baec);
-    color: var(--foreground-color, #000);
+    background-color: var(--accent-5, #b1baec);
+    color: var(--foreground, #000);
   }
 
   &.dark-mode {
-    background-color: var(--accent-shade-darken-50, #313a6c);
-    color: var(--foreground-color, #fff);
+    background-color: var(--accent-2, #313a6c);
+    color: var(--foreground, #fff);
   }
 
   &.primary.fast-cycle-mode {
     background: var(--accent-gradient-fastCycle);
-    color: var(--foreground-color, #fff);
+    color: var(--foreground, #fff);
   }
+  
   &.secondary.fast-cycle-mode {
-    background: var(--complementary-gradient-fastCycle);
-    color: var(--foreground-color, #fff);
+    background: var(--complement-gradient-fastCycle);
+    color: var(--foreground, #fff);
   }
 
   &.warning.fast-cycle-mode {
     background: var(--warning-gradient-fastCycle);
-    color: var(--foreground-color, #000);
+    color: var(--foreground, #000);
   }
+  
   &.danger.fast-cycle-mode {
     background: var(--danger-gradient-fastCycle);
-    color: var(--foreground-color, #fff);
+    color: var(--foreground, #fff);
   }
+  
   &.success.fast-cycle-mode {
     background: var(--success-gradient-fastCycle);
-    color: var(--foreground-color, #fff);
+    color: var(--foreground, #fff);
   }
-
-}
-
-button {
-  &:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.3s ease-in-out;
+  
+  // Additional gradient variants
+  &.gradient-glow {
+    @include gradient-background('linear', 'to right', var(--accent), var(--complement));
+    @include box-shadow-glow(var(--accent), 12px, 4px);
+    border: 2px solid transparent;
+    
+    &:hover:not(:disabled) {
+      @include box-shadow-glow(var(--complement), 16px, 6px);
+    }
+  }
+  
+  &.gradient-radial {
+    @include gradient-background('radial', 'circle', var(--accent), var(--complement));
+    
+    &:hover:not(:disabled) {
+      transform: scale(1.05);
+    }
+  }
+  
+  &.glow-on-hover {
+    &:hover:not(:disabled) {
+      @include box-shadow-glow(var(--accent), 16px, 6px);
+    }
   }
 }

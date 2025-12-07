@@ -3,6 +3,8 @@
   "compilerOptions": {
     "rootDir": ".",
     "sourceMap": true,
+    "resolveJsonModule": true,
+    "types": ["node", "jest"],
     "declaration": false,
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -17,6 +19,7 @@
     "baseUrl": ".",
     "paths": {
       "@optimistic-tanuki/auth-ui": ["libs/auth-ui/src/index.ts"],
+      "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
@@ -26,6 +29,8 @@
       "@optimistic-tanuki/logger": ["libs/logger/src/index.ts"],
       "@optimistic-tanuki/message-ui": ["libs/message-ui/src/index.ts"],
       "@optimistic-tanuki/models": ["libs/models/src/index.ts"],
+      "@optimistic-tanuki/navigation-ui": ["libs/navigation-ui/src/index.ts"],
+      "@optimistic-tanuki/permission-lib": ["libs/permission-lib/src/index.ts"],
       "@optimistic-tanuki/profile-ui": ["libs/profile-ui/src/index.ts"],
       "@optimistic-tanuki/project-ui": ["libs/project-ui/src/index.ts"],
       "@optimistic-tanuki/prompt-generation": [
@@ -33,9 +38,19 @@
       ],
       "@optimistic-tanuki/social-ui": ["libs/social-ui/src/index.ts"],
       "@optimistic-tanuki/storage": ["libs/storage/src/index.ts"],
+      "@optimistic-tanuki/theme-lib": ["libs/theme-lib/src/index.ts"],
       "@optimistic-tanuki/theme-ui": ["libs/theme-ui/src/index.ts"],
       "@optimistic-tanuki/ui-models": ["libs/ui-models/src/index.ts"]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": [
+    "node_modules",
+    "tmp",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/*.spec.tsx",
+    "**/*.stories.ts",
+    "**/*.stories.tsx",
+    "**/*.stories.mdx"
+  ]
 }

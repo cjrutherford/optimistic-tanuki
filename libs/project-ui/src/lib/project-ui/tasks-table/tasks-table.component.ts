@@ -11,26 +11,25 @@ import {
   Input,
   Output,
   SimpleChanges,
-  signal,
+  signal, OnInit, OnChanges,
 } from '@angular/core';
 import { CreateTask, ProfileDto, Task } from '@optimistic-tanuki/ui-models';
 
-import { CommonModule } from '@angular/common';
+
 import { TaskFormComponent } from '../task-form/task-form.component';
 
 @Component({
   selector: 'lib-tasks-table',
   imports: [
-    CommonModule,
     TableComponent,
     ButtonComponent,
     ModalComponent,
-    TaskFormComponent,
-  ],
+    TaskFormComponent
+],
   templateUrl: './tasks-table.component.html',
   styleUrl: './tasks-table.component.scss',
 })
-export class TasksTableComponent {
+export class TasksTableComponent implements OnInit, OnChanges {
   cells = signal<TableCell[][]>([]);
   showModal = signal<boolean>(false);
   showEditModal = signal<boolean>(false);

@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CreatePostDto, PostDto, UpdatePostDto, SearchPostDto, SearchPostOptions } from '@optimistic-tanuki/social-ui';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 
 
@@ -9,9 +10,14 @@ import { CreatePostDto, PostDto, UpdatePostDto, SearchPostDto, SearchPostOptions
   providedIn: 'root'
 })
 export class PostService {
-  private baseUrl = '/api/social/post';
+  private baseUrl: string;
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    @Inject(API_BASE_URL) private apiBaseUrl: string,
+    private http: HttpClient
+  ) {
+    this.baseUrl = `${this.apiBaseUrl}/social/post`;
+  }
 
   createPost(postDto: CreatePostDto): Observable<PostDto> {
     return this.http.post<PostDto>(this.baseUrl, postDto);

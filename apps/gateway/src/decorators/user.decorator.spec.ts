@@ -33,6 +33,7 @@ describe('UserDetailsDecorator', () => {
       iat: 456,
       name: 'Test User',
       userId: 'user-1',
+      profileId: '',
     };
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
     const token = `header.${base64Payload}.signature`;

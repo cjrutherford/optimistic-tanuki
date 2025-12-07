@@ -7,10 +7,18 @@
 .profile-grid-flex {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px; /* Adjust gap as needed */
+    gap: 40px; /* Adjust gap as needed */
     padding-bottom: 10px;
     overflow-x: auto; /* Allow horizontal scrolling if items overflow */
     overflow-y: hidden; /* Hide vertical overflow */
+    > * {
+        flex: 0 0 auto; /* Prevent items from shrinking or growing */
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 2px 2px 10px var(--accent),
+            inset 10px 5px 10px var(--complement);
+    }
 }
 .active {
     box-shadow: 2px 2px 5px var(--complement);
@@ -115,4 +123,20 @@
     // The .profile-badge, .left-badge, and otui-button.profile-badge styles will apply
     // to the button within .add-profile-photo-container.
     // Removed general p and button styles from here.
+}
+
+form.form-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    .left, .right {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        flex: 1; // Equal width for both sides
+    }
+    .dialog-actions {
+        display: flex;
+        flex: 2;
+    }
 }

@@ -1,10 +1,5 @@
 listenPort: 3000
 services:
-  asset:
-    name: asset
-    transport: TCP
-    host: ot_asset
-    port: 3005
   authentication:
     name: authentication
     transport: TCP
@@ -25,6 +20,11 @@ services:
     transport: TCP
     host: ot_tasks
     port: 3004
+  asset:
+    name: asset
+    transport: TCP
+    host: ot_assets
+    port: 3005
   project_planning:
     name: project_planning
     transport: TCP
@@ -45,3 +45,35 @@ services:
     transport: TCP
     host: ot_ai_orchestration
     port: 3010
+  blogging:
+    name: blogging
+    transport: TCP
+    host: ot_blogging
+    port: 3011
+  permissions:
+    name: permissions
+    transport: TCP
+    host: ot_permissions
+    port: 3012
+auth: 
+  jwtSecret: |
+    c3VwZXJzZWNyZXRzdHJpbmc=
+
+# Permissions cache configuration
+# Provider options: memory, file, redis
+permissions:
+  cache:
+    provider: memory  # Use 'file' for persistent cache or 'redis' for distributed cache
+    ttl: 300000       # Cache TTL in milliseconds (5 minutes)
+    maxSize: 10000    # Maximum cache entries (for memory/file providers)
+    
+    # File-based cache configuration (only used when provider is 'file')
+    # cacheDir: /tmp/permissions-cache
+    
+    # Redis cache configuration (only used when provider is 'redis')
+    # redis:
+    #   host: localhost
+    #   port: 6379
+    #   password: your-redis-password  # Optional
+    #   db: 0                          # Redis database number
+    #   keyPrefix: 'permissions:'      # Key prefix for cache entries

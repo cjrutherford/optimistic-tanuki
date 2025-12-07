@@ -1,10 +1,14 @@
-<div *ngIf="isLoggedIn" style="display: flex; justify-content: center; align-items: center;">
+@if (isLoggedIn) {
+  <div style="display: flex; justify-content: center; align-items: center;">
     <otui-button variant="secondary" class="button" (click)="showPanel = !showPanel">Hi {{user?.name || "User"}}</otui-button>
     <!-- <div *ngIf="showPanel" class="panel"> -->
     <otui-button class="button" variant="secondary" (click)="logout()">Logout</otui-button>
-    <!-- </div> -->
+  <!-- </div> -->
 </div>
-<div *ngIf="!isLoggedIn" style="display: flex; justify-content: center; align-items: center">
+}
+@if (!isLoggedIn) {
+  <div style="display: flex; justify-content: center; align-items: center">
     <otui-button class="button" variant="secondary" (click)="login()">Login</otui-button>
     <otui-button class="button" variant="secondary" (click)="register()">Register</otui-button>
-</div>
+  </div>
+}

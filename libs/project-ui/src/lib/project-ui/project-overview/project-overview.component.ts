@@ -1,8 +1,8 @@
 import { ButtonComponent, CardComponent, TileComponent } from '@optimistic-tanuki/common-ui';
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, signal, OnInit } from '@angular/core';
 
 import { ChangesTableComponent } from '../changes-table/changes-table.component';
-import { CommonModule } from '@angular/common';
+
 import { Project } from '@optimistic-tanuki/ui-models';
 import { ProjectJournalTableComponent } from '../project-journal-table/project-journal-table.component';
 import { RisksTableComponent } from '../risks-table/risks-table.component';
@@ -12,20 +12,19 @@ import { TasksTableComponent } from '../tasks-table/tasks-table.component';
 @Component({
   selector: 'lib-project-overview',
   imports: [
-    CommonModule, 
-    CardComponent, 
-    SummaryBlockComponent, 
-    TileComponent, 
+    CardComponent,
+    SummaryBlockComponent,
+    TileComponent,
     ButtonComponent,
     ProjectJournalTableComponent,
     TasksTableComponent,
     RisksTableComponent,
     ChangesTableComponent
-  ],
+],
   templateUrl: './project-overview.component.html',
   styleUrl: './project-overview.component.scss',
 })
-export class ProjectOverviewComponent {
+export class ProjectOverviewComponent implements OnInit {
   detailsShown = signal<boolean>(false);
   projectName = signal<string>('Project Name');
   taskCount = signal<number>(0);

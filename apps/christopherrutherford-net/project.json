@@ -7,12 +7,12 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "@angular-devkit/build-angular:browser",
+      "executor": "@angular-devkit/build-angular:application",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/christopherrutherford-net",
         "index": "apps/christopherrutherford-net/src/index.html",
-        "main": "apps/christopherrutherford-net/src/main.ts",
+        "browser": "apps/christopherrutherford-net/src/main.ts",
         "polyfills": ["zone.js"],
         "tsConfig": "apps/christopherrutherford-net/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
@@ -23,7 +23,12 @@
           }
         ],
         "styles": ["apps/christopherrutherford-net/src/styles.scss"],
-        "scripts": []
+        "scripts": [],
+        "server": "apps/christopherrutherford-net/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/christopherrutherford-net/src/server.ts"
+        },
+        "outputMode": "server"
       },
       "configurations": {
         "production": {
@@ -42,9 +47,7 @@
           "outputHashing": "all"
         },
         "development": {
-          "buildOptimizer": false,
           "optimization": false,
-          "vendorChunk": true,
           "extractLicenses": false,
           "sourceMap": true,
           "namedChunks": true
@@ -89,6 +92,61 @@
         "port": 4200,
         "spa": true
       }
+    },
+    "server": {
+      "dependsOn": ["build"],
+      "executor": "@angular-devkit/build-angular:server",
+      "options": {
+        "outputPath": "dist/apps/christopherrutherford-net/server",
+        "main": "apps/christopherrutherford-net/src/server.ts",
+        "tsConfig": "apps/christopherrutherford-net/tsconfig.server.json",
+        "inlineStyleLanguage": "scss"
+      },
+      "configurations": {
+        "production": {
+          "outputHashing": "media"
+        },
+        "development": {
+          "buildOptimizer": false,
+          "optimization": false,
+          "sourceMap": true,
+          "extractLicenses": false,
+          "vendorChunk": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve-ssr": {
+      "continuous": true,
+      "executor": "@angular-devkit/build-angular:ssr-dev-server",
+      "configurations": {
+        "development": {
+          "browserTarget": "christopherrutherford-net:build:development",
+          "serverTarget": "christopherrutherford-net:server:development"
+        },
+        "production": {
+          "browserTarget": "christopherrutherford-net:build:production",
+          "serverTarget": "christopherrutherford-net:server:production"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "prerender": {
+      "executor": "@angular-devkit/build-angular:prerender",
+      "options": {
+        "routes": ["/"]
+      },
+      "configurations": {
+        "development": {
+          "browserTarget": "christopherrutherford-net:build:development",
+          "serverTarget": "christopherrutherford-net:server:development"
+        },
+        "production": {
+          "browserTarget": "christopherrutherford-net:build:production",
+          "serverTarget": "christopherrutherford-net:server:production"
+        }
+      },
+      "defaultConfiguration": "production"
     }
   }
 }

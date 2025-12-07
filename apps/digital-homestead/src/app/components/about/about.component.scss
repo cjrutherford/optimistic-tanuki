@@ -1,7 +1,8 @@
 .section-heading {
     margin-bottom: 1rem;
     width: 90%;
-    background: rgba(33,33,33,0.15);
+    background: var(--heading-gradient);
+    color: var(--background);
     margin: 20px auto;
     padding: 40px;
     border-radius: 8px;

@@ -4,7 +4,7 @@ FROM docker.io/node:lts-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
 COPY dist/apps/social/package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Production image, copy all the files and run nest
 FROM docker.io/node:lts-alpine AS runner
@@ -16,6 +16,7 @@ WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 COPY ./dist/apps/social .
+RUN npm i --save typeorm
 RUN chown -R node:node .
 USER node
 EXPOSE 3003

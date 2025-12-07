@@ -1,0 +1,21 @@
+<div *ngIf="useTile; else cardTemplate">
+  <otui-tile style="width: 100%; display: block;">
+    <div class="title-bar">
+      <img *ngIf="logoSrc" [src]="logoSrc" [alt]="logoAlt" width="75px">
+      <otui-heading [text]="appTitle" [size]="'2em'"></otui-heading>
+      <otui-button class="menu-btn" (click)="onMenuClick()">{{ menuIcon }}</otui-button>
+    </div>
+  </otui-tile>
+</div>
+
+<ng-template #cardTemplate>
+  <otui-card>
+    <div class="title-bar">
+      <otui-button variant="rounded" (click)="onMenuClick()">
+        <img *ngIf="logoSrc" [src]="logoSrc" [alt]="logoAlt" [style.maxWidth.px]="75" [style.borderRadius]="'50%'" />
+      </otui-button>
+      <h1>{{ appTitle }}</h1>
+      <lib-theme-toggle *ngIf="showThemeToggle"></lib-theme-toggle>
+    </div>
+  </otui-card>
+</ng-template>

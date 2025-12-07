@@ -1,111 +1,37 @@
 <otui-tile>
   <otui-heading [text]="'Provided Services'" [size]="'2em'"></otui-heading>
 </otui-tile>
-<otui-grid [columns]="4" [rows]="1" class="projectGrid">
-
-  <otui-card>
-        <div class="project-image-container">
-            <img src="assets/images/custom-app.png" alt="Custom application development illustration" width="75%" style="border-radius: 15px;">
-        </div>
-        <div class="project-content-container">
-            <otui-heading [text]="'Custom Application Development'" [size]="'1.25em'"/>
-            <p>I'll work with you to develop tools that fit your bespoke need and to your specifications. Drop me a line, and we can build something together.</p>
-            <otui-button [variant]="'primary'" > Learn More </otui-button>
-        </div>
-  </otui-card>
-  <otui-card >
-        <div class="project-image-container">
-            <img src="assets/images/consulting.png" alt="immich" width="75%" style="border-radius: 15px;">
-        </div>
-        <div class="project-content-container">
-            <otui-heading [text]="'IT Consulting'" [size]="'1.25em'"/>
-            <p>Have a business? We can help you find the solution right for you! Whether it's software development, IT strategy, or support, we've got you covered.</p>
-            <otui-button [variant]="'primary'" > Learn More </otui-button>
-        </div>
-  </otui-card>
-  <otui-card >
-        <div class="project-image-container">
-            <img src="assets/images/private-cloud.png" alt="Private Cloud Services icon" width="75%" style="border-radius: 15px;">
-        </div>
-        <div class="project-content-container">
-            <otui-heading [text]="'Private Cloud Services'" [size]="'1.25em'"/>
-            <p>Have a business? Have a group? Want to provide common tools for your team? Let's discuss how we can create a tailored solution for you with the applications you want.</p>
-            <otui-button [variant]="'primary'" > Learn More </otui-button>
-        </div>
-  </otui-card>
-
-
-  
-  <div class="svg-background-in-div">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 100 100"
-      preserveAspectRatio="xMidYMid slice"
-    >
-      <defs>
-        <pattern
-          id="animatedWavePattern"
-          x="0"
-          y="0"
-          width="100"
-          height="100"
-          patternUnits="userSpaceOnUse"
-          patternContentUnits="userSpaceOnUse"
-        >
-          <path
-            id="wavePath"
-            d="M0,50 Q25,25 50,50 T100,50 V100 H0 Z"
-            fill="{complement}"
-            opacity="0.15"
-          >
-            <animate
-              attributeName="d"
-              dur="6s"
-              repeatCount="indefinite"
-              values="M0,50 Q25,25 50,50 T100,50 V100 H0 Z;
-                                             M0,60 Q20,30 50,50 T100,40 V100 H0 Z;
-                                             M0,40 Q30,70 50,50 T100,60 V100 H0 Z;
-                                             M0,50 Q25,25 50,50 T100,50 V100 H0 Z"
-            />
-            <animate
-              attributeName="opacity"
-              dur="4s"
-              repeatCount="indefinite"
-              values="0.15;0.25;0.15"
-              calcMode="spline"
-              keyTimes="0;0.5;1"
-              keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
-            />
-          </path>
-        </pattern>
-      </defs>
-
-      <rect
-        x="0"
-        y="0"
-        width="100%"
-        height="100%"
-        fill="url(#animatedWavePattern)"
-      />
-
-      <animateTransform
-        attributeName="patternTransform"
-        type="translate"
-        from="0 0"
-        to="100 0"
-        dur="30s"
-        repeatCount="indefinite"
-        additive="sum"
-      />
-      <animateTransform
-        attributeName="patternTransform"
-        type="translate"
-        from="0 0"
-        to="0 100"
-        dur="40s"
-        repeatCount="indefinite"
-        additive="sum"
-      />
-    </svg>
-  </div>
-</otui-grid>
+<div class="projectGrid">
+  <lib-blog-post-card
+    [title]="'Custom Application Development'"
+    [bannerImage]="'assets/images/custom-app.png'"
+    [excerpt]="'Offering custom application development solutions tailored to your business needs. Let me handle the technical details while you enjoy the benefits of these powerful tools.'"
+    [readMoreLink]="'/services/custom-application-development'"
+    [readMoreText]="'Learn More'"
+  >
+  </lib-blog-post-card>
+  <lib-blog-post-card
+    [title]="'IT Consulting'"
+    [bannerImage]="'assets/images/consulting.png'"
+    [excerpt]="'Have a business? We can help you find the solution right for you! Whether it\'s software development, IT strategy, or support, we\'ve got you covered.'"
+    [readMoreLink]="'/services/it-consulting'"
+    [readMoreText]="'Learn More'"
+  >
+  </lib-blog-post-card>
+  <lib-blog-post-card
+    [title]="'Private Cloud Services'"
+    [bannerImage]="'assets/images/private-cloud.png'"
+    [excerpt]="'Unlock the potential of your business with our private cloud solutions. Tailored to your needs, we ensure security, scalability, and control.'"
+    [readMoreLink]="'/services/private-cloud'"
+    [readMoreText]="'Learn More'"
+  >
+  </lib-blog-post-card>
+  <lib-blog-post-card
+    [title]="'Custom Solutions'"
+    [bannerImage]="'assets/images/custom-app.png'"
+    [excerpt]="'Have a business? Have a group? Want to provide common tools for your team? Lets discuss how we can create a tailored solution for you with the applications you want.'"
+    [readMoreLink]="'/services/custom-solutions'"
+    [readMoreText]="'Learn More'"
+  >
+  </lib-blog-post-card>
+</div>

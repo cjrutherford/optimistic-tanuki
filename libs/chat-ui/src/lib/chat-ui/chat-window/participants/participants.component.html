@@ -1,6 +1,8 @@
 <div class="participants">
-  <span *ngFor="let participant of participants" class="participant">
-    <img [src]="participant.avatarUrl" [alt]="participant.name" class="avatar" />
-    {{ participant.name }}
-  </span>
+  @for (participant of participants; track participant) {
+    <span class="participant">
+      <img [src]="participant.avatarUrl" [alt]="participant.name" class="avatar" />
+      {{ participant.name }}
+    </span>
+  }
 </div>

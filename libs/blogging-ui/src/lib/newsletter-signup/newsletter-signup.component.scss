@@ -1,0 +1,15 @@
+.row {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    .img {
+        flex: 1;
+        img {
+            width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            object-fit: cover;
+            height: 100%;
+        }
+    }
+}

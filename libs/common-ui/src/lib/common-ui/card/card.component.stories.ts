@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { CardComponent } from './card.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<CardComponent> = {
@@ -10,107 +10,61 @@ const meta: Meta<CardComponent> = {
 export default meta;
 type Story = StoryObj<CardComponent>;
 
-export const Empty: Story = {
-  args: {},
-};
-
-export const Heading: Story = {
-  args: {},
+export const Default: Story = {
+  args: { variant: 'default' },
   render: () => ({
     template: `
-      <otui-card>
-        <div class="card-header">Card Header</div>
-        <div class="card-body">This is a card with a header.</div>
-      </otui-card>
-    `,
-  }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    expect(canvas.getByText(/Card Header/gi)).toBeTruthy();
-  },
-};
-
-export const WithHeader: Story = {
-  args: {},
-  render: () => ({
-    template: `
-      <otui-card>
-        <div class="card-header">Card Header</div>
-        <div class="card-body">This is a card with a header.</div>
-      </otui-card>
-    `,
-  }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    expect(canvas.getByText(/Card Header/gi)).toBeTruthy();
-  },
-};
-
-export const WithFooter: Story = {
-  args: {},
-  render: () => ({
-    template: `
-      <otui-card>
-        <div class="card-body">This is a card with a footer.</div>
-        <div class="card-footer">Card Footer</div>
-      </otui-card>
-    `,
-  }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    expect(canvas.getByText(/Card Footer/gi)).toBeTruthy();
-  },
-};
-
-export const WithHeaderAndFooter: Story = {
-  args: {},
-  render: () => ({
-    template: `
-      <otui-card>
-        <div class="card-header">Card Header</div>
-        <div class="card-body">This is a card with both header and footer.</div>
-        <div class="card-footer">Card Footer</div>
-      </otui-card>
-    `,
-  }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    expect(canvas.getByText(/Card Header/gi)).toBeTruthy();
-    expect(canvas.getByText(/Card Footer/gi)).toBeTruthy();
-  },
-};
-
-export const LightMode: Story = {
-  args: {},
-  render: () => ({
-    template: `
-      <otui-card class="light-mode">
-        <div class="card-header">Card Header</div>
-        <div class="card-body">This is a card in light mode.</div>
+      <otui-card [CardVariant]="'default'">
+        <div class="card-header">Default Card</div>
+        <div class="card-body">This is the default card variant.</div>
       </otui-card>
     `,
   }),
 };
 
-export const DarkMode: Story = {
-  args: {},
+export const GradientGlow: Story = {
+  args: { variant: 'gradient-glow' },
   render: () => ({
     template: `
-      <otui-card class="dark-mode">
-        <div class="card-header">Card Header</div>
-        <div class="card-body">This is a card in dark mode.</div>
+      <otui-card [CardVariant]="'gradient-glow'">
+        <div class="card-header">Gradient Glow</div>
+        <div class="card-body">This card uses the gradient glow border effect.</div>
       </otui-card>
     `,
   }),
 };
 
-export const FastCycleMode: Story = {
-  args: {},
+export const ElectricBorder: Story = {
+  args: { variant: 'electric-border' },
   render: () => ({
     template: `
-      <otui-card class="fast-cycle-mode">
-        <div class="card-header">Card Header</div>
-        <div class="card-body">This is a card in fast cycle mode.</div>
+      <otui-card [CardVariant]="'electric-border'">
+        <div class="card-header">Electric Border</div>
+        <div class="card-body">This card uses the electric border effect.</div>
+      </otui-card>
+    `,
+  }),
+};
+
+export const GradientGlowCard: Story = {
+  args: { variant: 'gradient-glow-card' },
+  render: () => ({
+    template: `
+      <otui-card [CardVariant]="'gradient-glow-card'">
+        <div class="card-header">Gradient Glow Card</div>
+        <div class="card-body">This card uses the gradient glow card effect.</div>
+      </otui-card>
+    `,
+  }),
+};
+
+export const GradientBackground: Story = {
+  args: { variant: 'gradient-background' },
+  render: () => ({
+    template: `
+      <otui-card [CardVariant]="'gradient-background'">
+        <div class="card-header">Gradient Background</div>
+        <div class="card-body">This card uses the gradient background effect.</div>
       </otui-card>
     `,
   }),

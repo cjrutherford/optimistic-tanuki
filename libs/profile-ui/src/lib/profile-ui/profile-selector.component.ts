@@ -4,26 +4,24 @@ import { CreateProfileDto, ProfileDto, UpdateProfileDto } from '@optimistic-tanu
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ImageUploadComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 
-import { CommonModule } from '@angular/common';
+
 import { MatListModule } from '@angular/material/list';
 import { ProfilePhotoComponent } from './profile-photo/profile-photo.component';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'lib-profile-selector',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     CardComponent,
-    TileComponent,
     TextInputComponent,
     ButtonComponent,
-    ModalComponent, 
+    ModalComponent,
     ImageUploadComponent,
     ProfilePhotoComponent,
-    MatListModule,
-  ],
+    MatListModule
+],
   templateUrl: './profile-selector.component.html',
   styleUrl: './profile-selector.component.scss',
 })

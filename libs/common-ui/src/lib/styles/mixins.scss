@@ -1,0 +1,274 @@
+// Common style mixins for DRY implementation across components
+
+@use 'sass:list' as list;
+
+// Gradient mixins
+@mixin gradient-background($type: 'linear', $direction: 'to bottom', $colors...) {
+  @if $type == 'linear' {
+    background: linear-gradient(#{$direction}, $colors);
+  } @else if $type == 'radial' {
+    background: radial-gradient(#{$direction}, $colors);
+  } @else if $type == 'conic' {
+    background: conic-gradient(from #{$direction}, $colors);
+  }
+}
+
+@mixin gradient-border($type: 'linear', $direction: 'to right', $width: 2px, $colors...) {
+  border: $width solid transparent;
+  background: var(--background, #fff);
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  @if $type == 'linear' {
+    background-image: linear-gradient(var(--background, #fff), var(--background, #fff)), linear-gradient(#{$direction}, $colors);
+  } @else if $type == 'radial' {
+    background-image: linear-gradient(var(--background, #fff), var(--background, #fff)), radial-gradient(#{$direction}, $colors);
+  } @else if $type == 'conic' {
+    background-image: linear-gradient(var(--background, #fff), var(--background, #fff)), conic-gradient(from #{$direction}, $colors);
+  }
+}
+
+@mixin animated-gradient($duration: 8s, $size: 200%) {
+  background-size: $size $size;
+  animation: gradient-shift $duration infinite ease;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+// Shadow mixins
+@mixin box-shadow-glow($color, $blur: 8px, $spread: 2px) {
+  box-shadow: 0 0 $blur $spread $color;
+}
+
+@mixin box-shadow-multi-glow($color1, $color2, $blur1: 20px, $spread1: 8px, $blur2: 20px, $spread2: 8px) {
+  box-shadow: 
+    6px 12px $blur1 $spread1 $color1,
+    -6px -12px $blur2 $spread2 $color2;
+}
+
+@mixin box-shadow-inset($color, $blur: 8px, $spread: 0) {
+  box-shadow: inset 2px 4px $blur $spread $color;
+}
+
+@mixin box-shadow-layered($color1, $color2, $color3) {
+  box-shadow: 
+    0 0 24px 8px $color1,
+    0 0 48px 16px $color2,
+    0 0 96px 32px $color3;
+}
+
+// Border mixins
+@mixin border-base($width: 1px, $style: solid, $color: var(--border-color, #ccc)) {
+  border: $width $style $color;
+}
+
+@mixin border-radius-standard($size: var(--border-radius-md, 8px)) {
+  border-radius: $size;
+}
+
+// Transition mixins
+@mixin transition-base($properties: all, $duration: 0.3s, $timing: ease-in-out) {
+  transition: $properties $duration $timing;
+}
+
+@mixin transition-multi($transitions...) {
+  transition: $transitions;
+}
+
+// Layout mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+@mixin flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+// Hero section layout mixin
+@mixin hero-section($min-height: 60vh, $padding: 2rem) {
+  width: 100%;
+  min-height: $min-height;
+  position: relative;
+  padding: $padding;
+  @include flex-center;
+  flex-direction: column;
+}
+
+@mixin hero-overlay($opacity: 0.4, $color: #000) {
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba($color, $opacity);
+    z-index: 0;
+    pointer-events: none;
+  }
+}
+
+// Content container mixin
+@mixin content-container($max-width: 1200px, $padding: 2rem) {
+  max-width: $max-width;
+  margin: 0 auto;
+  padding: $padding;
+  width: 100%;
+}
+
+// Card/tile pattern mixin
+@mixin card-pattern($border-radius: 8px, $padding: 1.5rem) {
+  border-radius: $border-radius;
+  padding: $padding;
+  position: relative;
+  overflow: hidden;
+}
+
+// Glassmorphism effect mixin
+@mixin glass-morphism(
+  $blur: 10px,
+  $bg-opacity: 0.2,
+  $border-opacity: 0.3,
+  $radius: 10px
+) {
+  position: relative;
+  background: rgba(255, 255, 255, $bg-opacity);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid rgba(255, 255, 255, $border-opacity);
+  border-radius: $radius;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+// Glow effect layer mixin
+@mixin glow-layer($blur: 60px, $inset: -5%, $z-index: 0) {
+  &::before {
+    content: '';
+    display: block;
+    position: absolute;
+    inset: $inset;
+    background: var(--border-gradient, var(--gradient, none));
+    filter: blur($blur);
+    z-index: $z-index;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+}
+
+// Pulse animation mixin
+@mixin pulse-animation($duration: 16s, $colors: (var(--accent), var(--complement))) {
+  // Expose the two pulse colors as CSS custom properties so the root-level
+  // keyframes can reference them without needing Sass variables.
+  --pulse-color-1: #{list.nth($colors, 1)};
+  --pulse-color-2: #{list.nth($colors, 2)};
+  animation: pulse-halo $duration infinite ease;
+}
+
+// Root-level keyframes using CSS variables (safe to emit once at root).
+@at-root {
+  @keyframes pulse-halo {
+    0% {
+      box-shadow: 6px 12px 20px 8px var(--pulse-color-1), -6px -12px 20px 8px var(--pulse-color-2);
+    }
+    50% {
+      box-shadow: 10px 20px 28px 16px var(--pulse-color-2), -10px -20px 28px 16px var(--pulse-color-1);
+    }
+    100% {
+      box-shadow: 6px 12px 20px 8px var(--pulse-color-1), -6px -12px 20px 8px var(--pulse-color-2);
+    }
+  }
+}
+
+// Electric border effect mixin
+@mixin electric-border-effect($color: var(--complement)) {
+  position: relative;
+  overflow: hidden;
+  
+  .glow-layer-1 {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid rgba($color, 0.6);
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  .glow-layer-2 {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid $color;
+    pointer-events: none;
+    z-index: 2;
+  }
+  
+  .overlay-1,
+  .overlay-2 {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    mix-blend-mode: overlay;
+    transform: scale(1.1);
+    pointer-events: none;
+    z-index: 3;
+  }
+  
+  .overlay-1 {
+    opacity: 1;
+    background: linear-gradient(-30deg, white, transparent 30%, transparent 70%, white);
+  }
+  
+  .overlay-2 {
+    opacity: 0.5;
+    background: linear-gradient(-30deg, white, transparent 30%, transparent 70%, white);
+  }
+  
+  .background-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    transform: scale(1.1);
+    opacity: 0.3;
+    z-index: 0;
+    background: linear-gradient(-30deg, $color, transparent, $color);
+  }
+}
+
+// Responsive typography mixin
+@mixin responsive-font($min-size: 1rem, $max-size: 2rem, $min-vw: 320px, $max-vw: 1200px) {
+  font-size: clamp($min-size, calc($min-size + ($max-size - $min-size) * ((100vw - $min-vw) / ($max-vw - $min-vw))), $max-size);
+}
+
+// Grid layout mixin
+@mixin grid-layout($columns: 3, $gap: 2rem, $min-width: 250px) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax($min-width, 1fr));
+  gap: $gap;
+  
+  @media (min-width: 768px) {
+    grid-template-columns: repeat($columns, 1fr);
+  }
+}

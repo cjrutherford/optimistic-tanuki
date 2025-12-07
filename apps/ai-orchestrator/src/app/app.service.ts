@@ -23,10 +23,12 @@ export class AppService {
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileService: ClientProxy,
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
-    private readonly chatCollectorService: ClientProxy
+    private readonly chatCollectorService: ClientProxy,
+    @Inject('ai-enabled-apps')
+    private readonly aiEnabledApps: { [key: string]: string }
   ) {}
 
-  async processNewProfile(profileId: string) {
+  async processNewProfile(profileId: string, appId: string) {
     try {
       const assistant: PersonaTelosDto = await this.getPersona({ name: 'Alex Generalis' });
       const profile: ProfileDto = await firstValueFrom(
@@ -53,7 +55,9 @@ export class AppService {
           {
             role: 'system',
             content: `${systemPromptBase}
-            The user has just created a profile for the Forge of will a small personal project management platform. 
+            The user has just created a profile as a user of ${appId}. This app's description is: ${this.aiEnabledApps[appId] ?? 'No description available'}. 
+            The user's profile name is ${profile.profileName}. 
+            The user may have limited information in their profile.
             your goal is to assist the user in fleshing out their projects and goals. 
             behind the scenes, provide JSON output with potential TELOS data points to add to either the users' or the project's telos data.
             Inform the user that they can export their TELOS data at any time. TELOS is not an acronym, but a framework for maintaining focus and clarity for both AI and humans.
@@ -61,7 +65,7 @@ export class AppService {
             JSON format should be with keys for goals, skills, interests, limitations, strengths, objectives, coreObjective, and overallProfileSummary.`
           },{
             role: 'user',
-            content: `Hello, I'm ${profile.profileName}, and I just created my profile. I need help getting started, and I'm new here.`
+            content: `Hello, I'm ${profile.profileName}, and I just created my profile. I need help getting started, and I'm new here. Please ask me questions to help me clarify my goals and projects.`
           }
         ]
       };
@@ -86,7 +90,7 @@ export class AppService {
       return [];
     } catch (error) {
       console.trace(error);
-      this.l.error('Error processing new profile:', error.message);
+      this.l.error('Error processing new profile:', error);
       throw new RpcException('Failed to process new profile: ' + error.message);
     }
   }

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { NotificationComponent } from './notification.component';
-import { within } from '@storybook/testing-library';
+import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
 
 const meta: Meta<NotificationComponent> = {
@@ -20,7 +20,7 @@ export const Heading: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/notification works!/gi)).toBeTruthy();
+    await expect(canvas.getByText(/notification works!/gi)).toBeTruthy();
   },
 };
 
@@ -53,8 +53,8 @@ export const WithNotifications: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await new Promise(resolve => setTimeout(resolve, 1000));
-    expect(canvas.getByText(/info notification/gi)).toBeTruthy();
-    expect(canvas.getByText(/warning notification/gi)).toBeTruthy();
-    expect(canvas.getByText(/error notification/gi)).toBeTruthy();
+    await expect(canvas.getByText(/info notification/gi)).toBeTruthy();
+    await expect(canvas.getByText(/warning notification/gi)).toBeTruthy();
+    await expect(canvas.getByText(/error notification/gi)).toBeTruthy();
   },
 };

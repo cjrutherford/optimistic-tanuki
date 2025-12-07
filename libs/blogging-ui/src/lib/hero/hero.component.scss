@@ -1,0 +1,24 @@
+.background-image {
+    background-image: var(--background-image);
+    background-size: cover;
+    background-position: center;
+    border-radius: 10px;
+    padding: 0;
+    width: 100%;
+    .background-filter {
+        margin: 0;
+        padding: 20px;
+        background-color: rgba(0, 0, 0, 0.6); // Dark overlay for better text visibility
+        color: white;
+        border-radius: 8px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        p {
+            margin: 20px 30px;
+            font-size: 18px;
+        }
+    }
+}

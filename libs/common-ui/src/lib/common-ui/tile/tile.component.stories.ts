@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { TileComponent } from './tile.component';
-import { within } from '@storybook/testing-library';
-import { expect } from '@storybook/jest';
 
 const meta: Meta<TileComponent> = {
   component: TileComponent,
@@ -10,62 +8,37 @@ const meta: Meta<TileComponent> = {
 export default meta;
 type Story = StoryObj<TileComponent>;
 
-export const Primary: Story = {
+export const Default: Story = {
+  args: { TileVariant: 'default' },
   render: () => ({
-    template: `
-      <otui-tile>Primary Tile</otui-tile>
-    `,
+    template: `<otui-tile [TileVariant]="'default'">Default Tile</otui-tile>`,
   }),
 };
 
-export const Secondary: Story = {
+export const GradientGlow: Story = {
+  args: { TileVariant: 'gradient-glow' },
   render: () => ({
-    template: `
-      <otui-tile>Secondary Tile</otui-tile>
-    `,
+    template: `<otui-tile [TileVariant]="'gradient-glow'">Gradient Glow Tile</otui-tile>`,
   }),
 };
 
-export const Tertiary: Story = {
+export const ElectricBorder: Story = {
+  args: { TileVariant: 'electric-border' },
   render: () => ({
-    template: `
-      <otui-tile>Tertiary Tile</otui-tile>
-    `,
+    template: `<otui-tile [TileVariant]="'electric-border'">Electric Border Tile</otui-tile>`,
   }),
 };
 
-export const Heading: Story = {
+export const GradientGlowCard: Story = {
+  args: { TileVariant: 'gradient-glow-card' },
   render: () => ({
-    template: `
-      <otui-tile>Heading Tile</otui-tile>
-    `,
-  }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    expect(canvas.getByText(/Heading Tile/gi)).toBeTruthy();
-  },
-};
-
-export const LightMode: Story = {
-  render: () => ({
-    template: `
-      <otui-tile class="light-mode">Light Mode Tile</otui-tile>
-    `,
+    template: `<otui-tile [TileVariant]="'gradient-glow-card'">Gradient Glow Card Tile</otui-tile>`,
   }),
 };
 
-export const DarkMode: Story = {
+export const GradientBackground: Story = {
+  args: { TileVariant: 'gradient-background' },
   render: () => ({
-    template: `
-      <otui-tile class="dark-mode">Dark Mode Tile</otui-tile>
-    `,
-  }),
-};
-
-export const FastCycleMode: Story = {
-  render: () => ({
-    template: `
-      <otui-tile class="fast-cycle-mode">Fast Cycle Mode Tile</otui-tile>
-    `,
+    template: `<otui-tile [TileVariant]="'gradient-background'">Gradient Background Tile</otui-tile>`,
   }),
 };

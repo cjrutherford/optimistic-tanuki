@@ -1,26 +1,16 @@
-<otui-card>
-    <div style="display: flex; flex-direction: row; justify-content: space-between;">
-        <div>
-            <otui-heading [text]="'Christopher Rutherford'" [size]="'2rem'" [color]="'#fff'"></otui-heading>
-        </div>
-        <div style="display: flex; flex-direction: row; gap: 1rem; align-items: center;">
-            <otui-heading
-                [text]="'Home'"
-                [size]="'1.2rem'"
-                [color]="'#fff'"></otui-heading>
-            <otui-heading
-                [text]="'About'"
-                [size]="'1.2rem'"
-                [color]="'#fff'"></otui-heading>
-            <otui-heading
-                [text]="'Projects'"
-                [size]="'1.2rem'"
-                [color]="'#fff'"></otui-heading>
-            <otui-heading
-                [text]="'Contact'"
-                [size]="'1.2rem'"
-                [color]="'#fff'"></otui-heading>
-        </div>
+<otui-app-bar
+  appTitle="Christopher Rutherford"
+  logoSrc="assets/tanuki.jpg"
+  logoAlt="Christopher Rutherford Logo"
+  [showThemeToggle]="false"
+  [useTile]="true"
+  menuIcon="☰"
+  (menuToggle)="toggleMenu()">
+</otui-app-bar>
 
-    </div>
-</otui-card>
+<otui-nav-sidebar
+  [isOpen]="menuOpen()"
+  [navItems]="navItems"
+  heading="Navigation"
+  (close)="menuOpen.set(false)">
+</otui-nav-sidebar>

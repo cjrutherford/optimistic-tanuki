@@ -2,28 +2,27 @@ import { CanActivate, Router } from '@angular/router';
 import { Injectable, inject } from '@angular/core';
 
 import { AuthStateService } from './auth-state.service';
-import { ProfileService } from './profile.service';
+import { ProfileService } from './profile/profile.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthGuard implements CanActivate {
   private router = inject(Router);
   private authStateService = inject(AuthStateService);
   private isAuthenticated = false;
+  private readonly profileService: ProfileService = inject(ProfileService);
 
-  constructor(
-    private readonly profileService: ProfileService,
-  ) {
-    this.authStateService.isAuthenticated$.subscribe(isAuthenticated => {
+  constructor() {
+    // AuthStateService exposes isAuthenticated$ as a method that returns an Observable
+    this.authStateService.isAuthenticated$().subscribe((isAuthenticated) => {
       this.isAuthenticated = isAuthenticated;
     });
-
   }
 
   async canActivate(): Promise<boolean> {
     if (this.isAuthenticated) {
-        return true;
+      return true;
     }
     // If the user is not authenticated, navigate to the login page
     this.router.navigate(['/login']);

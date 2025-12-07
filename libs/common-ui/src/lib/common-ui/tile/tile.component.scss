@@ -1,30 +1,53 @@
+@use '../../styles/mixins' as *;
+
 .tile {
-  border: 4px solid var(--accent, #b1baec);
-  padding: 1em;
-  border-radius: 8px;
-  // box-shadow: 4px 4px 6px 10px var(--accent);
-  display: flex;
-  color: var(--foreground, #fff);
-  flex-direction: column;
+  padding: 0;
+  margin: 0;
+  @include pulse-animation(16s, (var(--accent), var(--complement)));
+  .filter {
+    margin: 5px;
+    padding: 2rem 2rem;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: var(--background-filter, rgba(255, 255, 255, 0.5));
+    @include border-radius-standard(var(--border-radius, 4px));
+    @include pulse-animation(16s, (var(--accent), var(--complement)));
+    :hover {
+      background: var(
+        --hover-background-filter,
+        var(--background-filter, rgba(255, 255, 255, 0.5))
+      );
+      @include transition-base(background, var(--transition-duration, 0.3s));
+    }
+  }
+}
+.default {
+  @include border-base(4px, solid, var(--accent, #b1baec));
+  @include border-radius-standard(8px);
+  @include flex-column;
   justify-content: center;
   align-items: center;
-  // transition: box-shadow 0.3s ease-in-out;
-  background: var(--background, #5969c3);
-  animation: pulse-halo 16s infinite ease;
+  @include transition-base(box-shadow, 0.3s);
+  background: var(--background-gradient, #5969c3);
+  @include pulse-animation(16s, (var(--accent), var(--complement)));
+  color: var(--foreground, #fff);
+  @include box-shadow-multi-glow(var(--accent), var(--complement), 20px, 8px, 20px, 8px);
 }
 
 .tile.row {
-  flex-direction: row;
+  @include flex-row;
   align-items: center;
   justify-content: space-between;
-  transition: box-shadow 0.3s ease-in-out;
+  @include transition-base(box-shadow, 0.3s);
   background: var(--background, #5969c3);
+  @include box-shadow-glow(var(--accent), 6px, 10px);
   box-shadow: 4px 4px 6px 10px var(--accent), inset 0 2px 12px 0 rgba(0, 0, 0, 0.15);
 }
 
 .tile:hover {
-  box-shadow: inset 1px 2px 1em var(--accent), 
-  2px 4px 8px 6px var(--complement);
+  @include box-shadow-inset(var(--accent), 1em, 0);
+  box-shadow: inset 1px 2px 1em var(--accent), 2px 4px 8px 6px var(--complement);
 }
 
 .tile.light-mode {
@@ -59,20 +82,72 @@
   height: 100%;
   aspect-ratio: 1 / 1;
 }
-@keyframes pulse-halo {
-  0% {
-    /* Halved blur and spread, using solid colors */
-    box-shadow: 2px 4px 7.5px 2.5px var(--accent),
-                -2px -4px 7.5px 2.5px var(--complement) !important;
+
+:host {
+  display: block;
+  box-sizing: border-box;
+  @include border-radius-standard(var(--border-radius, 1em));
+  @include border-base(var(--border-width, 2px), solid, var(--border-color, transparent));
+  background: var(--background, #fff);
+  color: var(--foreground, #222);
+  @include transition-base(box-shadow, var(--transition-duration, 0.3s));
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-glow {
+  border: solid var(--border-width, 4px) #0000;
+  border-radius: calc(2 * var(--border-width, 4px));
+  background: repeating-conic-gradient(
+      from var(--angle, 0deg),
+      var(--gradient-stops, #0000 0% 70%, #0000ff7f)
+    )
+    border-box;
+  filter: var(--glow-filter, url(#glow-0));
+  animation: glow-anim 2s linear infinite;
+}
+
+@keyframes glow-anim {
+  to {
+    --angle: 1turn;
   }
-  50% {
-    /* Halved offsets, blur, and spread; swapped colors */
-    box-shadow: 3px 5px 8px 5px var(--complement),
-                -3px -5px 8px 5px var(--accent) !important;
-  }
-  100% {
-    /* Return to initial state */
-    box-shadow: 2px 4px 7.5px 2.5px var(--accent),
-                -2px -4px 7.5px 2.5px var(--complement) !important;
-  }
+}
+
+.electric-border {
+  padding: 2px;
+  border-radius: 24px;
+  position: relative;
+  background: linear-gradient(
+      -30deg,
+      var(--gradient-color, #ffbc00),
+      transparent,
+      var(--gradient-color, #ffbc00)
+    ),
+    linear-gradient(to bottom, var(--background, #222), var(--background, #222));
+  border: 2px solid var(--electric-border-color, #dd8448);
+  filter: url(#turbulent-displace);
+}
+
+.gradient-glow-card {
+  --list: var(--gradient-colors, #ffbc00, #ff0058);
+  --grad: linear-gradient(45deg, var(--list));
+  border: solid 4px #0000;
+  aspect-ratio: 7/10;
+  border-radius: 1em;
+  background: conic-gradient(rgb(0 0 0/ 0.75) 0 0) padding-box,
+    var(--grad) border-box;
+}
+
+.gradient-glow-card::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--grad);
+  filter: blur(0.75em);
+  content: '';
+}
+
+.gradient-background {
+  @include gradient-background('linear', '135deg', '#ffbc00', '#ff0058');
+  @include animated-gradient(10s, 200%);
 }

@@ -1,17 +1,11 @@
-# Assets Service
+# Assets
 
-This service manages static assets for the application.
+This service is responsible for managing digital assets, such as images, videos, and documents. It provides a centralized location for storing and retrieving assets, as well as for performing various operations on them, such as resizing and cropping images.
 
-## Configuration
+## 🚀 Getting Started
 
-The application can be configured using environment variables.
+This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
 
-| Variable     | Description              | Default |
-|--------------|--------------------------|---------|
-| `NODE_ENV`   | Node.js environment      | `production` |
-| `PORT`       | Port to expose the service on | `3005`  |
-| `listenPort` | Port for the service to listen on | `3005`  |
+## 📝 API Reference
 
-## Running the Service
-
-The service is designed to be run in a Docker container. It exposes port `3005`.
+The Assets service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/assets`.

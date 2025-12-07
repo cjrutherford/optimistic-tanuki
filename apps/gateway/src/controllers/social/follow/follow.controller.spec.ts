@@ -8,10 +8,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { FollowController } from './follow.controller';
 import { UserDetails } from '../../../decorators/user.decorator';
 import { of } from 'rxjs';
+import { JwtService } from '@nestjs/jwt';
 
 describe('FollowController', () => {
   let controller: FollowController;
-  let mockAuthClinent;
+  let mockAuthClient;
   let mockSocialClient;
   let mockProfileClient;
 
@@ -37,10 +38,16 @@ describe('FollowController', () => {
             send: jest.fn().mockImplementation(() => of({})),
           },
         },
+        {
+          provide: JwtService,
+          useValue: {
+            verify: jest.fn(),
+          },
+        }
       ],
     }).compile();
 
-    mockAuthClinent = module.get(ServiceTokens.AUTHENTICATION_SERVICE);
+    mockAuthClient = module.get(ServiceTokens.AUTHENTICATION_SERVICE);
     mockSocialClient = module.get(ServiceTokens.SOCIAL_SERVICE);
     mockProfileClient = module.get(ServiceTokens.PROFILE_SERVICE);
     controller = module.get<FollowController>(FollowController);
@@ -52,7 +59,14 @@ describe('FollowController', () => {
 
   describe('follow', () => {
     it('should follow a user (happy path)', async () => {
-      const user = { email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1' };
+      const user: UserDetails = {
+        email: 'a',
+        exp: 1,
+        iat: 1,
+        name: 'n',
+        userId: 'user-1',
+        profileId: ''
+      };
       const followDto = { followerId: 'profile-1', followeeId: 'profile-2' };
       const profile = { userId: 'user-1' };
       const module = (controller as any);
@@ -64,14 +78,20 @@ describe('FollowController', () => {
       expect(result).toEqual({ success: true });
     });
     it('should throw if profile not found', async () => {
-      const user = { email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1' };
+      const user: UserDetails = {
+        email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1',
+        profileId: ''
+      };
       const followDto = { followerId: 'profile-1', followeeId: 'profile-2' };
       const module = (controller as any);
       module.profileClient = { send: jest.fn(() => of(null)) };
       await expect(controller.follow(user, followDto)).rejects.toThrow('Profile not found');
     });
     it('should throw if userId does not match', async () => {
-      const user = { email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1' };
+      const user: UserDetails = {
+        email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1',
+        profileId: ''
+      };
       const followDto = { followerId: 'profile-1', followeeId: 'profile-2' };
       const profile = { userId: 'other-user' };
       const module = (controller as any);
@@ -82,7 +102,7 @@ describe('FollowController', () => {
 
   describe('unfollow', () => {
     it('should unfollow a user (happy path)', async () => {
-      const user = { email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1' };
+      const user: UserDetails = { email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1', profileId: '' };
       const followDto = { followerId: 'profile-1', followeeId: 'profile-2' };
       const profile = { userId: 'user-1' };
       const module = (controller as any);
@@ -94,14 +114,14 @@ describe('FollowController', () => {
       expect(result).toEqual({ success: true });
     });
     it('should throw if profile not found', async () => {
-      const user = { email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1' };
+      const user: UserDetails = { email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1', profileId: '' };
       const followDto = { followerId: 'profile-1', followeeId: 'profile-2' };
       const module = (controller as any);
       module.profileClient = { send: jest.fn(() => of(null)) };
       await expect(controller.unfollow(user, followDto)).rejects.toThrow('Profile not found');
     });
     it('should throw if userId does not match', async () => {
-      const user = { email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1' };
+      const user: UserDetails = { email: 'a', exp: 1, iat: 1, name: 'n', userId: 'user-1', profileId: '' };
       const followDto = { followerId: 'profile-1', followeeId: 'profile-2' };
       const profile = { userId: 'other-user' };
       const module = (controller as any);

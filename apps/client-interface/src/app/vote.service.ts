@@ -1,16 +1,22 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { VoteDto, CreateVoteDto } from '@optimistic-tanuki/social-ui';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class VoteService {
-  private baseUrl = '/api/social/vote';
+  private baseUrl: string;
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    @Inject(API_BASE_URL) private apiBaseUrl: string,
+    private http: HttpClient
+  ) {
+    this.baseUrl = `${this.apiBaseUrl}/social/vote`;
+  }
 
   createVote(voteDto: CreateVoteDto): Observable<VoteDto> {
     return this.http.post<VoteDto>(this.baseUrl, voteDto);

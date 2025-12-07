@@ -6,36 +6,47 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
-import { AuthCommands } from '@optimistic-tanuki/constants';
+import { AuthCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { UserContext } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { UserDetails } from '../decorators/user.decorator';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
-    @Inject('AUTHENTICATION_SERVICE') private authService: ClientProxy,
-    private reflector: Reflector
+    @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
+    private authService: ClientProxy,
+    private reflector: Reflector,
+    private readonly jwt: JwtService
   ) {}
 
-  private async introspectToken(token: string, userId: string): Promise<boolean> {
+  private async introspectToken(
+    token: string,
+    userId: string
+  ): Promise<boolean> {
     const response = await firstValueFrom(
       this.authService.send({ cmd: AuthCommands.Validate }, { token, userId })
     );
-    console.log(response);
     // Assuming the response contains a field `isValid` to indicate token validity
     return response && response.isValid;
   }
 
-  parseToken(token: string) {
-    // Assuming the token is a JWT token
-    const payload = Buffer.from(token.split('.')[1], 'base64').toString(
-      'utf-8'
-    );
-    const data = JSON.parse(payload);
-    return data;
+  async parseToken(token: string): Promise<UserDetails> {
+    return await this.jwt.verifyAsync<UserDetails>(token);
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers['authorization'];
     if (!authHeader) {
@@ -46,14 +57,23 @@ export class AuthGuard implements CanActivate {
     if (!token) {
       throw new UnauthorizedException('Unauthorized: No Token Found.');
     }
-    const user = this.parseToken(token);
+    const user = await this.jwt.verifyAsync<UserDetails>(token);
     const isAuthenticated = await this.introspectToken(token, user.userId);
 
     if (!isAuthenticated) {
       throw new UnauthorizedException('Unauthorized: Token Invalid.');
     }
 
-    request.user = user;
+    const userContext: UserContext = {
+      userId: user.userId,
+      email: user.email,
+      name: user.name,
+      profileId: user.profileId,
+      scopes: [],
+      roles: [],
+    };
+
+    request.user = userContext;
 
     return true;
   }

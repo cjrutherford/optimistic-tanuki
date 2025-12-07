@@ -1,19 +1,21 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
+import {
+  Variantable,
+  VariantOptions,
+  VariantType,
+} from '../interfaces/variantable.interface';
+import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
+import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
 
 @Component({
   selector: 'otui-tile',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="tile">
-      <ng-content></ng-content>
-    </div>
-  `,
+  templateUrl: './tile.component.html',
   styleUrls: ['./tile.component.scss'],
   host: {
-    'class.theme': 'theme',
+    '[class.theme]': 'theme',
     '[style.--background]': 'background',
     '[style.--foreground]': 'foreground',
     '[style.--accent]': 'accent',
@@ -21,103 +23,108 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-ui';
     '[style.--border-color]': 'borderColor',
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
+    '[style.--variant]': 'variant',
+    '[style.--background-filter]': 'backgroundFilter',
+    '[style.--border-width]': 'borderWidth',
+    '[style.--border-radius]': 'borderRadius',
+    '[style.--border-style]': 'borderStyle',
+    '[style.--background-gradient]': 'backgroundGradient',
+    '[style.--svg-pattern]': 'svgPattern',
+    '[style.--glow-filter]': 'glowFilter',
+    '[style.--gradient-type]': 'gradientType',
+    '[style.--gradient-stops]': 'gradientStops',
+    '[style.--gradient-colors]': 'gradientColors',
+    '[style.--animation]': 'animation',
+    '[style.--hover-box-shadow]': 'hoverBoxShadow',
+    '[style.--hover-gradient]': 'hoverGradient',
+    '[style.--hover-glow-filter]': 'hoverGlowFilter',
+    '[style.--inset-shadow]': 'insetShadow',
+    '[style.--body-gradient]': 'bodyGradient',
+    '[style.--background-pattern]': 'backgroundPattern',
   },
 })
-export class TileComponent extends Themeable {
-  @Input() variant: 'default' | 'info' | 'warning' | 'error' | 'success' =
-    'default';
+export class TileComponent extends Variantable implements OnChanges {
+  @Input() TileVariant: VariantType = 'default';
+  variant!: string;
+  backgroundFilter!: string;
+  borderWidth!: string;
+  borderRadius!: string;
+  borderStyle!: string;
+  backgroundGradient!: string;
+  svgPattern!: string;
+  glowFilter!: string;
+  gradientType!: string;
+  gradientStops!: string;
+  gradientColors!: string;
+  animation!: string;
+  hoverBoxShadow!: string;
+  hoverGradient!: string;
+  hoverGlowFilter!: string;
+  insetShadow!: string;
+  bodyGradient!: string;
+  backgroundPattern!: string;
 
-  @Input() isRow = false;
+  // Apply the variant styles based on the provided options and theme colors
 
-  override applyTheme(colors: ThemeColors): void {
-    this.transitionDuration = '0.3s';
-
-    switch (this.variant) {
-      case 'default':
-        this.applyDefaultTheme(colors);
-        break;
-      case 'info':
-        this.applyInfoTheme(colors);
-        break;
-      case 'warning':
-        this.applyWarningTheme(colors);
-        break;
-      case 'error':
-        this.applyErrorTheme(colors);
-        break;
-      case 'success':
-        this.applySuccessTheme(colors);
-        break;
-    }
+  constructor() {
+    super();
   }
 
-  private applyDefaultTheme(colors: ThemeColors): void {
-    this.background = `radial-gradient(ellipse, ${colors.background}, ${colors.accent})`;
-    this.foreground = colors.foreground;
-    this.accent = colors.accent;
-    this.complement = colors.complementary;
-    if (this.theme === 'dark') {
-      this.borderGradient = colors.accentGradients['dark'];
-      this.borderColor = colors.complementaryShades[2][0];
-    } else {
-      this.borderGradient = colors.accentGradients['light'];
-      this.borderColor = colors.complementaryShades[2][1];
-    }
+  override applyVariant(colors: ThemeColors, options?: VariantOptions): void {
+    const opts = options ?? getDefaultVariantOptions(colors, this.TileVariant);
+    this.setVariantOptions(opts);
   }
 
-  private applyInfoTheme(colors: ThemeColors): void {
-    this.background = `radial-gradient(ellipse, ${colors.accent}, ${colors.background})`;
-    this.foreground = colors.foreground;
-    this.accent = colors.complementary;
-    this.complement = colors.accent;
-    if (this.theme === 'dark') {
-      this.borderGradient = colors.accentGradients['dark'];
-      this.borderColor = colors.complementaryShades[4][0];
-    } else {
-      this.borderGradient = colors.accentGradients['light'];
-      this.borderColor = colors.complementaryShades[4][1];
-    }
+  private setVariantOptions(options: VariantOptions) {
+    this.variant = options.variant ?? this.variant ?? 'default';
+    this.backgroundFilter =
+      options.backgroundFilter ?? this.backgroundFilter ?? 'none';
+    this.borderWidth = options.borderWidth ?? this.borderWidth ?? '1px';
+    this.borderRadius = options.borderRadius ?? this.borderRadius ?? '8px';
+    this.borderStyle = options.borderStyle ?? this.borderStyle ?? 'solid';
+    this.backgroundGradient =
+      options.backgroundGradient ?? this.backgroundGradient ?? 'none';
+    this.svgPattern = options.svgPattern ?? this.svgPattern ?? '';
+    this.glowFilter = options.glowFilter ?? this.glowFilter ?? 'none';
+    this.gradientType = options.gradientType ?? this.gradientType ?? 'linear';
+    this.gradientStops =
+      options.gradientStops !== undefined
+        ? Array.isArray(options.gradientStops)
+          ? options.gradientStops.join(', ')
+          : options.gradientStops
+        : this.gradientStops ?? '0%, 100%';
+    this.gradientColors =
+      options.gradientColors !== undefined
+        ? Array.isArray(options.gradientColors)
+          ? options.gradientColors.join(', ')
+          : options.gradientColors
+        : this.gradientColors ?? '#fff, #eee';
+    this.animation = options.animation ?? this.animation ?? 'none';
+    this.hoverBoxShadow =
+      options.hoverBoxShadow ??
+      this.hoverBoxShadow ??
+      '0 2px 8px rgba(0,0,0,0.1)';
+    this.hoverGradient = options.hoverGradient ?? this.hoverGradient ?? 'none';
+    this.hoverGlowFilter =
+      options.hoverGlowFilter ?? this.hoverGlowFilter ?? 'none';
+    this.insetShadow = options.insetShadow ?? this.insetShadow ?? 'none';
+    this.bodyGradient = options.bodyGradient ?? this.bodyGradient ?? 'none';
+    this.backgroundPattern =
+      options.backgroundPattern ?? this.backgroundPattern ?? '';
+    this.borderGradient =
+      options.borderGradient ?? this.borderGradient ?? 'none';
+    this.transitionDuration =
+      options.transitionDuration ?? this.transitionDuration ?? '0.3s';
   }
 
-  private applyWarningTheme(colors: ThemeColors): void {
-    this.background = `radial-gradient(ellipse, ${colors.warning}, ${colors.background})`;
-    this.foreground = colors.foreground;
-    this.accent = colors.complementary;
-    this.complement = colors.warning;
-    if (this.theme === 'dark') {
-      this.borderGradient = colors.warningGradients['dark'];
-      this.borderColor = colors.complementaryShades[6][0];
-    } else {
-      this.borderGradient = colors.warningGradients['light'];
-      this.borderColor = colors.complementaryShades[6][1];
-    }
-  }
-
-  private applyErrorTheme(colors: ThemeColors): void {
-    this.background = `radial-gradient(ellipse, ${colors.danger}, ${colors.background})`;
-    this.foreground = colors.foreground;
-    this.accent = colors.complementary;
-    this.complement = colors.danger;
-    if (this.theme === 'dark') {
-      this.borderGradient = colors.dangerGradients['dark'];
-      this.borderColor = colors.complementaryShades[8][0];
-    } else {
-      this.borderGradient = colors.dangerGradients['light'];
-      this.borderColor = colors.complementaryShades[8][1];
-    }
-  }
-
-  private applySuccessTheme(colors: ThemeColors): void {
-    this.background = `radial-gradient(ellipse, ${colors.success}, ${colors.background})`;
-    this.foreground = colors.foreground;
-    this.accent = colors.complementary;
-    this.complement = colors.success;
-    if (this.theme === 'dark') {
-      this.borderGradient = colors.successGradients['dark'];
-      this.borderColor = colors.complementaryShades[10][0];
-    } else {
-      this.borderGradient = colors.successGradients['light'];
-      this.borderColor = colors.complementaryShades[10][1];
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['TileVariant'] && this.themeColors) {
+      const currentVariant = changes['TileVariant'].currentValue;
+      const options = getDefaultVariantOptions(
+        this.themeColors,
+        currentVariant
+      );
+      this.applyVariant(this.themeColors, options);
     }
   }
 }

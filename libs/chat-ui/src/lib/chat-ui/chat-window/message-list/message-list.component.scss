@@ -2,10 +2,12 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-  background: #fafafa;
+  background: var(--background);
+  color: var(--foreground);
+  max-height: 700px;
 }
 .message {
-  margin-bottom: 12px;
+  margin: 20px auto;
   display: flex;
   align-items: baseline;
   .profile {
@@ -13,6 +15,9 @@
     flex-direction: column;
     align-items: center;
     margin-bottom: 4px;
+    background: var(--complement-transparent);
+    border-radius: 8px;
+    padding: 4px;
     .avatar {
       width: 32px;
       height: 32px;
@@ -25,8 +30,14 @@
 .sender {
   font-weight: bold;
   margin-right: 8px;
-  color: #1976d2;
+  color: var(--foreground);
 }
 .text {
-  color: #333;
+  color: var(--foreground);
+  background: var(--accent-transparent);
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 70%;
+  line-height: 1.4;
+  word-wrap: break-word;
 }

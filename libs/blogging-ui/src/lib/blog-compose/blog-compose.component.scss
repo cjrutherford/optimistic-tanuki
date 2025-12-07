@@ -1,0 +1,151 @@
+// Import Angular Component Node styles
+@use './extensions/angular-component-node.styles.scss';
+
+h3 {
+  margin: var(--spacing-sm, 8px);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.tiptap-editor-styles ::ng-deep .ProseMirror {
+  border: 2px solid var(--local-complement, var(--complement));
+  background: var(--local-background-gradient, var(--background-gradient));
+  color: var(--local-foreground, var(--foreground));
+  font-family: 'Roboto', sans-serif;
+  border-radius: var(--border-radius-lg, 8px);
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+  min-height: 200px;
+  padding: var(--spacing-md, 16px);
+  transition: all 0.15s ease-in-out;
+
+  &:focus {
+    outline: none;
+    border-color: var(--local-accent, var(--accent));
+    box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+  }
+}
+
+.content {
+  width: calc(100% - var(--spacing-sm, 8px));
+  margin: var(--spacing-xs, 4px) var(--spacing-xs, 4px) var(--spacing-md, 16px) var(--spacing-xs, 4px);
+  display: block;
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 300px;
+  box-shadow: inset 2px 2px 4px 6px var(--accent),
+    inset -2px -2px 4px 6px var(--complement);
+  border-radius: var(--border-radius-lg, 8px);
+  background: var(--local-background-gradient, var(--background-gradient));
+}
+
+button {
+  margin: var(--spacing-sm, 8px);
+  margin-left: var(--spacing-md, 16px);
+}
+
+.editor-wrapper {
+  position: relative;
+  border: 2px dashed transparent;
+  transition: border-color 0.15s ease-in-out;
+  
+  &.dragover {
+    border-color: var(--local-complement, var(--complement));
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+.compose-card {
+  position: relative;
+  border: 2px dashed transparent;
+  transition: border-color 0.15s ease-in-out;
+  
+  &.dragover {
+    ::after {
+      content: 'Drop files to upload';
+      position: absolute;
+      top: var(--spacing-md, 16px);
+      left: var(--spacing-md, 16px);
+      right: var(--spacing-md, 16px);
+      bottom: var(--spacing-md, 16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--local-background-gradient, var(--background-gradient));
+      color: var(--local-foreground, var(--foreground));
+      padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+      border-radius: var(--border-radius-lg, 8px);
+      box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+      z-index: var(--z-index-overlay, 1080);
+      font-size: var(--font-size-lg, 1.125rem);
+      font-weight: bold;
+      animation: pulse 12s infinite;
+    }
+    border-color: var(--local-complement, var(--complement));
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 5px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 20%, var(--local-complement, var(--complement)));
+  }
+  40% {
+    box-shadow: 0 0 15px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 60%, var(--local-complement, var(--complement)));
+  }
+  60% {
+    box-shadow: 0 0 20px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 80%, var(--local-complement, var(--complement)));
+  }
+  80% {
+    box-shadow: 0 0 15px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 60%, var(--local-complement, var(--complement)));
+  }
+  100% {
+    box-shadow: 0 0 5px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 20%, var(--local-complement, var(--complement)));
+  }
+}
+
+/* Component injection styles */
+.injected-components-container {
+  margin: var(--spacing-md, 16px) 0;
+  border: 2px dashed var(--local-complement, var(--complement, #c0af4b));
+  border-radius: var(--border-radius-lg, 8px);
+  padding: var(--spacing-md, 16px);
+  min-height: 100px;
+  background-color: var(--local-background, var(--background, #ffffff));
+  transition: all 0.15s ease-in-out;
+  
+  &:empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--local-foreground, var(--foreground));
+    opacity: 0.6;
+    font-style: italic;
+    
+    &::after {
+      content: 'Injected components will appear here';
+    }
+  }
+  
+  &:has(> *) {
+    border-style: solid;
+    background-color: transparent;
+  }
+}
+
+.injected-components-container > * {
+  margin-bottom: var(--spacing-md, 16px);
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}

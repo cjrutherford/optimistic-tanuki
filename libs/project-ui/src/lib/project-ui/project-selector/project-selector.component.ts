@@ -14,26 +14,25 @@ import {
   Output,
   SimpleChanges,
   computed,
-  signal,
+  signal, OnChanges, OnInit,
 } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
-import { CommonModule } from '@angular/common';
+
 import { SelectComponent } from '@optimistic-tanuki/form-ui';
 
 @Component({
   selector: 'lib-project-selector',
   imports: [
-    CommonModule,
     CardComponent,
     ReactiveFormsModule,
     SelectComponent,
-    ButtonComponent,
-  ],
+    ButtonComponent
+],
   templateUrl: './project-selector.component.html',
   styleUrl: './project-selector.component.scss',
 })
-export class ProjectSelectorComponent {
+export class ProjectSelectorComponent implements OnChanges, OnInit {
   @Input() projects: Project[] = [];
   availableProjects = signal<Project[]>([]);
   selectedProject = signal<Project | null>(null);

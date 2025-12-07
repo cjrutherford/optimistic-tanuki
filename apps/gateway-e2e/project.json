@@ -10,8 +10,7 @@
       "options": {
         "jestConfig": "apps/gateway-e2e/jest.config.ts",
         "passWithNoTests": true
-      },
-      "dependsOn": ["gateway:build", "gateway:serve"]
+      }
     }
   }
 }

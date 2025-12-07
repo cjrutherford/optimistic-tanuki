@@ -1,34 +1,37 @@
+.accordion-section {
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px var(--accent, #b1baec);
+  background: var(--background, #222);
+  border: 1px solid var(--border-color, #b1baec);
+  transition: box-shadow 0.3s, background 0.3s;
+  &.glass {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 24px var(--accent, #b1baec);
+  }
+  &.gradient {
+    background: linear-gradient(120deg, var(--accent, #b1baec), var(--complement, #919ee4));
+    color: var(--foreground, #fff);
+  }
+  &.sm { font-size: 0.9rem; }
+  &.md { font-size: 1rem; }
+  &.lg { font-size: 1.2rem; }
+}
 h3 {
   cursor: pointer;
   padding: 10px;
-  background-color: var(--accent-shade-darken-50, #b1baec);
-  border: 1px solid var(--accent-shade-darken-30, #919ee4);
   margin: 0;
-  color: var(--foreground-color, #fff);
+  color: var(--foreground, #fff);
+  background: var(--accent, #b1baec);
+  border-radius: 8px 8px 0 0;
+  user-select: none;
 }
-
-div {
+.accordion-content {
   overflow: hidden;
-  transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out, opacity 0.3s ease-in-out;
-  background-color: var(--accent-shade-darken-10, #5969c3);
-  color: var(--foreground-color, #fff);
-  padding: 0 10px;
-}
-
-div[ng-reflect-ng-if="true"] {
-  max-height: 100px; /* Adjust based on content */
+  transition: max-height 0.3s, padding 0.3s, opacity 0.3s;
+  background: var(--background, #222);
+  color: var(--foreground, #fff);
   padding: 10px;
-  opacity: 1;
-  ::before {
-    content: '';
-    display: block;
-    height: 10px;
-    background-color: var(--accent-shade-darken-50, #b1baec);
-  }
-}
-
-div[ng-reflect-ng-if="false"] {
-  max-height: 0;
-  padding: 0 10px;
-  opacity: 0;
+  border-radius: 0 0 8px 8px;
 }

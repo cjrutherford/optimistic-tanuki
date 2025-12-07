@@ -1,24 +1,24 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Observable, Subject, Subscription, filter, takeUntil } from 'rxjs';
 
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
-import { ThemeColors } from './theme.interface';
-import { ThemeService } from './theme.service';
+import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'lib-theme-toggle',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './theme.component.html',
   styleUrl: './theme.component.scss',
   host: {
+    // Using standardized variable names
     '[style.--background]': 'background',
     '[style.--foreground]': 'foreground',
+    '[style.--accent]': 'accent',
+    '[style.--complement]': 'complement',
     '[style.--border-color]': 'borderColor',
     '[style.--transition-duration]': 'transitionDuration',
-    '[style.--accent-color]': 'accent',
-    '[style.--complementary-color]': 'complement',
     '[class.dark]': 'theme === "dark"',
     '[class.light]': 'theme === "light"',
   }

@@ -1,5 +1,5 @@
-import { CreateGoalDto, CreateProfileDto, CreateProjectDto, CreateTimelineDto, ProfileDto, TimelineEventType, UpdateGoalDto, UpdateProfileDto, UpdateProjectDto, UpdateTimelineDto } from '@optimistic-tanuki/models';
 import { GoalCommands, ProfileCommands, ProjectCommands, ServiceTokens, TimelineCommands } from '@optimistic-tanuki/constants';
+import { CreateProfileDto, ProfileDto, UpdateProfileDto, CreateTimelineDto, UpdateTimelineDto, TimelineEventType } from '@optimistic-tanuki/models';
 // Removed duplicate/out-of-scope tests at the top of the file
 import { Test, TestingModule } from '@nestjs/testing';
 import { firstValueFrom, of } from 'rxjs';
@@ -9,6 +9,10 @@ import { ProfileController } from './profile.controller';
 import { UserDetails } from '../../decorators/user.decorator';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Logger } from '@nestjs/common';
+import { RoleInitService } from '@optimistic-tanuki/permission-lib';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { PermissionsCacheService } from '../../auth/permissions-cache.service';
+import { Reflector } from '@nestjs/core';
 
 describe('ProfileController', () => {
   let controller: ProfileController;
@@ -34,11 +38,51 @@ describe('ProfileController', () => {
           useValue: {
             send: jest.fn().mockImplementation(() => of({})),
           }
-        }
+        },
+        {
+          provide: ServiceTokens.AI_ORCHESTRATION_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          }
+        },
+        {
+          provide: ServiceTokens.TELOS_DOCS_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          }
+        },
+        {
+          provide: ServiceTokens.PERMISSIONS_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          }
+        },
+        {
+          provide: RoleInitService,
+          useValue: {
+            initializeRoles: jest.fn().mockResolvedValue(undefined),
+            enqueue: jest.fn().mockResolvedValue(undefined),
+          }
+        },
+        Reflector,
+        {
+          provide: PermissionsCacheService,
+          useValue: {
+            get: jest.fn().mockResolvedValue(null),
+            set: jest.fn().mockResolvedValue(undefined),
+            invalidateProfile: jest.fn().mockResolvedValue(undefined),
+            invalidateAppScope: jest.fn().mockResolvedValue(undefined),
+            clear: jest.fn().mockResolvedValue(undefined),
+            getStats: jest.fn().mockResolvedValue({}),
+            cleanupExpired: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ]
     })
     .overrideGuard(AuthGuard)
     .useValue({ canActivate: () => of(true) })
+    .overrideGuard(PermissionsGuard)
+    .useValue({ canActivate: () => of(true) }) // Mock PermissionsGuard
     .compile();
 
     controller = module.get<ProfileController>(ProfileController);
@@ -64,7 +108,7 @@ describe('ProfileController', () => {
      };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    const createResponse = await firstValueFrom(controller.createProfile(createProfileDto));
+    const createResponse = await controller.createProfile(createProfileDto, 'test');
     expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Create }, createProfileDto);
     expect(createResponse).toEqual({});
   });
@@ -73,7 +117,7 @@ describe('ProfileController', () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    const getResponse = await firstValueFrom(controller.getProfile(id));
+    const getResponse = await controller.getProfile(id, 'test');
     expect(clientProxy.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Get }, { id });
     expect(getResponse).toEqual({});
   });

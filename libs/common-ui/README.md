@@ -1,6 +1,19 @@
-# common-ui
+# Common UI
 
-This library was generated with [Nx](https://nx.dev).
+This library contains common UI components that are shared across multiple applications, such as buttons, forms, and modals.
+
+## Usage
+
+To use the components in this library, import the `CommonUiModule` into your Angular module:
+
+```typescript
+import { CommonUiModule } from '@optimistic-tanuki/common-ui';
+
+@NgModule({
+  imports: [CommonUiModule],
+})
+export class MyModule {}
+```
 
 ## Running unit tests
 

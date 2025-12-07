@@ -1,20 +1,11 @@
-# Project Planning Service
+# Project Planning
 
-This service manages projects, tasks, risks, and other project planning entities.
+This service is responsible for managing projects, tasks, and other project-related data. It provides a flexible and powerful platform for planning and tracking projects of all sizes.
 
-## Configuration
+## 🚀 Getting Started
 
-The application is configured via the `apps/project-planning/src/assets/config.yaml` file. The following values can be set in this file or overridden by environment variables:
+This service is started as part of the Forge of Will application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
 
-| Variable                | Description                   | Default Value         |
-|-------------------------|-------------------------------|-----------------------|
-| `listenPort`            | Port for the service to listen on | `3006`                |
-| `database.host`         | Database host                 | `db`                  |
-| `database.port`         | Database port                 | `5432`                |
-| `database.name`         | Database name                 | `ot_project_planning` |
-| `database.username`     | Database username             | `postgres`            |
-| `database.password`     | Database password             | `postgres`            |
+## 📝 API Reference
 
-## Running the Service
-
-The service is designed to be run in a Docker container. It exposes port `3006`.
+The Project Planning service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/project-planning`.

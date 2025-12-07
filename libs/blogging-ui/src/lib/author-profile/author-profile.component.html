@@ -1,0 +1,11 @@
+<otui-card style="padding: 0; ">
+    <div class="contents">
+        <lib-profile-photo [src]="profileImage"></lib-profile-photo>
+        <div class="bio">
+            <otui-heading [size]="'2rem'" class="author-name" [text]="authorName"></otui-heading>
+            @if(authorBio) {
+              <p>{{ authorBio }}</p>
+            }
+        </div>
+    </div>
+</otui-card>

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { NoteDto, NoteStatus, TaskDto, TaskStatus, TimerDto, TimerStatus } from '@optimistic-tanuki/ui-models';
 
 @Component({
@@ -7,9 +7,7 @@ import { NoteDto, NoteStatus, TaskDto, TaskStatus, TimerDto, TimerStatus } from 
   templateUrl: './tasks.component.html',
   styleUrls: ['./tasks.component.scss'],
   standalone: true,
-  imports: [
-    CommonModule, 
-  ],
+  imports: [],
 })
 export class TasksComponent implements OnInit {
   tasks: TaskDto[] = [];

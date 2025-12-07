@@ -1,17 +1,17 @@
 import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
 import { Change, CreateChange } from '@optimistic-tanuki/ui-models';
-import { Component, EventEmitter, Input, Output, SimpleChanges, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges, signal, OnInit, OnChanges } from '@angular/core';
 
 import { ChangeFormComponent } from '../change-form/change-form.component';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'lib-changes-table',
-  imports: [CommonModule, TableComponent, ButtonComponent, ModalComponent, ChangeFormComponent],
+  imports: [TableComponent, ButtonComponent, ModalComponent, ChangeFormComponent],
   templateUrl: './changes-table.component.html',
   styleUrl: './changes-table.component.scss',
 })
-export class ChangesTableComponent {
+export class ChangesTableComponent implements OnInit, OnChanges {
   cells = signal<TableCell[][]>([])
   showModal = signal<boolean>(false);
   showEditModal = signal<boolean>(false);

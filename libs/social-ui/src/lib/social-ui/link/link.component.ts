@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent, GridComponent } from '@optimistic-tanuki/common-ui';
 
@@ -11,7 +11,7 @@ export declare type LinkType = {
 @Component({
   selector: 'lib-link',
   standalone: true,
-  imports: [CommonModule, FormsModule, CardComponent, GridComponent, ButtonComponent],
+  imports: [FormsModule, CardComponent, GridComponent, ButtonComponent],
   templateUrl: './link.component.html',
   styleUrls: ['./link.component.scss'],
 })

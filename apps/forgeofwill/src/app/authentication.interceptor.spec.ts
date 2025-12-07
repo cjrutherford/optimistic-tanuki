@@ -1,6 +1,6 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent, HttpEventType, HttpResponse, HTTP_INTERCEPTORS, withInterceptors, HttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent, HttpEventType, HttpResponse, HTTP_INTERCEPTORS, HttpClient, HttpClientModule, withInterceptors } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting, HttpClientTestingModule } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -16,7 +16,7 @@ describe('authenticationInterceptor', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
+      imports: [HttpClientTestingModule, HttpClientModule],
       providers: [
         provideHttpClient(withInterceptors([authenticationInterceptor])),
         provideHttpClientTesting(),
@@ -79,7 +79,7 @@ describe('authenticationInterceptor', () => {
     httpClient.get('/api/data').subscribe({
       error: (error) => {
         expect(error.status).toBe(500);
-        expect(error.message).toBe('Server Error');
+        expect(error.statusText).toBe('Server Error');
         expect(authStateService.logout).not.toHaveBeenCalled();
         expect(router.navigate).not.toHaveBeenCalled();
       },

@@ -31,7 +31,7 @@ export const appConfig: ApplicationConfig = {
     {
       provide: SOCKET_HOST,
       useFactory: () => {
-        const value = (window as any)['env']?.SOCKET_URL || window.location.hostname;
+        const value = (window as any)['env']?.SOCKET_URL || 'http://localhost:3300';
         return value;
       },
     },

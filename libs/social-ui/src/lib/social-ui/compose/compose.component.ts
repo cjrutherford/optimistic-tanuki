@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Output, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CreatePostDto, UpdatePostDto, CreateAttachmentDto, AttachmentDto } from '../../models';
@@ -10,6 +10,8 @@ import MagicUrl from 'quill-magic-url';
 import ImageCompress from 'quill-image-compress';
 import Cursors from 'quill-cursors';
 import Placeholder from 'quill-placeholder-module';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import { GradientBuilder } from 'libs/common-ui/src/lib/common-ui/gradient-builder';
 
 Quill.register('modules/imageCompress', ImageCompress);
 Quill.register('modules/cursors', Cursors);
@@ -27,19 +29,18 @@ export declare type ComposeCompleteEvent = {
   standalone: true,
   imports: [
     FormsModule,
-    CommonModule,
     CardComponent,
     ButtonComponent,
     ReactiveFormsModule,
     QuillEditorComponent,
     TextInputComponent,
-    QuillModule,
-  ],
+    QuillModule
+],
   templateUrl: './compose.component.html',
   styleUrls: ['./compose.component.scss'],
   // encapsulation: ViewEncapsulation.Emulated,
 })
-export class ComposeComponent { 
+export class ComposeComponent extends Themeable { 
   @ViewChild('quillEditor', { static: true }) quillEditor!: QuillEditorComponent;
   @Output() postSubmitted: EventEmitter<ComposeCompleteEvent> = new EventEmitter<ComposeCompleteEvent>();
 
@@ -264,5 +265,24 @@ export class ComposeComponent {
   onPostSubmit(): void {
     console.log(this.content);
     this.onSubmit();
+  }
+
+  override applyTheme(colors: ThemeColors): void {
+    this.background = colors.background;
+    this.foreground = colors.foreground;
+    this.accent = colors.accent;
+    this.complement = colors.complementary;
+    this.borderColor = colors.tertiary;
+    this.borderGradient = new GradientBuilder()
+      .setType('linear')
+      .setOptions({ direction: '90deg', colors: [colors.accent, colors.complementary] })
+      .build();
+    if(this.theme === 'dark') {
+      this.borderGradient = colors.accentGradients['dark'];
+      this.borderColor = colors.complementaryShades[2][1];
+    } else {
+      this.borderGradient = colors.accentGradients['light'];
+      this.borderColor = colors.complementaryShades[2][1];
+    }
   }
 }
