@@ -8,7 +8,7 @@ Add a permissions audit and a clear enforcement pattern (gateway + microservice 
 
 ## Top-level plan (priority, tasks, verification, estimate)
 
-### 1. Permissions audit — DEFINE policy then IMPLEMENT — 2–3 days (adjusted)
+### 1. Permissions audit — DEFINE policy then IMPLEMENT — 2–3 days (adjusted) COMPLETE
 Goal:
 - Produce a permissions matrix, enforce at gateway and validate at microservice boundaries.
 - Reuse existing gateway and permissions-service primitives where possible.
@@ -52,7 +52,7 @@ Notes on reuse:
 - The permissions app already contains migrations, seed and controllers for permissions/roles; plan integration tests to call it as the authority.
 
 
-### 2. Discovery & per-app wiring — 0.5 day
+### 2. Discovery & per-app wiring — 0.5 day COMPLETE
 Tasks:
 - Confirm bootstrap points and AppModule locations so each app can register runtime config (API base URL / auth).
 - Inspect modules: `project.service.ts`, `post.service.ts`, `blog.service.ts`, `contact.service.ts`.
@@ -68,7 +68,7 @@ Checklist (deliverables):
 Files to inspect:
 - `project.service.ts`, `http.interceptor.ts`, `blog.service.ts`, `contact.service.ts`
 
-### 3. Minimal shared base-url token & tiny helper — 0.5 day
+### 3. Minimal shared base-url token & tiny helper — 0.5 day COMPLETE 
 Tasks:
 - Add a single InjectionToken library so apps can import a consistent token name while providing their own value.
 - Do NOT provide defaults; each app must register a provider.
@@ -86,8 +86,8 @@ Reference:
 
 ### 4. Social app hardening (client-interface) — 2–3 days
 Tasks:
-- Real-time client with exponential reconnect/backoff.
-- Pagination & query limits in `PostService`.
+- Real-time client with exponential reconnect/backoff. ✅
+- Pagination & query limits in `PostService`.✅
 - Input sanitization at UI + server side.
 - Media uploads integrated with assets service.
 
@@ -95,10 +95,10 @@ Verification:
 - Unit tests for pagination; E2E create post → comment → vote; role-based permission tests.
 
 Checklist (deliverables):
-- Pagination tests for PostService
-- SSE/WebSocket client helper with backoff
+- Pagination tests for PostService✅
+- SSE/WebSocket client helper with backoff✅
 - Sanitization checklist + example middleware
-- E2E scenario for post → comment → vote
+- E2E scenario for post → comment → vote ❌ (delayed.)
 
 Files:
 - `post.service.ts`, `comment.service.ts`, `http.interceptor.ts`, `server.ts`

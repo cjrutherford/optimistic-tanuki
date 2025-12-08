@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-
+import { Like } from 'typeorm';
 import { AppController } from './app.controller';
 import { AttachmentService } from './services/attachment.service';
 import { CommentService } from './services/comment.service';
@@ -19,7 +19,10 @@ describe('AppController', () => {
   beforeEach(async () => {
     postService = {
       create: jest.fn(),
-      findAll: jest.fn(),
+      findAll: jest.fn().mockResolvedValue([
+        { id: '1', title: 'Post 1' },
+        { id: '2', title: 'Post 2' },
+      ]),
       findOne: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
@@ -115,14 +118,22 @@ describe('AppController', () => {
     voteService.create.mockResolvedValue('upvoted');
     const result = await controller.upvotePost('1', 'u1');
     expect(result).toBe('upvoted');
-    expect(voteService.create).toHaveBeenCalledWith({ postId: '1', value: 1, userId: 'u1' });
+    expect(voteService.create).toHaveBeenCalledWith({
+      postId: '1',
+      value: 1,
+      userId: 'u1',
+    });
   });
 
   it('should downvote a post', async () => {
     voteService.create.mockResolvedValue('downvoted');
     const result = await controller.downvotePost('1', 'u1');
     expect(result).toBe('downvoted');
-    expect(voteService.create).toHaveBeenCalledWith({ postId: '1', value: -1, userId: 'u1' });
+    expect(voteService.create).toHaveBeenCalledWith({
+      postId: '1',
+      value: -1,
+      userId: 'u1',
+    });
   });
 
   it('should unvote a post', async () => {
@@ -136,7 +147,9 @@ describe('AppController', () => {
     voteService.findAll.mockResolvedValue(['vote']);
     const result = await controller.getVote('1');
     expect(result).toEqual(['vote']);
-    expect(voteService.findAll).toHaveBeenCalledWith({ where: { post: { id: '1' } } });
+    expect(voteService.findAll).toHaveBeenCalledWith({
+      where: { post: { id: '1' } },
+    });
   });
 
   it('should create a comment', async () => {
@@ -212,20 +225,65 @@ describe('AppController', () => {
   });
 
   it('should throw for unimplemented link methods', async () => {
-    await expect(controller.createLink({} as any)).rejects.toThrow(RpcException);
-    await expect(controller.updateLink('1', {} as any)).rejects.toThrow('Link Object Not Implemented');
-    await expect(controller.findLink('1')).rejects.toThrow('Link Object Not Implemented');
-    await expect(controller.findAllLinks({} as any)).rejects.toThrow('Link Object Not Implemented');
+    await expect(controller.createLink({} as any)).rejects.toThrow(
+      RpcException
+    );
+    await expect(controller.updateLink('1', {} as any)).rejects.toThrow(
+      'Link Object Not Implemented'
+    );
+    await expect(controller.findLink('1')).rejects.toThrow(
+      'Link Object Not Implemented'
+    );
+    await expect(controller.findAllLinks({} as any)).rejects.toThrow(
+      'Link Object Not Implemented'
+    );
+  });
+
+  it('should return paginated posts', async () => {
+    const result = await controller.findAllPosts(
+      { title: 'Test' },
+      { limit: 2, offset: 0 }
+    );
+
+    expect(postService.findAll).toHaveBeenCalledWith({
+      where: { title: Like('%Test%') },
+      take: 2,
+      // skip: 0,
+    });
+    expect(result).toEqual([
+      {
+        id: '1',
+        title: 'Post 1',
+        attachments: [],
+        comments: [],
+        links: [],
+        votes: [],
+      },
+      {
+        id: '2',
+        title: 'Post 2',
+        attachments: [],
+        comments: [],
+        links: [],
+        votes: [],
+      },
+    ]);
   });
 
   it('should call follow methods', async () => {
     followService.follow.mockResolvedValue('followed');
-    const result = await controller.follow({ followerId: 'a', followeeId: 'b' });
+    const result = await controller.follow({
+      followerId: 'a',
+      followeeId: 'b',
+    });
     expect(result).toBe('followed');
     expect(followService.follow).toHaveBeenCalledWith('a', 'b');
 
     followService.unfollow.mockResolvedValue('unfollowed');
-    const result2 = await controller.unfollow({ followerId: 'a', followeeId: 'b' });
+    const result2 = await controller.unfollow({
+      followerId: 'a',
+      followeeId: 'b',
+    });
     expect(result2).toBe('unfollowed');
     expect(followService.unfollow).toHaveBeenCalledWith('a', 'b');
 
@@ -245,12 +303,16 @@ describe('AppController', () => {
     expect(followService.getMutuals).toHaveBeenCalledWith('a');
 
     followService.getFollowerCount.mockResolvedValue(5);
-    const followerCount = await controller.getFollowerCount({ followeeId: 'b' });
+    const followerCount = await controller.getFollowerCount({
+      followeeId: 'b',
+    });
     expect(followerCount).toBe(5);
     expect(followService.getFollowerCount).toHaveBeenCalledWith('b');
 
     followService.getFollowingCount.mockResolvedValue(3);
-    const followingCount = await controller.getFollowingCount({ followerId: 'a' });
+    const followingCount = await controller.getFollowingCount({
+      followerId: 'a',
+    });
     expect(followingCount).toBe(3);
     expect(followService.getFollowingCount).toHaveBeenCalledWith('a');
   });

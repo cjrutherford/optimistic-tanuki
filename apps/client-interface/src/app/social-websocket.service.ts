@@ -2,18 +2,25 @@ import { Injectable, OnDestroy, inject } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
-import { PostDto, CommentDto, VoteDto, FollowEventDto } from '@optimistic-tanuki/ui-models';
+import {
+  PostDto,
+  CommentDto,
+  VoteDto,
+  FollowEventDto,
+} from '@optimistic-tanuki/ui-models';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SocialWebSocketService implements OnDestroy {
   private socket: Socket | null = null;
   private connected$ = new BehaviorSubject<boolean>(false);
   private posts$ = new BehaviorSubject<PostDto[]>([]);
+  private connectionError$ = new BehaviorSubject<string | null>(null);
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private baseReconnectDelay = 1000;
+  private reconnectTimeoutId: NodeJS.Timeout | null = null;
   private apiBaseUrl = inject(API_BASE_URL);
 
   constructor() {
@@ -65,27 +72,40 @@ export class SocialWebSocketService implements OnDestroy {
     this.socket.on('connect', () => {
       console.log('Connected to Social WebSocket');
       this.connected$.next(true);
-      this.reconnectAttempts = 0;
+      this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
     });
 
     this.socket.on('disconnect', (reason) => {
       console.log('Disconnected from Social WebSocket:', reason);
       this.connected$.next(false);
 
-      if (reason === 'io server disconnect') {
-        // Manual reconnection with exponential backoff
+      if (reason !== 'io client disconnect') {
+        // Trigger backoff for unexpected disconnections
         this.reconnectWithBackoff();
       }
     });
 
     this.socket.on('connect_error', (error) => {
       console.error('Connection error:', error);
+      this.connectionError$.next('Connection error ' + error.message);
+      this.reconnectWithBackoff();
+    });
+
+    this.socket.on('connect_timeout', () => {
+      console.warn('Connection timed out');
+      this.connectionError$.next('Connection timed out');
+      this.reconnectWithBackoff();
+    });
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('Reconnection failed');
+      this.reconnectWithBackoff();
     });
 
     this.socket.on('error', (error) => {
       console.error('Socket error:', error);
+      this.reconnectWithBackoff(); // Handle unexpected errors with backoff
     });
-
     // Post events
     this.socket.on('post_created', (post: PostDto) => {
       console.log('Post created:', post);
@@ -96,7 +116,7 @@ export class SocialWebSocketService implements OnDestroy {
     this.socket.on('post_updated', (post: PostDto) => {
       console.log('Post updated:', post);
       const currentPosts = this.posts$.value;
-      const index = currentPosts.findIndex(p => p.id === post.id);
+      const index = currentPosts.findIndex((p) => p.id === post.id);
       if (index !== -1) {
         currentPosts[index] = post;
         this.posts$.next([...currentPosts]);
@@ -106,7 +126,7 @@ export class SocialWebSocketService implements OnDestroy {
     this.socket.on('post_deleted', (data: { postId: string }) => {
       console.log('Post deleted:', data.postId);
       const currentPosts = this.posts$.value;
-      this.posts$.next(currentPosts.filter(p => p.id !== data.postId));
+      this.posts$.next(currentPosts.filter((p) => p.id !== data.postId));
     });
 
     // Comment events
@@ -118,9 +138,12 @@ export class SocialWebSocketService implements OnDestroy {
       console.log('Comment updated:', comment);
     });
 
-    this.socket.on('comment_deleted', (data: { commentId: string; postId: string }) => {
-      console.log('Comment deleted:', data);
-    });
+    this.socket.on(
+      'comment_deleted',
+      (data: { commentId: string; postId: string }) => {
+        console.log('Comment deleted:', data);
+      }
+    );
 
     // Vote events
     this.socket.on('vote_updated', (vote: VoteDto) => {
@@ -137,7 +160,7 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     // Feed response
-    this.socket.on('feed', (posts: Post[]) => {
+    this.socket.on('feed', (posts: PostDto[]) => {
       console.log('Feed received:', posts);
       this.posts$.next(posts);
     });
@@ -155,15 +178,20 @@ export class SocialWebSocketService implements OnDestroy {
   private reconnectWithBackoff(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error('Max reconnection attempts reached');
+      this.connectionError$.next(
+        'Unable to reconnect after multiple attempts.'
+      );
       return;
     }
 
     const delay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts);
     this.reconnectAttempts++;
 
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    console.log(
+      `Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+    );
 
-    setTimeout(() => {
+    this.reconnectTimeoutId = setTimeout(() => {
       this.socket?.connect();
     }, delay);
   }
@@ -203,7 +231,10 @@ export class SocialWebSocketService implements OnDestroy {
   /**
    * Unsubscribe from user activity updates
    */
-  unsubscribeFromUserActivity(profileId: string, targetUserIds?: string[]): void {
+  unsubscribeFromUserActivity(
+    profileId: string,
+    targetUserIds?: string[]
+  ): void {
     if (!this.socket?.connected) {
       return;
     }
@@ -221,6 +252,10 @@ export class SocialWebSocketService implements OnDestroy {
     this.socket.emit('GET_FEED', { profileId, limit, offset });
   }
 
+  getConnectionError(): Observable<string | null> {
+    return this.connectionError$.asObservable();
+  }
+
   /**
    * Get connection status as an Observable
    */
@@ -231,7 +266,7 @@ export class SocialWebSocketService implements OnDestroy {
   /**
    * Get posts as an Observable
    */
-  getPosts(): Observable<Post[]> {
+  getPosts(): Observable<PostDto[]> {
     return this.posts$.asObservable();
   }
 
@@ -244,5 +279,10 @@ export class SocialWebSocketService implements OnDestroy {
 
   ngOnDestroy(): void {
     this.disconnect();
+
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
   }
 }

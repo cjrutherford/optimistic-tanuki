@@ -43,6 +43,9 @@
       "@optimistic-tanuki/ui-models": ["libs/ui-models/src/index.ts"]
     }
   },
+  "angularCompilerOptions": {
+    "strictTemplates": true
+  },
   "exclude": [
     "node_modules",
     "tmp",

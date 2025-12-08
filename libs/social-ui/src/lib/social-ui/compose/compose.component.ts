@@ -1,17 +1,25 @@
 import { Component, EventEmitter, Output, ViewChild } from '@angular/core';
 
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { CreatePostDto, UpdatePostDto, CreateAttachmentDto, AttachmentDto } from '../../models';
-import { QuillEditorComponent, QuillModule, QuillModules } from 'ngx-quill';
+import {
+  ButtonComponent,
+  CardComponent,
+  GradientBuilder,
+} from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
-import Quill from 'quill';
-import MagicUrl from 'quill-magic-url';
-import ImageCompress from 'quill-image-compress';
-import Cursors from 'quill-cursors';
-import Placeholder from 'quill-placeholder-module';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
-import { GradientBuilder } from 'libs/common-ui/src/lib/common-ui/gradient-builder';
+import { QuillEditorComponent, QuillModule, QuillModules } from 'ngx-quill';
+import Quill from 'quill';
+import Cursors from 'quill-cursors';
+import ImageCompress from 'quill-image-compress';
+import MagicUrl from 'quill-magic-url';
+import Placeholder from 'quill-placeholder-module';
+import {
+  AttachmentDto,
+  CreateAttachmentDto,
+  CreatePostDto,
+  UpdatePostDto,
+} from '../../models';
 
 Quill.register('modules/imageCompress', ImageCompress);
 Quill.register('modules/cursors', Cursors);
@@ -34,24 +42,25 @@ export declare type ComposeCompleteEvent = {
     ReactiveFormsModule,
     QuillEditorComponent,
     TextInputComponent,
-    QuillModule
-],
+    QuillModule,
+  ],
   templateUrl: './compose.component.html',
   styleUrls: ['./compose.component.scss'],
   // encapsulation: ViewEncapsulation.Emulated,
 })
-export class ComposeComponent extends Themeable { 
-  @ViewChild('quillEditor', { static: true }) quillEditor!: QuillEditorComponent;
-  @Output() postSubmitted: EventEmitter<ComposeCompleteEvent> = new EventEmitter<ComposeCompleteEvent>();
+export class ComposeComponent extends Themeable {
+  @ViewChild('quillEditor', { static: true })
+  quillEditor!: QuillEditorComponent;
+  @Output() postSubmitted: EventEmitter<ComposeCompleteEvent> =
+    new EventEmitter<ComposeCompleteEvent>();
 
   isDragOver = false;
   // themeService = inject(ThemeService); // Removed
   title = '';
-  content = ''
+  content = '';
   links: Array<{ url: string }> = [];
   attachments: AttachmentDto[] = [];
   // sub!: Subscription; // Removed
-
 
   modules: QuillModules = {
     toolbar: [
@@ -142,7 +151,7 @@ export class ComposeComponent extends Themeable {
         },
       },
     },
-  }
+  };
 
   onDragOver(event: DragEvent) {
     event.preventDefault();
@@ -162,7 +171,7 @@ export class ComposeComponent extends Themeable {
       const fileArray = Array.from(files);
       fileArray.forEach((file) => {
         const reader = new FileReader();
-         
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         reader.onload = (e: any) => {
           const quill = this.quillEditor?.quillEditor as Quill;
@@ -170,19 +179,19 @@ export class ComposeComponent extends Themeable {
             quill.insertEmbed(
               quill.getSelection()?.index || 0,
               'image',
-              e.target.result,
+              e.target.result
             );
           } else if (file.type.startsWith('video/')) {
             quill.insertEmbed(
               quill.getSelection()?.index || 0,
               'video',
-              e.target.result,
+              e.target.result
             );
           } else {
             const link = `<a href="${e.target.result}" target="_blank">${file.name}</a>`;
             quill.clipboard.dangerouslyPasteHTML(
               quill.getSelection()?.index || 0,
-              link,
+              link
             );
           }
         };
@@ -220,12 +229,11 @@ export class ComposeComponent extends Themeable {
     otherAttachments.forEach((attachment) => {
       const url = attachment.getAttribute('data-attachment');
       if (url) {
-      attachments.push({ url, postId: '' });
+        attachments.push({ url, postId: '' });
       }
     });
     return attachments;
   }
-
 
   onSubmit(): void {
     const post: CreatePostDto = {
@@ -234,10 +242,12 @@ export class ComposeComponent extends Themeable {
       attachments: [],
       profileId: '',
     };
-    const attachments: CreateAttachmentDto[] = this.attachments.map((attachment) => ({
-      url: attachment.url,
-      postId: '',
-    }));
+    const attachments: CreateAttachmentDto[] = this.attachments.map(
+      (attachment) => ({
+        url: attachment.url,
+        postId: '',
+      })
+    );
     const links = this.links.map((link) => ({ url: link.url }));
     this.postSubmitted.emit({ post, attachments, links });
     this.title = '';
@@ -275,9 +285,12 @@ export class ComposeComponent extends Themeable {
     this.borderColor = colors.tertiary;
     this.borderGradient = new GradientBuilder()
       .setType('linear')
-      .setOptions({ direction: '90deg', colors: [colors.accent, colors.complementary] })
+      .setOptions({
+        direction: '90deg',
+        colors: [colors.accent, colors.complementary],
+      })
       .build();
-    if(this.theme === 'dark') {
+    if (this.theme === 'dark') {
       this.borderGradient = colors.accentGradients['dark'];
       this.borderColor = colors.complementaryShades[2][1];
     } else {
