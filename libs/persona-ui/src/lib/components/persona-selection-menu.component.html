@@ -1,14 +1,14 @@
 <div class="persona-menu-overlay" 
      (click)="onClose()" 
      (keydown.escape)="onClose()"
-     role="button"
-     tabindex="0">
+     role="presentation">
   <div class="persona-menu" 
        (click)="$event.stopPropagation()"
        (keydown)="$event.stopPropagation()"
        role="dialog"
        aria-labelledby="persona-menu-title"
-       tabindex="-1">
+       aria-modal="true"
+       tabindex="0">
     <div class="persona-menu-header">
       <h2 id="persona-menu-title">Select AI Persona</h2>
       <button class="close-button" (click)="onClose()" aria-label="Close menu">

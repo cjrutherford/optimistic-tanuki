@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { PersonaService } from '../services/persona.service';
 import { PersonaTelosDto } from '@optimistic-tanuki/models';
 
+/**
+ * Default persona name to recommend to users
+ */
+const DEFAULT_PERSONA_NAME = 'project management';
+
 @Component({
   selector: 'lib-persona-selection-menu',
   imports: [CommonModule],
@@ -49,7 +54,7 @@ export class PersonaSelectionMenuComponent implements OnInit {
   }
 
   getDefaultPersona(): PersonaTelosDto | undefined {
-    return this.personas().find(p => p.name.toLowerCase().includes('project management'));
+    return this.personas().find(p => p.name.toLowerCase().includes(DEFAULT_PERSONA_NAME));
   }
 
   isDefaultPersona(persona: PersonaTelosDto): boolean {
