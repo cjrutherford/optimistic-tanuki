@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, OnInit, signal } from '@angular/core';
+import { Component, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PersonaService } from '../services/persona.service';
 import { PersonaTelosDto } from '@optimistic-tanuki/models';
@@ -11,13 +11,13 @@ import { PersonaTelosDto } from '@optimistic-tanuki/models';
 })
 export class PersonaSelectionMenuComponent implements OnInit {
   @Output() personaSelected = new EventEmitter<PersonaTelosDto>();
-  @Output() close = new EventEmitter<void>();
+  @Output() menuClose = new EventEmitter<void>();
 
   personas = signal<PersonaTelosDto[]>([]);
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
 
-  constructor(private personaService: PersonaService) {}
+  private personaService = inject(PersonaService);
 
   ngOnInit() {
     this.loadPersonas();
@@ -45,7 +45,7 @@ export class PersonaSelectionMenuComponent implements OnInit {
   }
 
   onClose() {
-    this.close.emit();
+    this.menuClose.emit();
   }
 
   getDefaultPersona(): PersonaTelosDto | undefined {
