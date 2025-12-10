@@ -15,6 +15,7 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from './profile/profile.service';
 import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui';
 import { filter } from 'rxjs';
+import { AiAssistantBubbleComponent } from './ai-assistant-bubble/ai-assistant-bubble.component';
 
 @Component({
   imports: [
@@ -23,6 +24,7 @@ import { filter } from 'rxjs';
     NavSidebarComponent,
     ChatComponent,
     MessageComponent,
+    AiAssistantBubbleComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -166,5 +168,15 @@ export class AppComponent implements OnInit {
       console.log('Navigating to login page...');
       this.router.navigate(['/login']);
     }
+  }
+
+  openAiAssistant() {
+    console.log('Opening AI Assistant chat...');
+    // TODO: Implement AI assistant conversation opening logic
+    // For now, just show a message
+    this.messageService.addMessage({
+      content: 'AI Assistant chat feature is being implemented...',
+      type: 'info',
+    });
   }
 }

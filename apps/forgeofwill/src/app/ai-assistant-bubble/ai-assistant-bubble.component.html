@@ -1,0 +1,24 @@
+<button 
+  class="ai-assistant-bubble" 
+  (click)="onClick()"
+  aria-label="Open AI Assistant Chat"
+  title="Chat with AI Assistant">
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="32" 
+    height="32" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    stroke-width="2" 
+    stroke-linecap="round" 
+    stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    <circle cx="9" cy="10" r="1"></circle>
+    <circle cx="15" cy="10" r="1"></circle>
+    <path d="M9 14a3 3 0 0 0 6 0"></path>
+  </svg>
+  @if (unreadCount() > 0) {
+    <span class="badge">{{ unreadCount() }}</span>
+  }
+</button>
