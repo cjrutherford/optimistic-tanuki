@@ -1,4 +1,4 @@
-import { Component, effect, signal, OnInit } from '@angular/core';
+import { Component, effect, signal, OnInit, ViewChild } from '@angular/core';
 import {
   MessageComponent,
   MessageService,
@@ -15,6 +15,7 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from './profile/profile.service';
 import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui';
 import { filter } from 'rxjs';
+import { AiAssistantBubbleComponent } from './ai-assistant-bubble/ai-assistant-bubble.component';
 
 @Component({
   imports: [
@@ -23,6 +24,7 @@ import { filter } from 'rxjs';
     NavSidebarComponent,
     ChatComponent,
     MessageComponent,
+    AiAssistantBubbleComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -33,6 +35,8 @@ export class AppComponent implements OnInit {
   isModalOpen = signal<boolean>(false);
   messages = signal<MessageType[]>([]);
   navItems = signal<NavItem[]>([]);
+
+  @ViewChild(ChatComponent) chatComponent?: ChatComponent;
 
   constructor(
     private readonly router: Router,
@@ -165,6 +169,19 @@ export class AppComponent implements OnInit {
     } else {
       console.log('Navigating to login page...');
       this.router.navigate(['/login']);
+    }
+  }
+
+  openAiAssistant() {
+    console.log('Opening AI Assistant chat...');
+    if (this.chatComponent) {
+      this.chatComponent.openAiAssistantChat();
+    } else {
+      console.error('Chat component not available');
+      this.messageService.addMessage({
+        content: 'Chat service is not available',
+        type: 'error',
+      });
     }
   }
 }

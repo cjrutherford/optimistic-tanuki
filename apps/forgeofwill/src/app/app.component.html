@@ -17,5 +17,6 @@
 <router-outlet></router-outlet>
 @if (isAuthenticated() && selectedProfile()) {
     <app-chat></app-chat>
+    <app-ai-assistant-bubble (bubbleClicked)="openAiAssistant()"></app-ai-assistant-bubble>
 }
 <lib-message></lib-message>

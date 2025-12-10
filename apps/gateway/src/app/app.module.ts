@@ -23,6 +23,7 @@ import { PermissionsController } from '../controllers/permissions/permissions.co
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
+import { McpToolsModule } from './mcp/mcp-tools.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
       load: [loadConfig],
     }),
     LoggerModule,
+    McpToolsModule,
   ],
   controllers: [
     AuthenticationController,

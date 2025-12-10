@@ -4,7 +4,7 @@ FROM docker.io/node:lts-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
 COPY dist/apps/gateway/package*.json ./
-RUN npm install --omit=dev --legacy-peer-deps
+RUN npm install --omit=dev --legacy-peer-deps && npm i --legacy-peer-deps @nestjs/passport
 
 # Production image, copy all the files and run nest
 FROM docker.io/node:lts-alpine AS runner
@@ -14,7 +14,7 @@ ENV PORT=3000
 WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
-RUN npm i -g nodemon pg
+RUN npm i -g nodemon pg 
 COPY ./dist/apps/gateway .
 RUN chown -R node:node .
 USER node

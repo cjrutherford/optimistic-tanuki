@@ -7,7 +7,7 @@ import {
   EnvironmentInjector,
   inject,
   runInInjectionContext,
-  effect, OnInit,
+  effect, OnInit, OnDestroy,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
@@ -49,9 +49,10 @@ import { io } from 'socket.io-client';
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss',
 })
-export class ChatComponent implements OnInit {
+export class ChatComponent implements OnInit, OnDestroy {
   socketChat?: SocketChatService | null;
   private injector = inject(EnvironmentInjector);
+  private connectionInitialized = false;
 
   contacts = signal<ChatContact[]>([]);
   conversations = signal<ChatConversation[]>([], {
@@ -59,6 +60,7 @@ export class ChatComponent implements OnInit {
   });
   openWindows = signal<Set<string>>(new Set());
   selectedConversation = signal<string | null>(null);
+  isConnected = signal<boolean>(false);
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: object,
@@ -72,38 +74,124 @@ export class ChatComponent implements OnInit {
   }
 
   ngOnInit() {
-    if (!isPlatformBrowser(this.platformId) || !this.socketChat) return;
+    if (!isPlatformBrowser(this.platformId) || !this.socketChat) {
+      console.warn('Chat component: Not in browser or socket service unavailable');
+      return;
+    }
 
-    const connect = async () => {
-      const profile = this.profileService.currentUserProfile();
-      if (!profile) return;
-
-      this.socketChat!.onMessage((message) => {
-        // Handle incoming messages (could add to conversation/messages)
-        console.log('New message received:', message);
-      });
-
-      this.socketChat!.onConversations((data: ChatConversation[]) => {
-        this.conversations.set(data);
-        this.updateContacts();
-      });
-
-      this.socketChat!.getConversations(profile.id);
-    };
-
-    // Initial connect
-    connect();
+    this.initializeSocketConnection();
 
     // React to profile changes
     runInInjectionContext(this.injector, () => {
       const stopEffect = effect(() => {
         const profile = this.profileService.currentUserProfile();
-        if (profile) {
-          connect();
+        if (profile && !this.connectionInitialized) {
+          this.connectToChat(profile.id);
           stopEffect.destroy();
         }
       });
     });
+  }
+
+  ngOnDestroy() {
+    if (this.socketChat) {
+      this.socketChat.destroy();
+      console.log('Chat component destroyed, socket disconnected');
+    }
+  }
+
+  /**
+   * Initialize socket connection event handlers
+   */
+  private initializeSocketConnection() {
+    if (!this.socketChat) return;
+
+    // Set up message handler
+    this.socketChat.onMessage((message) => {
+      console.log('New message received:', message);
+      this.handleIncomingMessage(message);
+    });
+
+    // Set up conversations handler
+    this.socketChat.onConversations((data: ChatConversation[]) => {
+      console.log('Conversations updated:', data.length);
+      this.conversations.set(data);
+      this.updateContacts();
+    });
+
+    console.log('Socket connection handlers initialized');
+  }
+
+  /**
+   * Connect to chat service and load conversations
+   */
+  private async connectToChat(profileId: string) {
+    if (!this.socketChat || this.connectionInitialized) return;
+
+    try {
+      this.socketChat.getConversations(profileId);
+      this.connectionInitialized = true;
+      this.isConnected.set(true);
+      console.log('Connected to chat service for profile:', profileId);
+    } catch (error) {
+      console.error('Error connecting to chat:', error);
+      this.messageService.addMessage({
+        content: 'Failed to connect to chat service',
+        type: 'error',
+      });
+    }
+  }
+
+  /**
+   * Handle incoming chat messages
+   */
+  private handleIncomingMessage(message: ChatMessage) {
+    // Update the conversation with the new message
+    this.conversations.update((conversations) => {
+      const convIndex = conversations.findIndex(
+        (c) => c.id === message.conversationId
+      );
+      if (convIndex > -1) {
+        const updatedConv = { ...conversations[convIndex] };
+        updatedConv.messages = [...updatedConv.messages, message];
+        const newConversations = [...conversations];
+        newConversations[convIndex] = updatedConv;
+        return newConversations;
+      }
+      return conversations;
+    });
+  }
+
+  /**
+   * Open or create AI assistant conversation
+   */
+  async openAiAssistantChat() {
+    const profile = this.profileService.currentUserProfile();
+    if (!profile) {
+      this.messageService.addMessage({
+        content: 'Please log in to chat with AI assistant',
+        type: 'warning',
+      });
+      return;
+    }
+
+    // Look for existing AI assistant conversation
+    const aiConversation = this.conversations().find((conv) =>
+      conv.participants.some((p) => p.startsWith('ai-') || p.includes('assistant'))
+    );
+
+    if (aiConversation) {
+      // Open existing AI conversation
+      this.openChat(aiConversation.id);
+      console.log('Opened existing AI assistant conversation:', aiConversation.id);
+    } else {
+      // TODO: Create new AI assistant conversation
+      this.messageService.addMessage({
+        content: 'Creating new AI assistant conversation...',
+        type: 'info',
+      });
+      console.log('AI assistant conversation creation not yet implemented');
+    }
   }
 
   async updateContacts() {
