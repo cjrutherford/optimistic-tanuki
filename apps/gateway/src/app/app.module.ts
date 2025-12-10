@@ -24,6 +24,7 @@ import { PermissionsGuard } from '../guards/permissions.guard';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
 import { McpToolsModule } from './mcp/mcp-tools.module';
+import { PersonaController } from '../controllers/persona/persona.controller';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { McpToolsModule } from './mcp/mcp-tools.module';
     EventController,
     BlogController,
     PermissionsController,
+    PersonaController,
   ],
   providers: [
     AuthGuard,

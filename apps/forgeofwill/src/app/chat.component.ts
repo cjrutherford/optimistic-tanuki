@@ -163,7 +163,39 @@ export class ChatComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Open or create AI assistant conversation
+   * Open or create AI assistant conversation for a specific persona
+   */
+  async openOrCreatePersonaChat(personaId: string) {
+    const profile = this.profileService.currentUserProfile();
+    if (!profile) {
+      this.messageService.addMessage({
+        content: 'Please log in to chat with AI assistant',
+        type: 'warning',
+      });
+      return;
+    }
+
+    // Look for existing conversation with this persona
+    const personaConversation = this.conversations().find((conv) =>
+      conv.participants.includes(personaId)
+    );
+
+    if (personaConversation) {
+      // Open existing conversation
+      this.openChat(personaConversation.id);
+      console.log('Opened existing persona conversation:', personaConversation.id);
+    } else {
+      // TODO: Create new conversation with the persona
+      this.messageService.addMessage({
+        content: 'Creating new conversation with AI persona...',
+        type: 'info',
+      });
+      console.log('Persona conversation creation not yet implemented for:', personaId);
+    }
+  }
+
+  /**
+   * Open or create AI assistant conversation (legacy method for backward compatibility)
    */
   async openAiAssistantChat() {
     const profile = this.profileService.currentUserProfile();

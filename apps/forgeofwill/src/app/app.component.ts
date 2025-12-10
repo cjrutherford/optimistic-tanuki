@@ -184,4 +184,17 @@ export class AppComponent implements OnInit {
       });
     }
   }
+
+  onPersonaSelected(persona: any) {
+    console.log('Persona selected:', persona);
+    if (this.chatComponent) {
+      this.chatComponent.openOrCreatePersonaChat(persona.id);
+    } else {
+      console.error('Chat component not available');
+      this.messageService.addMessage({
+        content: 'Chat service is not available',
+        type: 'error',
+      });
+    }
+  }
 }
