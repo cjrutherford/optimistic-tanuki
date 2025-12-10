@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { SocialWebSocketService } from './social-websocket.service';
-import { API_BASE_URL } from '@optimistic-tanuki/constants';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('SocialWebSocketService', () => {
   let service: SocialWebSocketService;
