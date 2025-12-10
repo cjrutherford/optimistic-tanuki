@@ -17,6 +17,7 @@ describe('AuthGuard', () => {
 
     beforeEach(() => {
         reflector = new Reflector(); // Create a Reflector instance
+        reflector.getAllAndOverride = jest.fn().mockReturnValue(false); // Default to non-public route
         clientProxy = {
             send: jest.fn().mockReturnValue(of({}))
         };

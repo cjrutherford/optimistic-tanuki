@@ -1,44 +1,64 @@
-<otui-card>
+<otui-card
+  class="compose-card"
+  [class.dragover]="isDragOver"
+  (dragenter)="handleDragEnter($event)"
+  (dragover)="handleDragOver($event)"
+  (dragleave)="handleDragLeave($event)"
+  (drop)="handleDrop($event)"
+  [variantOverrides]="{ background: backgroundGradient }"
+>
   <form>
+    <label for="title">Title</label>
     <lib-text-input
-      type="text"
-      label="Name your Masterpiece"
-      placeholder="Enter title"
+      id="title"
+      [type]="'text'"
       [(ngModel)]="title"
       [ngModelOptions]="{ standalone: true }"
+      placeholder="Name your Masterpiece"
     ></lib-text-input>
-    <label for="content">Write your epic...</label>
-    <div 
-      class="editor-wrapper"
-      [class.dragover]="isDragOver"
-      (dragover)="onDragOver($event)"
-      (dragleave)="onDragLeave($event)"
-      (drop)="onDrop($event)"
-    >
-      <quill-editor
-        id="quillEditor"
-        class="editor"
-        [theme]="'snow'"
-        [(ngModel)]="content"
-        [ngModelOptions]="{ standalone: true }"
-        [modules]="modules"
-        placeholder="What's on your mind?"
-        (onContentChanged)="onContentChange($event)"
-      ></quill-editor>
-    </div>
-    <!-- <otui-grid
-        [columns]="2"
-        [rows]="1"
-        [style]="{ 'margin-top': '1em' }"> -->
-    <!-- <lib-attachment (attachmentsChange)="onAttachmentChange($event)"></lib-attachment> -->
-    <!-- <lib-link [links]="links" (linksChange)="onLinksChange($event)"></lib-link> -->
-    <!-- </otui-grid> -->
-    <otui-button
-      style="margin-top: 1em; margin-left: 15px"
-      (click)="onPostSubmit()"
-      label="Post"
-      variant="success"
-      >Post!
-    </otui-button>
+
+    <label for="content">Content</label>
+    @if (editor) {
+    <lib-rich-text-toolbar
+      [editor]="editor"
+      (componentsClicked)="onToolbarComponentsClick()"
+      (imageUploadClicked)="onToolbarImageUploadClick()"
+    ></lib-rich-text-toolbar>
+    }
+    <input
+      type="file"
+      id="imageInput"
+      #imageInput
+      hidden
+      (change)="onFileSelected($event)"
+      accept="image/*"
+    />
+    @if(editor) {
+    <tiptap-editor
+      [editor]="editor"
+      [(ngModel)]="content"
+      [ngModelOptions]="{ standalone: true }"
+      class="tiptap-editor-styles"
+    ></tiptap-editor>
+    }
+
+    <otui-button (action)="onPostSubmit()">Post</otui-button>
   </form>
 </otui-card>
+
+<!-- Component injection selector -->
+<lib-component-selector
+  [isVisible]="isComponentSelectorVisible"
+  [components]="registeredComponents"
+  (componentSelected)="onComponentSelected($event)"
+  (closed)="hideComponentSelector()"
+></lib-component-selector>
+
+<!-- Property editor -->
+<lib-property-editor
+  [isVisible]="isPropertyEditorVisible"
+  [componentInstance]="selectedComponentInstance"
+  [propertyDefinitions]="selectedComponentProperties"
+  (propertiesUpdated)="onPropertiesUpdated($event)"
+  (closed)="hidePropertyEditor()"
+></lib-property-editor>

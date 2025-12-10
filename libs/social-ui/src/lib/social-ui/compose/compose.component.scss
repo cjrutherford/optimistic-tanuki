@@ -1,87 +1,106 @@
+// Import Angular Component Node styles
+@use './extensions/angular-component-node.styles.scss';
+
 h3 {
-    margin: 10px;
-}
-.editor {
-    width: calc(100% - 20px);
-    height: calc(100% - 20px);
-    ::ng-deep .ql-editor {
-        height: 100%;
-    }
-    ::ng-deep .ql-container {
-        height: 100%;
-    }
-}
-button { 
-    margin: 10px;
-    margin-left: 15px;
+  margin: var(--spacing-sm, 8px);
 }
 
-  ::ng-deep .ql-container {
-    border: none;
-    background-color: var(--background-color);
-    color: var(--foreground-color);
-    font-family: 'Roboto', sans-serif;
-  }
+form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
 
-  ::ng-deep .ql-editor {
-    min-height: 200px;
-    padding: 1rem;
-    background-color: var(--accent-color);
-    color: var(--foreground-color);
-  }
+.tiptap-editor-styles ::ng-deep .ProseMirror {
+  border: 2px solid var(--local-complement, var(--complement));
+  background: var(--local-background-gradient, var(--background-gradient));
+  color: var(--local-foreground, var(--foreground));
+  font-family: 'Roboto', sans-serif;
+  border-radius: var(--border-radius-lg, 8px);
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+  min-height: 200px;
+  padding: var(--spacing-md, 16px);
+  transition: all 0.15s ease-in-out;
 
-  ::ng-deep .ql-toolbar {
-    border: none;
-    background-color: var(--accent-shade-lighten-30);
-    color: var(--foreground-color);
+  &:focus {
+    outline: none;
+    border-color: var(--local-accent, var(--accent));
+    box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
   }
+}
 
-  ::ng-deep .ql-toolbar button:hover {
-    background-color: var(--accent-shade-darken-10);
-  }
-  .editor-wrapper {
-    position: relative;
-    border: 2px dashed transparent;
-    transition: border-color 0.3s ease;
+.content {
+  width: calc(100% - var(--spacing-sm, 8px));
+  margin: var(--spacing-xs, 4px) var(--spacing-xs, 4px) var(--spacing-md, 16px) var(--spacing-xs, 4px);
+  display: block;
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 300px;
+  box-shadow: inset 2px 2px 4px 6px var(--accent),
+    inset -2px -2px 4px 6px var(--complement);
+  border-radius: var(--border-radius-lg, 8px);
+  background: var(--local-background-gradient, var(--background-gradient));
+}
+
+button {
+  margin: var(--spacing-sm, 8px);
+  margin-left: var(--spacing-md, 16px);
+}
+
+.editor-wrapper {
+  position: relative;
+  border: 2px dashed transparent;
+  transition: border-color 0.15s ease-in-out;
   
-    &.dragover {
-      border-color: var(--accent-color);
-      background-color: var(--accent-shade-lighten-30);
-    }
+  &.dragover {
+    border-color: var(--local-complement, var(--complement));
+    background-color: rgba(0, 0, 0, 0.1);
   }
+}
+
+.compose-card {
+  position: relative;
+  border: 2px dashed transparent;
+  transition: border-color 0.15s ease-in-out;
   
-  .editor {
-    width: calc(100% - 20px);
-    height: calc(100% - 20px);
-  
-    ::ng-deep .ql-editor {
-      height: 100%;
+  &.dragover {
+    ::after {
+      content: 'Drop files to upload';
+      position: absolute;
+      top: var(--spacing-md, 16px);
+      left: var(--spacing-md, 16px);
+      right: var(--spacing-md, 16px);
+      bottom: var(--spacing-md, 16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--local-background-gradient, var(--background-gradient));
+      color: var(--local-foreground, var(--foreground));
+      padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+      border-radius: var(--border-radius-lg, 8px);
+      box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+      z-index: var(--z-index-overlay, 1080);
+      font-size: var(--font-size-lg, 1.125rem);
+      font-weight: bold;
+      animation: pulse 12s infinite;
     }
-  
-    ::ng-deep .ql-container {
-      height: 100%;
-    }
+    border-color: var(--local-complement, var(--complement));
+    background-color: rgba(0, 0, 0, 0.1);
   }
-  ::ng-deep .ql-editor img {
-  max-width: 100%;
-  height: auto;
 }
 
-.overlay {
-  position: absolute;
-  border: 1px dashed #000;
-  z-index: 1000;
-}
-
-.overlay button {
-  margin: 5px;
-  padding: 5px 10px;
-  background-color: var(--accent-color);
-  color: var(--background-color);
-  border: none;
-  cursor: pointer;
-}
-
-.overlay button:hover {
-  background-color: var(--accent-shade-darken-10);
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 5px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 20%, var(--local-complement, var(--complement)));
+  }
+  40% {
+    box-shadow: 0 0 15px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 60%, var(--local-complement, var(--complement)));
+  }
+  100% {
+    box-shadow: 0 0 5px var(--local-accent, var(--accent));
+    background: radial-gradient(circle, var(--local-accent, var(--accent)) 20%, var(--local-complement, var(--complement)));
+  }
 }

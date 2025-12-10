@@ -5,17 +5,14 @@ import {
   Output,
   TemplateRef,
   ViewChild,
+  inject,
 } from '@angular/core';
 
 import { MatDialog } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { QuillModule, QuillModules } from 'ngx-quill';
-import {
-  Themeable,
-  ThemeColors,
-  ThemeService,
-} from '@optimistic-tanuki/theme-lib';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'lib-comment',
@@ -41,7 +38,9 @@ export class CommentComponent extends Themeable implements OnInit {
   comment = '';
   accentShade!: string;
 
-  constructor(private dialog: MatDialog) {
+  private dialog = inject(MatDialog);
+
+  constructor() {
     super();
   }
 

@@ -80,6 +80,7 @@ import {
 import { ComponentWrapperComponent } from './components/component-wrapper.component';
 import { ComponentEditorWrapperComponent } from './components/component-editor-wrapper.component';
 import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
+import DOMPurify from 'dompurify';
 
 // Rich text toolbar
 import { RichTextToolbarComponent } from './components/rich-text-toolbar.component';
@@ -193,6 +194,10 @@ export class BlogComposeComponent
   componentContainer!: ViewContainerRef;
 
   override readonly themeService: ThemeService = inject(ThemeService);
+
+  private sanitize(input: string): string {
+    return DOMPurify.sanitize(input);
+  }
 
   // Theming properties;
   backgroundGradient = 'linear-gradient(to right, #5969c3, #59c360)';
@@ -338,7 +343,7 @@ export class BlogComposeComponent
     this.editor.on('update', () => {
       const newContent = this.editor.getHTML();
       if (this._content !== newContent) {
-        this._content = newContent;
+        this._content = this.sanitize(newContent);
         this.emitChange();
       }
     });

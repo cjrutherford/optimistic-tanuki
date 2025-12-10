@@ -114,6 +114,7 @@ describe('SocialController', () => {
       value: 1,
       postId: '1',
       userId: mockUser.id,
+      profileId: mockUser.profileId,
     };
     await socialController.vote(mockUser, voteDto);
     expect(clientProxy.send).toHaveBeenCalledWith(

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SocialGateway } from './social.gateway';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
-import { of } from 'rxjs';
+import { throwError, of } from 'rxjs';
 
 describe('SocialGateway', () => {
   let gateway: SocialGateway;
@@ -54,9 +54,7 @@ describe('SocialGateway', () => {
       const payload = { profileId: 'user123' };
 
       mockSocialClient.send.mockReturnValue(
-        of(null).pipe(() => {
-          throw new Error('Service error');
-        })
+        throwError(() => new Error('Service error'))
       );
 
       await gateway.handleGetFeed(payload, mockClient);
@@ -102,7 +100,7 @@ describe('SocialGateway', () => {
   describe('broadcastPostCreated', () => {
     it('should broadcast post created event to subscribers', () => {
       const post = { id: 'post123', content: 'New post' };
-      
+
       // This is a public method but relies on internal state
       // In a real scenario, we'd need to set up mock clients first
       // Just verify it doesn't throw

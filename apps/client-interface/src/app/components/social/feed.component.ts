@@ -10,7 +10,9 @@ import {
   PostComponent,
   CreatePostDto,
   CreateCommentDto,
+  PostData,
 } from '@optimistic-tanuki/social-ui';
+import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
@@ -18,7 +20,7 @@ import { filter, firstValueFrom, Subject, takeUntil } from 'rxjs';
 import { CommentService } from '../../comment.service';
 import { ProfileService } from '../../profile.service';
 import { Router } from '@angular/router';
-import { PostProfileStub, ComposeCompleteEvent } from '@optimistic-tanuki/social-ui';
+import { PostProfileStub } from '@optimistic-tanuki/social-ui';
 
 @Component({
   selector: 'app-feed',
@@ -29,8 +31,8 @@ import { PostProfileStub, ComposeCompleteEvent } from '@optimistic-tanuki/social
     MatInputModule,
     MatIconModule,
     ComposeComponent,
-    PostComponent
-],
+    PostComponent,
+  ],
   providers: [ThemeService, PostService, AttachmentService, CommentService],
   templateUrl: './feed.component.html',
   styleUrls: ['./feed.component.scss'],
@@ -50,39 +52,39 @@ export class FeedComponent implements OnInit, OnDestroy {
     private readonly attachmentService: AttachmentService,
     private readonly commentService: CommentService,
     private readonly profileService: ProfileService,
-    private readonly router: Router,
-  ) {
-  }
-  
+    private readonly router: Router
+  ) {}
+
   ngOnInit() {
     this.themeService.themeColors$
-    .pipe(
-      filter(d => !!d),
-      takeUntil(this.destroy$)
-    )
-    .subscribe((colors) => {
-      this.themeStyles = {
-        backgroundColor: colors.background,
-        color: colors.foreground,
-        border: `1px solid ${colors.accent}`,
-      };
-    });
-    const currentProfile = this.profileService.currentUserProfile();
-    if(currentProfile){
-      this.postService.searchPosts(
-        { profileId: currentProfile.id }, {orderBy: 'createdAt', orderDirection: 'desc'}
-      ).pipe(
+      .pipe(
+        filter((d) => !!d),
         takeUntil(this.destroy$)
-      ).subscribe((posts) => {
-        this.posts = posts;
-        this.loadProfiles(posts);
+      )
+      .subscribe((colors) => {
+        this.themeStyles = {
+          backgroundColor: colors.background,
+          color: colors.foreground,
+          border: `1px solid ${colors.accent}`,
+        };
       });
+    const currentProfile = this.profileService.currentUserProfile();
+    if (currentProfile) {
+      this.postService
+        .searchPosts(
+          { profileId: currentProfile.id },
+          { orderBy: 'createdAt', orderDirection: 'desc' }
+        )
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((posts) => {
+          this.posts = posts;
+          this.loadProfiles(posts);
+        });
     } else {
-      this.router.navigate(['/profile'])
+      this.router.navigate(['/profile']);
     }
   }
   profiles: { [key: string]: PostProfileStub } = {};
-
 
   private loadProfiles(posts: PostDto[]) {
     const profileIds: string[] = [
@@ -103,43 +105,40 @@ export class FeedComponent implements OnInit, OnDestroy {
           avatar: profile.profilePic,
         };
       });
-    }
-    );
+    });
   }
 
-  createdPost(postData: ComposeCompleteEvent) {
-    console.log('create called.')
-    const { post, attachments, links } = postData;
+  createdPost(postData: PostData) {
+    console.log('create called.');
+    const { title, content, attachments, links } = postData;
     const currentProfile = this.profileService.currentUserProfile();
     if (!currentProfile) {
       console.error('No current profile found');
       return;
     }
-    const finalPost: CreatePostDto = post as CreatePostDto;
-    finalPost.profileId = currentProfile.id;
-    this.postService
-      .createPost(finalPost)
-      .subscribe(async (newPost) => {
-        if (attachments.length > 0) {
-          for (const atta of attachments) {
-            const newAttachment = await firstValueFrom(
-              this.attachmentService.createAttachment(atta),
-            );
-            if (!newPost.attachments) {
-              newPost.attachments = [];
-            }
-            newPost.attachments.push(newAttachment);
-          }
+    const finalPost: CreatePostDto = {
+      title,
+      content,
+      profileId: currentProfile.id,
+    };
+    this.postService.createPost(finalPost).subscribe(async (newPost) => {
+      if (attachments.length > 0) {
+        for (const attachment of attachments) {
+          const atta: CreateAttachmentDto = {
+            ...attachment,
+            postId: newPost.id,
+          };
+          await firstValueFrom(this.attachmentService.createAttachment(atta));
         }
-        this.posts.unshift(newPost);
-      });
+      }
+      this.posts.unshift(newPost);
+    });
   }
 
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
   }
-
 
   commented(newComment: CreateCommentDto, postIndex: number) {
     console.log('🚀 ~ FeedComponent ~ commented ~ newComment:', newComment);
