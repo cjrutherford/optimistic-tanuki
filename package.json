@@ -49,6 +49,7 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/mapped-types": "^2.1.0",
+    "@nestjs-mcp/server": "^0.3.0",
     "@nestjs/microservices": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/platform-socket.io": "^11.0.0",
