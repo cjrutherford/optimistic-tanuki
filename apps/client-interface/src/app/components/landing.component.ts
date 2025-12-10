@@ -1,25 +1,32 @@
+import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 
-import { CardComponent, GridComponent, HeadingComponent, ListComponent, TileComponent } from '@optimistic-tanuki/common-ui';
+import {
+  CardComponent,
+  GridComponent,
+  HeadingComponent,
+  ListComponent,
+  TileComponent,
+} from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
   imports: [
-    GridComponent,
-    TileComponent,
-    HeadingComponent,
+    CommonModule,
     CardComponent,
-    ListComponent
-],
+    GridComponent,
+    HeadingComponent,
+    ListComponent,
+    TileComponent,
+  ],
   templateUrl: './landing.component.html',
-  styleUrl: './landing.component.scss',
+  styleUrls: ['./landing.component.scss'],
 })
 export class LandingComponent {
-  featureItems: string[]= [
+  featureItems: string[] = [
     'Light/Dark Mode',
     'Custom Accent/Complement Colors',
-    'Multiple profiles by default',
-    "Rich text editing for: Posts, comments, and responses.",
-  ]
+    'Rich text editing for: Posts, comments, and responses.',
+  ];
 }

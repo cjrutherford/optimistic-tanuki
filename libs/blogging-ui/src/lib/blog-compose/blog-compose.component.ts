@@ -252,8 +252,9 @@ export class BlogComposeComponent
 
   // Flag to track if there's pending content to set after editor init
   private pendingContent: string | null = null;
+  private componentInjectionService = inject(ComponentInjectionService);
 
-  constructor(private componentInjectionService: ComponentInjectionService) {
+  constructor() {
     super();
   }
 

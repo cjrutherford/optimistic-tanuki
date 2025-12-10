@@ -2,5 +2,6 @@
   "nxConsole.generateAiAgentRules": true,
   "jest.jestCommandLine": "npx jest --config=jest.config.ts",
   "cSpell.words": ["telos"],
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "angular.log": "verbose"
 }

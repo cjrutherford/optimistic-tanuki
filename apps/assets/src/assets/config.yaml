@@ -1,6 +1,6 @@
 listenPort: 3005
 database:
-  host: localhost
+  host: db
   port: 5432
   name: ot_assets
   username: postgres

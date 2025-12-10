@@ -61,13 +61,13 @@ export class AppComponent implements OnInit, OnDestroy {
       startWith(this.router.url)
     );
 
-    this.urlSub = this.router.events.subscribe((event) => {
-      if (event instanceof NavigationEnd && this.router.url === '/') {
-        if (!this.authState.isAuthenticated) {
-          this.router.navigate(['/login']);
-        }
-      }
-    });
+    // this.urlSub = this.router.events.subscribe((event) => {
+    //   if (event instanceof NavigationEnd && this.router.url !== '/') {
+    //     if (!this.authState.isAuthenticated) {
+    //       this.router.navigate(['/login']);
+    //     }
+    //   }
+    // });
 
     this.authState.isAuthenticated$.subscribe({
       next: (isAuthenticated) => {
