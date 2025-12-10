@@ -1,4 +1,4 @@
-import { Component, effect, signal, OnInit } from '@angular/core';
+import { Component, effect, signal, OnInit, ViewChild } from '@angular/core';
 import {
   MessageComponent,
   MessageService,
@@ -35,6 +35,8 @@ export class AppComponent implements OnInit {
   isModalOpen = signal<boolean>(false);
   messages = signal<MessageType[]>([]);
   navItems = signal<NavItem[]>([]);
+
+  @ViewChild(ChatComponent) chatComponent?: ChatComponent;
 
   constructor(
     private readonly router: Router,
@@ -172,11 +174,14 @@ export class AppComponent implements OnInit {
 
   openAiAssistant() {
     console.log('Opening AI Assistant chat...');
-    // TODO: Implement AI assistant conversation opening logic
-    // For now, just show a message
-    this.messageService.addMessage({
-      content: 'AI Assistant chat feature is being implemented...',
-      type: 'info',
-    });
+    if (this.chatComponent) {
+      this.chatComponent.openAiAssistantChat();
+    } else {
+      console.error('Chat component not available');
+      this.messageService.addMessage({
+        content: 'Chat service is not available',
+        type: 'error',
+      });
+    }
   }
 }
