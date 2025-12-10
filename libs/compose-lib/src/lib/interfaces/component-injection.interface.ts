@@ -1,7 +1,7 @@
 import { ComponentRef, Type } from '@angular/core';
 
 /**
- * Interface for components that can be injected into the social post editor
+ * Interface for components that can be dynamically injected into editors
  */
 export interface InjectableComponent {
   /**

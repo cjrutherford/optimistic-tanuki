@@ -36,7 +36,6 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
    * Set the view container reference for component injection
    */
   setViewContainer(viewContainer: ViewContainerRef): void {
-    console.log('view container set');
     this.viewContainer = viewContainer;
   }
 
@@ -191,6 +190,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     wrapperElement.appendChild(componentElement);
 
     // Store the instance (with additional reference to the inner component)
+    // TODO: Consider using WeakMap instead of magic string '_innerComponentRef' to avoid potential conflicts with user data
     (instance.data as Record<string, unknown>)['_innerComponentRef'] =
       componentRef;
     this.activeComponents.set(instanceId, instance);

@@ -9,7 +9,7 @@ import {
 } from '../interfaces/component-injection.interface';
 
 export interface AngularComponentOptions {
-  HTMLAttributes: Record<string, any>;
+  HTMLAttributes: Record<string, unknown>;
   viewContainerRef?: ViewContainerRef;
   onComponentClick?: (componentId: string, instanceId: string) => void;
   onComponentDelete?: (instanceId: string) => void;
@@ -17,7 +17,7 @@ export interface AngularComponentOptions {
   renderer?: (
     componentId: string,
     instanceId: string,
-    data: any,
+    data: Record<string, unknown>,
     element: HTMLElement
   ) => InjectedComponentInstance;
 }

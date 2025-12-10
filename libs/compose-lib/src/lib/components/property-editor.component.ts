@@ -346,6 +346,7 @@ export class PropertyEditorComponent implements OnInit, OnChanges {
         this.editedData[key] = parsed;
       }
     } catch {
+      // TODO: Provide user feedback when JSON parsing fails (e.g., validation error message)
       // Invalid JSON, keep original value
     }
   }
@@ -357,6 +358,7 @@ export class PropertyEditorComponent implements OnInit, OnChanges {
         this.editedData[key] = parsed;
       }
     } catch {
+      // TODO: Provide user feedback when JSON parsing fails (e.g., validation error message)
       // Invalid JSON, keep original value
     }
   }
