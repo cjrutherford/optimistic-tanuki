@@ -1,14 +1,56 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { McpTool } from '@nestjs-mcp/server';
+import { Tool as McpTool } from '@rekog/mcp-nest';
 import { ClientProxy } from '@nestjs/microservices';
 import { RiskCommands, ServiceTokens } from '@optimistic-tanuki/constants';
-import { CreateRiskDto, UpdateRiskDto } from '@optimistic-tanuki/models';
+import {
+  CreateRiskDto,
+  RiskImpact,
+  RiskLikelihood,
+  RiskStatus,
+  UpdateRiskDto,
+} from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { z } from 'zod';
 
-/**
- * MCP Tools for Risk Management
- * These tools allow AI assistants to interact with risks through the Model Context Protocol
- */
+// Define Zod schemas outside the class
+export const listRisksSchema = z.object({
+  projectId: z.string().describe('The ID of the project whose risks to list'),
+});
+
+// Define Zod schemas for parameters
+const createRiskSchema = z.object({
+  projectId: z.string().describe('The ID of the project for this risk'),
+  name: z.string().describe('The name of the risk'),
+  description: z.string().optional().describe('A description of the risk'),
+  userId: z.string().describe('The ID of the user creating the risk'),
+  impact: z.nativeEnum(RiskImpact).describe('The impact level of the risk'),
+  likelihood: z
+    .nativeEnum(RiskLikelihood)
+    .describe('The likelihood of the risk'),
+  status: z.nativeEnum(RiskStatus).describe('The status of the risk'),
+});
+
+const updateRiskSchema = z.object({
+  riskId: z.string().describe('The ID of the risk to update'),
+  name: z.string().optional().describe('The new name of the risk'),
+  description: z
+    .string()
+    .optional()
+    .describe('The new description of the risk'),
+  impact: z
+    .nativeEnum(RiskImpact)
+    .optional()
+    .describe('The new impact level of the risk'),
+  likelihood: z
+    .nativeEnum(RiskLikelihood)
+    .optional()
+    .describe('The new likelihood of the risk'),
+  status: z
+    .nativeEnum(RiskStatus)
+    .optional()
+    .describe('The new status of the risk'),
+});
+
 @Injectable()
 export class RiskMcpService {
   private readonly logger = new Logger(RiskMcpService.name);
@@ -21,18 +63,9 @@ export class RiskMcpService {
   @McpTool({
     name: 'list_risks',
     description: 'List all risks for a project',
-    parameters: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project whose risks to list',
-        },
-      },
-      required: ['projectId'],
-    },
+    parameters: listRisksSchema,
   })
-  async listRisks({ projectId }: { projectId: string }) {
+  async listRisks({ projectId }: z.infer<typeof listRisksSchema>) {
     try {
       this.logger.log(`MCP Tool: Listing risks for project ${projectId}`);
       const risks = await firstValueFrom(
@@ -55,47 +88,7 @@ export class RiskMcpService {
   @McpTool({
     name: 'create_risk',
     description: 'Create a new risk for a project',
-    parameters: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project for this risk',
-        },
-        name: {
-          type: 'string',
-          description: 'The name of the risk',
-        },
-        description: {
-          type: 'string',
-          description: 'A description of the risk',
-        },
-        userId: {
-          type: 'string',
-          description: 'The ID of the user creating the risk',
-        },
-        impact: {
-          type: 'string',
-          description: 'The impact level of the risk',
-          enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-        },
-        probability: {
-          type: 'string',
-          description: 'The probability of the risk occurring',
-          enum: ['LOW', 'MEDIUM', 'HIGH'],
-        },
-        status: {
-          type: 'string',
-          description: 'The status of the risk',
-          enum: ['IDENTIFIED', 'ASSESSED', 'MITIGATED', 'CLOSED'],
-        },
-        mitigation: {
-          type: 'string',
-          description: 'Mitigation strategy for the risk',
-        },
-      },
-      required: ['projectId', 'name', 'description', 'userId', 'impact', 'probability', 'status'],
-    },
+    parameters: createRiskSchema,
   })
   async createRisk({
     projectId,
@@ -103,37 +96,25 @@ export class RiskMcpService {
     description,
     userId,
     impact,
-    probability,
+    likelihood,
     status,
-    mitigation,
-  }: {
-    projectId: string;
-    name: string;
-    description: string;
-    userId: string;
-    impact: string;
-    probability: string;
-    status: string;
-    mitigation?: string;
-  }) {
+  }: z.infer<typeof createRiskSchema>) {
     try {
-      this.logger.log(`MCP Tool: Creating risk "${name}" for project ${projectId}`);
+      this.logger.log(
+        `MCP Tool: Creating risk "${name}" for project ${projectId}`
+      );
       const riskData: CreateRiskDto = {
         projectId,
         name,
         description,
-        createdBy: userId,
+        riskOwner: userId, // Changed from createdBy to riskOwner
         impact,
-        probability,
+        likelihood,
         status,
-        mitigation,
       };
 
       const risk = await firstValueFrom(
-        this.projectPlanningService.send(
-          { cmd: RiskCommands.CREATE },
-          riskData
-        )
+        this.projectPlanningService.send({ cmd: RiskCommands.CREATE }, riskData)
       );
 
       return {
@@ -150,85 +131,30 @@ export class RiskMcpService {
   @McpTool({
     name: 'update_risk',
     description: 'Update an existing risk',
-    parameters: {
-      type: 'object',
-      properties: {
-        riskId: {
-          type: 'string',
-          description: 'The ID of the risk to update',
-        },
-        userId: {
-          type: 'string',
-          description: 'The ID of the user updating the risk',
-        },
-        name: {
-          type: 'string',
-          description: 'The new name of the risk',
-        },
-        description: {
-          type: 'string',
-          description: 'The new description of the risk',
-        },
-        impact: {
-          type: 'string',
-          description: 'The new impact level of the risk',
-          enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-        },
-        probability: {
-          type: 'string',
-          description: 'The new probability of the risk occurring',
-          enum: ['LOW', 'MEDIUM', 'HIGH'],
-        },
-        status: {
-          type: 'string',
-          description: 'The new status of the risk',
-          enum: ['IDENTIFIED', 'ASSESSED', 'MITIGATED', 'CLOSED'],
-        },
-        mitigation: {
-          type: 'string',
-          description: 'Updated mitigation strategy for the risk',
-        },
-      },
-      required: ['riskId', 'userId'],
-    },
+    parameters: updateRiskSchema,
   })
   async updateRisk({
     riskId,
-    userId,
     name,
     description,
     impact,
-    probability,
+    likelihood,
     status,
-    mitigation,
-  }: {
-    riskId: string;
-    userId: string;
-    name?: string;
-    description?: string;
-    impact?: string;
-    probability?: string;
-    status?: string;
-    mitigation?: string;
-  }) {
+  }: z.infer<typeof updateRiskSchema>) {
     try {
       this.logger.log(`MCP Tool: Updating risk ${riskId}`);
-      const updates: Partial<UpdateRiskDto> = {
-        id: riskId,
-        updatedBy: userId,
-      };
+      const updates: Partial<UpdateRiskDto> = {};
 
       if (name) updates.name = name;
       if (description) updates.description = description;
       if (impact) updates.impact = impact;
-      if (probability) updates.probability = probability;
+      if (likelihood) updates.likelihood = likelihood;
       if (status) updates.status = status;
-      if (mitigation) updates.mitigation = mitigation;
 
       const risk = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: RiskCommands.UPDATE },
-          updates
+          { riskId, ...updates }
         )
       );
 
@@ -246,34 +172,17 @@ export class RiskMcpService {
   @McpTool({
     name: 'delete_risk',
     description: 'Delete a risk',
-    parameters: {
-      type: 'object',
-      properties: {
-        riskId: {
-          type: 'string',
-          description: 'The ID of the risk to delete',
-        },
-        userId: {
-          type: 'string',
-          description: 'The ID of the user deleting the risk',
-        },
-      },
-      required: ['riskId', 'userId'],
-    },
+    parameters: z.object({
+      riskId: z.string().describe('The ID of the risk to delete'),
+    }),
   })
-  async deleteRisk({
-    riskId,
-    userId,
-  }: {
-    riskId: string;
-    userId: string;
-  }) {
+  async deleteRisk({ riskId }: { riskId: string }) {
     try {
-      this.logger.log(`MCP Tool: Deleting risk ${riskId} by user ${userId}`);
+      this.logger.log(`MCP Tool: Deleting risk ${riskId}`);
       await firstValueFrom(
         this.projectPlanningService.send(
-          { cmd: RiskCommands.DELETE },
-          riskId
+          { cmd: RiskCommands.REMOVE },
+          { riskId }
         )
       );
 

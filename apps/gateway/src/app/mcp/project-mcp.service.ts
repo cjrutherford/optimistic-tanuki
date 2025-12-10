@@ -1,14 +1,60 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { McpTool } from '@nestjs-mcp/server';
+import { Tool as McpTool } from '@rekog/mcp-nest';
 import { ClientProxy } from '@nestjs/microservices';
 import { ProjectCommands, ServiceTokens } from '@optimistic-tanuki/constants';
-import { CreateProjectDto, UpdateProjectDto } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { z } from 'zod';
+import { CreateProjectDto, UpdateProjectDto } from '@optimistic-tanuki/models';
 
-/**
- * MCP Tools for Project Management
- * These tools allow AI assistants to interact with projects through the Model Context Protocol
- */
+// Define Zod schemas for parameters
+const getProjectSchema = z.object({
+  projectId: z.string().describe('The ID of the project to retrieve'),
+});
+
+const createProjectSchema = z.object({
+  name: z.string().describe('The name of the project'),
+  description: z.string().describe('A description of the project'),
+  userId: z.string().describe('The ID of the user creating the project'),
+  startDate: z
+    .string()
+    .optional()
+    .describe('The start date of the project (ISO 8601 format)'),
+  status: z
+    .enum(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'])
+    .describe('The status of the project'),
+  members: z
+    .array(z.string())
+    .optional()
+    .describe('Array of member IDs to add to the project'),
+});
+
+const updateProjectSchema = z.object({
+  projectId: z.string().describe('The ID of the project to update'),
+  userId: z.string().describe('The ID of the user updating the project'),
+  name: z.string().optional().describe('The new name of the project'),
+  description: z
+    .string()
+    .optional()
+    .describe('The new description of the project'),
+  status: z
+    .enum(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'])
+    .optional()
+    .describe('The new status of the project'),
+  endDate: z
+    .string()
+    .optional()
+    .describe('The end date of the project (ISO 8601 format)'),
+});
+
+const deleteProjectSchema = z.object({
+  projectId: z.string().describe('The ID of the project to delete'),
+});
+
+// Define Zod schemas outside the class
+export const listProjectsSchema = z.object({
+  userId: z.string().describe('The ID of the user whose projects to list'),
+});
+
 @Injectable()
 export class ProjectMcpService {
   private readonly logger = new Logger(ProjectMcpService.name);
@@ -21,18 +67,9 @@ export class ProjectMcpService {
   @McpTool({
     name: 'list_projects',
     description: 'List all projects for a user',
-    parameters: {
-      type: 'object',
-      properties: {
-        userId: {
-          type: 'string',
-          description: 'The ID of the user whose projects to list',
-        },
-      },
-      required: ['userId'],
-    },
+    parameters: listProjectsSchema,
   })
-  async listProjects({ userId }: { userId: string }) {
+  async listProjects({ userId }: z.infer<typeof listProjectsSchema>) {
     try {
       this.logger.log(`MCP Tool: Listing projects for user ${userId}`);
       const projects = await firstValueFrom(
@@ -55,18 +92,9 @@ export class ProjectMcpService {
   @McpTool({
     name: 'get_project',
     description: 'Get details of a specific project by ID',
-    parameters: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project to retrieve',
-        },
-      },
-      required: ['projectId'],
-    },
+    parameters: getProjectSchema,
   })
-  async getProject({ projectId }: { projectId: string }) {
+  async getProject({ projectId }: z.infer<typeof getProjectSchema>) {
     try {
       this.logger.log(`MCP Tool: Getting project ${projectId}`);
       const project = await firstValueFrom(
@@ -88,40 +116,7 @@ export class ProjectMcpService {
   @McpTool({
     name: 'create_project',
     description: 'Create a new project',
-    parameters: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'The name of the project',
-        },
-        description: {
-          type: 'string',
-          description: 'A description of the project',
-        },
-        userId: {
-          type: 'string',
-          description: 'The ID of the user creating the project',
-        },
-        startDate: {
-          type: 'string',
-          description: 'The start date of the project (ISO 8601 format)',
-        },
-        status: {
-          type: 'string',
-          description: 'The status of the project (e.g., PLANNING, ACTIVE, COMPLETED)',
-          enum: ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'],
-        },
-        members: {
-          type: 'array',
-          description: 'Array of member IDs to add to the project',
-          items: {
-            type: 'string',
-          },
-        },
-      },
-      required: ['name', 'description', 'userId', 'status'],
-    },
+    parameters: createProjectSchema,
   })
   async createProject({
     name,
@@ -130,16 +125,11 @@ export class ProjectMcpService {
     startDate,
     status,
     members = [],
-  }: {
-    name: string;
-    description: string;
-    userId: string;
-    startDate?: string;
-    status: string;
-    members?: string[];
-  }) {
+  }: z.infer<typeof createProjectSchema>) {
     try {
-      this.logger.log(`MCP Tool: Creating project "${name}" for user ${userId}`);
+      this.logger.log(
+        `MCP Tool: Creating project "${name}" for user ${userId}`
+      );
       const projectData: CreateProjectDto = {
         name,
         description,
@@ -171,37 +161,7 @@ export class ProjectMcpService {
   @McpTool({
     name: 'update_project',
     description: 'Update an existing project',
-    parameters: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project to update',
-        },
-        name: {
-          type: 'string',
-          description: 'The new name of the project',
-        },
-        description: {
-          type: 'string',
-          description: 'The new description of the project',
-        },
-        status: {
-          type: 'string',
-          description: 'The new status of the project',
-          enum: ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'],
-        },
-        userId: {
-          type: 'string',
-          description: 'The ID of the user updating the project',
-        },
-        endDate: {
-          type: 'string',
-          description: 'The end date of the project (ISO 8601 format)',
-        },
-      },
-      required: ['projectId', 'userId'],
-    },
+    parameters: updateProjectSchema,
   })
   async updateProject({
     projectId,
@@ -210,19 +170,11 @@ export class ProjectMcpService {
     description,
     status,
     endDate,
-  }: {
-    projectId: string;
-    userId: string;
-    name?: string;
-    description?: string;
-    status?: string;
-    endDate?: string;
-  }) {
+  }: z.infer<typeof updateProjectSchema>) {
     try {
       this.logger.log(`MCP Tool: Updating project ${projectId}`);
       const updates: Partial<UpdateProjectDto> = {
         id: projectId,
-        updatedBy: userId,
       };
 
       if (name) updates.name = name;
@@ -251,34 +203,15 @@ export class ProjectMcpService {
   @McpTool({
     name: 'delete_project',
     description: 'Delete a project',
-    parameters: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project to delete',
-        },
-        userId: {
-          type: 'string',
-          description: 'The ID of the user deleting the project',
-        },
-      },
-      required: ['projectId', 'userId'],
-    },
+    parameters: deleteProjectSchema,
   })
-  async deleteProject({
-    projectId,
-    userId,
-  }: {
-    projectId: string;
-    userId: string;
-  }) {
+  async deleteProject({ projectId }: z.infer<typeof deleteProjectSchema>) {
     try {
-      this.logger.log(`MCP Tool: Deleting project ${projectId} by user ${userId}`);
+      this.logger.log(`MCP Tool: Deleting project ${projectId}`);
       await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectCommands.REMOVE },
-          projectId
+          { projectId }
         )
       );
 

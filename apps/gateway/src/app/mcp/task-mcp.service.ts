@@ -1,14 +1,55 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { McpTool } from '@nestjs-mcp/server';
+import { Tool as McpTool } from '@rekog/mcp-nest';
 import { ClientProxy } from '@nestjs/microservices';
 import { TaskCommands, ServiceTokens } from '@optimistic-tanuki/constants';
-import { CreateTaskDto, UpdateTaskDto } from '@optimistic-tanuki/models';
+import {
+  CreateTaskDto,
+  TaskPriority,
+  TaskStatus,
+  UpdateTaskDto,
+} from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { z } from 'zod';
 
-/**
- * MCP Tools for Task Management
- * These tools allow AI assistants to interact with tasks through the Model Context Protocol
- */
+// Define Zod schemas outside the class
+export const listTasksSchema = z.object({
+  projectId: z.string().describe('The ID of the project whose tasks to list'),
+});
+
+// Define Zod schemas for parameters
+const getTaskSchema = z.object({
+  taskId: z.string().describe('The ID of the task to retrieve'),
+});
+
+// Correct the `CreateTaskDto` and `UpdateTaskDto` usage
+const createTaskSchema = z.object({
+  title: z.string().describe('Title of the task'),
+  description: z.string().optional().describe('Description of the task'),
+  status: z.nativeEnum(TaskStatus).describe('Status of the task'),
+  priority: z.nativeEnum(TaskPriority).describe('Priority of the task'),
+  createdBy: z.string().describe('User who created the task'),
+  projectId: z.string().describe('ID of the related project'),
+});
+
+const updateTaskSchema = z.object({
+  id: z.string().describe('The unique identifier of the task'),
+  title: z.string().optional().describe('The new title of the task'),
+  description: z
+    .string()
+    .optional()
+    .describe('The new description of the task'),
+  status: z
+    .nativeEnum(TaskStatus)
+    .optional()
+    .describe('The new status of the task'),
+  priority: z
+    .nativeEnum(TaskPriority)
+    .optional()
+    .describe('The new priority of the task'),
+  createdBy: z.string().optional().describe('User who created the task'),
+  projectId: z.string().optional().describe('ID of the related project'),
+});
+
 @Injectable()
 export class TaskMcpService {
   private readonly logger = new Logger(TaskMcpService.name);
@@ -21,18 +62,9 @@ export class TaskMcpService {
   @McpTool({
     name: 'list_tasks',
     description: 'List all tasks for a project',
-    parameters: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project whose tasks to list',
-        },
-      },
-      required: ['projectId'],
-    },
+    parameters: listTasksSchema,
   })
-  async listTasks({ projectId }: { projectId: string }) {
+  async listTasks({ projectId }: z.infer<typeof listTasksSchema>) {
     try {
       this.logger.log(`MCP Tool: Listing tasks for project ${projectId}`);
       const tasks = await firstValueFrom(
@@ -55,25 +87,13 @@ export class TaskMcpService {
   @McpTool({
     name: 'get_task',
     description: 'Get details of a specific task by ID',
-    parameters: {
-      type: 'object',
-      properties: {
-        taskId: {
-          type: 'string',
-          description: 'The ID of the task to retrieve',
-        },
-      },
-      required: ['taskId'],
-    },
+    parameters: getTaskSchema,
   })
-  async getTask({ taskId }: { taskId: string }) {
+  async getTask({ taskId }: z.infer<typeof getTaskSchema>) {
     try {
       this.logger.log(`MCP Tool: Getting task ${taskId}`);
       const task = await firstValueFrom(
-        this.projectPlanningService.send(
-          { cmd: TaskCommands.FIND_ONE },
-          taskId
-        )
+        this.projectPlanningService.send({ cmd: TaskCommands.FIND_ONE }, taskId)
       );
       return {
         success: true,
@@ -87,90 +107,37 @@ export class TaskMcpService {
 
   @McpTool({
     name: 'create_task',
-    description: 'Create a new task in a project',
-    parameters: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project for this task',
-        },
-        name: {
-          type: 'string',
-          description: 'The name of the task',
-        },
-        description: {
-          type: 'string',
-          description: 'A description of the task',
-        },
-        userId: {
-          type: 'string',
-          description: 'The ID of the user creating the task',
-        },
-        status: {
-          type: 'string',
-          description: 'The status of the task',
-          enum: ['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'ARCHIVED'],
-        },
-        priority: {
-          type: 'string',
-          description: 'The priority of the task',
-          enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-        },
-        assignedTo: {
-          type: 'string',
-          description: 'The ID of the user assigned to this task',
-        },
-        dueDate: {
-          type: 'string',
-          description: 'The due date for the task (ISO 8601 format)',
-        },
-      },
-      required: ['projectId', 'name', 'description', 'userId', 'status'],
-    },
+    description: 'Create a new task for a project',
+    parameters: createTaskSchema,
   })
   async createTask({
-    projectId,
-    name,
+    title,
     description,
-    userId,
     status,
     priority,
-    assignedTo,
-    dueDate,
-  }: {
-    projectId: string;
-    name: string;
-    description: string;
-    userId: string;
-    status: string;
-    priority?: string;
-    assignedTo?: string;
-    dueDate?: string;
-  }) {
+    createdBy,
+    projectId,
+  }: z.infer<typeof createTaskSchema>) {
     try {
-      this.logger.log(`MCP Tool: Creating task "${name}" for project ${projectId}`);
+      this.logger.log(
+        `MCP Tool: Creating task "${title}" for project ${projectId}`
+      );
       const taskData: CreateTaskDto = {
-        projectId,
-        name,
+        title,
         description,
-        createdBy: userId,
         status,
-        priority: priority || 'MEDIUM',
-        assignedTo,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
+        priority,
+        createdBy,
+        projectId,
       };
 
       const task = await firstValueFrom(
-        this.projectPlanningService.send(
-          { cmd: TaskCommands.CREATE },
-          taskData
-        )
+        this.projectPlanningService.send({ cmd: TaskCommands.CREATE }, taskData)
       );
 
       return {
         success: true,
-        message: `Task "${name}" created successfully`,
+        message: `Task "${title}" created successfully`,
         task,
       };
     } catch (error) {
@@ -182,84 +149,32 @@ export class TaskMcpService {
   @McpTool({
     name: 'update_task',
     description: 'Update an existing task',
-    parameters: {
-      type: 'object',
-      properties: {
-        taskId: {
-          type: 'string',
-          description: 'The ID of the task to update',
-        },
-        name: {
-          type: 'string',
-          description: 'The new name of the task',
-        },
-        description: {
-          type: 'string',
-          description: 'The new description of the task',
-        },
-        status: {
-          type: 'string',
-          description: 'The new status of the task',
-          enum: ['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'ARCHIVED'],
-        },
-        priority: {
-          type: 'string',
-          description: 'The new priority of the task',
-          enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-        },
-        userId: {
-          type: 'string',
-          description: 'The ID of the user updating the task',
-        },
-        assignedTo: {
-          type: 'string',
-          description: 'The ID of the user assigned to this task',
-        },
-        dueDate: {
-          type: 'string',
-          description: 'The due date for the task (ISO 8601 format)',
-        },
-      },
-      required: ['taskId', 'userId'],
-    },
+    parameters: updateTaskSchema,
   })
   async updateTask({
-    taskId,
-    userId,
-    name,
+    id,
+    title,
     description,
     status,
     priority,
-    assignedTo,
-    dueDate,
-  }: {
-    taskId: string;
-    userId: string;
-    name?: string;
-    description?: string;
-    status?: string;
-    priority?: string;
-    assignedTo?: string;
-    dueDate?: string;
-  }) {
+    createdBy,
+    projectId,
+  }: z.infer<typeof updateTaskSchema>) {
     try {
-      this.logger.log(`MCP Tool: Updating task ${taskId}`);
-      const updates: Partial<UpdateTaskDto> = {
-        id: taskId,
-        updatedBy: userId,
-      };
+      this.logger.log(`MCP Tool: Updating task ${id}`);
+      const updates: Partial<UpdateTaskDto> = {};
 
-      if (name) updates.name = name;
+      if (title) updates.title = title;
       if (description) updates.description = description;
       if (status) updates.status = status;
       if (priority) updates.priority = priority;
-      if (assignedTo) updates.assignedTo = assignedTo;
-      if (dueDate) updates.dueDate = new Date(dueDate);
+      if (createdBy) updates.createdBy = createdBy;
+      if (projectId) updates.projectId = projectId;
 
       const task = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: TaskCommands.UPDATE },
-          updates
+          { id, ...updates }
         )
       );
 
@@ -276,38 +191,20 @@ export class TaskMcpService {
 
   @McpTool({
     name: 'delete_task',
-    description: 'Delete a task',
-    parameters: {
-      type: 'object',
-      properties: {
-        taskId: {
-          type: 'string',
-          description: 'The ID of the task to delete',
-        },
-        userId: {
-          type: 'string',
-          description: 'The ID of the user deleting the task',
-        },
-      },
-      required: ['taskId', 'userId'],
-    },
+    description: 'Delete a task by ID',
+    parameters: z.object({
+      taskId: z.string().describe('The ID of the task to delete'),
+    }),
   })
-  async deleteTask({
-    taskId,
-    userId,
-  }: {
-    taskId: string;
-    userId: string;
-  }) {
+  async deleteTask({ taskId }: { taskId: string }) {
     try {
-      this.logger.log(`MCP Tool: Deleting task ${taskId} by user ${userId}`);
+      this.logger.log(`MCP Tool: Deleting task ${taskId}`);
       await firstValueFrom(
         this.projectPlanningService.send(
-          { cmd: TaskCommands.DELETE },
-          taskId
+          { cmd: TaskCommands.REMOVE },
+          { taskId }
         )
       );
-
       return {
         success: true,
         message: 'Task deleted successfully',
