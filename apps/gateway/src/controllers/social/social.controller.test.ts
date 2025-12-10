@@ -139,9 +139,10 @@ describe('SocialController', () => {
 
   it('should create an attachment', async () => {
     const attachmentDto: CreateAttachmentDto = {
+      name: 'test-attachment',
       url: 'http://test.com',
       type: 'image',
-      post: '1',
+      size: 1024,
     };
     await socialController.attachment(mockUser, attachmentDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
@@ -258,7 +259,6 @@ describe('SocialController', () => {
     const updateAttachmentDto: UpdateAttachmentDto = {
       url: 'http://test.com',
       type: 'IMAGE',
-      post: '1',
     };
     await socialController.updateAttachment(id, updateAttachmentDto);
     expect(clientProxy.send).toHaveBeenCalledWith(

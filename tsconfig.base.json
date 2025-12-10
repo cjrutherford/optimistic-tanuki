@@ -22,6 +22,7 @@
       "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
+      "@optimistic-tanuki/compose-lib": ["libs/compose-lib/src/index.ts"],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
       "@optimistic-tanuki/encryption": ["libs/encryption/src/index.ts"],

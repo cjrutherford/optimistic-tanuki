@@ -17,10 +17,13 @@ describe('ComposeComponent', () => {
 
     fixture = TestBed.createComponent(ComposeComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {
+    // The component registers components in ngAfterViewInit which can cause
+    // ExpressionChangedAfterItHasBeenCheckedError in dev mode.
+    // We use detectChanges with checkNoChanges disabled.
+    fixture.changeDetectorRef.detectChanges();
     expect(component).toBeTruthy();
   });
 });

@@ -1,7 +1,16 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { CommentService } from './comment.service';
-import { CommentDto, UpdateCommentDto, CreateCommentDto, SearchCommentDto } from '@optimistic-tanuki/social-ui';
+import {
+  CommentDto,
+  UpdateCommentDto,
+  CreateCommentDto,
+  SearchCommentDto,
+} from '@optimistic-tanuki/social-ui';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('CommentService', () => {
   let service: CommentService;
@@ -10,7 +19,7 @@ describe('CommentService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [CommentService]
+      providers: [CommentService, { provide: API_BASE_URL, useValue: '' }],
     });
     service = TestBed.inject(CommentService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -25,65 +34,64 @@ describe('CommentService', () => {
   });
 
   it('should create a comment', () => {
-    const mockCommentDto: CreateCommentDto = {
+    const mockRequest: CreateCommentDto = {
       content: 'Test comment',
-      profileId: '123',
-      postId: '456'
+      postId: '123',
+      profileId: '456',
     };
     const mockResponse: CommentDto = {
       id: '789',
-      content: 'Test comment',
-      profileId: '123',
-      postId: '456',
-      userId: '123',
+      ...mockRequest,
+      userId: '456',
+      parentId: undefined,
     };
 
-    service.createComment(mockCommentDto).subscribe(comment => {
-      expect(comment).toEqual(mockResponse);
+    service.createComment(mockRequest).subscribe((response) => {
+      expect(response).toEqual(mockResponse);
     });
 
-    const req = httpMock.expectOne('/api/social/comment');
+    const req = httpMock.expectOne('/social/comment');
     expect(req.request.method).toBe('POST');
     req.flush(mockResponse);
   });
 
   it('should get a comment by id', () => {
+    const id = '789';
     const mockResponse: CommentDto = {
       id: '789',
       content: 'Test comment',
-      profileId: '123',
-      postId: '456',
-      userId: '123',
+      postId: '123',
+      userId: '456',
+      profileId: '456',
+      parentId: undefined,
     };
-    const id = '789';
 
-    service.getComment(id).subscribe(comment => {
-      expect(comment).toEqual(mockResponse);
+    service.getComment(id).subscribe((response) => {
+      expect(response).toEqual(mockResponse);
     });
 
-    const req = httpMock.expectOne(`/api/social/comment/${id}`);
+    const req = httpMock.expectOne(`/social/comment/${id}`);
     expect(req.request.method).toBe('GET');
     req.flush(mockResponse);
   });
 
   it('should update a comment', () => {
-    const mockUpdateCommentDto: UpdateCommentDto = {
-      content: 'Updated comment'
-    };
+    const id = '789';
+    const mockRequest: UpdateCommentDto = { content: 'Updated comment' };
     const mockResponse: CommentDto = {
       id: '789',
       content: 'Updated comment',
-      profileId: '123',
-      postId: '456',
-      userId: '123',
+      postId: '123',
+      userId: '456',
+      profileId: '456',
+      parentId: undefined,
     };
-    const id = '789';
 
-    service.updateComment(id, mockUpdateCommentDto).subscribe(comment => {
-      expect(comment).toEqual(mockResponse);
+    service.updateComment(id, mockRequest).subscribe((response) => {
+      expect(response).toEqual(mockResponse);
     });
 
-    const req = httpMock.expectOne(`/api/social/comment/update/${id}`);
+    const req = httpMock.expectOne(`/social/comment/update/${id}`);
     expect(req.request.method).toBe('PUT');
     req.flush(mockResponse);
   });
@@ -91,32 +99,33 @@ describe('CommentService', () => {
   it('should delete a comment', () => {
     const id = '789';
 
-    service.deleteComment(id).subscribe(() => {
-      expect(true).toBeTruthy(); // Just check that the subscribe is called
+    service.deleteComment(id).subscribe((response) => {
+      expect(response).toBeNull();
     });
 
-    const req = httpMock.expectOne(`/api/social/comment/${id}`);
+    const req = httpMock.expectOne(`/social/comment/${id}`);
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
   });
 
   it('should search comments', () => {
-    const mockSearchCriteria: SearchCommentDto = {
-      postId: '456'
-    };
-    const mockResponse: CommentDto[] = [{
-      id: '789',
-      content: 'Test comment',
-      profileId: '123',
-      postId: '456',
-      userId: '123',
-    }];
+    const mockRequest: SearchCommentDto = { postId: '123' };
+    const mockResponse: CommentDto[] = [
+      {
+        id: '789',
+        content: 'Test comment',
+        postId: '123',
+        userId: '456',
+        profileId: '456',
+        parentId: undefined,
+      },
+    ];
 
-    service.searchComments(mockSearchCriteria).subscribe(comments => {
-      expect(comments).toEqual(mockResponse);
+    service.searchComments(mockRequest).subscribe((response) => {
+      expect(response).toEqual(mockResponse);
     });
 
-    const req = httpMock.expectOne(`/api/social/comment/find`);
+    const req = httpMock.expectOne(`/social/comment/find`);
     expect(req.request.method).toBe('POST');
     req.flush(mockResponse);
   });

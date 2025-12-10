@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('UserComponent', () => {
   let component: UserComponent;
@@ -29,6 +30,7 @@ describe('UserComponent', () => {
       providers: [
         { provide: AuthStateService, useValue: authStateServiceMock },
         { provide: Router, useValue: routerMock },
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
       ],
     }).compileComponents();
 
