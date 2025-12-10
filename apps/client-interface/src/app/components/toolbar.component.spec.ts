@@ -3,6 +3,7 @@ import { ToolbarComponent } from './toolbar.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { Subject } from 'rxjs';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('ToolbarComponent', () => {
   let component: ToolbarComponent;
@@ -18,7 +19,10 @@ describe('ToolbarComponent', () => {
 
     TestBed.configureTestingModule({
       imports: [ToolbarComponent, HttpClientTestingModule],
-      providers: [{ provide: ThemeService, useValue: themeServiceStub }],
+      providers: [
+        { provide: ThemeService, useValue: themeServiceStub },
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+      ],
     });
 
     fixture = TestBed.createComponent(ToolbarComponent);

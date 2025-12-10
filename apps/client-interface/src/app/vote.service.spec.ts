@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { VoteService } from './vote.service';
 import { VoteDto, CreateVoteDto } from '@optimistic-tanuki/social-ui';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('VoteService', () => {
   let service: VoteService;
@@ -10,7 +11,10 @@ describe('VoteService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [VoteService],
+      providers: [
+        VoteService,
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+      ],
     });
 
     service = TestBed.inject(VoteService);

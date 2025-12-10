@@ -40,11 +40,15 @@ describe('VoteService', () => {
 
   it('should create a vote', async () => {
     const dto: CreateVoteDto = { postId: 'some uuid', userId: 'u1', value: 1 };
-    const vote = { id: 1, profileId: 'p1', ...dto } as Vote;
+    const vote = { id: 1, profileId: 'p1', post: { id: 'some uuid' }, userId: 'u1', value: 1 } as Vote;
     voteRepo.create.mockReturnValue(vote);
     voteRepo.save.mockResolvedValue(vote);
     const result = await service.create(dto);
-    expect(voteRepo.create).toHaveBeenCalledWith(dto);
+    expect(voteRepo.create).toHaveBeenCalledWith({
+      userId: 'u1',
+      value: 1,
+      post: { id: 'some uuid' },
+    });
     expect(voteRepo.save).toHaveBeenCalledWith(vote);
     expect(result).toBe(vote);
   });

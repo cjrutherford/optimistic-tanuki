@@ -12,6 +12,7 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { Component, OnDestroy, Output } from '@angular/core';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { CommonModule } from '@angular/common';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 jest.mock('quill', () => ({
   Quill: jest.fn().mockImplementation(() => ({
@@ -71,6 +72,7 @@ describe('FeedComponent', () => {
       { provide: CommentService, useValue: {} },
       { provide: ProfileService, useValue: profileServiceMock },
       { provide: Router, useValue: routerMock },
+      { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
       ],
     }).overrideComponent(FeedComponent, {
       set: {

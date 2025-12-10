@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { PostService } from './post.service';
 import { CreatePostDto, PostDto, UpdatePostDto, SearchPostDto } from '@optimistic-tanuki/social-ui';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('PostService', () => {
   let service: PostService;
@@ -10,7 +11,10 @@ describe('PostService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [PostService],
+      providers: [
+        PostService,
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+      ],
     });
     service = TestBed.inject(PostService);
     httpMock = TestBed.inject(HttpTestingController);

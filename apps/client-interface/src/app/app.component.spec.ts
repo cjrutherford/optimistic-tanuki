@@ -4,6 +4,7 @@ import { NxWelcomeComponent } from './nx-welcome.component';
 import { RouterModule } from '@angular/router';
 import { importProvidersFrom } from '@angular/core';
 import { HttpClientTestingModule, provideHttpClientTesting } from '@angular/common/http/testing';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 
 
@@ -11,6 +12,9 @@ describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent, NxWelcomeComponent, RouterModule.forRoot([]), HttpClientTestingModule],
+      providers: [
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+      ],
     }).compileComponents();
   });
 

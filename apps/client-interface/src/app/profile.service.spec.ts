@@ -3,6 +3,7 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ProfileService } from './profile.service';
 import { AuthStateService } from './state/auth-state.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('ProfileService', () => {
   let service: ProfileService;
@@ -12,7 +13,8 @@ describe('ProfileService', () => {
       imports: [HttpClientTestingModule],
       providers: [
         ProfileService,
-        { provide: AuthStateService, useValue: { getDecodedTokenValue: jest.fn() } }
+        { provide: AuthStateService, useValue: { getDecodedTokenValue: jest.fn() } },
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
       ]
     });
     service = TestBed.inject(ProfileService);

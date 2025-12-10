@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { AuthenticationService } from './authentication.service';
 import { RegisterRequest } from '@optimistic-tanuki/ui-models';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('AuthenticationService', () => {
   let service: AuthenticationService;
@@ -10,7 +11,10 @@ describe('AuthenticationService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [AuthenticationService]
+      providers: [
+        AuthenticationService,
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+      ]
     });
     service = TestBed.inject(AuthenticationService);
     httpMock = TestBed.inject(HttpTestingController);

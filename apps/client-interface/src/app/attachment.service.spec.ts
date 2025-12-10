@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { AttachmentService } from './attachment.service';
 import { AttachmentDto, CreateAttachmentDto, UpdateAttachmentDto, SearchAttachmentDto } from '@optimistic-tanuki/social-ui';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('AttachmentService', () => {
   let service: AttachmentService;
@@ -10,7 +11,10 @@ describe('AttachmentService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [AttachmentService]
+      providers: [
+        AttachmentService,
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+      ]
     });
     service = TestBed.inject(AttachmentService);
     httpMock = TestBed.inject(HttpTestingController);
