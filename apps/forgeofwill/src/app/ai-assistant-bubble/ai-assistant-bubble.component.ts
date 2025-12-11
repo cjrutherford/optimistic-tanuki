@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PersonaSelectionMenuComponent } from '@optimistic-tanuki/persona-ui';
-import { PersonaTelosDto } from '@optimistic-tanuki/models';
+import { PersonaTelosDto } from '@optimistic-tanuki/ui-models';
 
 /**
  * AI Assistant chat bubble button component.

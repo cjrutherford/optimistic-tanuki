@@ -1,11 +1,10 @@
-import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { API_BASE_URL, PersonaTelosDto } from '@optimistic-tanuki/ui-models';
 import { Observable } from 'rxjs';
-import { PersonaTelosDto } from '@optimistic-tanuki/models';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PersonaService {
   private http = inject(HttpClient);

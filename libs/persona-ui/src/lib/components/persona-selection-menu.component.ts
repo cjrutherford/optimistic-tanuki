@@ -1,7 +1,14 @@
-import { Component, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
+import {
+  Component,
+  Output,
+  EventEmitter,
+  OnInit,
+  signal,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PersonaService } from '../services/persona.service';
-import { PersonaTelosDto } from '@optimistic-tanuki/models';
+import { PersonaTelosDto } from '@optimistic-tanuki/ui-models';
 
 /**
  * Default persona name to recommend to users
@@ -31,7 +38,7 @@ export class PersonaSelectionMenuComponent implements OnInit {
   loadPersonas() {
     this.loading.set(true);
     this.error.set(null);
-    
+
     this.personaService.getAllPersonas().subscribe({
       next: (personas) => {
         this.personas.set(personas);
@@ -41,7 +48,7 @@ export class PersonaSelectionMenuComponent implements OnInit {
         console.error('Error loading personas:', err);
         this.error.set('Failed to load AI personas. Please try again.');
         this.loading.set(false);
-      }
+      },
     });
   }
 
@@ -54,7 +61,9 @@ export class PersonaSelectionMenuComponent implements OnInit {
   }
 
   getDefaultPersona(): PersonaTelosDto | undefined {
-    return this.personas().find(p => p.name.toLowerCase().includes(DEFAULT_PERSONA_NAME));
+    return this.personas().find((p) =>
+      p.name.toLowerCase().includes(DEFAULT_PERSONA_NAME)
+    );
   }
 
   isDefaultPersona(persona: PersonaTelosDto): boolean {
@@ -62,4 +71,3 @@ export class PersonaSelectionMenuComponent implements OnInit {
     return defaultPersona ? defaultPersona.id === persona.id : false;
   }
 }
-

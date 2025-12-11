@@ -42,3 +42,4 @@ export { VoteDto, CreateVoteDto } from './vote';
 export { FollowDto, FollowEventDto } from './follow';
 export { CreateAttachmentDto } from './create-attachment.dto';
 export { API_BASE_URL } from './api-config.tokens';
+export { PersonaTelosDto } from './telos';
