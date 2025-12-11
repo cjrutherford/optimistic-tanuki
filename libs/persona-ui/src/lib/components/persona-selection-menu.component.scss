@@ -1,0 +1,235 @@
+.persona-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 20px;
+}
+
+.persona-menu {
+  background: var(--background, #ffffff);
+  color: var(--foreground, #000000);
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.persona-menu-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(var(--foreground-rgb, 0, 0, 0), 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+}
+
+.close-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  color: var(--foreground, #000000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background-color: rgba(var(--foreground-rgb, 0, 0, 0), 0.1);
+  }
+}
+
+.persona-menu-content {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.recommendation-text {
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--accent, #667eea) 0%, var(--complement, #764ba2) 100%);
+  color: white;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+
+  strong {
+    font-weight: 700;
+  }
+}
+
+.persona-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.persona-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--background, #ffffff);
+  border: 2px solid rgba(var(--foreground-rgb, 0, 0, 0), 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+
+  &:hover {
+    border-color: var(--accent, #667eea);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb, 102, 126, 234), 0.15);
+    transform: translateY(-2px);
+  }
+
+  &.default-persona {
+    border-color: var(--accent, #667eea);
+    background: linear-gradient(135deg, rgba(var(--accent-rgb, 102, 126, 234), 0.05), rgba(var(--complement-rgb, 118, 75, 162), 0.05));
+  }
+}
+
+.persona-info {
+  flex: 1;
+}
+
+.persona-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--foreground, #000000);
+  }
+}
+
+.default-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, var(--accent, #667eea), var(--complement, #764ba2));
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.persona-description {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgba(var(--foreground-rgb, 0, 0, 0), 0.7);
+}
+
+.persona-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skill-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(var(--accent-rgb, 102, 126, 234), 0.1);
+  color: var(--accent, #667eea);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.persona-arrow {
+  color: var(--accent, #667eea);
+  opacity: 0.7;
+  transition: all 0.2s ease;
+
+  .persona-item:hover & {
+    opacity: 1;
+    transform: translateX(4px);
+  }
+}
+
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(var(--accent-rgb, 102, 126, 234), 0.1);
+  border-top-color: var(--accent, #667eea);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-state p {
+  color: #ef4444;
+  margin-bottom: 16px;
+}
+
+.retry-button {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, var(--accent, #667eea), var(--complement, #764ba2));
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb, 102, 126, 234), 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}

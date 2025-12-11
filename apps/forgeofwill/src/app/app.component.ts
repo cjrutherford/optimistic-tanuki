@@ -1,4 +1,13 @@
-import { Component, effect, signal, OnInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  effect,
+  signal,
+  OnInit,
+  ViewChild,
+  inject,
+  PLATFORM_ID,
+} from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import {
   MessageComponent,
   MessageService,
@@ -7,15 +16,18 @@ import {
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 
 import { AuthStateService } from './auth-state.service';
-import {
-  ThemeService,
-} from '@optimistic-tanuki/theme-lib';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { ChatComponent } from './chat.component';
-import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { ProfileDto, PersonaTelosDto } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from './profile/profile.service';
-import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui';
+import {
+  AppBarComponent,
+  NavSidebarComponent,
+  NavItem,
+} from '@optimistic-tanuki/navigation-ui';
 import { filter } from 'rxjs';
 import { AiAssistantBubbleComponent } from './ai-assistant-bubble/ai-assistant-bubble.component';
+import { ChatMessage } from '@optimistic-tanuki/chat-ui';
 
 @Component({
   imports: [
@@ -35,16 +47,19 @@ export class AppComponent implements OnInit {
   isModalOpen = signal<boolean>(false);
   messages = signal<MessageType[]>([]);
   navItems = signal<NavItem[]>([]);
+  newPersonaMessages = signal<Partial<ChatMessage>[]>([]);
 
   @ViewChild(ChatComponent) chatComponent?: ChatComponent;
 
-  constructor(
-    private readonly router: Router,
-    private readonly authState: AuthStateService,
-    private readonly profileService: ProfileService,
-    private readonly messageService: MessageService,
-    private readonly themeService: ThemeService
-  ) {
+  private platformId: object = inject(PLATFORM_ID);
+
+  private readonly router = inject(Router);
+  private readonly authState = inject(AuthStateService);
+  private readonly profileService = inject(ProfileService);
+  private readonly messageService = inject(MessageService);
+  private readonly themeService = inject(ThemeService);
+
+  constructor() {
     effect(() => {
       this.messages.set(this.messageService.messages());
       console.log('Messages updated:', this.messages());
@@ -72,11 +87,11 @@ export class AppComponent implements OnInit {
     });
 
     // Subscribe to router events to update active state
-    this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
-    ).subscribe(() => {
-      this.updateNavItems();
-    });
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.updateNavItems();
+      });
 
     this.themeService.themeColors$.subscribe({
       next: (colors) => {
@@ -182,6 +197,28 @@ export class AppComponent implements OnInit {
         content: 'Chat service is not available',
         type: 'error',
       });
+    }
+  }
+
+  onPersonaSelected(persona: PersonaTelosDto) {
+    console.log('Persona selected:', persona);
+    if (this.chatComponent) {
+      this.chatComponent.openOrCreatePersonaChat(persona.id);
+    } else {
+      console.error('Chat component not available');
+      this.messageService.addMessage({
+        content: 'Chat service is not available',
+        type: 'error',
+      });
+      this.newPersonaMessages.set([
+        {
+          content: `Persona "${persona.name}" selected, Please introduce the user to your role.`,
+          type: 'system',
+          recipientId: [persona.id],
+          senderId:
+            this.authState.getPersistedSelectedProfile()?.id || 'system',
+        },
+      ]);
     }
   }
 }

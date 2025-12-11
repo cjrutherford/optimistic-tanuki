@@ -22,3 +22,10 @@
     <span class="badge">{{ unreadCount() }}</span>
   }
 </button>
+
+@if (showMenu()) {
+  <lib-persona-selection-menu
+    (personaSelected)="onPersonaSelected($event)"
+    (menuClose)="onMenuClose()">
+  </lib-persona-selection-menu>
+}

@@ -4,19 +4,23 @@
   logoAlt="Forge of Will Logo"
   [showThemeToggle]="true"
   [useTile]="false"
-  (menuToggle)="showModal()">
+  (menuToggle)="showModal()"
+>
 </otui-app-bar>
 
 <otui-nav-sidebar
   [isOpen]="isModalOpen()"
   [navItems]="navItems()"
   heading="Navigation"
-  (close)="isModalOpen.set(false)">
+  (close)="isModalOpen.set(false)"
+>
 </otui-nav-sidebar>
 
 <router-outlet></router-outlet>
 @if (isAuthenticated() && selectedProfile()) {
-    <app-chat></app-chat>
-    <app-ai-assistant-bubble (bubbleClicked)="openAiAssistant()"></app-ai-assistant-bubble>
+<app-chat [externalMessages]="newPersonaMessages()"></app-chat>
+<app-ai-assistant-bubble
+  (personaSelected)="onPersonaSelected($event)"
+></app-ai-assistant-bubble>
 }
 <lib-message></lib-message>

@@ -32,6 +32,7 @@
       "@optimistic-tanuki/models": ["libs/models/src/index.ts"],
       "@optimistic-tanuki/navigation-ui": ["libs/navigation-ui/src/index.ts"],
       "@optimistic-tanuki/permission-lib": ["libs/permission-lib/src/index.ts"],
+      "@optimistic-tanuki/persona-ui": ["libs/persona-ui/src/index.ts"],
       "@optimistic-tanuki/profile-ui": ["libs/profile-ui/src/index.ts"],
       "@optimistic-tanuki/project-ui": ["libs/project-ui/src/index.ts"],
       "@optimistic-tanuki/prompt-generation": [

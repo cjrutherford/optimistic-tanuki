@@ -1,13 +1,14 @@
-import {
-  ApplicationConfig,
-  provideZoneChangeDetection,
-} from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import {
   provideClientHydration,
   withEventReplay,
 } from '@angular/platform-browser';
 import { io } from 'socket.io-client';
-import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withFetch,
+  withInterceptors,
+} from '@angular/common/http';
 import {
   SOCKET_HOST,
   SOCKET_IO_INSTANCE,
@@ -20,18 +21,26 @@ import { ProfileService } from './profile/profile.service';
 import { appRoutes } from './app.routes';
 import { authenticationInterceptor } from './authentication.interceptor';
 import { provideRouter } from '@angular/router';
-
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideClientHydration(withEventReplay()),
-    provideHttpClient(withInterceptors([authenticationInterceptor]), withFetch()),
+    provideHttpClient(
+      withInterceptors([authenticationInterceptor]),
+      withFetch()
+    ),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     {
+      provide: API_BASE_URL,
+      useValue: '/api',
+    },
+    {
       provide: SOCKET_HOST,
       useFactory: () => {
-        const value = (window as any)['env']?.SOCKET_URL || 'http://localhost:3300';
+        const value =
+          (window as any)['env']?.SOCKET_URL || 'http://localhost:3300';
         return value;
       },
     },

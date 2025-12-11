@@ -7,7 +7,12 @@ import {
   EnvironmentInjector,
   inject,
   runInInjectionContext,
-  effect, OnInit, OnDestroy,
+  effect,
+  OnInit,
+  OnDestroy,
+  Input,
+  SimpleChange,
+  SimpleChanges,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
@@ -50,6 +55,7 @@ import { io } from 'socket.io-client';
   styleUrl: './chat.component.scss',
 })
 export class ChatComponent implements OnInit, OnDestroy {
+  @Input() externalMessages: Partial<ChatMessage>[] = [];
   socketChat?: SocketChatService | null;
   private injector = inject(EnvironmentInjector);
   private connectionInitialized = false;
@@ -62,20 +68,23 @@ export class ChatComponent implements OnInit, OnDestroy {
   selectedConversation = signal<string | null>(null);
   isConnected = signal<boolean>(false);
 
-  constructor(
-    @Inject(PLATFORM_ID) private platformId: object,
-    private profileService: ProfileService,
-    private readonly messageService: MessageService,
-    @Inject(SocketChatService)
-    socketChatService: SocketChatService | null = null
-  ) {
-    this.socketChat = socketChatService;
-    console.log('ChatComponent initialized with SocketChatService:', this.socketChat);
+  private platformId = inject(PLATFORM_ID);
+  private profileService = inject(ProfileService);
+  private readonly messageService = inject(MessageService);
+
+  constructor() {
+    this.socketChat = inject(SocketChatService, { optional: true });
+    console.log(
+      'ChatComponent initialized with SocketChatService:',
+      this.socketChat
+    );
   }
 
   ngOnInit() {
     if (!isPlatformBrowser(this.platformId) || !this.socketChat) {
-      console.warn('Chat component: Not in browser or socket service unavailable');
+      console.warn(
+        'Chat component: Not in browser or socket service unavailable'
+      );
       return;
     }
 
@@ -91,6 +100,14 @@ export class ChatComponent implements OnInit, OnDestroy {
         }
       });
     });
+
+    if (
+      this.externalMessages.length > 0 &&
+      isPlatformBrowser(this.platformId) &&
+      this.socketChat
+    ) {
+      this.processExternalMessages(this.externalMessages);
+    }
   }
 
   ngOnDestroy() {
@@ -98,6 +115,27 @@ export class ChatComponent implements OnInit, OnDestroy {
       this.socketChat.destroy();
       console.log('Chat component destroyed, socket disconnected');
     }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (
+      changes['externalMessages'] &&
+      !changes['externalMessages'].isFirstChange()
+    ) {
+      this.processExternalMessages(changes['externalMessages'].currentValue);
+    }
+  }
+
+  processExternalMessages(messages: Partial<ChatMessage>[]) {
+    if (!this.socketChat) {
+      console.error('SocketChatService is not available to process messages.');
+      return;
+    }
+
+    messages.forEach((message) => {
+      this.socketChat!.sendMessage(message);
+      console.log('External message sent:', message);
+    });
   }
 
   /**
@@ -163,7 +201,52 @@ export class ChatComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Open or create AI assistant conversation
+   * Open or create AI assistant conversation for a specific persona
+   */
+  async openOrCreatePersonaChat(personaId: string) {
+    const profile = this.profileService.currentUserProfile();
+    if (!profile) {
+      this.messageService.addMessage({
+        content: 'Please log in to chat with AI assistant',
+        type: 'warning',
+      });
+      return;
+    }
+
+    // Look for existing conversation with this persona
+    const personaConversation = this.conversations().find((conv) =>
+      conv.participants.includes(personaId)
+    );
+
+    if (personaConversation) {
+      // Open existing conversation
+      this.openChat(personaConversation.id);
+      console.log(
+        'Opened existing persona conversation:',
+        personaConversation.id
+      );
+    } else {
+      // TODO: Create new conversation with the persona
+      this.messageService.addMessage({
+        content: 'Creating new conversation with AI persona...',
+        type: 'info',
+      });
+      console.log(
+        'Persona conversation creation not yet implemented for:',
+        personaId
+      );
+
+      this.socketChat?.sendMessage({
+        content: 'Creating new AI assistant conversation...',
+        type: 'system',
+        senderId: profile.id,
+        recipientId: [personaId],
+      });
+    }
+  }
+
+  /**
+   * Open or create AI assistant conversation (legacy method for backward compatibility)
    */
   async openAiAssistantChat() {
     const profile = this.profileService.currentUserProfile();
@@ -177,13 +260,18 @@ export class ChatComponent implements OnInit, OnDestroy {
 
     // Look for existing AI assistant conversation
     const aiConversation = this.conversations().find((conv) =>
-      conv.participants.some((p) => p.startsWith('ai-') || p.includes('assistant'))
+      conv.participants.some(
+        (p) => p.startsWith('ai-') || p.includes('assistant')
+      )
     );
 
     if (aiConversation) {
       // Open existing AI conversation
       this.openChat(aiConversation.id);
-      console.log('Opened existing AI assistant conversation:', aiConversation.id);
+      console.log(
+        'Opened existing AI assistant conversation:',
+        aiConversation.id
+      );
     } else {
       // TODO: Create new AI assistant conversation
       this.messageService.addMessage({
