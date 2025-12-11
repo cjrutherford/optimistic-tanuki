@@ -5,6 +5,7 @@
   "scripts": {
     "docker:build:slow": "for service in authentication client-interface gateway profile social project-planning assets forgeofwill-client-interface chat-collector prompt-proxy ai-orchestrator telos-docs-service blogging crdn-client-interface digital-homestead-client-interface permissions owner-console; do docker compose build $service; done",
     "docker:build": "docker compose build",
+    "docker:build:push": "sh ./build-push.sh",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "build:dev": "nx run-many --target=build --projects=authentication,client-interface,gateway,profile,social,project-planning,assets,forgeofwill,chat-collector,prompt-proxy,ai-orchestrator,telos-docs-service,blogging,christopherrutherford-net,digital-homestead,permissions,owner-console --configuration=development",
