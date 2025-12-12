@@ -177,6 +177,52 @@ export class SocialGateway {
     });
   }
 
+  @SubscribeMessage(SocialRealtimeCommands.GET_FOLLOWING)
+  async handleGetFollowing(
+    @MessageBody() payload: { profileId: string },
+    @ConnectedSocket() client: Socket
+  ): Promise<void> {
+    this.l.log(`Getting following for profile: ${payload.profileId}`);
+    
+    try {
+      const following = await firstValueFrom(
+        this.socialClient.send(
+          { cmd: FollowCommands.GET_FOLLOWING },
+          { followerId: payload.profileId }
+        )
+      );
+      
+      client.emit('following', following || []);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.l.error(`Error fetching following: ${errorMessage}`);
+      client.emit('error', { message: 'Failed to fetch following' });
+    }
+  }
+
+  @SubscribeMessage(SocialRealtimeCommands.GET_FOLLOWERS)
+  async handleGetFollowers(
+    @MessageBody() payload: { profileId: string },
+    @ConnectedSocket() client: Socket
+  ): Promise<void> {
+    this.l.log(`Getting followers for profile: ${payload.profileId}`);
+    
+    try {
+      const followers = await firstValueFrom(
+        this.socialClient.send(
+          { cmd: FollowCommands.GET_FOLLOWERS },
+          { followeeId: payload.profileId }
+        )
+      );
+      
+      client.emit('followers', followers || []);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.l.error(`Error fetching followers: ${errorMessage}`);
+      client.emit('error', { message: 'Failed to fetch followers' });
+    }
+  }
+
   @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
     // Use reverse mapping for efficient lookup

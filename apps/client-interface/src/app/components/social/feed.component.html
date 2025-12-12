@@ -1,5 +1,9 @@
 <div class="feed-container">
-  <lib-social-compose (postSubmitted)="createdPost($event)"  style="width: 100%; padding-left: 1em; margin-right: 1em;"></lib-social-compose>
+  <lib-social-compose 
+    (postSubmitted)="createdPost($event)" 
+    [imageUploadCallback]="imageUploadCallback"
+    style="width: 100%; padding-left: 1em; margin-right: 1em;">
+  </lib-social-compose>
   @for (post of posts; track post; let i = $index) {
     <div class="post">
       <lib-post

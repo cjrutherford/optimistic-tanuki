@@ -5,6 +5,7 @@ import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
 import { CreateCommentDto, UpdateCommentDto } from '@optimistic-tanuki/models';
 import { RpcException } from '@nestjs/microservices';
 import { Post } from '../../entities/post.entity';
+import DOMPurify from 'isomorphic-dompurify';
 
 @Injectable()
 export class CommentService {
@@ -14,6 +15,14 @@ export class CommentService {
     @Inject(getRepositoryToken(Post))
     private readonly postRepo: Repository<Post>
   ) {}
+
+  private sanitizeContent(content: string): string {
+    return DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'code'],
+      ALLOWED_ATTR: ['href'],
+      ALLOW_DATA_ATTR: false,
+    });
+  }
 
   async create(createCommentDto: CreateCommentDto): Promise<Comment> {
     console.log('Creating comment');
@@ -29,6 +38,7 @@ export class CommentService {
       console.log('post found', post);
       const commentToCreate: Partial<Comment> = {
         ...createCommentDto,
+        content: this.sanitizeContent(createCommentDto.content || ''),
         post,
       };
       const comment = await this.commentRepo.create(commentToCreate);
@@ -60,7 +70,13 @@ export class CommentService {
   }
 
   async update(id: string, updateCommentDto: UpdateCommentDto): Promise<void> {
-    await this.commentRepo.update(id, updateCommentDto);
+    const sanitizedDto = {
+      ...updateCommentDto,
+    };
+    if (updateCommentDto.content) {
+      sanitizedDto.content = this.sanitizeContent(updateCommentDto.content);
+    }
+    await this.commentRepo.update(id, sanitizedDto);
   }
 
   async remove(id: string): Promise<void> {
