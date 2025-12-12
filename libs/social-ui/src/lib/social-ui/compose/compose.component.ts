@@ -64,6 +64,7 @@ import {
   InjectedComponentInstance,
   ComponentInjectionAPI,
 } from './interfaces/component-injection.interface';
+import { ImageUploadService } from './services/image-upload.service';
 
 export interface PostData {
   title: string;
