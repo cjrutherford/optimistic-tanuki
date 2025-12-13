@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
-import { CreateAssetDto } from '@optimistic-tanuki/models';
+import { CreateAssetDto } from '@optimistic-tanuki/ui-models';
 
 export interface AssetDto {
   id: string;
@@ -15,7 +15,7 @@ export interface AssetDto {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AssetService {
   private baseUrl: string;

@@ -24,7 +24,7 @@ import { Router } from '@angular/router';
 import { PostProfileStub } from '@optimistic-tanuki/social-ui';
 import { SocialWebSocketService } from '../../social-websocket.service';
 import { AssetService } from '../../asset.service';
-import { CreateAssetDto } from '@optimistic-tanuki/models';
+import { CreateAssetDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-feed',
@@ -37,7 +37,14 @@ import { CreateAssetDto } from '@optimistic-tanuki/models';
     ComposeComponent,
     PostComponent,
   ],
-  providers: [ThemeService, PostService, AttachmentService, CommentService, SocialWebSocketService, AssetService],
+  providers: [
+    ThemeService,
+    PostService,
+    AttachmentService,
+    CommentService,
+    SocialWebSocketService,
+    AssetService,
+  ],
   templateUrl: './feed.component.html',
   styleUrls: ['./feed.component.scss'],
 })
@@ -49,9 +56,12 @@ export class FeedComponent implements OnInit, OnDestroy {
     border: string;
   };
   destroy$ = new Subject<void>();
-  
+
   // Image upload callback for the compose component
-  imageUploadCallback: ImageUploadCallback = async (dataUrl: string, fileName: string): Promise<string> => {
+  imageUploadCallback: ImageUploadCallback = async (
+    dataUrl: string,
+    fileName: string
+  ): Promise<string> => {
     const currentProfile = this.profileService.currentUserProfile();
     if (!currentProfile) {
       throw new Error('No current profile found');
@@ -59,7 +69,7 @@ export class FeedComponent implements OnInit, OnDestroy {
 
     // Extract file extension from data URL
     const fileExtension = this.getFileExtensionFromDataUrl(dataUrl);
-    
+
     const assetDto: CreateAssetDto = {
       name: fileName,
       profileId: currentProfile.id,
@@ -69,7 +79,9 @@ export class FeedComponent implements OnInit, OnDestroy {
     };
 
     try {
-      const asset = await firstValueFrom(this.assetService.createAsset(assetDto));
+      const asset = await firstValueFrom(
+        this.assetService.createAsset(assetDto)
+      );
       return this.assetService.getAssetUrl(asset.id);
     } catch (error) {
       console.error('Failed to upload image to asset service:', error);
@@ -101,14 +113,15 @@ export class FeedComponent implements OnInit, OnDestroy {
           border: `1px solid ${colors.accent}`,
         };
       });
-    
+
     const currentProfile = this.profileService.currentUserProfile();
     if (currentProfile) {
       // Connect to WebSocket
       this.socialWebSocketService.connect();
-      
+
       // Subscribe to WebSocket connection status
-      this.socialWebSocketService.getConnectionStatus()
+      this.socialWebSocketService
+        .getConnectionStatus()
         .pipe(takeUntil(this.destroy$))
         .subscribe((connected) => {
           if (connected) {
@@ -119,19 +132,23 @@ export class FeedComponent implements OnInit, OnDestroy {
             this.socialWebSocketService.subscribeToPosts(currentProfile.id);
           }
         });
-      
+
       // Subscribe to posts from WebSocket
-      this.socialWebSocketService.getPosts()
+      this.socialWebSocketService
+        .getPosts()
         .pipe(takeUntil(this.destroy$))
         .subscribe((posts) => {
           console.log('Received posts from WebSocket:', posts.length);
           this.posts = posts;
           this.loadProfiles(posts);
         });
-      
+
       // Fallback to HTTP if WebSocket doesn't connect within 5 seconds
       setTimeout(() => {
-        if (!this.socialWebSocketService.isConnected() && this.posts.length === 0) {
+        if (
+          !this.socialWebSocketService.isConnected() &&
+          this.posts.length === 0
+        ) {
           console.log('WebSocket not connected, falling back to HTTP');
           this.postService
             .searchPosts(
@@ -208,7 +225,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       // Disconnect WebSocket
       this.socialWebSocketService.disconnect();
     }
-    
+
     this.destroy$.next();
     this.destroy$.complete();
   }
