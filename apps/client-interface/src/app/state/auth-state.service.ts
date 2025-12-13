@@ -20,6 +20,7 @@ export class AuthStateService {
   private tokenSubject: BehaviorSubject<string | null>;
   private isAuthenticatedSubject: BehaviorSubject<boolean>;
   private decodedTokenSubject: BehaviorSubject<UserData | null>;
+  private currentProfileSubject: BehaviorSubject<ProfileDto | null>;
   private _isAuthenticated = false;
   private readonly namespace = 'ot-client';
   private readonly tokenKey = `${this.namespace}-authToken`;
@@ -28,6 +29,7 @@ export class AuthStateService {
 
   isAuthenticated$: Observable<boolean>;
   decodedToken$: Observable<UserData | null>;
+  currentProfile$: Observable<ProfileDto | null>;
 
   private authService = inject(AuthenticationService);
   private http = inject(HttpClient);
@@ -39,8 +41,10 @@ export class AuthStateService {
       this.tokenSubject = new BehaviorSubject<string | null>(null);
       this.isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
       this.decodedTokenSubject = new BehaviorSubject<UserData | null>(null);
+      this.currentProfileSubject = new BehaviorSubject<ProfileDto | null>(null);
       this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
       this.decodedToken$ = this.decodedTokenSubject.asObservable();
+      this.currentProfile$ = this.currentProfileSubject.asObservable();
       return;
     }
 
@@ -53,8 +57,12 @@ export class AuthStateService {
     this.decodedTokenSubject = new BehaviorSubject<UserData | null>(
       this.getDecodedToken()
     );
+    this.currentProfileSubject = new BehaviorSubject<ProfileDto | null>(
+      this.getPersistedSelectedProfile()
+    );
     this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
     this.decodedToken$ = this.decodedTokenSubject.asObservable();
+    this.currentProfile$ = this.currentProfileSubject.asObservable();
 
     const token = localStorage.getItem(this.tokenKey);
     if (token) {
@@ -103,13 +111,14 @@ export class AuthStateService {
     this.tokenSubject.next(null);
     this.isAuthenticatedSubject.next(false);
     this.decodedTokenSubject.next(null);
+    this.currentProfileSubject.next(null);
   }
 
   private getDecodedToken(): UserData | null {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(this.tokenKey);
     if (!token) return null;
     const decoded: any = jwtDecode(token);
     if (decoded.profileId === undefined || decoded.profileId === null)
@@ -158,8 +167,10 @@ export class AuthStateService {
     }
     if (profile) {
       localStorage.setItem(this.selectedProfileKey, JSON.stringify(profile));
+      this.currentProfileSubject.next(profile);
     } else {
       localStorage.removeItem(this.selectedProfileKey);
+      this.currentProfileSubject.next(null);
     }
   }
 
