@@ -7,6 +7,7 @@ import { User, UserDetails } from '../../../decorators/user.decorator';
 import { UpdateFollowDto } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { SocialGateway } from '../../../app/social-gateway/social.gateway';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('follow')
 export class FollowController {
@@ -22,6 +23,7 @@ export class FollowController {
     @ApiOperation({ summary: 'Follow a user' })
     @ApiResponse({ status: 201, description: 'The user has been successfully followed.' })
     @Post('/')
+    @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 follows per minute
     async follow(@User() user: UserDetails, @Body() followDto: UpdateFollowDto) {
         const followingProfile = await firstValueFrom(this.profileClient.send({ cmd: ProfileCommands.Get }, { id: followDto.followerId }));
         if (!followingProfile) {
@@ -46,6 +48,7 @@ export class FollowController {
     @ApiOperation({ summary: 'Unfollow a user' })
     @ApiResponse({ status: 201, description: 'The user has been successfully unfollowed.' })
     @Post('/unfollow')
+    @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 unfollows per minute
     async unfollow(@User() user: UserDetails, @Body() followDto: UpdateFollowDto) {
         const followingProfile = await firstValueFrom(this.profileClient.send({ cmd: ProfileCommands.Get }, { id: followDto.followerId }));
         if (!followingProfile) {

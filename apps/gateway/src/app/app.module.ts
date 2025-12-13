@@ -25,6 +25,8 @@ import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
 import { McpToolsModule } from './mcp/mcp-tools.module';
 import { PersonaController } from '../controllers/persona/persona.controller';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -32,6 +34,23 @@ import { PersonaController } from '../controllers/persona/persona.controller';
       isGlobal: true,
       load: [loadConfig],
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000, // 1 second
+        limit: 10, // 10 requests per second
+      },
+      {
+        name: 'medium',
+        ttl: 10000, // 10 seconds
+        limit: 50, // 50 requests per 10 seconds
+      },
+      {
+        name: 'long',
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute
+      },
+    ]),
     LoggerModule,
     McpToolsModule,
   ],
@@ -49,6 +68,10 @@ import { PersonaController } from '../controllers/persona/persona.controller';
     PersonaController,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     AuthGuard,
     PermissionsGuard,
     {

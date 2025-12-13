@@ -64,6 +64,7 @@ import {
   InjectedComponentInstance,
   ComponentInjectionAPI,
 } from './interfaces/component-injection.interface';
+import { ImageUploadService } from './services/image-upload.service';
 
 export interface PostData {
   title: string;
@@ -71,6 +72,10 @@ export interface PostData {
   links: { url: string }[];
   attachments: CreateAttachmentDto[];
   injectedComponents?: InjectedComponentInstance[];
+}
+
+export interface ImageUploadCallback {
+  (dataUrl: string, fileName: string): Promise<string>;
 }
 
 @Component({
@@ -97,7 +102,7 @@ export interface PostData {
   ],
   templateUrl: './compose.component.html',
   styleUrls: ['./compose.component.scss'],
-  providers: [ComponentInjectionService],
+  providers: [ComponentInjectionService, ImageUploadService],
 })
 export class ComposeComponent
   extends Themeable
@@ -106,6 +111,7 @@ export class ComposeComponent
   @Input() title = '';
   @Input() attachments: CreateAttachmentDto[] = [];
   @Input() links: { url: string }[] = [];
+  @Input() imageUploadCallback?: ImageUploadCallback;
   @Output() postSubmitted = new EventEmitter<PostData>();
 
   @ViewChild('editorContent') editorContent!: ElementRef;
@@ -144,6 +150,7 @@ export class ComposeComponent
 
   private componentInjectionService = inject(ComponentInjectionService);
   private dialog = inject(MatDialog);
+  private imageUploadService = inject(ImageUploadService);
 
   private _content = '';
 
@@ -585,14 +592,43 @@ export class ComposeComponent
     });
   }
 
-  onPostSubmit(): void {
+  async onPostSubmit(): Promise<void> {
+    let finalContent = this.content;
+
+    // If an image upload callback is provided, process images
+    if (this.imageUploadCallback) {
+      const images = this.imageUploadService.extractBase64Images(this.content);
+      
+      if (images.length > 0) {
+        const replacements: Array<{ dataUrl: string; assetUrl: string }> = [];
+        
+        // Upload each image and collect replacements
+        for (const image of images) {
+          try {
+            const fileName = `image_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+            const assetUrl = await this.imageUploadCallback(image.dataUrl, fileName);
+            replacements.push({ dataUrl: image.dataUrl, assetUrl });
+          } catch (error) {
+            console.error('Failed to upload image:', error);
+            // Continue with other images even if one fails
+          }
+        }
+        
+        // Replace all base64 URLs with asset URLs
+        if (replacements.length > 0) {
+          finalContent = this.imageUploadService.replaceImageUrls(this.content, replacements);
+        }
+      }
+    }
+
     this.postSubmitted.emit({
       title: this.title,
-      content: this.content,
+      content: finalContent,
       links: this.links,
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(),
     });
+    
     this.title = '';
     this.content = '';
     this.links = [];

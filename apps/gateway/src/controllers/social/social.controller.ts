@@ -44,6 +44,7 @@ import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @UseGuards(AuthGuard, PermissionsGuard)
 @ApiTags('social')
@@ -67,6 +68,7 @@ export class SocialController {
   })
   @Post('post')
   @RequirePermissions('social.post.create')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 posts per minute
   async post(@User() user, @Body() postDto: CreatePostDto) {
     console.log(user);
     postDto.userId = user.userId;
@@ -97,6 +99,7 @@ export class SocialController {
   })
   @Post('vote')
   @RequirePermissions('social.vote.create')
+  @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 votes per minute
   async vote(@User() user: UserDetails, @Body() voteDto: CreateVoteDto) {
     voteDto.userId = user.userId;
     const commandMap = {
@@ -129,6 +132,7 @@ export class SocialController {
   })
   @Post('comment')
   @RequirePermissions('social.comment.create')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 comments per minute
   async comment(
     @User() user: UserDetails,
     @Body() commentDto: CreateCommentDto

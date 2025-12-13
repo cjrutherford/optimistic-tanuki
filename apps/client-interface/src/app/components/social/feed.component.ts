@@ -11,6 +11,7 @@ import {
   CreatePostDto,
   CreateCommentDto,
   PostData,
+  ImageUploadCallback,
 } from '@optimistic-tanuki/social-ui';
 import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -21,6 +22,9 @@ import { CommentService } from '../../comment.service';
 import { ProfileService } from '../../profile.service';
 import { Router } from '@angular/router';
 import { PostProfileStub } from '@optimistic-tanuki/social-ui';
+import { SocialWebSocketService } from '../../social-websocket.service';
+import { AssetService } from '../../asset.service';
+import { CreateAssetDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-feed',
@@ -33,7 +37,14 @@ import { PostProfileStub } from '@optimistic-tanuki/social-ui';
     ComposeComponent,
     PostComponent,
   ],
-  providers: [ThemeService, PostService, AttachmentService, CommentService],
+  providers: [
+    ThemeService,
+    PostService,
+    AttachmentService,
+    CommentService,
+    SocialWebSocketService,
+    AssetService,
+  ],
   templateUrl: './feed.component.html',
   styleUrls: ['./feed.component.scss'],
 })
@@ -46,13 +57,47 @@ export class FeedComponent implements OnInit, OnDestroy {
   };
   destroy$ = new Subject<void>();
 
+  // Image upload callback for the compose component
+  imageUploadCallback: ImageUploadCallback = async (
+    dataUrl: string,
+    fileName: string
+  ): Promise<string> => {
+    const currentProfile = this.profileService.currentUserProfile();
+    if (!currentProfile) {
+      throw new Error('No current profile found');
+    }
+
+    // Extract file extension from data URL
+    const fileExtension = this.getFileExtensionFromDataUrl(dataUrl);
+
+    const assetDto: CreateAssetDto = {
+      name: fileName,
+      profileId: currentProfile.id,
+      type: 'image',
+      content: dataUrl,
+      fileExtension: fileExtension,
+    };
+
+    try {
+      const asset = await firstValueFrom(
+        this.assetService.createAsset(assetDto)
+      );
+      return this.assetService.getAssetUrl(asset.id);
+    } catch (error) {
+      console.error('Failed to upload image to asset service:', error);
+      throw error;
+    }
+  };
+
   constructor(
     private readonly themeService: ThemeService,
     private readonly postService: PostService,
     private readonly attachmentService: AttachmentService,
     private readonly commentService: CommentService,
     private readonly profileService: ProfileService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly socialWebSocketService: SocialWebSocketService,
+    private readonly assetService: AssetService
   ) {}
 
   ngOnInit() {
@@ -68,18 +113,55 @@ export class FeedComponent implements OnInit, OnDestroy {
           border: `1px solid ${colors.accent}`,
         };
       });
+
     const currentProfile = this.profileService.currentUserProfile();
     if (currentProfile) {
-      this.postService
-        .searchPosts(
-          { profileId: currentProfile.id },
-          { orderBy: 'createdAt', orderDirection: 'desc' }
-        )
+      // Connect to WebSocket
+      this.socialWebSocketService.connect();
+
+      // Subscribe to WebSocket connection status
+      this.socialWebSocketService
+        .getConnectionStatus()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((connected) => {
+          if (connected) {
+            console.log('WebSocket connected, loading feed...');
+            // Get initial feed via WebSocket
+            this.socialWebSocketService.getFeed(currentProfile.id, 50, 0);
+            // Subscribe to all posts updates
+            this.socialWebSocketService.subscribeToPosts(currentProfile.id);
+          }
+        });
+
+      // Subscribe to posts from WebSocket
+      this.socialWebSocketService
+        .getPosts()
         .pipe(takeUntil(this.destroy$))
         .subscribe((posts) => {
+          console.log('Received posts from WebSocket:', posts.length);
           this.posts = posts;
           this.loadProfiles(posts);
         });
+
+      // Fallback to HTTP if WebSocket doesn't connect within 5 seconds
+      setTimeout(() => {
+        if (
+          !this.socialWebSocketService.isConnected() &&
+          this.posts.length === 0
+        ) {
+          console.log('WebSocket not connected, falling back to HTTP');
+          this.postService
+            .searchPosts(
+              { profileId: currentProfile.id },
+              { orderBy: 'createdAt', orderDirection: 'desc' }
+            )
+            .pipe(takeUntil(this.destroy$))
+            .subscribe((posts) => {
+              this.posts = posts;
+              this.loadProfiles(posts);
+            });
+        }
+      }, 5000);
     } else {
       this.router.navigate(['/profile']);
     }
@@ -136,6 +218,14 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    const currentProfile = this.profileService.currentUserProfile();
+    if (currentProfile) {
+      // Unsubscribe from WebSocket topics
+      this.socialWebSocketService.unsubscribeFromPosts(currentProfile.id);
+      // Disconnect WebSocket
+      this.socialWebSocketService.disconnect();
+    }
+
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -163,5 +253,18 @@ export class FeedComponent implements OnInit, OnDestroy {
   onScroll() {
     // const length = this.posts.length;
     // this.posts.push(...Array.from({ length: 20 }, (_, i) => `Post #${length + i + 1}`));
+  }
+
+  private getFileExtensionFromDataUrl(dataUrl: string): string {
+    const mimeType = dataUrl.split(',')[0].match(/:(.*?);/)?.[1];
+    const extensionMap: { [key: string]: string } = {
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/gif': 'gif',
+      'image/webp': 'webp',
+      'image/svg+xml': 'svg',
+    };
+    return extensionMap[mimeType || ''] || 'png';
   }
 }

@@ -5,4 +5,4 @@ export { VoteComponent } from './vote/vote.component';
 export { ComposeComponent } from './compose/compose.component';
 export { AttachmentComponent } from './attachment/attachment.component';
 export { LinkComponent } from './link/link.component';
-export type { PostData } from './compose/compose.component';
+export type { PostData, ImageUploadCallback } from './compose/compose.component';
