@@ -117,12 +117,12 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
   };
 
   ngOnInit() {
-    console.log('AgTasksTableComponent initialized');
+    // Component initialized
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['tasks']) {
-      console.log('Tasks changed:', changes['tasks'].currentValue);
+      // Tasks updated
     }
   }
 
@@ -167,6 +167,8 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
   }
 
   onDelete(task: Task) {
+    // TODO: Replace with modal component for better UX
+    // For now, using native confirm as a temporary solution
     if (confirm(`Are you sure you want to delete task "${task.title}"?`)) {
       this.deleteTask.emit(task.id);
     }
