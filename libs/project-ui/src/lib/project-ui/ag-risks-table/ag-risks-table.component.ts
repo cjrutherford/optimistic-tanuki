@@ -114,13 +114,11 @@ export class AgRisksTableComponent implements OnInit, OnChanges {
   };
 
   ngOnInit() {
-    // Component initialized
+    // Component initialization complete
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['risks']) {
-      // Risks updated
-    }
+    // Handle input changes if needed in the future
   }
 
   actionsRenderer(params: any) {

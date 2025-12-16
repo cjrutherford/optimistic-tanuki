@@ -114,13 +114,11 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
   };
 
   ngOnInit() {
-    // Component initialized
+    // Component initialization complete
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['changes']) {
-      // Changes updated
-    }
+    // Handle input changes if needed in the future
   }
 
   actionsRenderer(params: any) {

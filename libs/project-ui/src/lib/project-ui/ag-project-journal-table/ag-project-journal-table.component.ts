@@ -95,13 +95,11 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
   };
 
   ngOnInit() {
-    // Component initialized
+    // Component initialization complete
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['journals']) {
-      // Journals updated
-    }
+    // Handle input changes if needed in the future
   }
 
   actionsRenderer(params: any) {
