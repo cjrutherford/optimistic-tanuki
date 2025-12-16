@@ -1,0 +1,130 @@
+/**
+ * Theme-aware AG Grid styles
+ * This file defines custom CSS variables for AG Grid that integrate with the application theme
+ */
+
+.ag-grid-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+/**
+ * Custom AG Grid theme that uses CSS variables from the host component
+ * These variables are set dynamically based on the ThemeService
+ */
+.ag-theme-optimistic {
+  // Base colors
+  --ag-background-color: var(--ag-background-color);
+  --ag-foreground-color: var(--ag-foreground-color);
+  --ag-border-color: var(--ag-border-color);
+  
+  // Header
+  --ag-header-background-color: var(--ag-header-background-color);
+  --ag-header-foreground-color: var(--ag-header-foreground-color);
+  --ag-header-cell-hover-background-color: var(--ag-row-hover-color);
+  
+  // Rows
+  --ag-odd-row-background-color: var(--ag-odd-row-background-color);
+  --ag-row-hover-color: var(--ag-row-hover-color);
+  --ag-selected-row-background-color: var(--ag-selected-row-background-color);
+  
+  // Grid spacing and sizing
+  --ag-grid-size: 6px;
+  --ag-cell-horizontal-padding: 12px;
+  --ag-header-height: 48px;
+  --ag-row-height: 42px;
+  
+  // Font
+  font-family: inherit;
+  font-size: 14px;
+  
+  // Borders
+  --ag-borders: solid 1px;
+  --ag-row-border-color: var(--ag-border-color);
+  
+  // Inputs and controls
+  --ag-input-focus-border-color: var(--ag-accent-color);
+  --ag-checkbox-checked-color: var(--ag-accent-color);
+  
+  // Scrollbar styling
+  --ag-scrollbar-size: 8px;
+  
+  width: 100%;
+  height: 100%;
+  
+  // Ensure proper spacing
+  .ag-root-wrapper {
+    border-radius: 4px;
+  }
+  
+  // Style header cells
+  .ag-header-cell {
+    font-weight: 600;
+    
+    &:hover {
+      background-color: var(--ag-row-hover-color);
+    }
+  }
+  
+  // Style rows
+  .ag-row {
+    cursor: pointer;
+    
+    &:hover {
+      background-color: var(--ag-row-hover-color) !important;
+    }
+    
+    &.ag-row-selected {
+      background-color: var(--ag-selected-row-background-color) !important;
+    }
+  }
+  
+  // Style cells
+  .ag-cell {
+    display: flex;
+    align-items: center;
+    line-height: 1.5;
+  }
+  
+  // Pagination styling
+  .ag-paging-panel {
+    border-top: 1px solid var(--ag-border-color);
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  // Filter styling
+  .ag-filter {
+    background-color: var(--ag-background-color);
+    
+    .ag-input-field-input {
+      background-color: var(--ag-background-color);
+      color: var(--ag-foreground-color);
+      border: 1px solid var(--ag-border-color);
+      border-radius: 4px;
+      padding: 6px 8px;
+      
+      &:focus {
+        border-color: var(--ag-accent-color);
+        outline: none;
+      }
+    }
+  }
+  
+  // Sort indicator
+  .ag-sort-indicator-icon {
+    color: var(--ag-accent-color);
+  }
+  
+  // Loading overlay
+  .ag-overlay-loading-wrapper {
+    background-color: var(--ag-background-color);
+    color: var(--ag-foreground-color);
+  }
+  
+  // No rows overlay
+  .ag-overlay-no-rows-wrapper {
+    background-color: var(--ag-background-color);
+    color: var(--ag-foreground-color);
+  }
+}
