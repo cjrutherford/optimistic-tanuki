@@ -1,0 +1,37 @@
+<div class="ag-tasks-table-container">
+  <otui-ag-grid
+    [rowData]="tasks"
+    [columnDefs]="columnDefs"
+    [gridOptions]="gridOptions"
+    [height]="'600px'"
+  />
+  
+  <div class="action-group">
+    <otui-button (click)="showModal = true">➕ Add Task</otui-button>
+  </div>
+</div>
+
+@if (showEditModal && selectedTask) {
+  <otui-modal
+    (closeModal)="showEditModal = false"
+    [heading]="'Edit Task'"
+  >
+    <lib-task-form
+      [task]="selectedTask"
+      (formSubmit)="onEditFormSubmit($event)"
+      (close)="showEditModal = false"
+    />
+  </otui-modal>
+}
+
+@if (showModal) {
+  <otui-modal
+    (closeModal)="closeModal()"
+    [heading]="'Add Task'"
+  >
+    <lib-task-form 
+      (formSubmit)="onCreateFormSubmit($event)" 
+      (close)="closeModal()"
+    />
+  </otui-modal>
+}

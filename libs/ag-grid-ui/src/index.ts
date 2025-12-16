@@ -13,5 +13,5 @@ export type {
   FilterChangedEvent,
   ValueFormatterParams,
   ValueGetterParams,
-  CellRendererParams,
+  ICellRendererParams,
 } from 'ag-grid-community';

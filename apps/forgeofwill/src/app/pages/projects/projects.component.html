@@ -32,13 +32,13 @@
       <div class="row-container">
         <otui-tile class="parent-container">
           @if (shownDetails() === 'tasks') {
-          <lib-tasks-table
+          <lib-ag-tasks-table
             (deleteTask)="onDeleteTask($event)"
             (editTask)="onEditTask($event)"
             (createTask)="onCreateTask($event)"
             [tasks]="selectedProject()!.tasks"
             style="width: 100%; height: 100%"
-          ></lib-tasks-table>
+          ></lib-ag-tasks-table>
           } @else if (shownDetails() === 'risks') {
           <lib-risks-table
             (createRisk)="onCreateRisk($event)"

@@ -1,6 +1,6 @@
 import { ButtonComponent, CardComponent, GlassContainerComponent, ModalComponent, TileComponent } from '@optimistic-tanuki/common-ui';
 import { Change, CreateChange, CreateProject, CreateProjectJournal, CreateRisk, CreateTask, Project, ProjectJournal, Risk, Task } from '@optimistic-tanuki/ui-models';
-import { ChangesTableComponent, ProjectFormComponent, ProjectJournalTableComponent, ProjectOverviewComponent, ProjectSelectorComponent, RisksTableComponent, SummaryBlockComponent, TasksTableComponent } from '@optimistic-tanuki/project-ui';
+import { ChangesTableComponent, ProjectFormComponent, ProjectJournalTableComponent, ProjectOverviewComponent, ProjectSelectorComponent, RisksTableComponent, SummaryBlockComponent, AgTasksTableComponent } from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal, OnInit } from '@angular/core';
 
 import { ChangeService } from '../../change/change.service';
@@ -18,7 +18,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     ModalComponent,
     CardComponent,
     SummaryBlockComponent,
-    TasksTableComponent,
+    AgTasksTableComponent,
     RisksTableComponent,
     ChangesTableComponent,
     ButtonComponent,

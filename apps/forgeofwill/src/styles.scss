@@ -1,4 +1,9 @@
 /* You can add global styles to this file, and also import other style files */
+
+// Import AG Grid styles
+@import 'ag-grid-community/styles/ag-grid.css';
+@import 'ag-grid-community/styles/ag-theme-quartz.css';
+
 body {
     background-color: var(--background-color);
     /* Use accent color variable for SVG fill via mask and background-color */
