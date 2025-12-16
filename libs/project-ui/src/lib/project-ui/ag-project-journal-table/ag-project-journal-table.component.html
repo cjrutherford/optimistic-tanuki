@@ -1,0 +1,35 @@
+<div class="ag-project-journal-table-container">
+  <otui-ag-grid
+    [rowData]="journals"
+    [columnDefs]="columnDefs"
+    [gridOptions]="gridOptions"
+    [height]="'600px'"
+  />
+  
+  <div class="action-group">
+    <otui-button (click)="showModal = true">➕ Add Journal Entry</otui-button>
+  </div>
+</div>
+
+@if (showEditModal && selectedJournal) {
+  <otui-modal
+    (closeModal)="showEditModal = false"
+    [heading]="'Edit Journal Entry'"
+  >
+    <lib-project-journal-form
+      [journal]="selectedJournal"
+      (submitted)="entryUpdated($event)"
+    />
+  </otui-modal>
+}
+
+@if (showModal) {
+  <otui-modal
+    (closeModal)="closeModal()"
+    [heading]="'Add Journal Entry'"
+  >
+    <lib-project-journal-form 
+      (submitted)="entryCreated($event)"
+    />
+  </otui-modal>
+}

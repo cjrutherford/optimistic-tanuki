@@ -14,3 +14,6 @@ export * from './lib/project-ui/summary-block/summary-block.component';
 export * from './lib/project-ui/task-form/task-form.component';
 export * from './lib/project-ui/tasks-table/tasks-table.component';
 export * from './lib/project-ui/ag-tasks-table/ag-tasks-table.component';
+export * from './lib/project-ui/ag-risks-table/ag-risks-table.component';
+export * from './lib/project-ui/ag-changes-table/ag-changes-table.component';
+export * from './lib/project-ui/ag-project-journal-table/ag-project-journal-table.component';

@@ -40,21 +40,21 @@
             style="width: 100%; height: 100%"
           ></lib-ag-tasks-table>
           } @else if (shownDetails() === 'risks') {
-          <lib-risks-table
+          <lib-ag-risks-table
             (createRisk)="onCreateRisk($event)"
             (editRisk)="onEditRisk($event)"
             (deleteRisk)="onDeleteRisk($event)"
             [risks]="selectedProject()!.risks"
             style="width: 100%; height: 100%"
-          ></lib-risks-table>
+          ></lib-ag-risks-table>
           } @else if (shownDetails() === 'changes') {
-          <lib-changes-table
+          <lib-ag-changes-table
             (createChange)="onCreateChange($event)"
             (editChange)="onEditChange($event)"
             (deleteChange)="onDeleteChange($event)"
             [changes]="selectedProject()!.changes"
             style="width: 100%; height: 100%"
-          ></lib-changes-table>
+          ></lib-ag-changes-table>
           }
           <otui-button (click)="hideDetails()" class="close-button"
             >X</otui-button
@@ -72,13 +72,13 @@
         <otui-tile style="grid-column: span 3; grid-row: span 3">
           <h3>Project Journal</h3>
           <p>Recent updates and notes about the project.</p>
-          <lib-project-journal-table
+          <lib-ag-project-journal-table
             (createJournalEntry)="onCreateJournalEntry($event)"
             (editJournalEntry)="onUpdateJournalEntry($event)"
             (deleteJournalEntry)="onDeleteJournalEntry($event)"
             style="width: 100%; height: 100%"
             [journals]="selectedProject()!.journalEntries"
-          ></lib-project-journal-table>
+          ></lib-ag-project-journal-table>
         </otui-tile>
       </div>
     </div>
