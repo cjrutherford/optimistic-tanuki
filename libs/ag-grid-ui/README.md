@@ -9,6 +9,7 @@ A theme-aware AG Grid wrapper component for the Optimistic Tanuki workspace. Thi
 - 📦 **Easy to use**: Simple input bindings for common use cases
 - 🛠️ **Utility functions**: Helper functions for creating common column types
 - 🎯 **Type-safe**: Full TypeScript support with re-exported AG Grid types
+- ✅ **Pre-registered modules**: AG Grid Community modules automatically registered (v35+)
 
 ## Installation
 
@@ -19,7 +20,13 @@ This library is already part of the workspace. To use it in your application:
 import { AgGridUiComponent } from '@optimistic-tanuki/ag-grid-ui';
 ```
 
-2. Import AG Grid styles in your application's styles.scss or angular.json
+2. Import AG Grid styles in your application's `styles.scss` or `angular.json`:
+```scss
+@import 'ag-grid-community/styles/ag-grid.css';
+@import 'ag-grid-community/styles/ag-theme-quartz.css';
+```
+
+**Note**: The library automatically registers AG Grid's `AllCommunityModule`, so you don't need to manually register modules in your application.
 
 ## Basic Usage
 

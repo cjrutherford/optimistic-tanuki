@@ -14,6 +14,7 @@ Created a new Angular library in `libs/ag-grid-ui` that provides:
   - Automatically integrates with the application's ThemeService
   - Applies dynamic theme colors to AG Grid CSS variables
   - Supports light and dark modes
+  - **Pre-registered AG Grid Community modules** - No additional setup required
   
 - **Utility Functions** (`grid-utils.ts`)
   - `createDateColumn()` - Creates date columns with proper formatting
@@ -30,6 +31,15 @@ Created a new Angular library in `libs/ag-grid-ui` that provides:
   - Row selection
   - Cell text selection
   - Row animations
+
+## Important Note: AG Grid Module Registration
+
+The `ag-grid-ui` library automatically registers the `AllCommunityModule` from AG Grid v35. This means:
+- ✅ No manual module registration needed in your application
+- ✅ All community features are available immediately
+- ✅ Just import and use the component
+
+The registration happens once when the library is first imported, ensuring all AG Grid features work correctly.
 
 ### 2. Example Component: `ag-tasks-table`
 

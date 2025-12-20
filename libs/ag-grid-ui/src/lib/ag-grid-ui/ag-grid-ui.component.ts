@@ -5,8 +5,13 @@ import {
   GridOptions,
   GridReadyEvent,
   GridApi,
+  ModuleRegistry,
+  AllCommunityModule,
 } from 'ag-grid-community';
 import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
+
+// Register AG Grid modules
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 /**
  * Theme-aware AG Grid wrapper component with reasonable defaults

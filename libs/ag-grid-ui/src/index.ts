@@ -15,3 +15,6 @@ export type {
   ValueGetterParams,
   ICellRendererParams,
 } from 'ag-grid-community';
+
+// Re-export module registry for advanced use cases
+export { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
