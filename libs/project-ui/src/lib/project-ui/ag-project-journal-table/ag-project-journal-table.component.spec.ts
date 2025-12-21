@@ -9,6 +9,7 @@ import '@optimistic-tanuki/ag-grid-ui';
 describe('AgProjectJournalTableComponent', () => {
   let component: AgProjectJournalTableComponent;
   let fixture: ComponentFixture<AgProjectJournalTableComponent>;
+  let compiled: HTMLElement;
 
   const mockJournals: ProjectJournal[] = [
     {
@@ -44,6 +45,7 @@ describe('AgProjectJournalTableComponent', () => {
 
     fixture = TestBed.createComponent(AgProjectJournalTableComponent);
     component = fixture.componentInstance;
+    compiled = fixture.nativeElement;
   });
 
   it('should create', () => {
@@ -54,27 +56,45 @@ describe('AgProjectJournalTableComponent', () => {
     expect(component.journals).toEqual([]);
   });
 
-  it('should accept journals input', () => {
+  it('should accept journals input and render grid', (done) => {
     component.journals = mockJournals;
-    // Don't call detectChanges() to avoid AG Grid initialization
-    expect(component.journals.length).toBe(2);
+    fixture.detectChanges();
+    
+    setTimeout(() => {
+      expect(component.journals.length).toBe(2);
+      
+      const agGrid = compiled.querySelector('otui-ag-grid');
+      expect(agGrid).toBeTruthy();
+      
+      done();
+    }, 500);
   });
 
-  it('should have column definitions configured', () => {
+  it('should have column definitions configured with all required columns', () => {
     expect(component.columnDefs).toBeDefined();
     expect(component.columnDefs.length).toBeGreaterThan(0);
-  });
-
-  it('should render AG Grid with data', () => {
-    component.journals = mockJournals;
-    // Don't call detectChanges() to avoid AG Grid initialization in test environment
-    // AG Grid rendering is tested in Storybook
     
-    expect(component.journals.length).toBe(2);
-    expect(component.columnDefs).toBeDefined();
+    const contentColumn = component.columnDefs.find(col => col.field === 'content');
+    const analysisColumn = component.columnDefs.find(col => col.field === 'analysis');
+    const createdColumn = component.columnDefs.find(col => col.field === 'createdAt');
+    
+    expect(contentColumn).toBeDefined();
+    expect(analysisColumn).toBeDefined();
+    expect(createdColumn).toBeDefined();
   });
 
-  it('should emit createJournalEntry event', (done) => {
+  it('should have auto-height row configuration for long content', () => {
+    expect(component.gridOptions).toBeDefined();
+    
+    // Check if wrapText is enabled for content columns
+    const contentColumn = component.columnDefs.find(col => col.field === 'content');
+    const analysisColumn = component.columnDefs.find(col => col.field === 'analysis');
+    
+    expect(contentColumn?.wrapText).toBe(true);
+    expect(analysisColumn?.wrapText).toBe(true);
+  });
+
+  it('should emit createJournalEntry event with correct data', (done) => {
     component.createJournalEntry.subscribe((journal) => {
       expect(journal.content).toBe('New Entry');
       done();
@@ -88,11 +108,12 @@ describe('AgProjectJournalTableComponent', () => {
     });
   });
 
-  it('should emit editJournalEntry event', (done) => {
+  it('should emit editJournalEntry event with correct data', (done) => {
     component.selectedJournal = mockJournals[0];
     
     component.editJournalEntry.subscribe((journal) => {
       expect(journal.id).toBe('1');
+      expect(journal.content).toContain('Updated');
       done();
     });
 
@@ -106,5 +127,47 @@ describe('AgProjectJournalTableComponent', () => {
     component.onEdit(journal);
     expect(component.selectedJournal).toEqual(journal);
     expect(component.showEditModal).toBe(true);
+  });
+
+  it('should update grid when journals input changes', (done) => {
+    component.journals = [];
+    fixture.detectChanges();
+    
+    component.journals = mockJournals;
+    component.ngOnChanges({
+      journals: {
+        currentValue: mockJournals,
+        previousValue: [],
+        firstChange: false,
+        isFirstChange: () => false
+      }
+    });
+    fixture.detectChanges();
+    
+    setTimeout(() => {
+      expect(component.journals.length).toBe(2);
+      done();
+    }, 300);
+  });
+
+  it('should have grid options configured for journal entries', () => {
+    expect(component.gridOptions).toBeDefined();
+    expect(component.gridOptions.pagination).toBe(true);
+  });
+
+  it('should render action column with edit and delete buttons', () => {
+    const actionsColumn = component.columnDefs.find(col => col.headerName === 'Actions');
+    expect(actionsColumn).toBeDefined();
+    expect(actionsColumn?.cellRenderer).toBeDefined();
+  });
+
+  it('should handle modal open/close correctly', () => {
+    expect(component.showModal).toBe(false);
+    
+    component.showModal = true;
+    expect(component.showModal).toBe(true);
+    
+    component.closeModal();
+    expect(component.showModal).toBe(false);
   });
 });

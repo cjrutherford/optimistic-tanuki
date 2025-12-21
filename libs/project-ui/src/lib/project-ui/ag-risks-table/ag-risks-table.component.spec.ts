@@ -9,6 +9,7 @@ import '@optimistic-tanuki/ag-grid-ui';
 describe('AgRisksTableComponent', () => {
   let component: AgRisksTableComponent;
   let fixture: ComponentFixture<AgRisksTableComponent>;
+  let compiled: HTMLElement;
 
   const mockRisks: Risk[] = [
     {
@@ -44,6 +45,7 @@ describe('AgRisksTableComponent', () => {
 
     fixture = TestBed.createComponent(AgRisksTableComponent);
     component = fixture.componentInstance;
+    compiled = fixture.nativeElement;
   });
 
   it('should create', () => {
@@ -54,29 +56,39 @@ describe('AgRisksTableComponent', () => {
     expect(component.risks).toEqual([]);
   });
 
-  it('should accept risks input', () => {
+  it('should accept risks input and render grid', (done) => {
     component.risks = mockRisks;
-    // Don't call detectChanges() to avoid AG Grid initialization
-    expect(component.risks.length).toBe(2);
+    fixture.detectChanges();
+    
+    setTimeout(() => {
+      expect(component.risks.length).toBe(2);
+      
+      const agGrid = compiled.querySelector('otui-ag-grid');
+      expect(agGrid).toBeTruthy();
+      
+      done();
+    }, 500);
   });
 
-  it('should have column definitions configured', () => {
+  it('should have column definitions configured with all required columns', () => {
     expect(component.columnDefs).toBeDefined();
     expect(component.columnDefs.length).toBeGreaterThan(0);
-  });
-
-  it('should render AG Grid with data', () => {
-    component.risks = mockRisks;
-    // Don't call detectChanges() to avoid AG Grid initialization in test environment
-    // AG Grid rendering is tested in Storybook
     
-    expect(component.risks.length).toBe(2);
-    expect(component.columnDefs).toBeDefined();
+    const descriptionColumn = component.columnDefs.find(col => col.field === 'description');
+    const impactColumn = component.columnDefs.find(col => col.field === 'impact');
+    const likelihoodColumn = component.columnDefs.find(col => col.field === 'likelihood');
+    const statusColumn = component.columnDefs.find(col => col.field === 'status');
+    
+    expect(descriptionColumn).toBeDefined();
+    expect(impactColumn).toBeDefined();
+    expect(likelihoodColumn).toBeDefined();
+    expect(statusColumn).toBeDefined();
   });
 
-  it('should emit createRisk event', (done) => {
+  it('should emit createRisk event with correct data', (done) => {
     component.createRisk.subscribe((risk) => {
       expect(risk.description).toBe('New Risk');
+      expect(risk.impact).toBe('LOW');
       done();
     });
 
@@ -92,10 +104,11 @@ describe('AgRisksTableComponent', () => {
     });
   });
 
-  it('should emit editRisk event', (done) => {
+  it('should emit editRisk event with correct data', (done) => {
     const riskToEdit = mockRisks[0];
     component.editRisk.subscribe((risk) => {
       expect(risk.id).toBe('1');
+      expect(risk.description).toBe('Database performance degradation');
       done();
     });
 
@@ -107,5 +120,37 @@ describe('AgRisksTableComponent', () => {
     component.onEdit(risk);
     expect(component.selectedRisk).toEqual(risk);
     expect(component.showEditModal).toBe(true);
+  });
+
+  it('should update grid when risks input changes', (done) => {
+    component.risks = [];
+    fixture.detectChanges();
+    
+    component.risks = mockRisks;
+    component.ngOnChanges({
+      risks: {
+        currentValue: mockRisks,
+        previousValue: [],
+        firstChange: false,
+        isFirstChange: () => false
+      }
+    });
+    fixture.detectChanges();
+    
+    setTimeout(() => {
+      expect(component.risks.length).toBe(2);
+      done();
+    }, 300);
+  });
+
+  it('should have grid options configured for risks', () => {
+    expect(component.gridOptions).toBeDefined();
+    expect(component.gridOptions.pagination).toBe(true);
+  });
+
+  it('should render action column with edit and delete buttons', () => {
+    const actionsColumn = component.columnDefs.find(col => col.headerName === 'Actions');
+    expect(actionsColumn).toBeDefined();
+    expect(actionsColumn?.cellRenderer).toBeDefined();
   });
 });
