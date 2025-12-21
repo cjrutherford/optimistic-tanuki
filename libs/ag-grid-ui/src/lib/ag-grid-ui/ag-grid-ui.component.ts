@@ -185,6 +185,19 @@ export class AgGridUiComponent extends Themeable implements OnInit, OnDestroy, O
     return opts;
   }
 
+  override ngOnInit(): void {
+    super.ngOnInit();
+    // Initialize signals with current input values
+    this.rowDataSignal.set(this.rowData || []);
+    this.columnDefsSignal.set(this.columnDefs || []);
+    this.gridOptionsSignal.set(this.gridOptions);
+    this.loadingSignal.set(!!this.loading);
+    console.log('ag-grid: ngOnInit', {
+      rowData: this.rowData?.length,
+      columnDefs: this.columnDefs?.length,
+    });
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['rowData']) {
       this.rowDataSignal.set(this.rowData || []);

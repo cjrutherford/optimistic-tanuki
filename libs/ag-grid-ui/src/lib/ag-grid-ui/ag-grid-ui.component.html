@@ -1,8 +1,8 @@
 <div class="ag-grid-wrapper" [style.height]="height" [style.width]="width">
   <ag-grid-angular
     class="ag-theme-optimistic"
-    [rowData]="rowData"
-    [columnDefs]="columnDefs"
+    [rowData]="rowDataSignal()"
+    [columnDefs]="columnDefsSignal()"
     [gridOptions]="mergedGridOptions"
     (gridReady)="onGridReady($event)"
   ></ag-grid-angular>

@@ -61,6 +61,14 @@ describe('AgGridUiComponent', () => {
     component.gridOptions = {
       paginationPageSize: 25,
     };
+    component.ngOnChanges({
+      gridOptions: {
+        currentValue: component.gridOptions,
+        previousValue: undefined,
+        firstChange: true,
+        isFirstChange: () => true,
+      },
+    });
     const merged = component.mergedGridOptions;
     expect(merged.paginationPageSize).toBe(25);
     expect(merged.pagination).toBe(true); // default preserved
@@ -96,7 +104,11 @@ describe('AgGridUiComponent', () => {
 
   it('should have grid API available after onGridReady', () => {
     const mockParams = {
-      api: { sizeColumnsToFit: () => {} },
+      api: { 
+        sizeColumnsToFit: () => {},
+        hideOverlay: () => {},
+        getDisplayedRowCount: () => 0,
+      },
     } as any;
     
     component.onGridReady(mockParams);
