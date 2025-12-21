@@ -1,12 +1,5 @@
-import {
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-  OnInit,
-  OnChanges,
-  SimpleChanges,
-} from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
   ColDef,
@@ -29,9 +22,9 @@ import { ChangeFormComponent } from '../change-form/change-form.component';
   selector: 'lib-ag-changes-table',
   imports: [AgGridUiComponent, ButtonComponent, ModalComponent, ChangeFormComponent],
   templateUrl: './ag-changes-table.component.html',
-  styleUrl: './ag-changes-table.component.scss',
+  styleUrls: ['./ag-changes-table.component.scss'],
 })
-export class AgChangesTableComponent implements OnInit, OnChanges {
+export class AgChangesTableComponent {
   @Input() changes: Change[] = [];
   @Output() createChange = new EventEmitter<CreateChange>();
   @Output() editChange = new EventEmitter<Change>();
@@ -54,7 +47,7 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
       headerName: 'Type',
       flex: 1,
       minWidth: 120,
-      filter: 'agSetColumnFilter',
+      filter: 'agTextColumnFilter',
       cellStyle: { fontWeight: 'bold', textTransform: 'uppercase' },
     },
     createStatusColumn('changeStatus', 'Status'),
@@ -78,7 +71,7 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
       headerName: 'Resolution',
       flex: 1,
       minWidth: 120,
-      filter: 'agSetColumnFilter',
+      filter: 'agTextColumnFilter',
       cellStyle: (params) => {
         const resolution = params.value;
         if (resolution === 'APPROVED') {
@@ -105,7 +98,7 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
     pagination: true,
     paginationPageSize: 10,
     paginationPageSizeSelector: [10, 25, 50, 100],
-    rowSelection: 'single',
+    rowSelection: { mode: 'singleRow' },
     onCellClicked: (event: CellClickedEvent) => {
       if (event.column.getColId() !== 'Actions') {
         this.selectedChange = event.data;
@@ -113,15 +106,9 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
     },
   };
 
-  ngOnInit() {
-    // Component initialization complete
-  }
+  // Intentionally minimal lifecycle handling; add logic if needed later
 
-  ngOnChanges(changes: SimpleChanges) {
-    // Handle input changes if needed in the future
-  }
-
-  actionsRenderer(params: any) {
+  actionsRenderer(params: ICellRendererParams) {
     const container = document.createElement('div');
     container.style.display = 'flex';
     container.style.gap = '8px';

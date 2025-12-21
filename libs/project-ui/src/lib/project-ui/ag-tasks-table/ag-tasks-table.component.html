@@ -1,9 +1,10 @@
 <div class="ag-tasks-table-container">
   <otui-ag-grid
-    [rowData]="tasks"
+    [rowData]="tasksSignal()"
     [columnDefs]="columnDefs"
     [gridOptions]="gridOptions"
     [height]="'600px'"
+    [loading]="loading"
   />
   
   <div class="action-group">

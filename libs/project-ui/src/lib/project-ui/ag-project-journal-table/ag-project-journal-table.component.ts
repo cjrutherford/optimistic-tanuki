@@ -86,7 +86,7 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
     pagination: true,
     paginationPageSize: 10,
     paginationPageSizeSelector: [10, 25, 50, 100],
-    rowSelection: 'single',
+    rowSelection: { mode: 'singleRow' },
     onCellClicked: (event: CellClickedEvent) => {
       if (event.column.getColId() !== 'Actions') {
         this.selectedJournal = event.data;

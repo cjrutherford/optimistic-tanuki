@@ -22,7 +22,7 @@ const mockTasks: Task[] = [
     title: 'Implement Login',
     description: 'Develop authentication module with JWT',
     status: 'TODO',
-    priority: 'CRITICAL',
+    priority: 'HIGH',
     assignee: 'Bob Smith',
     projectId: 'project-1',
     dueDate: new Date('2024-12-25'),
@@ -118,7 +118,7 @@ export const AllStatuses: Story = {
       { ...mockTasks[0], status: 'TODO', title: 'TODO Task' },
       { ...mockTasks[1], status: 'IN_PROGRESS', title: 'In Progress Task' },
       { ...mockTasks[2], status: 'DONE', title: 'Done Task' },
-      { ...mockTasks[3], status: 'BLOCKED', title: 'Blocked Task' },
+      { ...mockTasks[3], status: 'IN_PROGRESS', title: 'Blocked Task' },
     ],
   },
 };
@@ -126,7 +126,7 @@ export const AllStatuses: Story = {
 export const AllPriorities: Story = {
   args: {
     tasks: [
-      { ...mockTasks[0], priority: 'CRITICAL', title: 'Critical Priority' },
+      { ...mockTasks[0], priority: 'HIGH', title: 'Critical Priority' },
       { ...mockTasks[1], priority: 'HIGH', title: 'High Priority' },
       { ...mockTasks[2], priority: 'MEDIUM', title: 'Medium Priority' },
       { ...mockTasks[3], priority: 'LOW', title: 'Low Priority' },

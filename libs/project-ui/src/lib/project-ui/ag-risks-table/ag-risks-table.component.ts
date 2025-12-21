@@ -1,12 +1,5 @@
-import {
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-  OnInit,
-  OnChanges,
-  SimpleChanges,
-} from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
   ColDef,
@@ -29,9 +22,9 @@ import { RiskFormComponent } from '../risk-form/risk-form.component';
   selector: 'lib-ag-risks-table',
   imports: [AgGridUiComponent, ButtonComponent, ModalComponent, RiskFormComponent],
   templateUrl: './ag-risks-table.component.html',
-  styleUrl: './ag-risks-table.component.scss',
+  styleUrls: ['./ag-risks-table.component.scss'],
 })
-export class AgRisksTableComponent implements OnInit, OnChanges {
+export class AgRisksTableComponent {
   @Input() risks: Risk[] = [];
   @Output() createRisk = new EventEmitter<CreateRisk>();
   @Output() editRisk = new EventEmitter<Risk>();
@@ -54,7 +47,7 @@ export class AgRisksTableComponent implements OnInit, OnChanges {
       headerName: 'Impact',
       flex: 1,
       minWidth: 100,
-      filter: 'agSetColumnFilter',
+      filter: 'agTextColumnFilter',
       cellStyle: (params) => {
         const impact = params.value;
         if (impact === 'HIGH' || impact === 'CRITICAL') {
@@ -70,7 +63,7 @@ export class AgRisksTableComponent implements OnInit, OnChanges {
       headerName: 'Likelihood',
       flex: 1,
       minWidth: 120,
-      filter: 'agSetColumnFilter',
+      filter: 'agTextColumnFilter',
       cellStyle: (params) => {
         const likelihood = params.value;
         if (likelihood === 'CERTAIN' || likelihood === 'LIKELY') {
@@ -105,7 +98,7 @@ export class AgRisksTableComponent implements OnInit, OnChanges {
     pagination: true,
     paginationPageSize: 10,
     paginationPageSizeSelector: [10, 25, 50, 100],
-    rowSelection: 'single',
+    rowSelection: { mode: 'singleRow' },
     onCellClicked: (event: CellClickedEvent) => {
       if (event.column.getColId() !== 'Actions') {
         this.selectedRisk = event.data;
@@ -113,15 +106,9 @@ export class AgRisksTableComponent implements OnInit, OnChanges {
     },
   };
 
-  ngOnInit() {
-    // Component initialization complete
-  }
+  // Intentionally minimal lifecycle handling; add logic if needed later
 
-  ngOnChanges(changes: SimpleChanges) {
-    // Handle input changes if needed in the future
-  }
-
-  actionsRenderer(params: any) {
+  actionsRenderer(params: ICellRendererParams) {
     const container = document.createElement('div');
     container.style.display = 'flex';
     container.style.gap = '8px';

@@ -78,6 +78,21 @@
       background-color: var(--ag-selected-row-background-color) !important;
     }
   }
+
+  // Ensure rows and cells have minimum sizes so content is visible
+  .ag-row,
+  .ag-row .ag-cell {
+    box-sizing: border-box;
+    min-height: var(--ag-row-height, 42px);
+    min-width: 80px;
+    /* allow wrapping content to take multiple lines */
+    white-space: normal !important;
+  }
+
+  .ag-header-cell {
+    box-sizing: border-box;
+    min-height: var(--ag-header-height, 48px);
+  }
   
   // Style cells
   .ag-cell {

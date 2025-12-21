@@ -57,7 +57,8 @@ export function createStatusColumn(
   return {
     field,
     headerName: headerName || field,
-    filter: 'agSetColumnFilter',
+    // Use text filter in the community edition to avoid requiring SetFilterModule
+    filter: 'agTextColumnFilter',
     cellStyle: { fontWeight: 'bold', textTransform: 'uppercase' },
     ...options,
   };
@@ -67,7 +68,7 @@ export function createStatusColumn(
  * Creates an actions column with custom cell renderer
  */
 export function createActionsColumn(
-  cellRenderer: any,
+  cellRenderer: unknown,
   options?: Partial<ColDef>
 ): ColDef {
   return {
@@ -100,8 +101,9 @@ export function createGridOptions(
       flex: 1,
       minWidth: 100,
     },
-    rowSelection: 'multiple',
-    suppressRowClickSelection: true,
+    rowSelection: { mode: 'multiRow' },
+    // suppressRowClickSelection is deprecated; preserve previous intent
+    // by not enabling click selection on the default object.
     animateRows: true,
     enableCellTextSelection: true,
     ensureDomOrder: true,
@@ -112,7 +114,7 @@ export function createGridOptions(
 /**
  * Helper to convert table data to AG Grid column definitions
  */
-export function generateColumnsFromData<T extends Record<string, any>>(
+export function generateColumnsFromData<T extends Record<string, unknown>>(
   data: T[],
   excludeFields: string[] = [],
   customColumns: Record<string, Partial<ColDef>> = {}

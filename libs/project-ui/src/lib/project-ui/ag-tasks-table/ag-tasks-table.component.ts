@@ -1,12 +1,5 @@
-import {
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-  OnInit,
-  OnChanges,
-  SimpleChanges,
-} from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, signal, Signal, WritableSignal } from '@angular/core';
+import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
   ColDef,
@@ -30,10 +23,12 @@ import { TaskFormComponent } from '../task-form/task-form.component';
   selector: 'lib-ag-tasks-table',
   imports: [AgGridUiComponent, ButtonComponent, ModalComponent, TaskFormComponent],
   templateUrl: './ag-tasks-table.component.html',
-  styleUrl: './ag-tasks-table.component.scss',
+  styleUrls: ['./ag-tasks-table.component.scss'],
 })
-export class AgTasksTableComponent implements OnInit, OnChanges {
+export class AgTasksTableComponent implements OnChanges {
   @Input() tasks: Task[] = [];
+  /** Optional loading flag forwarded to the grid wrapper */
+  @Input() loading: boolean = false;
   @Output() createTask = new EventEmitter<CreateTask>();
   @Output() editTask = new EventEmitter<Task>();
   @Output() deleteTask = new EventEmitter<string>();
@@ -63,7 +58,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
       headerName: 'Priority',
       flex: 1,
       minWidth: 120,
-      filter: 'agSetColumnFilter',
+      filter: 'agTextColumnFilter',
       cellStyle: (params) => {
         const priority = params.value;
         if (priority === 'HIGH' || priority === 'CRITICAL') {
@@ -107,7 +102,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
     pagination: true,
     paginationPageSize: 10,
     paginationPageSizeSelector: [10, 25, 50, 100],
-    rowSelection: 'single',
+    rowSelection: { mode: 'singleRow' },
     onCellClicked: (event: CellClickedEvent) => {
       // Don't trigger row selection on actions column
       if (event.column.getColId() !== 'Actions') {
@@ -116,20 +111,25 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
     },
   };
 
-  ngOnInit() {
-    // Component initialized
-  }
+  // internal signal-based representation of tasks for reactive flows
+  tasksSignal: WritableSignal<Task[]> = signal([]);
 
-  ngOnChanges(changes: SimpleChanges) {
+  // Intentionally minimal lifecycle handling; add logic if needed later
+
+  ngOnChanges(changes: SimpleChanges): void {
     if (changes['tasks']) {
-      // Tasks updated
+      this.tasksSignal.set(this.tasks || []);
+      console.log('ag-tasks-table: tasks updated, length=', (this.tasks || []).length);
+    }
+    if (changes['loading']) {
+      console.log('ag-tasks-table: loading=', !!this.loading);
     }
   }
 
   /**
    * Custom cell renderer for actions column
    */
-  actionsRenderer(params: any) {
+  actionsRenderer(params: ICellRendererParams) {
     const container = document.createElement('div');
     container.style.display = 'flex';
     container.style.gap = '8px';

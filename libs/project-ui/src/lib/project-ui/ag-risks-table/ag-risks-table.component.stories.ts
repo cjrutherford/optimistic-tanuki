@@ -21,14 +21,15 @@ const mockRisks: Risk[] = [
     impact: 'MEDIUM',
     likelihood: 'POSSIBLE',
     projectId: 'project-1',
-    status: 'MITIGATED',
+    status: 'IN_PROGRESS',
+    resolution: 'MITIGATED',
     createdBy: 'admin',
     createdAt: new Date('2024-01-16'),
   },
   {
     id: '3',
     description: 'Security vulnerability in authentication system',
-    impact: 'CRITICAL',
+    impact: 'HIGH',
     likelihood: 'UNLIKELY',
     projectId: 'project-1',
     status: 'OPEN',
@@ -41,7 +42,8 @@ const mockRisks: Risk[] = [
     impact: 'MEDIUM',
     likelihood: 'CERTAIN',
     projectId: 'project-1',
-    status: 'ACCEPTED',
+    status: 'IN_PROGRESS',
+    resolution: 'ACCEPTED',
     createdBy: 'admin',
     createdAt: new Date('2024-01-18'),
   },
@@ -85,7 +87,7 @@ export const Empty: Story = {
 
 export const HighImpactRisks: Story = {
   args: {
-    risks: mockRisks.filter(r => r.impact === 'HIGH' || r.impact === 'CRITICAL'),
+    risks: mockRisks.filter(r => r.impact === 'HIGH'),
   },
 };
 
@@ -98,7 +100,7 @@ export const OpenRisks: Story = {
 export const AllImpactLevels: Story = {
   args: {
     risks: [
-      { ...mockRisks[0], impact: 'CRITICAL', description: 'Critical Impact Risk' },
+      { ...mockRisks[0], impact: 'HIGH', description: 'Critical Impact Risk' },
       { ...mockRisks[1], impact: 'HIGH', description: 'High Impact Risk' },
       { ...mockRisks[2], impact: 'MEDIUM', description: 'Medium Impact Risk' },
       { ...mockRisks[3], impact: 'LOW', description: 'Low Impact Risk' },
