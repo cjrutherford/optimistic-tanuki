@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, OnInit, signal, computed, input, output } from '@angular/core';
 import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
@@ -17,6 +17,7 @@ import { RiskFormComponent } from '../risk-form/risk-form.component';
 
 /**
  * AG Grid-based risks table component
+ * Uses signals throughout for reactive data flow
  */
 @Component({
   selector: 'lib-ag-risks-table',
@@ -24,15 +25,21 @@ import { RiskFormComponent } from '../risk-form/risk-form.component';
   templateUrl: './ag-risks-table.component.html',
   styleUrls: ['./ag-risks-table.component.scss'],
 })
-export class AgRisksTableComponent {
-  @Input() risks: Risk[] = [];
-  @Output() createRisk = new EventEmitter<CreateRisk>();
-  @Output() editRisk = new EventEmitter<Risk>();
-  @Output() deleteRisk = new EventEmitter<string>();
+export class AgRisksTableComponent implements OnInit {
+  // Signal-based inputs and outputs
+  risks = input<Risk[]>([]);
+  loading = input<boolean>(false);
+  createRisk = output<CreateRisk>();
+  editRisk = output<Risk>();
+  deleteRisk = output<string>();
 
-  showModal = false;
-  showEditModal = false;
-  selectedRisk: Risk | null = null;
+  // Internal state signals
+  showModal = signal(false);
+  showEditModal = signal(false);
+  selectedRisk = signal<Risk | null>(null);
+  
+  // Computed signal for grid data
+  gridData = computed(() => this.risks());
 
   columnDefs: ColDef[] = [
     {
@@ -101,12 +108,14 @@ export class AgRisksTableComponent {
     rowSelection: { mode: 'singleRow' },
     onCellClicked: (event: CellClickedEvent) => {
       if (event.column.getColId() !== 'Actions') {
-        this.selectedRisk = event.data;
+        this.selectedRisk.set(event.data);
       }
     },
   };
 
-  // Intentionally minimal lifecycle handling; add logic if needed later
+  ngOnInit(): void {
+    console.log('ag-risks-table initialized with', this.risks().length, 'risks');
+  }
 
   actionsRenderer(params: ICellRendererParams) {
     const container = document.createElement('div');
@@ -141,8 +150,8 @@ export class AgRisksTableComponent {
   }
 
   onEdit(risk: Risk) {
-    this.selectedRisk = risk;
-    this.showEditModal = true;
+    this.selectedRisk.set(risk);
+    this.showEditModal.set(true);
   }
 
   onDelete(risk: Risk) {
@@ -154,7 +163,7 @@ export class AgRisksTableComponent {
 
   onEditFormSubmit(risk: Risk) {
     this.editRisk.emit(risk);
-    this.showEditModal = false;
+    this.showEditModal.set(false);
   }
 
   onCreateFormSubmit(risk: Risk) {
@@ -172,6 +181,6 @@ export class AgRisksTableComponent {
   }
 
   closeModal() {
-    this.showModal = false;
+    this.showModal.set(false);
   }
 }

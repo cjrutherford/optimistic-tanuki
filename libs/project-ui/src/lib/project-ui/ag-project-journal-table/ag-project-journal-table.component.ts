@@ -1,11 +1,10 @@
 import {
   Component,
-  EventEmitter,
-  Input,
-  Output,
   OnInit,
-  OnChanges,
-  SimpleChanges,
+  signal,
+  computed,
+  input,
+  output,
 } from '@angular/core';
 import {
   AgGridUiComponent,
@@ -23,6 +22,7 @@ import { ProjectJournalFormComponent } from '../project-journal-form/project-jou
 
 /**
  * AG Grid-based project journal table component
+ * Uses signals throughout for reactive data flow
  */
 @Component({
   selector: 'lib-ag-project-journal-table',
@@ -30,15 +30,21 @@ import { ProjectJournalFormComponent } from '../project-journal-form/project-jou
   templateUrl: './ag-project-journal-table.component.html',
   styleUrl: './ag-project-journal-table.component.scss',
 })
-export class AgProjectJournalTableComponent implements OnInit, OnChanges {
-  @Input() journals: ProjectJournal[] = [];
-  @Output() createJournalEntry = new EventEmitter<CreateProjectJournal>();
-  @Output() editJournalEntry = new EventEmitter<ProjectJournal>();
-  @Output() deleteJournalEntry = new EventEmitter<string>();
+export class AgProjectJournalTableComponent implements OnInit {
+  // Signal-based inputs and outputs
+  journals = input<ProjectJournal[]>([]);
+  loading = input<boolean>(false);
+  createJournalEntry = output<CreateProjectJournal>();
+  editJournalEntry = output<ProjectJournal>();
+  deleteJournalEntry = output<string>();
 
-  showModal = false;
-  showEditModal = false;
-  selectedJournal: ProjectJournal | null = null;
+  // Internal state signals
+  showModal = signal(false);
+  showEditModal = signal(false);
+  selectedJournal = signal<ProjectJournal | null>(null);
+  
+  // Computed signal for grid data
+  gridData = computed(() => this.journals());
 
   columnDefs: ColDef[] = [
     {
@@ -89,17 +95,13 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
     rowSelection: { mode: 'singleRow' },
     onCellClicked: (event: CellClickedEvent) => {
       if (event.column.getColId() !== 'Actions') {
-        this.selectedJournal = event.data;
+        this.selectedJournal.set(event.data);
       }
     },
   };
 
-  ngOnInit() {
-    // Component initialization complete
-  }
-
-  ngOnChanges(changes: SimpleChanges) {
-    // Handle input changes if needed in the future
+  ngOnInit(): void {
+    console.log('ag-project-journal-table initialized with', this.journals().length, 'journals');
   }
 
   actionsRenderer(params: any) {
@@ -135,8 +137,8 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
   }
 
   onEdit(journal: ProjectJournal) {
-    this.selectedJournal = journal;
-    this.showEditModal = true;
+    this.selectedJournal.set(journal);
+    this.showEditModal.set(true);
   }
 
   onDelete(journal: ProjectJournal) {
@@ -147,22 +149,23 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
   }
 
   entryUpdated(updatedEntry: Partial<ProjectJournal>) {
-    const projectId = this.selectedJournal?.projectId || '';
-    const journalId = this.selectedJournal?.id || '';
-    const profileId = this.selectedJournal?.profileId || '';
+    const selected = this.selectedJournal();
+    const projectId = selected?.projectId || '';
+    const journalId = selected?.id || '';
+    const profileId = selected?.profileId || '';
     const updateEntry: ProjectJournal = {
       id: journalId,
       projectId: projectId,
       profileId: profileId,
-      ...this.selectedJournal,
+      ...selected,
       ...updatedEntry,
-      content: updatedEntry.content || this.selectedJournal?.content || '',
-      createdAt: this.selectedJournal?.createdAt || new Date(),
+      content: updatedEntry.content || selected?.content || '',
+      createdAt: selected?.createdAt || new Date(),
       updatedAt: new Date(),
     };
     this.editJournalEntry.emit(updateEntry);
-    this.showEditModal = false;
-    this.selectedJournal = null;
+    this.showEditModal.set(false);
+    this.selectedJournal.set(null);
   }
 
   entryCreated(newEntry: Partial<ProjectJournal>) {
@@ -177,6 +180,6 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
   }
 
   closeModal() {
-    this.showModal = false;
+    this.showModal.set(false);
   }
 }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, OnInit, signal, computed, input, output } from '@angular/core';
 import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
@@ -17,6 +17,7 @@ import { ChangeFormComponent } from '../change-form/change-form.component';
 
 /**
  * AG Grid-based changes table component
+ * Uses signals throughout for reactive data flow
  */
 @Component({
   selector: 'lib-ag-changes-table',
@@ -24,15 +25,21 @@ import { ChangeFormComponent } from '../change-form/change-form.component';
   templateUrl: './ag-changes-table.component.html',
   styleUrls: ['./ag-changes-table.component.scss'],
 })
-export class AgChangesTableComponent {
-  @Input() changes: Change[] = [];
-  @Output() createChange = new EventEmitter<CreateChange>();
-  @Output() editChange = new EventEmitter<Change>();
-  @Output() deleteChange = new EventEmitter<string>();
+export class AgChangesTableComponent implements OnInit {
+  // Signal-based inputs and outputs
+  changes = input<Change[]>([]);
+  loading = input<boolean>(false);
+  createChange = output<CreateChange>();
+  editChange = output<Change>();
+  deleteChange = output<string>();
 
-  showModal = false;
-  showEditModal = false;
-  selectedChange: Change | null = null;
+  // Internal state signals
+  showModal = signal(false);
+  showEditModal = signal(false);
+  selectedChange = signal<Change | null>(null);
+  
+  // Computed signal for grid data
+  gridData = computed(() => this.changes());
 
   columnDefs: ColDef[] = [
     {
@@ -101,12 +108,14 @@ export class AgChangesTableComponent {
     rowSelection: { mode: 'singleRow' },
     onCellClicked: (event: CellClickedEvent) => {
       if (event.column.getColId() !== 'Actions') {
-        this.selectedChange = event.data;
+        this.selectedChange.set(event.data);
       }
     },
   };
 
-  // Intentionally minimal lifecycle handling; add logic if needed later
+  ngOnInit(): void {
+    console.log('ag-changes-table initialized with', this.changes().length, 'changes');
+  }
 
   actionsRenderer(params: ICellRendererParams) {
     const container = document.createElement('div');
@@ -141,8 +150,8 @@ export class AgChangesTableComponent {
   }
 
   onEdit(change: Change) {
-    this.selectedChange = change;
-    this.showEditModal = true;
+    this.selectedChange.set(change);
+    this.showEditModal.set(true);
   }
 
   onDelete(change: Change) {
@@ -153,7 +162,7 @@ export class AgChangesTableComponent {
   }
 
   onEditFormSubmit(change: Partial<Change>) {
-    const selected = this.selectedChange;
+    const selected = this.selectedChange();
     const changeId = selected?.id || '';
     const updatedChange: Change = {
       ...(selected as Change),
@@ -162,7 +171,7 @@ export class AgChangesTableComponent {
       updatedAt: new Date(),
     };
     this.editChange.emit(updatedChange);
-    this.showEditModal = false;
+    this.showEditModal.set(false);
   }
 
   onCreateFormSubmit(change: Partial<Change>) {
@@ -191,6 +200,6 @@ export class AgChangesTableComponent {
   }
 
   closeModal() {
-    this.showModal = false;
+    this.showModal.set(false);
   }
 }

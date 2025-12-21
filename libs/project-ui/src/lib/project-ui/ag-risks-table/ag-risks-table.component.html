@@ -1,29 +1,30 @@
 <div class="ag-risks-table-container">
+  <div class="action-group">
+    <otui-button (click)="showModal.set(true)">➕ Add Risk</otui-button>
+  </div>
+  
   <otui-ag-grid
-    [rowData]="risks"
+    [rowData]="gridData()"
     [columnDefs]="columnDefs"
     [gridOptions]="gridOptions"
     [height]="'600px'"
+    [loading]="loading()"
   />
-  
-  <div class="action-group">
-    <otui-button (click)="showModal = true">➕ Add Risk</otui-button>
-  </div>
 </div>
 
-@if (showEditModal && selectedRisk) {
+@if (showEditModal() && selectedRisk()) {
   <otui-modal
-    (closeModal)="showEditModal = false"
+    (closeModal)="showEditModal.set(false)"
     [heading]="'Edit Risk'"
   >
     <lib-risk-form
-      [risk]="selectedRisk"
+      [risk]="selectedRisk()"
       (submitted)="onEditFormSubmit($event)"
     />
   </otui-modal>
 }
 
-@if (showModal) {
+@if (showModal()) {
   <otui-modal
     (closeModal)="closeModal()"
     [heading]="'Add Risk'"

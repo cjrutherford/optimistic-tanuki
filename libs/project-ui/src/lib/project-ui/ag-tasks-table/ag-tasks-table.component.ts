@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, signal, Signal, WritableSignal } from '@angular/core';
+import { Component, EventEmitter, input, output, OnInit, signal, computed } from '@angular/core';
 import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
@@ -18,6 +18,7 @@ import { TaskFormComponent } from '../task-form/task-form.component';
 /**
  * AG Grid-based tasks table component
  * Replaces the old table-based implementation with AG Grid
+ * Uses signals throughout for reactive data flow
  */
 @Component({
   selector: 'lib-ag-tasks-table',
@@ -25,17 +26,21 @@ import { TaskFormComponent } from '../task-form/task-form.component';
   templateUrl: './ag-tasks-table.component.html',
   styleUrls: ['./ag-tasks-table.component.scss'],
 })
-export class AgTasksTableComponent implements OnChanges {
-  @Input() tasks: Task[] = [];
-  /** Optional loading flag forwarded to the grid wrapper */
-  @Input() loading: boolean = false;
-  @Output() createTask = new EventEmitter<CreateTask>();
-  @Output() editTask = new EventEmitter<Task>();
-  @Output() deleteTask = new EventEmitter<string>();
+export class AgTasksTableComponent implements OnInit {
+  // Signal-based inputs and outputs
+  tasks = input<Task[]>([]);
+  loading = input<boolean>(false);
+  createTask = output<CreateTask>();
+  editTask = output<Task>();
+  deleteTask = output<string>();
 
-  showModal = false;
-  showEditModal = false;
-  selectedTask: Task | null = null;
+  // Internal state signals
+  showModal = signal(false);
+  showEditModal = signal(false);
+  selectedTask = signal<Task | null>(null);
+  
+  // Computed signal for grid data (allows for filtering, sorting, etc.)
+  gridData = computed(() => this.tasks());
 
   columnDefs: ColDef[] = [
     {
@@ -106,24 +111,13 @@ export class AgTasksTableComponent implements OnChanges {
     onCellClicked: (event: CellClickedEvent) => {
       // Don't trigger row selection on actions column
       if (event.column.getColId() !== 'Actions') {
-        this.selectedTask = event.data;
+        this.selectedTask.set(event.data);
       }
     },
   };
 
-  // internal signal-based representation of tasks for reactive flows
-  tasksSignal: WritableSignal<Task[]> = signal([]);
-
-  // Intentionally minimal lifecycle handling; add logic if needed later
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['tasks']) {
-      this.tasksSignal.set(this.tasks || []);
-      console.log('ag-tasks-table: tasks updated, length=', (this.tasks || []).length);
-    }
-    if (changes['loading']) {
-      console.log('ag-tasks-table: loading=', !!this.loading);
-    }
+  ngOnInit(): void {
+    console.log('ag-tasks-table initialized with', this.tasks().length, 'tasks');
   }
 
   /**
@@ -162,8 +156,8 @@ export class AgTasksTableComponent implements OnChanges {
   }
 
   onEdit(task: Task) {
-    this.selectedTask = task;
-    this.showEditModal = true;
+    this.selectedTask.set(task);
+    this.showEditModal.set(true);
   }
 
   onDelete(task: Task) {
@@ -176,7 +170,7 @@ export class AgTasksTableComponent implements OnChanges {
 
   onEditFormSubmit(task: Task) {
     this.editTask.emit(task);
-    this.showEditModal = false;
+    this.showEditModal.set(false);
   }
 
   onCreateFormSubmit(task: Task) {
@@ -193,6 +187,6 @@ export class AgTasksTableComponent implements OnChanges {
   }
 
   closeModal() {
-    this.showModal = false;
+    this.showModal.set(false);
   }
 }
