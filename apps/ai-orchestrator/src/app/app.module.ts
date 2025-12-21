@@ -6,29 +6,42 @@ import { loadConfig } from './config';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { LoggerModule } from '@optimistic-tanuki/logger';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { RateLimitGuard } from './guards/rate-limit.guard';
 
 @Module({
   imports: [
     LoggerModule,
     ConfigModule.forRoot({
       load: [loadConfig],
-    })
+    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
+      provide: APP_GUARD,
+      useClass: RateLimitGuard,
+    },
+    {
       provide: 'ai-enabled-apps',
       useFactory: (config: ConfigService) => {
-        return config.get<{[key: string]: string}>('ai-enabled-apps', {});
+        return config.get<{ [key: string]: string }>('ai-enabled-apps', {});
       },
       inject: [ConfigService],
     },
     {
       provide: ServiceTokens.PROMPT_PROXY,
       useFactory: (config: ConfigService) => {
-        const options = config.get('dependencies.prompt_proxy')
-        if(!options) {
+        const options = config.get('dependencies.prompt_proxy');
+        if (!options) {
           throw new Error('Prompt Proxy configuration not found');
         }
         return ClientProxyFactory.create({
@@ -36,10 +49,10 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
           options: {
             port: options.port,
             host: options.host,
-          }
-        })
+          },
+        });
       },
-      inject: [ConfigService]
+      inject: [ConfigService],
     },
     {
       provide: ServiceTokens.TELOS_DOCS_SERVICE,
@@ -53,10 +66,10 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
           options: {
             port: options.port,
             host: options.host,
-          }
+          },
         });
       },
-      inject: [ConfigService]
+      inject: [ConfigService],
     },
     {
       provide: ServiceTokens.PROFILE_SERVICE,
@@ -70,10 +83,10 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
           options: {
             port: options.port,
             host: options.host,
-          }
+          },
         });
       },
-      inject: [ConfigService]
+      inject: [ConfigService],
     },
     {
       provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
@@ -87,11 +100,11 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
           options: {
             port: options.port,
             host: options.host,
-          }
+          },
         });
       },
-      inject: [ConfigService]
-    }
+      inject: [ConfigService],
+    },
   ],
 })
 export class AppModule {}

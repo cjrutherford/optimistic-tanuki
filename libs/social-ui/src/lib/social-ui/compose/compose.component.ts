@@ -48,7 +48,7 @@ import Superscript from '@tiptap/extension-superscript';
 import DOMPurify from 'dompurify';
 
 import { ComponentInjectionService } from './services/component-injection.service';
-import { AngularComponentNode } from './extensions/angular-component-node.extension';
+import { SocialComposeComponentNode } from './extensions/social-compose-component.extension';
 import { ComponentSelectorComponent } from './components/component-selector.component';
 import {
   PropertyEditorComponent,
@@ -201,7 +201,7 @@ export class ComposeComponent
         TableRow,
         TableHeader,
         TableCell,
-        AngularComponentNode.configure({
+        SocialComposeComponentNode.configure({
           onComponentClick: (componentId: string, instanceId: string) => {
             this.onInlineComponentClick(componentId, instanceId);
           },
@@ -598,25 +598,33 @@ export class ComposeComponent
     // If an image upload callback is provided, process images
     if (this.imageUploadCallback) {
       const images = this.imageUploadService.extractBase64Images(this.content);
-      
+
       if (images.length > 0) {
         const replacements: Array<{ dataUrl: string; assetUrl: string }> = [];
-        
+
         // Upload each image and collect replacements
         for (const image of images) {
           try {
-            const fileName = `image_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-            const assetUrl = await this.imageUploadCallback(image.dataUrl, fileName);
+            const fileName = `image_${Date.now()}_${Math.random()
+              .toString(36)
+              .substring(2, 9)}`;
+            const assetUrl = await this.imageUploadCallback(
+              image.dataUrl,
+              fileName
+            );
             replacements.push({ dataUrl: image.dataUrl, assetUrl });
           } catch (error) {
             console.error('Failed to upload image:', error);
             // Continue with other images even if one fails
           }
         }
-        
+
         // Replace all base64 URLs with asset URLs
         if (replacements.length > 0) {
-          finalContent = this.imageUploadService.replaceImageUrls(this.content, replacements);
+          finalContent = this.imageUploadService.replaceImageUrls(
+            this.content,
+            replacements
+          );
         }
       }
     }
@@ -628,7 +636,7 @@ export class ComposeComponent
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(),
     });
-    
+
     this.title = '';
     this.content = '';
     this.links = [];

@@ -3,7 +3,6 @@ import {
   EventEmitter,
   Output,
   OnDestroy,
-  OnInit,
   HostListener,
   ViewChild,
   ViewContainerRef,
@@ -77,8 +76,6 @@ import {
   PropertyEditorComponent,
   PropertyDefinition,
 } from './components/property-editor.component';
-import { ComponentWrapperComponent } from './components/component-wrapper.component';
-import { ComponentEditorWrapperComponent } from './components/component-editor-wrapper.component';
 import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
 import DOMPurify from 'dompurify';
 
@@ -86,7 +83,7 @@ import DOMPurify from 'dompurify';
 import { RichTextToolbarComponent } from './components/rich-text-toolbar.component';
 
 // Angular Component Node Extension
-import { AngularComponentNode } from './extensions/angular-component-node.extension';
+import { BlogComposeComponentNode } from './extensions/blog-compose-component.extension';
 
 interface PostData {
   title: string;
@@ -294,7 +291,7 @@ export class BlogComposeComponent
         TableRow,
         TableHeader,
         TableCell,
-        AngularComponentNode.configure({
+        BlogComposeComponentNode.configure({
           onComponentClick: (componentId: string, instanceId: string) => {
             this.onInlineComponentClick(componentId, instanceId);
           },
@@ -648,8 +645,7 @@ export class BlogComposeComponent
 
   async injectComponent(
     componentId: string,
-    data?: Record<string, unknown>,
-    position?: number
+    data?: Record<string, unknown>
   ): Promise<InjectedComponentInstance> {
     // Use our new inline injection method instead
     const component = this.componentInjectionService
@@ -925,8 +921,14 @@ export class BlogComposeComponent
       // Still track the component in our system for editing
       const mockComponentRef = {
         instance: component.data || {},
-        changeDetectorRef: { detectChanges: () => {} },
-        destroy: () => {},
+        changeDetectorRef: {
+          detectChanges: () => {
+            // Mock implementation
+          },
+        },
+        destroy: () => {
+          // Mock implementation
+        },
       } as any;
 
       const injectedInstance: InjectedComponentInstance = {
@@ -993,8 +995,12 @@ export class BlogComposeComponent
   }
 
   // ControlValueAccessor implementation
-  private onChange = (value: any) => {};
-  private onTouched = () => {};
+  private onChange = (value: any) => {
+    // Default implementation
+  };
+  private onTouched = () => {
+    // Default implementation
+  };
 
   writeValue(value: any): void {
     if (value && typeof value === 'object') {

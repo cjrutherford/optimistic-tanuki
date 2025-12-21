@@ -1,15 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { RichTextToolbarComponent } from './rich-text-toolbar.component';
-import { Editor } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
-import Subscript from '@tiptap/extension-subscript';
-import Superscript from '@tiptap/extension-superscript';
-import TextAlign from '@tiptap/extension-text-align';
-import { Table } from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableHeader from '@tiptap/extension-table-header';
-import TableCell from '@tiptap/extension-table-cell';
 
 const meta: Meta<RichTextToolbarComponent> = {
   component: RichTextToolbarComponent,
@@ -17,7 +7,8 @@ const meta: Meta<RichTextToolbarComponent> = {
   parameters: {
     docs: {
       description: {
-        component: 'A rich text editing toolbar component with grouped tools and ng-icons integration',
+        component:
+          'A rich text editing toolbar component with grouped tools and ng-icons integration',
       },
     },
   },
@@ -30,27 +21,27 @@ const createMockEditor = () => {
   return {
     chain: () => ({
       focus: () => ({
-        toggleBold: () => ({ run: () => {} }),
-        toggleItalic: () => ({ run: () => {} }),
-        toggleUnderline: () => ({ run: () => {} }),
-        toggleStrike: () => ({ run: () => {} }),
-        toggleHeading: () => ({ run: () => {} }),
-        toggleBulletList: () => ({ run: () => {} }),
-        toggleOrderedList: () => ({ run: () => {} }),
-        toggleBlockquote: () => ({ run: () => {} }),
-        toggleCodeBlock: () => ({ run: () => {} }),
-        setTextAlign: () => ({ run: () => {} }),
-        setLink: () => ({ run: () => {} }),
-        insertTable: () => ({ run: () => {} }),
-        addColumnBefore: () => ({ run: () => {} }),
-        addColumnAfter: () => ({ run: () => {} }),
-        deleteColumn: () => ({ run: () => {} }),
-        addRowBefore: () => ({ run: () => {} }),
-        addRowAfter: () => ({ run: () => {} }),
-        deleteRow: () => ({ run: () => {} }),
-        deleteTable: () => ({ run: () => {} }),
-        undo: () => ({ run: () => {} }),
-        redo: () => ({ run: () => {} }),
+        toggleBold: () => ({ run: () => true }),
+        toggleItalic: () => ({ run: () => true }),
+        toggleUnderline: () => ({ run: () => true }),
+        toggleStrike: () => ({ run: () => true }),
+        toggleHeading: () => ({ run: () => true }),
+        toggleBulletList: () => ({ run: () => true }),
+        toggleOrderedList: () => ({ run: () => true }),
+        toggleBlockquote: () => ({ run: () => true }),
+        toggleCodeBlock: () => ({ run: () => true }),
+        setTextAlign: () => ({ run: () => true }),
+        setLink: () => ({ run: () => true }),
+        insertTable: () => ({ run: () => true }),
+        addColumnBefore: () => ({ run: () => true }),
+        addColumnAfter: () => ({ run: () => true }),
+        deleteColumn: () => ({ run: () => true }),
+        addRowBefore: () => ({ run: () => true }),
+        addRowAfter: () => ({ run: () => true }),
+        deleteRow: () => ({ run: () => true }),
+        deleteTable: () => ({ run: () => true }),
+        undo: () => ({ run: () => true }),
+        redo: () => ({ run: () => true }),
       }),
     }),
     isActive: (format: string, options?: any) => {
@@ -85,7 +76,8 @@ export const WithTableActive: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Shows the toolbar when cursor is inside a table, displaying additional table management tools',
+        story:
+          'Shows the toolbar when cursor is inside a table, displaying additional table management tools',
       },
     },
   },
@@ -98,7 +90,8 @@ export const Interactive: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Interactive toolbar that responds to clicks (actions are mocked for demo)',
+        story:
+          'Interactive toolbar that responds to clicks (actions are mocked for demo)',
       },
     },
   },

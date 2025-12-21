@@ -1,6 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BlogComposeComponent } from './blog-compose.component';
-import { FormsModule, ReactiveFormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  ControlValueAccessor,
+  NG_VALUE_ACCESSOR,
+} from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Component, Input, forwardRef } from '@angular/core';
 
@@ -9,6 +14,7 @@ import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { TiptapEditorDirective } from 'ngx-tiptap';
 
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'tiptap-editor',
   template: '',
   standalone: true,
@@ -22,8 +28,12 @@ import { TiptapEditorDirective } from 'ngx-tiptap';
 })
 class MockTiptapEditor implements ControlValueAccessor {
   @Input() ngModel: any;
-  onChange: any = () => {};
-  onTouched: any = () => {};
+  onChange: any = () => {
+    // Mock implementation
+  };
+  onTouched: any = () => {
+    // Mock implementation
+  };
 
   writeValue(value: any): void {
     this.ngModel = value;
@@ -37,6 +47,7 @@ class MockTiptapEditor implements ControlValueAccessor {
     this.onTouched = fn;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setDisabledState?(isDisabled: boolean): void {
     // Not needed for this mock
   }

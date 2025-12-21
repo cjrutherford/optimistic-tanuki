@@ -1,10 +1,17 @@
 import { PostController } from './post.controller';
-import { PostService } from '../services';
-import { CreateBlogPostDto, BlogPostDto, BlogPostQueryDto, UpdateBlogPostDto } from '@optimistic-tanuki/models';
+import { PostService, RssService, SeoService } from '../services';
+import {
+  CreateBlogPostDto,
+  BlogPostDto,
+  BlogPostQueryDto,
+  UpdateBlogPostDto,
+} from '@optimistic-tanuki/models';
 
 describe('PostController', () => {
   let controller: PostController;
   let postService: jest.Mocked<PostService>;
+  let rssService: jest.Mocked<RssService>;
+  let seoService: jest.Mocked<SeoService>;
 
   const mockPost: BlogPostDto = {
     id: 'post-1',
@@ -35,9 +42,19 @@ describe('PostController', () => {
       findPublished: jest.fn(),
       findDraftsByAuthor: jest.fn(),
       publish: jest.fn(),
+      searchPosts: jest.fn(),
     } as unknown as jest.Mocked<PostService>;
-    
-    controller = new PostController(postService);
+
+    rssService = {
+      generateRssFeed: jest.fn(),
+    } as unknown as jest.Mocked<RssService>;
+
+    seoService = {
+      generatePostMetadata: jest.fn(),
+      generateBlogMetadata: jest.fn(),
+    } as unknown as jest.Mocked<SeoService>;
+
+    controller = new PostController(postService, rssService, seoService);
   });
 
   it('should be defined', () => {
@@ -110,17 +127,24 @@ describe('PostController', () => {
 
   describe('updatePost', () => {
     it('should update a post with required ownership check', async () => {
-      const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Updated Title' };
+      const updateDto: UpdateBlogPostDto = {
+        id: 'post-1',
+        title: 'Updated Title',
+      };
       const updatedPost = { ...mockPost, title: 'Updated Title' };
       postService.update.mockResolvedValue(updatedPost);
 
-      const result = await controller.updatePost({ 
-        id: 'post-1', 
+      const result = await controller.updatePost({
+        id: 'post-1',
         updatePostDto: updateDto,
-        requestingAuthorId: 'author-1'
+        requestingAuthorId: 'author-1',
       });
 
-      expect(postService.update).toHaveBeenCalledWith('post-1', updateDto, 'author-1');
+      expect(postService.update).toHaveBeenCalledWith(
+        'post-1',
+        updateDto,
+        'author-1'
+      );
       expect(result.title).toBe('Updated Title');
     });
   });
@@ -143,7 +167,7 @@ describe('PostController', () => {
 
       expect(postService.findPublished).toHaveBeenCalled();
       expect(result).toEqual([mockPublishedPost]);
-      expect(result.every(p => p.isDraft === false)).toBe(true);
+      expect(result.every((p) => p.isDraft === false)).toBe(true);
     });
   });
 
@@ -162,7 +186,10 @@ describe('PostController', () => {
     it('should publish a draft post', async () => {
       postService.publish.mockResolvedValue(mockPublishedPost);
 
-      const result = await controller.publishPost({ id: 'post-1', requestingAuthorId: 'author-1' });
+      const result = await controller.publishPost({
+        id: 'post-1',
+        requestingAuthorId: 'author-1',
+      });
 
       expect(postService.publish).toHaveBeenCalledWith('post-1', 'author-1');
       expect(result.isDraft).toBe(false);

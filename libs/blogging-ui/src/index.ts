@@ -19,3 +19,7 @@ export * from './lib/blog-compose/configs/component-properties.config';
 export * from './lib/blog-compose/components/example-components/callout-box.component';
 export * from './lib/blog-compose/components/example-components/code-snippet.component';
 export * from './lib/blog-compose/components/example-components/image-gallery.component';
+
+export * from './lib/comments/comments.component';
+
+export * from './lib/tag-list/tag-list.component';

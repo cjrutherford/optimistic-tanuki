@@ -1,15 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { 
-  BlogPostDto, 
+import {
+  BlogPostDto,
   CreateBlogPostDto,
   BlogPostQueryDto,
-  UpdateBlogPostDto 
+  UpdateBlogPostDto,
 } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class BlogService {
   private readonly http = inject(HttpClient);
@@ -40,7 +40,10 @@ export class BlogService {
     return this.http.get<BlogPostDto>(`/api/post/${id}`);
   }
 
-  updatePost(id: string, data: Partial<UpdateBlogPostDto>): Observable<BlogPostDto> {
+  updatePost(
+    id: string,
+    data: Partial<UpdateBlogPostDto>
+  ): Observable<BlogPostDto> {
     return this.http.patch<BlogPostDto>(`/api/post/${id}`, data);
   }
 
@@ -60,5 +63,41 @@ export class BlogService {
 
   deletePost(id: string): Observable<void> {
     return this.http.delete<void>(`/api/post/${id}`);
+  }
+
+  /**
+   * Search posts by title or content
+   */
+  searchPosts(searchTerm: string): Observable<BlogPostDto[]> {
+    return this.http.get<BlogPostDto[]>(`/api/post/search`, {
+      params: { q: searchTerm as string },
+    });
+  }
+
+  /**
+   * Get RSS feed URL
+   */
+  getRssFeedUrl(baseUrl?: string): string {
+    const url = '/api/post/rss/feed.xml';
+    return baseUrl ? `${url}?baseUrl=${encodeURIComponent(baseUrl)}` : url;
+  }
+
+  /**
+   * Get SEO metadata for a post
+   */
+  getSeoMetadata(postId: string, baseUrl?: string): Observable<any> {
+    const params: Record<string, string> = {};
+    if (baseUrl) {
+      params['baseUrl'] = baseUrl;
+    }
+    return this.http.get<any>(`/api/post/${postId}/seo`, { params });
+  }
+
+  /**
+   * Get sitemap URL
+   */
+  getSitemapUrl(baseUrl?: string): string {
+    const url = '/api/blog/sitemap.xml';
+    return baseUrl ? `${url}?baseUrl=${encodeURIComponent(baseUrl)}` : url;
   }
 }

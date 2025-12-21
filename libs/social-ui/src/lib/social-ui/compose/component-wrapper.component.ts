@@ -1,10 +1,4 @@
-import {
-  Component,
-  Input,
-  Output,
-  EventEmitter,
-  HostListener,
-} from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 import { MatIconModule } from '@angular/material/icon';
 import { InjectedComponentInstance } from './interfaces/component-injection.interface';
@@ -21,6 +15,8 @@ import { InjectedComponentInstance } from './interfaces/component-injection.inte
       (mouseenter)="onMouseEnter()"
       (mouseleave)="onMouseLeave()"
       (click)="onClick($event)"
+      (keyup.enter)="onClick($event)"
+      tabindex="0"
     >
       @if (isHovered || isSelected) {
       <div class="component-controls">

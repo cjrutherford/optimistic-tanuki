@@ -3,8 +3,6 @@ import {
   ComponentRef,
   ViewContainerRef,
   EventEmitter,
-  ComponentFactory,
-  createComponent,
 } from '@angular/core';
 import {
   InjectableComponent,

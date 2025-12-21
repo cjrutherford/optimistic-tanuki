@@ -9,8 +9,11 @@ import {
   Param,
   Patch,
   Post,
+  Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ClientProxy } from '@nestjs/microservices';
 import { BlogCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
@@ -22,6 +25,7 @@ import { firstValueFrom } from 'rxjs';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { AuthGuard } from '../../auth/auth.guard';
+import { Public } from '../../decorators/public.decorator';
 
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller('blog')
@@ -139,6 +143,33 @@ export class BlogController {
       this.l.error(`Error deleting blog ${id}`, error);
       throw new HttpException(
         'Failed to delete blog: [' + error.message + ']',
+        500
+      );
+    }
+  }
+
+  /**
+   * Generate sitemap XML for all published content
+   */
+  @Get('/sitemap.xml')
+  @Public()
+  async getSitemap(@Res() res: Response, @Query('baseUrl') baseUrl?: string) {
+    try {
+      const defaultBaseUrl = baseUrl || 'https://blog.optimistic-tanuki.com';
+
+      const sitemapXml = await firstValueFrom(
+        this.blogService.send(
+          { cmd: BlogCommands.GENERATE_SITEMAP },
+          { baseUrl: defaultBaseUrl }
+        )
+      );
+
+      res.set('Content-Type', 'application/xml');
+      res.send(sitemapXml);
+    } catch (error) {
+      this.l.error('Error generating sitemap', error);
+      throw new HttpException(
+        'Failed to generate sitemap: [' + error.message + ']',
         500
       );
     }

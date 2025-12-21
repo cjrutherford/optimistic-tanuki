@@ -157,7 +157,7 @@ export interface PropertyDefinition {
               label="Webhook URL"
             ></lib-text-input>
             <div class="output-schema">
-              <label>Expected Data Schema:</label>
+              <label [for]="prop.key + '_schema'">Expected Data Schema:</label>
               <textarea
                 [id]="prop.key + '_schema'"
                 [(ngModel)]="editedData[prop.key + '_schema']"
@@ -406,7 +406,7 @@ export class PropertyEditorComponent implements OnInit, OnChanges {
       if (Array.isArray(parsed)) {
         this.editedData[key] = parsed;
       }
-    } catch (e) {
+    } catch {
       // Invalid JSON, keep original value
     }
   }
@@ -417,7 +417,7 @@ export class PropertyEditorComponent implements OnInit, OnChanges {
       if (typeof parsed === 'object' && parsed !== null) {
         this.editedData[key] = parsed;
       }
-    } catch (e) {
+    } catch {
       // Invalid JSON, keep original value
     }
   }

@@ -27,9 +27,23 @@
         [label]="'Your Message'"
         (valueChange)="onMessageChange($event)"
       ></lib-text-area>
+
+      <!-- Honeypot field -->
+      <div style="display: none">
+        <label for="website">Website</label>
+        <input
+          type="text"
+          id="website"
+          name="website"
+          (input)="onHoneypotChange($event)"
+        />
+      </div>
+
       <div class="row">
-          <otui-button style="flex: 1;"(click)="onSubscribe()">{{buttonText}}</otui-button>
-          <!-- <otui-button style="flex: 1;"(click)="onClose()">Close</otui-button> -->
+        <otui-button style="flex: 1" (click)="onSubscribe()">{{
+          buttonText
+        }}</otui-button>
+        <!-- <otui-button style="flex: 1;"(click)="onClose()">Close</otui-button> -->
       </div>
     </div>
   </div>

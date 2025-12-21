@@ -260,6 +260,30 @@
       "appScope": "blogging"
     },
     {
+      "name": "blog.post.publish",
+      "description": "Publish blog post",
+      "resource": "post",
+      "action": "publish",
+      "targetId": null,
+      "appScope": "blogging"
+    },
+    {
+      "name": "blog.comment.create",
+      "description": "Create blog comment",
+      "resource": "comment",
+      "action": "create",
+      "targetId": null,
+      "appScope": "blogging"
+    },
+    {
+      "name": "blog.comment.read",
+      "description": "Read blog comments",
+      "resource": "comment",
+      "action": "read",
+      "targetId": null,
+      "appScope": "blogging"
+    },
+    {
       "name": "project.create",
       "description": "Create project",
       "resource": "project",
@@ -581,8 +605,28 @@
       "permissionAppScope": "blogging"
     },
     {
+      "role": "blog_author",
+      "permission": "blog.post.publish",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "blog_author",
+      "permission": "blog.comment.create",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "blog_author",
+      "permission": "blog.comment.read",
+      "permissionAppScope": "blogging"
+    },
+    {
       "role": "blog_reader",
       "permission": "blog.post.read",
+      "permissionAppScope": "blogging"
+    },
+    {
+      "role": "blog_reader",
+      "permission": "blog.comment.read",
       "permissionAppScope": "blogging"
     },
     {

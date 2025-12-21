@@ -4,7 +4,8 @@ export const BlogCommands = {
   DELETE: 'blog.delete',
   FIND: 'blog.find',
   FIND_ALL: 'blog.findAll',
-}
+  GENERATE_SITEMAP: 'blog.generateSitemap',
+};
 
 export const ContactCommands = {
   CREATE: 'contact.create',
@@ -12,23 +13,26 @@ export const ContactCommands = {
   DELETE: 'contact.delete',
   FIND: 'contact.find',
   FIND_ALL: 'contact.findAll',
-}
+};
 
 export const EventCommands = {
-    CREATE: 'event.create',
-    UPDATE: 'event.update',
-    DELETE: 'event.delete',
-    FIND: 'event.find',
-    FIND_ALL: 'event.findAll',
-}
+  CREATE: 'event.create',
+  UPDATE: 'event.update',
+  DELETE: 'event.delete',
+  FIND: 'event.find',
+  FIND_ALL: 'event.findAll',
+};
 
 export const PostCommands = {
-    CREATE: 'post.create',
-    UPDATE: 'post.update',
-    DELETE: 'post.delete',
-    FIND: 'post.find',
-    FIND_ALL: 'post.findAll',
-    FIND_PUBLISHED: 'post.findPublished',
-    FIND_DRAFTS_BY_AUTHOR: 'post.findDraftsByAuthor',
-    PUBLISH: 'post.publish',
-}
+  CREATE: 'post.create',
+  UPDATE: 'post.update',
+  DELETE: 'post.delete',
+  FIND: 'post.find',
+  FIND_ALL: 'post.findAll',
+  FIND_PUBLISHED: 'post.findPublished',
+  FIND_DRAFTS_BY_AUTHOR: 'post.findDraftsByAuthor',
+  PUBLISH: 'post.publish',
+  GENERATE_RSS: 'post.generateRss',
+  GENERATE_SEO: 'post.generateSeo',
+  SEARCH: 'post.search',
+};

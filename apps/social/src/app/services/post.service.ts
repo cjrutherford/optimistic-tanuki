@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Post } from '../../entities/post.entity';
-import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
+import { Attachment } from '../../entities/attachment.entity';
+import { Repository, FindOneOptions, FindManyOptions, In } from 'typeorm';
 import { CreatePostDto, UpdatePostDto } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
 
@@ -9,12 +10,40 @@ import DOMPurify from 'isomorphic-dompurify';
 export class PostService {
   constructor(
     @Inject(getRepositoryToken(Post))
-    private readonly postRepo: Repository<Post>
+    private readonly postRepo: Repository<Post>,
+    @Inject(getRepositoryToken(Attachment))
+    private readonly attachmentRepo: Repository<Attachment>
   ) {}
 
   private sanitizeContent(content: string): string {
     return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'blockquote', 'code', 'pre', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+      ALLOWED_TAGS: [
+        'p',
+        'br',
+        'strong',
+        'em',
+        'u',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'ul',
+        'ol',
+        'li',
+        'a',
+        'blockquote',
+        'code',
+        'pre',
+        'img',
+        'table',
+        'thead',
+        'tbody',
+        'tr',
+        'th',
+        'td',
+      ],
       ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class'],
       ALLOW_DATA_ATTR: false,
     });
@@ -26,7 +55,15 @@ export class PostService {
       ...createPostDto,
       content: this.sanitizeContent(createPostDto.content || ''),
     };
-    const post = await this.postRepo.create(sanitizedDto);
+    const post = this.postRepo.create(sanitizedDto);
+
+    if (createPostDto.attachmentIds && createPostDto.attachmentIds.length > 0) {
+      const attachments = await this.attachmentRepo.findBy({
+        id: In(createPostDto.attachmentIds),
+      });
+      post.attachments = attachments;
+    }
+
     return await this.postRepo.save(post);
   }
 

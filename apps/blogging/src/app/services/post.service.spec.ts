@@ -1,5 +1,9 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { CreateBlogPostDto, UpdateBlogPostDto, BlogPostQueryDto } from '@optimistic-tanuki/models';
+import {
+  CreateBlogPostDto,
+  UpdateBlogPostDto,
+  BlogPostQueryDto,
+} from '@optimistic-tanuki/models';
 import { Post } from '../entities';
 import { PostService } from './post.service';
 import { Repository } from 'typeorm';
@@ -35,6 +39,7 @@ describe('PostService', () => {
       findOne: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      createQueryBuilder: jest.fn(),
     };
     service = new PostService(postRepo as Repository<Post>);
   });
@@ -78,13 +83,17 @@ describe('PostService', () => {
 
       const result = await service.create(dto);
 
-      expect(postRepo.create).toHaveBeenCalledWith(expect.objectContaining({
-        ...dto,
-        isDraft: false,
-      }));
-      expect(postRepo.create).toHaveBeenCalledWith(expect.objectContaining({
-        publishedAt: expect.any(Date),
-      }));
+      expect(postRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ...dto,
+          isDraft: false,
+        })
+      );
+      expect(postRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          publishedAt: expect.any(Date),
+        })
+      );
       expect(result).toEqual(createdPost);
     });
 
@@ -173,7 +182,7 @@ describe('PostService', () => {
       const startDate = '2024-01-01';
       const endDate = '2024-12-31';
 
-      const query: BlogPostQueryDto = { 
+      const query: BlogPostQueryDto = {
         createdAt: [startDate, endDate] as unknown as [Date, Date],
         updatedAt: [startDate, endDate] as unknown as [Date, Date],
       };
@@ -224,7 +233,9 @@ describe('PostService', () => {
 
       const result = await service.findOne('post-1');
 
-      expect(postRepo.findOne).toHaveBeenCalledWith({ where: { id: 'post-1' } });
+      expect(postRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'post-1' },
+      });
       expect(result).toEqual(mockPost);
     });
 
@@ -242,51 +253,81 @@ describe('PostService', () => {
       postRepo.findOne.mockResolvedValue(mockPost);
       postRepo.update.mockResolvedValue(undefined);
 
-      const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Updated Title' };
+      const updateDto: UpdateBlogPostDto = {
+        id: 'post-1',
+        title: 'Updated Title',
+      };
       await service.update('post-1', updateDto, 'author-1');
 
-      expect(postRepo.update).toHaveBeenCalledWith('post-1', expect.objectContaining({ title: 'Updated Title' }));
+      expect(postRepo.update).toHaveBeenCalledWith(
+        'post-1',
+        expect.objectContaining({ title: 'Updated Title' })
+      );
     });
 
     it('should throw ForbiddenException if requestingAuthorId does not match', async () => {
       postRepo.findOne.mockResolvedValue(mockPost);
 
-      const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Updated Title' };
+      const updateDto: UpdateBlogPostDto = {
+        id: 'post-1',
+        title: 'Updated Title',
+      };
 
-      await expect(service.update('post-1', updateDto, 'different-author')).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.update('post-1', updateDto, 'different-author')
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if post does not exist', async () => {
       postRepo.findOne.mockResolvedValue(null);
 
-      const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Updated Title' };
+      const updateDto: UpdateBlogPostDto = {
+        id: 'post-1',
+        title: 'Updated Title',
+      };
 
-      await expect(service.update('post-1', updateDto, 'author-1')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.update('post-1', updateDto, 'author-1')
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should set publishedAt when publishing a draft', async () => {
-      postRepo.findOne.mockResolvedValueOnce(mockPost).mockResolvedValueOnce({ ...mockPost, isDraft: false, publishedAt: new Date() });
+      postRepo.findOne
+        .mockResolvedValueOnce(mockPost)
+        .mockResolvedValueOnce({
+          ...mockPost,
+          isDraft: false,
+          publishedAt: new Date(),
+        });
       postRepo.update.mockResolvedValue(undefined);
 
       const updateDto: UpdateBlogPostDto = { id: 'post-1', isDraft: false };
       await service.update('post-1', updateDto, 'author-1');
 
-      expect(postRepo.update).toHaveBeenCalledWith('post-1', expect.objectContaining({
-        isDraft: false,
-        publishedAt: expect.any(Date),
-      }));
+      expect(postRepo.update).toHaveBeenCalledWith(
+        'post-1',
+        expect.objectContaining({
+          isDraft: false,
+          publishedAt: expect.any(Date),
+        })
+      );
     });
 
     it('should not update publishedAt if already published', async () => {
-      postRepo.findOne.mockResolvedValueOnce(mockPublishedPost).mockResolvedValueOnce(mockPublishedPost);
+      postRepo.findOne
+        .mockResolvedValueOnce(mockPublishedPost)
+        .mockResolvedValueOnce(mockPublishedPost);
       postRepo.update.mockResolvedValue(undefined);
 
       const updateDto: UpdateBlogPostDto = { id: 'post-2', title: 'New Title' };
       await service.update('post-2', updateDto, 'author-1');
 
-      expect(postRepo.update).toHaveBeenCalledWith('post-2', expect.not.objectContaining({
-        publishedAt: expect.any(Date),
-      }));
+      expect(postRepo.update).toHaveBeenCalledWith(
+        'post-2',
+        expect.not.objectContaining({
+          publishedAt: expect.any(Date),
+        })
+      );
     });
   });
 
@@ -295,37 +336,63 @@ describe('PostService', () => {
       postRepo.findOne.mockResolvedValue(mockPost);
       postRepo.update.mockResolvedValue(undefined);
 
-      const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Admin Updated Title' };
+      const updateDto: UpdateBlogPostDto = {
+        id: 'post-1',
+        title: 'Admin Updated Title',
+      };
       await service.adminUpdate('post-1', updateDto);
 
-      expect(postRepo.update).toHaveBeenCalledWith('post-1', expect.objectContaining({ title: 'Admin Updated Title' }));
+      expect(postRepo.update).toHaveBeenCalledWith(
+        'post-1',
+        expect.objectContaining({ title: 'Admin Updated Title' })
+      );
     });
 
     it('should throw NotFoundException if post does not exist', async () => {
       postRepo.findOne.mockResolvedValue(null);
 
-      const updateDto: UpdateBlogPostDto = { id: 'post-1', title: 'Updated Title' };
+      const updateDto: UpdateBlogPostDto = {
+        id: 'post-1',
+        title: 'Updated Title',
+      };
 
-      await expect(service.adminUpdate('post-1', updateDto)).rejects.toThrow(NotFoundException);
+      await expect(service.adminUpdate('post-1', updateDto)).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should set publishedAt when publishing a draft via admin', async () => {
-      postRepo.findOne.mockResolvedValueOnce(mockPost).mockResolvedValueOnce({ ...mockPost, isDraft: false, publishedAt: new Date() });
+      postRepo.findOne
+        .mockResolvedValueOnce(mockPost)
+        .mockResolvedValueOnce({
+          ...mockPost,
+          isDraft: false,
+          publishedAt: new Date(),
+        });
       postRepo.update.mockResolvedValue(undefined);
 
       const updateDto: UpdateBlogPostDto = { id: 'post-1', isDraft: false };
       await service.adminUpdate('post-1', updateDto);
 
-      expect(postRepo.update).toHaveBeenCalledWith('post-1', expect.objectContaining({
-        isDraft: false,
-        publishedAt: expect.any(Date),
-      }));
+      expect(postRepo.update).toHaveBeenCalledWith(
+        'post-1',
+        expect.objectContaining({
+          isDraft: false,
+          publishedAt: expect.any(Date),
+        })
+      );
     });
   });
 
   describe('publish', () => {
     it('should publish a draft post', async () => {
-      postRepo.findOne.mockResolvedValueOnce(mockPost).mockResolvedValueOnce({ ...mockPost, isDraft: false, publishedAt: new Date() });
+      postRepo.findOne
+        .mockResolvedValueOnce(mockPost)
+        .mockResolvedValueOnce({
+          ...mockPost,
+          isDraft: false,
+          publishedAt: new Date(),
+        });
       postRepo.update.mockResolvedValue(undefined);
 
       const result = await service.publish('post-1', 'author-1');
@@ -340,13 +407,17 @@ describe('PostService', () => {
     it('should throw NotFoundException if post does not exist', async () => {
       postRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.publish('non-existent', 'author-1')).rejects.toThrow(NotFoundException);
+      await expect(service.publish('non-existent', 'author-1')).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should throw ForbiddenException if requestingAuthorId does not match', async () => {
       postRepo.findOne.mockResolvedValue(mockPost);
 
-      await expect(service.publish('post-1', 'different-author')).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.publish('post-1', 'different-author')
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should return post unchanged if already published', async () => {
@@ -366,6 +437,68 @@ describe('PostService', () => {
       await service.remove('post-1');
 
       expect(postRepo.delete).toHaveBeenCalledWith('post-1');
+    });
+  });
+
+  describe('searchPosts', () => {
+    it('should search posts by title and content', async () => {
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockPublishedPost]),
+      };
+
+      postRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      const result = await service.searchPosts('test');
+
+      expect(postRepo.createQueryBuilder).toHaveBeenCalledWith('post');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'post.isDraft = :isDraft',
+        { isDraft: false }
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        '(post.title ILIKE :term OR post.content ILIKE :term)',
+        { term: '%test%' }
+      );
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'post.publishedAt',
+        'DESC'
+      );
+      expect(result).toEqual([mockPublishedPost]);
+    });
+
+    it('should return empty array for empty search term', async () => {
+      const result = await service.searchPosts('');
+
+      expect(postRepo.createQueryBuilder).not.toHaveBeenCalled();
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array for whitespace-only search term', async () => {
+      const result = await service.searchPosts('   ');
+
+      expect(postRepo.createQueryBuilder).not.toHaveBeenCalled();
+      expect(result).toEqual([]);
+    });
+
+    it('should only search published posts', async () => {
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockPublishedPost]),
+      };
+
+      postRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      await service.searchPosts('test');
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'post.isDraft = :isDraft',
+        { isDraft: false }
+      );
     });
   });
 });

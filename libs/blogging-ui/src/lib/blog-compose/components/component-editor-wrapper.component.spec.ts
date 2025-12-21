@@ -1,13 +1,17 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Component, Input } from '@angular/core';
 
 import { ComponentEditorWrapperComponent } from './component-editor-wrapper.component';
-import { InjectedComponentInstance, InjectableComponent } from '../interfaces/component-injection.interface';
+import {
+  InjectedComponentInstance,
+  InjectableComponent,
+} from '../interfaces/component-injection.interface';
 
 // Simple mock component for testing
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'mock-test-component',
   template: '<div class="test-component">{{ title }}</div>',
   standalone: true,
@@ -30,8 +34,8 @@ describe('ComponentEditorWrapperComponent', () => {
     icon: 'test_icon',
     data: {
       title: 'Default Title',
-      content: 'Default Content'
-    }
+      content: 'Default Content',
+    },
   };
 
   const mockComponentInstance: InjectedComponentInstance = {
@@ -40,12 +44,12 @@ describe('ComponentEditorWrapperComponent', () => {
     componentRef: {
       instance: { title: 'Instance Title' },
       changeDetectorRef: { detectChanges: jest.fn() },
-      destroy: jest.fn()
+      destroy: jest.fn(),
     } as any,
     data: {
       title: 'Instance Title',
-      content: 'Instance Content'
-    }
+      content: 'Instance Content',
+    },
   };
 
   beforeEach(async () => {
@@ -54,7 +58,7 @@ describe('ComponentEditorWrapperComponent', () => {
         ComponentEditorWrapperComponent,
         FormsModule,
         NoopAnimationsModule,
-        MockTestComponent
+        MockTestComponent,
       ],
     }).compileComponents();
 
@@ -134,9 +138,9 @@ describe('ComponentEditorWrapperComponent', () => {
     component.componentData = { title: 'Original' };
     component.editingData = { title: 'Modified' };
     component.isEditing = true;
-    
+
     component.cancelQuickEdit();
-    
+
     expect(component.isEditing).toBe(false);
     expect(component.editingData['title']).toBe('Original');
   });
@@ -145,12 +149,12 @@ describe('ComponentEditorWrapperComponent', () => {
     const spy = jest.spyOn(component.propertiesChanged, 'emit');
     component.editingData = { title: 'New Title' };
     component.isEditing = true;
-    
+
     component.saveQuickEdit();
-    
+
     expect(spy).toHaveBeenCalledWith({
       instance: mockComponentInstance,
-      data: { title: 'New Title' }
+      data: { title: 'New Title' },
     });
     expect(component.isEditing).toBe(false);
   });
@@ -160,14 +164,17 @@ describe('ComponentEditorWrapperComponent', () => {
       stringValue: 'test',
       boolTrue: true,
       boolFalse: false,
-      longString: 'This is a very long string that should be truncated for display purposes'
+      longString:
+        'This is a very long string that should be truncated for display purposes',
     };
 
     expect(component.formatPropertyValue('stringValue')).toBe('test');
     expect(component.formatPropertyValue('boolTrue')).toBe('Yes');
     expect(component.formatPropertyValue('boolFalse')).toBe('No');
     expect(component.formatPropertyValue('nonExistent')).toBe('-');
-    expect(component.formatPropertyValue('longString').length).toBeLessThanOrEqual(33); // 30 chars + '...'
+    expect(
+      component.formatPropertyValue('longString').length
+    ).toBeLessThanOrEqual(33); // 30 chars + '...'
   });
 
   it('should check for visible properties', () => {

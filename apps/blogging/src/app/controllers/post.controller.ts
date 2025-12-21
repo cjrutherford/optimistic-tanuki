@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { BlogPostCommands } from '@optimistic-tanuki/constants';
-import { PostService } from '../services';
+import { PostService, RssService, SeoService } from '../services';
 import {
   CreateBlogPostDto,
   BlogPostDto,
@@ -11,7 +11,11 @@ import {
 
 @Controller('post')
 export class PostController {
-  constructor(private readonly postService: PostService) {
+  constructor(
+    private readonly postService: PostService,
+    private readonly rssService: RssService,
+    private readonly seoService: SeoService
+  ) {
     console.log('PostController initialized');
   }
 
@@ -72,5 +76,48 @@ export class PostController {
     @Payload() data: { id: string; requestingAuthorId: string }
   ): Promise<BlogPostDto> {
     return await this.postService.publish(data.id, data.requestingAuthorId);
+  }
+
+  @MessagePattern({ cmd: BlogPostCommands.GENERATE_RSS })
+  async generateRssFeed(
+    @Payload()
+    data: {
+      blogInfo: {
+        title: string;
+        description: string;
+        link: string;
+        feedUrl: string;
+        author?: {
+          name: string;
+          email: string;
+          link?: string;
+        };
+      };
+    }
+  ): Promise<string> {
+    const posts = await this.postService.findPublished();
+    return this.rssService.generateRssFeed(posts, data.blogInfo);
+  }
+
+  @MessagePattern({ cmd: BlogPostCommands.GENERATE_SEO })
+  async generateSeoMetadata(
+    @Payload() data: { postId: string; baseUrl: string; defaultImage?: string }
+  ): Promise<any> {
+    const post = await this.postService.findOne(data.postId);
+    if (!post) {
+      throw new Error('Post not found');
+    }
+    return this.seoService.generatePostMetadata(
+      post,
+      data.baseUrl,
+      data.defaultImage
+    );
+  }
+
+  @MessagePattern({ cmd: BlogPostCommands.SEARCH })
+  async searchPosts(
+    @Payload() query: { searchTerm: string }
+  ): Promise<BlogPostDto[]> {
+    return await this.postService.searchPosts(query.searchTerm);
   }
 }

@@ -4,13 +4,19 @@ import { MatIconModule } from '@angular/material/icon';
 import { Component, Input } from '@angular/core';
 
 import { ComponentEditorWrapperComponent } from './component-editor-wrapper.component';
-import { InjectedComponentInstance, InjectableComponent } from '../interfaces/component-injection.interface';
+import {
+  InjectedComponentInstance,
+  InjectableComponent,
+} from '../interfaces/component-injection.interface';
 
 // Sample component for demonstration
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'sample-injected-component',
   template: `
-    <div style="padding: 1rem; background: #f0f7ff; border-radius: 8px; border-left: 4px solid #007acc;">
+    <div
+      style="padding: 1rem; background: #f0f7ff; border-radius: 8px; border-left: 4px solid #007acc;"
+    >
       <h4 style="margin: 0 0 0.5rem 0; color: #007acc;">{{ title }}</h4>
       <p style="margin: 0; color: #333;">{{ content }}</p>
     </div>
@@ -31,8 +37,8 @@ const mockComponentDef: InjectableComponent = {
   icon: 'star',
   data: {
     title: 'Sample Title',
-    content: 'This is sample content for the component.'
-  }
+    content: 'This is sample content for the component.',
+  },
 };
 
 const mockComponentInstance: InjectedComponentInstance = {
@@ -40,13 +46,19 @@ const mockComponentInstance: InjectedComponentInstance = {
   componentDef: mockComponentDef,
   componentRef: {
     instance: { title: 'Instance Title' },
-    changeDetectorRef: { detectChanges: () => {} },
-    destroy: () => {}
+    changeDetectorRef: {
+      detectChanges: () => {
+        // Mock implementation
+      },
+    },
+    destroy: () => {
+      // Mock implementation
+    },
   } as any,
   data: {
     title: 'Sample Title',
-    content: 'This is sample content for the component.'
-  }
+    content: 'This is sample content for the component.',
+  },
 };
 
 const meta: Meta<ComponentEditorWrapperComponent> = {
@@ -119,13 +131,15 @@ export const WithDifferentData: Story = {
       ...mockComponentInstance,
       data: {
         title: 'Custom Title',
-        content: 'This component has custom data values that differ from defaults.',
+        content:
+          'This component has custom data values that differ from defaults.',
       },
     },
     componentDef: mockComponentDef,
     componentData: {
       title: 'Custom Title',
-      content: 'This component has custom data values that differ from defaults.',
+      content:
+        'This component has custom data values that differ from defaults.',
     },
     isSelected: false,
     isResizable: false,

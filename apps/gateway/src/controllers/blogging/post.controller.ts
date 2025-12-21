@@ -9,8 +9,11 @@ import {
   Param,
   Patch,
   Post,
+  Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ClientProxy } from '@nestjs/microservices';
 import { BlogPostCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
@@ -141,7 +144,7 @@ export class PostController {
    * Publish a draft post
    */
   @Post('/:id/publish')
-  @RequirePermissions('blog.post.update')
+  @RequirePermissions('blog.post.publish')
   async publishPost(@Param('id') id: string, @User() user: UserDetails) {
     try {
       const requestingAuthorId = this.getProfileId(user);
@@ -173,8 +176,11 @@ export class PostController {
     }
   }
 
+  /**
+   * Get a single post by ID (public for published, protected for drafts)
+   */
   @Get('/:id')
-  // @RequirePermissions('blog.post.read', 'public')
+  @Public()
   async getPost(@Param('id') id: string) {
     try {
       const post = await firstValueFrom(
@@ -182,6 +188,11 @@ export class PostController {
       );
       if (!post) {
         this.l.error(`Post ${id} not found`);
+        throw new HttpException('Post not found', 404);
+      }
+      // Only return published posts to public
+      // Drafts will be handled by the /drafts/:authorId endpoint
+      if (post.isDraft) {
         throw new HttpException('Post not found', 404);
       }
       this.l.log(`Post ${id} retrieved successfully`);
@@ -248,6 +259,96 @@ export class PostController {
       this.l.error(`Error deleting post ${id}`, error);
       throw new HttpException(
         'Failed to delete post: [' + error.message + ']',
+        500
+      );
+    }
+  }
+
+  /**
+   * Generate RSS feed for all published posts
+   */
+  @Get('/rss/feed.xml')
+  @Public()
+  async getRssFeed(@Res() res: Response, @Query('baseUrl') baseUrl?: string) {
+    try {
+      const defaultBaseUrl = baseUrl || 'https://blog.optimistic-tanuki.com';
+      const blogInfo = {
+        title: 'Optimistic Tanuki Blog',
+        description: 'A collection of thoughts and tutorials',
+        link: defaultBaseUrl,
+        feedUrl: `${defaultBaseUrl}/post/rss/feed.xml`,
+        author: {
+          name: 'Optimistic Tanuki Team',
+          email: 'blog@optimistic-tanuki.com',
+        },
+      };
+
+      const rssXml = await firstValueFrom(
+        this.postService.send(
+          { cmd: BlogPostCommands.GENERATE_RSS },
+          { blogInfo }
+        )
+      );
+
+      res.set('Content-Type', 'application/rss+xml');
+      res.send(rssXml);
+    } catch (error) {
+      this.l.error('Error generating RSS feed', error);
+      throw new HttpException(
+        'Failed to generate RSS feed: [' + error.message + ']',
+        500
+      );
+    }
+  }
+
+  /**
+   * Search posts by title or content
+   */
+  @Get('/search')
+  @Public()
+  async searchPosts(@Query('q') searchTerm: string) {
+    try {
+      if (!searchTerm || searchTerm.trim().length === 0) {
+        return [];
+      }
+
+      const posts = await firstValueFrom(
+        this.postService.send({ cmd: BlogPostCommands.SEARCH }, { searchTerm })
+      );
+      this.l.log(`Search completed for term: ${searchTerm}`);
+      return posts;
+    } catch (error) {
+      this.l.error('Error searching posts', error);
+      throw new HttpException(
+        'Failed to search posts: [' + error.message + ']',
+        500
+      );
+    }
+  }
+
+  /**
+   * Get SEO metadata for a post
+   */
+  @Get('/:id/seo')
+  @Public()
+  async getPostSeoMetadata(
+    @Param('id') id: string,
+    @Query('baseUrl') baseUrl?: string
+  ) {
+    try {
+      const defaultBaseUrl = baseUrl || 'https://blog.optimistic-tanuki.com';
+      const metadata = await firstValueFrom(
+        this.postService.send(
+          { cmd: BlogPostCommands.GENERATE_SEO },
+          { postId: id, baseUrl: defaultBaseUrl }
+        )
+      );
+      this.l.log(`SEO metadata generated for post ${id}`);
+      return metadata;
+    } catch (error) {
+      this.l.error(`Error generating SEO metadata for post ${id}`, error);
+      throw new HttpException(
+        'Failed to generate SEO metadata: [' + error.message + ']',
         500
       );
     }
