@@ -1,10 +1,8 @@
 /**
  * Storybook Preview Configuration for Project UI
  * 
- * Note: AG Grid styles are NOT imported here due to webpack font loading issues.
- * AG Grid tables will render without styling in Storybook, but the component
- * structure and behavior can still be verified. For styled previews, run the
- * actual application.
+ * Note: AG Grid styles are loaded via CDN in preview-head.html to avoid
+ * webpack font loading issues with base64-encoded fonts in the CSS.
  */
 
 // You can add global decorators, parameters, or mocks here as needed.
