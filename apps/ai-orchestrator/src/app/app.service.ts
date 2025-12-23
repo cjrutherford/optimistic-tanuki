@@ -179,8 +179,12 @@ export class AppService {
                 
 Your previous conversation summary is: '${conversationSummary}'
 
+CURRENT USER INFORMATION:
+- User Profile ID: ${profile.id}
+- User Name: ${profile.profileName}
+- When tools require a 'userId' or 'profileId' parameter, use: ${profile.id}
+
 You have access to tools that can help you complete tasks. Use them when appropriate.
-If you are asked to create something that requires profile information, the profileId will be automatically provided.
 Simply respond naturally to the user, and call tools when needed to accomplish their requests.`,
             },
             {
