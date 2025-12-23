@@ -114,7 +114,7 @@ describe('Tool Formatter', () => {
       const result = transformMcpToolToOpenAI(mcpTool, 'user-123');
 
       expect(result.function.parameters.properties.userId.description).toBe(
-        'The ID of the user creating the project. Use the current user\'s profile ID: user-123'
+        'The ID of the user creating the project. ALWAYS use the current user\'s profile ID: user-123'
       );
     });
 
@@ -136,7 +136,7 @@ describe('Tool Formatter', () => {
       const result = transformMcpToolToOpenAI(mcpTool, 'user-456');
 
       expect(result.function.parameters.properties.members.description).toBe(
-        'Array of member IDs to add to the project. For now, include only the current user\'s profile ID: [user-456]'
+        'Array of member IDs to add to the project. ALWAYS include the current user\'s profile ID: [user-456]'
       );
     });
 
@@ -163,6 +163,64 @@ describe('Tool Formatter', () => {
 
       expect(result.function.parameters.properties.userId.description).toContain('user-789');
       expect(result.function.parameters.properties.members.description).toContain('[user-789]');
+    });
+
+    it('should enhance projectId parameter with list_projects instruction', () => {
+      const mcpTool: McpTool = {
+        name: 'create_task',
+        description: 'Create a new task',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            projectId: {
+              type: 'string',
+              description: 'The ID of the project',
+            },
+          },
+        },
+      };
+
+      const result = transformMcpToolToOpenAI(mcpTool, 'user-123');
+
+      expect(result.function.parameters.properties.projectId.description).toContain('list_projects');
+      expect(result.function.parameters.properties.projectId.description).toContain('user-123');
+    });
+
+    it('should enhance createdBy parameter with user profile ID', () => {
+      const mcpTool: McpTool = {
+        name: 'create_task',
+        description: 'Create a new task',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            createdBy: {
+              type: 'string',
+              description: 'User who created the task',
+            },
+          },
+        },
+      };
+
+      const result = transformMcpToolToOpenAI(mcpTool, 'user-456');
+
+      expect(result.function.parameters.properties.createdBy.description).toContain('ALWAYS');
+      expect(result.function.parameters.properties.createdBy.description).toContain('user-456');
+    });
+
+    it('should enhance tool description for project-dependent tools', () => {
+      const mcpTool: McpTool = {
+        name: 'create_task',
+        description: 'Create a new task',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      };
+
+      const result = transformMcpToolToOpenAI(mcpTool, 'user-123');
+
+      expect(result.function.description).toContain('list_projects');
+      expect(result.function.description).toContain('NOTE:');
     });
   });
 
