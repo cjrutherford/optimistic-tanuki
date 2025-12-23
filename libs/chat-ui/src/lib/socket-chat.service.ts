@@ -9,18 +9,18 @@ import { Inject, Injectable } from '@angular/core';
  * such as the host URL and namespace.
  * They can be provided in the app module or any other module
  * to customize the socket connection settings.
- * 
+ *
  * SOCKET_HOST: The base URL for the socket server.
  * SOCKET_NAMESPACE: The namespace for the socket connection.
  * SOCKET_IO_INSTANCE: The instance of the socket.io client library.
- * 
+ *
  * These tokens should be set by YOU when providing the service in your application.
  * For example:
  * ```typescript
  * providers: [
  *   {
  *     provide: SOCKET_HOST,
- *     useValue: 'http://your-socket-server.com'  
+ *     useValue: 'http://your-socket-server.com'
  *  },{
  *     provide: SOCKET_NAMESPACE,
  *    useValue: 'your-namespace'
@@ -37,7 +37,7 @@ export const SOCKET_IO_INSTANCE = 'SOCKET_IO_INSTANCE';
  * Service for handling chat functionality via WebSockets.
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SocketChatService {
   private socket: Socket;
@@ -53,7 +53,9 @@ export class SocketChatService {
     @Inject(SOCKET_NAMESPACE) private readonly namespace = 'chat',
     @Inject(SOCKET_IO_INSTANCE) private readonly ioInstance: typeof io
   ) {
-    this.socket = this.ioInstance(`${this.hostUrl}/${this.namespace}`, { autoConnect: true });
+    this.socket = this.ioInstance(`${this.hostUrl}/${this.namespace}`, {
+      autoConnect: true,
+    });
     this.socket.on('connect', () => {
       console.log(`Socket connected to ${this.hostUrl}/${this.namespace}`);
     });
@@ -107,6 +109,14 @@ export class SocketChatService {
    */
   onConversations(callback: (data: ChatConversation[]) => void): void {
     this.socket.on('conversations', callback);
+  }
+
+  sendInit(profileId: string, personaId: string, appId: string) {
+    this.socket.emit('new_persona_chat', {
+      profileId,
+      personaId,
+      appId,
+    });
   }
 
   /**

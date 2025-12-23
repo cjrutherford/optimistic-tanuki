@@ -4,13 +4,11 @@ import DOMPurify from 'isomorphic-dompurify';
 
 @Injectable()
 export class SanitizationService {
-  private purify: DOMPurify.DOMPurify;
+  private purify: typeof DOMPurify;
 
   constructor() {
     // Initialize DOMPurify with JSDOM for server-side usage
-    const window = new JSDOM('').window;
-    const windowWithDomPurify = window as unknown as Window & typeof globalThis;
-    this.purify = DOMPurify.default(windowWithDomPurify);
+    this.purify = DOMPurify;
     console.log('SanitizationService initialized');
   }
 

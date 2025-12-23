@@ -226,7 +226,6 @@ export class ChatComponent implements OnInit, OnDestroy {
         personaConversation.id
       );
     } else {
-      // TODO: Create new conversation with the persona
       this.messageService.addMessage({
         content: 'Creating new conversation with AI persona...',
         type: 'info',
@@ -236,12 +235,14 @@ export class ChatComponent implements OnInit, OnDestroy {
         personaId
       );
 
-      this.socketChat?.sendMessage({
-        content: 'Creating new AI assistant conversation...',
-        type: 'system',
-        senderId: profile.id,
-        recipientId: [personaId],
-      });
+      this.socketChat?.sendInit(profile.id, personaId, 'forgeofwill');
+
+      // this.socketChat?.sendMessage({
+      //   content: 'Creating new AI assistant conversation...',
+      //   type: 'system',
+      //   senderId: profile.id,
+      //   recipientId: [personaId],
+      // });
     }
   }
 

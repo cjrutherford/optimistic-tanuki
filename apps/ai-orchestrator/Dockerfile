@@ -4,7 +4,7 @@ FROM docker.io/node:lts-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
 COPY dist/apps/ai-orchestrator/package*.json ./
-RUN npm install --omit=dev --legacy-peer-deps
+RUN npm install --omit=dev --legacy-peer-deps && npm i --save --legacy-peer-deps @nestjs/axios
 
 # Production image, copy all the files and run nest
 FROM docker.io/node:lts-alpine AS runner

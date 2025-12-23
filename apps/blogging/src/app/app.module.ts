@@ -18,6 +18,7 @@ import {
   SeoService,
   SitemapService,
   SpamProtectionService,
+  SanitizationService,
 } from './services';
 import config from './config';
 import loadDatabase from './loadDatabase';
@@ -51,6 +52,7 @@ import { Contact, Event, Post, Blog } from './entities';
     SeoService,
     SitemapService,
     SpamProtectionService,
+    SanitizationService,
     {
       provide: getRepositoryToken(Post),
       useFactory: (ds: DataSource) => ds.getRepository(Post),

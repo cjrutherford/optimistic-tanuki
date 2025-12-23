@@ -12,14 +12,17 @@ import {
   ServiceTokens,
   PersonaTelosCommands,
   AIOrchestrationCommands,
+  ProfileCommands,
 } from '@optimistic-tanuki/constants';
 import {
   ChatConversation,
   ChatMessage,
   PersonaTelosDto,
+  ProfileDto,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
+import { th } from 'zod/v4/locales';
 
 @WebSocketGateway(Number(process.env.SOCKET_PORT) || 3300, {
   namespace: 'chat',
@@ -38,8 +41,100 @@ export class ChatGateway {
     @Inject(ServiceTokens.AI_ORCHESTRATION_SERVICE)
     private readonly aiOrchestrationClient: ClientProxy,
     @Inject(ServiceTokens.TELOS_DOCS_SERVICE)
-    private readonly telosDocsClient: ClientProxy
+    private readonly telosDocsClient: ClientProxy,
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profileClient: ClientProxy
   ) {}
+
+  @SubscribeMessage('new_persona_chat')
+  async handleNewPersonaChat(
+    @MessageBody()
+    payload: { profileId: string; personaId: string; appId: string },
+    @ConnectedSocket() client: Socket
+  ): Promise<void> {
+    const profile: ProfileDto = await firstValueFrom(
+      this.profileClient.send(
+        { cmd: ProfileCommands.Get },
+        { id: payload.profileId }
+      )
+    );
+    this.l.log('New Persona Chat Requested');
+    const senderId = payload.profileId;
+    // this.updateConnectedSockets(senderId, client, 'connect');
+    this.l.log(
+      `Creating new chat for profileId: ${payload.profileId}, personaId: ${payload.personaId}`
+    );
+    const persona: PersonaTelosDto = await firstValueFrom(
+      this.telosDocsClient.send(
+        { cmd: PersonaTelosCommands.FIND_ONE },
+        { id: payload.personaId }
+      )
+    );
+    if (!persona) {
+      this.l.error(
+        `Persona with ID ${payload.personaId} not found. Cannot create chat.`
+      );
+      return;
+    }
+    // const newConversation: ChatConversation = {
+    //   id: '',
+    //   participants: [payload.profileId, payload.personaId],
+    //   // title: `Chat with ${persona.name}`,?
+    //   messages: [
+    //     {
+    //       id: '',
+    //       conversationId: '',
+    //       senderId: persona.id,
+    //       senderName: persona.name,
+    //       recipientName: [profile.profileName],
+    //       recipientId: [payload.profileId],
+    //       type: 'system',
+    //       role: 'system',
+    //       content: 'The user is new here. Say hello! introduce yourself.',
+    //       timestamp: new Date(),
+    //     },
+    //   ],
+    //   metadata: {
+    //     appId: payload.appId,
+    //   },
+    //   privacy: 'public',
+    //   createdAt: new Date(),
+    //   updatedAt: new Date(),
+    //   addMessage: function (message: ChatMessage): void {
+    //     this.messages.push(message);
+    //     this.updatedAt = new Date();
+    //   },
+    // };
+    // const createdConversation: ChatConversation = await firstValueFrom(
+    //   this.chatCollectorClient.send(
+    //     { cmd: ChatCommands.POST_MESSAGE },
+    //     newConversation
+    //   )
+    // );
+
+    const orchestratorValue = await firstValueFrom(
+      this.aiOrchestrationClient.send(
+        { cmd: AIOrchestrationCommands.PROFILE_INITIALIZE },
+        {
+          profileId: payload.profileId,
+          appId: payload.appId,
+          personaId: payload.personaId,
+        }
+      )
+    );
+    this.l.debug(`orchestratorValue: ${JSON.stringify(orchestratorValue)}`);
+    // this.l.log(
+    //   `New conversation created with ID: ${createdConversation.id} for profileId: ${payload.profileId}`
+    // );
+    // Notify the client about the new conversation
+    const conversations = await firstValueFrom(
+      this.chatCollectorClient.send(
+        { cmd: ChatCommands.GET_CONVERSATIONS },
+        { profileId: payload.profileId }
+      )
+    );
+    client.emit('conversations', conversations || []);
+  }
 
   @SubscribeMessage('message')
   async handleMessage(
@@ -83,6 +178,13 @@ export class ChatGateway {
         )
       );
       aiPayload.messages.push(payload);
+      this.l.debug(
+        "Current ai payload: aiPayload='" +
+          JSON.stringify(aiPayload) +
+          "' new payload='" +
+          payload +
+          "'"
+      );
       await firstValueFrom(
         this.aiOrchestrationClient.send(
           { cmd: AIOrchestrationCommands.CONVERSATION_UPDATE },

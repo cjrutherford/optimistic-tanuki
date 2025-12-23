@@ -22,3 +22,5 @@ dependencies:
     port: 3008
 ai-enabled-apps:
   forgeofwill: The Forge of Will is a personal project management platform to allow users to plan, track, collaborate, and achieve their goals effectively. It combines task management, goal setting, and collaboration tools to help individuals and teams stay organized and productive.
+toolSources:
+  gateway: http://gateway:3000/api/mcp

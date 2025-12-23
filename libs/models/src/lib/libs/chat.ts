@@ -7,6 +7,7 @@ export class ChatMessage {
   recipientName: string[];
   content: string;
   timestamp: Date;
+  role: 'assistant' | 'user' | 'tool' | 'system';
   type: 'chat' | 'info' | 'warning' | 'system';
 }
 

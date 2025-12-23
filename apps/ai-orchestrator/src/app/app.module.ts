@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { loadConfig } from './config';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { LoggerModule } from '@optimistic-tanuki/logger';
-import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
-import { RateLimitGuard } from './guards/rate-limit.guard';
+import { ToolsService } from './tools.service';
+// import { ThrottlerModule } from '@nestjs/throttler';
+// import { APP_GUARD } from '@nestjs/core';
+// import { RateLimitGuard } from './guards/rate-limit.guard';
 
 @Module({
   imports: [
@@ -16,20 +18,22 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     ConfigModule.forRoot({
       load: [loadConfig],
     }),
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 10,
-      },
-    ]),
+    HttpModule,
+    // ThrottlerModule.forRoot([
+    //   {
+    //     ttl: 60000,
+    //     limit: 10,
+    //   },
+    // ]),
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: RateLimitGuard,
-    },
+    ToolsService,
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: RateLimitGuard,
+    // },
     {
       provide: 'ai-enabled-apps',
       useFactory: (config: ConfigService) => {

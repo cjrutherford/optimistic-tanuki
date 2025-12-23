@@ -3,26 +3,29 @@ import { HttpModule } from '@nestjs/axios';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { LoggerModule } from '@optimistic-tanuki/logger';
 import loadConfig from './config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      load: [loadConfig]
+      load: [loadConfig],
     }),
     HttpModule.register({
       timeout: 5000,
       maxRedirects: 5,
     }),
+    LoggerModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
       provide: 'API_BASE_URL',
-      useFactory: (config: ConfigService) => `http://${config.get('ollama.apiUrl')}:${config.get('ollama.apiPort')}`,
-      inject: [ConfigService]
-    }
+      useFactory: (config: ConfigService) =>
+        `http://${config.get('ollama.apiUrl')}:${config.get('ollama.apiPort')}`,
+      inject: [ConfigService],
+    },
   ],
 })
 export class AppModule {}
