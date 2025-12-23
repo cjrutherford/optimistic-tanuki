@@ -164,7 +164,8 @@ export class AppService {
         );
         const toolsMeta = await this.toolsService.listTools().catch((e) => []);
         // Transform MCP tools to OpenAI format for Ollama's OpenAI-compatible API
-        const openAITools = transformMcpToolsToOpenAI(toolsMeta);
+        // Pass user profile ID to enhance tool parameter descriptions
+        const openAITools = transformMcpToolsToOpenAI(toolsMeta, profile.id);
         console.log('Transformed tools:', openAITools[0]);
 
         this.l.log(`Conversation summary: '${conversationSummary}'`);
