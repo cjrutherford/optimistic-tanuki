@@ -185,6 +185,13 @@ CURRENT USER INFORMATION:
 - User Name: ${profile.profileName}
 - When tools require a 'userId' or 'profileId' parameter, use: ${profile.id}
 
+TOOL USAGE GUIDELINES:
+- Use ONE tool at a time - you can only call a single tool per response
+- If a task requires multiple steps, call one tool, wait for its response, then call the next tool
+- Some tools depend on data from other tools - use the response from one tool to inform the next tool call
+- After completing all necessary tool calls, ALWAYS provide a final natural language response to the user explaining what was accomplished
+- Your final response should summarize the actions taken and the results
+
 You have access to tools that can help you complete tasks. Use them when appropriate.
 Simply respond naturally to the user, and call tools when needed to accomplish their requests.`,
             },
@@ -244,8 +251,15 @@ Simply respond naturally to the user, and call tools when needed to accomplish t
 
           // Check if response has OpenAI-format tool_calls
           if (response.message.tool_calls && response.message.tool_calls.length > 0) {
-            // Handle OpenAI-format tool calls
-            const toolCall = response.message.tool_calls[0]; // Process first tool call
+            // Handle OpenAI-format tool calls - only process ONE tool at a time
+            if (response.message.tool_calls.length > 1) {
+              this.l.warn(
+                `LLM returned ${response.message.tool_calls.length} tool calls, but only processing the first one. ` +
+                `The LLM should call one tool at a time.`
+              );
+            }
+            
+            const toolCall = response.message.tool_calls[0]; // Process first tool call only
             const functionCall = toolCall.function;
             const toolName = functionCall.name;
             let toolArgs = {};
@@ -274,11 +288,11 @@ Simply respond naturally to the user, and call tools when needed to accomplish t
             );
             this.l.log(`Tool response: '${JSON.stringify(toolResponse)}'`);
             
-            // Add the assistant's tool call message
+            // Add the assistant's tool call message (only include the one tool we're processing)
             personaPrompt.messages.push({
               role: 'assistant',
               content: response.message.content || '',
-              tool_calls: response.message.tool_calls,
+              tool_calls: [toolCall], // Only include the first tool call
             } as any);
             
             // Add the tool response
@@ -351,8 +365,8 @@ Simply respond naturally to the user, and call tools when needed to accomplish t
           } else if (!parsedResponse && content && content.trim()) {
             // LLM didn't follow the strict tool JSON protocol but returned human-readable text.
             // Treat this as the final response and return it to the client.
-            this.l.warn(
-              'LLM returned non-JSON content; treating as final response.'
+            this.l.log(
+              'LLM provided final response without tool call - sending to user.'
             );
             stopConditionMet = true;
             const newChatMessage: Partial<ChatMessage> = {
