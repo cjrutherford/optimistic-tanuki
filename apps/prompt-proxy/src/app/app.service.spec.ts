@@ -3,6 +3,7 @@ import { AppService } from './app.service';
 import { HttpService } from '@nestjs/axios';
 import { of, throwError } from 'rxjs';
 import { RpcException } from '@nestjs/microservices';
+import { Logger } from '@nestjs/common';
 
 describe('AppService', () => {
   let service: AppService;
@@ -20,6 +21,14 @@ describe('AppService', () => {
           provide: HttpService,
           useValue: {
             post: jest.fn(),
+          },
+        },
+        {
+          provide: Logger,
+          useValue: {
+            debug: jest.fn(),
+            log: jest.fn(),
+            error: jest.fn(),
           },
         },
       ],
