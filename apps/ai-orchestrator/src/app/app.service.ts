@@ -17,6 +17,7 @@ import {
 } from '@optimistic-tanuki/models';
 import { ToolsService } from './tools.service';
 import { generatePersonaSystemMessage } from '@optimistic-tanuki/prompt-generation';
+import { transformMcpToolsToOpenAI } from './tool-formatter';
 
 @Injectable()
 export class AppService {
@@ -162,54 +163,25 @@ export class AppService {
           systemPrompt
         );
         const toolsMeta = await this.toolsService.listTools().catch((e) => []);
-        console.log(toolsMeta[0]);
+        // Transform MCP tools to OpenAI format for Ollama's OpenAI-compatible API
+        const openAITools = transformMcpToolsToOpenAI(toolsMeta);
+        console.log('Transformed tools:', openAITools[0]);
 
         this.l.log(`Conversation summary: '${conversationSummary}'`);
         const personaPrompt: GeneratePrompt = {
           model: 'llama3.2:3b',
           stream: false,
-          tools: toolsMeta,
+          tools: openAITools,
           messages: [
             {
               role: 'system',
-              content: `TOOL PROTOCOL:
-                When you want to use a tool, respond with a JSON object in the following format:
-                {
-                  "tool": "tool_name",
-                  "args": {
-                    "param1": "value1",
-                    "param2": "value2"
-                  }
-                }
-                Only respond with this JSON object when you want to use a tool.
-                When you have completed your task and want to provide a final response, respond with:
-                {
-                  "stop": true,
-                  "response": "Your final response here."
-                }
-                Do not include any other text outside of the JSON object.
-                if you are asked to create something that requires profile information, make sure to use the profileId provided in the tool arguments.
+              content: `${systemPrompt}
+                
+Your previous conversation summary is: '${conversationSummary}'
 
-                IF THERE IS NO NEED TO CALL A TOOL, SIMPLY RESPOND TO THE USER.
-                `,
-            },
-            {
-              role: 'system',
-              content: `AvailableTools: ${toolsMeta
-                .map(
-                  (t) =>
-                    `${t.name}: ${t.description} : ${t.params ?? ''} : ${
-                      t.output ?? ''
-                    }`
-                )
-                .join('; ')}`,
-            },
-            {
-              role: 'system',
-              content: `
-                ${systemPrompt}
-                your previous conversation summary is: '${conversationSummary}'
-              `,
+You have access to tools that can help you complete tasks. Use them when appropriate.
+If you are asked to create something that requires profile information, the profileId will be automatically provided.
+Simply respond naturally to the user, and call tools when needed to accomplish their requests.`,
             },
             {
               role: 'user',
@@ -265,10 +237,62 @@ export class AppService {
             this.promptProxy.send({ cmd: PromptCommands.SEND }, personaPrompt)
           );
 
+          // Check if response has OpenAI-format tool_calls
+          if (response.message.tool_calls && response.message.tool_calls.length > 0) {
+            // Handle OpenAI-format tool calls
+            const toolCall = response.message.tool_calls[0]; // Process first tool call
+            const functionCall = toolCall.function;
+            const toolName = functionCall.name;
+            let toolArgs = {};
+            
+            try {
+              toolArgs = typeof functionCall.arguments === 'string' 
+                ? JSON.parse(functionCall.arguments)
+                : functionCall.arguments;
+            } catch (e) {
+              this.l.error(`Failed to parse tool arguments: ${functionCall.arguments}`);
+              toolArgs = {};
+            }
+
+            // Ensure the tool sees the user's profile id (not the persona id)
+            if (!toolArgs['profileId'] && !toolArgs['userId']) {
+              toolArgs['profileId'] = profile.id;
+            }
+
+            this.l.log(
+              `OpenAI tool call: '${toolName}' with args: '${JSON.stringify(toolArgs)}'`
+            );
+            
+            const toolResponse = await this.toolsService.callTool(
+              toolName,
+              toolArgs
+            );
+            this.l.log(`Tool response: '${JSON.stringify(toolResponse)}'`);
+            
+            // Add the assistant's tool call message
+            personaPrompt.messages.push({
+              role: 'assistant',
+              content: response.message.content || '',
+              tool_calls: response.message.tool_calls,
+            } as any);
+            
+            // Add the tool response
+            personaPrompt.messages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: typeof toolResponse === 'string'
+                ? toolResponse
+                : JSON.stringify(toolResponse),
+            } as any);
+            
+            continue; // Continue the loop to get the final response
+          }
+
           const content = response.message.content;
           const parsedResponse = tryParseJson(content);
 
           if (parsedResponse && parsedResponse.tool) {
+            // Legacy JSON-format tool calling (kept for backward compatibility)
             // Ensure the tool sees the user's profile id (not the persona id)
             parsedResponse.args = parsedResponse.args || {};
             if (!parsedResponse.args.profileId) {

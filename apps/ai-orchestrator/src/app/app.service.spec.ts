@@ -6,6 +6,7 @@ import { ServiceTokens, ProfileCommands, PersonaTelosCommands, PromptCommands, C
 import { of, throwError } from 'rxjs';
 import { ChatConversation, ChatMessage, PersonaTelosDto, ProfileDto } from '@optimistic-tanuki/models';
 import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
+import { ToolsService } from './tools.service';
 
 jest.mock('@optimistic-tanuki/prompt-generation');
 
@@ -15,6 +16,7 @@ describe('AppService', () => {
   let promptProxy: ClientProxy;
   let profileService: ClientProxy;
   let chatCollectorService: ClientProxy;
+  let toolsService: ToolsService;
   let logger: Logger;
 
   const mockAiEnabledApps = {
@@ -52,11 +54,18 @@ describe('AppService', () => {
         },
         {
           provide: Logger,
-          useValue: { log: jest.fn(), error: jest.fn() },
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
         },
         {
           provide: 'ai-enabled-apps',
           useValue: mockAiEnabledApps,
+        },
+        {
+          provide: ToolsService,
+          useValue: {
+            listTools: jest.fn().mockResolvedValue([]),
+            callTool: jest.fn().mockResolvedValue({}),
+          },
         },
       ],
     }).compile();
@@ -66,6 +75,7 @@ describe('AppService', () => {
     promptProxy = module.get<ClientProxy>(ServiceTokens.PROMPT_PROXY);
     profileService = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
     chatCollectorService = module.get<ClientProxy>(ServiceTokens.CHAT_COLLECTOR_SERVICE);
+    toolsService = module.get<ToolsService>(ToolsService);
     logger = module.get<Logger>(Logger);
   });
 
@@ -110,11 +120,11 @@ describe('AppService', () => {
     });
 
     it('should successfully process a new profile', async () => {
-      await service.processNewProfile(mockProfileId, 'test-app-id');
+      await service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id');
 
       expect(telosDocsService.send).toHaveBeenCalledWith(
         { cmd: PersonaTelosCommands.FIND },
-        { name: 'Alex Generalis' }
+        { id: 'persona-id' }
       );
       expect(profileService.send).toHaveBeenCalledWith(
         { cmd: ProfileCommands.Get },
@@ -127,19 +137,19 @@ describe('AppService', () => {
 
     it('should throw RpcException if persona not found', async () => {
       jest.spyOn(telosDocsService, 'send').mockReturnValue(of([]));
-      await expect(service.processNewProfile(mockProfileId, 'test-app-id')).rejects.toThrow(RpcException);
-      await expect(service.processNewProfile(mockProfileId, 'test-app-id')).rejects.toThrow('Failed to get persona: Persona not found');
+      await expect(service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')).rejects.toThrow(RpcException);
+      await expect(service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')).rejects.toThrow('Failed to get persona: Persona not found');
     });
 
     it('should throw RpcException if profile not found', async () => {
       jest.spyOn(profileService, 'send').mockReturnValue(of(null));
-      await expect(service.processNewProfile(mockProfileId, 'test-app-id')).rejects.toThrow(RpcException);
-      await expect(service.processNewProfile(mockProfileId, 'test-app-id')).rejects.toThrow('Failed to process new profile: Profile not found');
+      await expect(service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')).rejects.toThrow(RpcException);
+      await expect(service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')).rejects.toThrow('Failed to process new profile: Profile not found');
     });
 
     it('should handle errors during prompt proxy call', async () => {
       jest.spyOn(promptProxy, 'send').mockReturnValue(throwError(() => new Error('Prompt error')));
-      await expect(service.processNewProfile(mockProfileId, 'test-app-id')).rejects.toThrow(RpcException);
+      await expect(service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')).rejects.toThrow(RpcException);
       expect(logger.error).toHaveBeenCalledWith('Error processing new profile:', expect.any(Error));
     });
   });
@@ -150,10 +160,11 @@ describe('AppService', () => {
       participants: [],
       createdAt: new Date(),
       updatedAt: new Date(),
+      privacy: 'private',
       addMessage: jest.fn(),
       messages: [
-        { id: 'msg1', conversationId: 'conv-id', senderId: 'user-id', senderName: 'User', recipientId: ['ai-id'], recipientName: ['AI'], content: 'Hello', timestamp: new Date(), type: 'chat' },
-        { id: 'msg2', conversationId: 'conv-id', senderId: 'ai-id', senderName: 'AI', recipientId: ['user-id'], recipientName: ['User'], content: 'Hi there', timestamp: new Date(), type: 'chat' },
+        { id: 'msg1', conversationId: 'conv-id', senderId: 'user-id', senderName: 'User', recipientId: ['ai-id'], recipientName: ['AI'], content: 'Hello', timestamp: new Date(), role: 'user', type: 'chat' },
+        { id: 'msg2', conversationId: 'conv-id', senderId: 'ai-id', senderName: 'AI', recipientId: ['user-id'], recipientName: ['User'], content: 'Hi there', timestamp: new Date(), role: 'assistant', type: 'chat' },
       ],
     };
     const mockAiPersonas: PersonaTelosDto[] = [
@@ -267,8 +278,8 @@ describe('AppService', () => {
 
   describe('summarizeConversation', () => {
     const mockMessages: ChatMessage[] = [
-      { id: 'msg1', conversationId: 'conv-id', senderId: 'user-id', senderName: 'User', recipientId: ['ai-id'], recipientName: ['AI'], content: 'Message 1', timestamp: new Date(), type: 'chat' },
-      { id: 'msg2', conversationId: 'conv-id', senderId: 'user-id', senderName: 'User', recipientId: ['ai-id'], recipientName: ['AI'], content: 'Message 2', timestamp: new Date(), type: 'chat' },
+      { id: 'msg1', conversationId: 'conv-id', senderId: 'user-id', senderName: 'User', recipientId: ['ai-id'], recipientName: ['AI'], content: 'Message 1', timestamp: new Date(), role: 'user', type: 'chat' },
+      { id: 'msg2', conversationId: 'conv-id', senderId: 'user-id', senderName: 'User', recipientId: ['ai-id'], recipientName: ['AI'], content: 'Message 2', timestamp: new Date(), role: 'user', type: 'chat' },
     ];
     const mockPersonaPrompt = 'Persona system prompt';
     const mockSummaryResponse = { message: { content: 'Conversation summary' } };
