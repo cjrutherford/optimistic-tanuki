@@ -86,7 +86,20 @@ export class ToolsService {
           }
         )
       );
-      console.log(resp.data);
+      this.l.debug(`Tool response data: ${JSON.stringify(resp.data)}`);
+      
+      // JSON-RPC response format: { jsonrpc, id, result }
+      // Return the result content, not the entire wrapper
+      if (resp.data && resp.data.result) {
+        const result = resp.data.result;
+        // MCP tools return { content: [...] } format
+        if (Array.isArray(result.content) && result.content.length > 0) {
+          // Return the text content from the first content item
+          return result.content[0].text || result;
+        }
+        return result;
+      }
+      
       return resp.data;
     } catch (err) {
       this.l.error(`Error calling tool ${toolName}`, err);

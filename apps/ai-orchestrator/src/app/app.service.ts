@@ -281,8 +281,14 @@ Simply respond naturally to the user, and call tools when needed to accomplish t
                 ? JSON.parse(functionCall.arguments)
                 : functionCall.arguments;
             } catch (e) {
-              this.l.error(`Failed to parse tool arguments: ${functionCall.arguments}`);
-              toolArgs = {};
+              this.l.error(`Failed to parse tool arguments for ${toolName}: ${functionCall.arguments}`);
+              this.l.error(`Parse error: ${e.message}`);
+              // Don't call the tool with empty args - continue to next iteration
+              personaPrompt.messages.push({
+                role: 'assistant',
+                content: `Error: Failed to parse tool arguments. Please try again with valid JSON.`,
+              });
+              continue;
             }
 
             // Ensure the tool sees the user's profile id (not the persona id)
@@ -298,7 +304,8 @@ Simply respond naturally to the user, and call tools when needed to accomplish t
               toolName,
               toolArgs
             );
-            this.l.log(`Tool response: '${JSON.stringify(toolResponse)}'`);
+            this.l.log(`Tool '${toolName}' executed successfully.`);
+            this.l.debug(`Tool response: '${JSON.stringify(toolResponse)}'`);
             
             // Add the assistant's tool call message (only include the one tool we're processing)
             personaPrompt.messages.push({
