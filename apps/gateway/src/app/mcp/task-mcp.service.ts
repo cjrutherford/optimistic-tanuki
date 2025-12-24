@@ -27,8 +27,16 @@ const createTaskSchema = z.object({
   description: z.string().optional().describe('Description of the task'),
   status: z.nativeEnum(TaskStatus).describe('Status of the task'),
   priority: z.nativeEnum(TaskPriority).describe('Priority of the task'),
-  createdBy: z.string().describe('User who created the task'),
-  projectId: z.string().describe('ID of the related project'),
+  createdBy: z
+    .string()
+    .describe(
+      'User who created the task this should be the profile id used to reference the user.'
+    ),
+  projectId: z
+    .string()
+    .describe(
+      'ID of the related project. use the project id from list_projects or the context.'
+    ),
 });
 
 const updateTaskSchema = z.object({

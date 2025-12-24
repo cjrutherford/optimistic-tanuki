@@ -14,10 +14,13 @@ import {
   GeneratePrompt,
   PersonaTelosDto,
   ProfileDto,
+  ToolExecutionContext,
+  ToolResult,
 } from '@optimistic-tanuki/models';
 import { ToolsService } from './tools.service';
 import { generatePersonaSystemMessage } from '@optimistic-tanuki/prompt-generation';
 import { transformMcpToolsToOpenAI } from './tool-formatter';
+import { MCPToolExecutor } from './mcp-tool-executor';
 
 @Injectable()
 export class AppService {
@@ -33,7 +36,8 @@ export class AppService {
     private readonly chatCollectorService: ClientProxy,
     @Inject('ai-enabled-apps')
     private readonly aiEnabledApps: { [key: string]: string },
-    private readonly toolsService: ToolsService
+    private readonly toolsService: ToolsService,
+    private readonly mcpExecutor: MCPToolExecutor
   ) {}
 
   async processNewProfile(
@@ -162,11 +166,15 @@ export class AppService {
           conversation.messages,
           systemPrompt
         );
-        const toolsMeta = await this.toolsService.listTools().catch((e) => []);
+        const toolsMeta = await this.toolsService.listTools().catch(() => []);
         // Transform MCP tools to OpenAI format for Ollama's OpenAI-compatible API
         // Pass user profile ID to enhance tool parameter descriptions
         const openAITools = transformMcpToolsToOpenAI(toolsMeta, profile.id);
         console.log('Transformed tools:', openAITools[0]);
+
+        const projectResource = await this.toolsService
+          .getResource('project://shcema')
+          .catch(() => null);
 
         this.l.log(`Conversation summary: '${conversationSummary}'`);
         const personaPrompt: GeneratePrompt = {
@@ -183,7 +191,9 @@ Your previous conversation summary is: '${conversationSummary}'
 CURRENT USER INFORMATION:
 - User Profile ID: ${profile.id}
 - User Name: ${profile.profileName}
-- ALWAYS use ${profile.id} for any 'userId', 'profileId', 'createdBy', or 'members' parameters
+- ALWAYS use ${
+                profile.id
+              } for any 'userId', 'profileId', 'createdBy', or 'members' parameters
 
 TOOL USAGE GUIDELINES:
 - Use ONE tool at a time - you can only call a single tool per response
@@ -192,9 +202,17 @@ TOOL USAGE GUIDELINES:
 - After completing all necessary tool calls, ALWAYS provide a final natural language response to the user explaining what was accomplished
 - Your final response should summarize the actions taken and the results
 
+HANDLING TOOL RESULTS:
+- Analyze the result of each tool call carefully.
+- If a tool call fails (contains "error" or "isError": true), DO NOT proceed with dependent steps. Instead, inform the user of the error and ask for clarification or try an alternative approach if possible.
+- If a tool call succeeds, use the data returned to proceed to the next step or formulate your final response.
+- When a tool returns a list (e.g., list_projects), check if it's empty before trying to access items.
+
 PROJECT-RELATED WORKFLOWS:
 - Tasks, Risks, Changes, and Journal Entries are ALL tied to specific projects
-- BEFORE creating or listing any of these items, you MUST first call 'list_projects' with userId: ${profile.id}
+- BEFORE creating or listing any of these items, you MUST first call 'list_projects' with userId: ${
+                profile.id
+              }
 - From the list_projects response, select the appropriate projectId
 - Then use that projectId when creating/listing tasks, risks, changes, or journal entries
 - If no suitable project exists, create one first using 'create_project'
@@ -209,6 +227,13 @@ Simply respond naturally to the user, and call tools when needed to accomplish t
 
 If the intent is to call another tool, ONLY responsd with the tool call JSON as specified in the tool calling protocol.
 DO NOT provide non-JSON responses when tools should be called. ONLY provide non-JSON responses when you have completed all tool calls and are providing a final answer to the user.
+${
+  projectResource
+    ? `- You have access to the Project Schema resource which covers most database effective tool calls: ${JSON.stringify(
+        projectResource
+      )}`
+    : ''
+}
 `,
             },
             {
@@ -279,65 +304,53 @@ DO NOT provide non-JSON responses when tools should be called. ONLY provide non-
             }
 
             const toolCall = response.message.tool_calls[0]; // Process first tool call only
-            const functionCall = toolCall.function;
-            const toolName = functionCall.name;
-            let toolArgs = {};
 
-            try {
-              toolArgs =
-                typeof functionCall.arguments === 'string'
-                  ? JSON.parse(functionCall.arguments)
-                  : functionCall.arguments;
-            } catch (e) {
-              this.l.error(
-                `Failed to parse tool arguments for ${toolName}: ${functionCall.arguments}`
+            // Create execution context
+            const executionContext: ToolExecutionContext = {
+              userId: profile.id,
+              profileId: profile.id,
+              conversationId: conversation.id,
+            };
+
+            // Execute tool call using standardized executor
+            const toolResult: ToolResult =
+              await this.mcpExecutor.executeToolCall(
+                toolCall,
+                executionContext
               );
-              this.l.error(`Parse error: ${e.message}`);
-              // Don't call the tool with empty args - continue to next iteration
-              personaPrompt.messages.push({
-                role: 'assistant',
-                content: `Error: Failed to parse tool arguments. Please try again with valid JSON.`,
-              });
-              continue;
-            }
-
-            // Ensure the tool sees the user's profile id (not the persona id)
-            // and normalize arguments to handle LLM hallucinations
-            toolArgs = await this.normalizeToolArgs(
-              toolName,
-              toolArgs,
-              profile.id
-            );
 
             this.l.log(
-              `OpenAI tool call: '${toolName}' with args: '${JSON.stringify(
-                toolArgs
-              )}'`
+              `Tool '${toolResult.toolName}' executed with success=${toolResult.success}`
             );
-
-            const toolResponse = await this.toolsService.callTool(
-              toolName,
-              toolArgs
-            );
-            this.l.log(`Tool '${toolName}' executed successfully.`);
-            this.l.debug(`Tool response: '${JSON.stringify(toolResponse)}'`);
+            this.l.debug(`Tool result: ${JSON.stringify(toolResult)}`);
 
             // Add the assistant's tool call message (only include the one tool we're processing)
             personaPrompt.messages.push({
               role: 'assistant',
               content: response.message.content || '',
               tool_calls: [toolCall], // Only include the first tool call
-            } as any);
+            } as unknown as any);
 
-            // Add the tool response
+            // Add the tool response - format based on success/failure
+            let toolResponseContent: string;
+            if (toolResult.success) {
+              toolResponseContent =
+                typeof toolResult.result === 'string'
+                  ? toolResult.result
+                  : JSON.stringify(toolResult.result);
+            } else {
+              // Include error information in the response
+              toolResponseContent = JSON.stringify({
+                error: toolResult.error,
+                message: `Tool execution failed: ${toolResult.error?.message}`,
+              });
+            }
+
             personaPrompt.messages.push({
               role: 'tool',
               tool_call_id: toolCall.id,
-              content:
-                typeof toolResponse === 'string'
-                  ? toolResponse
-                  : JSON.stringify(toolResponse),
-            } as any);
+              content: toolResponseContent,
+            } as unknown as any);
 
             continue; // Continue the loop to get the final response
           }
@@ -358,34 +371,47 @@ DO NOT provide non-JSON responses when tools should be called. ONLY provide non-
 
           if (parsedResponse && parsedResponse.tool) {
             // Legacy JSON-format tool calling (kept for backward compatibility)
-            // Ensure the tool sees the user's profile id (not the persona id)
-            parsedResponse.args = parsedResponse.args || {};
-            parsedResponse.args = await this.normalizeToolArgs(
-              parsedResponse.tool,
-              parsedResponse.args,
-              profile.id
-            );
+            // Convert to standard OpenAI format and use executor
+            const legacyToolCall = {
+              id: `legacy_${Date.now()}`,
+              type: 'function' as const,
+              function: {
+                name: parsedResponse.tool,
+                arguments: JSON.stringify(parsedResponse.args || {}),
+              },
+            };
+
+            // Create execution context
+            const executionContext: ToolExecutionContext = {
+              userId: profile.id,
+              profileId: profile.id,
+              conversationId: conversation.id,
+            };
+
+            // Execute using standardized executor
+            const toolResult: ToolResult =
+              await this.mcpExecutor.executeToolCall(
+                legacyToolCall,
+                executionContext
+              );
 
             this.l.log(
-              `Calling tool: '${
-                parsedResponse.tool
-              }' with args: '${JSON.stringify(parsedResponse.args)}'`
+              `Legacy tool '${toolResult.toolName}' executed with success=${toolResult.success}`
             );
-            const toolResponse = await this.toolsService.callTool(
-              parsedResponse.tool,
-              parsedResponse.args
-            );
-            this.l.log(`Tool response: '${toolResponse}'`);
+
             // Add the tool response back to the persona prompt for further processing
+            const responseContent = toolResult.success
+              ? typeof toolResult.result === 'string'
+                ? toolResult.result
+                : JSON.stringify(toolResult.result)
+              : JSON.stringify({
+                  error: toolResult.error,
+                  message: `Tool failed: ${toolResult.error?.message}`,
+                });
+
             personaPrompt.messages.push({
               role: 'assistant',
-              content: `The tool '${
-                parsedResponse.tool
-              }' returned the following response: ${
-                typeof toolResponse === 'string'
-                  ? toolResponse
-                  : JSON.stringify(toolResponse)
-              }. Please use this information to generate your next action.`,
+              content: `The tool '${parsedResponse.tool}' returned the following response: ${responseContent}. Please use this information to generate your next action.`,
             });
           } else if (
             parsedResponse &&
@@ -473,107 +499,6 @@ DO NOT provide non-JSON responses when tools should be called. ONLY provide non-
       this.l.error('Error getting persona:', e);
       throw new RpcException('Failed to get persona: ' + e.message);
     }
-  }
-
-  private async normalizeToolArgs(
-    toolName: string,
-    args: any,
-    profileId: string
-  ) {
-    const normalized = { ...args };
-
-    // Ensure profileId is present
-    if (!normalized['profileId']) {
-      normalized['profileId'] = profileId;
-    }
-
-    // Specific normalizations for create_project
-    if (toolName === 'create_project') {
-      // Map 'title' to 'name'
-      if (normalized['title'] && !normalized['name']) {
-        normalized['name'] = normalized['title'];
-        delete normalized['title'];
-      }
-      // Map 'createdBy' to 'userId'
-      if (normalized['createdBy'] && !normalized['userId']) {
-        normalized['userId'] = normalized['createdBy'];
-        delete normalized['createdBy'];
-      }
-      // Ensure 'userId' is set if missing
-      if (!normalized['userId']) {
-        normalized['userId'] = profileId;
-      }
-      // Default 'status'
-      if (!normalized['status']) {
-        normalized['status'] = 'PLANNING';
-      }
-      // Default 'description'
-      if (!normalized['description']) {
-        normalized['description'] = '';
-      }
-      // Fix members if it's a string
-      if (normalized['members'] && typeof normalized['members'] === 'string') {
-        // If it looks like a JSON array string, try to parse it
-        if (
-          normalized['members'].startsWith('[') &&
-          normalized['members'].endsWith(']')
-        ) {
-          try {
-            normalized['members'] = JSON.parse(normalized['members']);
-          } catch {
-            normalized['members'] = [normalized['members']];
-          }
-        } else {
-          normalized['members'] = [normalized['members']];
-        }
-      }
-    }
-
-    // Specific normalizations for create_task
-    if (toolName === 'create_task') {
-      // Check for invalid projectId (e.g. matching profileId)
-      if (!normalized['projectId'] || normalized['projectId'] === profileId) {
-        this.l.warn(
-          `Detected invalid projectId in create_task: ${normalized['projectId']}. Attempting to resolve...`
-        );
-        try {
-          // Try to list projects to find a valid one
-          const projectsResponse = await this.toolsService.callTool(
-            'list_projects',
-            { userId: profileId }
-          );
-
-          let projects = [];
-          if (Array.isArray(projectsResponse)) {
-            projects = projectsResponse;
-          } else if (
-            projectsResponse &&
-            Array.isArray(projectsResponse.projects)
-          ) {
-            projects = projectsResponse.projects;
-          } else if (typeof projectsResponse === 'string') {
-            try {
-              const parsed = JSON.parse(projectsResponse);
-              if (Array.isArray(parsed)) projects = parsed;
-              else if (parsed.projects && Array.isArray(parsed.projects))
-                projects = parsed.projects;
-            } catch {}
-          }
-
-          if (projects.length > 0) {
-            // Use the first project found
-            normalized['projectId'] = projects[0].id;
-            this.l.log(`Resolved projectId to: ${normalized['projectId']}`);
-          } else {
-            this.l.warn('No projects found to resolve projectId.');
-          }
-        } catch (e) {
-          this.l.error('Failed to resolve projectId', e);
-        }
-      }
-    }
-
-    return normalized;
   }
 
   private async summarizeConversation(

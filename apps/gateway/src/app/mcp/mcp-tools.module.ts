@@ -11,6 +11,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { loadConfig, TcpServiceConfig } from '../../config';
+import { ProjectSchemaResource } from './resources';
 
 /**
  * MCP Module for ForgeOfWill
@@ -65,6 +66,7 @@ import { loadConfig, TcpServiceConfig } from '../../config';
     ChangeMcpService,
     JournalMcpService,
     PersonaMcpService,
+    ProjectSchemaResource,
   ],
   exports: [
     ProjectMcpService,

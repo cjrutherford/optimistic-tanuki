@@ -1,22 +1,15 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { ToolDefinition } from '@optimistic-tanuki/models';
 
 /**
  * Utility functions to transform MCP tools to OpenAI function calling format
  */
 
-export interface OpenAITool {
-  type: 'function';
-  function: {
-    name: string;
-    description: string;
-    parameters: {
-      type: string;
-      properties?: Record<string, any>;
-      required?: string[];
-      [key: string]: any;
-    };
-  };
-}
+// Re-export the ToolDefinition type for backward compatibility
+export type OpenAITool = ToolDefinition;
+
+// Keep the old interface name for internal use
+export interface McpTool extends Tool {}
 
 /**
  * Enhance tool parameter descriptions with user context

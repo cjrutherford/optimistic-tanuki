@@ -4,6 +4,9 @@
 
 The ForgeOfWill MCP (Model Context Protocol) Tools provide a comprehensive set of capabilities for AI assistants to interact with the project management system and collaborate with other AI personas.
 
+**See Also:**
+- [MCP Validation Guide](./MCP_VALIDATION_GUIDE.md) - Detailed information on tool call validation and standardization
+
 ## Architecture
 
 The MCP tools are implemented in the Gateway service using the `@nestjs-mcp/server` package. This provides a standardized interface for AI assistants to:
@@ -11,6 +14,14 @@ The MCP tools are implemented in the Gateway service using the `@nestjs-mcp/serv
 1. Manage projects, tasks, risks, changes, and journal entries
 2. Discover and refer to other AI specialist personas
 3. Collaborate across different AI capabilities
+
+All tool calls go through a standardized validation and execution pipeline that ensures:
+- Type safety with Zod schemas
+- Argument validation and normalization
+- Consistent error handling
+- Execution tracking and metrics
+
+For implementation details, see the [MCP Validation Guide](./MCP_VALIDATION_GUIDE.md).
 
 ## Available MCP Tools
 

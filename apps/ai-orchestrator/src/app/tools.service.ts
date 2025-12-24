@@ -9,6 +9,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { EventSource } from 'eventsource';
+import { firstValueFrom } from 'rxjs';
 
 // Polyfill EventSource for Node.js
 global.EventSource = EventSource as any;
@@ -81,6 +82,37 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
     await this.client.connect(this.transport);
     this.l.log('MCP Client connected successfully');
   }
+
+  async listResources() {
+    if (!this.client) {
+      throw new Error('MCP Client not connected');
+    }
+    try {
+      const result = await this.client.listResources();
+      this.l.log(
+        `Fetched ${result.resources.length} resources from gateway MCP`
+      );
+      return result.resources;
+    } catch (err) {
+      this.l.error('Error fetching resources list', err);
+      throw err;
+    }
+  }
+
+  async getResource(resourceName: string) {
+    if (!this.client) {
+      throw new Error('MCP Client not connected');
+    }
+    try {
+      this.l.log(`Getting resource ${resourceName} from gateway MCP`);
+      const result = await this.client.subscribeResource({ uri: resourceName });
+      return result; // Adjust this line based on the actual structure of the result object
+    } catch (err) {
+      this.l.error(`Error getting resource ${resourceName}`, err);
+      throw err;
+    }
+  }
+
   /**
    * Fetch list of tools using the SDK Client
    */
