@@ -7,11 +7,11 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,7 +29,7 @@ services:
       postgres:
         condition: service_healthy
     command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
-    restart: "no"
+    restart: 'no'
 
   authentication:
     container_name: ot_authentication
@@ -37,7 +37,7 @@ services:
       context: .
       dockerfile: ./apps/authentication/Dockerfile
     ports:
-      - "3001:3001"
+      - '3001:3001'
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,7 +51,7 @@ services:
       context: .
       dockerfile: ./apps/forgeofwill/Dockerfile
     ports:
-      - "8080:4000" # Changed from 8080:80
+      - '8080:4000' # Changed from 8080:80
     # Command will be inherited from Dockerfile's CMD (now a Node.js server)
     # depends_on: # Add if it needs gateway or other services to be up first for production
 
@@ -61,7 +61,16 @@ services:
       context: .
       dockerfile: ./apps/gateway/Dockerfile
     ports:
-      - "3000:3000"
+      - '3000:3000'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "require(''http'').get(''http://localhost:3000/api/mcp/sse'', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }).on(''error'', (err) => process.exit(1));"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       postgres: # Ensures postgres (db) is healthy
         condition: service_healthy
@@ -83,7 +92,7 @@ services:
       context: .
       dockerfile: ./apps/profile/Dockerfile
     ports:
-      - "3002:3002"
+      - '3002:3002'
     depends_on:
       postgres:
         condition: service_healthy
@@ -96,7 +105,7 @@ services:
       context: .
       dockerfile: ./apps/project-planning/Dockerfile
     ports:
-      - "3006:3006"
+      - '3006:3006'
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,21 +118,21 @@ services:
       context: .
       dockerfile: ./apps/social/Dockerfile
     ports:
-      - "3003:3003"
+      - '3003:3003'
     depends_on:
       postgres:
         condition: service_healthy
       db-setup: # Ensures db-setup is completed before starting social
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
-  
+
   chat-collector:
     container_name: ot_chat_collector
     build:
       context: .
       dockerfile: ./apps/chat-collector/Dockerfile
     ports:
-      - "3007:3007"
+      - '3007:3007'
     depends_on:
       postgres:
         condition: service_healthy
@@ -144,14 +153,14 @@ services:
   #     db-setup: # Ensures db-setup is completed before starting tasks
   #       condition: service_completed_successfully
   #   # Command will be inherited from Dockerfile\'s CMD
-  
+
   assets:
     container_name: ot_asset
     build:
       context: .
       dockerfile: ./apps/assets/Dockerfile
     ports:
-      - "3005:3005"
+      - '3005:3005'
     depends_on:
       postgres:
         condition: service_healthy
@@ -165,7 +174,7 @@ services:
       context: .
       dockerfile: ./apps/prompt-proxy/Dockerfile
     ports:
-      - "3008:3008"
+      - '3008:3008'
     depends_on:
       postgres:
         condition: service_healthy
@@ -177,7 +186,7 @@ services:
       context: .
       dockerfile: ./apps/ai-orchestrator/Dockerfile
     ports:
-      - "3010:3010"
+      - '3010:3010'
     depends_on:
       postgres:
         condition: service_healthy
@@ -194,7 +203,7 @@ services:
       context: .
       dockerfile: ./apps/telos-docs-service/Dockerfile
     ports:
-      - "3009:3009"
+      - '3009:3009'
     depends_on:
       postgres:
         condition: service_healthy
