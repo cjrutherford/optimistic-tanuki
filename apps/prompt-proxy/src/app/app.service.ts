@@ -21,6 +21,11 @@ export class AppService {
         })
       );
       this.l.debug(response.data);
+      if (response.data.message) {
+        this.l.log(
+          `LLM Response: ${JSON.stringify(response.data.message, null, 2)}`
+        );
+      }
       return response.data;
     } catch (error) {
       console.trace('Error in sendMessage:', error);

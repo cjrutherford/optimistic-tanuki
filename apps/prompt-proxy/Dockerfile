@@ -4,14 +4,14 @@ FROM docker.io/node:lts-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
 COPY dist/apps/prompt-proxy/package*.json ./
-RUN npm install --omit=dev --legacy-peer-deps && npm i @nestjs/axios
+RUN npm install --omit=dev --legacy-peer-deps && npm i @nestjs/axios zod
 
 # Production image, copy all the files and run nest
 FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3009
-RUN npm i -g nodemon pg @nestjs/axios
+RUN npm i -g nodemon pg @nestjs/axios zod
 WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json

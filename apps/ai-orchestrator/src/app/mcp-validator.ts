@@ -1,6 +1,6 @@
 /**
  * MCP Validator
- * 
+ *
  * Provides validation utilities for MCP tool calls, results, and messages.
  * Ensures strict adherence to the MCP protocol.
  */
@@ -40,7 +40,11 @@ export class MCPValidator {
       let parsedArgs: Record<string, any>;
       try {
         parsedArgs = JSON.parse(validatedCall.function.arguments);
-        if (typeof parsedArgs !== 'object' || parsedArgs === null || Array.isArray(parsedArgs)) {
+        if (
+          typeof parsedArgs !== 'object' ||
+          parsedArgs === null ||
+          Array.isArray(parsedArgs)
+        ) {
           throw new Error('Arguments must be a JSON object');
         }
       } catch (error) {
@@ -117,20 +121,21 @@ export class MCPValidator {
   validateToolResult(toolResult: any): ValidationResult<ToolResult> {
     try {
       const validated = ToolResultSchema.parse(toolResult);
-      
+
       // Additional business logic validation
       if (validated.success && !validated.result) {
         this.logger.warn(
           `Tool result for ${validated.toolName} marked as success but has no result data`
         );
       }
-      
+
       if (!validated.success && !validated.error) {
         return {
           success: false,
           error: {
             code: MCPErrorCode.VALIDATION_FAILED,
-            message: 'Tool result marked as failure but has no error information',
+            message:
+              'Tool result marked as failure but has no error information',
             details: toolResult,
           },
         };
@@ -138,7 +143,7 @@ export class MCPValidator {
 
       return {
         success: true,
-        data: validated,
+        data: validated as unknown as ToolResult,
       };
     } catch (error) {
       this.logger.error('Tool result validation failed:', error);
@@ -161,7 +166,7 @@ export class MCPValidator {
       const validated = MCPMessageSchema.parse(message);
       return {
         success: true,
-        data: validated,
+        data: validated as unknown as MCPMessage,
       };
     } catch (error) {
       this.logger.error('Message validation failed:', error);
@@ -182,10 +187,12 @@ export class MCPValidator {
   validateAssistantMessage(message: any): ValidationResult<AssistantMessage> {
     try {
       const validated = AssistantMessageSchema.parse(message);
-      
+
       // If tool_calls are present, validate them
       if (validated.tool_calls && validated.tool_calls.length > 0) {
-        const toolCallsValidation = this.validateToolCalls(validated.tool_calls);
+        const toolCallsValidation = this.validateToolCalls(
+          validated.tool_calls
+        );
         if (!toolCallsValidation.success) {
           return {
             success: false,
@@ -196,7 +203,7 @@ export class MCPValidator {
 
       return {
         success: true,
-        data: validated,
+        data: validated as unknown as AssistantMessage,
       };
     } catch (error) {
       this.logger.error('Assistant message validation failed:', error);
@@ -219,7 +226,7 @@ export class MCPValidator {
       const validated = ToolMessageSchema.parse(message);
       return {
         success: true,
-        data: validated,
+        data: validated as unknown as ToolMessage,
       };
     } catch (error) {
       this.logger.error('Tool message validation failed:', error);
@@ -242,7 +249,7 @@ export class MCPValidator {
       const validated = ToolExecutionContextSchema.parse(context);
       return {
         success: true,
-        data: validated,
+        data: validated as unknown as ToolExecutionContext,
       };
     } catch (error) {
       this.logger.error('Context validation failed:', error);
@@ -266,13 +273,12 @@ export class MCPValidator {
     error: Error | MCPError,
     executionTime?: number
   ): ToolResult {
-    const errorCode = error instanceof MCPError 
-      ? error.code 
-      : MCPErrorCode.TOOL_EXECUTION_FAILED;
-    
-    const errorDetails = error instanceof MCPError 
-      ? error.details 
-      : undefined;
+    const errorCode =
+      error instanceof MCPError
+        ? error.code
+        : MCPErrorCode.TOOL_EXECUTION_FAILED;
+
+    const errorDetails = error instanceof MCPError ? error.details : undefined;
 
     return {
       toolCallId,

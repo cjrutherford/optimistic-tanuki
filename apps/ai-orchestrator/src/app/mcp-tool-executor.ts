@@ -1,6 +1,6 @@
 /**
  * MCP Tool Executor
- * 
+ *
  * Provides a standardized interface for executing MCP tools with strict validation.
  * Ensures all tool calls are properly validated before execution and results are
  * consistently formatted.
@@ -72,14 +72,16 @@ export class MCPToolExecutor {
       const parsedCall = toolCallValidation.data;
 
       // Normalize arguments with context
-      const normalizedArgs = this.normalizeToolArguments(
+      const normalizedArgs = await this.normalizeToolArguments(
         parsedCall.name,
         parsedCall.arguments,
         context
       );
 
       this.logger.log(
-        `Executing tool: ${parsedCall.name} with args: ${JSON.stringify(normalizedArgs)}`
+        `Executing tool: ${parsedCall.name} with args: ${JSON.stringify(
+          normalizedArgs
+        )}`
       );
 
       // Execute the tool
@@ -172,11 +174,11 @@ export class MCPToolExecutor {
   /**
    * Normalize tool arguments by injecting context and fixing common issues
    */
-  private normalizeToolArguments(
+  private async normalizeToolArguments(
     toolName: string,
     args: Record<string, any>,
     context: ToolExecutionContext
-  ): Record<string, any> {
+  ): Promise<Record<string, any>> {
     const normalized = { ...args };
 
     // Always inject userId/profileId if not present or invalid
@@ -197,7 +199,7 @@ export class MCPToolExecutor {
       case 'create_project':
         return this.normalizeCreateProject(normalized, context);
       case 'create_task':
-        return this.normalizeCreateTask(normalized, context);
+        return await this.normalizeCreateTask(normalized, context);
       case 'create_risk':
         return this.normalizeCreateRisk(normalized, context);
       case 'create_change':
@@ -251,25 +253,79 @@ export class MCPToolExecutor {
     return normalized;
   }
 
-  private normalizeCreateTask(
+  private async normalizeCreateTask(
     args: Record<string, any>,
     context: ToolExecutionContext
-  ): Record<string, any> {
+  ): Promise<Record<string, any>> {
     const normalized = { ...args };
+
+    // Map 'name' to 'title' if title is missing
+    if (normalized['name'] && !normalized['title']) {
+      normalized['title'] = normalized['name'];
+      delete normalized['name'];
+    }
 
     // Ensure createdBy is set
     if (!normalized['createdBy']) {
       normalized['createdBy'] = context.profileId;
     }
 
-    // Default status
+    // Default status and normalize to uppercase
     if (!normalized['status']) {
       normalized['status'] = 'TODO';
+    } else if (typeof normalized['status'] === 'string') {
+      normalized['status'] = normalized['status'].toUpperCase();
     }
 
-    // Default priority
+    // Default priority and normalize to uppercase
     if (!normalized['priority']) {
       normalized['priority'] = 'MEDIUM';
+    } else if (typeof normalized['priority'] === 'string') {
+      normalized['priority'] = normalized['priority'].toUpperCase();
+    }
+
+    // Check for invalid projectId (e.g. matching profileId)
+    if (
+      !normalized['projectId'] ||
+      normalized['projectId'] === context.profileId
+    ) {
+      this.logger.warn(
+        `Detected invalid projectId in create_task: ${normalized['projectId']}. Attempting to resolve...`
+      );
+      try {
+        // Try to list projects to find a valid one
+        const projectsResponse = await this.toolsService.callTool(
+          'list_projects',
+          { userId: context.profileId }
+        );
+
+        let projects = [];
+        if (Array.isArray(projectsResponse)) {
+          projects = projectsResponse;
+        } else if (
+          projectsResponse &&
+          Array.isArray(projectsResponse.projects)
+        ) {
+          projects = projectsResponse.projects;
+        } else if (typeof projectsResponse === 'string') {
+          try {
+            const parsed = JSON.parse(projectsResponse);
+            if (Array.isArray(parsed)) projects = parsed;
+            else if (parsed.projects && Array.isArray(parsed.projects))
+              projects = parsed.projects;
+          } catch {}
+        }
+
+        if (projects.length > 0) {
+          // Use the first project found
+          normalized['projectId'] = projects[0].id;
+          this.logger.log(`Resolved projectId to: ${normalized['projectId']}`);
+        } else {
+          this.logger.warn('No projects found to resolve projectId.');
+        }
+      } catch (e) {
+        this.logger.error('Failed to resolve projectId', e);
+      }
     }
 
     return normalized;

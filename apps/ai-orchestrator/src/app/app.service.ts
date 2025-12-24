@@ -166,11 +166,15 @@ export class AppService {
           conversation.messages,
           systemPrompt
         );
-        const toolsMeta = await this.toolsService.listTools().catch((e) => []);
+        const toolsMeta = await this.toolsService.listTools().catch(() => []);
         // Transform MCP tools to OpenAI format for Ollama's OpenAI-compatible API
         // Pass user profile ID to enhance tool parameter descriptions
         const openAITools = transformMcpToolsToOpenAI(toolsMeta, profile.id);
         console.log('Transformed tools:', openAITools[0]);
+
+        const projectResource = await this.toolsService
+          .getResource('project://shcema')
+          .catch(() => null);
 
         this.l.log(`Conversation summary: '${conversationSummary}'`);
         const personaPrompt: GeneratePrompt = {
@@ -187,7 +191,9 @@ Your previous conversation summary is: '${conversationSummary}'
 CURRENT USER INFORMATION:
 - User Profile ID: ${profile.id}
 - User Name: ${profile.profileName}
-- ALWAYS use ${profile.id} for any 'userId', 'profileId', 'createdBy', or 'members' parameters
+- ALWAYS use ${
+                profile.id
+              } for any 'userId', 'profileId', 'createdBy', or 'members' parameters
 
 TOOL USAGE GUIDELINES:
 - Use ONE tool at a time - you can only call a single tool per response
@@ -196,9 +202,17 @@ TOOL USAGE GUIDELINES:
 - After completing all necessary tool calls, ALWAYS provide a final natural language response to the user explaining what was accomplished
 - Your final response should summarize the actions taken and the results
 
+HANDLING TOOL RESULTS:
+- Analyze the result of each tool call carefully.
+- If a tool call fails (contains "error" or "isError": true), DO NOT proceed with dependent steps. Instead, inform the user of the error and ask for clarification or try an alternative approach if possible.
+- If a tool call succeeds, use the data returned to proceed to the next step or formulate your final response.
+- When a tool returns a list (e.g., list_projects), check if it's empty before trying to access items.
+
 PROJECT-RELATED WORKFLOWS:
 - Tasks, Risks, Changes, and Journal Entries are ALL tied to specific projects
-- BEFORE creating or listing any of these items, you MUST first call 'list_projects' with userId: ${profile.id}
+- BEFORE creating or listing any of these items, you MUST first call 'list_projects' with userId: ${
+                profile.id
+              }
 - From the list_projects response, select the appropriate projectId
 - Then use that projectId when creating/listing tasks, risks, changes, or journal entries
 - If no suitable project exists, create one first using 'create_project'
@@ -213,6 +227,13 @@ Simply respond naturally to the user, and call tools when needed to accomplish t
 
 If the intent is to call another tool, ONLY responsd with the tool call JSON as specified in the tool calling protocol.
 DO NOT provide non-JSON responses when tools should be called. ONLY provide non-JSON responses when you have completed all tool calls and are providing a final answer to the user.
+${
+  projectResource
+    ? `- You have access to the Project Schema resource which covers most database effective tool calls: ${JSON.stringify(
+        projectResource
+      )}`
+    : ''
+}
 `,
             },
             {
@@ -292,10 +313,11 @@ DO NOT provide non-JSON responses when tools should be called. ONLY provide non-
             };
 
             // Execute tool call using standardized executor
-            const toolResult: ToolResult = await this.mcpExecutor.executeToolCall(
-              toolCall,
-              executionContext
-            );
+            const toolResult: ToolResult =
+              await this.mcpExecutor.executeToolCall(
+                toolCall,
+                executionContext
+              );
 
             this.l.log(
               `Tool '${toolResult.toolName}' executed with success=${toolResult.success}`
@@ -307,7 +329,7 @@ DO NOT provide non-JSON responses when tools should be called. ONLY provide non-
               role: 'assistant',
               content: response.message.content || '',
               tool_calls: [toolCall], // Only include the first tool call
-            } as any);
+            } as unknown as any);
 
             // Add the tool response - format based on success/failure
             let toolResponseContent: string;
@@ -328,7 +350,7 @@ DO NOT provide non-JSON responses when tools should be called. ONLY provide non-
               role: 'tool',
               tool_call_id: toolCall.id,
               content: toolResponseContent,
-            } as any);
+            } as unknown as any);
 
             continue; // Continue the loop to get the final response
           }
@@ -367,10 +389,11 @@ DO NOT provide non-JSON responses when tools should be called. ONLY provide non-
             };
 
             // Execute using standardized executor
-            const toolResult: ToolResult = await this.mcpExecutor.executeToolCall(
-              legacyToolCall,
-              executionContext
-            );
+            const toolResult: ToolResult =
+              await this.mcpExecutor.executeToolCall(
+                legacyToolCall,
+                executionContext
+              );
 
             this.l.log(
               `Legacy tool '${toolResult.toolName}' executed with success=${toolResult.success}`
