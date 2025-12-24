@@ -36,9 +36,9 @@ describe('AppController', () => {
 
   describe('profileInitialize', () => {
     it('should call appService.processNewProfile and return data', async () => {
-      const data = { profileId: 'test-profile-id', appId: 'test-app-id' };
+      const data = { profileId: 'test-profile-id', appId: 'test-app-id', personaId: 'test-persona-id' };
       await appController.profileInitialize(data);
-      expect(appService.processNewProfile).toHaveBeenCalledWith(data.profileId, data.appId);
+      expect(appService.processNewProfile).toHaveBeenCalledWith(data.profileId, data.appId, data.personaId);
     });
   });
 
@@ -49,6 +49,7 @@ describe('AppController', () => {
           id: 'test-conversation-id',
           messages: [],
           participants: [],
+          privacy: 'private',
           createdAt: new Date(),
           updatedAt: new Date(),
           addMessage: jest.fn(),
@@ -65,7 +66,7 @@ describe('AppController', () => {
 
     it('should throw RpcException if conversation ID is missing', async () => {
       const data = {
-        conversation: { messages: [] } as ChatConversation,
+        conversation: { messages: [], privacy: 'private' } as ChatConversation,
         aiPersonas: [],
       };
       await expect(appController.conversationUpdate(data as any)).rejects.toThrow(RpcException);

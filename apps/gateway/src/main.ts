@@ -18,7 +18,9 @@ async function bootstrap() {
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('Optomisitc Tanuki API')
-    .setDescription('I got caught by an angry panda once, he said life\'s too short to be stuck working for someone else\'s dreams. I wonder if he ever got back home.')
+    .setDescription(
+      "I got caught by an angry panda once, he said life's too short to be stuck working for someone else's dreams. I wonder if he ever got back home."
+    )
     .setVersion('1.0')
     .addTag('authentication')
     .addTag('social')
@@ -38,12 +40,14 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
     optionsSuccessStatus: 204,
-  })
+  });
 
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
-  await app.listen(port);
-  Logger.log(`🚀 Application is running on: http://localhost:${port}/${globalPrefix}`);
+  await app.listen(port, '0.0.0.0');
+  Logger.log(
+    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
+  );
   Logger.log(`📚 Swagger is running on: http://localhost:${port}/api-docs`);
 }
 

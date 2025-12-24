@@ -1,7 +1,14 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { Tool as McpTool } from '@rekog/mcp-nest';
+import { Tool as McpTool, Resource } from '@rekog/mcp-nest';
 import { ClientProxy } from '@nestjs/microservices';
-import { ProjectCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  ProjectCommands,
+  ServiceTokens,
+  TaskCommands,
+  RiskCommands,
+  ChangeCommands,
+  ProjectJournalCommands,
+} from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 import { z } from 'zod';
 import { CreateProjectDto, UpdateProjectDto } from '@optimistic-tanuki/models';
@@ -113,6 +120,85 @@ export class ProjectMcpService {
     }
   }
 
+  @Resource({
+    uri: 'project://{projectId}/context',
+    name: 'Project Context',
+    mimeType: 'application/json',
+    description:
+      'Get the full context of a project including tasks, risks, changes, and journal entries',
+  })
+  async getProjectContext(params: { projectId: string }) {
+    try {
+      const { projectId } = params;
+      this.logger.log(`MCP Resource: Getting context for project ${projectId}`);
+
+      const [project, tasks, risks, changes, journalEntries] =
+        await Promise.all([
+          firstValueFrom(
+            this.projectPlanningService.send(
+              { cmd: ProjectCommands.FIND_ONE },
+              projectId
+            )
+          ),
+          firstValueFrom(
+            this.projectPlanningService.send(
+              { cmd: TaskCommands.FIND_ALL },
+              { projectId }
+            )
+          ).catch((err) => {
+            this.logger.warn(`Failed to fetch tasks for ${projectId}`, err);
+            return [];
+          }),
+          firstValueFrom(
+            this.projectPlanningService.send(
+              { cmd: RiskCommands.FIND_ALL },
+              { projectId }
+            )
+          ).catch((err) => {
+            this.logger.warn(`Failed to fetch risks for ${projectId}`, err);
+            return [];
+          }),
+          firstValueFrom(
+            this.projectPlanningService.send(
+              { cmd: ChangeCommands.FIND_ALL },
+              { projectId }
+            )
+          ).catch((err) => {
+            this.logger.warn(`Failed to fetch changes for ${projectId}`, err);
+            return [];
+          }),
+          firstValueFrom(
+            this.projectPlanningService.send(
+              { cmd: ProjectJournalCommands.FIND_ALL },
+              { projectId }
+            )
+          ).catch((err) => {
+            this.logger.warn(
+              `Failed to fetch journal entries for ${projectId}`,
+              err
+            );
+            return [];
+          }),
+        ]);
+
+      return {
+        text: JSON.stringify(
+          {
+            project,
+            tasks,
+            risks,
+            changes,
+            journalEntries,
+          },
+          null,
+          2
+        ),
+      };
+    } catch (error) {
+      this.logger.error('Error getting project context:', error);
+      throw new Error(`Failed to get project context: ${error.message}`);
+    }
+  }
   @McpTool({
     name: 'create_project',
     description: 'Create a new project',

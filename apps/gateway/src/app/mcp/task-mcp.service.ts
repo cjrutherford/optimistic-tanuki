@@ -46,8 +46,18 @@ const updateTaskSchema = z.object({
     .nativeEnum(TaskPriority)
     .optional()
     .describe('The new priority of the task'),
-  createdBy: z.string().optional().describe('User who created the task'),
-  projectId: z.string().optional().describe('ID of the related project'),
+  createdBy: z
+    .string()
+    .optional()
+    .describe(
+      'User who created the task. this should map to the profileId used to reference the user.'
+    ),
+  projectId: z
+    .string()
+    .optional()
+    .describe(
+      'ID of the related project. this relates to the id field of the project data type. please use the list_projects tool to get project ids.'
+    ),
 });
 
 @Injectable()
@@ -61,7 +71,8 @@ export class TaskMcpService {
 
   @McpTool({
     name: 'list_tasks',
-    description: 'List all tasks for a project',
+    description:
+      'List all tasks for a project, this is highly dependent on the project type and the project id should match the id of the project either from the list_projects tool or from an earlier tool call response such as create project.',
     parameters: listTasksSchema,
   })
   async listTasks({ projectId }: z.infer<typeof listTasksSchema>) {
@@ -86,7 +97,8 @@ export class TaskMcpService {
 
   @McpTool({
     name: 'get_task',
-    description: 'Get details of a specific task by ID',
+    description:
+      'Get details of a specific task by ID. id for tasks could be found via the list_tasks tool or earlier tool call responses.',
     parameters: getTaskSchema,
   })
   async getTask({ taskId }: z.infer<typeof getTaskSchema>) {
@@ -107,7 +119,8 @@ export class TaskMcpService {
 
   @McpTool({
     name: 'create_task',
-    description: 'Create a new task for a project',
+    description:
+      'Create a new task for a project. this should be associated with a project id obtained from the list_projects tool or earlier tool call responses.',
     parameters: createTaskSchema,
   })
   async createTask({
@@ -148,7 +161,8 @@ export class TaskMcpService {
 
   @McpTool({
     name: 'update_task',
-    description: 'Update an existing task',
+    description:
+      'Update an existing task. all data points are optional except for the id which is required to identify the task to update.',
     parameters: updateTaskSchema,
   })
   async updateTask({
