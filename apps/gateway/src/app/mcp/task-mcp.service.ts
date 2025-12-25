@@ -68,6 +68,22 @@ const updateTaskSchema = z.object({
     ),
 });
 
+const queryTasksSchema = z.object({
+  projectId: z.string().describe('The ID of the project to query tasks for'),
+  title: z
+    .string()
+    .optional()
+    .describe('Filter tasks by title (partial match)'),
+  status: z
+    .nativeEnum(TaskStatus)
+    .optional()
+    .describe('Filter tasks by status'),
+  priority: z
+    .nativeEnum(TaskPriority)
+    .optional()
+    .describe('Filter tasks by priority'),
+});
+
 @Injectable()
 export class TaskMcpService {
   private readonly logger = new Logger(TaskMcpService.name);
@@ -234,6 +250,30 @@ export class TaskMcpService {
     } catch (error) {
       this.logger.error('Error deleting task:', error);
       throw new Error(`Failed to delete task: ${error.message}`);
+    }
+  }
+
+  @McpTool({
+    name: 'query_tasks',
+    description: 'Query tasks within a project by title, status, or priority',
+    parameters: queryTasksSchema,
+  })
+  async queryTasks(query: z.infer<typeof queryTasksSchema>) {
+    try {
+      this.logger.log(
+        `MCP Tool: Querying tasks for project ${query.projectId}`
+      );
+      const tasks = await firstValueFrom(
+        this.projectPlanningService.send({ cmd: TaskCommands.FIND_ALL }, query)
+      );
+      return {
+        success: true,
+        tasks,
+        count: tasks.length,
+      };
+    } catch (error) {
+      this.logger.error('Error querying tasks:', error);
+      throw new Error(`Failed to query tasks: ${error.message}`);
     }
   }
 }

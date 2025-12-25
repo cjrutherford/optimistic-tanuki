@@ -51,6 +51,23 @@ const updateRiskSchema = z.object({
     .describe('The new status of the risk'),
 });
 
+const queryRisksSchema = z.object({
+  projectId: z.string().describe('The ID of the project to query risks for'),
+  name: z.string().optional().describe('Filter risks by name (partial match)'),
+  impact: z
+    .nativeEnum(RiskImpact)
+    .optional()
+    .describe('Filter risks by impact'),
+  likelihood: z
+    .nativeEnum(RiskLikelihood)
+    .optional()
+    .describe('Filter risks by likelihood'),
+  status: z
+    .nativeEnum(RiskStatus)
+    .optional()
+    .describe('Filter risks by status'),
+});
+
 @Injectable()
 export class RiskMcpService {
   private readonly logger = new Logger(RiskMcpService.name);
@@ -193,6 +210,31 @@ export class RiskMcpService {
     } catch (error) {
       this.logger.error('Error deleting risk:', error);
       throw new Error(`Failed to delete risk: ${error.message}`);
+    }
+  }
+
+  @McpTool({
+    name: 'query_risks',
+    description:
+      'Query risks within a project by name, impact, likelihood, or status',
+    parameters: queryRisksSchema,
+  })
+  async queryRisks(query: z.infer<typeof queryRisksSchema>) {
+    try {
+      this.logger.log(
+        `MCP Tool: Querying risks for project ${query.projectId}`
+      );
+      const risks = await firstValueFrom(
+        this.projectPlanningService.send({ cmd: RiskCommands.FIND_ALL }, query)
+      );
+      return {
+        success: true,
+        risks,
+        count: risks.length,
+      };
+    } catch (error) {
+      this.logger.error('Error querying risks:', error);
+      throw new Error(`Failed to query risks: ${error.message}`);
     }
   }
 }

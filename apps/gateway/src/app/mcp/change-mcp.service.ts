@@ -54,6 +54,22 @@ export const deleteChangeSchema = z.object({
   changeId: z.string().describe('The ID of the change to delete'),
 });
 
+const queryChangesSchema = z.object({
+  projectId: z.string().describe('The ID of the project to query changes for'),
+  changeName: z
+    .string()
+    .optional()
+    .describe('Filter changes by name (partial match)'),
+  changeStatus: z
+    .enum(['PROPOSED', 'APPROVED', 'IN_PROGRESS', 'COMPLETE', 'DISCARDED'])
+    .optional()
+    .describe('Filter changes by status'),
+  priority: z
+    .enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
+    .optional()
+    .describe('Filter changes by priority'),
+});
+
 @Injectable()
 export class ChangeMcpService {
   private readonly logger = new Logger(ChangeMcpService.name);
@@ -153,6 +169,33 @@ export class ChangeMcpService {
     } catch (error) {
       this.logger.error('Error deleting change:', error);
       throw new Error(`Failed to delete change: ${error.message}`);
+    }
+  }
+
+  @McpTool({
+    name: 'query_changes',
+    description: 'Query changes within a project by name, status, or priority',
+    parameters: queryChangesSchema,
+  })
+  async queryChanges(query: z.infer<typeof queryChangesSchema>) {
+    try {
+      this.logger.log(
+        `MCP Tool: Querying changes for project ${query.projectId}`
+      );
+      const changes = await firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: ChangeCommands.FIND_ALL },
+          query
+        )
+      );
+      return {
+        success: true,
+        changes,
+        count: changes.length,
+      };
+    } catch (error) {
+      this.logger.error('Error querying changes:', error);
+      throw new Error(`Failed to query changes: ${error.message}`);
     }
   }
 }
