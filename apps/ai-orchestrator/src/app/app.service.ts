@@ -20,13 +20,15 @@ import {
 import { ToolsService } from './tools.service';
 import { generatePersonaSystemMessage } from '@optimistic-tanuki/prompt-generation';
 import { MCPToolExecutor } from './mcp-tool-executor';
-import { buildConversationPreamble, shouldEmitToUser, extractUserFacingContent } from './utils/prompt-engineering';
 import { 
-  parseXmlToolCall, 
-  containsXmlToolCall, 
-  stripXmlToolCalls, 
-  xmlToolCallToOpenAI 
-} from './utils/xml-tool-parser';
+  buildConversationPreamble, 
+  shouldEmitToUser, 
+  extractUserFacingContent,
+  parseXmlToolCall,
+  containsXmlToolCall,
+  stripXmlToolCalls,
+  xmlToolCallToOpenAI
+} from './utils';
 
 @Injectable()
 export class AppService {

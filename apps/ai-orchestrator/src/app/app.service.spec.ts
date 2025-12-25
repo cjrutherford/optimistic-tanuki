@@ -19,6 +19,7 @@ import {
 } from '@optimistic-tanuki/models';
 import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
 import { ToolsService } from './tools.service';
+import { MCPToolExecutor } from './mcp-tool-executor';
 
 jest.mock('@optimistic-tanuki/prompt-generation');
 
@@ -83,15 +84,17 @@ describe('AppService', () => {
             listTools: jest.fn().mockResolvedValue([]),
             callTool: jest.fn().mockResolvedValue({}),
             getResource: jest.fn().mockResolvedValue(null),
-            listResources: jest.fn().mockResolvedValue([]),
           },
         },
         {
           provide: MCPToolExecutor,
           useValue: {
-            executeToolCall: jest.fn(),
-            executeToolCalls: jest.fn(),
-            validateResult: jest.fn(),
+            executeToolCall: jest.fn().mockResolvedValue({
+              success: true,
+              toolName: 'test_tool',
+              result: { message: 'success' },
+              error: null,
+            }),
           },
         },
       ],
