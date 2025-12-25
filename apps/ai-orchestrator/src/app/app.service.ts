@@ -67,7 +67,7 @@ export class AppService {
       const systemPromptBase = generatePersonaSystemMessage(assistant);
       this.l.log(`System prompt base: '${systemPromptBase}'`);
       const message: GeneratePrompt = {
-        model: 'llama3.2:3b',
+        model: 'qwen3-coder',
         stream: false,
         messages: [
           {
@@ -76,7 +76,9 @@ export class AppService {
             The user has just created a profile as a user of ${appId}. This app's description is: ${
               this.aiEnabledApps[appId] ?? 'No description available'
             }. 
-            The user's profile name is ${profile.profileName}. 
+            The user's profile name is ${
+              profile.profileName
+            } and their user id is their profile id: ${profile.id}. 
             The user may have limited information in their profile.
             your goal is to assist the user in fleshing out their projects and goals. 
             behind the scenes, provide JSON output with potential TELOS data points to add to either the users' or the project's telos data.
@@ -128,6 +130,7 @@ export class AppService {
     aiPersonas: PersonaTelosDto[];
   }): Promise<Partial<ChatMessage>[]> {
     try {
+      const MAX_ITER = 6;
       const { conversation, aiPersonas } = data;
       // this.l.log(JSON.stringify(aiPersonas));
 
@@ -169,31 +172,27 @@ export class AppService {
         const toolsMeta = await this.toolsService.listTools().catch(() => []);
         // Transform MCP tools to OpenAI format for Ollama's OpenAI-compatible API
         // Pass user profile ID to enhance tool parameter descriptions
-        const openAITools = transformMcpToolsToOpenAI(toolsMeta, profile.id);
-        console.log('Transformed tools:', openAITools[0]);
+        const openAITools = toolsMeta; //transformMcpToolsToOpenAI(toolsMeta, profile.id);
+        // console.log('Transformed tools:', openAITools[0]);
 
         const projectResource = await this.toolsService
           .getResource('project://shcema')
           .catch(() => null);
 
         this.l.log(`Conversation summary: '${conversationSummary}'`);
-        const personaPrompt: GeneratePrompt = {
-          model: 'llama3.2:3b',
-          stream: false,
-          tools: openAITools,
-          messages: [
-            {
-              role: 'system',
-              content: `${systemPrompt}
-                
-Your previous conversation summary is: '${conversationSummary}'
 
-CURRENT USER INFORMATION:
-- User Profile ID: ${profile.id}
-- User Name: ${profile.profileName}
-- ALWAYS use ${
-                profile.id
-              } for any 'userId', 'profileId', 'createdBy', or 'members' parameters
+        const conversationPreamble = `${systemPrompt}
+
+# USER CONTEXT
+userProfileId: ${profile.id}
+userName: ${profile.profileName}
+
+# SYSTEM INVARIANTS (must always be followed)
+- Always use userId/profileId/createdBy/members = ${profile.id}
+- When selecting projectId, ALWAYS call list_projects with userId=${
+          profile.id
+        } first
+- Use ONE tool per assistant response. If multiple steps required, call tools sequentially across responses.
 
 TOOL USAGE GUIDELINES:
 - Use ONE tool at a time - you can only call a single tool per response
@@ -208,33 +207,106 @@ HANDLING TOOL RESULTS:
 - If a tool call succeeds, use the data returned to proceed to the next step or formulate your final response.
 - When a tool returns a list (e.g., list_projects), check if it's empty before trying to access items.
 
-PROJECT-RELATED WORKFLOWS:
-- Tasks, Risks, Changes, and Journal Entries are ALL tied to specific projects
-- BEFORE creating or listing any of these items, you MUST first call 'list_projects' with userId: ${
-                profile.id
-              }
-- From the list_projects response, select the appropriate projectId
-- Then use that projectId when creating/listing tasks, risks, changes, or journal entries
-- If no suitable project exists, create one first using 'create_project'
+# RESPONSE RULES
+- If calling a tool: respond ONLY with the tool call JSON (strict). After toolReply, continue the conversation and produce a final natural-language summary for the user.
+- Final user-facing messages must be plain language and include a short summary of actions taken.
+- For TELOS output: append valid JSON after a literal line '---' using this schema: { "goals": [], "skills": [], "interests": [], "limitations": [], "strengths": [], "objectives": [], "coreObjective": "", "overallProfileSummary": "" }.
 
-PARAMETER USAGE RULES:
-- userId/profileId/createdBy: ALWAYS use ${profile.id} (the current user)
-- members: ALWAYS use [${profile.id}] (include the current user)
-- projectId: MUST come from a 'list_projects' call first - select from available projects
+# EXAMPLES
+- OpenAI tool_call example:
+{"id":"1","type":"function","function":{"name":"create_project","arguments":"{\"name\":\"My Project\",\"userId\":\"${
+          profile.id
+        }\"}"}}
+- Successful tool_result:
+{"success":true,"toolName":"create_project","result":{"id":"proj_123","name":"My Project"},"error":null}
+- Failure:
+{"success":false,"toolName":"create_project","result":null,"error":{"message":"Project name already exists"}}
 
-You have access to tools that can help you complete tasks. Use them when appropriate.
-Simply respond naturally to the user, and call tools when needed to accomplish their requests.
+For example you can get a list of hte user's projects from within the app by calling the list_projects tool with userId: ${
+          profile.id
+        }.
 
-If the intent is to call another tool, ONLY responsd with the tool call JSON as specified in the tool calling protocol.
-DO NOT provide non-JSON responses when tools should be called. ONLY provide non-JSON responses when you have completed all tool calls and are providing a final answer to the user.
+# OPERATIONAL LIMITS
+- Max tool-call iterations: ${MAX_ITER}
+- On tool failure: stop dependent steps, return an error summary and ask user for next action.
+
 ${
   projectResource
-    ? `- You have access to the Project Schema resource which covers most database effective tool calls: ${JSON.stringify(
-        projectResource
-      )}`
+    ? `# Project resource: ${JSON.stringify(projectResource)}`
     : ''
 }
-`,
+`;
+
+        //         const conversationPreamble = `${systemPrompt}
+
+        // Your previous conversation summary is: '${conversationSummary}'
+
+        // CURRENT USER INFORMATION:
+        // - User Profile ID: ${profile.id}
+        // - User Name: ${profile.profileName}
+        // - ALWAYS use ${
+        //           profile.id
+        //         } for any 'userId', 'profileId', 'createdBy', or 'members' parameters
+
+        // TOOL USAGE GUIDELINES:
+        // - Use ONE tool at a time - you can only call a single tool per response
+        // - If a task requires multiple steps, call one tool, wait for its response, then call the next tool
+        // - Some tools depend on data from other tools - use the response from one tool to inform the next tool call
+        // - After completing all necessary tool calls, ALWAYS provide a final natural language response to the user explaining what was accomplished
+        // - Your final response should summarize the actions taken and the results
+
+        // HANDLING TOOL RESULTS:
+        // - Analyze the result of each tool call carefully.
+        // - If a tool call fails (contains "error" or "isError": true), DO NOT proceed with dependent steps. Instead, inform the user of the error and ask for clarification or try an alternative approach if possible.
+        // - If a tool call succeeds, use the data returned to proceed to the next step or formulate your final response.
+        // - When a tool returns a list (e.g., list_projects), check if it's empty before trying to access items.
+
+        // PROJECT-RELATED WORKFLOWS:
+        // - Tasks, Risks, Changes, and Journal Entries are ALL tied to specific projects
+        // - BEFORE creating or listing any of these items, you MUST first call 'list_projects' with userId: ${
+        //           profile.id
+        //         }
+        // - From the list_projects response, select the appropriate projectId
+        // - Then use that projectId when creating/listing tasks, risks, changes, or journal entries
+        // - If no suitable project exists, create one first using 'create_project'
+
+        // PARAMETER USAGE RULES:
+        // - userId/profileId/createdBy: ALWAYS use ${profile.id} (the current user)
+        // - members: ALWAYS use [${profile.id}] (include the current user)
+        // - projectId: MUST come from a 'list_projects' call first - select from available projects
+
+        // GENERAL GUIDELINES:
+        // when asked to "create" "update" "list" or "get" information related to projects, tasks, risks, changes, or journal entries, ALWAYS ensure you have the correct project context by calling 'list_projects' first.
+        // the point of this is to ensure that all actions are tied to the correct project and that you have the necessary information to proceed. if the user provides a project name, we can use the query_projects tool to find it, but we should still confirm by listing projects first.
+
+        // You have access to tools that can help you complete tasks. Use them when appropriate.
+        // Simply respond naturally to the user, and call tools when needed to accomplish their requests.
+
+        // If the intent is to call another tool, ONLY responsd with the tool call JSON as specified in the tool calling protocol.
+        // DO NOT provide non-JSON responses when tools should be called. ONLY provide non-JSON responses when you have completed all tool calls and are providing a final answer to the user.
+        // ${
+        //   projectResource
+        //     ? `- You have access to the Project Schema resource which covers most database effective tool calls: ${JSON.stringify(
+        //         projectResource
+        //       )}`
+        //     : ''
+        // }
+        // `;
+
+        const personaPrompt: GeneratePrompt = {
+          model: 'qwen3-coder',
+          stream: false,
+          tools: openAITools,
+          messages: [
+            {
+              role: 'tools',
+              content: `Available tools: ${openAITools
+                .map((t) => JSON.stringify(t))
+                .join(', ')}`,
+            },
+            {
+              role: 'system',
+              content: conversationPreamble,
             },
             {
               role: 'user',
@@ -263,7 +335,6 @@ ${
 
         let stopConditionMet = false;
         let iterations = 0;
-        const MAX_ITER = 6;
         while (!stopConditionMet) {
           iterations++;
           if (iterations > MAX_ITER) {
@@ -409,10 +480,16 @@ ${
                   message: `Tool failed: ${toolResult.error?.message}`,
                 });
 
-            personaPrompt.messages.push({
-              role: 'assistant',
-              content: `The tool '${parsedResponse.tool}' returned the following response: ${responseContent}. Please use this information to generate your next action.`,
-            });
+            personaPrompt.messages.push(
+              {
+                role: 'system',
+                content: conversationPreamble,
+              },
+              {
+                role: 'assistant',
+                content: `The tool '${parsedResponse.tool}' returned the following response: ${responseContent}. Please use this information to generate your next action.`,
+              }
+            );
           } else if (
             parsedResponse &&
             (parsedResponse.stop ||
@@ -514,7 +591,7 @@ ${
           'The user is just starting out. Please introduce yourself and what your available to help with.';
       }
       const prompt: GeneratePrompt = {
-        model: 'llama3.2:3b',
+        model: 'qwen3-coder',
         stream: false,
         messages: [
           {

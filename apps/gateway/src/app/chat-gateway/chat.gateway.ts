@@ -182,7 +182,7 @@ export class ChatGateway {
         "Current ai payload: aiPayload='" +
           JSON.stringify(aiPayload) +
           "' new payload='" +
-          payload +
+          JSON.stringify(payload) +
           "'"
       );
       await firstValueFrom(
