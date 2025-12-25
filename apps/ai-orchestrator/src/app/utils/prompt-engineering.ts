@@ -1,6 +1,6 @@
 /**
  * Prompt Engineering Utilities
- * 
+ *
  * This module contains utility functions for constructing and priming prompts
  * to ensure the LLM can accurately call tools with correct parameters.
  */
@@ -18,6 +18,7 @@ CRITICAL PARAMETER RULES:
 - When selecting projectId, ALWAYS call list_projects with userId=${profileId} first
 - Use ONE tool per assistant response
 - Tool calls must use exact parameter names from tool definitions
+- sometimes the user will not provide the exact names or values for some parameters, it's determinant that you try to "fuzz" the value to match the expected parameter name or value as closely as possible.
 
 RESPONSE FORMAT:
 - OpenAI format tool calls are preferred: {"id":"...","type":"function","function":{"name":"tool_name","arguments":"{...}"}}
@@ -59,6 +60,8 @@ userName: ${profile.profileName}`;
 export function generateToolUsageGuidelines(): string {
   return `TOOL USAGE GUIDELINES:
 - Use ONE tool at a time - you can only call a single tool per response
+- The tool call definition in your response MUST be a valid XML document with a clear "<tool_call>" root element or JSON in OpenAI function calling format
+- ALWAYS use exact parameter names as defined in the tool definitions
 - If a task requires multiple steps, call one tool, wait for its response, then call the next tool
 - Some tools depend on data from other tools - use the response from one tool to inform the next tool call
 - After completing all necessary tool calls, ALWAYS provide a final natural language response to the user explaining what was accomplished
@@ -72,6 +75,7 @@ export function generateToolResultHandling(): string {
   return `HANDLING TOOL RESULTS:
 - Analyze the result of each tool call carefully.
 - If a tool call fails (contains "error" or "isError": true), DO NOT proceed with dependent steps. Instead, inform the user of the error and ask for clarification or try an alternative approach if possible.
+- if a tool call fails due  to an error as previously defined, attempt to correct the issue by attempting to correct the call at least once before informing the user.
 - If a tool call succeeds, use the data returned to proceed to the next step or formulate your final response.
 - When a tool returns a list (e.g., list_projects), check if it's empty before trying to access items.`;
 }
@@ -146,7 +150,11 @@ export function extractUserFacingContent(
   toolCalls?: any[]
 ): string | null {
   // If there are tool calls but no content, this is purely a tool call message
-  if (toolCalls && toolCalls.length > 0 && (!content || content.trim() === '')) {
+  if (
+    toolCalls &&
+    toolCalls.length > 0 &&
+    (!content || content.trim() === '')
+  ) {
     return null;
   }
 

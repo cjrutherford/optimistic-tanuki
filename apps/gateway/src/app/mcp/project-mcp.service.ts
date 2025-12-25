@@ -203,6 +203,7 @@ export class ProjectMcpService {
       throw new Error(`Failed to get project context: ${error.message}`);
     }
   }
+
   @McpTool({
     name: 'create_project',
     description: 'Create a new project',
