@@ -185,13 +185,42 @@ export class ChatGateway {
           JSON.stringify(payload) +
           "'"
       );
-      await firstValueFrom(
+      
+      // Send to AI orchestrator and get responses
+      const aiResponses: Partial<ChatMessage>[] = await firstValueFrom(
         this.aiOrchestrationClient.send(
           { cmd: AIOrchestrationCommands.CONVERSATION_UPDATE },
           { conversation: aiPayload, aiPersonas: aiRecipients }
         )
       );
-      this.l.log('AI message sent successfully.');
+      
+      this.l.log(`AI orchestrator returned ${aiResponses.length} messages`);
+      
+      // Emit each AI response to all participants as they come in
+      for (const aiResponse of aiResponses) {
+        this.l.log(`Processing AI response: ${JSON.stringify(aiResponse)}`);
+        
+        // Get updated conversations for all participants
+        const allParticipantIds = [...new Set([senderId, ...recipientIds])];
+        for (const participantId of allParticipantIds) {
+          const participantSocket = this.connectedClients.find(
+            (c) => c.id === participantId
+          );
+          
+          if (participantSocket) {
+            this.l.log(`Emitting updated conversations to participant: ${participantId}`);
+            const conversations = await firstValueFrom(
+              this.chatCollectorClient.send(
+                { cmd: ChatCommands.GET_CONVERSATIONS },
+                { profileId: participantId }
+              )
+            );
+            participantSocket.client.emit('conversations', conversations || []);
+          }
+        }
+      }
+      
+      this.l.log('AI message processing complete.');
     } else {
       this.l.log('Message handling complete.');
     }

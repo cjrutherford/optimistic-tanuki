@@ -328,8 +328,24 @@ export class AppService {
           );
           if (userFacingContent) {
             this.l.log(`LLM user-facing message: "${userFacingContent}"`);
-            // Optionally emit this to user as an intermediate message for better observability
-            // This shows what the LLM is "thinking" before tool execution
+            // Emit intermediate message showing LLM reasoning
+            const intermediateMessage: Partial<ChatMessage> = {
+              conversationId: conversation.id,
+              senderId: persona.id,
+              senderName: persona.name,
+              recipientId: [profile.id],
+              recipientName: [profile.profileName],
+              content: userFacingContent,
+              timestamp: new Date(),
+              type: 'system',
+            };
+            responses.push(intermediateMessage);
+            await firstValueFrom(
+              this.chatCollectorService.send(
+                { cmd: ChatCommands.POST_MESSAGE },
+                intermediateMessage
+              )
+            );
           }
 
           // Check if response has OpenAI-format tool_calls
@@ -346,6 +362,25 @@ export class AppService {
             }
 
             const toolCall = response.message.tool_calls[0]; // Process first tool call only
+
+            // Emit tool call notification message for observability
+            const toolCallMessage: Partial<ChatMessage> = {
+              conversationId: conversation.id,
+              senderId: persona.id,
+              senderName: persona.name,
+              recipientId: [profile.id],
+              recipientName: [profile.profileName],
+              content: `🔧 Calling tool: ${toolCall.function.name}`,
+              timestamp: new Date(),
+              type: 'system',
+            };
+            responses.push(toolCallMessage);
+            await firstValueFrom(
+              this.chatCollectorService.send(
+                { cmd: ChatCommands.POST_MESSAGE },
+                toolCallMessage
+              )
+            );
 
             // Create execution context
             const executionContext: ToolExecutionContext = {
@@ -408,6 +443,50 @@ export class AppService {
               // Convert XML to OpenAI format
               const openAIToolCall = xmlToolCallToOpenAI(xmlToolCall);
               
+              // Strip XML tool call from content for user-facing message
+              const cleanedContent = stripXmlToolCalls(content);
+              
+              // If there's user-facing content alongside the tool call, emit it
+              if (cleanedContent && cleanedContent.trim()) {
+                this.l.log(`User message with XML tool call: "${cleanedContent}"`);
+                const intermediateMessage: Partial<ChatMessage> = {
+                  conversationId: conversation.id,
+                  senderId: persona.id,
+                  senderName: persona.name,
+                  recipientId: [profile.id],
+                  recipientName: [profile.profileName],
+                  content: cleanedContent,
+                  timestamp: new Date(),
+                  type: 'system',
+                };
+                responses.push(intermediateMessage);
+                await firstValueFrom(
+                  this.chatCollectorService.send(
+                    { cmd: ChatCommands.POST_MESSAGE },
+                    intermediateMessage
+                  )
+                );
+              }
+
+              // Emit tool call notification message
+              const toolCallMessage: Partial<ChatMessage> = {
+                conversationId: conversation.id,
+                senderId: persona.id,
+                senderName: persona.name,
+                recipientId: [profile.id],
+                recipientName: [profile.profileName],
+                content: `🔧 Calling tool: ${xmlToolCall.name}`,
+                timestamp: new Date(),
+                type: 'system',
+              };
+              responses.push(toolCallMessage);
+              await firstValueFrom(
+                this.chatCollectorService.send(
+                  { cmd: ChatCommands.POST_MESSAGE },
+                  toolCallMessage
+                )
+              );
+              
               // Create execution context
               const executionContext: ToolExecutionContext = {
                 userId: profile.id,
@@ -425,14 +504,6 @@ export class AppService {
               this.l.log(
                 `XML tool '${toolResult.toolName}' executed with success=${toolResult.success}`
               );
-
-              // Strip XML tool call from content for user-facing message
-              const cleanedContent = stripXmlToolCalls(content);
-              
-              // If there's user-facing content alongside the tool call, emit it
-              if (cleanedContent && cleanedContent.trim()) {
-                this.l.log(`User message with XML tool call: "${cleanedContent}"`);
-              }
 
               // Add the tool response back to the persona prompt for further processing
               const responseContent = toolResult.success
@@ -483,6 +554,25 @@ export class AppService {
                 arguments: JSON.stringify(parsedResponse.args || {}),
               },
             };
+
+            // Emit tool call notification message for observability
+            const toolCallMessage: Partial<ChatMessage> = {
+              conversationId: conversation.id,
+              senderId: persona.id,
+              senderName: persona.name,
+              recipientId: [profile.id],
+              recipientName: [profile.profileName],
+              content: `🔧 Calling tool: ${parsedResponse.tool}`,
+              timestamp: new Date(),
+              type: 'system',
+            };
+            responses.push(toolCallMessage);
+            await firstValueFrom(
+              this.chatCollectorService.send(
+                { cmd: ChatCommands.POST_MESSAGE },
+                toolCallMessage
+              )
+            );
 
             // Create execution context
             const executionContext: ToolExecutionContext = {
