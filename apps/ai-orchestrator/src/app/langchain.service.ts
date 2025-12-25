@@ -1,17 +1,28 @@
 /**
  * LangChain Service for AI Orchestration
- * 
+ *
  * Replaces custom prompt engineering with LangChain.js
  */
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ChatOllama } from '@langchain/ollama';
-import { HumanMessage, AIMessage, SystemMessage, BaseMessage } from '@langchain/core/messages';
+import {
+  HumanMessage,
+  AIMessage,
+  SystemMessage,
+  BaseMessage,
+} from '@langchain/core/messages';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { ChatMessage, PersonaTelosDto, ProfileDto, ToolResult } from '@optimistic-tanuki/models';
+import {
+  ChatMessage,
+  PersonaTelosDto,
+  ProfileDto,
+  ToolResult,
+} from '@optimistic-tanuki/models';
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ToolsService } from './tools.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class LangChainService {
@@ -20,11 +31,16 @@ export class LangChainService {
 
   constructor(
     private readonly toolsService: ToolsService,
-    private readonly mcpExecutor: MCPToolExecutor
+    private readonly mcpExecutor: MCPToolExecutor,
+    private readonly config: ConfigService
   ) {
+    const ollama = this.config.get<{ host: string; port: number }>('ollama');
     this.llm = new ChatOllama({
       model: 'qwen3-coder',
-      baseUrl: process.env.OLLAMA_BASE_URL || 'http://prompt-proxy:11434',
+      baseUrl:
+        ollama.host && ollama.port
+          ? `http://${ollama.host}:${ollama.port}`
+          : 'http://prompt-proxy:11434',
       temperature: 0.7,
     });
   }
@@ -49,9 +65,12 @@ ${conversationSummary}
 - Provide clear responses after tool execution`;
   }
 
-  private async createTools(userId: string, conversationId: string): Promise<DynamicStructuredTool[]> {
+  private async createTools(
+    userId: string,
+    conversationId: string
+  ): Promise<DynamicStructuredTool[]> {
     const mcpTools = await this.toolsService.listTools();
-    return mcpTools.map(tool => {
+    return mcpTools.map((tool) => {
       const schema = this.convertToZodSchema(tool.inputSchema);
       return new DynamicStructuredTool({
         name: tool.name,
@@ -62,14 +81,19 @@ ${conversationSummary}
           const toolCall = {
             id: `lc_${Date.now()}`,
             type: 'function' as const,
-            function: { name: tool.name, arguments: JSON.stringify(enrichedInput) },
+            function: {
+              name: tool.name,
+              arguments: JSON.stringify(enrichedInput),
+            },
           };
           const result: ToolResult = await this.mcpExecutor.executeToolCall(
             toolCall,
             { userId, profileId: userId, conversationId }
           );
           if (result.success) {
-            return typeof result.result === 'string' ? result.result : JSON.stringify(result.result);
+            return typeof result.result === 'string'
+              ? result.result
+              : JSON.stringify(result.result);
           }
           throw new Error(result.error?.message || 'Tool failed');
         },
@@ -80,16 +104,20 @@ ${conversationSummary}
   private convertToZodSchema(jsonSchema: any): z.ZodObject<any> {
     const shape: Record<string, z.ZodTypeAny> = {};
     if (jsonSchema.properties) {
-      for (const [key, prop] of Object.entries(jsonSchema.properties as Record<string, any>)) {
+      for (const [key, prop] of Object.entries(
+        jsonSchema.properties as Record<string, any>
+      )) {
         let zodType: z.ZodTypeAny = z.any();
         if (prop.type === 'string') zodType = z.string();
-        else if (prop.type === 'number' || prop.type === 'integer') zodType = z.number();
+        else if (prop.type === 'number' || prop.type === 'integer')
+          zodType = z.number();
         else if (prop.type === 'boolean') zodType = z.boolean();
         else if (prop.type === 'array') zodType = z.array(z.any());
         else if (prop.type === 'object') zodType = z.object({}).passthrough();
-        
+
         if (prop.description) zodType = zodType.describe(prop.description);
-        if (!jsonSchema.required || !jsonSchema.required.includes(key)) zodType = zodType.optional();
+        if (!jsonSchema.required || !jsonSchema.required.includes(key))
+          zodType = zodType.optional();
         shape[key] = zodType;
       }
     }
@@ -97,8 +125,10 @@ ${conversationSummary}
   }
 
   private convertChatHistory(messages: ChatMessage[]): BaseMessage[] {
-    return messages.map(msg => {
-      const isUser = msg.role === 'user' || (msg.type === 'chat' && msg.senderId !== msg.recipientId?.[0]);
+    return messages.map((msg) => {
+      const isUser =
+        msg.role === 'user' ||
+        (msg.type === 'chat' && msg.senderId !== msg.recipientId?.[0]);
       if (isUser) return new HumanMessage(msg.content);
       if (msg.role === 'assistant') return new AIMessage(msg.content);
       return new SystemMessage(msg.content);
@@ -113,10 +143,14 @@ ${conversationSummary}
     conversationSummary: string,
     conversationId: string
   ): Promise<{ response: string; intermediateSteps: any[] }> {
-    const systemPrompt = this.createSystemPrompt(persona, profile, conversationSummary);
+    const systemPrompt = this.createSystemPrompt(
+      persona,
+      profile,
+      conversationSummary
+    );
     const tools = await this.createTools(profile.id, conversationId);
     const chatHistory = this.convertChatHistory(conversationHistory);
-    
+
     const messages: BaseMessage[] = [
       new SystemMessage(systemPrompt),
       ...chatHistory,
@@ -136,9 +170,13 @@ ${conversationSummary}
     conversationSummary: string,
     conversationId: string
   ): AsyncGenerator<{ type: string; content: string }> {
-    const systemPrompt = this.createSystemPrompt(persona, profile, conversationSummary);
+    const systemPrompt = this.createSystemPrompt(
+      persona,
+      profile,
+      conversationSummary
+    );
     const chatHistory = this.convertChatHistory(conversationHistory);
-    
+
     const messages: BaseMessage[] = [
       new SystemMessage(systemPrompt),
       ...chatHistory,
