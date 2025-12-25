@@ -283,125 +283,196 @@ export class AppService {
             conversation.id
           );
 
+          let accumulatedContent = '';
+          let lastEmittedLength = 0;
+          
           // Process stream and emit messages in real-time
           for await (const chunk of stream) {
-            const detectedToolCall = this.extractToolCallFromText(
-              typeof chunk.content === 'string' ? chunk.content : undefined,
-              'stream_'
-            ) as ToolCall | null;
-            this.l.debug('Chunk: ' + chunk);
-            this.l.debug(
-              'Extracted tool call: ' + JSON.stringify(detectedToolCall)
-            );
-            if (chunk.type === 'tool_call' || detectedToolCall) {
-              // Emit tool call notification
-              const toolCallMessage: Partial<ChatMessage> = {
-                conversationId: conversation.id,
-                senderId: persona.id,
-                senderName: persona.name,
-                recipientId: [profile.id],
-                recipientName: [profile.profileName],
-                content: chunk.content,
-                timestamp: new Date(),
-                type: 'system',
-              };
-
-              // Post immediately for real-time delivery
-              await firstValueFrom(
-                this.chatCollectorService.send(
-                  { cmd: ChatCommands.POST_MESSAGE },
-                  toolCallMessage
-                )
-              );
-              responses.push(toolCallMessage);
-
-              // Execute the tool via the MCP executor and post the result, then continue the stream loop
-              try {
-                const ctx: ToolExecutionContext = {
-                  profileId: profile.id,
-                  userId: profile.id,
-                  conversationId: conversation.id,
-                };
-
-                const result: ToolResult =
-                  await this.mcpExecutor.executeToolCall(detectedToolCall, ctx);
-
-                const resultContent = result.success
-                  ? typeof result.result === 'string'
-                    ? result.result
-                    : JSON.stringify(result.result)
-                  : JSON.stringify({
-                      error: result.error,
-                      message: result.error?.message || 'Tool execution failed',
-                    });
-
-                const toolResultMessage: Partial<ChatMessage> = {
+            this.l.debug('Received chunk:', { type: chunk.type, contentLength: chunk.content?.length });
+            
+            if (chunk.type === 'chunk') {
+              // Accumulate content
+              accumulatedContent += chunk.content;
+              
+              // Emit intermediate message if we have enough new content (every 50 chars or so)
+              if (accumulatedContent.length - lastEmittedLength > 50) {
+                const newContent = accumulatedContent.substring(lastEmittedLength);
+                lastEmittedLength = accumulatedContent.length;
+                
+                const intermediateMessage: Partial<ChatMessage> = {
                   conversationId: conversation.id,
                   senderId: persona.id,
                   senderName: persona.name,
                   recipientId: [profile.id],
                   recipientName: [profile.profileName],
-                  content: `🔧 Tool result (${detectedToolCall.function.name}): ${resultContent}`,
+                  content: newContent,
                   timestamp: new Date(),
-                  type: 'system',
+                  type: 'chat_chunk', // New type for streaming chunks
                 };
-
+                
+                // Post immediately for real-time updates
                 await firstValueFrom(
                   this.chatCollectorService.send(
                     { cmd: ChatCommands.POST_MESSAGE },
-                    toolResultMessage
+                    intermediateMessage
                   )
                 );
-                responses.push(toolResultMessage);
-              } catch (toolError) {
-                this.l.error('Error executing tool call:', toolError);
-                const errorMessage: Partial<ChatMessage> = {
-                  conversationId: conversation.id,
-                  senderId: persona.id,
-                  senderName: persona.name,
-                  recipientId: [profile.id],
-                  recipientName: [profile.profileName],
-                  content: `⚠️ Error executing tool (${detectedToolCall.function.name}): ${toolError.message}`,
-                  timestamp: new Date(),
-                  type: 'system',
-                };
-                await firstValueFrom(
-                  this.chatCollectorService.send(
-                    { cmd: ChatCommands.POST_MESSAGE },
-                    errorMessage
-                  )
-                );
-                responses.push(errorMessage);
+                this.l.debug('Emitted chunk with', newContent.length, 'characters');
               }
-
-              this.l.log('Tool call message emitted:', chunk.content);
             } else if (chunk.type === 'final_response') {
-              // Parse and emit final response
-              const { content, telosData } = this.parseTelosResponse(
-                chunk.content
+              // Check if the final accumulated content contains a tool call
+              const detectedToolCall = this.extractToolCallFromText(
+                accumulatedContent,
+                'stream_'
+              ) as ToolCall | null;
+              
+              this.l.debug(
+                'Final response - Detected tool call:',
+                detectedToolCall ? detectedToolCall.function.name : 'none'
               );
+              
+              if (detectedToolCall) {
+                // Extract user-facing content (before tool call)
+                const userFacingContent = accumulatedContent
+                  .replace(/```(?:json)?\s*\n?[\s\S]*?```/g, '')
+                  .replace(/<tool_call[\s\S]*?<\/tool_call>/gi, '')
+                  .replace(/\{["\s]*name["\s]*:["\s]*[^}]+\}/g, '')
+                  .trim();
+                
+                // Emit user-facing content if present
+                if (userFacingContent.length > 0) {
+                  const thoughtMessage: Partial<ChatMessage> = {
+                    conversationId: conversation.id,
+                    senderId: persona.id,
+                    senderName: persona.name,
+                    recipientId: [profile.id],
+                    recipientName: [profile.profileName],
+                    content: userFacingContent,
+                    timestamp: new Date(),
+                    type: 'chat',
+                  };
+                  
+                  await firstValueFrom(
+                    this.chatCollectorService.send(
+                      { cmd: ChatCommands.POST_MESSAGE },
+                      thoughtMessage
+                    )
+                  );
+                  responses.push(thoughtMessage);
+                }
+                
+                // Emit tool call notification
+                const toolCallMessage: Partial<ChatMessage> = {
+                  conversationId: conversation.id,
+                  senderId: persona.id,
+                  senderName: persona.name,
+                  recipientId: [profile.id],
+                  recipientName: [profile.profileName],
+                  content: `🔧 Calling tool: ${detectedToolCall.function.name}`,
+                  timestamp: new Date(),
+                  type: 'system',
+                };
 
-              const finalMessage: Partial<ChatMessage> = {
-                conversationId: conversation.id,
-                senderId: persona.id,
-                senderName: persona.name,
-                recipientId: [profile.id],
-                recipientName: [profile.profileName],
-                content: content,
-                timestamp: new Date(),
-                type: 'chat',
-              };
+                await firstValueFrom(
+                  this.chatCollectorService.send(
+                    { cmd: ChatCommands.POST_MESSAGE },
+                    toolCallMessage
+                  )
+                );
+                responses.push(toolCallMessage);
 
-              // Post immediately
-              await firstValueFrom(
-                this.chatCollectorService.send(
-                  { cmd: ChatCommands.POST_MESSAGE },
-                  finalMessage
-                )
-              );
-              responses.push(finalMessage);
+                // Execute the tool via the MCP executor
+                try {
+                  const ctx: ToolExecutionContext = {
+                    profileId: profile.id,
+                    userId: profile.id,
+                    conversationId: conversation.id,
+                  };
 
-              this.l.log('Final response emitted');
+                  this.l.log('Executing tool call:', {
+                    name: detectedToolCall.function.name,
+                    arguments: detectedToolCall.function.arguments
+                  });
+
+                  const result: ToolResult =
+                    await this.mcpExecutor.executeToolCall(detectedToolCall, ctx);
+
+                  const resultContent = result.success
+                    ? typeof result.result === 'string'
+                      ? result.result
+                      : JSON.stringify(result.result, null, 2)
+                    : JSON.stringify({
+                        error: result.error,
+                        message: result.error?.message || 'Tool execution failed',
+                      }, null, 2);
+
+                  const toolResultMessage: Partial<ChatMessage> = {
+                    conversationId: conversation.id,
+                    senderId: persona.id,
+                    senderName: persona.name,
+                    recipientId: [profile.id],
+                    recipientName: [profile.profileName],
+                    content: `✅ Tool result (${detectedToolCall.function.name}):\n${resultContent}`,
+                    timestamp: new Date(),
+                    type: 'system',
+                  };
+
+                  await firstValueFrom(
+                    this.chatCollectorService.send(
+                      { cmd: ChatCommands.POST_MESSAGE },
+                      toolResultMessage
+                    )
+                  );
+                  responses.push(toolResultMessage);
+                } catch (toolError) {
+                  this.l.error('Error executing tool call:', toolError);
+                  const errorMessage: Partial<ChatMessage> = {
+                    conversationId: conversation.id,
+                    senderId: persona.id,
+                    senderName: persona.name,
+                    recipientId: [profile.id],
+                    recipientName: [profile.profileName],
+                    content: `⚠️ Error executing tool (${detectedToolCall.function.name}): ${toolError.message}`,
+                    timestamp: new Date(),
+                    type: 'system',
+                  };
+                  await firstValueFrom(
+                    this.chatCollectorService.send(
+                      { cmd: ChatCommands.POST_MESSAGE },
+                      errorMessage
+                    )
+                  );
+                  responses.push(errorMessage);
+                }
+
+                this.l.log('Tool call processing complete');
+              } else {
+                // No tool call - emit final response normally
+                const { content, telosData } = this.parseTelosResponse(
+                  accumulatedContent
+                );
+
+                const finalMessage: Partial<ChatMessage> = {
+                  conversationId: conversation.id,
+                  senderId: persona.id,
+                  senderName: persona.name,
+                  recipientId: [profile.id],
+                  recipientName: [profile.profileName],
+                  content: content,
+                  timestamp: new Date(),
+                  type: 'chat',
+                };
+
+                await firstValueFrom(
+                  this.chatCollectorService.send(
+                    { cmd: ChatCommands.POST_MESSAGE },
+                    finalMessage
+                  )
+                );
+                responses.push(finalMessage);
+
+                this.l.log('Final response emitted (no tool call)');
+              }
             }
           }
         } catch (streamError) {

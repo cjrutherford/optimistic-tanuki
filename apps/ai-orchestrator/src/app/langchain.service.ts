@@ -326,8 +326,11 @@ Response must be a single JSON object:
       new HumanMessage(userMessage),
     ];
 
-    // Simple invoke without tool binding for now
-    const response = await this.llm.invoke(messages);
+    // Bind tools to LLM so it knows what tools are available and their schemas
+    const llmWithTools = this.llm.bindTools(tools);
+    this.logger.log(`Executing conversation with ${tools.length} tools bound to LLM`);
+    
+    const response = await llmWithTools.invoke(messages);
     return { response: response.content as string, intermediateSteps: [] };
   }
 
@@ -351,6 +354,7 @@ Response must be a single JSON object:
       conversationSummary,
       projectContext
     );
+    const tools = await this.createTools(profile.id, conversationId);
     const chatHistory = this.convertChatHistory(conversationHistory);
 
     const messages: BaseMessage[] = [
@@ -359,15 +363,25 @@ Response must be a single JSON object:
       new HumanMessage(userMessage),
     ];
 
-    const stream = await this.llm.stream(messages);
+    // Bind tools to LLM so it knows what tools are available and their schemas
+    const llmWithTools = this.llm.bindTools(tools);
+    this.logger.log(`Streaming conversation with ${tools.length} tools bound to LLM`);
+    
+    const stream = await llmWithTools.stream(messages);
     let fullResponse = '';
 
+    // Stream chunks in real-time instead of accumulating
     for await (const chunk of stream) {
       if (chunk.content) {
-        fullResponse += chunk.content;
+        const contentStr = typeof chunk.content === 'string' ? chunk.content : JSON.stringify(chunk.content);
+        fullResponse += contentStr;
+        
+        // Yield each chunk immediately for real-time updates
+        yield { type: 'chunk', content: contentStr };
       }
     }
 
+    // Final yield with complete response
     yield { type: 'final_response', content: fullResponse };
   }
 }
