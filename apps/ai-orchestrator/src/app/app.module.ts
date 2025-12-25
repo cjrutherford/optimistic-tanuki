@@ -9,6 +9,7 @@ import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { ToolsService } from './tools.service';
 import { MCPToolExecutor } from './mcp-tool-executor';
+import { LangChainService } from './langchain.service';
 // import { ThrottlerModule } from '@nestjs/throttler';
 // import { APP_GUARD } from '@nestjs/core';
 // import { RateLimitGuard } from './guards/rate-limit.guard';
@@ -32,6 +33,7 @@ import { MCPToolExecutor } from './mcp-tool-executor';
     AppService,
     ToolsService,
     MCPToolExecutor,
+    LangChainService,
     // {
     //   provide: APP_GUARD,
     //   useClass: RateLimitGuard,
