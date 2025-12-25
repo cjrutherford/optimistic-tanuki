@@ -59,10 +59,20 @@ export class LangChainService {
 # CONVERSATION SUMMARY
 ${conversationSummary}
 
-# RULES
-- Always use userId/profileId = ${profile.id}
+# TOOL CALLING RULES
+- When you need to call a tool, respond with ONLY a JSON object in this exact format:
+  {"name": "tool_name", "arguments": {"param1": "value1", "param2": "value2"}}
+- Do NOT wrap the JSON in markdown code blocks or add any other text
+- Do NOT use explanatory text before or after the JSON
+- Alternative formats also supported:
+  * XML: <tool_call><name>tool_name</name><arguments><param>value</param></arguments></tool_call>
+  * OpenAI: {"type": "function", "function": {"name": "tool_name", "arguments": "{\\"param\\": \\"value\\"}"}}
+
+# RESPONSE RULES
+- Always use userId/profileId = ${profile.id} in tool calls
 - Use ONE tool per response
-- Provide clear responses after tool execution`;
+- After tool execution completes, provide a clear natural language response
+- For final responses (not tool calls), use conversational language`;
   }
 
   private async createTools(

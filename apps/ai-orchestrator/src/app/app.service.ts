@@ -89,7 +89,46 @@ export class AppService {
       }
     }
 
-    // 2) Try to extract first JSON block and parse it
+    // 2) Check for markdown code block with JSON (```json or just ```)
+    const markdownMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+    if (markdownMatch) {
+      const codeContent = markdownMatch[1].trim();
+      try {
+        const parsed = JSON.parse(codeContent);
+        // case: { "name": "tool_name", "arguments": { ... } }
+        if (parsed.name && parsed.arguments) {
+          return {
+            id: `${idPrefix}${Date.now()}`,
+            type: 'function' as const,
+            function: {
+              name: String(parsed.name),
+              arguments: JSON.stringify(parsed.arguments),
+            },
+          };
+        }
+        // case: already OpenAI-style tool call
+        if (
+          parsed.type === 'function' &&
+          parsed.function &&
+          parsed.function.name
+        ) {
+          const args = parsed.function.arguments;
+          return {
+            id: parsed.id ?? `${idPrefix}${Date.now()}`,
+            type: 'function' as const,
+            function: {
+              name: parsed.function.name,
+              arguments:
+                typeof args === 'string' ? args : JSON.stringify(args ?? {}),
+            },
+          };
+        }
+      } catch (e) {
+        this.l.debug('Failed to parse markdown code block as JSON:', e);
+      }
+    }
+
+    // 3) Try to extract first JSON block and parse it (without markdown)
     const jsonMatch = text.match(/\{[\s\S]*\}/m);
     if (jsonMatch) {
       try {
