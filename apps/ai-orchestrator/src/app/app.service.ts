@@ -19,8 +19,14 @@ import {
 } from '@optimistic-tanuki/models';
 import { ToolsService } from './tools.service';
 import { generatePersonaSystemMessage } from '@optimistic-tanuki/prompt-generation';
-import { transformMcpToolsToOpenAI } from './tool-formatter';
 import { MCPToolExecutor } from './mcp-tool-executor';
+import { buildConversationPreamble, shouldEmitToUser, extractUserFacingContent } from './utils/prompt-engineering';
+import { 
+  parseXmlToolCall, 
+  containsXmlToolCall, 
+  stripXmlToolCalls, 
+  xmlToolCallToOpenAI 
+} from './utils/xml-tool-parser';
 
 @Injectable()
 export class AppService {
@@ -170,10 +176,9 @@ export class AppService {
           systemPrompt
         );
         const toolsMeta = await this.toolsService.listTools().catch(() => []);
-        // Transform MCP tools to OpenAI format for Ollama's OpenAI-compatible API
-        // Pass user profile ID to enhance tool parameter descriptions
-        const openAITools = toolsMeta; //transformMcpToolsToOpenAI(toolsMeta, profile.id);
-        // console.log('Transformed tools:', openAITools[0]);
+        // Note: transformMcpToolsToOpenAI is intentionally not used here
+        // because it caused the LLM to fail getting the right parameters
+        const openAITools = toolsMeta;
 
         const projectResource = await this.toolsService
           .getResource('project://shcema')
@@ -181,61 +186,14 @@ export class AppService {
 
         this.l.log(`Conversation summary: '${conversationSummary}'`);
 
-        const conversationPreamble = `${systemPrompt}
-
-# USER CONTEXT
-userProfileId: ${profile.id}
-userName: ${profile.profileName}
-
-# SYSTEM INVARIANTS (must always be followed)
-- Always use userId/profileId/createdBy/members = ${profile.id}
-- When selecting projectId, ALWAYS call list_projects with userId=${
-          profile.id
-        } first
-- Use ONE tool per assistant response. If multiple steps required, call tools sequentially across responses.
-
-TOOL USAGE GUIDELINES:
-- Use ONE tool at a time - you can only call a single tool per response
-- If a task requires multiple steps, call one tool, wait for its response, then call the next tool
-- Some tools depend on data from other tools - use the response from one tool to inform the next tool call
-- After completing all necessary tool calls, ALWAYS provide a final natural language response to the user explaining what was accomplished
-- Your final response should summarize the actions taken and the results
-
-HANDLING TOOL RESULTS:
-- Analyze the result of each tool call carefully.
-- If a tool call fails (contains "error" or "isError": true), DO NOT proceed with dependent steps. Instead, inform the user of the error and ask for clarification or try an alternative approach if possible.
-- If a tool call succeeds, use the data returned to proceed to the next step or formulate your final response.
-- When a tool returns a list (e.g., list_projects), check if it's empty before trying to access items.
-
-# RESPONSE RULES
-- If calling a tool: respond ONLY with the tool call JSON (strict). After toolReply, continue the conversation and produce a final natural-language summary for the user.
-- Final user-facing messages must be plain language and include a short summary of actions taken.
-- For TELOS output: append valid JSON after a literal line '---' using this schema: { "goals": [], "skills": [], "interests": [], "limitations": [], "strengths": [], "objectives": [], "coreObjective": "", "overallProfileSummary": "" }.
-
-# EXAMPLES
-- OpenAI tool_call example:
-{"id":"1","type":"function","function":{"name":"create_project","arguments":"{\"name\":\"My Project\",\"userId\":\"${
-          profile.id
-        }\"}"}}
-- Successful tool_result:
-{"success":true,"toolName":"create_project","result":{"id":"proj_123","name":"My Project"},"error":null}
-- Failure:
-{"success":false,"toolName":"create_project","result":null,"error":{"message":"Project name already exists"}}
-
-For example you can get a list of hte user's projects from within the app by calling the list_projects tool with userId: ${
-          profile.id
-        }.
-
-# OPERATIONAL LIMITS
-- Max tool-call iterations: ${MAX_ITER}
-- On tool failure: stop dependent steps, return an error summary and ask user for next action.
-
-${
-  projectResource
-    ? `# Project resource: ${JSON.stringify(projectResource)}`
-    : ''
-}
-`;
+        // Use utility function to build conversation preamble with proper prompt priming
+        const conversationPreamble = buildConversationPreamble(
+          systemPrompt,
+          profile,
+          conversationSummary,
+          MAX_ITER,
+          projectResource
+        );
 
         //         const conversationPreamble = `${systemPrompt}
 
@@ -361,6 +319,17 @@ ${
             this.promptProxy.send({ cmd: PromptCommands.SEND }, personaPrompt)
           );
 
+          // Emit any user-facing content from the LLM response for observability
+          const userFacingContent = extractUserFacingContent(
+            response.message.content,
+            response.message.tool_calls
+          );
+          if (userFacingContent) {
+            this.l.log(`LLM user-facing message: "${userFacingContent}"`);
+            // Optionally emit this to user as an intermediate message for better observability
+            // This shows what the LLM is "thinking" before tool execution
+          }
+
           // Check if response has OpenAI-format tool_calls
           if (
             response.message.tool_calls &&
@@ -427,6 +396,67 @@ ${
           }
 
           const content = response.message.content;
+          
+          // Check for XML-formatted tool calls
+          if (content && containsXmlToolCall(content)) {
+            this.l.log('Detected XML-formatted tool call');
+            const xmlToolCall = parseXmlToolCall(content);
+            
+            if (xmlToolCall) {
+              // Convert XML to OpenAI format
+              const openAIToolCall = xmlToolCallToOpenAI(xmlToolCall);
+              
+              // Create execution context
+              const executionContext: ToolExecutionContext = {
+                userId: profile.id,
+                profileId: profile.id,
+                conversationId: conversation.id,
+              };
+
+              // Execute using standardized executor
+              const toolResult: ToolResult =
+                await this.mcpExecutor.executeToolCall(
+                  openAIToolCall,
+                  executionContext
+                );
+
+              this.l.log(
+                `XML tool '${toolResult.toolName}' executed with success=${toolResult.success}`
+              );
+
+              // Strip XML tool call from content for user-facing message
+              const cleanedContent = stripXmlToolCalls(content);
+              
+              // If there's user-facing content alongside the tool call, emit it
+              if (cleanedContent && cleanedContent.trim()) {
+                this.l.log(`User message with XML tool call: "${cleanedContent}"`);
+              }
+
+              // Add the tool response back to the persona prompt for further processing
+              const responseContent = toolResult.success
+                ? typeof toolResult.result === 'string'
+                  ? toolResult.result
+                  : JSON.stringify(toolResult.result)
+                : JSON.stringify({
+                    error: toolResult.error,
+                    message: `Tool failed: ${toolResult.error?.message}`,
+                  });
+
+              personaPrompt.messages.push(
+                {
+                  role: 'system',
+                  content: conversationPreamble,
+                },
+                {
+                  role: 'assistant',
+                  content: `The tool '${xmlToolCall.name}' returned the following response: ${responseContent}. Please use this information to generate your next action.`,
+                }
+              );
+              
+              continue; // Continue the loop
+            }
+          }
+          
           const parsedResponse = tryParseJson(content);
 
           // Normalize LLM response if it uses { name: "tool", parameters: { ... } } format
