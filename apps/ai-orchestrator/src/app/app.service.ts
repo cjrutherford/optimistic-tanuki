@@ -339,13 +339,18 @@ export class AppService {
               timestamp: new Date(),
               type: 'system',
             };
-            responses.push(intermediateMessage);
-            await firstValueFrom(
+            
+            // Post and immediately add to responses for real-time emission
+            const postedMessage = await firstValueFrom(
               this.chatCollectorService.send(
                 { cmd: ChatCommands.POST_MESSAGE },
                 intermediateMessage
               )
             );
+            responses.push(intermediateMessage);
+            
+            // Emit notification to trigger immediate client update
+            this.l.debug('Intermediate message posted, should trigger real-time update');
           }
 
           // Check if response has OpenAI-format tool_calls
@@ -374,13 +379,18 @@ export class AppService {
               timestamp: new Date(),
               type: 'system',
             };
-            responses.push(toolCallMessage);
-            await firstValueFrom(
+            
+            // Post and immediately add to responses for real-time emission
+            const postedToolMessage = await firstValueFrom(
               this.chatCollectorService.send(
                 { cmd: ChatCommands.POST_MESSAGE },
                 toolCallMessage
               )
             );
+            responses.push(toolCallMessage);
+            
+            // Emit notification to trigger immediate client update
+            this.l.debug('Tool call message posted, should trigger real-time update');
 
             // Create execution context
             const executionContext: ToolExecutionContext = {

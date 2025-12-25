@@ -186,29 +186,52 @@ export class ChatGateway {
           "'"
       );
       
-      // Send to AI orchestrator and get responses
-      const aiResponses: Partial<ChatMessage>[] = await firstValueFrom(
+      // Set up polling for real-time updates while AI processes
+      const conversationId = payload.conversationId;
+      const allParticipantIds = [...new Set([senderId, ...recipientIds])];
+      
+      // Start polling immediately for new messages
+      const pollInterval = setInterval(async () => {
+        try {
+          for (const participantId of allParticipantIds) {
+            const participantSocket = this.connectedClients.find(
+              (c) => c.id === participantId
+            );
+            
+            if (participantSocket) {
+              const conversations = await firstValueFrom(
+                this.chatCollectorClient.send(
+                  { cmd: ChatCommands.GET_CONVERSATIONS },
+                  { profileId: participantId }
+                )
+              );
+              participantSocket.client.emit('conversations', conversations || []);
+            }
+          }
+        } catch (error) {
+          this.l.error('Error during conversation polling:', error);
+        }
+      }, 500); // Poll every 500ms for new messages
+      
+      // Send to AI orchestrator (non-blocking for polling)
+      firstValueFrom(
         this.aiOrchestrationClient.send(
           { cmd: AIOrchestrationCommands.CONVERSATION_UPDATE },
           { conversation: aiPayload, aiPersonas: aiRecipients }
         )
-      );
-      
-      this.l.log(`AI orchestrator returned ${aiResponses.length} messages`);
-      
-      // Emit each AI response to all participants as they come in
-      for (const aiResponse of aiResponses) {
-        this.l.log(`Processing AI response: ${JSON.stringify(aiResponse)}`);
+      ).then((aiResponses: Partial<ChatMessage>[]) => {
+        this.l.log(`AI orchestrator completed with ${aiResponses.length} messages`);
         
-        // Get updated conversations for all participants
-        const allParticipantIds = [...new Set([senderId, ...recipientIds])];
-        for (const participantId of allParticipantIds) {
+        // Stop polling after AI completes
+        clearInterval(pollInterval);
+        
+        // Do one final emit to ensure all messages are sent
+        allParticipantIds.forEach(async (participantId) => {
           const participantSocket = this.connectedClients.find(
             (c) => c.id === participantId
           );
           
           if (participantSocket) {
-            this.l.log(`Emitting updated conversations to participant: ${participantId}`);
             const conversations = await firstValueFrom(
               this.chatCollectorClient.send(
                 { cmd: ChatCommands.GET_CONVERSATIONS },
@@ -217,10 +240,14 @@ export class ChatGateway {
             );
             participantSocket.client.emit('conversations', conversations || []);
           }
-        }
-      }
+        });
+        
+        this.l.log('AI message processing complete.');
+      }).catch((error) => {
+        this.l.error('Error in AI orchestration:', error);
+        clearInterval(pollInterval);
+      });
       
-      this.l.log('AI message processing complete.');
     } else {
       this.l.log('Message handling complete.');
     }
