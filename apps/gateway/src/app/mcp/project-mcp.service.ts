@@ -11,7 +11,11 @@ import {
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 import { z } from 'zod';
-import { CreateProjectDto, UpdateProjectDto } from '@optimistic-tanuki/models';
+import {
+  CreateProjectDto,
+  QueryProjectDto,
+  UpdateProjectDto,
+} from '@optimistic-tanuki/models';
 
 // Define Zod schemas for parameters
 const getProjectSchema = z.object({
@@ -308,6 +312,34 @@ export class ProjectMcpService {
     } catch (error) {
       this.logger.error('Error deleting project:', error);
       throw new Error(`Failed to delete project: ${error.message}`);
+    }
+  }
+
+  @McpTool({
+    name: 'query_projects',
+    description: 'Query projects by name',
+    parameters: z.object({
+      name: z.string().describe('The name of the project to query'),
+      userId: z.string().describe('The ID of the user whose projects to query'),
+    }),
+  })
+  async queryProjects(query: QueryProjectDto) {
+    try {
+      this.logger.log(`MCP Tool: Querying projects with name ${query.name}`);
+      const projects = await firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: ProjectCommands.FIND_ALL },
+          query
+        )
+      );
+      return {
+        success: true,
+        projects,
+        count: projects.length,
+      };
+    } catch (error) {
+      this.logger.error('Error querying projects:', error);
+      throw new Error(`Failed to query projects: ${error.message}`);
     }
   }
 }
