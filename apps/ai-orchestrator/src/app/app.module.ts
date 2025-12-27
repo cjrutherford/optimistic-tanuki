@@ -10,6 +10,9 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
 import { ToolsService } from './tools.service';
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { LangChainService } from './langchain.service';
+import { ContextStorageService } from './context-storage.service';
+import { LangGraphService } from './langgraph.service';
+import { LangChainAgentService } from './langchain-agent.service';
 // import { ThrottlerModule } from '@nestjs/throttler';
 // import { APP_GUARD } from '@nestjs/core';
 // import { RateLimitGuard } from './guards/rate-limit.guard';
@@ -34,6 +37,9 @@ import { LangChainService } from './langchain.service';
     ToolsService,
     MCPToolExecutor,
     LangChainService,
+    ContextStorageService,
+    LangGraphService,
+    LangChainAgentService,
     // {
     //   provide: APP_GUARD,
     //   useClass: RateLimitGuard,
