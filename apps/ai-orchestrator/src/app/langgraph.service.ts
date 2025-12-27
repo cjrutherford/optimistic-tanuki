@@ -116,13 +116,13 @@ export class LangGraphService {
     workflow.addNode('updateSummary', this.updateSummaryNode.bind(this));
     workflow.addNode('saveContext', this.saveContextNode.bind(this));
 
-    // Define edges
-    workflow.addEdge(START as any, 'loadContext');
-    workflow.addEdge('loadContext' as any, 'processMessage');
-    workflow.addEdge('processMessage' as any, 'extractTopics');
-    workflow.addEdge('extractTopics' as any, 'updateSummary');
-    workflow.addEdge('updateSummary' as any, 'saveContext');
-    workflow.addEdge('saveContext' as any, END as any);
+    // Define edges - using type assertions for string node names
+    (workflow as any).addEdge(START, 'loadContext');
+    (workflow as any).addEdge('loadContext', 'processMessage');
+    (workflow as any).addEdge('processMessage', 'extractTopics');
+    (workflow as any).addEdge('extractTopics', 'updateSummary');
+    (workflow as any).addEdge('updateSummary', 'saveContext');
+    (workflow as any).addEdge('saveContext', END);
 
     return workflow.compile();
   }
@@ -291,7 +291,7 @@ export class LangGraphService {
       let llmResponse: string;
       let toolCalls: Array<{ tool: string; input: unknown; output: unknown }> = [];
 
-      if (useAgent && this.agent.isInitialized()) {
+      if (useAgent && this.agent && this.agent.isInitialized()) {
         this.logger.log('Using Agent for multi-step execution');
         
         // Get the last user message

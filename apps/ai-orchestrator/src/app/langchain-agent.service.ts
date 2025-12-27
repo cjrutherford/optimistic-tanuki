@@ -7,9 +7,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ChatOllama } from '@langchain/ollama';
-// Agent imports - currently not used, direct tool execution via LangChain instead
-// import { AgentExecutor } from '@langchain/langgraph/prebuilt';
-// import { createReactAgent } from '@langchain/langgraph/prebuilt';
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { BaseMessage } from '@langchain/core/messages';
@@ -37,6 +35,7 @@ export class LangChainAgentService {
   private llm: ChatOllama;
   private initialized = false;
   private tools: DynamicStructuredTool[] = [];
+  private agent: any = null; // CompiledStateGraph from createReactAgent
 
   constructor(
     private readonly toolsService: ToolsService,
@@ -101,29 +100,19 @@ Current user: {userId}`,
   ): Promise<void> {
     try {
       // Get MCP tools and convert to LangChain format
-      const tools = await this.createTools(userId, conversationId);
+      this.tools = await this.createTools(userId, conversationId);
 
-      // Create agent prompt
-      const prompt = this.createAgentPrompt();
-
-      // Create tool-calling agent
-      const agent = await createToolCallingAgent({
+      // Create React agent using LangGraph prebuilt
+      // This returns a CompiledStateGraph that can be invoked
+      this.agent = createReactAgent({
         llm: this.llm,
-        tools,
-        prompt,
+        tools: this.tools,
       });
-
-      // Create agent executor
-      this.agentExecutor = new AgentExecutor({
-        agent,
-        tools,
-        verbose: true, // Enable logging
-        maxIterations: 10, // Prevent infinite loops
-        returnIntermediateSteps: true, // Capture tool call details
-      });
+      
+      this.initialized = true;
 
       this.logger.log(
-        `Initialized agent with ${tools.length} tools for user ${userId}`
+        `Initialized agent with ${this.tools.length} tools for user ${userId}`
       );
     } catch (error) {
       this.logger.error(`Failed to initialize agent: ${error.message}`);
@@ -299,38 +288,49 @@ Current user: {userId}`,
   }
 
   /**
-   * Execute the agent with a user message
+   * Execute agent for multi-step reasoning
    */
   async executeAgent(
     input: string,
     chatHistory: BaseMessage[],
     userId: string
   ): Promise<AgentExecutionResult> {
-    if (!this.agentExecutor) {
+    if (!this.agent) {
       throw new Error('Agent not initialized. Call initializeAgent first.');
     }
 
     try {
       this.logger.log(`Executing agent for user ${userId}`);
       
-      const result = await this.agentExecutor.invoke({
-        input,
-        chat_history: chatHistory,
-        userId,
+      // Invoke the React agent graph
+      const result = await this.agent.invoke({
+        messages: [...chatHistory, { role: 'user', content: input }],
       });
 
-      // Extract tool calls from intermediate steps
-      const toolCalls = (result.intermediateSteps || []).map((step: any) => ({
-        tool: step.action?.tool || 'unknown',
-        input: step.action?.toolInput || {},
-        output: step.observation || '',
-      }));
+      // Extract messages from result
+      const messages = result.messages || [];
+      const lastMessage = messages[messages.length - 1];
+      const output = lastMessage?.content || '';
+
+      // Extract tool calls from messages
+      const toolCalls: Array<{ tool: string; input: unknown; output: unknown }> = [];
+      for (const msg of messages) {
+        if (msg.tool_calls && msg.tool_calls.length > 0) {
+          for (const toolCall of msg.tool_calls) {
+            toolCalls.push({
+              tool: toolCall.name || 'unknown',
+              input: toolCall.args || {},
+              output: '', // Tool outputs are in subsequent messages
+            });
+          }
+        }
+      }
 
       return {
-        output: result.output || '',
-        intermediateSteps: (result.intermediateSteps || []).map((step: any) => ({
-          action: step.action?.tool || 'unknown',
-          observation: step.observation || '',
+        output,
+        intermediateSteps: messages.map((msg: any) => ({
+          action: msg.tool_calls?.[0]?.name || 'response',
+          observation: msg.content || '',
         })),
         toolCalls,
       };
@@ -351,7 +351,8 @@ Current user: {userId}`,
    * Reset agent (for new conversation or context change)
    */
   reset(): void {
-    this.agentExecutor = null;
+    this.agent = null;
+    this.initialized = false;
     this.logger.log('Agent reset');
   }
 }

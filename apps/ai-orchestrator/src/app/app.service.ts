@@ -151,6 +151,7 @@ export class AppService {
       const result = await this.langGraphService.executeConversation(
         profile.id,
         langChainMessages,
+        [], // Empty chat history for new profile
         conversationSummary,
         assistant,
         profile,
