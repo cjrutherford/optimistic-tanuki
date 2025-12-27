@@ -126,102 +126,59 @@ ${conversationSummary}
 
 ${projectContext || ''}
 
+# TOOL DISCOVERY
+You have access to tools through the MCP (Model Context Protocol) system. To discover what tools are available, call the 'list_tools' tool. This will show you all available tools with their exact parameter names and descriptions.
+
+**IMPORTANT**: The available tools may change over time. Always use 'list_tools' when you're uncertain about:
+- What tools are available
+- What parameters a tool requires
+- The exact parameter names to use
+
 # AVAILABLE RESOURCES
 You can access contextual information using MCP resources:
 - project://{projectId}/context - Get full project context including tasks, risks, changes, and journal entries
 
 # STRICT OPERATIONAL GUIDELINES
-1. **NO ID HALLUCINATION**: You must NEVER invent IDs. If you need an ID (projectId, taskId, etc.), you MUST first query or list the items to find the correct ID.
-2. **TOOL FIRST APPROACH**: If a user request requires data or action, call the appropriate tool immediately. Do not ask for permission.
-3. **ONE TOOL AT A TIME**: Execute one tool call, wait for the result, then decide the next step.
-4. **JSON ONLY OUTPUT**: When calling a tool, output ONLY the JSON object. No markdown, no explanations.
-5. **USER ID BINDING**: Always use the provided User ID (${
+1. **TOOL DISCOVERY FIRST**: If uncertain about available actions, call 'list_tools' to see what you can do.
+2. **NO ID HALLUCINATION**: You must NEVER invent IDs. If you need an ID (projectId, taskId, etc.), you MUST first query or list the items to find the correct ID.
+3. **TOOL FIRST APPROACH**: If a user request requires data or action, call the appropriate tool immediately. Do not ask for permission.
+4. **ONE TOOL AT A TIME**: Execute one tool call, wait for the result, then decide the next step.
+5. **JSON ONLY OUTPUT**: When calling a tool, output ONLY the JSON object. No markdown, no explanations.
+6. **USER ID BINDING**: Always use the provided User ID (${
       profile.id
     }) for 'userId', 'createdBy', 'owner', etc.
-6. **STRICT PARAMETER NAMES**: Verify parameter names against the tool definition. Do not assume 'id' vs 'taskId' vs 'projectId'. Use exactly what the tool requires.
+7. **EXACT PARAMETER NAMES**: Use the EXACT parameter names from the tool schema. The schemas are provided by 'list_tools' or bound to this conversation. Do NOT guess or assume parameter names.
 
 # TOOL CALLING FORMAT
-Response must be a single JSON object:
-{"name": "tool_name", "arguments": {"param": "value"}}
+When calling a tool, output a single JSON object with this structure:
+{"name": "tool_name", "arguments": {"param1": "value1", "param2": "value2"}}
 
-# ANNOTATED WORKFLOW EXAMPLES
+Do NOT wrap in markdown code blocks. Do NOT add explanations before or after.
 
-## SCENARIO 1: PROJECT MANAGEMENT
-**User**: "Create a project called 'Website Redesign'"
-**Thought**: User wants to create a project. I have the name and user ID.
-**Action**: {"name": "create_project", "arguments": {"name": "Website Redesign", "description": "Redesign company website", "userId": "${
-      profile.id
-    }", "status": "PLANNING"}}
+# EXAMPLE WORKFLOWS
 
-**User**: "Update the 'Website Redesign' project to active"
-**Thought**: I need the projectId for 'Website Redesign'. I will query for it first.
-**Action**: {"name": "query_projects", "arguments": {"name": "Website Redesign", "userId": "${
-      profile.id
-    }"}}
-**[System returns list of projects]**
-**Thought**: I found the project with ID "proj-123". Now I can update it.
-**Action**: {"name": "update_project", "arguments": {"projectId": "proj-123", "userId": "${
-      profile.id
-    }", "status": "ACTIVE"}}
+## Discovering Available Tools
+**User**: "What can you help me with?"
+**Action**: {"name": "list_tools", "arguments": {}}
+**[System returns list of all available tools]**
+**Response**: "I can help you with: [summarize tools]"
 
-## SCENARIO 2: TASK MANAGEMENT
-**User**: "Add a high priority task 'Fix Login Bug' to the Website project"
-**Thought**: I need the projectId for 'Website'.
+## Creating Items That Require IDs
+**User**: "Create a task called 'Fix Bug' in the Website project"
+**Thought**: I need the projectId for 'Website'. I'll query for it first.
 **Action**: {"name": "query_projects", "arguments": {"name": "Website", "userId": "${
       profile.id
     }"}}
-**[System returns project "proj-123"]**
+**[System returns project with ID "proj-123"]**
 **Thought**: I have the projectId. Now I can create the task.
-**Action**: {"name": "create_task", "arguments": {"title": "Fix Login Bug", "description": "Fix login issue", "status": "TODO", "priority": "HIGH", "createdBy": "${
+**Action**: {"name": "create_task", "arguments": {"title": "Fix Bug", "projectId": "proj-123", "createdBy": "${
       profile.id
-    }", "projectId": "proj-123"}}
-
-**User**: "Mark the 'Fix Login Bug' task as done"
-**Thought**: I need the taskId. I know the project is "proj-123" (from context) or I need to find it. I'll query tasks in that project.
-**Action**: {"name": "query_tasks", "arguments": {"projectId": "proj-123", "title": "Fix Login Bug"}}
-**[System returns task "task-456"]**
-**Thought**: Found the task. Now update status.
-**Action**: {"name": "update_task", "arguments": {"id": "task-456", "status": "DONE"}}
-
-## SCENARIO 3: RISK MANAGEMENT
-**User**: "Log a high impact risk 'Server Crash' for the Website project"
-**Thought**: Need projectId for 'Website'.
-**Action**: {"name": "query_projects", "arguments": {"name": "Website", "userId": "${
-      profile.id
-    }"}}
-**[System returns project "proj-123"]**
-**Thought**: Create the risk.
-**Action**: {"name": "create_risk", "arguments": {"projectId": "proj-123", "name": "Server Crash", "description": "Potential server crash due to load", "impact": "HIGH", "likelihood": "LOW", "status": "OPEN", "userId": "${
-      profile.id
-    }"}}
-
-## SCENARIO 4: CHANGE MANAGEMENT
-**User**: "Request a change 'Add Dark Mode' for the Website project"
-**Thought**: Need projectId.
-**Action**: {"name": "query_projects", "arguments": {"name": "Website", "userId": "${
-      profile.id
-    }"}}
-**[System returns project "proj-123"]**
-**Thought**: Create change request.
-**Action**: {"name": "create_change", "arguments": {"projectId": "proj-123", "changeName": "Add Dark Mode", "changeDescription": "Implement dark mode theme", "changeStatus": "PROPOSED", "priority": "MEDIUM", "userId": "${
-      profile.id
-    }"}}
-
-## SCENARIO 5: JOURNAL MANAGEMENT
-**User**: "Add a journal entry 'Daily Standup' to the Website project"
-**Thought**: Need projectId.
-**Action**: {"name": "query_projects", "arguments": {"name": "Website", "userId": "${
-      profile.id
-    }"}}
-**[System returns project "proj-123"]**
-**Thought**: Create journal entry.
-**Action**: {"name": "create_journal_entry", "arguments": {"projectId": "proj-123", "userId": "${
-      profile.id
-    }", "entryDate": "${new Date().toISOString()}", "content": "Daily Standup notes..."}}
+    }", "status": "TODO"}}
 
 # RESPONSE RULES
 - After tool execution completes, provide a clear natural language response.
 - If a tool fails, explain what went wrong and suggest next steps.
+- If you're uncertain about parameters, call 'list_tools' to verify.
 `;
 
     return basePrompt;
@@ -232,7 +189,9 @@ Response must be a single JSON object:
     conversationId: string
   ): Promise<DynamicStructuredTool[]> {
     const mcpTools = await this.toolsService.listTools();
-    return mcpTools.map((tool) => {
+    
+    // Create MCP tools
+    const tools = mcpTools.map((tool) => {
       const schema = this.convertToZodSchema(tool.inputSchema);
       return new DynamicStructuredTool({
         name: tool.name,
@@ -261,6 +220,39 @@ Response must be a single JSON object:
         },
       });
     });
+
+    // Add list_tools as a LangChain tool so LLM can discover available tools
+    const listToolsTool = new DynamicStructuredTool({
+      name: 'list_tools',
+      description: 'List all available tools with their descriptions and parameters. Call this when you need to discover what actions you can perform.',
+      schema: z.object({}), // No parameters needed
+      func: async () => {
+        this.logger.log('LLM called list_tools to discover available actions');
+        
+        // Format tools in a way that's helpful for the LLM
+        const toolDescriptions = mcpTools.map(tool => {
+          const params = tool.inputSchema?.properties || {};
+          const required = tool.inputSchema?.required || [];
+          
+          const paramList = Object.entries(params).map(([name, schema]: [string, any]) => {
+            const isRequired = required.includes(name);
+            const typeInfo = schema.type || 'any';
+            const description = schema.description || '';
+            return `  - ${name} (${typeInfo})${isRequired ? ' [REQUIRED]' : ' [optional]'}: ${description}`;
+          }).join('\n');
+
+          return `## ${tool.name}
+Description: ${tool.description || 'No description'}
+Parameters:
+${paramList || '  (none)'}`;
+        }).join('\n\n');
+
+        return `Available Tools:\n\n${toolDescriptions}\n\nNote: Always use the exact parameter names shown above. Do NOT fabricate IDs - query/list first to get valid IDs.`;
+      },
+    });
+
+    // Return all tools including list_tools
+    return [listToolsTool, ...tools];
   }
 
   private convertToZodSchema(jsonSchema: any): z.ZodObject<any> {
