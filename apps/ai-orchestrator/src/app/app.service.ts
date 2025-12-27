@@ -45,7 +45,7 @@ export class AppService {
   ): BaseMessage[] {
     return messages.map((msg) => {
       // AI personas are assistants
-      if (msg.type === 'ai' || msg.senderName.toLowerCase().includes('assistant')) {
+      if (msg.role === 'assistant' || msg.senderName.toLowerCase().includes('assistant')) {
         return new AIMessage(msg.content);
       }
       // User messages
@@ -87,7 +87,7 @@ export class AppService {
    */
   private async getPersona(data: { id: string }): Promise<PersonaTelosDto> {
     return await firstValueFrom(
-      this.telosDocsService.send({ cmd: PersonaTelosCommands.Get }, data)
+      this.telosDocsService.send({ cmd: PersonaTelosCommands.FIND_ONE }, data)
     );
   }
 
@@ -244,6 +244,7 @@ export class AppService {
           const result = await this.langGraphService.executeConversation(
             profile.id,
             langChainMessages,
+            conversation.messages, // Pass full chat history
             conversationSummary,
             persona,
             profile,

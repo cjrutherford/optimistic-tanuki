@@ -7,7 +7,9 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ChatOllama } from '@langchain/ollama';
-import { AgentExecutor, createToolCallingAgent } from 'langchain/agents';
+// Agent imports - currently not used, direct tool execution via LangChain instead
+// import { AgentExecutor } from '@langchain/langgraph/prebuilt';
+// import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { BaseMessage } from '@langchain/core/messages';
@@ -33,7 +35,8 @@ export interface AgentExecutionResult {
 export class LangChainAgentService {
   private readonly logger = new Logger(LangChainAgentService.name);
   private llm: ChatOllama;
-  private agentExecutor: AgentExecutor | null = null;
+  private initialized = false;
+  private tools: DynamicStructuredTool[] = [];
 
   constructor(
     private readonly toolsService: ToolsService,
@@ -163,13 +166,28 @@ Current user: {userId}`,
             );
 
             try {
-              const result = await this.mcpExecutor.callMcpTool(
-                mcpTool.name,
-                enrichedInput,
-                conversationId
+              // Create ToolCall object matching the expected format
+              const toolCall: any = {
+                id: `call_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+                type: 'function' as const,
+                function: {
+                  name: mcpTool.name,
+                  arguments: JSON.stringify(enrichedInput),
+                },
+              };
+
+              const context: any = {
+                userId,
+                conversationId,
+                timestamp: new Date(),
+              };
+
+              const result = await this.mcpExecutor.executeToolCall(
+                toolCall,
+                context
               );
 
-              return JSON.stringify(result, null, 2);
+              return JSON.stringify(result.result || result, null, 2);
             } catch (error) {
               this.logger.error(
                 `Tool ${mcpTool.name} execution failed: ${error.message}`
@@ -326,7 +344,7 @@ Current user: {userId}`,
    * Check if agent is initialized
    */
   isInitialized(): boolean {
-    return this.agentExecutor !== null;
+    return this.initialized;
   }
 
   /**

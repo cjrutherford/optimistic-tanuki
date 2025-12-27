@@ -6,7 +6,7 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
+import { StateGraph, START, END, Annotation } from '@langchain/langgraph';
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 import { ChatMessage, ProfileDto, PersonaTelosDto } from '@optimistic-tanuki/models';
 import { ContextStorageService } from './context-storage.service';
@@ -19,6 +19,12 @@ import { LangChainAgentService } from './langchain-agent.service';
 const ConversationState = Annotation.Root({
   // Core conversation data
   messages: Annotation<BaseMessage[]>({
+    reducer: (x, y) => x.concat(y), // Append new messages
+    default: () => [],
+  }),
+  
+  // Original ChatMessage[] for full history context
+  chatHistory: Annotation<ChatMessage[]>({
     reducer: (x, y) => x.concat(y), // Append new messages
     default: () => [],
   }),
@@ -111,12 +117,12 @@ export class LangGraphService {
     workflow.addNode('saveContext', this.saveContextNode.bind(this));
 
     // Define edges
-    workflow.addEdge(START, 'loadContext');
-    workflow.addEdge('loadContext', 'processMessage');
-    workflow.addEdge('processMessage', 'extractTopics');
-    workflow.addEdge('extractTopics', 'updateSummary');
-    workflow.addEdge('updateSummary', 'saveContext');
-    workflow.addEdge('saveContext', END);
+    workflow.addEdge(START as any, 'loadContext');
+    workflow.addEdge('loadContext' as any, 'processMessage');
+    workflow.addEdge('processMessage' as any, 'extractTopics');
+    workflow.addEdge('extractTopics' as any, 'updateSummary');
+    workflow.addEdge('updateSummary' as any, 'saveContext');
+    workflow.addEdge('saveContext' as any, END as any);
 
     return workflow.compile();
   }
@@ -258,6 +264,7 @@ export class LangGraphService {
   async executeConversation(
     profileId: string,
     messages: BaseMessage[],
+    chatHistory: ChatMessage[],
     existingSummary: string,
     persona: PersonaTelosDto,
     profile: ProfileDto,
@@ -271,6 +278,7 @@ export class LangGraphService {
     const initialState: Partial<ConversationStateType> = {
       profileId,
       messages,
+      chatHistory,
       summary: existingSummary || '',
       iteration: 0,
     };
@@ -304,11 +312,11 @@ export class LangGraphService {
       } else {
         this.logger.log('Using direct LangChain execution');
         
-        // Use regular LangChain service
+        // Use the full chatHistory for context
         const conversationResult = await this.langchain.executeConversation(
           persona,
           profile,
-          messages.slice(0, -1),
+          result.chatHistory.slice(0, -1), // Full chat history except last message
           messages[messages.length - 1].content.toString(),
           result.summary,
           conversationId

@@ -118,7 +118,7 @@ export class ContextStorageService implements OnModuleDestroy {
         return null;
       }
 
-      const context = JSON.parse(value) as ConversationContext;
+      const context = JSON.parse(value as string) as ConversationContext;
       context.lastUpdated = new Date(context.lastUpdated);
       
       this.logger.debug(`Retrieved context for profile: ${profileId}`);
