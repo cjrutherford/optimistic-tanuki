@@ -8,10 +8,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
-import { ChatMessage, ProfileDto, PersonaTelosDto } from '@optimistic-tanuki/models';
+import { ChatMessage, ProfileDto } from '@optimistic-tanuki/models';
 import { ContextStorageService } from './context-storage.service';
 import { LangChainService } from './langchain.service';
-import { LangChainAgentService } from './langchain-agent.service';
 
 /**
  * Conversation state managed by LangGraph
@@ -91,8 +90,7 @@ export class LangGraphService {
 
   constructor(
     private readonly contextStorage: ContextStorageService,
-    private readonly langchain: LangChainService,
-    private readonly agent: LangChainAgentService
+    private readonly langchain: LangChainService
   ) {
     this.graph = this.buildGraph();
   }
@@ -258,16 +256,8 @@ export class LangGraphService {
   async executeConversation(
     profileId: string,
     messages: BaseMessage[],
-    existingSummary: string,
-    persona: PersonaTelosDto,
-    profile: ProfileDto,
-    conversationId: string,
-    useAgent = false
-  ): Promise<{
-    response: string;
-    topics?: string[];
-    toolCalls?: Array<{ tool: string; input: unknown; output: unknown }>;
-  }> {
+    existingSummary?: string
+  ): Promise<ConversationStateType> {
     const initialState: Partial<ConversationStateType> = {
       profileId,
       messages,
@@ -276,52 +266,8 @@ export class LangGraphService {
     };
 
     try {
-      // Execute state graph
       const result = await this.graph.invoke(initialState);
-
-      // Execute LLM (with or without agent)
-      let llmResponse: string;
-      let toolCalls: Array<{ tool: string; input: unknown; output: unknown }> = [];
-
-      if (useAgent && this.agent.isInitialized()) {
-        this.logger.log('Using Agent for multi-step execution');
-        
-        // Get the last user message
-        const lastMessage = messages[messages.length - 1];
-        const userInput = lastMessage.content.toString();
-        
-        // Execute agent
-        const agentResult = await this.agent.executeAgent(
-          userInput,
-          messages.slice(0, -1), // Chat history without current message
-          profileId
-        );
-        
-        llmResponse = agentResult.output;
-        toolCalls = agentResult.toolCalls;
-        
-        this.logger.log(`Agent execution complete. Tool calls: ${toolCalls.length}`);
-      } else {
-        this.logger.log('Using direct LangChain execution');
-        
-        // Use regular LangChain service
-        const conversationResult = await this.langchain.executeConversation(
-          persona,
-          profile,
-          messages.slice(0, -1),
-          messages[messages.length - 1].content.toString(),
-          result.summary,
-          conversationId
-        );
-        
-        llmResponse = conversationResult.response;
-      }
-
-      return {
-        response: llmResponse,
-        topics: result.recentTopics,
-        toolCalls,
-      };
+      return result;
     } catch (error) {
       this.logger.error(`Error executing conversation graph: ${error.message}`);
       throw error;
