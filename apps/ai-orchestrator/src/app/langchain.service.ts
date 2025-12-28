@@ -296,7 +296,11 @@ ${paramList || '  (none)'}`;
     userMessage: string,
     conversationSummary: string,
     conversationId: string
-  ): Promise<{ response: string; intermediateSteps: any[] }> {
+  ): Promise<{ 
+    response: string; 
+    intermediateSteps: any[];
+    toolCalls?: Array<{ tool: string; input: unknown; output: unknown }>;
+  }> {
     // Enrich with project context if available
     const projectContext = await this.enrichWithProjectContext(
       conversationHistory,
@@ -323,7 +327,84 @@ ${paramList || '  (none)'}`;
     this.logger.log(`Executing conversation with ${tools.length} tools bound to LLM`);
     
     const response = await llmWithTools.invoke(messages);
-    return { response: response.content as string, intermediateSteps: [] };
+    
+    // Check if response contains tool calls
+    const toolCallsToExecute: any[] = (response as any).tool_calls || [];
+    const toolCalls: Array<{ tool: string; input: unknown; output: unknown }> = [];
+    
+    if (toolCallsToExecute.length > 0) {
+      this.logger.log(`LLM requested ${toolCallsToExecute.length} tool calls`);
+      
+      // Execute each tool call
+      for (const toolCall of toolCallsToExecute) {
+        this.logger.log(`Executing tool: ${toolCall.name}`);
+        
+        try {
+          // Convert to OpenAI format for MCP executor
+          const openAIToolCall = {
+            id: toolCall.id || `call_${Date.now()}`,
+            type: 'function' as const,
+            function: {
+              name: toolCall.name,
+              arguments: typeof toolCall.args === 'string' 
+                ? toolCall.args 
+                : JSON.stringify(toolCall.args),
+            },
+          };
+          
+          const context = {
+            userId: profile.id,
+            profileId: profile.id,
+            conversationId,
+            timestamp: new Date(),
+          };
+          
+          const result = await this.mcpExecutor.executeToolCall(
+            openAIToolCall,
+            context
+          );
+          
+          toolCalls.push({
+            tool: toolCall.name,
+            input: toolCall.args,
+            output: result.result || result,
+          });
+          
+          this.logger.log(`Tool ${toolCall.name} executed successfully`);
+        } catch (error) {
+          this.logger.error(`Tool ${toolCall.name} execution failed:`, error);
+          toolCalls.push({
+            tool: toolCall.name,
+            input: toolCall.args,
+            output: { error: error.message },
+          });
+        }
+      }
+      
+      // If tools were called, get final response from LLM with tool results
+      if (toolCalls.length > 0) {
+        // Add tool results to conversation and get final response
+        const toolResultMessages = toolCalls.map(tc => 
+          new AIMessage(`Tool ${tc.tool} result: ${JSON.stringify(tc.output)}`)
+        );
+        
+        const finalMessages = [...messages, response, ...toolResultMessages];
+        const finalResponse = await llmWithTools.invoke(finalMessages);
+        
+        return { 
+          response: finalResponse.content as string, 
+          intermediateSteps: [],
+          toolCalls 
+        };
+      }
+    }
+    
+    // No tool calls, just return the response
+    return { 
+      response: response.content as string, 
+      intermediateSteps: [],
+      toolCalls: toolCalls.length > 0 ? toolCalls : undefined
+    };
   }
 
   async *streamConversation(

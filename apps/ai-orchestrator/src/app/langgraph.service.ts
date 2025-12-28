@@ -323,6 +323,12 @@ export class LangGraphService {
         );
         
         llmResponse = conversationResult.response;
+        
+        // If tool calls were made in direct execution, include them
+        if (conversationResult.toolCalls && conversationResult.toolCalls.length > 0) {
+          toolCalls = conversationResult.toolCalls;
+          this.logger.log(`Direct LangChain execution made ${toolCalls.length} tool calls`);
+        }
       }
 
       return {
