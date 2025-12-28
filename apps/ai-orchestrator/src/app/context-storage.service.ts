@@ -1,6 +1,6 @@
 /**
  * Context Storage Service
- * 
+ *
  * Manages conversation context persistence using Redis
  * Maps profileId to conversation context for quick retrieval
  */
@@ -33,9 +33,13 @@ export class ContextStorageService implements OnModuleDestroy {
 
   private async initRedis(): Promise<void> {
     try {
-      const redisHost = this.config.get<string>('REDIS_HOST', 'localhost');
-      const redisPort = this.config.get<number>('REDIS_PORT', 6379);
-      const redisPassword = this.config.get<string>('REDIS_PASSWORD');
+      const {
+        host: redisHost,
+        port: redisPort,
+        password: redisPassword,
+      } = this.config.get<{ host: string; port: number; password?: string }>(
+        'redis'
+      );
 
       this.client = createClient({
         socket: {
@@ -96,7 +100,9 @@ export class ContextStorageService implements OnModuleDestroy {
       await this.client.setEx(key, this.defaultTTL, value);
       this.logger.debug(`Stored context for profile: ${profileId}`);
     } catch (error) {
-      this.logger.error(`Error storing context for ${profileId}: ${error.message}`);
+      this.logger.error(
+        `Error storing context for ${profileId}: ${error.message}`
+      );
     }
   }
 
@@ -120,11 +126,13 @@ export class ContextStorageService implements OnModuleDestroy {
 
       const context = JSON.parse(value as string) as ConversationContext;
       context.lastUpdated = new Date(context.lastUpdated);
-      
+
       this.logger.debug(`Retrieved context for profile: ${profileId}`);
       return context;
     } catch (error) {
-      this.logger.error(`Error retrieving context for ${profileId}: ${error.message}`);
+      this.logger.error(
+        `Error retrieving context for ${profileId}: ${error.message}`
+      );
       return null;
     }
   }
@@ -137,7 +145,7 @@ export class ContextStorageService implements OnModuleDestroy {
     updates: Partial<Omit<ConversationContext, 'profileId' | 'lastUpdated'>>
   ): Promise<void> {
     const existing = await this.getContext(profileId);
-    
+
     if (!existing) {
       // Create new context if doesn't exist
       await this.storeContext(profileId, {
@@ -174,7 +182,9 @@ export class ContextStorageService implements OnModuleDestroy {
       await this.client.del(key);
       this.logger.log(`Deleted context for profile: ${profileId}`);
     } catch (error) {
-      this.logger.error(`Error deleting context for ${profileId}: ${error.message}`);
+      this.logger.error(
+        `Error deleting context for ${profileId}: ${error.message}`
+      );
     }
   }
 
@@ -190,7 +200,7 @@ export class ContextStorageService implements OnModuleDestroy {
     try {
       const pattern = `${this.keyPrefix}*`;
       const keys = await this.client.keys(pattern);
-      
+
       if (keys.length > 0) {
         await this.client.del(keys);
         this.logger.warn(`Cleared ${keys.length} conversation contexts`);
@@ -211,10 +221,10 @@ export class ContextStorageService implements OnModuleDestroy {
     try {
       const pattern = `${this.keyPrefix}*`;
       const keys = await this.client.keys(pattern);
-      
+
       return {
         totalContexts: keys.length,
-        keys: keys.map(k => k.replace(this.keyPrefix, '')),
+        keys: keys.map((k) => k.replace(this.keyPrefix, '')),
       };
     } catch (error) {
       this.logger.error(`Error getting context stats: ${error.message}`);

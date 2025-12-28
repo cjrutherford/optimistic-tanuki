@@ -40,16 +40,20 @@ export class AppService {
   /**
    * Convert chat messages to LangChain BaseMessage format
    */
-  private convertToLangChainMessages(
-    messages: ChatMessage[]
-  ): BaseMessage[] {
+  private convertToLangChainMessages(messages: ChatMessage[]): BaseMessage[] {
     return messages.map((msg) => {
+      const role = msg.role || 'user';
+      const senderName = msg.senderName || '';
+      const content = msg.content || '';
       // AI personas are assistants
-      if (msg.role === 'assistant' || msg.senderName.toLowerCase().includes('assistant')) {
-        return new AIMessage(msg.content);
+      if (
+        role === 'assistant' ||
+        senderName.toLowerCase().includes('assistant')
+      ) {
+        return new AIMessage(content);
       }
       // User messages
-      return new HumanMessage(msg.content);
+      return new HumanMessage(content);
     });
   }
 
@@ -368,9 +372,7 @@ export class AppService {
     } catch (error) {
       console.trace(error);
       this.l.error('Error updating conversation:', error);
-      throw new RpcException(
-        'Failed to update conversation: ' + error.message
-      );
+      throw new RpcException('Failed to update conversation: ' + error.message);
     }
   }
 }

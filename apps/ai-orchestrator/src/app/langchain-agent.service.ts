@@ -1,6 +1,6 @@
 /**
  * LangChain Agent Service
- * 
+ *
  * Uses LangChain agents for streamlined tool execution
  * Provides automatic tool selection and multi-step reasoning
  */
@@ -94,10 +94,7 @@ Current user: {userId}`,
   /**
    * Initialize the agent executor with tools
    */
-  async initializeAgent(
-    userId: string,
-    conversationId: string
-  ): Promise<void> {
+  async initializeAgent(userId: string, conversationId: string): Promise<void> {
     try {
       // Get MCP tools and convert to LangChain format
       this.tools = await this.createTools(userId, conversationId);
@@ -108,7 +105,7 @@ Current user: {userId}`,
         llm: this.llm,
         tools: this.tools,
       });
-      
+
       this.initialized = true;
 
       this.logger.log(
@@ -157,7 +154,9 @@ Current user: {userId}`,
             try {
               // Create ToolCall object matching the expected format
               const toolCall: any = {
-                id: `call_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+                id: `call_${Date.now()}_${Math.random()
+                  .toString(36)
+                  .substring(7)}`,
                 type: 'function' as const,
                 function: {
                   name: mcpTool.name,
@@ -167,6 +166,7 @@ Current user: {userId}`,
 
               const context: any = {
                 userId,
+                profileId: userId,
                 conversationId,
                 timestamp: new Date(),
               };
@@ -209,7 +209,9 @@ Current user: {userId}`,
                     const required = t.inputSchema.required?.includes(name)
                       ? '(required)'
                       : '(optional)';
-                    return `  - ${name} ${required}: ${schema.description || schema.type}`;
+                    return `  - ${name} ${required}: ${
+                      schema.description || schema.type
+                    }`;
                   })
                   .join('\n')
               : '  No parameters';
@@ -222,7 +224,9 @@ Current user: {userId}`,
       })
     );
 
-    this.logger.log(`Created ${tools.length} LangChain tools (including list_tools)`);
+    this.logger.log(
+      `Created ${tools.length} LangChain tools (including list_tools)`
+    );
     return tools;
   }
 
@@ -301,7 +305,7 @@ Current user: {userId}`,
 
     try {
       this.logger.log(`Executing agent for user ${userId}`);
-      
+
       // Invoke the React agent graph
       const result = await this.agent.invoke({
         messages: [...chatHistory, { role: 'user', content: input }],
@@ -313,7 +317,11 @@ Current user: {userId}`,
       const output = lastMessage?.content || '';
 
       // Extract tool calls from messages
-      const toolCalls: Array<{ tool: string; input: unknown; output: unknown }> = [];
+      const toolCalls: Array<{
+        tool: string;
+        input: unknown;
+        output: unknown;
+      }> = [];
       for (const msg of messages) {
         if (msg.tool_calls && msg.tool_calls.length > 0) {
           for (const toolCall of msg.tool_calls) {

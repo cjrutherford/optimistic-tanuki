@@ -27,3 +27,6 @@ toolSources:
 ollama:
   host: 192.168.50.238
   port: 11434
+redis:
+  host: redis
+  port: 6379
