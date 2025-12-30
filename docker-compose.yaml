@@ -296,3 +296,26 @@ services:
 
 volumes:
   postgres_data:
+
+  store:
+    container_name: ot_store
+    build:
+      context: .
+      dockerfile: ./apps/store/Dockerfile
+    ports:
+      - '3009:3009'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  store-client:
+    container_name: ot_store_client
+    build:
+      context: .
+      dockerfile: ./apps/store-client/Dockerfile
+    ports:
+      - '8085:4000'
+    depends_on:
+      - gateway

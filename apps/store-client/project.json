@@ -21,7 +21,12 @@
             "input": "apps/store-client/public"
           }
         ],
-        "styles": ["apps/store-client/src/styles.scss"]
+        "styles": ["apps/store-client/src/styles.scss"],
+        "server": "apps/store-client/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/store-client/src/server.ts"
+        },
+        "prerender": true
       },
       "configurations": {
         "production": {

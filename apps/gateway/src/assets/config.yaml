@@ -55,6 +55,11 @@ services:
     transport: TCP
     host: ot_permissions
     port: 3012
+  store:
+    name: store
+    transport: TCP
+    host: ot_store
+    port: 3009
 auth: 
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=
