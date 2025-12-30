@@ -165,9 +165,6 @@ jest.mock('@langchain/core/messages', () => {
   return { BaseMessage, HumanMessage, AIMessage };
 });
 
-// Provide a noop for community package if required
-jest.mock('@langchain/community', () => ({}));
-
 // Silence console noise in tests
 const noop = () => {};
 console.debug = noop;
