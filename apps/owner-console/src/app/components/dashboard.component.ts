@@ -107,6 +107,24 @@ export class DashboardComponent implements OnInit {
         isActive: this.router.url.includes('/theme'),
       },
       {
+        label: 'Store Overview',
+        action: () => this.router.navigate(['/dashboard/store/overview']),
+        variant: 'text',
+        isActive: this.router.url.includes('/store/overview'),
+      },
+      {
+        label: 'Products',
+        action: () => this.router.navigate(['/dashboard/store/products']),
+        variant: 'text',
+        isActive: this.router.url.includes('/store/products'),
+      },
+      {
+        label: 'Orders',
+        action: () => this.router.navigate(['/dashboard/store/orders']),
+        variant: 'text',
+        isActive: this.router.url.includes('/store/orders'),
+      },
+      {
         label: 'Logout',
         action: () => this.logout(),
         variant: 'danger',

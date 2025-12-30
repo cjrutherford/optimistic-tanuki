@@ -110,6 +110,24 @@ export class StoreController {
     );
   }
 
+  @RequirePermissions('store.order.view')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('orders')
+  async findAllOrders() {
+    return await firstValueFrom(
+      this.storeService.send(OrderCommands.FIND_ALL_ORDERS, {})
+    );
+  }
+
+  @RequirePermissions('store.order.view')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('orders/:id')
+  async findOneOrder(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.storeService.send(OrderCommands.FIND_ONE_ORDER, id)
+    );
+  }
+
   @UseGuards(AuthGuard)
   @Get('orders/user/:userId')
   async findUserOrders(@Param('userId') userId: string) {
@@ -118,7 +136,31 @@ export class StoreController {
     );
   }
 
+  @RequirePermissions('store.order.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('orders/:id')
+  async updateOrder(
+    @Param('id') id: string,
+    @Body() updateOrderDto: UpdateOrderDto
+  ) {
+    return await firstValueFrom(
+      this.storeService.send(OrderCommands.UPDATE_ORDER, {
+        id,
+        updateOrderDto,
+      })
+    );
+  }
+
   // Subscription endpoints
+  @RequirePermissions('store.subscription.view')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('subscriptions')
+  async findAllSubscriptions() {
+    return await firstValueFrom(
+      this.storeService.send(SubscriptionCommands.FIND_ALL_SUBSCRIPTIONS, {})
+    );
+  }
+
   @UseGuards(AuthGuard)
   @Post('subscriptions')
   async createSubscription(@Body() createSubscriptionDto: CreateSubscriptionDto) {
@@ -135,7 +177,8 @@ export class StoreController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('store.subscription.cancel')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Put('subscriptions/:id/cancel')
   async cancelSubscription(@Param('id') id: string) {
     return await firstValueFrom(
