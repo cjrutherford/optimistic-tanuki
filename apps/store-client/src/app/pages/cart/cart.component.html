@@ -1,0 +1,12 @@
+<div class="cart-page">
+  <header class="page-header">
+    <h1>Shopping Cart</h1>
+  </header>
+
+  <store-shopping-cart
+    [items]="items"
+    (updateQuantity)="onUpdateQuantity($event)"
+    (removeItem)="onRemoveItem($event)"
+    (checkout)="onCheckout()">
+  </store-shopping-cart>
+</div>
