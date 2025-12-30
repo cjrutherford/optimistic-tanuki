@@ -119,7 +119,7 @@ describe('AppService', () => {
 
   describe('processNewProfile', () => {
     const mockProfileId = 'test-profile-id';
-    const mockPersona: PersonaTelosDto = {
+    const mockPersona: any = {
       id: 'persona-id',
       name: 'Alex Generalis',
       description: 'desc',
@@ -133,7 +133,7 @@ describe('AppService', () => {
       exampleResponses: [],
       promptTemplate: '',
     };
-    const mockProfile: ProfileDto = {
+    const mockProfile: any = {
       id: mockProfileId,
       profileName: 'Test User',
       email: '',
@@ -214,7 +214,7 @@ describe('AppService', () => {
   });
 
   describe('updateConversation', () => {
-    const mockConversation: ChatConversation = {
+    const mockConversation: any = {
       id: 'conv-id',
       participants: [],
       createdAt: new Date(),
@@ -248,7 +248,7 @@ describe('AppService', () => {
         },
       ],
     };
-    const mockAiPersonas: PersonaTelosDto[] = [
+    const mockAiPersonas: any[] = [
       {
         id: 'ai-id',
         name: 'AI Persona',
@@ -264,7 +264,7 @@ describe('AppService', () => {
         promptTemplate: '',
       },
     ];
-    const mockProfile: ProfileDto = {
+    const mockProfile: any = {
       id: 'user-id',
       profileName: 'Test User',
       email: '',
@@ -328,7 +328,7 @@ describe('AppService', () => {
   });
 
   describe('getPersona', () => {
-    const mockPersona: PersonaTelosDto = {
+    const mockPersona: any = {
       id: 'persona-id',
       name: 'Alex Generalis',
       description: 'desc',
@@ -345,7 +345,9 @@ describe('AppService', () => {
 
     it('should return persona if found by name', async () => {
       jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersona]));
-      const result = await service['getPersona']({ name: 'Alex Generalis' });
+      const result = await service['getPersona']({
+        name: 'Alex Generalis',
+      } as any);
       expect(result).toEqual(mockPersona);
       expect(telosDocsService.send).toHaveBeenCalledWith(
         { cmd: PersonaTelosCommands.FIND },
@@ -366,10 +368,10 @@ describe('AppService', () => {
     it('should throw RpcException if persona not found', async () => {
       jest.spyOn(telosDocsService, 'send').mockReturnValue(of([]));
       await expect(
-        service['getPersona']({ name: 'NonExistent' })
+        service['getPersona']({ name: 'NonExistent' } as any)
       ).rejects.toThrow(RpcException);
       await expect(
-        service['getPersona']({ name: 'NonExistent' })
+        service['getPersona']({ name: 'NonExistent' } as any)
       ).rejects.toThrow('Failed to get persona: Persona not found');
     });
 
@@ -378,7 +380,7 @@ describe('AppService', () => {
         .spyOn(telosDocsService, 'send')
         .mockReturnValue(throwError(() => new Error('Telos error')));
       await expect(
-        service['getPersona']({ name: 'Alex Generalis' })
+        service['getPersona']({ name: 'Alex Generalis' } as any)
       ).rejects.toThrow(RpcException);
       expect(logger.error).toHaveBeenCalledWith(
         'Error getting persona:',
@@ -388,7 +390,7 @@ describe('AppService', () => {
   });
 
   describe('summarizeConversation', () => {
-    const mockMessages: ChatMessage[] = [
+    const mockMessages: any[] = [
       {
         id: 'msg1',
         conversationId: 'conv-id',

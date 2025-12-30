@@ -36,9 +36,17 @@ describe('AppController', () => {
 
   describe('profileInitialize', () => {
     it('should call appService.processNewProfile and return data', async () => {
-      const data = { profileId: 'test-profile-id', appId: 'test-app-id', personaId: 'test-persona-id' };
+      const data = {
+        profileId: 'test-profile-id',
+        appId: 'test-app-id',
+        personaId: 'test-persona-id',
+      };
       await appController.profileInitialize(data);
-      expect(appService.processNewProfile).toHaveBeenCalledWith(data.profileId, data.appId, data.personaId);
+      expect(appService.processNewProfile).toHaveBeenCalledWith(
+        data.profileId,
+        data.appId,
+        data.personaId
+      );
     });
   });
 
@@ -53,11 +61,13 @@ describe('AppController', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           addMessage: jest.fn(),
-        } as ChatConversation,
+        } as any,
         aiPersonas: [],
       };
       const expectedUpdate = [{ content: 'test-message' }];
-      jest.spyOn(appService, 'updateConversation').mockResolvedValue(expectedUpdate as any);
+      jest
+        .spyOn(appService, 'updateConversation')
+        .mockResolvedValue(expectedUpdate as any);
 
       const result = await appController.conversationUpdate(data);
       expect(appService.updateConversation).toHaveBeenCalledWith(data);
@@ -66,11 +76,15 @@ describe('AppController', () => {
 
     it('should throw RpcException if conversation ID is missing', async () => {
       const data = {
-        conversation: { messages: [], privacy: 'private' } as ChatConversation,
+        conversation: { messages: [], privacy: 'private' } as any,
         aiPersonas: [],
       };
-      await expect(appController.conversationUpdate(data as any)).rejects.toThrow(RpcException);
-      await expect(appController.conversationUpdate(data as any)).rejects.toThrow('Conversation ID is required');
+      await expect(
+        appController.conversationUpdate(data as any)
+      ).rejects.toThrow(RpcException);
+      await expect(
+        appController.conversationUpdate(data as any)
+      ).rejects.toThrow('Conversation ID is required');
     });
   });
 
@@ -78,7 +92,9 @@ describe('AppController', () => {
     it('should log that telos updated was called', async () => {
       const data = { some: 'data' };
       await appController.telosUpdate(data);
-      expect(logger.log).toHaveBeenCalledWith("telos updated called. here's where we update the telos documents....");
+      expect(logger.log).toHaveBeenCalledWith(
+        "telos updated called. here's where we update the telos documents...."
+      );
     });
   });
 
@@ -86,7 +102,9 @@ describe('AppController', () => {
     it('should log that refer persona was called', async () => {
       const data = { some: 'data' };
       await appController.referPersona(data);
-      expect(logger.log).toHaveBeenCalledWith("refer persona called. here's where we refer the persona....");
+      expect(logger.log).toHaveBeenCalledWith(
+        "refer persona called. here's where we refer the persona...."
+      );
     });
   });
 });

@@ -95,25 +95,25 @@ export class AppService {
     );
   }
 
-  /**
-   * Summarize conversation for context
-   */
-  private async summarizeConversation(
-    messages: ChatMessage[],
-    persona: PersonaTelosDto
-  ): Promise<string> {
-    if (messages.length === 0) {
-      return 'No previous conversation history.';
-    }
+  // /**
+  //  * Summarize conversation for context
+  //  */
+  // private async summarizeConversation(
+  //   messages: ChatMessage[],
+  //   persona: PersonaTelosDto
+  // ): Promise<string> {
+  //   if (messages.length === 0) {
+  //     return 'No previous conversation history.';
+  //   }
 
-    // Simple summary for now - can be enhanced
-    const recentCount = Math.min(messages.length, 5);
-    const recentMessages = messages.slice(-recentCount);
+  //   // Simple summary for now - can be enhanced
+  //   const recentCount = Math.min(messages.length, 5);
+  //   const recentMessages = messages.slice(-recentCount);
 
-    return `Recent conversation (last ${recentCount} messages): ${recentMessages
-      .map((m) => `${m.senderName}: ${m.content}`)
-      .join(' | ')}`;
-  }
+  //   return `Recent conversation (last ${recentCount} messages): ${recentMessages
+  //     .map((m) => `${m.senderName}: ${m.content}`)
+  //     .join(' | ')}`;
+  // }
 
   async processNewProfile(
     profileId: string,
@@ -254,7 +254,55 @@ export class AppService {
             persona,
             profile,
             conversation.id,
-            true // Use agent for multi-step reasoning
+            true, // Use agent for multi-step reasoning
+            async (progress) => {
+              this.l.debug('Received progress update:', progress);
+              try {
+                if (progress.type === 'tool_start') {
+                  const toolCallMessage: Partial<ChatMessage> = {
+                    conversationId: conversation.id,
+                    senderId: persona.id,
+                    senderName: persona.name,
+                    recipientId: [profile.id],
+                    recipientName: [profile.profileName],
+                    content: `🔧 Calling tool: ${progress.content.tool}`,
+                    timestamp: new Date(),
+                    type: 'system',
+                  };
+                  await firstValueFrom(
+                    this.chatCollectorService.send(
+                      { cmd: ChatCommands.POST_MESSAGE },
+                      toolCallMessage
+                    )
+                  );
+                  responses.push(toolCallMessage);
+                } else if (progress.type === 'tool_end') {
+                  const toolResultMessage: Partial<ChatMessage> = {
+                    conversationId: conversation.id,
+                    senderId: persona.id,
+                    senderName: persona.name,
+                    recipientId: [profile.id],
+                    recipientName: [profile.profileName],
+                    content: `✅ Tool result (${progress.content.tool}):\n${
+                      typeof progress.content.output === 'string'
+                        ? progress.content.output
+                        : JSON.stringify(progress.content.output, null, 2)
+                    }`,
+                    timestamp: new Date(),
+                    type: 'system',
+                  };
+                  await firstValueFrom(
+                    this.chatCollectorService.send(
+                      { cmd: ChatCommands.POST_MESSAGE },
+                      toolResultMessage
+                    )
+                  );
+                  responses.push(toolResultMessage);
+                }
+              } catch (err) {
+                this.l.error('Error sending progress update:', err);
+              }
+            }
           );
 
           this.l.log('LangGraph execution complete:', {
@@ -264,53 +312,15 @@ export class AppService {
           });
 
           // Process intermediate steps (tool calls) - these are auto-emitted by LangGraph
+          // We now handle this via the progress callback, so we don't need to re-emit them here
+          // unless we want to ensure they are in the final response list if the callback failed?
+          // But we pushed to responses in the callback.
+
+          /* 
           if (result.toolCalls && result.toolCalls.length > 0) {
-            for (const toolCall of result.toolCalls) {
-              // Tool call notification
-              const toolCallMessage: Partial<ChatMessage> = {
-                conversationId: conversation.id,
-                senderId: persona.id,
-                senderName: persona.name,
-                recipientId: [profile.id],
-                recipientName: [profile.profileName],
-                content: `🔧 Calling tool: ${toolCall.tool}`,
-                timestamp: new Date(),
-                type: 'system',
-              };
-
-              await firstValueFrom(
-                this.chatCollectorService.send(
-                  { cmd: ChatCommands.POST_MESSAGE },
-                  toolCallMessage
-                )
-              );
-              responses.push(toolCallMessage);
-
-              // Tool result
-              const toolResultMessage: Partial<ChatMessage> = {
-                conversationId: conversation.id,
-                senderId: persona.id,
-                senderName: persona.name,
-                recipientId: [profile.id],
-                recipientName: [profile.profileName],
-                content: `✅ Tool result (${toolCall.tool}):\n${JSON.stringify(
-                  toolCall.output,
-                  null,
-                  2
-                )}`,
-                timestamp: new Date(),
-                type: 'system',
-              };
-
-              await firstValueFrom(
-                this.chatCollectorService.send(
-                  { cmd: ChatCommands.POST_MESSAGE },
-                  toolResultMessage
-                )
-              );
-              responses.push(toolResultMessage);
-            }
+             // ... removed ...
           }
+          */
 
           // Parse final response for TELOS data
           const { content, telosData } = this.parseTelosResponse(

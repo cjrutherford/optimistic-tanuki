@@ -9,28 +9,24 @@ This guide explains how to use the new prompt engineering utilities and XML tool
 ### Basic Usage
 
 ```typescript
-import { 
-  buildConversationPreamble,
-  extractUserFacingContent,
-  shouldEmitToUser
-} from './utils';
+import { buildConversationPreamble, extractUserFacingContent, shouldEmitToUser } from './utils';
 
 // Build a complete conversation preamble
 const preamble = buildConversationPreamble(
-  systemPrompt,        // Base system prompt from persona
-  profile,             // User profile DTO
+  systemPrompt, // Base system prompt from persona
+  profile, // User profile DTO
   conversationSummary, // Summary of previous messages
-  maxIterations,       // Max tool-call iterations (e.g., 6)
-  projectResource      // Optional project resource data
+  maxIterations, // Max tool-call iterations (e.g., 6)
+  projectResource // Optional project resource data
 );
 
 // Use in your prompt
 const prompt: GeneratePrompt = {
-  model: 'qwen3-coder',
+  model: 'qwen3',
   messages: [
     { role: 'system', content: preamble },
-    { role: 'user', content: userMessage }
-  ]
+    { role: 'user', content: userMessage },
+  ],
 };
 ```
 
@@ -38,10 +34,7 @@ const prompt: GeneratePrompt = {
 
 ```typescript
 // Get content that should be shown to user (strips tool calls)
-const userContent = extractUserFacingContent(
-  response.message.content,
-  response.message.tool_calls
-);
+const userContent = extractUserFacingContent(response.message.content, response.message.tool_calls);
 
 if (userContent) {
   console.log('LLM wants to tell user:', userContent);
@@ -59,12 +52,7 @@ if (shouldEmitToUser(response.message.content, response.message.tool_calls)) {
 For more control, use individual components:
 
 ```typescript
-import {
-  generateToolCallingPrimer,
-  generateSystemInvariants,
-  generateUserContext,
-  generateResponseRules
-} from './utils';
+import { generateToolCallingPrimer, generateSystemInvariants, generateUserContext, generateResponseRules } from './utils';
 
 // Just the tool calling primer
 const primer = generateToolCallingPrimer(userId);
@@ -89,11 +77,7 @@ Your additional custom instructions here...
 ### Detecting XML Tool Calls
 
 ```typescript
-import { 
-  containsXmlToolCall,
-  parseXmlToolCall,
-  xmlToolCallToOpenAI
-} from './utils';
+import { containsXmlToolCall, parseXmlToolCall, xmlToolCallToOpenAI } from './utils';
 
 const llmResponse = `
 Let me create that project for you.
@@ -110,16 +94,13 @@ Let me create that project for you.
 
 if (containsXmlToolCall(llmResponse)) {
   const xmlCall = parseXmlToolCall(llmResponse);
-  
+
   if (xmlCall) {
     // Convert to OpenAI format for execution
     const openAICall = xmlToolCallToOpenAI(xmlCall);
-    
+
     // Execute using standard executor
-    const result = await mcpExecutor.executeToolCall(
-      openAICall,
-      executionContext
-    );
+    const result = await mcpExecutor.executeToolCall(openAICall, executionContext);
   }
 }
 ```
@@ -243,13 +224,7 @@ Instead of building prompts manually, use the utility:
 const prompt = `You are an assistant. Use userId=${userId}...`;
 
 // ✅ Do this
-const prompt = buildConversationPreamble(
-  systemPrompt,
-  profile,
-  summary,
-  maxIter,
-  resource
-);
+const prompt = buildConversationPreamble(systemPrompt, profile, summary, maxIter, resource);
 ```
 
 ### 2. Check for User-Facing Content
@@ -257,10 +232,7 @@ const prompt = buildConversationPreamble(
 Always extract and log user-facing content for observability:
 
 ```typescript
-const userContent = extractUserFacingContent(
-  response.message.content,
-  response.message.tool_calls
-);
+const userContent = extractUserFacingContent(response.message.content, response.message.tool_calls);
 
 if (userContent) {
   logger.log(`LLM message: "${userContent}"`);
@@ -309,7 +281,7 @@ const toolCall = toolCalls[0]; // Only process first
 ```typescript
 async updateConversation(data: { conversation, aiPersonas }) {
   const profile = await getProfile(lastMessage.senderId);
-  
+
   // Build preamble with utilities
   const preamble = buildConversationPreamble(
     generatePersonaSystemMessage(persona),
@@ -318,7 +290,7 @@ async updateConversation(data: { conversation, aiPersonas }) {
     6, // max iterations
     await getProjectResource()
   );
-  
+
   // Send to LLM
   const response = await promptProxy.send({
     messages: [
@@ -326,17 +298,17 @@ async updateConversation(data: { conversation, aiPersonas }) {
       { role: 'user', content: lastMessage.content }
     ]
   });
-  
+
   // Check for user-facing content
   const userContent = extractUserFacingContent(
     response.message.content,
     response.message.tool_calls
   );
-  
+
   if (userContent) {
     logger.log(`LLM thinking: "${userContent}"`);
   }
-  
+
   // Handle tool calls (OpenAI or XML)
   if (response.message.tool_calls?.length > 0) {
     // OpenAI format
@@ -406,16 +378,11 @@ userProfileId: ${profile.id}
 `;
 
 // New way
-const preamble = buildConversationPreamble(
-  systemPrompt,
-  profile,
-  summary,
-  maxIter,
-  resource
-);
+const preamble = buildConversationPreamble(systemPrompt, profile, summary, maxIter, resource);
 ```
 
 This makes the code:
+
 - More maintainable
 - Easier to test
 - Consistent across the codebase

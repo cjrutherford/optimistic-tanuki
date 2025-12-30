@@ -10,7 +10,7 @@ import { ChatOllama } from '@langchain/ollama';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { DynamicStructuredTool } from '@langchain/core/tools';
-import { BaseMessage } from '@langchain/core/messages';
+import { BaseMessage, AIMessage } from '@langchain/core/messages';
 import { ConfigService } from '@nestjs/config';
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ToolsService } from './tools.service';
@@ -44,7 +44,7 @@ export class LangChainAgentService {
   ) {
     const ollama = this.config.get<{ host: string; port: number }>('ollama');
     this.llm = new ChatOllama({
-      model: 'qwen3-coder',
+      model: 'qwen3',
       baseUrl:
         ollama.host && ollama.port
           ? `http://${ollama.host}:${ollama.port}`
@@ -57,10 +57,7 @@ export class LangChainAgentService {
    * Create agent prompt template
    */
   private createAgentPrompt(): ChatPromptTemplate {
-    return ChatPromptTemplate.fromMessages([
-      [
-        'system',
-        `You are an AI assistant helping users manage projects, tasks, risks, and more.
+    const systemPrompt = `You are an AI assistant helping users manage projects, tasks, risks, and more.
 
 # YOUR CAPABILITIES
 You have access to tools that allow you to:
@@ -74,45 +71,37 @@ You have access to tools that allow you to:
 1. TOOL DISCOVERY: Call 'list_tools' when uncertain about available actions
 2. ID VALIDATION: NEVER fabricate UUIDs - always query first to get real IDs
 3. SEQUENTIAL EXECUTION: Call ONE tool at a time, wait for result before next tool
-4. MULTI-STEP WORKFLOWS: For tasks/risks/changes, query projects first to get projectId
-5. USER CONTEXT: Always use the provided userId/profileId from context
+`;
 
-# RESPONSE STYLE
-- Be concise and helpful
-- Explain what you're doing before calling tools
-- Report results clearly after tool execution
-- If a tool fails, explain why and suggest alternatives
-
-Current user: {userId}`,
-      ],
-      ['placeholder', '{chat_history}'],
-      ['human', '{input}'],
-      ['placeholder', '{agent_scratchpad}'],
+    return ChatPromptTemplate.fromMessages([
+      { role: 'system', content: systemPrompt } as any,
     ]);
   }
-
   /**
-   * Initialize the agent executor with tools
+   * Initialize the agent for a given user/conversation.
+   * This prepares LangChain tools and compiles the agent graph.
    */
   async initializeAgent(userId: string, conversationId: string): Promise<void> {
+    if (this.initialized) return;
     try {
-      // Get MCP tools and convert to LangChain format
+      this.logger.log(`Initializing agent for user ${userId}`);
+      // Build tools for this user/context
       this.tools = await this.createTools(userId, conversationId);
 
-      // Create React agent using LangGraph prebuilt
-      // This returns a CompiledStateGraph that can be invoked
+      // Create the React-style agent from LangGraph prebuilt helper
       this.agent = createReactAgent({
         llm: this.llm,
         tools: this.tools,
       });
 
       this.initialized = true;
-
       this.logger.log(
         `Initialized agent with ${this.tools.length} tools for user ${userId}`
       );
     } catch (error) {
-      this.logger.error(`Failed to initialize agent: ${error.message}`);
+      this.logger.error(
+        `Failed to initialize agent: ${error?.message || error}`
+      );
       throw error;
     }
   }
@@ -139,11 +128,15 @@ Current user: {userId}`,
           schema: zodSchema,
           func: async (input: Record<string, unknown>) => {
             // Inject userId/profileId into parameters
+            // Ensure profileId is mapped from userId if not present
             const enrichedInput = {
               ...input,
-              userId: input.userId || userId,
-              profileId: input.profileId || userId,
-              createdBy: input.createdBy || userId,
+              userId: (input.userId as string) || userId,
+              profileId:
+                (input.profileId as string) ||
+                (input.userId as string) ||
+                userId,
+              createdBy: (input.createdBy as string) || userId,
             };
 
             this.logger.log(
@@ -181,6 +174,15 @@ Current user: {userId}`,
               this.logger.error(
                 `Tool ${mcpTool.name} execution failed: ${error.message}`
               );
+
+              // Return a structured error message to the agent so it can retry
+              if (
+                error.message.includes('required property') ||
+                error.message.includes('validation failed')
+              ) {
+                return `Error: Validation failed or missing required parameter. Please check the tool definition using 'list_tools' and try again with the correct parameters. Details: ${error.message}`;
+              }
+
               return `Error executing ${mcpTool.name}: ${error.message}`;
             }
           },
@@ -297,53 +299,164 @@ Current user: {userId}`,
   async executeAgent(
     input: string,
     chatHistory: BaseMessage[],
-    userId: string
+    userId: string,
+    conversationSummary?: string,
+    conversationId?: string,
+    onProgress?: (data: {
+      type: 'tool_start' | 'tool_end' | 'log';
+      content: any;
+    }) => Promise<void> | void
   ): Promise<AgentExecutionResult> {
-    if (!this.agent) {
+    if (!this.initialized || !this.agent) {
       throw new Error('Agent not initialized. Call initializeAgent first.');
     }
 
     try {
       this.logger.log(`Executing agent for user ${userId}`);
+      if (onProgress)
+        await onProgress({
+          type: 'log',
+          content: `Starting agent execution for user ${userId}`,
+        });
 
-      // Invoke the React agent graph
-      const result = await this.agent.invoke({
-        messages: [...chatHistory, { role: 'user', content: input }],
+      // Build messages including LangGraph-provided context so agent sees the same state.
+      const systemPrompt = this.createAgentPrompt();
+      const summaryMsg = conversationSummary
+        ? [
+            {
+              role: 'system',
+              content: `Conversation Summary: ${conversationSummary}`,
+            },
+          ]
+        : [];
+      const convIdMsg = conversationId
+        ? [{ role: 'system', content: `Conversation ID: ${conversationId}` }]
+        : [];
+
+      const inputs = {
+        messages: [
+          { role: 'system', content: systemPrompt } as any,
+          ...summaryMsg,
+          ...convIdMsg,
+          ...chatHistory,
+          { role: 'user', content: input },
+        ],
+      };
+
+      // Use stream to get intermediate steps
+      const stream = await this.agent.stream(inputs, {
+        streamMode: 'values',
       });
 
-      // Extract messages from result
-      const messages = result.messages || [];
-      const lastMessage = messages[messages.length - 1];
-      const output = lastMessage?.content || '';
-
-      // Extract tool calls from messages
+      let finalState: any;
       const toolCalls: Array<{
         tool: string;
         input: unknown;
         output: unknown;
       }> = [];
-      for (const msg of messages) {
+
+      for await (const chunk of stream) {
+        this.logger.debug(
+          'Agent stream chunk:',
+          JSON.stringify(chunk, null, 2)
+        );
+        finalState = chunk;
+        const messages = chunk.messages || [];
+        const lastMessage = messages[messages.length - 1];
+
+        if (lastMessage) {
+          // Check for tool calls
+          if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+            for (const toolCall of lastMessage.tool_calls) {
+              this.logger.log(`Agent detected tool call: ${toolCall.name}`);
+              if (onProgress) {
+                await onProgress({
+                  type: 'tool_start',
+                  content: { tool: toolCall.name, input: toolCall.args },
+                });
+              }
+            }
+          }
+
+          // Check for tool outputs (ToolMessage)
+          if (lastMessage._getType() === 'tool') {
+            this.logger.log(
+              `Agent received tool output for: ${lastMessage.name}`
+            );
+            // We might need to match this with the previous tool call, but for now just report it
+            if (onProgress) {
+              await onProgress({
+                type: 'tool_end',
+                content: {
+                  tool: lastMessage.name,
+                  output: lastMessage.content,
+                },
+              });
+            }
+
+            // Store for result
+            toolCalls.push({
+              tool: lastMessage.name || 'unknown',
+              input: {}, // We'd need to look back to find input, skipping for now or we can track it
+              output: lastMessage.content,
+            });
+          }
+        }
+      }
+
+      // Extract final response
+      const messages = finalState?.messages || [];
+      const lastMessage = messages[messages.length - 1];
+      const output = lastMessage?.content || '';
+
+      if (!output && toolCalls.length === 0) {
+        const msg =
+          'Agent execution completed but produced no output and no tool calls. The model may have failed to respond or encountered an internal error.';
+        this.logger.warn(msg);
+        if (onProgress) await onProgress({ type: 'log', content: msg });
+        throw new Error(msg);
+      }
+
+      // Re-scan messages for complete tool call history to ensure we have everything
+      // (The stream loop above catches them in real-time, this ensures the final result object is complete)
+      const allToolCalls: Array<{
+        tool: string;
+        input: unknown;
+        output: unknown;
+      }> = [];
+
+      for (let i = 0; i < messages.length; i++) {
+        const msg = messages[i];
         if (msg.tool_calls && msg.tool_calls.length > 0) {
           for (const toolCall of msg.tool_calls) {
-            toolCalls.push({
+            const toolOutputMsg = messages.find(
+              (m: any) => m.tool_call_id === toolCall.id
+            );
+
+            allToolCalls.push({
               tool: toolCall.name || 'unknown',
               input: toolCall.args || {},
-              output: '', // Tool outputs are in subsequent messages
+              output: toolOutputMsg ? toolOutputMsg.content : '',
             });
           }
         }
       }
 
       return {
-        output,
+        output: typeof output === 'string' ? output : JSON.stringify(output),
         intermediateSteps: messages.map((msg: any) => ({
           action: msg.tool_calls?.[0]?.name || 'response',
           observation: msg.content || '',
         })),
-        toolCalls,
+        toolCalls: allToolCalls,
       };
     } catch (error) {
       this.logger.error(`Agent execution failed: ${error.message}`);
+      if (onProgress)
+        onProgress({
+          type: 'log',
+          content: `Agent execution failed: ${error.message}`,
+        });
       throw error;
     }
   }

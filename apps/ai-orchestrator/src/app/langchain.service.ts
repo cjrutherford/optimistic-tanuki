@@ -12,6 +12,7 @@ import {
   SystemMessage,
   BaseMessage,
 } from '@langchain/core/messages';
+import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import {
@@ -36,7 +37,7 @@ export class LangChainService {
   ) {
     const ollama = this.config.get<{ host: string; port: number }>('ollama');
     this.llm = new ChatOllama({
-      model: 'qwen3-coder',
+      model: 'qwen3',
       baseUrl:
         ollama.host && ollama.port
           ? `http://${ollama.host}:${ollama.port}`
@@ -109,22 +110,20 @@ export class LangChainService {
     return '';
   }
 
-  private createSystemPrompt(
-    persona: PersonaTelosDto,
-    profile: ProfileDto,
-    conversationSummary: string,
-    projectContext?: string
-  ): string {
-    const basePrompt = `You are ${persona.name}, ${persona.description}
+  private createSystemPromptTemplate(): ChatPromptTemplate {
+    return ChatPromptTemplate.fromMessages([
+      [
+        'system',
+        `You are {personaName}, {personaDescription}
 
 # USER CONTEXT
-- User ID: ${profile.id}
-- User Name: ${profile.profileName}
+- User ID: {userId}
+- User Name: {userName}
 
 # CONVERSATION SUMMARY
-${conversationSummary}
+{conversationSummary}
 
-${projectContext || ''}
+{projectContext}
 
 # TOOL DISCOVERY
 You have access to tools through the MCP (Model Context Protocol) system. To discover what tools are available, call the 'list_tools' tool. This will show you all available tools with their exact parameter names and descriptions.
@@ -136,7 +135,14 @@ You have access to tools through the MCP (Model Context Protocol) system. To dis
 
 # AVAILABLE RESOURCES
 You can access contextual information using MCP resources:
-- project://{projectId}/context - Get full project context including tasks, risks, changes, and journal entries
+- project://{{projectId}}/context - Get full project context including tasks, risks, changes, and journal entries
+
+# DATA RELATIONSHIPS & AWARENESS
+- **User**: The entity interacting with you. Identified by '{userId}'. All created items (tasks, projects) must be linked to this ID.
+- **Profile ID**: This is the SAME as the User ID. If a tool asks for 'profileId', use '{userId}'.
+- **Project**: A container for tasks, risks, and changes. Identified by a UUID. You must query projects to find their IDs before creating child items.
+- **Task/Risk/Change**: Items that belong to a Project. They require a 'projectId' to be created.
+- **Context Awareness**: Use the conversation summary and project context to inform your decisions. If a project is mentioned, look for its ID in the context or query for it.
 
 # STRICT OPERATIONAL GUIDELINES
 1. **TOOL DISCOVERY FIRST**: If uncertain about available actions, call 'list_tools' to see what you can do.
@@ -144,14 +150,12 @@ You can access contextual information using MCP resources:
 3. **TOOL FIRST APPROACH**: If a user request requires data or action, call the appropriate tool immediately. Do not ask for permission.
 4. **ONE TOOL AT A TIME**: Execute one tool call, wait for the result, then decide the next step.
 5. **JSON ONLY OUTPUT**: When calling a tool, output ONLY the JSON object. No markdown, no explanations.
-6. **USER ID BINDING**: Always use the provided User ID (${
-      profile.id
-    }) for 'userId', 'createdBy', 'owner', etc.
+6. **USER ID BINDING**: Always use the provided User ID ({userId}) for 'userId', 'createdBy', 'owner', etc.
 7. **EXACT PARAMETER NAMES**: Use the EXACT parameter names from the tool schema. The schemas are provided by 'list_tools' or bound to this conversation. Do NOT guess or assume parameter names.
 
 # TOOL CALLING FORMAT
 When calling a tool, output a single JSON object with this structure:
-{"name": "tool_name", "arguments": {"param1": "value1", "param2": "value2"}}
+{{"name": "tool_name", "arguments": {{"param1": "value1", "param2": "value2"}}}}
 
 Do NOT wrap in markdown code blocks. Do NOT add explanations before or after.
 
@@ -159,37 +163,33 @@ Do NOT wrap in markdown code blocks. Do NOT add explanations before or after.
 
 ## Discovering Available Tools
 **User**: "What can you help me with?"
-**Action**: {"name": "list_tools", "arguments": {}}
+**Action**: {{"name": "list_tools", "arguments": {{}}}}
 **[System returns list of all available tools]**
 **Response**: "I can help you with: [summarize tools]"
 
 ## Creating Items That Require IDs
 **User**: "Create a task called 'Fix Bug' in the Website project"
 **Thought**: I need the projectId for 'Website'. I'll query for it first.
-**Action**: {"name": "query_projects", "arguments": {"name": "Website", "userId": "${
-      profile.id
-    }"}}
+**Action**: {{"name": "query_projects", "arguments": {{"name": "Website", "userId": "{userId}"}}}}
 **[System returns project with ID "proj-123"]**
 **Thought**: I have the projectId. Now I can create the task.
-**Action**: {"name": "create_task", "arguments": {"title": "Fix Bug", "projectId": "proj-123", "createdBy": "${
-      profile.id
-    }", "status": "TODO"}}
+**Action**: {{"name": "create_task", "arguments": {{"title": "Fix Bug", "projectId": "proj-123", "createdBy": "{userId}", "status": "TODO"}}}}
 
 # RESPONSE RULES
 - After tool execution completes, provide a clear natural language response.
 - If a tool fails, explain what went wrong and suggest next steps.
 - If you're uncertain about parameters, call 'list_tools' to verify.
-`;
-
-    return basePrompt;
+`,
+      ],
+    ]);
   }
 
   private async createTools(
     userId: string,
     conversationId: string
-  ): Promise<DynamicStructuredTool[]> {
+  ): Promise<any[]> {
     const mcpTools = await this.toolsService.listTools();
-    
+
     // Create MCP tools
     const tools = mcpTools.map((tool) => {
       const schema = this.convertToZodSchema(tool.inputSchema);
@@ -218,41 +218,48 @@ Do NOT wrap in markdown code blocks. Do NOT add explanations before or after.
           }
           throw new Error(result.error?.message || 'Tool failed');
         },
-      });
+      }) as any;
     });
 
     // Add list_tools as a LangChain tool so LLM can discover available tools
     const listToolsTool = new DynamicStructuredTool({
       name: 'list_tools',
-      description: 'List all available tools with their descriptions and parameters. Call this when you need to discover what actions you can perform.',
+      description:
+        'List all available tools with their descriptions and parameters. Call this when you need to discover what actions you can perform.',
       schema: z.object({}), // No parameters needed
       func: async () => {
         this.logger.log('LLM called list_tools to discover available actions');
-        
-        // Format tools in a way that's helpful for the LLM
-        const toolDescriptions = mcpTools.map(tool => {
-          const params = tool.inputSchema?.properties || {};
-          const required = tool.inputSchema?.required || [];
-          
-          const paramList = Object.entries(params).map(([name, schema]: [string, any]) => {
-            const isRequired = required.includes(name);
-            const typeInfo = schema.type || 'any';
-            const description = schema.description || '';
-            return `  - ${name} (${typeInfo})${isRequired ? ' [REQUIRED]' : ' [optional]'}: ${description}`;
-          }).join('\n');
 
-          return `## ${tool.name}
+        // Format tools in a way that's helpful for the LLM
+        const toolDescriptions = mcpTools
+          .map((tool) => {
+            const params = tool.inputSchema?.properties || {};
+            const required = tool.inputSchema?.required || [];
+
+            const paramList = Object.entries(params)
+              .map(([name, schema]: [string, any]) => {
+                const isRequired = required.includes(name);
+                const typeInfo = schema.type || 'any';
+                const description = schema.description || '';
+                return `  - ${name} (${typeInfo})${
+                  isRequired ? ' [REQUIRED]' : ' [optional]'
+                }: ${description}`;
+              })
+              .join('\n');
+
+            return `## ${tool.name}
 Description: ${tool.description || 'No description'}
 Parameters:
 ${paramList || '  (none)'}`;
-        }).join('\n\n');
+          })
+          .join('\n\n');
 
         return `Available Tools:\n\n${toolDescriptions}\n\nNote: Always use the exact parameter names shown above. Do NOT fabricate IDs - query/list first to get valid IDs.`;
       },
-    });
+    }) as any;
 
     // Return all tools including list_tools
-    return [listToolsTool, ...tools];
+    return [listToolsTool, ...tools] as any[];
   }
 
   private convertToZodSchema(jsonSchema: any): z.ZodObject<any> {
@@ -296,8 +303,8 @@ ${paramList || '  (none)'}`;
     userMessage: string,
     conversationSummary: string,
     conversationId: string
-  ): Promise<{ 
-    response: string; 
+  ): Promise<{
+    response: string;
     intermediateSteps: any[];
     toolCalls?: Array<{ tool: string; input: unknown; output: unknown }>;
   }> {
@@ -307,38 +314,45 @@ ${paramList || '  (none)'}`;
       userMessage
     );
 
-    const systemPrompt = this.createSystemPrompt(
-      persona,
-      profile,
-      conversationSummary,
-      projectContext
-    );
+    const promptTemplate = this.createSystemPromptTemplate();
+    const systemMessages = await promptTemplate.formatMessages({
+      personaName: persona.name,
+      personaDescription: persona.description,
+      userId: profile.id,
+      userName: profile.profileName,
+      conversationSummary: conversationSummary,
+      projectContext: projectContext || '',
+    });
+
     const tools = await this.createTools(profile.id, conversationId);
     const chatHistory = this.convertChatHistory(conversationHistory);
 
     const messages: BaseMessage[] = [
-      new SystemMessage(systemPrompt),
+      ...systemMessages,
       ...chatHistory,
       new HumanMessage(userMessage),
     ];
 
     // Bind tools to LLM so it knows what tools are available and their schemas
     const llmWithTools = this.llm.bindTools(tools);
-    this.logger.log(`Executing conversation with ${tools.length} tools bound to LLM`);
-    
+    this.logger.log(
+      `Executing conversation with ${tools.length} tools bound to LLM`
+    );
+
     const response = await llmWithTools.invoke(messages);
-    
+
     // Check if response contains tool calls
     const toolCallsToExecute: any[] = (response as any).tool_calls || [];
-    const toolCalls: Array<{ tool: string; input: unknown; output: unknown }> = [];
-    
+    const toolCalls: Array<{ tool: string; input: unknown; output: unknown }> =
+      [];
+
     if (toolCallsToExecute.length > 0) {
       this.logger.log(`LLM requested ${toolCallsToExecute.length} tool calls`);
-      
+
       // Execute each tool call
       for (const toolCall of toolCallsToExecute) {
         this.logger.log(`Executing tool: ${toolCall.name}`);
-        
+
         try {
           // Convert to OpenAI format for MCP executor
           const openAIToolCall = {
@@ -346,30 +360,31 @@ ${paramList || '  (none)'}`;
             type: 'function' as const,
             function: {
               name: toolCall.name,
-              arguments: typeof toolCall.args === 'string' 
-                ? toolCall.args 
-                : JSON.stringify(toolCall.args),
+              arguments:
+                typeof toolCall.args === 'string'
+                  ? toolCall.args
+                  : JSON.stringify(toolCall.args),
             },
           };
-          
+
           const context = {
             userId: profile.id,
             profileId: profile.id,
             conversationId,
             timestamp: new Date(),
           };
-          
+
           const result = await this.mcpExecutor.executeToolCall(
             openAIToolCall,
             context
           );
-          
+
           toolCalls.push({
             tool: toolCall.name,
             input: toolCall.args,
             output: result.result || result,
           });
-          
+
           this.logger.log(`Tool ${toolCall.name} executed successfully`);
         } catch (error) {
           this.logger.error(`Tool ${toolCall.name} execution failed:`, error);
@@ -380,30 +395,33 @@ ${paramList || '  (none)'}`;
           });
         }
       }
-      
+
       // If tools were called, get final response from LLM with tool results
       if (toolCalls.length > 0) {
         // Add tool results to conversation and get final response
-        const toolResultMessages = toolCalls.map(tc => 
-          new AIMessage(`Tool ${tc.tool} result: ${JSON.stringify(tc.output)}`)
+        const toolResultMessages = toolCalls.map(
+          (tc) =>
+            new AIMessage(
+              `Tool ${tc.tool} result: ${JSON.stringify(tc.output)}`
+            )
         );
-        
+
         const finalMessages = [...messages, response, ...toolResultMessages];
         const finalResponse = await llmWithTools.invoke(finalMessages);
-        
-        return { 
-          response: finalResponse.content as string, 
+
+        return {
+          response: finalResponse.content as string,
           intermediateSteps: [],
-          toolCalls 
+          toolCalls,
         };
       }
     }
-    
+
     // No tool calls, just return the response
-    return { 
-      response: response.content as string, 
+    return {
+      response: response.content as string,
       intermediateSteps: [],
-      toolCalls: toolCalls.length > 0 ? toolCalls : undefined
+      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
   }
 
@@ -421,34 +439,43 @@ ${paramList || '  (none)'}`;
       userMessage
     );
 
-    const systemPrompt = this.createSystemPrompt(
-      persona,
-      profile,
-      conversationSummary,
-      projectContext
-    );
+    const promptTemplate = this.createSystemPromptTemplate();
+    const systemMessages = await promptTemplate.formatMessages({
+      personaName: persona.name,
+      personaDescription: persona.description,
+      userId: profile.id,
+      userName: profile.profileName,
+      conversationSummary: conversationSummary,
+      projectContext: projectContext || '',
+    });
+
     const tools = await this.createTools(profile.id, conversationId);
     const chatHistory = this.convertChatHistory(conversationHistory);
 
     const messages: BaseMessage[] = [
-      new SystemMessage(systemPrompt),
+      ...systemMessages,
       ...chatHistory,
       new HumanMessage(userMessage),
     ];
 
     // Bind tools to LLM so it knows what tools are available and their schemas
     const llmWithTools = this.llm.bindTools(tools);
-    this.logger.log(`Streaming conversation with ${tools.length} tools bound to LLM`);
-    
+    this.logger.log(
+      `Streaming conversation with ${tools.length} tools bound to LLM`
+    );
+
     const stream = await llmWithTools.stream(messages);
     let fullResponse = '';
 
     // Stream chunks in real-time instead of accumulating
     for await (const chunk of stream) {
       if (chunk.content) {
-        const contentStr = typeof chunk.content === 'string' ? chunk.content : JSON.stringify(chunk.content);
+        const contentStr =
+          typeof chunk.content === 'string'
+            ? chunk.content
+            : JSON.stringify(chunk.content);
         fullResponse += contentStr;
-        
+
         // Yield each chunk immediately for real-time updates
         yield { type: 'chunk', content: contentStr };
       }

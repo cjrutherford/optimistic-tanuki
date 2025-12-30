@@ -1,6 +1,6 @@
 /**
  * LangGraph Service for State Management
- * 
+ *
  * Manages conversation state using LangGraph
  * Handles context building, tool execution tracking, and state persistence
  */
@@ -8,7 +8,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { StateGraph, START, END, Annotation } from '@langchain/langgraph';
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
-import { ChatMessage, ProfileDto, PersonaTelosDto } from '@optimistic-tanuki/models';
+import {
+  ChatMessage,
+  ProfileDto,
+  PersonaTelosDto,
+} from '@optimistic-tanuki/models';
 import { ContextStorageService } from './context-storage.service';
 import { LangChainService } from './langchain.service';
 import { LangChainAgentService } from './langchain-agent.service';
@@ -22,31 +26,31 @@ const ConversationState = Annotation.Root({
     reducer: (x, y) => x.concat(y), // Append new messages
     default: () => [],
   }),
-  
+
   // Original ChatMessage[] for full history context
   chatHistory: Annotation<ChatMessage[]>({
     reducer: (x, y) => x.concat(y), // Append new messages
     default: () => [],
   }),
-  
+
   // User context
   profileId: Annotation<string>({
     reducer: (x, y) => y ?? x,
     default: () => '',
   }),
-  
+
   // Conversation summary
   summary: Annotation<string>({
     reducer: (x, y) => y ?? x,
     default: () => '',
   }),
-  
+
   // Active projects being discussed
   activeProjects: Annotation<string[]>({
     reducer: (x, y) => Array.from(new Set([...x, ...y])),
     default: () => [],
   }),
-  
+
   // Recent topics
   recentTopics: Annotation<string[]>({
     reducer: (x, y) => {
@@ -56,31 +60,31 @@ const ConversationState = Annotation.Root({
     },
     default: () => [],
   }),
-  
+
   // Tool call tracking
   toolCallsCount: Annotation<number>({
     reducer: (x, y) => x + y,
     default: () => 0,
   }),
-  
+
   // Last tool called
   lastToolCalled: Annotation<string | null>({
     reducer: (x, y) => y ?? x,
     default: () => null,
   }),
-  
+
   // Current iteration (for max iterations check)
   iteration: Annotation<number>({
     reducer: (x, y) => x + 1,
     default: () => 0,
   }),
-  
+
   // Whether conversation should continue
   shouldContinue: Annotation<boolean>({
     reducer: (x, y) => y ?? x,
     default: () => true,
   }),
-  
+
   // Additional metadata
   metadata: Annotation<Record<string, unknown>>({
     reducer: (x, y) => ({ ...x, ...y }),
@@ -135,7 +139,7 @@ export class LangGraphService {
   ): Promise<Partial<ConversationStateType>> {
     try {
       const context = await this.contextStorage.getContext(state.profileId);
-      
+
       if (context) {
         this.logger.debug(`Loaded context for profile ${state.profileId}`);
         return {
@@ -145,7 +149,7 @@ export class LangGraphService {
           metadata: context.metadata || {},
         };
       }
-      
+
       this.logger.debug(`No existing context for profile ${state.profileId}`);
       return {};
     } catch (error) {
@@ -179,22 +183,22 @@ export class LangGraphService {
 
       for (const message of lastMessages) {
         const content = message.content.toString().toLowerCase();
-        
+
         // Extract project mentions
         if (content.includes('project')) {
           topics.push('projects');
         }
-        
+
         // Extract task mentions
         if (content.includes('task')) {
           topics.push('tasks');
         }
-        
+
         // Extract risk mentions
         if (content.includes('risk')) {
           topics.push('risks');
         }
-        
+
         // Extract change mentions
         if (content.includes('change')) {
           topics.push('changes');
@@ -224,8 +228,10 @@ export class LangGraphService {
     try {
       // Simple summary: last user message + topics
       const lastMessage = state.messages[state.messages.length - 1];
-      const summary = `Last discussed: ${lastMessage.content.toString().slice(0, 100)}... Topics: ${state.recentTopics.join(', ')}`;
-      
+      const summary = `Last discussed: ${lastMessage.content
+        .toString()
+        .slice(0, 100)}... Topics: ${state.recentTopics.join(', ')}`;
+
       return {
         summary,
       };
@@ -249,7 +255,7 @@ export class LangGraphService {
         messageCount: state.messages.length,
         metadata: state.metadata,
       });
-      
+
       this.logger.debug(`Saved context for profile ${state.profileId}`);
       return {};
     } catch (error) {
@@ -269,7 +275,8 @@ export class LangGraphService {
     persona: PersonaTelosDto,
     profile: ProfileDto,
     conversationId: string,
-    useAgent = false
+    useAgent = false,
+    onProgress?: (data: any) => Promise<void> | void
   ): Promise<{
     response: string;
     topics?: string[];
@@ -289,29 +296,36 @@ export class LangGraphService {
 
       // Execute LLM (with or without agent)
       let llmResponse: string;
-      let toolCalls: Array<{ tool: string; input: unknown; output: unknown }> = [];
+      let toolCalls: Array<{ tool: string; input: unknown; output: unknown }> =
+        [];
 
       if (useAgent && this.agent && this.agent.isInitialized()) {
         this.logger.log('Using Agent for multi-step execution');
-        
+
         // Get the last user message
         const lastMessage = messages[messages.length - 1];
         const userInput = lastMessage.content.toString();
-        
+
         // Execute agent
+        // Pass LangGraph-enriched summary and conversationId so agent has canonical context
         const agentResult = await this.agent.executeAgent(
           userInput,
           messages.slice(0, -1), // Chat history without current message
-          profileId
+          profileId,
+          result.summary,
+          conversationId,
+          onProgress
         );
-        
+
         llmResponse = agentResult.output;
         toolCalls = agentResult.toolCalls;
-        
-        this.logger.log(`Agent execution complete. Tool calls: ${toolCalls.length}`);
+
+        this.logger.log(
+          `Agent execution complete. Tool calls: ${toolCalls.length}`
+        );
       } else {
         this.logger.log('Using direct LangChain execution');
-        
+
         // Use the full chatHistory for context
         const conversationResult = await this.langchain.executeConversation(
           persona,
@@ -321,13 +335,18 @@ export class LangGraphService {
           result.summary,
           conversationId
         );
-        
+
         llmResponse = conversationResult.response;
-        
+
         // If tool calls were made in direct execution, include them
-        if (conversationResult.toolCalls && conversationResult.toolCalls.length > 0) {
+        if (
+          conversationResult.toolCalls &&
+          conversationResult.toolCalls.length > 0
+        ) {
           toolCalls = conversationResult.toolCalls;
-          this.logger.log(`Direct LangChain execution made ${toolCalls.length} tool calls`);
+          this.logger.log(
+            `Direct LangChain execution made ${toolCalls.length} tool calls`
+          );
         }
       }
 

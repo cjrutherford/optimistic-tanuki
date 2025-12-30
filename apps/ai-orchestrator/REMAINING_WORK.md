@@ -13,6 +13,7 @@ This document outlines work that could not be completed in the current task cycl
 **What Was Delivered**:
 
 1. **Context Storage Service** (`context-storage.service.ts`)
+
    - ✅ Redis-based persistent storage (profileId → context mapping)
    - ✅ 7-day TTL with automatic expiration
    - ✅ CRUD operations for conversation context
@@ -20,6 +21,7 @@ This document outlines work that could not be completed in the current task cycl
    - ✅ Comprehensive tests (context-storage.service.spec.ts)
 
 2. **LangGraph Service** (`langgraph.service.ts`)
+
    - ✅ StateGraph for conversation flow management
    - ✅ Automatic context loading from Redis
    - ✅ Topic extraction from messages
@@ -28,6 +30,7 @@ This document outlines work that could not be completed in the current task cycl
    - ✅ State reducers for proper state management
 
 3. **LangChain Agent Service** (`langchain-agent.service.ts`)
+
    - ✅ AgentExecutor for automatic tool calling
    - ✅ Tool discovery via list_tools
    - ✅ Multi-step reasoning (query → create workflows)
@@ -36,6 +39,7 @@ This document outlines work that could not be completed in the current task cycl
    - ✅ Max iteration safety (10 iterations max)
 
 4. **Documentation** (`LANGGRAPH_AGENT_INTEGRATION.md`)
+
    - ✅ Complete architecture guide
    - ✅ Usage examples
    - ✅ Integration points
@@ -47,6 +51,7 @@ This document outlines work that could not be completed in the current task cycl
    - ✅ Registered new services in app.module.ts
 
 **Benefits**:
+
 - 🎯 Persistent context across sessions (Redis-backed)
 - 🤖 Intelligent multi-step tool execution (Agent)
 - 📊 Structured state management (LangGraph)
@@ -75,6 +80,7 @@ The current test suite (`langchain-behavior.spec.ts`) validates tool binding, sc
 - Response quality and naturalness
 
 **Implementation Approach**:
+
 ```typescript
 describe('LLM Response Scenarios', () => {
   beforeEach(() => {
@@ -100,7 +106,7 @@ describe('LLM Response Scenarios', () => {
     });
 
     const result = await service.executeConversation(...);
-    
+
     expect(mockInvoke).toHaveBeenCalled();
     // Verify tool call was made
   });
@@ -133,6 +139,7 @@ While real-time streaming is implemented (`streamConversation`), we don't have a
 - Streaming works correctly when errors occur mid-stream
 
 **Implementation Approach**:
+
 ```typescript
 describe('Real-Time Streaming', () => {
   it('should emit chunks immediately, not buffered', async () => {
@@ -194,7 +201,8 @@ The `extractToolCallFromText` method in `app.service.ts` handles 4 different too
 - Very large tool call payloads
 
 **Implementation Approach**:
-```typescript
+
+````typescript
 describe('Tool Call Extraction', () => {
   it('should extract tool call from markdown with syntax errors', () => {
     const text = '```json\n{name: "tool", arguments: {id: "123"}}\n```';
@@ -219,7 +227,7 @@ describe('Tool Call Extraction', () => {
     // Should parse nested structure
   });
 });
-```
+````
 
 **Blocker**:
 None - just needs time allocation.
@@ -244,6 +252,7 @@ Replace the current manual tool calling loop with LangChain's AgentExecutor. Thi
 - Thought process visibility
 
 **Implementation Approach**:
+
 ```typescript
 import { AgentExecutor } from '@langchain/agents';
 import { createReactAgent } from '@langchain/core/agents';
@@ -255,7 +264,7 @@ async executeConversationWithAgent(
   userMessage: string,
 ): Promise<any> {
   const tools = await this.createTools(profile.id, conversationId);
-  
+
   const agent = await createReactAgent({
     llm: this.llm,
     tools,
@@ -277,6 +286,7 @@ async executeConversationWithAgent(
 ```
 
 **Benefits**:
+
 - LLM can perform multi-step reasoning automatically
 - Better handling of complex workflows
 - Built-in retry logic
@@ -284,6 +294,7 @@ async executeConversationWithAgent(
 - Less custom code to maintain
 
 **Challenges**:
+
 - Need to adapt current real-time streaming approach
 - Agent prompts need careful tuning
 - May require changes to message emission logic
@@ -304,6 +315,7 @@ Integrate LangChain's memory modules to maintain better conversation context:
 - `EntityMemory` - Track entities mentioned (project IDs, task IDs, etc.)
 
 **Implementation Approach**:
+
 ```typescript
 import { BufferMemory } from 'langchain/memory';
 import { ConversationChain } from 'langchain/chains';
@@ -332,6 +344,7 @@ class LangChainService {
 ```
 
 **Benefits**:
+
 - Automatic context window management
 - Better handling of long conversations
 - Reduced token usage (summarization)
@@ -355,12 +368,13 @@ Integrate LangSmith (LangChain's observability platform) for:
 - Prompt iteration and testing
 
 **Implementation Approach**:
+
 ```typescript
 import { LangSmith } from 'langsmith';
 
 // In langchain.service.ts constructor:
 this.llm = new ChatOllama({
-  model: 'qwen3-coder',
+  model: 'qwen3',
   baseUrl: ...,
   callbacks: [
     {
@@ -382,6 +396,7 @@ this.llm = new ChatOllama({
 ```
 
 **Benefits**:
+
 - Visual trace of LLM reasoning
 - Identify slow tool calls
 - Track token usage and costs
@@ -404,6 +419,7 @@ Cache tool results to avoid redundant calls to MCP services:
 - Invalidate cache when mutations occur (`create_*`, `update_*`, `delete_*`)
 
 **Implementation Approach**:
+
 ```typescript
 import { Cache } from 'cache-manager';
 
@@ -459,11 +475,13 @@ class LangChainService {
 ```
 
 **Benefits**:
+
 - Faster responses for repeated queries
 - Reduced load on MCP services
 - Better user experience
 
 **Challenges**:
+
 - Cache invalidation is complex
 - Need to handle distributed cache if multiple instances
 - May cause stale data if not careful
@@ -484,20 +502,22 @@ import { JsonOutputParser } from '@langchain/core/output_parsers';
 import { StructuredOutputParser } from 'langchain/output_parsers';
 
 const parser = StructuredOutputParser.fromNamesAndDescriptions({
-  tool_name: "The name of the tool to call",
-  arguments: "The arguments to pass to the tool as a JSON object",
+  tool_name: 'The name of the tool to call',
+  arguments: 'The arguments to pass to the tool as a JSON object',
 });
 
 const llmWithStructuredOutput = this.llm.pipe(parser);
 ```
 
 **Benefits**:
+
 - No more parsing failures
 - Guaranteed valid JSON
 - No need for fallback parsers (XML, markdown, etc.)
 - Simpler code
 
 **Challenges**:
+
 - Requires LLM support for JSON mode (Ollama may not support this yet)
 - Need fallback for older models
 
@@ -532,7 +552,7 @@ async validateToolCall(
   availableTools: DynamicStructuredTool[]
 ): Promise<ToolCallValidation> {
   const tool = availableTools.find(t => t.name === toolCall.function.name);
-  
+
   if (!tool) {
     return {
       valid: false,
@@ -544,7 +564,7 @@ async validateToolCall(
 
   const args = JSON.parse(toolCall.function.arguments);
   const validation = tool.schema.safeParse(args);
-  
+
   if (!validation.success) {
     return {
       valid: false,
@@ -561,7 +581,7 @@ async validateToolCall(
   }
 
   const confidence = warnings.length === 0 ? 1.0 : 0.7;
-  
+
   return {
     valid: true,
     confidence,
@@ -572,6 +592,7 @@ async validateToolCall(
 ```
 
 **Benefits**:
+
 - Catch errors before execution
 - Ask user for clarification when confidence is low
 - Better error messages
@@ -593,6 +614,7 @@ Version control prompts and run A/B tests:
 - Automatically promote better-performing prompts
 
 **Implementation Approach**:
+
 ```typescript
 interface PromptVersion {
   id: string;
@@ -623,6 +645,7 @@ class PromptManager {
 ```
 
 **Benefits**:
+
 - Data-driven prompt improvement
 - Compare different approaches
 - Gradual rollout of prompt changes
@@ -631,39 +654,43 @@ class PromptManager {
 
 ## 📊 Priority Matrix
 
-| Enhancement | Priority | Effort | Impact | Recommendation |
-|------------|----------|--------|--------|----------------|
-| LLM Response Testing with Mocks | High | Medium | High | **Do next** |
-| Agent Integration | High | Large | Major | **Plan for Q1** |
-| LangSmith Observability | Medium | Small | High | **Quick win** |
-| Conversation Memory | Medium | Medium | Medium | **Nice to have** |
-| Structured Output | Medium | Small | Medium | **Quick win** |
-| Real-Time Streaming Tests | Medium | Small | Low | **Do when time permits** |
-| Tool Result Caching | Low | Medium | Medium | **Later** |
-| Tool Call Confidence | Low | Medium | Medium | **Later** |
-| Prompt Versioning | Low | Medium | Low | **Later** |
-| Tool Call Format Tests | Low | Small | Low | **Later** |
+| Enhancement                     | Priority | Effort | Impact | Recommendation           |
+| ------------------------------- | -------- | ------ | ------ | ------------------------ |
+| LLM Response Testing with Mocks | High     | Medium | High   | **Do next**              |
+| Agent Integration               | High     | Large  | Major  | **Plan for Q1**          |
+| LangSmith Observability         | Medium   | Small  | High   | **Quick win**            |
+| Conversation Memory             | Medium   | Medium | Medium | **Nice to have**         |
+| Structured Output               | Medium   | Small  | Medium | **Quick win**            |
+| Real-Time Streaming Tests       | Medium   | Small  | Low    | **Do when time permits** |
+| Tool Result Caching             | Low      | Medium | Medium | **Later**                |
+| Tool Call Confidence            | Low      | Medium | Medium | **Later**                |
+| Prompt Versioning               | Low      | Medium | Low    | **Later**                |
+| Tool Call Format Tests          | Low      | Small  | Low    | **Later**                |
 
 ---
 
 ## 🎯 Recommended Next Steps
 
 1. **Week 1-2**: Implement LLM response testing with mocked Ollama
+
    - Validate tool selection accuracy
    - Test multi-step reasoning
    - Ensure parameter correctness
 
 2. **Week 3**: Add LangSmith integration
+
    - Set up tracing
    - Monitor production usage
    - Identify improvement areas
 
 3. **Month 2**: Plan and execute Agent integration
+
    - Design agent prompt architecture
    - Migrate from manual tool loop to AgentExecutor
    - Add thought process visibility
 
 4. **Month 3**: Add conversation memory
+
    - Implement BufferMemory
    - Test with long conversations
    - Optimize token usage

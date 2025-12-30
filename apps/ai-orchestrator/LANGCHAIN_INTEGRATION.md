@@ -27,7 +27,7 @@ User Message
   ↓
 LangChain ChatPromptTemplate
   ↓
-ChatOllama (qwen3-coder)
+ChatOllama (qwen3)
   ↓
 DynamicStructuredTool (auto-converted from MCP)
   ↓
@@ -43,20 +43,22 @@ Streaming response with real-time emission
 **Purpose**: Central service for all AI orchestration using LangChain
 
 **Features**:
-- ChatOllama integration for qwen3-coder model
+
+- ChatOllama integration for qwen3 model
 - Automatic prompt template creation from persona + profile
 - MCP tool to LangChain tool conversion
 - Streaming support for real-time updates
 
 **Example Usage**:
+
 ```typescript
 const result = await langChainService.executeConversation(
-  persona,      // PersonaTelosDto
-  profile,      // ProfileDto  
-  history,      // ChatMessage[]
-  userMessage,  // string
-  summary,      // string
-  convId        // string
+  persona, // PersonaTelosDto
+  profile, // ProfileDto
+  history, // ChatMessage[]
+  userMessage, // string
+  summary, // string
+  convId // string
 );
 
 console.log(result.response);
@@ -117,7 +119,7 @@ ${conversationSummary}
 # RULES
 - Always use userId/profileId = ${profile.id}
 - Use ONE tool per response
-- Provide clear responses after tool execution`
+- Provide clear responses after tool execution`;
 ```
 
 **Simplified from 100+ lines to ~20 lines**
@@ -128,16 +130,17 @@ LangChain uses specific message types:
 
 ```typescript
 // User messages
-new HumanMessage("User input")
+new HumanMessage('User input');
 
-// AI responses  
-new AIMessage("AI response")
+// AI responses
+new AIMessage('AI response');
 
 // System prompts
-new SystemMessage("System instructions")
+new SystemMessage('System instructions');
 ```
 
 Automatic conversion from ChatMessage format:
+
 - `role: 'user'` → HumanMessage
 - `role: 'assistant'` → AIMessage
 - `type: 'system'` → SystemMessage
@@ -147,12 +150,14 @@ Automatic conversion from ChatMessage format:
 ### 1. Code Simplification
 
 **Before**:
+
 - `app.service.ts`: 700+ lines
 - `prompt-engineering.ts`: 166 lines
 - `xml-tool-parser.ts`: 144 lines
 - **Total**: 1000+ lines
 
 **After**:
+
 - `app.service.ts`: ~300 lines
 - `langchain.service.ts`: ~150 lines
 - **Total**: 450 lines
@@ -195,17 +200,18 @@ LANGCHAIN_API_KEY=your-api-key
 
 ### Model Configuration
 
-Currently using `qwen3-coder` via Ollama:
+Currently using `qwen3` via Ollama:
 
 ```typescript
 new ChatOllama({
-  model: 'qwen3-coder',
+  model: 'qwen3',
   baseUrl: process.env.OLLAMA_BASE_URL,
   temperature: 0.7,
 });
 ```
 
 **Easily switchable to other models**:
+
 - `llama2`
 - `mistral`
 - `codellama`
@@ -237,7 +243,7 @@ for await (const chunk of stream) {
       type: 'system'
     });
   }
-  
+
   if (chunk.type === 'final_response') {
     // Emit final response
     await postMessage({
@@ -274,8 +280,8 @@ new DynamicStructuredTool({
     // Enrich with context
     // Execute via MCPToolExecutor
     // Return result
-  }
-})
+  },
+});
 ```
 
 ### 4. Tool Execution
@@ -287,7 +293,7 @@ new DynamicStructuredTool({
 // - Error catching
 // - Result parsing
 
-const result = await tool.func({ name: "Project" });
+const result = await tool.func({ name: 'Project' });
 ```
 
 ## Error Handling
@@ -332,18 +338,18 @@ describe('LangChainService', () => {
       '',
       'conv-1'
     );
-    
+
     expect(result.response).toBeDefined();
   });
 
   it('should stream conversation', async () => {
     const stream = service.streamConversation(...);
     const chunks = [];
-    
+
     for await (const chunk of stream) {
       chunks.push(chunk);
     }
-    
+
     expect(chunks.length).toBeGreaterThan(0);
   });
 });
@@ -357,13 +363,13 @@ describe('AI Orchestrator with LangChain', () => {
     // Send message requiring tool
     const response = await updateConversation({
       conversation,
-      aiPersonas: [persona]
+      aiPersonas: [persona],
     });
-    
+
     // Verify tool call message
     expect(response).toContainEqual(
       expect.objectContaining({
-        content: expect.stringContaining('🔧 Calling tool:')
+        content: expect.stringContaining('🔧 Calling tool:'),
       })
     );
   });
@@ -451,9 +457,13 @@ const chain = new LLMChain({
 **Cause**: MCP tool list empty or tool name mismatch
 
 **Solution**:
+
 ```typescript
 const tools = await toolsService.listTools();
-console.log('Available tools:', tools.map(t => t.name));
+console.log(
+  'Available tools:',
+  tools.map((t) => t.name)
+);
 ```
 
 ### Issue: Schema validation fails
@@ -461,6 +471,7 @@ console.log('Available tools:', tools.map(t => t.name));
 **Cause**: Input doesn't match Zod schema
 
 **Solution**:
+
 ```typescript
 // Check generated schema
 const schema = convertToZodSchema(jsonSchema);
@@ -475,6 +486,7 @@ schema.parse(input);
 **Cause**: Model doesn't support streaming
 
 **Solution**:
+
 ```typescript
 // Fall back to non-streaming
 const result = await llm.invoke(messages);

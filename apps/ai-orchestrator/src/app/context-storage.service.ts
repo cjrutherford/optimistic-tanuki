@@ -33,13 +33,25 @@ export class ContextStorageService implements OnModuleDestroy {
 
   private async initRedis(): Promise<void> {
     try {
-      const {
-        host: redisHost,
-        port: redisPort,
-        password: redisPassword,
-      } = this.config.get<{ host: string; port: number; password?: string }>(
-        'redis'
-      );
+      // Support both a single 'redis' config object or separate REDIS_HOST/REDIS_PORT keys
+      let redisCfg = this.config.get<any>('redis');
+      let redisHost: string | undefined;
+      let redisPort: number | undefined;
+      let redisPassword: string | undefined;
+
+      if (redisCfg && typeof redisCfg === 'object') {
+        redisHost = redisCfg.host;
+        redisPort = redisCfg.port;
+        redisPassword = redisCfg.password;
+      } else {
+        // Fallback to environment-style keys used in some tests/mocks
+        redisHost =
+          this.config.get('REDIS_HOST') || this.config.get('redisHost');
+        redisPort =
+          this.config.get('REDIS_PORT') || this.config.get('redisPort');
+        redisPassword =
+          this.config.get('REDIS_PASSWORD') || this.config.get('redisPassword');
+      }
 
       this.client = createClient({
         socket: {
@@ -65,6 +77,9 @@ export class ContextStorageService implements OnModuleDestroy {
       });
 
       await this.client.connect();
+
+      // Some test mocks do not emit a 'connect' event; consider successful connect as connected
+      this.isConnected = true;
     } catch (error) {
       this.logger.error(`Failed to initialize Redis: ${error.message}`);
       this.isConnected = false;

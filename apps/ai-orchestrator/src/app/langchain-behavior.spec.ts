@@ -22,7 +22,7 @@ describe('LangChain LLM Behavior Tests', () => {
   let toolsService: ToolsService;
   let mcpExecutor: MCPToolExecutor;
 
-  const mockPersona: PersonaTelosDto = {
+  const mockPersona: any = {
     id: 'persona-123',
     name: 'AI Assistant',
     description: 'A helpful AI assistant',
@@ -32,7 +32,7 @@ describe('LangChain LLM Behavior Tests', () => {
     systemPrompt: '',
   };
 
-  const mockProfile: ProfileDto = {
+  const mockProfile: any = {
     id: 'user-456',
     profileName: 'Test User',
     email: 'test@example.com',
@@ -297,7 +297,7 @@ describe('LangChain LLM Behavior Tests', () => {
 
   describe('Chat History Conversion', () => {
     it('should convert user messages correctly', () => {
-      const messages: ChatMessage[] = [
+      const messages: any[] = [
         {
           id: 'msg-1',
           conversationId: 'conv-123',
@@ -318,7 +318,7 @@ describe('LangChain LLM Behavior Tests', () => {
     });
 
     it('should convert assistant messages correctly', () => {
-      const messages: ChatMessage[] = [
+      const messages: any[] = [
         {
           id: 'msg-1',
           conversationId: 'conv-123',
@@ -339,7 +339,7 @@ describe('LangChain LLM Behavior Tests', () => {
     });
 
     it('should handle mixed message types', () => {
-      const messages: ChatMessage[] = [
+      const messages: any[] = [
         {
           id: 'msg-1',
           conversationId: 'conv-123',
@@ -372,7 +372,7 @@ describe('LangChain LLM Behavior Tests', () => {
 
   describe('Project Context Enrichment', () => {
     it('should detect projectId in conversation', async () => {
-      const messages: ChatMessage[] = [
+      const messages: any[] = [
         {
           id: 'msg-1',
           conversationId: 'conv-123',
@@ -406,7 +406,7 @@ describe('LangChain LLM Behavior Tests', () => {
     });
 
     it('should return empty string when no projectId found', async () => {
-      const messages: ChatMessage[] = [
+      const messages: any[] = [
         {
           id: 'msg-1',
           conversationId: 'conv-123',

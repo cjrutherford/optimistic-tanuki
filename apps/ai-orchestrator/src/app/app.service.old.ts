@@ -20,14 +20,14 @@ import {
 import { ToolsService } from './tools.service';
 import { generatePersonaSystemMessage } from '@optimistic-tanuki/prompt-generation';
 import { MCPToolExecutor } from './mcp-tool-executor';
-import { 
-  buildConversationPreamble, 
-  shouldEmitToUser, 
+import {
+  buildConversationPreamble,
+  shouldEmitToUser,
   extractUserFacingContent,
   parseXmlToolCall,
   containsXmlToolCall,
   stripXmlToolCalls,
-  xmlToolCallToOpenAI
+  xmlToolCallToOpenAI,
 } from './utils';
 
 @Injectable()
@@ -75,7 +75,7 @@ export class AppService {
       const systemPromptBase = generatePersonaSystemMessage(assistant);
       this.l.log(`System prompt base: '${systemPromptBase}'`);
       const message: GeneratePrompt = {
-        model: 'qwen3-coder',
+        model: 'qwen3',
         stream: false,
         messages: [
           {
@@ -254,7 +254,7 @@ export class AppService {
         // `;
 
         const personaPrompt: GeneratePrompt = {
-          model: 'qwen3-coder',
+          model: 'qwen3',
           stream: false,
           tools: openAITools,
           messages: [
@@ -339,7 +339,7 @@ export class AppService {
               timestamp: new Date(),
               type: 'system',
             };
-            
+
             // Post and immediately add to responses for real-time emission
             const postedMessage = await firstValueFrom(
               this.chatCollectorService.send(
@@ -348,9 +348,11 @@ export class AppService {
               )
             );
             responses.push(intermediateMessage);
-            
+
             // Emit notification to trigger immediate client update
-            this.l.debug('Intermediate message posted, should trigger real-time update');
+            this.l.debug(
+              'Intermediate message posted, should trigger real-time update'
+            );
           }
 
           // Check if response has OpenAI-format tool_calls
@@ -379,7 +381,7 @@ export class AppService {
               timestamp: new Date(),
               type: 'system',
             };
-            
+
             // Post and immediately add to responses for real-time emission
             const postedToolMessage = await firstValueFrom(
               this.chatCollectorService.send(
@@ -388,9 +390,11 @@ export class AppService {
               )
             );
             responses.push(toolCallMessage);
-            
+
             // Emit notification to trigger immediate client update
-            this.l.debug('Tool call message posted, should trigger real-time update');
+            this.l.debug(
+              'Tool call message posted, should trigger real-time update'
+            );
 
             // Create execution context
             const executionContext: ToolExecutionContext = {
@@ -443,22 +447,24 @@ export class AppService {
           }
 
           const content = response.message.content;
-          
+
           // Check for XML-formatted tool calls
           if (content && containsXmlToolCall(content)) {
             this.l.log('Detected XML-formatted tool call');
             const xmlToolCall = parseXmlToolCall(content);
-            
+
             if (xmlToolCall) {
               // Convert XML to OpenAI format
               const openAIToolCall = xmlToolCallToOpenAI(xmlToolCall);
-              
+
               // Strip XML tool call from content for user-facing message
               const cleanedContent = stripXmlToolCalls(content);
-              
+
               // If there's user-facing content alongside the tool call, emit it
               if (cleanedContent && cleanedContent.trim()) {
-                this.l.log(`User message with XML tool call: "${cleanedContent}"`);
+                this.l.log(
+                  `User message with XML tool call: "${cleanedContent}"`
+                );
                 const intermediateMessage: Partial<ChatMessage> = {
                   conversationId: conversation.id,
                   senderId: persona.id,
@@ -496,7 +502,7 @@ export class AppService {
                   toolCallMessage
                 )
               );
-              
+
               // Create execution context
               const executionContext: ToolExecutionContext = {
                 userId: profile.id,
@@ -535,11 +541,11 @@ export class AppService {
                   content: `The tool '${xmlToolCall.name}' returned the following response: ${responseContent}. Please use this information to generate your next action.`,
                 }
               );
-              
+
               continue; // Continue the loop
             }
           }
-          
+
           const parsedResponse = tryParseJson(content);
 
           // Normalize LLM response if it uses { name: "tool", parameters: { ... } } format
@@ -723,7 +729,7 @@ export class AppService {
           'The user is just starting out. Please introduce yourself and what your available to help with.';
       }
       const prompt: GeneratePrompt = {
-        model: 'qwen3-coder',
+        model: 'qwen3',
         stream: false,
         messages: [
           {
