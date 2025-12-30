@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.product-list {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(1, 1fr) !important;
+  }
+
+  @media (min-width: 769px) and (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary-color, #666);
+  font-size: 1.25rem;
+}
