@@ -1,16 +1,21 @@
 // Lightweight mocks for heavy langchain/langgraph packages to reduce test memory usage
+// These mocks prevent actual LLM connections and reduce memory footprint significantly
 
-// Mock the langgraph package
+// Mock the langgraph package - minimal implementation to prevent loading heavy dependencies
 jest.mock('@langchain/langgraph', () => {
   class MockStateGraph {
     constructor() {}
-    addNode() {}
-    addEdge() {}
+    addNode() {
+      return this; // Chainable
+    }
+    addEdge() {
+      return this; // Chainable
+    }
     compile() {
-      // Return a simple object with an invoke method that returns the passed state
+      // Return a minimal mock compiled graph that won't consume memory
       return {
         invoke: async (initialState: any) => {
-          // Provide sensible defaults used by code under test
+          // Return state immediately without processing
           return {
             ...initialState,
             recentTopics: initialState.recentTopics || [],
@@ -32,100 +37,45 @@ jest.mock('@langchain/langgraph', () => {
   };
 });
 
-// Mock prebuilt createReactAgent
+// Mock prebuilt createReactAgent - ultra lightweight to prevent OOM
 jest.mock('@langchain/langgraph/prebuilt', () => ({
-  createReactAgent: () => {
-    // Minimal agent stub with required methods
-    return {
-      stream: async function* (inputs: any, _opts: any) {
-        // Yield a single final-state-like chunk that mirrors the input messages
-        // and provides minimal fields expected by the MCP validator and agent code.
-        const incomingMessages = (inputs && inputs.messages) || [];
-
-        const toMessageObject = (m: any) => {
-          const role = m.role || 'user';
-          const content = m.content || (typeof m === 'string' ? m : '');
-
-          const obj: any = {
-            role,
-            content:
-              typeof content === 'string' ? content : JSON.stringify(content),
-            // Simple helper used in agent to detect tool outputs
-            _getType: () =>
-              role === 'tool'
-                ? 'tool'
-                : role === 'assistant'
-                ? 'assistant'
-                : role,
-          };
-
-          // If this is a tool message, include a tool_call_id and optional name
-          if (role === 'tool') {
-            obj.tool_call_id = m.tool_call_id || `call_mock_${Date.now()}`;
-            obj.name = m.name || 'mock_tool';
-          }
-
-          // If this is an assistant message that contains tool_calls, make sure they have ids
-          if (role === 'assistant' && m.tool_calls) {
-            obj.tool_calls = m.tool_calls.map((tc: any, idx: number) => ({
-              id:
-                tc.id && tc.id.length > 0 ? tc.id : `call_${Date.now()}_${idx}`,
-              type: tc.type || 'function',
-              function: tc.function || {
-                name: tc.name || 'mock_fn',
-                arguments: tc.arguments || '{}',
-              },
-              // also expose a convenience name
-              name: (tc.function && tc.function.name) || tc.name || 'mock_fn',
-            }));
-          }
-
-          return obj;
-        };
-
-        // Build chunk
-        const chunk = {
-          messages: incomingMessages.map(toMessageObject),
-        };
-
-        // Yield a brief initial progress chunk and then the final chunk
-        yield { messages: [] };
-        yield chunk;
-      },
-      invoke: async (opts: any) => {
-        const msgs = (opts && opts.messages) || [
-          { role: 'assistant', content: 'mock' },
-        ];
-        return {
-          messages: msgs.map((m: any) => ({
-            role: m.role || 'assistant',
-            content: m.content || 'mock',
-          })),
-        };
-      },
-      isInitialized: () => true,
-    };
-  },
+  createReactAgent: () => ({
+    stream: async function* (_inputs: any) {
+      // Minimal yield to satisfy iterator contract
+      yield { messages: [] };
+    },
+    invoke: async () => ({
+      messages: [{ role: 'assistant', content: 'mock' }],
+    }),
+    isInitialized: () => true,
+  }),
 }));
 
-// Mock ollama LLM client
+// Mock ollama LLM client - prevents connection attempts
 jest.mock('@langchain/ollama', () => ({
-  ChatOllama: class {
+  ChatOllama: class MockChatOllama {
     constructor(_opts: any) {}
-    // minimal interface if used
+    async invoke(_messages: any[]) {
+      return { content: 'mock response', tool_calls: [] };
+    }
+    bindTools(_tools: any[]) {
+      return this;
+    }
+    async *stream(_messages: any[]) {
+      yield { content: 'mock' };
+    }
   },
 }));
 
-// Mock core prompt/template and tools to lightweight implementations
+// Mock core prompt/template and tools - ultra lightweight
 jest.mock('@langchain/core/prompts', () => ({
   ChatPromptTemplate: {
-    fromMessages: (messages: any[]) =>
-      messages.map((m) => (m.content ? m.content : m)).join('\n'),
+    fromMessages: () => ({ invoke: async () => '' }),
   },
 }));
 
 jest.mock('@langchain/core/tools', () => ({
-  DynamicStructuredTool: class {
+  DynamicStructuredTool: class MockTool {
     name: string;
     description: string;
     schema: any;
@@ -139,17 +89,22 @@ jest.mock('@langchain/core/tools', () => ({
   },
 }));
 
-// Mock messages - simple container classes used by AppService
+// Mock zod-to-json-schema to prevent loading heavy validation library
+jest.mock('zod-to-json-schema', () => ({
+  zodToJsonSchema: (schema: any) => ({ type: 'object', properties: {} }),
+}));
+
+// Mock messages - minimal container classes
 jest.mock('@langchain/core/messages', () => {
   class BaseMessage {
-    content: any;
+    content: string;
     role: string;
     constructor(content: any, role = 'user') {
-      this.content = content;
+      this.content = String(content);
       this.role = role;
     }
     toString() {
-      return String(this.content);
+      return this.content;
     }
   }
   class HumanMessage extends BaseMessage {
@@ -165,8 +120,21 @@ jest.mock('@langchain/core/messages', () => {
   return { BaseMessage, HumanMessage, AIMessage };
 });
 
-// Silence console noise in tests
+// Mock Redis to prevent connection attempts and reduce memory
+jest.mock('redis', () => ({
+  createClient: () => ({
+    connect: jest.fn().mockResolvedValue(undefined),
+    quit: jest.fn().mockResolvedValue(undefined),
+    setEx: jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    del: jest.fn().mockResolvedValue(1),
+    keys: jest.fn().mockResolvedValue([]),
+    on: jest.fn(),
+  }),
+}));
+
+// Silence console noise in tests to reduce memory from string allocations
 const noop = () => {};
-console.debug = noop;
-console.info = noop;
-console.warn = noop;
+global.console.debug = noop;
+global.console.info = noop;
+global.console.warn = noop;
