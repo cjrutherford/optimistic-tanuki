@@ -1,10 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppService } from './app.service';
+import { MCPToolExecutor } from './mcp-tool-executor';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { Logger } from '@nestjs/common';
-import { ServiceTokens, ProfileCommands, PersonaTelosCommands, PromptCommands, ChatCommands } from '@optimistic-tanuki/constants';
+import {
+  ServiceTokens,
+  ProfileCommands,
+  PersonaTelosCommands,
+  PromptCommands,
+  ChatCommands,
+} from '@optimistic-tanuki/constants';
 import { of, throwError } from 'rxjs';
-import { ChatConversation, ChatMessage, PersonaTelosDto, ProfileDto } from '@optimistic-tanuki/models';
+import {
+  ChatConversation,
+  ChatMessage,
+  PersonaTelosDto,
+  ProfileDto,
+} from '@optimistic-tanuki/models';
 import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
 import { ToolsService } from './tools.service';
 
@@ -21,7 +33,7 @@ describe('AppService', () => {
 
   const mockAiEnabledApps = {
     'test-app-id': 'Test App Description',
-    'forgeofwill': 'Forge of Will application',
+    forgeofwill: 'Forge of Will application',
   };
 
   beforeEach(async () => {
@@ -54,7 +66,12 @@ describe('AppService', () => {
         },
         {
           provide: Logger,
-          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+          useValue: {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+          },
         },
         {
           provide: 'ai-enabled-apps',
@@ -65,16 +82,30 @@ describe('AppService', () => {
           useValue: {
             listTools: jest.fn().mockResolvedValue([]),
             callTool: jest.fn().mockResolvedValue({}),
+            getResource: jest.fn().mockResolvedValue(null),
+            listResources: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: MCPToolExecutor,
+          useValue: {
+            executeToolCall: jest.fn(),
+            executeToolCalls: jest.fn(),
+            validateResult: jest.fn(),
           },
         },
       ],
     }).compile();
 
     service = module.get<AppService>(AppService);
-    telosDocsService = module.get<ClientProxy>(ServiceTokens.TELOS_DOCS_SERVICE);
+    telosDocsService = module.get<ClientProxy>(
+      ServiceTokens.TELOS_DOCS_SERVICE
+    );
     promptProxy = module.get<ClientProxy>(ServiceTokens.PROMPT_PROXY);
     profileService = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
-    chatCollectorService = module.get<ClientProxy>(ServiceTokens.CHAT_COLLECTOR_SERVICE);
+    chatCollectorService = module.get<ClientProxy>(
+      ServiceTokens.CHAT_COLLECTOR_SERVICE
+    );
     toolsService = module.get<ToolsService>(ToolsService);
     logger = module.get<Logger>(Logger);
   });
@@ -85,9 +116,9 @@ describe('AppService', () => {
 
   describe('processNewProfile', () => {
     const mockProfileId = 'test-profile-id';
-    const mockPersona: PersonaTelosDto = { 
-      id: 'persona-id', 
-      name: 'Alex Generalis', 
+    const mockPersona: PersonaTelosDto = {
+      id: 'persona-id',
+      name: 'Alex Generalis',
       description: 'desc',
       goals: [],
       skills: [],
@@ -99,8 +130,8 @@ describe('AppService', () => {
       exampleResponses: [],
       promptTemplate: '',
     };
-    const mockProfile: ProfileDto = { 
-      id: mockProfileId, 
+    const mockProfile: ProfileDto = {
+      id: mockProfileId,
       profileName: 'Test User',
       email: '',
       bio: '',
@@ -109,18 +140,26 @@ describe('AppService', () => {
       updatedAt: new Date(),
       appScope: 'test-app-id',
     };
-    const mockPromptResponse = { message: { content: 'Welcome message---{"goals":[]}' } };
+    const mockPromptResponse = {
+      message: { content: 'Welcome message---{"goals":[]}' },
+    };
 
     beforeEach(() => {
       jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersona]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
       jest.spyOn(promptProxy, 'send').mockReturnValue(of(mockPromptResponse));
       jest.spyOn(chatCollectorService, 'send').mockReturnValue(of({}));
-      (promptGeneration.generatePersonaSystemMessage as jest.Mock).mockReturnValue('System prompt base');
+      (
+        promptGeneration.generatePersonaSystemMessage as jest.Mock
+      ).mockReturnValue('System prompt base');
     });
 
     it('should successfully process a new profile', async () => {
-      await service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id');
+      await service.processNewProfile(
+        mockProfileId,
+        'test-app-id',
+        'persona-id'
+      );
 
       expect(telosDocsService.send).toHaveBeenCalledWith(
         { cmd: PersonaTelosCommands.FIND },
@@ -132,25 +171,42 @@ describe('AppService', () => {
       );
       expect(promptProxy.send).toHaveBeenCalled();
       expect(chatCollectorService.send).toHaveBeenCalled();
-      expect(logger.log).toHaveBeenCalledWith(`Creating welcome chat for profile: '${mockProfileId}'`);
+      expect(logger.log).toHaveBeenCalledWith(
+        `Creating welcome chat for profile: '${mockProfileId}'`
+      );
     });
 
     it('should throw RpcException if persona not found', async () => {
       jest.spyOn(telosDocsService, 'send').mockReturnValue(of([]));
-      await expect(service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')).rejects.toThrow(RpcException);
-      await expect(service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')).rejects.toThrow('Failed to get persona: Persona not found');
+      await expect(
+        service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')
+      ).rejects.toThrow(RpcException);
+      await expect(
+        service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')
+      ).rejects.toThrow('Failed to get persona: Persona not found');
     });
 
     it('should throw RpcException if profile not found', async () => {
       jest.spyOn(profileService, 'send').mockReturnValue(of(null));
-      await expect(service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')).rejects.toThrow(RpcException);
-      await expect(service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')).rejects.toThrow('Failed to process new profile: Profile not found');
+      await expect(
+        service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')
+      ).rejects.toThrow(RpcException);
+      await expect(
+        service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')
+      ).rejects.toThrow('Failed to process new profile: Profile not found');
     });
 
     it('should handle errors during prompt proxy call', async () => {
-      jest.spyOn(promptProxy, 'send').mockReturnValue(throwError(() => new Error('Prompt error')));
-      await expect(service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')).rejects.toThrow(RpcException);
-      expect(logger.error).toHaveBeenCalledWith('Error processing new profile:', expect.any(Error));
+      jest
+        .spyOn(promptProxy, 'send')
+        .mockReturnValue(throwError(() => new Error('Prompt error')));
+      await expect(
+        service.processNewProfile(mockProfileId, 'test-app-id', 'persona-id')
+      ).rejects.toThrow(RpcException);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Error processing new profile:',
+        expect.any(Error)
+      );
     });
   });
 
@@ -163,14 +219,36 @@ describe('AppService', () => {
       privacy: 'private',
       addMessage: jest.fn(),
       messages: [
-        { id: 'msg1', conversationId: 'conv-id', senderId: 'user-id', senderName: 'User', recipientId: ['ai-id'], recipientName: ['AI'], content: 'Hello', timestamp: new Date(), role: 'user', type: 'chat' },
-        { id: 'msg2', conversationId: 'conv-id', senderId: 'ai-id', senderName: 'AI', recipientId: ['user-id'], recipientName: ['User'], content: 'Hi there', timestamp: new Date(), role: 'assistant', type: 'chat' },
+        {
+          id: 'msg1',
+          conversationId: 'conv-id',
+          senderId: 'user-id',
+          senderName: 'User',
+          recipientId: ['ai-id'],
+          recipientName: ['AI'],
+          content: 'Hello',
+          timestamp: new Date(),
+          role: 'user',
+          type: 'chat',
+        },
+        {
+          id: 'msg2',
+          conversationId: 'conv-id',
+          senderId: 'ai-id',
+          senderName: 'AI',
+          recipientId: ['user-id'],
+          recipientName: ['User'],
+          content: 'Hi there',
+          timestamp: new Date(),
+          role: 'assistant',
+          type: 'chat',
+        },
       ],
     };
     const mockAiPersonas: PersonaTelosDto[] = [
       {
-        id: 'ai-id', 
-        name: 'AI Persona', 
+        id: 'ai-id',
+        name: 'AI Persona',
         description: 'desc',
         goals: [],
         skills: [],
@@ -184,7 +262,7 @@ describe('AppService', () => {
       },
     ];
     const mockProfile: ProfileDto = {
-      id: 'user-id', 
+      id: 'user-id',
       profileName: 'Test User',
       email: '',
       bio: '',
@@ -199,12 +277,19 @@ describe('AppService', () => {
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
       jest.spyOn(promptProxy, 'send').mockReturnValue(of(mockPromptResponse));
       jest.spyOn(chatCollectorService, 'send').mockReturnValue(of({}));
-      jest.spyOn(service as any, 'summarizeConversation').mockResolvedValue('summary');
-      (promptGeneration.generatePersonaSystemMessage as jest.Mock).mockReturnValue('System prompt');
+      jest
+        .spyOn(service as any, 'summarizeConversation')
+        .mockResolvedValue('summary');
+      (
+        promptGeneration.generatePersonaSystemMessage as jest.Mock
+      ).mockReturnValue('System prompt');
     });
 
     it('should successfully update conversation and post messages', async () => {
-      const result = await service.updateConversation({ conversation: mockConversation, aiPersonas: mockAiPersonas });
+      const result = await service.updateConversation({
+        conversation: mockConversation,
+        aiPersonas: mockAiPersonas,
+      });
 
       expect(profileService.send).toHaveBeenCalledWith(
         { cmd: ProfileCommands.Get },
@@ -215,22 +300,34 @@ describe('AppService', () => {
         'System prompt'
       );
       expect(promptProxy.send).toHaveBeenCalled();
-      expect(chatCollectorService.send).toHaveBeenCalledTimes(mockAiPersonas.length);
+      expect(chatCollectorService.send).toHaveBeenCalledTimes(
+        mockAiPersonas.length
+      );
       expect(result.length).toBe(mockAiPersonas.length);
       expect(result[0].content).toBe('AI response');
     });
 
     it('should handle errors during conversation update', async () => {
-      jest.spyOn(profileService, 'send').mockReturnValue(throwError(() => new Error('Profile error')));
-      await expect(service.updateConversation({ conversation: mockConversation, aiPersonas: mockAiPersonas })).rejects.toThrow(RpcException);
-      expect(logger.log).toHaveBeenCalledWith('Error updating conversation:', expect.any(Error));
+      jest
+        .spyOn(profileService, 'send')
+        .mockReturnValue(throwError(() => new Error('Profile error')));
+      await expect(
+        service.updateConversation({
+          conversation: mockConversation,
+          aiPersonas: mockAiPersonas,
+        })
+      ).rejects.toThrow(RpcException);
+      expect(logger.log).toHaveBeenCalledWith(
+        'Error updating conversation:',
+        expect.any(Error)
+      );
     });
   });
 
   describe('getPersona', () => {
     const mockPersona: PersonaTelosDto = {
-      id: 'persona-id', 
-      name: 'Alex Generalis', 
+      id: 'persona-id',
+      name: 'Alex Generalis',
       description: 'desc',
       goals: [],
       skills: [],
@@ -265,47 +362,95 @@ describe('AppService', () => {
 
     it('should throw RpcException if persona not found', async () => {
       jest.spyOn(telosDocsService, 'send').mockReturnValue(of([]));
-      await expect(service['getPersona']({ name: 'NonExistent' })).rejects.toThrow(RpcException);
-      await expect(service['getPersona']({ name: 'NonExistent' })).rejects.toThrow('Failed to get persona: Persona not found');
+      await expect(
+        service['getPersona']({ name: 'NonExistent' })
+      ).rejects.toThrow(RpcException);
+      await expect(
+        service['getPersona']({ name: 'NonExistent' })
+      ).rejects.toThrow('Failed to get persona: Persona not found');
     });
 
     it('should handle errors during persona retrieval', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(throwError(() => new Error('Telos error')));
-      await expect(service['getPersona']({ name: 'Alex Generalis' })).rejects.toThrow(RpcException);
-      expect(logger.error).toHaveBeenCalledWith('Error getting persona:', expect.any(Error));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(throwError(() => new Error('Telos error')));
+      await expect(
+        service['getPersona']({ name: 'Alex Generalis' })
+      ).rejects.toThrow(RpcException);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Error getting persona:',
+        expect.any(Error)
+      );
     });
   });
 
   describe('summarizeConversation', () => {
     const mockMessages: ChatMessage[] = [
-      { id: 'msg1', conversationId: 'conv-id', senderId: 'user-id', senderName: 'User', recipientId: ['ai-id'], recipientName: ['AI'], content: 'Message 1', timestamp: new Date(), role: 'user', type: 'chat' },
-      { id: 'msg2', conversationId: 'conv-id', senderId: 'user-id', senderName: 'User', recipientId: ['ai-id'], recipientName: ['AI'], content: 'Message 2', timestamp: new Date(), role: 'user', type: 'chat' },
+      {
+        id: 'msg1',
+        conversationId: 'conv-id',
+        senderId: 'user-id',
+        senderName: 'User',
+        recipientId: ['ai-id'],
+        recipientName: ['AI'],
+        content: 'Message 1',
+        timestamp: new Date(),
+        role: 'user',
+        type: 'chat',
+      },
+      {
+        id: 'msg2',
+        conversationId: 'conv-id',
+        senderId: 'user-id',
+        senderName: 'User',
+        recipientId: ['ai-id'],
+        recipientName: ['AI'],
+        content: 'Message 2',
+        timestamp: new Date(),
+        role: 'user',
+        type: 'chat',
+      },
     ];
     const mockPersonaPrompt = 'Persona system prompt';
-    const mockSummaryResponse = { message: { content: 'Conversation summary' } };
+    const mockSummaryResponse = {
+      message: { content: 'Conversation summary' },
+    };
 
     beforeEach(() => {
       jest.spyOn(promptProxy, 'send').mockReturnValue(of(mockSummaryResponse));
     });
 
     it('should successfully summarize conversation', async () => {
-      const result = await service['summarizeConversation'](mockMessages, mockPersonaPrompt);
+      const result = await service['summarizeConversation'](
+        mockMessages,
+        mockPersonaPrompt
+      );
       expect(result).toBe('Conversation summary');
       expect(promptProxy.send).toHaveBeenCalledWith(
         { cmd: PromptCommands.SEND },
         expect.objectContaining({
           messages: expect.arrayContaining([
             expect.objectContaining({ role: 'system' }),
-            expect.objectContaining({ role: 'user', content: 'Message 1\n\n\nMessage 2' }),
+            expect.objectContaining({
+              role: 'user',
+              content: 'Message 1\n\n\nMessage 2',
+            }),
           ]),
         })
       );
     });
 
     it('should handle errors during conversation summarization', async () => {
-      jest.spyOn(promptProxy, 'send').mockReturnValue(throwError(() => new Error('Summarize error')));
-      await expect(service['summarizeConversation'](mockMessages, mockPersonaPrompt)).rejects.toThrow(RpcException);
-      expect(logger.error).toHaveBeenCalledWith('Error summarizing conversation:', expect.any(Error));
+      jest
+        .spyOn(promptProxy, 'send')
+        .mockReturnValue(throwError(() => new Error('Summarize error')));
+      await expect(
+        service['summarizeConversation'](mockMessages, mockPersonaPrompt)
+      ).rejects.toThrow(RpcException);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Error summarizing conversation:',
+        expect.any(Error)
+      );
     });
   });
 });

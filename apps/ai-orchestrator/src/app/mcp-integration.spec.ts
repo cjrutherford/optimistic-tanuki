@@ -1,6 +1,6 @@
 /**
  * MCP Integration Tests
- * 
+ *
  * End-to-end tests for the complete MCP (Model Context Protocol) flow.
  * These tests validate the entire pipeline from tool discovery to execution
  * and result handling.
@@ -12,9 +12,19 @@ import { ToolsService } from './tools.service';
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ClientProxy } from '@nestjs/microservices';
 import { Logger } from '@nestjs/common';
-import { ServiceTokens, ProfileCommands, PersonaTelosCommands, PromptCommands, ChatCommands } from '@optimistic-tanuki/constants';
+import {
+  ServiceTokens,
+  ProfileCommands,
+  PersonaTelosCommands,
+  PromptCommands,
+  ChatCommands,
+} from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
-import { PersonaTelosDto, ProfileDto, ChatConversation } from '@optimistic-tanuki/models';
+import {
+  PersonaTelosDto,
+  ProfileDto,
+  ChatConversation,
+} from '@optimistic-tanuki/models';
 import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
 
 jest.mock('@optimistic-tanuki/prompt-generation');
@@ -62,6 +72,8 @@ describe('MCP Integration Tests', () => {
           useValue: {
             listTools: jest.fn(),
             callTool: jest.fn(),
+            getResource: jest.fn().mockResolvedValue(null),
+            listResources: jest.fn().mockResolvedValue([]),
           },
         },
         {
@@ -89,7 +101,12 @@ describe('MCP Integration Tests', () => {
         },
         {
           provide: Logger,
-          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+          useValue: {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+          },
         },
         {
           provide: 'ai-enabled-apps',
@@ -103,9 +120,13 @@ describe('MCP Integration Tests', () => {
     mcpExecutor = module.get<MCPToolExecutor>(MCPToolExecutor);
     promptProxy = module.get<ClientProxy>(ServiceTokens.PROMPT_PROXY);
     profileService = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
-    chatCollectorService = module.get<ClientProxy>(ServiceTokens.CHAT_COLLECTOR_SERVICE);
+    chatCollectorService = module.get<ClientProxy>(
+      ServiceTokens.CHAT_COLLECTOR_SERVICE
+    );
 
-    (promptGeneration.generatePersonaSystemMessage as jest.Mock).mockReturnValue('System prompt');
+    (
+      promptGeneration.generatePersonaSystemMessage as jest.Mock
+    ).mockReturnValue('System prompt');
   });
 
   describe('End-to-End Tool Calling Flow', () => {
@@ -152,26 +173,33 @@ describe('MCP Integration Tests', () => {
       ]);
 
       // Mock LLM response with tool call
-      jest.spyOn(promptProxy, 'send')
+      jest
+        .spyOn(promptProxy, 'send')
         .mockReturnValueOnce(of({ message: { content: 'summary' } })) // Conversation summary
-        .mockReturnValueOnce(of({
-          message: {
-            content: '',
-            tool_calls: [{
-              id: 'call_123',
-              type: 'function',
-              function: {
-                name: 'list_projects',
-                arguments: '{"userId": "profile-123"}',
-              },
-            }],
-          },
-        }))
-        .mockReturnValueOnce(of({
-          message: {
-            content: 'You have 2 projects: Project A and Project B.',
-          },
-        }));
+        .mockReturnValueOnce(
+          of({
+            message: {
+              content: '',
+              tool_calls: [
+                {
+                  id: 'call_123',
+                  type: 'function',
+                  function: {
+                    name: 'list_projects',
+                    arguments: '{"userId": "profile-123"}',
+                  },
+                },
+              ],
+            },
+          })
+        )
+        .mockReturnValueOnce(
+          of({
+            message: {
+              content: 'You have 2 projects: Project A and Project B.',
+            },
+          })
+        );
 
       // Mock tool execution
       jest.spyOn(mcpExecutor, 'executeToolCall').mockResolvedValue({
@@ -247,26 +275,34 @@ describe('MCP Integration Tests', () => {
       jest.spyOn(toolsService, 'listTools').mockResolvedValue([]);
 
       // Mock LLM responses
-      jest.spyOn(promptProxy, 'send')
+      jest
+        .spyOn(promptProxy, 'send')
         .mockReturnValueOnce(of({ message: { content: 'summary' } }))
-        .mockReturnValueOnce(of({
-          message: {
-            content: '',
-            tool_calls: [{
-              id: 'call_456',
-              type: 'function',
-              function: {
-                name: 'create_project',
-                arguments: '{"name": "Test Project"}',
-              },
-            }],
-          },
-        }))
-        .mockReturnValueOnce(of({
-          message: {
-            content: 'I encountered an error creating the project. Please try again.',
-          },
-        }));
+        .mockReturnValueOnce(
+          of({
+            message: {
+              content: '',
+              tool_calls: [
+                {
+                  id: 'call_456',
+                  type: 'function',
+                  function: {
+                    name: 'create_project',
+                    arguments: '{"name": "Test Project"}',
+                  },
+                },
+              ],
+            },
+          })
+        )
+        .mockReturnValueOnce(
+          of({
+            message: {
+              content:
+                'I encountered an error creating the project. Please try again.',
+            },
+          })
+        );
 
       // Mock tool execution failure
       jest.spyOn(mcpExecutor, 'executeToolCall').mockResolvedValue({
@@ -326,21 +362,26 @@ describe('MCP Integration Tests', () => {
       jest.spyOn(toolsService, 'listTools').mockResolvedValue([]);
 
       // Mock LLM response with legacy JSON format
-      jest.spyOn(promptProxy, 'send')
+      jest
+        .spyOn(promptProxy, 'send')
         .mockReturnValueOnce(of({ message: { content: 'summary' } }))
-        .mockReturnValueOnce(of({
-          message: {
-            content: JSON.stringify({
-              tool: 'list_projects',
-              args: { userId: 'profile-123' },
-            }),
-          },
-        }))
-        .mockReturnValueOnce(of({
-          message: {
-            content: 'Here are your projects.',
-          },
-        }));
+        .mockReturnValueOnce(
+          of({
+            message: {
+              content: JSON.stringify({
+                tool: 'list_projects',
+                args: { userId: 'profile-123' },
+              }),
+            },
+          })
+        )
+        .mockReturnValueOnce(
+          of({
+            message: {
+              content: 'Here are your projects.',
+            },
+          })
+        );
 
       // Mock tool execution
       jest.spyOn(mcpExecutor, 'executeToolCall').mockResolvedValue({
@@ -403,21 +444,26 @@ describe('MCP Integration Tests', () => {
       jest.spyOn(toolsService, 'listTools').mockResolvedValue([]);
 
       // Mock LLM to keep calling tools indefinitely
-      jest.spyOn(promptProxy, 'send')
+      jest
+        .spyOn(promptProxy, 'send')
         .mockReturnValueOnce(of({ message: { content: 'summary' } }))
-        .mockReturnValue(of({
-          message: {
-            content: '',
-            tool_calls: [{
-              id: 'call_loop',
-              type: 'function',
-              function: {
-                name: 'list_projects',
-                arguments: '{}',
-              },
-            }],
-          },
-        }));
+        .mockReturnValue(
+          of({
+            message: {
+              content: '',
+              tool_calls: [
+                {
+                  id: 'call_loop',
+                  type: 'function',
+                  function: {
+                    name: 'list_projects',
+                    arguments: '{}',
+                  },
+                },
+              ],
+            },
+          })
+        );
 
       jest.spyOn(mcpExecutor, 'executeToolCall').mockResolvedValue({
         toolCallId: 'call_loop',
@@ -472,7 +518,8 @@ describe('MCP Integration Tests', () => {
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
       jest.spyOn(toolsService, 'listTools').mockResolvedValue([]);
 
-      jest.spyOn(promptProxy, 'send')
+      jest
+        .spyOn(promptProxy, 'send')
         .mockReturnValue(of({ message: { content: 'Hello from persona' } }));
 
       jest.spyOn(chatCollectorService, 'send').mockReturnValue(of({}));

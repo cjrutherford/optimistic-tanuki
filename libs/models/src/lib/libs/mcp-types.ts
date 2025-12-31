@@ -1,6 +1,6 @@
 /**
  * Standardized MCP (Model Context Protocol) Types
- * 
+ *
  * This file defines the canonical types for tool calling, tool results,
  * and MCP protocol messages used throughout the platform.
  */
@@ -148,10 +148,16 @@ export const BaseMessageSchema = z.object({
 
 /**
  * Zod schema for assistant messages
+ *
+ * Note: `tool_calls` is intentionally parsed as an array of `any` here so that
+ * assistant messages are validated at the top-level without performing nested
+ * zod validation on tool calls. Detailed validation of tool call structure
+ * happens explicitly through `MCPValidator.validateToolCalls` so that errors
+ * are reported with the `INVALID_TOOL_CALL` code instead of `VALIDATION_FAILED`.
  */
 export const AssistantMessageSchema = BaseMessageSchema.extend({
   role: z.literal('assistant'),
-  tool_calls: z.array(ToolCallSchema).optional(),
+  tool_calls: z.array(z.any()).optional(),
 });
 
 /**
@@ -197,11 +203,13 @@ export const ToolDefinitionSchema = z.object({
   function: z.object({
     name: z.string().min(1, 'Function name is required'),
     description: z.string(),
-    parameters: z.object({
-      type: z.literal('object'),
-      properties: z.record(z.any()),
-      required: z.array(z.string()).optional(),
-    }).passthrough(), // Allow additional properties
+    parameters: z
+      .object({
+        type: z.literal('object'),
+        properties: z.record(z.any()),
+        required: z.array(z.string()).optional(),
+      })
+      .passthrough(), // Allow additional properties
   }),
 });
 

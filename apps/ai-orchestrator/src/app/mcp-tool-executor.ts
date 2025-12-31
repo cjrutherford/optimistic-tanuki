@@ -152,6 +152,9 @@ export class MCPToolExecutor {
           );
         }
       }
+      // If overall validation failed, return the constructed error results
+      // rather than executing tool calls again (avoids duplicate error entries).
+      return results;
     }
 
     // Execute valid tool calls sequentially
