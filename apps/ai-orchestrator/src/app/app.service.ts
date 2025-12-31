@@ -5,7 +5,6 @@ import {
   PersonaTelosCommands,
   ProfileCommands,
   ServiceTokens,
-  PromptCommands,
 } from '@optimistic-tanuki/constants';
 import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
 import { firstValueFrom } from 'rxjs';
@@ -27,8 +26,6 @@ export class AppService {
     private readonly l: Logger,
     @Inject(ServiceTokens.TELOS_DOCS_SERVICE)
     private readonly telosDocsService: ClientProxy,
-    @Inject(ServiceTokens.PROMPT_PROXY)
-    private readonly promptProxy: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileService: ClientProxy,
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
@@ -168,18 +165,9 @@ export class AppService {
         new HumanMessage(welcomePrompt),
       ];
 
-      // Optionally call the prompt proxy to seed or generate the welcome prompt
-      await firstValueFrom(
-        this.promptProxy.send(
-          { cmd: PromptCommands.SEND },
-          {
-            messages: [
-              { role: 'system', content: 'system' },
-              { role: 'user', content: welcomePrompt },
-            ],
-          }
-        )
-      );
+      // No external prompt proxy call here — the conversation is seeded
+      // directly via LangGraph/LangChain messages to avoid runtime
+      // dependencies on the prompt proxy service.
 
       const result = await this.langGraphService.executeConversation(
         profile.id,
@@ -231,35 +219,19 @@ export class AppService {
     messages: ChatMessage[],
     personaPrompt: string
   ): Promise<string> {
-    try {
-      if (!messages || messages.length === 0) {
-        return 'No previous conversation history.';
-      }
-
-      const recentCount = Math.min(messages.length, 5);
-      const recentMessages = messages.slice(-recentCount);
-
-      // Build a single user content block of the recent messages
-      const userContent = recentMessages.map((m) => m.content).join('\n\n\n');
-
-      const payload = {
-        messages: [
-          { role: 'system', content: personaPrompt },
-          { role: 'user', content: userContent },
-        ],
-      };
-
-      const res: any = await firstValueFrom(
-        this.promptProxy.send({ cmd: PromptCommands.SEND }, payload)
-      );
-
-      return res?.message?.content || 'No summary available';
-    } catch (error) {
-      this.l.error('Error summarizing conversation:', error);
-      throw new RpcException(
-        'Failed to summarize conversation: ' + error.message
-      );
+    // Lightweight internal summarizer so we don't depend on the external
+    // prompt proxy. Keeps conversation summarization deterministic for
+    // unit tests and avoids runtime RPC dependencies.
+    if (!messages || messages.length === 0) {
+      return 'No previous conversation history.';
     }
+
+    const recentCount = Math.min(messages.length, 5);
+    const recentMessages = messages.slice(-recentCount);
+
+    return `Recent conversation (last ${recentCount} messages): ${recentMessages
+      .map((m) => `${m.senderName}: ${m.content}`)
+      .join(' | ')}`;
   }
 
   async updateConversation(data: {
@@ -298,28 +270,9 @@ export class AppService {
         const personaSystemPrompt = (
           promptGeneration.generatePersonaSystemMessage as any
         )(persona);
-        // Send a lightweight prompt request with the persona system prompt so
-        // external prompt proxies receive the persona context (tests expect
-        // promptProxy.send to have been called). Do this safely so errors
-        // from the prompt proxy do not abort conversation processing.
-        try {
-          await firstValueFrom(
-            this.promptProxy.send(
-              { cmd: PromptCommands.SEND },
-              {
-                messages: [
-                  { role: 'system', content: personaSystemPrompt },
-                  { role: 'user', content: lastMessage.content },
-                ],
-              }
-            )
-          );
-        } catch (e) {
-          this.l.warn(
-            'Prompt proxy call failed while seeding persona prompt:',
-            e
-          );
-        }
+        // No external prompt proxy seeding: use internal summarizer and
+        // LangGraph execution. This keeps the services decoupled from the
+        // prompt proxy RPC surface.
 
         const generatedSummary = await this.summarizeConversation(
           conversation.messages,

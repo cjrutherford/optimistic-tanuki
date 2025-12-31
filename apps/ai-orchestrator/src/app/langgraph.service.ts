@@ -7,29 +7,8 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { StateGraph, START, END } from '@langchain/langgraph';
-import * as LangGraphImport from '@langchain/langgraph';
+import { Annotation } from '@langchain/langgraph';
 
-// Safe runtime wrapper for Annotation: some test environments or versions
-// of the langgraph package may export Annotation differently. Provide a
-// lightweight fallback so tests that only import this module don't crash.
-let Annotation: any;
-const LGAnnotation = (LangGraphImport as any).Annotation;
-if (typeof LGAnnotation === 'function') {
-  Annotation = LGAnnotation;
-} else {
-  // Provide a callable proxy so `Annotation(...)` works even if the
-  // imported symbol is an object or missing in the test environment.
-  Annotation = ((arg: any) => arg) as any;
-
-  // If the original export provided a Root helper, reuse it; otherwise
-  // create a minimal Root that exposes a `State` property so the code
-  // that accesses `ConversationState.State` won't throw on import.
-  if (LGAnnotation && typeof LGAnnotation.Root === 'function') {
-    Annotation.Root = LGAnnotation.Root;
-  } else {
-    Annotation.Root = (obj: any) => ({ State: obj });
-  }
-}
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 import {
   ChatMessage,
@@ -41,81 +20,96 @@ import { LangChainService } from './langchain.service';
 import { LangChainAgentService } from './langchain-agent.service';
 
 /**
- * Conversation state managed by LangGraph
+ * Conversation state managed by LangGraph.
+ *
+ * Build lazily at runtime to avoid import-time invocation of `Annotation`
+ * that can fail in some test/module interop shapes. We still use the
+ * langgraph types for compile-time safety but resolve the runtime value
+ * when needed.
  */
-const ConversationState = Annotation.Root({
-  // Core conversation data
-  messages: Annotation<BaseMessage[]>({
-    reducer: (x, y) => x.concat(y), // Append new messages
-    default: () => [],
-  }),
+function getConversationState() {
+  // Resolve runtime Annotation export (support function export or object-with-Root)
+  const AnnotationRuntime = Annotation;
 
-  // Original ChatMessage[] for full history context
-  chatHistory: Annotation<ChatMessage[]>({
-    reducer: (x, y) => x.concat(y), // Append new messages
-    default: () => [],
-  }),
+  return AnnotationRuntime.Root({
+    // Core conversation data
+    messages: AnnotationRuntime<BaseMessage[]>({
+      reducer: (x, y) => x.concat(y), // Append new messages
+      default: () => [],
+    }),
 
-  // User context
-  profileId: Annotation<string>({
-    reducer: (x, y) => y ?? x,
-    default: () => '',
-  }),
+    // Original ChatMessage[] for full history context
+    chatHistory: AnnotationRuntime<ChatMessage[]>({
+      reducer: (x, y) => x.concat(y), // Append new messages
+      default: () => [],
+    }),
 
-  // Conversation summary
-  summary: Annotation<string>({
-    reducer: (x, y) => y ?? x,
-    default: () => '',
-  }),
+    // User context
+    profileId: AnnotationRuntime<string>({
+      reducer: (x, y) => y ?? x,
+      default: () => '',
+    }),
 
-  // Active projects being discussed
-  activeProjects: Annotation<string[]>({
-    reducer: (x, y) => Array.from(new Set([...x, ...y])),
-    default: () => [],
-  }),
+    // Conversation summary
+    summary: AnnotationRuntime<string>({
+      reducer: (x, y) => y ?? x,
+      default: () => '',
+    }),
 
-  // Recent topics
-  recentTopics: Annotation<string[]>({
-    reducer: (x, y) => {
-      const combined = [...x, ...y];
-      // Keep only last 10 unique topics
-      return Array.from(new Set(combined)).slice(-10);
-    },
-    default: () => [],
-  }),
+    // Active projects being discussed
+    activeProjects: AnnotationRuntime<string[]>({
+      reducer: (x, y) => Array.from(new Set([...x, ...y])),
+      default: () => [],
+    }),
 
-  // Tool call tracking
-  toolCallsCount: Annotation<number>({
-    reducer: (x, y) => x + y,
-    default: () => 0,
-  }),
+    // Recent topics
+    recentTopics: AnnotationRuntime<string[]>({
+      reducer: (x, y) => {
+        const combined = [...x, ...y];
+        // Keep only last 10 unique topics
+        return Array.from(new Set(combined)).slice(-10);
+      },
+      default: () => [],
+    }),
 
-  // Last tool called
-  lastToolCalled: Annotation<string | null>({
-    reducer: (x, y) => y ?? x,
-    default: () => null,
-  }),
+    // Tool call tracking
+    toolCallsCount: AnnotationRuntime<number>({
+      reducer: (x, y) => x + y,
+      default: () => 0,
+    }),
 
-  // Current iteration (for max iterations check)
-  iteration: Annotation<number>({
-    reducer: (x, y) => x + 1,
-    default: () => 0,
-  }),
+    // Last tool called
+    lastToolCalled: AnnotationRuntime<string | null>({
+      reducer: (x, y) => y ?? x,
+      default: () => null,
+    }),
 
-  // Whether conversation should continue
-  shouldContinue: Annotation<boolean>({
-    reducer: (x, y) => y ?? x,
-    default: () => true,
-  }),
+    // Current iteration (for max iterations check)
+    iteration: AnnotationRuntime<number>({
+      reducer: (x, y) => x + 1,
+      default: () => 0,
+    }),
 
-  // Additional metadata
-  metadata: Annotation<Record<string, unknown>>({
-    reducer: (x, y) => ({ ...x, ...y }),
-    default: () => ({}),
-  }),
-});
+    // Whether conversation should continue
+    shouldContinue: AnnotationRuntime<boolean>({
+      reducer: (x, y) => y ?? x,
+      default: () => true,
+    }),
 
-type ConversationStateType = typeof ConversationState.State;
+    // Additional metadata
+    metadata: AnnotationRuntime<Record<string, unknown>>({
+      reducer: (x, y) => ({ ...x, ...y }),
+      default: () => ({}),
+    }),
+  });
+}
+
+// Derive the runtime ConversationState type from the factory when needed
+type ConversationStateType = ReturnType<typeof getConversationState> extends {
+  State: infer S;
+}
+  ? S
+  : any;
 
 @Injectable()
 export class LangGraphService {
@@ -131,10 +125,35 @@ export class LangGraphService {
   }
 
   /**
+   * Normalize message content to a string for safe processing.
+   * Some callers may supply `content` as an array of segments, an object,
+   * or a plain string. Ensure we always return a string so callers can
+   * safely call string methods without risking `.every is not a function`.
+   */
+  private normalizeContent(content: unknown): string {
+    if (content == null) return '';
+    if (Array.isArray(content)) {
+      try {
+        return content.map((c) => (c == null ? '' : String(c))).join(' ');
+      } catch (e) {
+        return String(content);
+      }
+    }
+    if (typeof content === 'object') {
+      try {
+        return JSON.stringify(content);
+      } catch (e) {
+        return String(content);
+      }
+    }
+    return String(content);
+  }
+
+  /**
    * Build the conversation state graph
    */
   private buildGraph() {
-    const workflow = new StateGraph(ConversationState);
+    const workflow = new StateGraph(getConversationState());
 
     // Define nodes
     workflow.addNode('loadContext', this.loadContextNode.bind(this));
@@ -205,7 +224,7 @@ export class LangGraphService {
       const topics: string[] = [];
 
       for (const message of lastMessages) {
-        const content = message.content.toString().toLowerCase();
+        const content = this.normalizeContent(message.content).toLowerCase();
 
         // Extract project mentions
         if (content.includes('project')) {
@@ -251,9 +270,9 @@ export class LangGraphService {
     try {
       // Simple summary: last user message + topics
       const lastMessage = state.messages[state.messages.length - 1];
-      const summary = `Last discussed: ${lastMessage.content
-        .toString()
-        .slice(0, 100)}... Topics: ${state.recentTopics.join(', ')}`;
+      const summary = `Last discussed: ${this.normalizeContent(
+        lastMessage?.content
+      ).slice(0, 100)}... Topics: ${state.recentTopics.join(', ')}`;
 
       return {
         summary,
@@ -327,7 +346,7 @@ export class LangGraphService {
 
         // Get the last user message
         const lastMessage = messages[messages.length - 1];
-        const userInput = lastMessage.content.toString();
+        const userInput = this.normalizeContent(lastMessage?.content);
 
         // Execute agent
         // Pass LangGraph-enriched summary and conversationId so agent has canonical context
@@ -354,7 +373,7 @@ export class LangGraphService {
           persona,
           profile,
           result.chatHistory.slice(0, -1), // Full chat history except last message
-          messages[messages.length - 1].content.toString(),
+          this.normalizeContent(messages[messages.length - 1]?.content),
           result.summary,
           conversationId
         );
