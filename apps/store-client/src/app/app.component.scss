@@ -10,8 +10,8 @@
 }
 
 .main-nav {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--accent, #007bff);
+  color: var(--nav-text-color, #ffffff);
   padding: 1rem 2rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
@@ -28,7 +28,7 @@
     gap: 2rem;
 
     li a {
-      color: white;
+      color: var(--nav-text-color, #ffffff);
       text-decoration: none;
       font-weight: 500;
       padding: 0.5rem 1rem;
@@ -36,11 +36,11 @@
       transition: background-color 0.3s;
 
       &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.08);
       }
 
       &.active {
-        background-color: rgba(255, 255, 255, 0.2);
+        background-color: rgba(255, 255, 255, 0.12);
       }
     }
   }

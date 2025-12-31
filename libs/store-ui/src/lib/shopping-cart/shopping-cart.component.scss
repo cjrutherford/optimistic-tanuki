@@ -4,12 +4,12 @@
 
 .shopping-cart {
   padding: 1.5rem;
-  background-color: var(--surface-color, #ffffff);
+  background-color: var(--background, var(--surface-color, #ffffff));
   border-radius: var(--border-radius, 8px);
 
   h2 {
     margin: 0 0 1.5rem;
-    color: var(--text-color, #333);
+    color: var(--foreground, var(--text-color, #333));
   }
 }
 
@@ -42,7 +42,7 @@
 
     .item-price {
       margin: 0;
-      color: var(--text-secondary-color, #666);
+      color: var(--foreground, var(--text-secondary-color, #666));
     }
   }
 
@@ -55,7 +55,7 @@
       width: 30px;
       height: 30px;
       border: 1px solid var(--border-color, #ccc);
-      background-color: var(--surface-color, #fff);
+      background-color: var(--background, var(--surface-color, #fff));
       cursor: pointer;
       border-radius: var(--border-radius, 4px);
 
@@ -67,7 +67,7 @@
 
   .item-total {
     font-weight: 600;
-    color: var(--primary-color, #007bff);
+    color: var(--accent, var(--primary-color, #007bff));
   }
 
   .remove-btn {
@@ -75,7 +75,7 @@
     height: 30px;
     border: none;
     background-color: transparent;
-    color: var(--error-color, #dc3545);
+    color: var(--danger, var(--error-color, #dc3545));
     font-size: 1.5rem;
     cursor: pointer;
     transition: opacity 0.3s;
@@ -89,7 +89,7 @@
 .empty-cart {
   text-align: center;
   padding: 3rem;
-  color: var(--text-secondary-color, #666);
+  color: var(--foreground, var(--text-secondary-color, #666));
 }
 
 .cart-summary {
@@ -104,7 +104,7 @@
 
     .total-amount {
       font-weight: 700;
-      color: var(--primary-color, #007bff);
+      color: var(--accent, var(--primary-color, #007bff));
     }
   }
 
@@ -113,7 +113,7 @@
     padding: 1rem;
     border: none;
     border-radius: var(--border-radius, 4px);
-    background-color: var(--primary-color, #007bff);
+    background-color: var(--accent, var(--primary-color, #007bff));
     color: var(--button-text-color, #ffffff);
     font-size: 1.125rem;
     font-weight: 600;

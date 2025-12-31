@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService, Product } from '../services/store.service';
-import { CreateProductDto, UpdateProductDto } from '@optimistic-tanuki/models';
+import { CreateProductDto, UpdateProductDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-product-management',

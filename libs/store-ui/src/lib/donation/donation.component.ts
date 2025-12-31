@@ -1,7 +1,7 @@
 import { Component, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ThemeHostBindingsDirective } from '@optimistic-tanuki/theme-lib';
+import { ThemeHostBindingsDirective, Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 export interface DonationRequest {
   amount: number;
@@ -17,7 +17,7 @@ export interface DonationRequest {
   styleUrls: ['./donation.component.scss'],
   hostDirectives: [ThemeHostBindingsDirective],
 })
-export class DonationComponent {
+export class DonationComponent extends Themeable {
   @Output() donate = new EventEmitter<DonationRequest>();
 
   amount: number = 10;
@@ -45,5 +45,14 @@ export class DonationComponent {
         anonymous: this.anonymous,
       });
     }
+  }
+  // Implement Themeable
+  applyTheme(colors: ThemeColors): void {
+    this.setLocalCSSVariables({
+      accent: colors.accent,
+      complement: colors.complementary,
+      background: colors.background,
+      foreground: colors.foreground,
+    });
   }
 }

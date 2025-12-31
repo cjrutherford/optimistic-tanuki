@@ -1,1 +1,32 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global theme-aware defaults and legacy aliases */
+:root {
+	/* Core standardized theme variables (can be overridden by ThemeService at runtime) */
+	--background: var(--background, #ffffff);
+	--foreground: var(--foreground, #212121);
+	--accent: var(--accent, #007bff);
+	--complement: var(--complement, #c0af4b);
+	--tertiary: var(--tertiary, #6c757d);
+	--success: var(--success, #28a745);
+	--danger: var(--danger, #dc3545);
+	--warning: var(--warning, #ffc107);
+
+	/* Legacy aliases for components that still reference older names */
+	--background-color: var(--background);
+	--foreground-color: var(--foreground);
+	--accent-color: var(--accent);
+	--complementary-color: var(--complement);
+	--primary-color: var(--accent);
+	--button-text-color: #ffffff;
+	--text-color: var(--foreground);
+	--text-secondary-color: #666;
+	--surface-color: var(--background);
+}
+
+/* Basic page styling honoring theme variables */
+html, body {
+	height: 100%;
+	background: var(--background);
+	color: var(--foreground);
+}
+
+/* You can add other global styles or imports below */

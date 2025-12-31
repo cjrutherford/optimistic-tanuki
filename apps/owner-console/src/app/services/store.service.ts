@@ -6,7 +6,7 @@ import {
   UpdateProductDto,
   CreateOrderDto,
   UpdateOrderDto,
-} from '@optimistic-tanuki/models';
+} from '@optimistic-tanuki/ui-models';
 
 export interface Product {
   id: string;

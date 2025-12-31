@@ -19,6 +19,6 @@
 .empty-state {
   text-align: center;
   padding: 3rem;
-  color: var(--text-secondary-color, #666);
+  color: var(--foreground, var(--text-secondary-color, #666));
   font-size: 1.25rem;
 }

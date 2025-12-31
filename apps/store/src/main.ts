@@ -17,7 +17,7 @@ export async function bootstrap() {
     transport: Transport.TCP,
     options: {
       host: '0.0.0.0',
-      port: Number(config.get('listenPort')) || 3009,
+      port: Number(config.get('listenPort')) || 3013,
     },
   });
   await app.listen().then(() => {
