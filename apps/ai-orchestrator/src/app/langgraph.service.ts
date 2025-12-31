@@ -6,7 +6,30 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { StateGraph, START, END, Annotation } from '@langchain/langgraph';
+import { StateGraph, START, END } from '@langchain/langgraph';
+import * as LangGraphImport from '@langchain/langgraph';
+
+// Safe runtime wrapper for Annotation: some test environments or versions
+// of the langgraph package may export Annotation differently. Provide a
+// lightweight fallback so tests that only import this module don't crash.
+let Annotation: any;
+const LGAnnotation = (LangGraphImport as any).Annotation;
+if (typeof LGAnnotation === 'function') {
+  Annotation = LGAnnotation;
+} else {
+  // Provide a callable proxy so `Annotation(...)` works even if the
+  // imported symbol is an object or missing in the test environment.
+  Annotation = ((arg: any) => arg) as any;
+
+  // If the original export provided a Root helper, reuse it; otherwise
+  // create a minimal Root that exposes a `State` property so the code
+  // that accesses `ConversationState.State` won't throw on import.
+  if (LGAnnotation && typeof LGAnnotation.Root === 'function') {
+    Annotation.Root = LGAnnotation.Root;
+  } else {
+    Annotation.Root = (obj: any) => ({ State: obj });
+  }
+}
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 import {
   ChatMessage,

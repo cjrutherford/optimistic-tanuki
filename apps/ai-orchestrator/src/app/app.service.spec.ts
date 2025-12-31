@@ -20,6 +20,10 @@ import {
 import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
 import { ToolsService } from './tools.service';
 import { MCPToolExecutor } from './mcp-tool-executor';
+import { LangChainService } from './langchain.service';
+import { LangGraphService } from './langgraph.service';
+import { LangChainAgentService } from './langchain-agent.service';
+import { ContextStorageService } from './context-storage.service';
 
 jest.mock('@optimistic-tanuki/prompt-generation');
 
@@ -95,6 +99,33 @@ describe('AppService', () => {
               result: { message: 'success' },
               error: null,
             }),
+          },
+        },
+        // LangChain / LangGraph related providers (mocks)
+        {
+          provide: LangChainService,
+          useValue: {},
+        },
+        {
+          provide: LangGraphService,
+          useValue: {
+            executeConversation: jest.fn().mockResolvedValue({
+              response: 'AI response',
+              toolCalls: [],
+              topics: [],
+            }),
+          },
+        },
+        {
+          provide: LangChainAgentService,
+          useValue: {
+            initializeAgent: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: ContextStorageService,
+          useValue: {
+            getContext: jest.fn().mockResolvedValue({ summary: '' }),
           },
         },
       ],

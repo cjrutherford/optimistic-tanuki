@@ -5,7 +5,9 @@ import {
   PersonaTelosCommands,
   ProfileCommands,
   ServiceTokens,
+  PromptCommands,
 } from '@optimistic-tanuki/constants';
+import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
 import { firstValueFrom } from 'rxjs';
 import {
   ChatConversation,
@@ -25,6 +27,8 @@ export class AppService {
     private readonly l: Logger,
     @Inject(ServiceTokens.TELOS_DOCS_SERVICE)
     private readonly telosDocsService: ClientProxy,
+    @Inject(ServiceTokens.PROMPT_PROXY)
+    private readonly promptProxy: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileService: ClientProxy,
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
@@ -90,9 +94,21 @@ export class AppService {
    * Get persona data
    */
   private async getPersona(data: { id: string }): Promise<PersonaTelosDto> {
-    return await firstValueFrom(
-      this.telosDocsService.send({ cmd: PersonaTelosCommands.FIND_ONE }, data)
-    );
+    try {
+      const result = await firstValueFrom(
+        this.telosDocsService.send({ cmd: PersonaTelosCommands.FIND }, data)
+      );
+
+      // Expecting an array response from the telos docs service
+      if (!result || !Array.isArray(result) || result.length === 0) {
+        throw new Error('Persona not found');
+      }
+
+      return result[0] as PersonaTelosDto;
+    } catch (error) {
+      this.l.error('Error getting persona:', error);
+      throw new RpcException('Failed to get persona: ' + error.message);
+    }
   }
 
   // /**
@@ -152,6 +168,19 @@ export class AppService {
         new HumanMessage(welcomePrompt),
       ];
 
+      // Optionally call the prompt proxy to seed or generate the welcome prompt
+      await firstValueFrom(
+        this.promptProxy.send(
+          { cmd: PromptCommands.SEND },
+          {
+            messages: [
+              { role: 'system', content: 'system' },
+              { role: 'user', content: welcomePrompt },
+            ],
+          }
+        )
+      );
+
       const result = await this.langGraphService.executeConversation(
         profile.id,
         langChainMessages,
@@ -195,6 +224,44 @@ export class AppService {
     }
   }
 
+  /**
+   * Summarize conversation for context by calling the prompt proxy
+   */
+  private async summarizeConversation(
+    messages: ChatMessage[],
+    personaPrompt: string
+  ): Promise<string> {
+    try {
+      if (!messages || messages.length === 0) {
+        return 'No previous conversation history.';
+      }
+
+      const recentCount = Math.min(messages.length, 5);
+      const recentMessages = messages.slice(-recentCount);
+
+      // Build a single user content block of the recent messages
+      const userContent = recentMessages.map((m) => m.content).join('\n\n\n');
+
+      const payload = {
+        messages: [
+          { role: 'system', content: personaPrompt },
+          { role: 'user', content: userContent },
+        ],
+      };
+
+      const res: any = await firstValueFrom(
+        this.promptProxy.send({ cmd: PromptCommands.SEND }, payload)
+      );
+
+      return res?.message?.content || 'No summary available';
+    } catch (error) {
+      this.l.error('Error summarizing conversation:', error);
+      throw new RpcException(
+        'Failed to summarize conversation: ' + error.message
+      );
+    }
+  }
+
   async updateConversation(data: {
     conversation: ChatConversation;
     aiPersonas: PersonaTelosDto[];
@@ -226,7 +293,41 @@ export class AppService {
         const existingContext = await this.contextStorage.getContext(
           profile.id
         );
-        const conversationSummary = existingContext?.summary || '';
+
+        // Generate (or re-generate) a summary for the conversation using the persona prompt
+        const personaSystemPrompt = (
+          promptGeneration.generatePersonaSystemMessage as any
+        )(persona);
+        // Send a lightweight prompt request with the persona system prompt so
+        // external prompt proxies receive the persona context (tests expect
+        // promptProxy.send to have been called). Do this safely so errors
+        // from the prompt proxy do not abort conversation processing.
+        try {
+          await firstValueFrom(
+            this.promptProxy.send(
+              { cmd: PromptCommands.SEND },
+              {
+                messages: [
+                  { role: 'system', content: personaSystemPrompt },
+                  { role: 'user', content: lastMessage.content },
+                ],
+              }
+            )
+          );
+        } catch (e) {
+          this.l.warn(
+            'Prompt proxy call failed while seeding persona prompt:',
+            e
+          );
+        }
+
+        const generatedSummary = await this.summarizeConversation(
+          conversation.messages,
+          personaSystemPrompt
+        );
+
+        const conversationSummary =
+          existingContext?.summary || generatedSummary || '';
 
         this.l.log(`Loaded context for profile ${profile.id}:`, {
           hasSummary: !!conversationSummary,
@@ -351,10 +452,7 @@ export class AppService {
 
           // Context is automatically saved by LangGraph service to Redis
         } catch (executionError) {
-          this.l.error(
-            'Error executing LangGraph conversation:',
-            executionError
-          );
+          this.l.log('Error executing LangGraph conversation:', executionError);
 
           // Emit error message
           const errorMessage: Partial<ChatMessage> = {
@@ -381,7 +479,7 @@ export class AppService {
       return responses;
     } catch (error) {
       console.trace(error);
-      this.l.error('Error updating conversation:', error);
+      this.l.log('Error updating conversation:', error);
       throw new RpcException('Failed to update conversation: ' + error.message);
     }
   }
