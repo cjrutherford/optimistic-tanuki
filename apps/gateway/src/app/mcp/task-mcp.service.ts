@@ -25,8 +25,18 @@ const getTaskSchema = z.object({
 const createTaskSchema = z.object({
   title: z.string().describe('Title of the task'),
   description: z.string().optional().describe('Description of the task'),
-  status: z.nativeEnum(TaskStatus).describe('Status of the task'),
-  priority: z.nativeEnum(TaskPriority).describe('Priority of the task'),
+  status: z
+    .nativeEnum(TaskStatus)
+    .optional()
+    .describe(
+      'Status of the task. MUST be one of: TODO, IN_PROGRESS, DONE, ARCHIVED. Default: TODO'
+    ),
+  priority: z
+    .nativeEnum(TaskPriority)
+    .optional()
+    .describe(
+      'Priority of the task. MUST be one of: LOW, MEDIUM_LOW, MEDIUM, MEDIUM_HIGH, HIGH. Default: MEDIUM'
+    ),
   createdBy: z
     .string()
     .describe(
@@ -143,8 +153,7 @@ export class TaskMcpService {
 
   @McpTool({
     name: 'create_task',
-    description:
-      'Create a new task for a project. this should be associated with a project id obtained from the list_projects tool or earlier tool call responses.',
+    description: 'Create a new task for a project.',
     parameters: createTaskSchema,
   })
   async createTask({
@@ -162,8 +171,8 @@ export class TaskMcpService {
       const taskData: CreateTaskDto = {
         title,
         description: description ?? 'No description provided',
-        status,
-        priority,
+        status: status ?? TaskStatus.TODO,
+        priority: priority ?? TaskPriority.MEDIUM,
         createdBy,
         projectId,
       };

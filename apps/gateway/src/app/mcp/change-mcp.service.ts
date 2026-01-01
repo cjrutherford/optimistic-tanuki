@@ -2,6 +2,11 @@ import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Tool as McpTool } from '@rekog/mcp-nest';
 import { ClientProxy } from '@nestjs/microservices';
 import { ChangeCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  CreateChangeDto,
+  Changetype,
+  ChangeStatus,
+} from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { z } from 'zod';
 
@@ -16,16 +21,39 @@ export const createChangeSchema = z.object({
   changeDescription: z.string().describe('A description of the change'),
   userId: z.string().describe('The ID of the user creating the change'),
   changeStatus: z
-    .enum(['PROPOSED', 'APPROVED', 'IN_PROGRESS', 'COMPLETE', 'DISCARDED'])
-    .describe('The status of the change request'),
+    .nativeEnum(ChangeStatus)
+    .optional()
+    .describe(
+      'The status of the change request. MUST be one of: PENDING, RESEARCHING, DISCUSSING, DESIGNING, PENDING_APPROVAL, IMPLEMENTING, COMPLETE, DISCARDED. Default is PENDING'
+    ),
+  changeType: z
+    .nativeEnum(Changetype)
+    .optional()
+    .describe('The type of change. Default is MODIFICATION'),
   priority: z
     .enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
     .optional()
-    .describe('The priority of the change'),
+    .describe('The priority of the change. Defualt is MEDIUM'),
   impact: z
     .string()
     .optional()
     .describe('The impact of the change on the project'),
+  likliehood: z
+    .enum([
+      'UNLIKELY',
+      'POSSIBLE',
+      'LIKELY',
+      'VERY_LIKELY',
+      'IMMINENT',
+      'ALMOST_CERTAIN',
+      'CERTAIN',
+      'NOT_APPLICABLE',
+      'UNKNOWN',
+    ])
+    .optional()
+    .describe(
+      'The likelihood of the change occurring. Default is NOT_APPLICABLE'
+    ),
 });
 
 export const updateChangeSchema = z.object({
@@ -39,11 +67,27 @@ export const updateChangeSchema = z.object({
   changeStatus: z
     .enum(['PROPOSED', 'APPROVED', 'IN_PROGRESS', 'COMPLETE', 'DISCARDED'])
     .optional()
-    .describe('The new status of the change request'),
+    .describe('The new status of the change request. Default is PROPOSED'),
   priority: z
     .enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
     .optional()
-    .describe('The new priority of the change'),
+    .describe('The new priority of the change. Default is MEDIUM'),
+  liklihood: z
+    .enum([
+      'UNLIKELY',
+      'POSSIBLE',
+      'LIKELY',
+      'VERY_LIKELY',
+      'IMMINENT',
+      'ALMOST_CERTAIN',
+      'CERTAIN',
+      'NOT_APPLICABLE',
+      'UNKNOWN',
+    ])
+    .optional()
+    .describe(
+      'The new likelihood of the change occurring. Default is NOT_APPLICABLE'
+    ),
   impact: z
     .string()
     .optional()
@@ -114,8 +158,20 @@ export class ChangeMcpService {
       this.logger.log(
         `MCP Tool: Creating change for project ${params.projectId}`
       );
+      const changeData: CreateChangeDto = {
+        projectId: params.projectId,
+        changeType: params.changeType || Changetype.MODIFICATION,
+        changeDescription: `${params.changeName}: ${params.changeDescription}`,
+        changeStatus: params.changeStatus || ChangeStatus.PENDING,
+        changeDate: new Date(),
+        requestor: params.userId,
+        approver: params.userId,
+      };
       const result = await firstValueFrom(
-        this.projectPlanningService.send({ cmd: ChangeCommands.CREATE }, params)
+        this.projectPlanningService.send(
+          { cmd: ChangeCommands.CREATE },
+          changeData
+        )
       );
       return {
         success: true,

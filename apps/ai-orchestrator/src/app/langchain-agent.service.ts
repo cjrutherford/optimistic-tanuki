@@ -92,6 +92,7 @@ You have access to tools that allow you to:
 # ERROR HANDLING
 - If a tool fails due to "Invalid parameters", check the enum values and required fields.
 - If a tool fails due to "Missing ID", try to find the ID using a query tool (e.g., 'list_projects' or 'query_projects').
+- if a tool fails due to ambiguity in connected id's please try to lookup the correct id using the appropriate list or query tool before retrying.
 `;
   }
   /**
@@ -101,9 +102,9 @@ You have access to tools that allow you to:
   async initializeAgent(userId: string, conversationId: string): Promise<void> {
     if (this.initialized) return;
     try {
-      this.logger.log(`Initializing agent for user ${userId}`);
-      // Build tools for this user/context
-      this.tools = await this.createTools(userId, conversationId);
+      this.logger.log(`Initializing agent (first time setup)`);
+      // Build tools (context-agnostic at creation time)
+      this.tools = await this.createTools();
 
       // Create the React-style agent from LangGraph prebuilt helper
       this.agent = createReactAgent({
@@ -112,9 +113,7 @@ You have access to tools that allow you to:
       });
 
       this.initialized = true;
-      this.logger.log(
-        `Initialized agent with ${this.tools.length} tools for user ${userId}`
-      );
+      this.logger.log(`Initialized agent with ${this.tools.length} tools`);
     } catch (error) {
       this.logger.error(
         `Failed to initialize agent: ${error?.message || error}`
@@ -126,10 +125,7 @@ You have access to tools that allow you to:
   /**
    * Create LangChain tools from MCP tools
    */
-  private async createTools(
-    userId: string,
-    conversationId: string
-  ): Promise<DynamicStructuredTool[]> {
+  private async createTools(): Promise<DynamicStructuredTool[]> {
     const mcpTools = await this.toolsService.listTools();
     const tools: DynamicStructuredTool[] = [];
 
@@ -143,7 +139,14 @@ You have access to tools that allow you to:
           name: mcpTool.name,
           description: mcpTool.description || `Tool: ${mcpTool.name}`,
           schema: zodSchema,
-          func: async (input: Record<string, unknown>) => {
+          func: async (input: Record<string, unknown>, runManager, config) => {
+            const userId = config?.configurable?.userId;
+            const conversationId = config?.configurable?.conversationId;
+
+            if (!userId) {
+              throw new Error('User ID not found in tool config');
+            }
+
             // Inject userId/profileId into parameters
             // Ensure profileId is mapped from userId if not present
             const enrichedInput = {
@@ -206,6 +209,7 @@ You have access to tools that allow you to:
         });
 
         tools.push(tool);
+        this.logger.log(`Successfully added tool: ${mcpTool.name}`);
       } catch (error) {
         this.logger.warn(
           `Failed to convert tool ${mcpTool.name}: ${error.message}`
@@ -244,7 +248,9 @@ You have access to tools that allow you to:
     );
 
     this.logger.log(
-      `Created ${tools.length} LangChain tools (including list_tools)`
+      `Created ${tools.length} LangChain tools (including list_tools): ${tools
+        .map((t) => t.name)
+        .join(', ')}`
     );
     return tools;
   }
@@ -370,6 +376,10 @@ You have access to tools that allow you to:
       // Use stream to get intermediate steps
       const stream = await this.agent.stream(inputs, {
         streamMode: 'values',
+        configurable: {
+          userId,
+          conversationId,
+        },
       });
 
       let finalState: any;

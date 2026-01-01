@@ -28,6 +28,7 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
   // Shared history for the conversation
   let history: any[] = [];
   const conversationId = 'e2e-test-conversation-' + Date.now();
+  const projectName = 'Project Omega ' + Date.now();
 
   beforeAll(async () => {
     // 1. Initialize Clients
@@ -120,7 +121,7 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
           const projects = await firstValueFrom(
             projectPlanningClient.send(
               { cmd: ProjectCommands.FIND_ALL },
-              { name: 'Project Omega', owner: createdProfileId }
+              { name: projectName, owner: createdProfileId }
             )
           );
           if (projects && projects.length > 0) {
@@ -211,7 +212,7 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
 
   it('Step 1: Should create a project', async () => {
     const response = await sendMessage(
-      'Create a new project named "Project Omega" with description "Top secret project". IMPORTANT: Please explicitly state the Project ID in your response.'
+      `Create a new project named "${projectName}" with description "Top secret project". IMPORTANT: Please explicitly state the Project ID in your response.`
     );
 
     // Log response
@@ -238,7 +239,7 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
         projects = await firstValueFrom(
           projectPlanningClient.send(
             { cmd: ProjectCommands.FIND_ALL },
-            { name: 'Project Omega' }
+            { name: projectName }
           )
         );
         if (projects && projects.length > 0) break;
@@ -261,7 +262,7 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
     expect(createdProjectId).toBeDefined();
 
     const response = await sendMessage(
-      `Add a task "Initial Research" to Project Omega. Use the Project ID: ${createdProjectId}.`
+      `Add a task "Initial Research" to ${projectName}. Use the Project ID: ${createdProjectId}.`
     );
 
     console.log(
@@ -337,7 +338,7 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
             { projectId: createdProjectId }
           )
         );
-        if (risks && risks.find((r: any) => r.name === 'Budget Overrun')) break;
+        if (risks && risks.find((r: any) => r.description === 'Budget Overrun')) break;
       } catch (e) {
         console.log(`Attempt ${i + 1} to find risk failed, retrying...`);
       }
@@ -345,7 +346,7 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
     }
 
     expect(risks).toBeDefined();
-    const risk = risks.find((r: any) => r.name === 'Budget Overrun');
+    const risk = risks.find((r: any) => r.description === 'Budget Overrun');
     expect(risk).toBeDefined();
     createdRiskId = risk.id;
     console.log('Verified Risk in DB:', createdRiskId);
@@ -356,7 +357,7 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
     expect(createdProjectId).toBeDefined();
 
     const response = await sendMessage(
-      `Summarize the status of "Project Omega". Use the Project ID: ${createdProjectId} to fetch details.`
+      `Summarize the status of "${projectName}". Use the Project ID: ${createdProjectId} to fetch details.`
     );
 
     console.log(
@@ -376,7 +377,7 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
 
     // Check if summary contains key elements
     const content = aiResponse.content.toLowerCase();
-    expect(content).toContain('project omega');
+    expect(content).toContain(projectName.toLowerCase());
     expect(content).toContain('initial research'); // Task
     expect(content).toContain('budget overrun'); // Risk
   }, 300000);
