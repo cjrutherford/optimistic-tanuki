@@ -1,4 +1,4 @@
-import { Component, EventEmitter, input, output, OnInit, signal, computed } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges, signal, computed } from '@angular/core';
 import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
@@ -18,7 +18,7 @@ import { TaskFormComponent } from '../task-form/task-form.component';
 /**
  * AG Grid-based tasks table component
  * Replaces the old table-based implementation with AG Grid
- * Uses signals throughout for reactive data flow
+ * Uses signals internally for reactive data flow
  */
 @Component({
   selector: 'lib-ag-tasks-table',
@@ -26,21 +26,24 @@ import { TaskFormComponent } from '../task-form/task-form.component';
   templateUrl: './ag-tasks-table.component.html',
   styleUrls: ['./ag-tasks-table.component.scss'],
 })
-export class AgTasksTableComponent implements OnInit {
-  // Signal-based inputs and outputs
-  tasks = input<Task[]>([]);
-  loading = input<boolean>(false);
-  createTask = output<CreateTask>();
-  editTask = output<Task>();
-  deleteTask = output<string>();
+export class AgTasksTableComponent implements OnInit, OnChanges {
+  // Traditional inputs/outputs for compatibility with parent components
+  @Input() tasks: Task[] = [];
+  @Input() loading: boolean = false;
+  @Output() createTask = new EventEmitter<CreateTask>();
+  @Output() editTask = new EventEmitter<Task>();
+  @Output() deleteTask = new EventEmitter<string>();
 
-  // Internal state signals
+  // Internal state signals for reactive UI
   showModal = signal(false);
   showEditModal = signal(false);
   selectedTask = signal<Task | null>(null);
   
+  // Internal signal for grid data (reactive to input changes)
+  private tasksSignal = signal<Task[]>([]);
+  
   // Computed signal for grid data (allows for filtering, sorting, etc.)
-  gridData = computed(() => this.tasks());
+  gridData = computed(() => this.tasksSignal());
 
   columnDefs: ColDef[] = [
     {
@@ -117,7 +120,15 @@ export class AgTasksTableComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    console.log('ag-tasks-table initialized with', this.tasks().length, 'tasks');
+    this.tasksSignal.set(this.tasks || []);
+    console.log('ag-tasks-table initialized with', this.tasks?.length || 0, 'tasks');
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['tasks']) {
+      this.tasksSignal.set(this.tasks || []);
+      console.log('ag-tasks-table tasks updated:', this.tasks?.length || 0);
+    }
   }
 
   /**

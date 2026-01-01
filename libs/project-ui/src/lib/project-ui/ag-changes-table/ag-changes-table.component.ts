@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, input, output } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, signal, computed } from '@angular/core';
 import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
@@ -17,7 +17,7 @@ import { ChangeFormComponent } from '../change-form/change-form.component';
 
 /**
  * AG Grid-based changes table component
- * Uses signals throughout for reactive data flow
+ * Uses signals internally for reactive data flow
  */
 @Component({
   selector: 'lib-ag-changes-table',
@@ -25,21 +25,24 @@ import { ChangeFormComponent } from '../change-form/change-form.component';
   templateUrl: './ag-changes-table.component.html',
   styleUrls: ['./ag-changes-table.component.scss'],
 })
-export class AgChangesTableComponent implements OnInit {
-  // Signal-based inputs and outputs
-  changes = input<Change[]>([]);
-  loading = input<boolean>(false);
-  createChange = output<CreateChange>();
-  editChange = output<Change>();
-  deleteChange = output<string>();
+export class AgChangesTableComponent implements OnInit, OnChanges {
+  // Traditional inputs/outputs for compatibility
+  @Input() changes: Change[] = [];
+  @Input() loading: boolean = false;
+  @Output() createChange = new EventEmitter<CreateChange>();
+  @Output() editChange = new EventEmitter<Change>();
+  @Output() deleteChange = new EventEmitter<string>();
 
   // Internal state signals
   showModal = signal(false);
   showEditModal = signal(false);
   selectedChange = signal<Change | null>(null);
   
+  // Internal signal for grid data
+  private changesSignal = signal<Change[]>([]);
+  
   // Computed signal for grid data
-  gridData = computed(() => this.changes());
+  gridData = computed(() => this.changesSignal());
 
   columnDefs: ColDef[] = [
     {
@@ -114,7 +117,15 @@ export class AgChangesTableComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    console.log('ag-changes-table initialized with', this.changes().length, 'changes');
+    this.changesSignal.set(this.changes || []);
+    console.log('ag-changes-table initialized with', this.changes?.length || 0, 'changes');
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['changes']) {
+      this.changesSignal.set(this.changes || []);
+      console.log('ag-changes-table changes updated:', this.changes?.length || 0);
+    }
   }
 
   actionsRenderer(params: ICellRendererParams) {

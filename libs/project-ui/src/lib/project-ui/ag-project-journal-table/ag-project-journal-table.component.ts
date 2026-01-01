@@ -1,10 +1,13 @@
 import {
   Component,
   OnInit,
+  OnChanges,
+  SimpleChanges,
+  Input,
+  Output,
+  EventEmitter,
   signal,
   computed,
-  input,
-  output,
 } from '@angular/core';
 import {
   AgGridUiComponent,
@@ -22,7 +25,7 @@ import { ProjectJournalFormComponent } from '../project-journal-form/project-jou
 
 /**
  * AG Grid-based project journal table component
- * Uses signals throughout for reactive data flow
+ * Uses signals internally for reactive data flow
  */
 @Component({
   selector: 'lib-ag-project-journal-table',
@@ -30,21 +33,24 @@ import { ProjectJournalFormComponent } from '../project-journal-form/project-jou
   templateUrl: './ag-project-journal-table.component.html',
   styleUrl: './ag-project-journal-table.component.scss',
 })
-export class AgProjectJournalTableComponent implements OnInit {
-  // Signal-based inputs and outputs
-  journals = input<ProjectJournal[]>([]);
-  loading = input<boolean>(false);
-  createJournalEntry = output<CreateProjectJournal>();
-  editJournalEntry = output<ProjectJournal>();
-  deleteJournalEntry = output<string>();
+export class AgProjectJournalTableComponent implements OnInit, OnChanges {
+  // Traditional inputs/outputs for compatibility
+  @Input() journals: ProjectJournal[] = [];
+  @Input() loading: boolean = false;
+  @Output() createJournalEntry = new EventEmitter<CreateProjectJournal>();
+  @Output() editJournalEntry = new EventEmitter<ProjectJournal>();
+  @Output() deleteJournalEntry = new EventEmitter<string>();
 
   // Internal state signals
   showModal = signal(false);
   showEditModal = signal(false);
   selectedJournal = signal<ProjectJournal | null>(null);
   
+  // Internal signal for grid data
+  private journalsSignal = signal<ProjectJournal[]>([]);
+  
   // Computed signal for grid data
-  gridData = computed(() => this.journals());
+  gridData = computed(() => this.journalsSignal());
 
   columnDefs: ColDef[] = [
     {
@@ -101,7 +107,15 @@ export class AgProjectJournalTableComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    console.log('ag-project-journal-table initialized with', this.journals().length, 'journals');
+    this.journalsSignal.set(this.journals || []);
+    console.log('ag-project-journal-table initialized with', this.journals?.length || 0, 'journals');
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['journals']) {
+      this.journalsSignal.set(this.journals || []);
+      console.log('ag-project-journal-table journals updated:', this.journals?.length || 0);
+    }
   }
 
   actionsRenderer(params: any) {

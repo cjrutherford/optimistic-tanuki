@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, input, output } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, signal, computed } from '@angular/core';
 import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
@@ -17,7 +17,7 @@ import { RiskFormComponent } from '../risk-form/risk-form.component';
 
 /**
  * AG Grid-based risks table component
- * Uses signals throughout for reactive data flow
+ * Uses signals internally for reactive data flow
  */
 @Component({
   selector: 'lib-ag-risks-table',
@@ -25,21 +25,24 @@ import { RiskFormComponent } from '../risk-form/risk-form.component';
   templateUrl: './ag-risks-table.component.html',
   styleUrls: ['./ag-risks-table.component.scss'],
 })
-export class AgRisksTableComponent implements OnInit {
-  // Signal-based inputs and outputs
-  risks = input<Risk[]>([]);
-  loading = input<boolean>(false);
-  createRisk = output<CreateRisk>();
-  editRisk = output<Risk>();
-  deleteRisk = output<string>();
+export class AgRisksTableComponent implements OnInit, OnChanges {
+  // Traditional inputs/outputs for compatibility
+  @Input() risks: Risk[] = [];
+  @Input() loading: boolean = false;
+  @Output() createRisk = new EventEmitter<CreateRisk>();
+  @Output() editRisk = new EventEmitter<Risk>();
+  @Output() deleteRisk = new EventEmitter<string>();
 
   // Internal state signals
   showModal = signal(false);
   showEditModal = signal(false);
   selectedRisk = signal<Risk | null>(null);
   
+  // Internal signal for grid data
+  private risksSignal = signal<Risk[]>([]);
+  
   // Computed signal for grid data
-  gridData = computed(() => this.risks());
+  gridData = computed(() => this.risksSignal());
 
   columnDefs: ColDef[] = [
     {
@@ -114,7 +117,15 @@ export class AgRisksTableComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    console.log('ag-risks-table initialized with', this.risks().length, 'risks');
+    this.risksSignal.set(this.risks || []);
+    console.log('ag-risks-table initialized with', this.risks?.length || 0, 'risks');
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['risks']) {
+      this.risksSignal.set(this.risks || []);
+      console.log('ag-risks-table risks updated:', this.risks?.length || 0);
+    }
   }
 
   actionsRenderer(params: ICellRendererParams) {
