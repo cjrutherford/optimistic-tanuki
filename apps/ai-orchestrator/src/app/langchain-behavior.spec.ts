@@ -7,9 +7,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-// Local token substitute for the real LangChainService so TS doesn't try to resolve the heavy/missing module
-class LangChainService {}
-import { z } from 'zod';
+import { LangChainService } from './langchain.service';
 import { ToolsService } from './tools.service';
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ConfigService } from '@nestjs/config';
@@ -23,143 +21,6 @@ describe('LangChain LLM Behavior Tests', () => {
   let service: LangChainService;
   let toolsService: ToolsService;
   let mcpExecutor: MCPToolExecutor;
-
-  // Lightweight in-test mock of LangChainService to avoid importing heavy real service
-  class MockLangChainService {
-    toolsService: any;
-
-    async createTools(profileId: string, conversationId: string) {
-      const tools = mockTools.map((t) => ({
-        name: t.name,
-        description: t.description,
-        inputSchema: t.inputSchema,
-        func: async (args: any) => {
-          // When executed, delegate to the MCP executor provided in the test scope
-          if (typeof mcpExecutor?.executeToolCall === 'function') {
-            const enrichedArgs = Object.assign({}, args || {}, {
-              userId: profileId,
-              profileId: profileId,
-            });
-
-            const toolCall = {
-              id: `call_${Math.random().toString(36).slice(2, 9)}`,
-              type: 'function',
-              function: {
-                name: t.name,
-                arguments: JSON.stringify(enrichedArgs),
-              },
-            } as any;
-
-            const res: any = await (mcpExecutor as any).executeToolCall(
-              toolCall,
-              {
-                userId: profileId,
-                profileId: profileId,
-                conversationId,
-              }
-            );
-
-            if (!res?.success) {
-              throw new Error(res?.error?.message || 'Tool failed');
-            }
-
-            return (
-              res?.result?.message || JSON.stringify(res?.result) || 'success'
-            );
-          }
-
-          return 'success';
-        },
-      }));
-
-      // add list_tools
-      tools.push({
-        name: 'list_tools',
-        description: 'List all available tools',
-        inputSchema: { type: 'object', properties: {}, required: [] } as any,
-        func: async () => {
-          // Return a human-readable list including parameter names/descriptions
-          return mockTools
-            .map((m) => {
-              const params = Object.keys(m.inputSchema?.properties || {}).join(
-                ', '
-              );
-              const paramDesc = params ? ` — params: ${params}` : '';
-              return `${m.name}${paramDesc}`;
-            })
-            .join(', ');
-        },
-      });
-
-      return tools;
-    }
-
-    convertToZodSchema(jsonSchema: any) {
-      // Minimal converter: only supports basic property types used in tests
-      const shape: any = {};
-      const props = jsonSchema?.properties || {};
-      const required = jsonSchema?.required || [];
-
-      Object.keys(props).forEach((key) => {
-        const p = props[key] || {};
-        let schema: any = z.any();
-        if (p.type === 'string') schema = z.string();
-        if (p.type === 'number') schema = z.number();
-        if (p.type === 'boolean') schema = z.boolean();
-        if (!required.includes(key)) schema = schema.optional();
-        shape[key] = schema;
-      });
-
-      return z.object(shape);
-    }
-
-    createSystemPrompt(
-      persona: any,
-      profile: any,
-      summary: string,
-      projectContext?: string
-    ) {
-      const parts = [];
-      parts.push('list_tools');
-      parts.push('discover');
-      parts.push(profile?.id || '');
-      parts.push(profile?.profileName || '');
-      parts.push('NO ID HALLUCINATION');
-      parts.push('ONE TOOL AT A TIME');
-      parts.push('JSON ONLY OUTPUT');
-      if (projectContext) parts.push('PROJECT CONTEXT', projectContext);
-      return parts.join(' ');
-    }
-
-    convertChatHistory(messages: any[]) {
-      // Return simple message objects whose constructor names match expectations
-      const { HumanMessage, AIMessage } = require('@langchain/core/messages');
-      return messages.map((m) => {
-        if (m.role === 'user') return new HumanMessage(m.content);
-        if (m.role === 'assistant') return new AIMessage(m.content);
-        return { content: m.content };
-      });
-    }
-
-    async enrichWithProjectContext(messages: any[], moreInfo: string) {
-      const text = messages.map((m) => m.content).join('\n');
-      const match = text.match(/([a-z0-9\-]{3,})/i);
-      if (!match) return '';
-      const id = match[0];
-      if (
-        !this.toolsService ||
-        typeof this.toolsService.getResource !== 'function'
-      )
-        return '';
-      const res = await this.toolsService.getResource(
-        `project://${id}/context`
-      );
-      if (!res?._meta?.contents?.length) return '';
-      return `PROJECT CONTEXT\n${res._meta.contents
-        .map((c: any) => c.text)
-        .join('\n')}`;
-    }
-  }
 
   const mockPersona: any = {
     id: 'persona-123',
@@ -242,7 +103,7 @@ describe('LangChain LLM Behavior Tests', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        { provide: LangChainService, useClass: MockLangChainService },
+        LangChainService,
         {
           provide: ToolsService,
           useValue: {
@@ -277,13 +138,6 @@ describe('LangChain LLM Behavior Tests', () => {
     service = module.get<LangChainService>(LangChainService);
     toolsService = module.get<ToolsService>(ToolsService);
     mcpExecutor = module.get<MCPToolExecutor>(MCPToolExecutor);
-
-    // wire the toolsService into the mock service if present
-    try {
-      (service as any).toolsService = toolsService;
-    } catch (e) {
-      // ignore wiring errors in case service is not the mock
-    }
   });
 
   describe('Tool Discovery', () => {

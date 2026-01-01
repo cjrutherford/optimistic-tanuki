@@ -207,6 +207,30 @@ export class MCPValidator {
       };
     } catch (error) {
       this.logger.error('Assistant message validation failed:', error);
+
+      // If the parse error came from invalid tool_calls specifically,
+      // normalize it to INVALID_TOOL_CALL so callers can distinguish
+      // structural issues with tool calls from general message validation.
+      const issues: any[] = (error && (error.errors || error.issues)) || [];
+      const hasToolCallsError = issues.some((iss) => {
+        try {
+          return Array.isArray(iss.path) && iss.path[0] === 'tool_calls';
+        } catch (_) {
+          return false;
+        }
+      });
+
+      if (hasToolCallsError) {
+        return {
+          success: false,
+          error: {
+            code: MCPErrorCode.INVALID_TOOL_CALL,
+            message: 'Assistant message contains invalid tool_calls',
+            details: { message, zodError: error },
+          },
+        };
+      }
+
       return {
         success: false,
         error: {

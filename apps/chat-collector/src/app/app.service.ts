@@ -27,14 +27,20 @@ export class AppService {
     const message = this.messageRepository.create(newMessage);
     this.l.debug('Created message entity:', JSON.stringify(message));
     await this.messageRepository.save(message);
-
-    let conversation = await this.conversationRepository.findOne({
-      where: { id: data.conversationId },
-      relations: ['messages'],
-    });
+    let conversation: Conversation | null = null;
+    if (data.conversationId && data.conversationId !== '') {
+      try {
+        conversation = await this.conversationRepository.findOne({
+          where: { id: data.conversationId },
+          relations: ['messages'],
+        });
+      } catch (_) {
+        conversation = null;
+      }
+    }
     if (!conversation) {
       conversation = this.conversationRepository.create({
-        id: data.conversationId,
+        id: conversation?.id ?? uuidv4(),
         title: [data.recipientName, ...data.recipientName].join(', '),
         participants: [data.senderId, ...data.recipientId],
         messages: [message],

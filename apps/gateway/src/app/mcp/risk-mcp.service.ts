@@ -23,11 +23,18 @@ const createRiskSchema = z.object({
   name: z.string().describe('The name of the risk'),
   description: z.string().optional().describe('A description of the risk'),
   userId: z.string().describe('The ID of the user creating the risk'),
-  impact: z.nativeEnum(RiskImpact).describe('The impact level of the risk'),
+  impact: z
+    .nativeEnum(RiskImpact)
+    .optional()
+    .describe('The impact level of the risk. MUST be one of: LOW, MEDIUM, HIGH. Default: LOW'),
   likelihood: z
     .nativeEnum(RiskLikelihood)
-    .describe('The likelihood of the risk'),
-  status: z.nativeEnum(RiskStatus).describe('The status of the risk'),
+    .optional()
+    .describe('The likelihood of the risk. MUST be one of: UNLIKELY, POSSIBLE, LIKELY, IMMINENT, ALMOST_CERTAIN, CERTAIN, NOT_APPLICABLE, UNKNOWN. Default: UNLIKELY'),
+  status: z
+    .nativeEnum(RiskStatus)
+    .optional()
+    .describe('The status of the risk. MUST be one of: OPEN, IN_PROGRESS, CLOSED. Default: OPEN'),
 });
 
 const updateRiskSchema = z.object({
@@ -49,6 +56,23 @@ const updateRiskSchema = z.object({
     .nativeEnum(RiskStatus)
     .optional()
     .describe('The new status of the risk'),
+});
+
+const queryRisksSchema = z.object({
+  projectId: z.string().describe('The ID of the project to query risks for'),
+  name: z.string().optional().describe('Filter risks by name (partial match)'),
+  impact: z
+    .nativeEnum(RiskImpact)
+    .optional()
+    .describe('Filter risks by impact'),
+  likelihood: z
+    .nativeEnum(RiskLikelihood)
+    .optional()
+    .describe('Filter risks by likelihood'),
+  status: z
+    .nativeEnum(RiskStatus)
+    .optional()
+    .describe('Filter risks by status'),
 });
 
 @Injectable()
@@ -106,12 +130,13 @@ export class RiskMcpService {
       const riskData: CreateRiskDto = {
         projectId,
         name,
-        description,
+        description: description ? `${name}: ${description}` : name,
         riskOwner: userId, // Changed from createdBy to riskOwner
-        impact,
-        likelihood,
-        status,
+        impact: impact || RiskImpact.LOW,
+        likelihood: likelihood || RiskLikelihood.UNLIKELY,
+        status: status || RiskStatus.OPEN,
       };
+      this.logger.log(`RiskMcpService sending riskData: ${JSON.stringify(riskData)}`);
 
       const risk = await firstValueFrom(
         this.projectPlanningService.send({ cmd: RiskCommands.CREATE }, riskData)
@@ -193,6 +218,31 @@ export class RiskMcpService {
     } catch (error) {
       this.logger.error('Error deleting risk:', error);
       throw new Error(`Failed to delete risk: ${error.message}`);
+    }
+  }
+
+  @McpTool({
+    name: 'query_risks',
+    description:
+      'Query risks within a project by name, impact, likelihood, or status',
+    parameters: queryRisksSchema,
+  })
+  async queryRisks(query: z.infer<typeof queryRisksSchema>) {
+    try {
+      this.logger.log(
+        `MCP Tool: Querying risks for project ${query.projectId}`
+      );
+      const risks = await firstValueFrom(
+        this.projectPlanningService.send({ cmd: RiskCommands.FIND_ALL }, query)
+      );
+      return {
+        success: true,
+        risks,
+        count: risks.length,
+      };
+    } catch (error) {
+      this.logger.error('Error querying risks:', error);
+      throw new Error(`Failed to query risks: ${error.message}`);
     }
   }
 }

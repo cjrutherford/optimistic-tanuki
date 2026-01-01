@@ -203,6 +203,7 @@ export class ProjectMcpService {
       throw new Error(`Failed to get project context: ${error.message}`);
     }
   }
+
   @McpTool({
     name: 'create_project',
     description: 'Create a new project',
@@ -323,13 +324,13 @@ export class ProjectMcpService {
       userId: z.string().describe('The ID of the user whose projects to query'),
     }),
   })
-  async queryProjects(query: QueryProjectDto) {
+  async queryProjects(query: { name: string; userId: string }) {
     try {
       this.logger.log(`MCP Tool: Querying projects with name ${query.name}`);
       const projects = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectCommands.FIND_ALL },
-          query
+          { ...query, owner: query.userId }
         )
       );
       return {

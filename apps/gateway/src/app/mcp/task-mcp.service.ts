@@ -25,8 +25,18 @@ const getTaskSchema = z.object({
 const createTaskSchema = z.object({
   title: z.string().describe('Title of the task'),
   description: z.string().optional().describe('Description of the task'),
-  status: z.nativeEnum(TaskStatus).describe('Status of the task'),
-  priority: z.nativeEnum(TaskPriority).describe('Priority of the task'),
+  status: z
+    .nativeEnum(TaskStatus)
+    .optional()
+    .describe(
+      'Status of the task. MUST be one of: TODO, IN_PROGRESS, DONE, ARCHIVED. Default: TODO'
+    ),
+  priority: z
+    .nativeEnum(TaskPriority)
+    .optional()
+    .describe(
+      'Priority of the task. MUST be one of: LOW, MEDIUM_LOW, MEDIUM, MEDIUM_HIGH, HIGH. Default: MEDIUM'
+    ),
   createdBy: z
     .string()
     .describe(
@@ -66,6 +76,22 @@ const updateTaskSchema = z.object({
     .describe(
       'ID of the related project. this relates to the id field of the project data type. please use the list_projects tool to get project ids.'
     ),
+});
+
+const queryTasksSchema = z.object({
+  projectId: z.string().describe('The ID of the project to query tasks for'),
+  title: z
+    .string()
+    .optional()
+    .describe('Filter tasks by title (partial match)'),
+  status: z
+    .nativeEnum(TaskStatus)
+    .optional()
+    .describe('Filter tasks by status'),
+  priority: z
+    .nativeEnum(TaskPriority)
+    .optional()
+    .describe('Filter tasks by priority'),
 });
 
 @Injectable()
@@ -127,8 +153,7 @@ export class TaskMcpService {
 
   @McpTool({
     name: 'create_task',
-    description:
-      'Create a new task for a project. this should be associated with a project id obtained from the list_projects tool or earlier tool call responses.',
+    description: 'Create a new task for a project.',
     parameters: createTaskSchema,
   })
   async createTask({
@@ -145,9 +170,9 @@ export class TaskMcpService {
       );
       const taskData: CreateTaskDto = {
         title,
-        description,
-        status,
-        priority,
+        description: description ?? 'No description provided',
+        status: status ?? TaskStatus.TODO,
+        priority: priority ?? TaskPriority.MEDIUM,
         createdBy,
         projectId,
       };
@@ -234,6 +259,30 @@ export class TaskMcpService {
     } catch (error) {
       this.logger.error('Error deleting task:', error);
       throw new Error(`Failed to delete task: ${error.message}`);
+    }
+  }
+
+  @McpTool({
+    name: 'query_tasks',
+    description: 'Query tasks within a project by title, status, or priority',
+    parameters: queryTasksSchema,
+  })
+  async queryTasks(query: z.infer<typeof queryTasksSchema>) {
+    try {
+      this.logger.log(
+        `MCP Tool: Querying tasks for project ${query.projectId}`
+      );
+      const tasks = await firstValueFrom(
+        this.projectPlanningService.send({ cmd: TaskCommands.FIND_ALL }, query)
+      );
+      return {
+        success: true,
+        tasks,
+        count: tasks.length,
+      };
+    } catch (error) {
+      this.logger.error('Error querying tasks:', error);
+      throw new Error(`Failed to query tasks: ${error.message}`);
     }
   }
 }

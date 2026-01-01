@@ -185,13 +185,69 @@ export class ChatGateway {
           JSON.stringify(payload) +
           "'"
       );
-      await firstValueFrom(
+      
+      // Set up polling for real-time updates while AI processes
+      const conversationId = payload.conversationId;
+      const allParticipantIds = [...new Set([senderId, ...recipientIds])];
+      
+      // Start polling immediately for new messages
+      const pollInterval = setInterval(async () => {
+        try {
+          for (const participantId of allParticipantIds) {
+            const participantSocket = this.connectedClients.find(
+              (c) => c.id === participantId
+            );
+            
+            if (participantSocket) {
+              const conversations = await firstValueFrom(
+                this.chatCollectorClient.send(
+                  { cmd: ChatCommands.GET_CONVERSATIONS },
+                  { profileId: participantId }
+                )
+              );
+              participantSocket.client.emit('conversations', conversations || []);
+            }
+          }
+        } catch (error) {
+          this.l.error('Error during conversation polling:', error);
+        }
+      }, 500); // Poll every 500ms for new messages
+      
+      // Send to AI orchestrator (non-blocking for polling)
+      firstValueFrom(
         this.aiOrchestrationClient.send(
           { cmd: AIOrchestrationCommands.CONVERSATION_UPDATE },
           { conversation: aiPayload, aiPersonas: aiRecipients }
         )
-      );
-      this.l.log('AI message sent successfully.');
+      ).then((aiResponses: Partial<ChatMessage>[]) => {
+        this.l.log(`AI orchestrator completed with ${aiResponses.length} messages`);
+        
+        // Stop polling after AI completes
+        clearInterval(pollInterval);
+        
+        // Do one final emit to ensure all messages are sent
+        allParticipantIds.forEach(async (participantId) => {
+          const participantSocket = this.connectedClients.find(
+            (c) => c.id === participantId
+          );
+          
+          if (participantSocket) {
+            const conversations = await firstValueFrom(
+              this.chatCollectorClient.send(
+                { cmd: ChatCommands.GET_CONVERSATIONS },
+                { profileId: participantId }
+              )
+            );
+            participantSocket.client.emit('conversations', conversations || []);
+          }
+        });
+        
+        this.l.log('AI message processing complete.');
+      }).catch((error) => {
+        this.l.error('Error in AI orchestration:', error);
+        clearInterval(pollInterval);
+      });
+      
     } else {
       this.l.log('Message handling complete.');
     }

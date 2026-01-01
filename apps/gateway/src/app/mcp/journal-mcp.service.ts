@@ -19,6 +19,17 @@ export const listJournalEntriesSchema = z.object({
     .describe('The ID of the project whose journal entries to list'),
 });
 
+const queryJournalEntriesSchema = z.object({
+  projectId: z
+    .string()
+    .describe('The ID of the project to query journal entries for'),
+  content: z
+    .string()
+    .optional()
+    .describe('Filter journal entries by content (partial match)'),
+  entryDate: z.string().optional().describe('Filter journal entries by date'),
+});
+
 @Injectable()
 export class JournalMcpService {
   private readonly logger = new Logger(JournalMcpService.name);
@@ -116,6 +127,33 @@ export class JournalMcpService {
     } catch (error) {
       this.logger.error('Error updating journal entry:', error);
       throw new Error(`Failed to update journal entry: ${error.message}`);
+    }
+  }
+
+  @McpTool({
+    name: 'query_journal_entries',
+    description: 'Query journal entries within a project by content or date',
+    parameters: queryJournalEntriesSchema,
+  })
+  async queryJournalEntries(query: z.infer<typeof queryJournalEntriesSchema>) {
+    try {
+      this.logger.log(
+        `MCP Tool: Querying journal entries for project ${query.projectId}`
+      );
+      const entries = await firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: ProjectJournalCommands.FIND_ALL },
+          query
+        )
+      );
+      return {
+        success: true,
+        entries,
+        count: entries.length,
+      };
+    } catch (error) {
+      this.logger.error('Error querying journal entries:', error);
+      throw new Error(`Failed to query journal entries: ${error.message}`);
     }
   }
 }

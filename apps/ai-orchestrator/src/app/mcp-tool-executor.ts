@@ -152,8 +152,8 @@ export class MCPToolExecutor {
           );
         }
       }
-      // If overall validation failed, return the constructed error results
-      // rather than executing tool calls again (avoids duplicate error entries).
+
+      // Return early: do not execute any tool calls if validation failed
       return results;
     }
 

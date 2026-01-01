@@ -11,7 +11,7 @@
         "jestConfig": "apps/ai-orchestrator-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["ai-orchestrator:build", "ai-orchestrator:serve"]
+      "dependsOn": ["ai-orchestrator:build"]
     }
   }
 }

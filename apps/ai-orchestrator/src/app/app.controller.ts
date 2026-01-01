@@ -1,7 +1,10 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 import { AppService } from './app.service';
 import { MessagePattern, RpcException } from '@nestjs/microservices';
-import { AIOrchestrationCommands } from '@optimistic-tanuki/constants';
+import {
+  AIOrchestrationCommands,
+  CommonCommands,
+} from '@optimistic-tanuki/constants';
 import {
   ChatConversation,
   ChatMessage,
@@ -14,6 +17,11 @@ export class AppController {
     private readonly l: Logger,
     private readonly appService: AppService
   ) {}
+
+  @MessagePattern({ cmd: CommonCommands.HealthCheck })
+  healthCheck() {
+    return { status: 'healthy' };
+  }
 
   @MessagePattern({ cmd: AIOrchestrationCommands.PROFILE_INITIALIZE })
   async profileInitialize(data: {

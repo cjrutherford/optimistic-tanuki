@@ -4,23 +4,21 @@ import {
   ChatCommands,
   PersonaTelosCommands,
   ProfileCommands,
-  PromptCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
+import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
 import { firstValueFrom } from 'rxjs';
 import {
   ChatConversation,
   ChatMessage,
-  GeneratePrompt,
   PersonaTelosDto,
   ProfileDto,
-  ToolExecutionContext,
-  ToolResult,
 } from '@optimistic-tanuki/models';
-import { ToolsService } from './tools.service';
-import { generatePersonaSystemMessage } from '@optimistic-tanuki/prompt-generation';
-import { transformMcpToolsToOpenAI } from './tool-formatter';
-import { MCPToolExecutor } from './mcp-tool-executor';
+import { LangChainService } from './langchain.service';
+import { LangGraphService } from './langgraph.service';
+import { LangChainAgentService } from './langchain-agent.service';
+import { ContextStorageService } from './context-storage.service';
+import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 
 @Injectable()
 export class AppService {
@@ -28,17 +26,107 @@ export class AppService {
     private readonly l: Logger,
     @Inject(ServiceTokens.TELOS_DOCS_SERVICE)
     private readonly telosDocsService: ClientProxy,
-    @Inject(ServiceTokens.PROMPT_PROXY)
-    private readonly promptProxy: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileService: ClientProxy,
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
     private readonly chatCollectorService: ClientProxy,
     @Inject('ai-enabled-apps')
     private readonly aiEnabledApps: { [key: string]: string },
-    private readonly toolsService: ToolsService,
-    private readonly mcpExecutor: MCPToolExecutor
+    private readonly langChainService: LangChainService,
+    private readonly langGraphService: LangGraphService,
+    private readonly langChainAgentService: LangChainAgentService,
+    private readonly contextStorage: ContextStorageService
   ) {}
+
+  /**
+   * Convert chat messages to LangChain BaseMessage format
+   */
+  private convertToLangChainMessages(messages: ChatMessage[]): BaseMessage[] {
+    return messages.map((msg) => {
+      const role = msg.role || 'user';
+      const senderName = msg.senderName || '';
+      const content = msg.content || '';
+      // AI personas are assistants
+      if (
+        role === 'assistant' ||
+        senderName.toLowerCase().includes('assistant')
+      ) {
+        return new AIMessage(content);
+      }
+      // User messages
+      return new HumanMessage(content);
+    });
+  }
+
+  /**
+   * Parse TELOS data from response
+   */
+  private parseTelosResponse(response: string): {
+    content: string;
+    telosData: any | null;
+  } {
+    const parts = response.split('---');
+    if (parts.length === 1) {
+      return { content: response, telosData: null };
+    }
+
+    const content = parts[0].trim();
+    const telosSection = parts[1].trim();
+
+    try {
+      // Try to parse as JSON
+      const jsonMatch = telosSection.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const telosData = JSON.parse(jsonMatch[0]);
+        return { content, telosData };
+      }
+    } catch (e) {
+      this.l.warn('Failed to parse TELOS data:', e);
+    }
+
+    return { content: response, telosData: null };
+  }
+
+  /**
+   * Get persona data
+   */
+  private async getPersona(data: { id: string }): Promise<PersonaTelosDto> {
+    try {
+      const result = await firstValueFrom(
+        this.telosDocsService.send({ cmd: PersonaTelosCommands.FIND }, data)
+      );
+
+      // Expecting an array response from the telos docs service
+      if (!result || !Array.isArray(result) || result.length === 0) {
+        throw new Error('Persona not found');
+      }
+
+      return result[0] as PersonaTelosDto;
+    } catch (error) {
+      this.l.error('Error getting persona:', error);
+      throw new RpcException('Failed to get persona: ' + error.message);
+    }
+  }
+
+  // /**
+  //  * Summarize conversation for context
+  //  */
+  // private async summarizeConversation(
+  //   messages: ChatMessage[],
+  //   persona: PersonaTelosDto
+  // ): Promise<string> {
+  //   if (messages.length === 0) {
+  //     return 'No previous conversation history.';
+  //   }
+
+  //   // Simple summary for now - can be enhanced
+  //   const recentCount = Math.min(messages.length, 5);
+  //   const recentMessages = messages.slice(-recentCount);
+
+  //   return `Recent conversation (last ${recentCount} messages): ${recentMessages
+  //     .map((m) => `${m.senderName}: ${m.content}`)
+  //     .join(' | ')}`;
+  // }
 
   async processNewProfile(
     profileId: string,
@@ -55,69 +143,68 @@ export class AppService {
           { id: profileId }
         )
       );
-      this.l.log(profile);
+
       if (!profile) {
         throw new Error('Profile not found');
       }
 
       this.l.log(`Creating welcome chat for profile: '${profileId}'`);
       this.l.log(`Using assistant: '${assistant.name}'`);
-      this.l.log(`profile Name: '${profile.profileName}'`);
 
-      const systemPromptBase = generatePersonaSystemMessage(assistant);
-      this.l.log(`System prompt base: '${systemPromptBase}'`);
-      const message: GeneratePrompt = {
-        model: 'qwen3-coder',
-        stream: false,
-        messages: [
-          {
-            role: 'system',
-            content: `${systemPromptBase}
-            The user has just created a profile as a user of ${appId}. This app's description is: ${
-              this.aiEnabledApps[appId] ?? 'No description available'
-            }. 
-            The user's profile name is ${
-              profile.profileName
-            } and their user id is their profile id: ${profile.id}. 
-            The user may have limited information in their profile.
-            your goal is to assist the user in fleshing out their projects and goals. 
-            behind the scenes, provide JSON output with potential TELOS data points to add to either the users' or the project's telos data.
-            Inform the user that they can export their TELOS data at any time. TELOS is not an acronym, but a framework for maintaining focus and clarity for both AI and humans.
-            TELOS data should be included at the end of the response in json format separated from the main response with \`---\` 
-            JSON format should be with keys for goals, skills, interests, limitations, strengths, objectives, coreObjective, and overallProfileSummary.`,
-          },
-          {
-            role: 'user',
-            content: `Hello, I'm ${profile.profileName}, and I just created my profile. I need help getting started, and I'm new here. Please ask me questions to help me clarify my goals and projects.`,
-          },
-        ],
-      };
+      // Create welcome message
+      const welcomePrompt = `Hello, I'm ${profile.profileName}, and I just created my profile. I need help getting started, and I'm new here. Please ask me questions to help me clarify my goals and projects.`;
 
-      const initialResponse = await firstValueFrom(
-        this.promptProxy.send({ cmd: PromptCommands.SEND }, message)
+      const conversationSummary = `The user has just created a profile as a user of ${appId}. This app's description is: ${
+        this.aiEnabledApps[appId] ?? 'No description available'
+      }. The user may have limited information in their profile. Your goal is to assist the user in fleshing out their projects and goals. Behind the scenes, provide JSON output with potential TELOS data points. Inform the user that they can export their TELOS data at any time. TELOS is not an acronym, but a framework for maintaining focus and clarity for both AI and humans. TELOS data should be included at the end of the response in json format separated from the main response with '---'. JSON format should be with keys for goals, skills, interests, limitations, strengths, objectives, coreObjective, and overallProfileSummary.`;
+
+      const responses: Partial<ChatMessage>[] = [];
+
+      // Use LangGraph to execute with state management
+      const langChainMessages: BaseMessage[] = [
+        new HumanMessage(welcomePrompt),
+      ];
+
+      // No external prompt proxy call here — the conversation is seeded
+      // directly via LangGraph/LangChain messages to avoid runtime
+      // dependencies on the prompt proxy service.
+
+      const result = await this.langGraphService.executeConversation(
+        profile.id,
+        langChainMessages,
+        [], // Empty chat history for new profile
+        conversationSummary,
+        assistant,
+        profile,
+        '' // No conversation ID yet
       );
-      this.l.log('Initial AI response: ' + initialResponse);
-      const responseData = initialResponse.message.content;
 
-      const [responseMessage, telosString] = responseData.split('---');
-      this.l.log(`User message: '${responseMessage}'`);
-      this.l.log(`TELOS data: '${telosString}'`);
-      const chatBody: Partial<ChatMessage> = {
+      // Parse response to extract TELOS data if present
+      const { content, telosData } = this.parseTelosResponse(result.response);
+
+      const newChatMessage: Partial<ChatMessage> = {
+        conversationId: '',
         senderId: assistant.id,
         senderName: assistant.name,
-        recipientId: [profileId],
+        recipientId: [profile.id],
         recipientName: [profile.profileName],
-        content: responseMessage,
+        content: content,
         timestamp: new Date(),
         type: 'chat',
       };
+
+      responses.push(newChatMessage);
+
+      // Post message to chat collector (Forge of Will flow)
+      this.l.log('Posting welcome message to chat collector');
       await firstValueFrom(
         this.chatCollectorService.send(
           { cmd: ChatCommands.POST_MESSAGE },
-          chatBody
+          newChatMessage
         )
       );
-      return [];
+
+      return responses;
     } catch (error) {
       console.trace(error);
       this.l.error('Error processing new profile:', error);
@@ -125,14 +212,34 @@ export class AppService {
     }
   }
 
+  /**
+   * Summarize conversation for context by calling the prompt proxy
+   */
+  private async summarizeConversation(
+    messages: ChatMessage[],
+    personaPrompt: string
+  ): Promise<string> {
+    // Lightweight internal summarizer so we don't depend on the external
+    // prompt proxy. Keeps conversation summarization deterministic for
+    // unit tests and avoids runtime RPC dependencies.
+    if (!messages || messages.length === 0) {
+      return 'No previous conversation history.';
+    }
+
+    const recentCount = Math.min(messages.length, 5);
+    const recentMessages = messages.slice(-recentCount);
+
+    return `Recent conversation (last ${recentCount} messages): ${recentMessages
+      .map((m) => `${m.senderName}: ${m.content}`)
+      .join(' | ')}`;
+  }
+
   async updateConversation(data: {
     conversation: ChatConversation;
     aiPersonas: PersonaTelosDto[];
   }): Promise<Partial<ChatMessage>[]> {
     try {
-      const MAX_ITER = 6;
       const { conversation, aiPersonas } = data;
-      // this.l.log(JSON.stringify(aiPersonas));
 
       const lastMessage =
         conversation.messages[conversation.messages.length - 1];
@@ -142,480 +249,191 @@ export class AppService {
           { id: lastMessage.senderId }
         )
       );
+
       const responses: Partial<ChatMessage>[] = [];
+
       for (const persona of aiPersonas) {
-        const systemPrompt = generatePersonaSystemMessage(persona);
-        // // If this is a brand new conversation with the placeholder, generate
-        // // a greeting message and post it immediately so the client doesn't
-        // // continue to show the placeholder.
-        // const isNewConversation =
-        //   conversation.messages.length === 1 &&
-        //   conversation.messages[0].content ===
-        //     'Creating new AI assistant conversation...';
+        this.l.log(`Processing conversation for persona: ${persona.name}`);
 
-        // if (isNewConversation) {
-        //   this.l.log(
-        //     'Detected new conversation placeholder — generating greeting.'
-        //   );
-        //   const response = await this.processNewProfile(
-        //     conversation.messages[0].senderId,
-        //     conversation.metadata?.appId || 'forgeofwill'
-        //     conve
-        //   );
-        //   return response;
-        // }
-
-        const conversationSummary = await this.summarizeConversation(
-          conversation.messages,
-          systemPrompt
+        // Initialize agent with user context
+        await this.langChainAgentService.initializeAgent(
+          profile.id,
+          conversation.id
         );
-        const toolsMeta = await this.toolsService.listTools().catch(() => []);
-        // Transform MCP tools to OpenAI format for Ollama's OpenAI-compatible API
-        // Pass user profile ID to enhance tool parameter descriptions
-        const openAITools = toolsMeta; //transformMcpToolsToOpenAI(toolsMeta, profile.id);
-        // console.log('Transformed tools:', openAITools[0]);
 
-        const projectResource = await this.toolsService
-          .getResource('project://shcema')
-          .catch(() => null);
-
-        this.l.log(`Conversation summary: '${conversationSummary}'`);
-
-        const conversationPreamble = `${systemPrompt}
-
-# USER CONTEXT
-userProfileId: ${profile.id}
-userName: ${profile.profileName}
-
-# SYSTEM INVARIANTS (must always be followed)
-- Always use userId/profileId/createdBy/members = ${profile.id}
-- When selecting projectId, ALWAYS call list_projects with userId=${
+        // Load existing context from Redis
+        const existingContext = await this.contextStorage.getContext(
           profile.id
-        } first
-- Use ONE tool per assistant response. If multiple steps required, call tools sequentially across responses.
+        );
 
-TOOL USAGE GUIDELINES:
-- Use ONE tool at a time - you can only call a single tool per response
-- If a task requires multiple steps, call one tool, wait for its response, then call the next tool
-- Some tools depend on data from other tools - use the response from one tool to inform the next tool call
-- After completing all necessary tool calls, ALWAYS provide a final natural language response to the user explaining what was accomplished
-- Your final response should summarize the actions taken and the results
+        // Generate (or re-generate) a summary for the conversation using the persona prompt
+        const personaSystemPrompt = (
+          promptGeneration.generatePersonaSystemMessage as any
+        )(persona);
+        // No external prompt proxy seeding: use internal summarizer and
+        // LangGraph execution. This keeps the services decoupled from the
+        // prompt proxy RPC surface.
 
-HANDLING TOOL RESULTS:
-- Analyze the result of each tool call carefully.
-- If a tool call fails (contains "error" or "isError": true), DO NOT proceed with dependent steps. Instead, inform the user of the error and ask for clarification or try an alternative approach if possible.
-- If a tool call succeeds, use the data returned to proceed to the next step or formulate your final response.
-- When a tool returns a list (e.g., list_projects), check if it's empty before trying to access items.
+        const generatedSummary = await this.summarizeConversation(
+          conversation.messages,
+          personaSystemPrompt
+        );
 
-# RESPONSE RULES
-- If calling a tool: respond ONLY with the tool call JSON (strict). After toolReply, continue the conversation and produce a final natural-language summary for the user.
-- Final user-facing messages must be plain language and include a short summary of actions taken.
-- For TELOS output: append valid JSON after a literal line '---' using this schema: { "goals": [], "skills": [], "interests": [], "limitations": [], "strengths": [], "objectives": [], "coreObjective": "", "overallProfileSummary": "" }.
+        const conversationSummary =
+          existingContext?.summary || generatedSummary || '';
 
-# EXAMPLES
-- OpenAI tool_call example:
-{"id":"1","type":"function","function":{"name":"create_project","arguments":"{\"name\":\"My Project\",\"userId\":\"${
-          profile.id
-        }\"}"}}
-- Successful tool_result:
-{"success":true,"toolName":"create_project","result":{"id":"proj_123","name":"My Project"},"error":null}
-- Failure:
-{"success":false,"toolName":"create_project","result":null,"error":{"message":"Project name already exists"}}
+        this.l.log(`Loaded context for profile ${profile.id}:`, {
+          hasSummary: !!conversationSummary,
+          topicCount: existingContext?.recentTopics?.length || 0,
+          activeProjects: existingContext?.activeProjects?.length || 0,
+        });
 
-For example you can get a list of hte user's projects from within the app by calling the list_projects tool with userId: ${
-          profile.id
-        }.
+        // Convert messages to LangChain format
+        const langChainMessages = this.convertToLangChainMessages(
+          conversation.messages.slice(0, -1) // Exclude last message (current user input)
+        );
 
-# OPERATIONAL LIMITS
-- Max tool-call iterations: ${MAX_ITER}
-- On tool failure: stop dependent steps, return an error summary and ask user for next action.
+        // Add the current user message
+        langChainMessages.push(new HumanMessage(lastMessage.content));
 
-${
-  projectResource
-    ? `# Project resource: ${JSON.stringify(projectResource)}`
-    : ''
-}
-`;
+        try {
+          // Use LangGraph with Agent for state-managed, multi-step execution
+          this.l.log('Executing conversation through LangGraph with Agent...');
 
-        //         const conversationPreamble = `${systemPrompt}
-
-        // Your previous conversation summary is: '${conversationSummary}'
-
-        // CURRENT USER INFORMATION:
-        // - User Profile ID: ${profile.id}
-        // - User Name: ${profile.profileName}
-        // - ALWAYS use ${
-        //           profile.id
-        //         } for any 'userId', 'profileId', 'createdBy', or 'members' parameters
-
-        // TOOL USAGE GUIDELINES:
-        // - Use ONE tool at a time - you can only call a single tool per response
-        // - If a task requires multiple steps, call one tool, wait for its response, then call the next tool
-        // - Some tools depend on data from other tools - use the response from one tool to inform the next tool call
-        // - After completing all necessary tool calls, ALWAYS provide a final natural language response to the user explaining what was accomplished
-        // - Your final response should summarize the actions taken and the results
-
-        // HANDLING TOOL RESULTS:
-        // - Analyze the result of each tool call carefully.
-        // - If a tool call fails (contains "error" or "isError": true), DO NOT proceed with dependent steps. Instead, inform the user of the error and ask for clarification or try an alternative approach if possible.
-        // - If a tool call succeeds, use the data returned to proceed to the next step or formulate your final response.
-        // - When a tool returns a list (e.g., list_projects), check if it's empty before trying to access items.
-
-        // PROJECT-RELATED WORKFLOWS:
-        // - Tasks, Risks, Changes, and Journal Entries are ALL tied to specific projects
-        // - BEFORE creating or listing any of these items, you MUST first call 'list_projects' with userId: ${
-        //           profile.id
-        //         }
-        // - From the list_projects response, select the appropriate projectId
-        // - Then use that projectId when creating/listing tasks, risks, changes, or journal entries
-        // - If no suitable project exists, create one first using 'create_project'
-
-        // PARAMETER USAGE RULES:
-        // - userId/profileId/createdBy: ALWAYS use ${profile.id} (the current user)
-        // - members: ALWAYS use [${profile.id}] (include the current user)
-        // - projectId: MUST come from a 'list_projects' call first - select from available projects
-
-        // GENERAL GUIDELINES:
-        // when asked to "create" "update" "list" or "get" information related to projects, tasks, risks, changes, or journal entries, ALWAYS ensure you have the correct project context by calling 'list_projects' first.
-        // the point of this is to ensure that all actions are tied to the correct project and that you have the necessary information to proceed. if the user provides a project name, we can use the query_projects tool to find it, but we should still confirm by listing projects first.
-
-        // You have access to tools that can help you complete tasks. Use them when appropriate.
-        // Simply respond naturally to the user, and call tools when needed to accomplish their requests.
-
-        // If the intent is to call another tool, ONLY responsd with the tool call JSON as specified in the tool calling protocol.
-        // DO NOT provide non-JSON responses when tools should be called. ONLY provide non-JSON responses when you have completed all tool calls and are providing a final answer to the user.
-        // ${
-        //   projectResource
-        //     ? `- You have access to the Project Schema resource which covers most database effective tool calls: ${JSON.stringify(
-        //         projectResource
-        //       )}`
-        //     : ''
-        // }
-        // `;
-
-        const personaPrompt: GeneratePrompt = {
-          model: 'qwen3-coder',
-          stream: false,
-          tools: openAITools,
-          messages: [
-            {
-              role: 'tools',
-              content: `Available tools: ${openAITools
-                .map((t) => JSON.stringify(t))
-                .join(', ')}`,
-            },
-            {
-              role: 'system',
-              content: conversationPreamble,
-            },
-            {
-              role: 'user',
-              content: lastMessage.content,
-            },
-          ],
-        };
-
-        // Robust JSON extractor: try full parse, then extract first {...} block
-        const tryParseJson = (s: string | undefined) => {
-          if (!s || typeof s !== 'string') return null;
-          try {
-            return JSON.parse(s.trim());
-          } catch {
-            const m = s.match(/\{[\s\S]*\}/m);
-            if (m && m[0]) {
+          const result = await this.langGraphService.executeConversation(
+            profile.id,
+            langChainMessages,
+            conversation.messages, // Pass full chat history
+            conversationSummary,
+            persona,
+            profile,
+            conversation.id,
+            true, // Use agent for multi-step reasoning
+            async (progress) => {
+              this.l.debug('Received progress update:', progress);
               try {
-                return JSON.parse(m[0]);
-              } catch {
-                return null;
+                if (progress.type === 'tool_start') {
+                  const toolCallMessage: Partial<ChatMessage> = {
+                    conversationId: conversation.id,
+                    senderId: persona.id,
+                    senderName: persona.name,
+                    recipientId: [profile.id],
+                    recipientName: [profile.profileName],
+                    content: `🔧 Calling tool: ${progress.content.tool}`,
+                    timestamp: new Date(),
+                    type: 'system',
+                  };
+                  await firstValueFrom(
+                    this.chatCollectorService.send(
+                      { cmd: ChatCommands.POST_MESSAGE },
+                      toolCallMessage
+                    )
+                  );
+                  responses.push(toolCallMessage);
+                } else if (progress.type === 'tool_end') {
+                  const toolResultMessage: Partial<ChatMessage> = {
+                    conversationId: conversation.id,
+                    senderId: persona.id,
+                    senderName: persona.name,
+                    recipientId: [profile.id],
+                    recipientName: [profile.profileName],
+                    content: `✅ Tool result (${progress.content.tool}):\n${
+                      typeof progress.content.output === 'string'
+                        ? progress.content.output
+                        : JSON.stringify(progress.content.output, null, 2)
+                    }`,
+                    timestamp: new Date(),
+                    type: 'system',
+                  };
+                  await firstValueFrom(
+                    this.chatCollectorService.send(
+                      { cmd: ChatCommands.POST_MESSAGE },
+                      toolResultMessage
+                    )
+                  );
+                  responses.push(toolResultMessage);
+                }
+              } catch (err) {
+                this.l.error('Error sending progress update:', err);
               }
             }
-            return null;
-          }
-        };
-
-        let stopConditionMet = false;
-        let iterations = 0;
-        while (!stopConditionMet) {
-          iterations++;
-          if (iterations > MAX_ITER) {
-            this.l.warn(
-              `Max tool-call iterations (${MAX_ITER}) reached for persona ${persona.id}. Aborting loop.`
-            );
-            // provide a fallback message so client isn't blocked
-            responses.push({
-              conversationId: conversation.id,
-              senderId: persona.id,
-              senderName: persona.name,
-              recipientId: [profile.id],
-              recipientName: [profile.profileName],
-              content:
-                'I am unable to complete this action right now. Please try again later.',
-              timestamp: new Date(),
-              type: 'chat',
-            });
-            break;
-          }
-
-          this.l.log(`Persona prompt: '${JSON.stringify(personaPrompt)}'`);
-          const response = await firstValueFrom(
-            this.promptProxy.send({ cmd: PromptCommands.SEND }, personaPrompt)
           );
 
-          // Check if response has OpenAI-format tool_calls
-          if (
-            response.message.tool_calls &&
-            response.message.tool_calls.length > 0
-          ) {
-            // Handle OpenAI-format tool calls - only process ONE tool at a time
-            if (response.message.tool_calls.length > 1) {
-              this.l.warn(
-                `LLM returned ${response.message.tool_calls.length} tool calls, but only processing the first one. ` +
-                  `The LLM should call one tool at a time.`
-              );
-            }
+          this.l.log('LangGraph execution complete:', {
+            hasResponse: !!result.response,
+            toolCallsCount: result.toolCalls?.length || 0,
+            topics: result.topics?.length || 0,
+          });
 
-            const toolCall = response.message.tool_calls[0]; // Process first tool call only
+          // Process intermediate steps (tool calls) - these are auto-emitted by LangGraph
+          // We now handle this via the progress callback, so we don't need to re-emit them here
+          // unless we want to ensure they are in the final response list if the callback failed?
+          // But we pushed to responses in the callback.
 
-            // Create execution context
-            const executionContext: ToolExecutionContext = {
-              userId: profile.id,
-              profileId: profile.id,
-              conversationId: conversation.id,
-            };
-
-            // Execute tool call using standardized executor
-            const toolResult: ToolResult =
-              await this.mcpExecutor.executeToolCall(
-                toolCall,
-                executionContext
-              );
-
-            this.l.log(
-              `Tool '${toolResult.toolName}' executed with success=${toolResult.success}`
-            );
-            this.l.debug(`Tool result: ${JSON.stringify(toolResult)}`);
-
-            // Add the assistant's tool call message (only include the one tool we're processing)
-            personaPrompt.messages.push({
-              role: 'assistant',
-              content: response.message.content || '',
-              tool_calls: [toolCall], // Only include the first tool call
-            } as unknown as any);
-
-            // Add the tool response - format based on success/failure
-            let toolResponseContent: string;
-            if (toolResult.success) {
-              toolResponseContent =
-                typeof toolResult.result === 'string'
-                  ? toolResult.result
-                  : JSON.stringify(toolResult.result);
-            } else {
-              // Include error information in the response
-              toolResponseContent = JSON.stringify({
-                error: toolResult.error,
-                message: `Tool execution failed: ${toolResult.error?.message}`,
-              });
-            }
-
-            personaPrompt.messages.push({
-              role: 'tool',
-              tool_call_id: toolCall.id,
-              content: toolResponseContent,
-            } as unknown as any);
-
-            continue; // Continue the loop to get the final response
+          /* 
+          if (result.toolCalls && result.toolCalls.length > 0) {
+             // ... removed ...
           }
+          */
 
-          const content = response.message.content;
-          const parsedResponse = tryParseJson(content);
+          // Parse final response for TELOS data
+          const { content, telosData } = this.parseTelosResponse(
+            result.response
+          );
 
-          // Normalize LLM response if it uses { name: "tool", parameters: { ... } } format
-          if (
-            parsedResponse &&
-            parsedResponse.name &&
-            parsedResponse.parameters &&
-            !parsedResponse.tool
-          ) {
-            parsedResponse.tool = parsedResponse.name;
-            parsedResponse.args = parsedResponse.parameters;
-          }
+          // Emit final response
+          const finalMessage: Partial<ChatMessage> = {
+            conversationId: conversation.id,
+            senderId: persona.id,
+            senderName: persona.name,
+            recipientId: [profile.id],
+            recipientName: [profile.profileName],
+            content: content,
+            timestamp: new Date(),
+            type: 'chat',
+          };
 
-          if (parsedResponse && parsedResponse.tool) {
-            // Legacy JSON-format tool calling (kept for backward compatibility)
-            // Convert to standard OpenAI format and use executor
-            const legacyToolCall = {
-              id: `legacy_${Date.now()}`,
-              type: 'function' as const,
-              function: {
-                name: parsedResponse.tool,
-                arguments: JSON.stringify(parsedResponse.args || {}),
-              },
-            };
+          await firstValueFrom(
+            this.chatCollectorService.send(
+              { cmd: ChatCommands.POST_MESSAGE },
+              finalMessage
+            )
+          );
+          responses.push(finalMessage);
 
-            // Create execution context
-            const executionContext: ToolExecutionContext = {
-              userId: profile.id,
-              profileId: profile.id,
-              conversationId: conversation.id,
-            };
+          this.l.log('Conversation processing complete for', persona.name);
 
-            // Execute using standardized executor
-            const toolResult: ToolResult =
-              await this.mcpExecutor.executeToolCall(
-                legacyToolCall,
-                executionContext
-              );
+          // Context is automatically saved by LangGraph service to Redis
+        } catch (executionError) {
+          this.l.log('Error executing LangGraph conversation:', executionError);
 
-            this.l.log(
-              `Legacy tool '${toolResult.toolName}' executed with success=${toolResult.success}`
-            );
+          // Emit error message
+          const errorMessage: Partial<ChatMessage> = {
+            conversationId: conversation.id,
+            senderId: persona.id,
+            senderName: persona.name,
+            recipientId: [profile.id],
+            recipientName: [profile.profileName],
+            content: `⚠️ Error processing conversation: ${executionError.message}`,
+            timestamp: new Date(),
+            type: 'system',
+          };
 
-            // Add the tool response back to the persona prompt for further processing
-            const responseContent = toolResult.success
-              ? typeof toolResult.result === 'string'
-                ? toolResult.result
-                : JSON.stringify(toolResult.result)
-              : JSON.stringify({
-                  error: toolResult.error,
-                  message: `Tool failed: ${toolResult.error?.message}`,
-                });
-
-            personaPrompt.messages.push(
-              {
-                role: 'system',
-                content: conversationPreamble,
-              },
-              {
-                role: 'assistant',
-                content: `The tool '${parsedResponse.tool}' returned the following response: ${responseContent}. Please use this information to generate your next action.`,
-              }
-            );
-          } else if (
-            parsedResponse &&
-            (parsedResponse.stop ||
-              parsedResponse.response ||
-              parsedResponse.message)
-          ) {
-            this.l.log('Stop condition received from LLM.');
-            stopConditionMet = true;
-            // Prefer explicit response fields from the JSON, otherwise fallback to raw content
-            const finalText =
-              parsedResponse.response ?? parsedResponse.message ?? content;
-            this.l.debug(`Final response text: '${finalText}'`);
-            const newChatMessage: Partial<ChatMessage> = {
-              conversationId: conversation.id,
-              senderId: persona.id,
-              senderName: persona.name,
-              recipientId: [profile.id],
-              recipientName: [profile.profileName],
-              content: finalText,
-              timestamp: new Date(),
-              type: 'chat',
-            };
-            responses.push(newChatMessage);
-          } else if (!parsedResponse && content && content.trim()) {
-            // LLM didn't follow the strict tool JSON protocol but returned human-readable text.
-            // Treat this as the final response and return it to the client.
-            this.l.log(
-              'LLM provided final response without tool call - sending to user.'
-            );
-            stopConditionMet = true;
-            const newChatMessage: Partial<ChatMessage> = {
-              conversationId: conversation.id,
-              senderId: persona.id,
-              senderName: persona.name,
-              recipientId: [profile.id],
-              recipientName: [profile.profileName],
-              content: content,
-              timestamp: new Date(),
-              type: 'chat',
-            };
-            responses.push(newChatMessage);
-          } else {
-            this.l.log('Invalid or unexpected response from LLM.');
-            stopConditionMet = true; // Break the loop to avoid infinite processing
-          }
+          await firstValueFrom(
+            this.chatCollectorService.send(
+              { cmd: ChatCommands.POST_MESSAGE },
+              errorMessage
+            )
+          );
+          responses.push(errorMessage);
         }
       }
 
-      this.l.log('Responses from AI personas:', responses);
-      for (const response of responses) {
-        this.l.log('Posting message to chat collector:', response);
-        await firstValueFrom(
-          this.chatCollectorService.send(
-            { cmd: ChatCommands.POST_MESSAGE },
-            response
-          )
-        );
-      }
-      this.l.log('All AI persona messages posted successfully.');
       return responses;
-    } catch (e) {
-      this.l.log('Error updating conversation:', e);
-      throw new RpcException('Failed to update conversation: ' + e.message);
-    }
-  }
-
-  private async getPersona(options: {
-    name?: string;
-    id?: string;
-  }): Promise<PersonaTelosDto> {
-    try {
-      const persona = await firstValueFrom(
-        this.telosDocsService.send(
-          { cmd: PersonaTelosCommands.FIND },
-          { ...options }
-        )
-      );
-      if (!persona || persona.length === 0) {
-        throw new Error('Persona not found');
-      }
-      this.l.log('Personas found:', persona.map((p) => p.name).join(','));
-      return persona[0];
-    } catch (e) {
-      this.l.error('Error getting persona:', e);
-      throw new RpcException('Failed to get persona: ' + e.message);
-    }
-  }
-
-  private async summarizeConversation(
-    messages: ChatMessage[],
-    personaPrompt: string
-  ) {
-    try {
-      if (
-        messages.length === 1 &&
-        messages[0].content == 'Creating new AI assistant conversation...'
-      ) {
-        messages[0].content =
-          'The user is just starting out. Please introduce yourself and what your available to help with.';
-      }
-      const prompt: GeneratePrompt = {
-        model: 'qwen3-coder',
-        stream: false,
-        messages: [
-          {
-            role: 'system',
-            content: `${personaPrompt}
-              Please summarize the conversation and pick out  keywords from the previous messages.
-              keep the summary to include all information, but in the smallest possible form.
-              This is for the purpose of providing context for further prompting.
-            `,
-          },
-          {
-            role: 'user',
-            content: messages.map((msg) => msg.content).join('\n\n\n'),
-          },
-        ],
-      };
-      const response = await firstValueFrom(
-        this.promptProxy.send({ cmd: PromptCommands.SEND }, prompt)
-      );
-      this.l.log('Conversation summary response:', response);
-      return response.message.content;
-    } catch (e) {
-      this.l.error('Error summarizing conversation:', e);
-      throw new RpcException('Failed to summarize conversation: ' + e.message);
+    } catch (error) {
+      console.trace(error);
+      this.l.log('Error updating conversation:', error);
+      throw new RpcException('Failed to update conversation: ' + error.message);
     }
   }
 }
