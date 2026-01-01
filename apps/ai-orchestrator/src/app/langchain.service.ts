@@ -137,12 +137,45 @@ You have access to tools through the MCP (Model Context Protocol) system. To dis
 You can access contextual information using MCP resources:
 - project://{{projectId}}/context - Get full project context including tasks, risks, changes, and journal entries
 
-# DATA RELATIONSHIPS & AWARENESS
-- **User**: The entity interacting with you. Identified by '{userId}'. All created items (tasks, projects) must be linked to this ID.
-- **Profile ID**: This is the SAME as the User ID. If a tool asks for 'profileId', use '{userId}'.
-- **Project**: A container for tasks, risks, and changes. Identified by a UUID. You must query projects to find their IDs before creating child items.
-- **Task/Risk/Change**: Items that belong to a Project. They require a 'projectId' to be created.
-- **Context Awareness**: Use the conversation summary and project context to inform your decisions. If a project is mentioned, look for its ID in the context or query for it.
+# DATA RELATIONSHIPS & CRITICAL PARAMETER MAPPINGS
+
+## User Identity Parameters
+- **userId** or **createdBy**: ALWAYS use '{userId}' (the current user's profile ID)
+- **profileId**: SAME as userId - use '{userId}'
+- **owner**: SAME as userId - use '{userId}'
+
+## Project Management Entities
+1. **Project**: Container identified by UUID (e.g., "a1b2c3d4-e5f6-...")
+   - To GET project ID: Use list_projects or query_projects FIRST
+   - Parameters: name, description, userId, status, startDate, members
+   - Status values: PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED
+
+2. **Task**: Work item belonging to a Project
+   - REQUIRED: title, createdBy (use '{userId}'), projectId (from list/query)
+   - OPTIONAL: description, status, priority
+   - Status values: TODO, IN_PROGRESS, DONE, ARCHIVED
+   - Priority values: LOW, MEDIUM_LOW, MEDIUM, MEDIUM_HIGH, HIGH
+
+3. **Risk**: Risk assessment belonging to a Project
+   - REQUIRED: projectId, title, likelihood, impact, createdBy
+   - Parameters match risk_mcp service schemas
+
+4. **Change**: Change request belonging to a Project
+   - REQUIRED: projectId, title, description, createdBy
+   - Parameters match change_mcp service schemas
+
+## ID Resolution Workflow (CRITICAL)
+NEVER fabricate or guess IDs. ALWAYS follow this pattern:
+
+1. **Need projectId?**
+   - Step 1: Call list_projects with userId: '{userId}'
+   - Step 2: Extract the 'id' field from returned project
+   - Step 3: Use that exact ID in subsequent calls
+
+2. **Need taskId/riskId/changeId?**
+   - Step 1: Call list_tasks/list_risks/list_changes with projectId
+   - Step 2: Extract the 'id' field from returned items
+   - Step 3: Use that exact ID in subsequent calls
 
 # STRICT OPERATIONAL GUIDELINES
 1. **TOOL DISCOVERY FIRST**: If uncertain about available actions, call 'list_tools' to see what you can do.
@@ -152,6 +185,7 @@ You can access contextual information using MCP resources:
 5. **JSON ONLY OUTPUT**: When calling a tool, output ONLY the JSON object. No markdown, no explanations.
 6. **USER ID BINDING**: Always use the provided User ID ({userId}) for 'userId', 'createdBy', 'owner', etc.
 7. **EXACT PARAMETER NAMES**: Use the EXACT parameter names from the tool schema. The schemas are provided by 'list_tools' or bound to this conversation. Do NOT guess or assume parameter names.
+8. **CONTEXT-AWARE IDs**: Check conversation summary and project context for previously mentioned IDs before querying.
 
 # TOOL CALLING FORMAT
 When calling a tool, output a single JSON object with this structure:
@@ -159,26 +193,63 @@ When calling a tool, output a single JSON object with this structure:
 
 Do NOT wrap in markdown code blocks. Do NOT add explanations before or after.
 
-# EXAMPLE WORKFLOWS
+# EXAMPLE WORKFLOWS WITH PROJECT MANAGEMENT TOOLS
 
-## Discovering Available Tools
-**User**: "What can you help me with?"
-**Action**: {{"name": "list_tools", "arguments": {{}}}}
-**[System returns list of all available tools]**
-**Response**: "I can help you with: [summarize tools]"
+## Example 1: Create Project (Simple)
+**User**: "Create a new project called 'Website Redesign' for planning our site update"
+**Action**: {{"name": "create_project", "arguments": {{"name": "Website Redesign", "description": "Planning our site update", "userId": "{userId}", "status": "PLANNING"}}}}
+**Response**: "I've created the 'Website Redesign' project. It's now in PLANNING status."
 
-## Creating Items That Require IDs
-**User**: "Create a task called 'Fix Bug' in the Website project"
-**Thought**: I need the projectId for 'Website'. I'll query for it first.
-**Action**: {{"name": "query_projects", "arguments": {{"name": "Website", "userId": "{userId}"}}}}
-**[System returns project with ID "proj-123"]**
-**Thought**: I have the projectId. Now I can create the task.
-**Action**: {{"name": "create_task", "arguments": {{"title": "Fix Bug", "projectId": "proj-123", "createdBy": "{userId}", "status": "TODO"}}}}
+## Example 2: Create Task (Requires Project ID Resolution)
+**User**: "Add a task 'Update homepage' to the Website Redesign project"
+**Step 1 - Get projectId**: {{"name": "query_projects", "arguments": {{"name": "Website Redesign", "userId": "{userId}"}}}}
+**[Returns]: {{"success": true, "projects": [{{"id": "a1b2c3d4-e5f6-...", "name": "Website Redesign", ...}}]}}
+**Step 2 - Create task**: {{"name": "create_task", "arguments": {{"title": "Update homepage", "projectId": "a1b2c3d4-e5f6-...", "createdBy": "{userId}", "status": "TODO", "priority": "MEDIUM"}}}}
+**Response**: "I've added the task 'Update homepage' to your Website Redesign project."
+
+## Example 3: List and Update Task
+**User**: "Mark the homepage update task as in progress"
+**Step 1 - Find project**: {{"name": "query_projects", "arguments": {{"name": "Website Redesign", "userId": "{userId}"}}}}
+**[Returns]: {{"projects": [{{"id": "a1b2c3d4-...", ...}}]}}
+**Step 2 - List tasks**: {{"name": "list_tasks", "arguments": {{"projectId": "a1b2c3d4-..."}}}}
+**[Returns]: {{"tasks": [{{"id": "task-xyz", "title": "Update homepage", ...}}]}}
+**Step 3 - Update task**: {{"name": "update_task", "arguments": {{"id": "task-xyz", "status": "IN_PROGRESS"}}}}
+**Response**: "The 'Update homepage' task is now marked as in progress."
+
+## Example 4: Query Specific Project Details
+**User**: "What tasks do I have in the Website project?"
+**Step 1 - Find project**: {{"name": "query_projects", "arguments": {{"name": "Website", "userId": "{userId}"}}}}
+**[Returns]: {{"projects": [{{"id": "proj-123", ...}}]}}
+**Step 2 - List tasks**: {{"name": "list_tasks", "arguments": {{"projectId": "proj-123"}}}}
+**Response**: "In your Website project, you have: [list tasks from result]"
+
+## Example 5: Using Context-Aware IDs
+**Context**: Previous message mentioned "project proj-abc123"
+**User**: "Add a task to review the design"
+**[Check context for proj-abc123]**
+**Action**: {{"name": "create_task", "arguments": {{"title": "Review the design", "projectId": "proj-abc123", "createdBy": "{userId}", "status": "TODO"}}}}
+**Response**: "I've added 'Review the design' to your project."
+
+## Example 6: Create Risk
+**User**: "Add a risk about potential delays to the Website project"
+**Step 1**: {{"name": "query_projects", "arguments": {{"name": "Website", "userId": "{userId}"}}}}
+**[Returns projectId]**
+**Step 2**: {{"name": "create_risk", "arguments": {{"projectId": "proj-xyz", "title": "Potential delays", "description": "Risk of timeline slippage", "likelihood": "MEDIUM", "impact": "HIGH", "createdBy": "{userId}"}}}}
+
+# PARAMETER CONSISTENCY CHECKLIST
+Before calling any project management tool, verify:
+- ✓ userId/createdBy = '{userId}'
+- ✓ projectId = Actual UUID from list/query (never invented)
+- ✓ taskId/riskId = Actual UUID from list (never invented)
+- ✓ status/priority = Valid enum value from tool schema
+- ✓ All REQUIRED parameters present
+- ✓ Parameter names match EXACTLY (not camelCase variations)
 
 # RESPONSE RULES
 - After tool execution completes, provide a clear natural language response.
 - If a tool fails, explain what went wrong and suggest next steps.
 - If you're uncertain about parameters, call 'list_tools' to verify.
+- Include relevant details from tool results in your response (project names, task counts, IDs when helpful).
 `,
       ],
     ]);
@@ -190,7 +261,7 @@ Do NOT wrap in markdown code blocks. Do NOT add explanations before or after.
   ): Promise<any[]> {
     const mcpTools = await this.toolsService.listTools();
 
-    // Create MCP tools
+    // Create MCP tools with smart parameter enrichment
     const tools = mcpTools.map((tool) => {
       const schema = this.convertToZodSchema(tool.inputSchema);
       return new DynamicStructuredTool({
@@ -198,7 +269,32 @@ Do NOT wrap in markdown code blocks. Do NOT add explanations before or after.
         description: tool.description || `Execute ${tool.name}`,
         schema,
         func: async (input: any) => {
-          const enrichedInput = { ...input, userId, profileId: userId };
+          // Smart parameter enrichment based on tool requirements
+          const enrichedInput = { ...input };
+          
+          // Auto-inject userId if not provided and tool expects it
+          if (!enrichedInput.userId && tool.inputSchema?.properties?.userId) {
+            enrichedInput.userId = userId;
+          }
+          
+          // Auto-inject createdBy if not provided and tool expects it
+          if (!enrichedInput.createdBy && tool.inputSchema?.properties?.createdBy) {
+            enrichedInput.createdBy = userId;
+          }
+          
+          // Auto-inject owner if not provided and tool expects it
+          if (!enrichedInput.owner && tool.inputSchema?.properties?.owner) {
+            enrichedInput.owner = userId;
+          }
+          
+          // Always include profileId for context (backwards compatibility)
+          enrichedInput.profileId = userId;
+
+          this.logger.debug(
+            `Executing ${tool.name} with enriched parameters:`,
+            Object.keys(enrichedInput)
+          );
+
           const toolCall = {
             id: `lc_${Date.now()}`,
             type: 'function' as const,
@@ -230,31 +326,70 @@ Do NOT wrap in markdown code blocks. Do NOT add explanations before or after.
       func: async () => {
         this.logger.log('LLM called list_tools to discover available actions');
 
-        // Format tools in a way that's helpful for the LLM
-        const toolDescriptions = mcpTools
-          .map((tool) => {
-            const params = tool.inputSchema?.properties || {};
-            const required = tool.inputSchema?.required || [];
+        // Group tools by category for better organization
+        const projectTools: any[] = [];
+        const taskTools: any[] = [];
+        const riskTools: any[] = [];
+        const changeTools: any[] = [];
+        const otherTools: any[] = [];
 
-            const paramList = Object.entries(params)
-              .map(([name, schema]: [string, any]) => {
-                const isRequired = required.includes(name);
-                const typeInfo = schema.type || 'any';
-                const description = schema.description || '';
-                return `  - ${name} (${typeInfo})${
-                  isRequired ? ' [REQUIRED]' : ' [optional]'
-                }: ${description}`;
-              })
-              .join('\n');
+        mcpTools.forEach((tool) => {
+          if (tool.name.includes('project')) projectTools.push(tool);
+          else if (tool.name.includes('task')) taskTools.push(tool);
+          else if (tool.name.includes('risk')) riskTools.push(tool);
+          else if (tool.name.includes('change')) changeTools.push(tool);
+          else otherTools.push(tool);
+        });
 
-            return `## ${tool.name}
-Description: ${tool.description || 'No description'}
-Parameters:
+        const formatToolCategory = (tools: any[], category: string) => {
+          if (tools.length === 0) return '';
+          const formatted = tools
+            .map((tool) => {
+              const params = tool.inputSchema?.properties || {};
+              const required = tool.inputSchema?.required || [];
+
+              const paramList = Object.entries(params)
+                .map(([name, schema]: [string, any]) => {
+                  const isRequired = required.includes(name);
+                  const typeInfo = schema.type || 'any';
+                  const description = schema.description || '';
+                  const enumValues = schema.enum
+                    ? ` (values: ${schema.enum.join(', ')})`
+                    : '';
+                  return `  - ${name} (${typeInfo})${enumValues}${
+                    isRequired ? ' **[REQUIRED]**' : ' [optional]'
+                  }: ${description}`;
+                })
+                .join('\n');
+
+              return `### ${tool.name}
+${tool.description || 'No description'}
+**Parameters:**
 ${paramList || '  (none)'}`;
-          })
-          .join('\n\n');
+            })
+            .join('\n\n');
+          return `## ${category}\n\n${formatted}`;
+        };
 
-        return `Available Tools:\n\n${toolDescriptions}\n\nNote: Always use the exact parameter names shown above. Do NOT fabricate IDs - query/list first to get valid IDs.`;
+        const sections = [
+          formatToolCategory(projectTools, 'PROJECT MANAGEMENT'),
+          formatToolCategory(taskTools, 'TASK MANAGEMENT'),
+          formatToolCategory(riskTools, 'RISK MANAGEMENT'),
+          formatToolCategory(changeTools, 'CHANGE MANAGEMENT'),
+          formatToolCategory(otherTools, 'OTHER TOOLS'),
+        ].filter(Boolean);
+
+        return `# AVAILABLE TOOLS
+
+${sections.join('\n\n')}
+
+## CRITICAL REMINDERS
+- **userId/createdBy**: Auto-injected as current user (${userId}) if not provided
+- **projectId/taskId/riskId**: MUST be obtained from list/query calls - NEVER fabricate
+- **status/priority**: Use EXACT enum values shown above
+- **Parameter names**: Use EXACTLY as shown - no variations allowed
+
+Always verify parameter names match tool schemas before calling!`;
       },
     }) as any;
 
