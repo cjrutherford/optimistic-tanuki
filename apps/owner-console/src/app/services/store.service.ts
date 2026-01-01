@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import {
   CreateProductDto,
   UpdateProductDto,
-  CreateOrderDto,
   UpdateOrderDto,
 } from '@optimistic-tanuki/ui-models';
 

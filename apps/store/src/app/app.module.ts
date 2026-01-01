@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import { LoggerModule } from '@optimistic-tanuki/logger';

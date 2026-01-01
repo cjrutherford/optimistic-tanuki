@@ -14,6 +14,6 @@ export class AppComponent {
 
   ngOnInit(): void {
     this.themeService.setTheme('dark');
-    this.themeService.setPalette('Retro Gaming')
+    this.themeService.setPalette('Retro Gaming');
   }
 }

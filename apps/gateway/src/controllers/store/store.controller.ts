@@ -21,7 +21,6 @@ import {
   CreateProductDto,
   UpdateProductDto,
   CreateSubscriptionDto,
-  UpdateSubscriptionDto,
   CreateDonationDto,
   CreateOrderDto,
   UpdateOrderDto,

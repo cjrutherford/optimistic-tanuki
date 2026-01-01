@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "docker:build:slow": "for service in authentication client-interface gateway profile social project-planning assets forgeofwill-client-interface chat-collector prompt-proxy ai-orchestrator telos-docs-service blogging crdn-client-interface digital-homestead-client-interface permissions owner-console store st; do docker compose build $service; done",
+    "docker:build:slow": "for service in authentication client-interface gateway profile social project-planning assets forgeofwill-client-interface chat-collector prompt-proxy ai-orchestrator telos-docs-service blogging crdn-client-interface digital-homestead-client-interface permissions owner-console store store-client; do docker compose build $service; done",
     "docker:build": "docker compose build",
     "docker:build:push": "sh ./build-push.sh",
     "docker:up": "docker compose up -d",

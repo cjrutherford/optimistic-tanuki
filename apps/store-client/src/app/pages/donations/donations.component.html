@@ -4,5 +4,8 @@
     <p>Your donations help us continue to provide great products and services</p>
   </header>
 
-  <store-donation (donate)="onDonate($event)"></store-donation>
+  <div class="success-message" *ngIf="success">{{ success }}</div>
+  <div class="error-message" *ngIf="error">{{ error }}</div>
+
+  <store-donation (donate)="onDonate($event)" [disabled]="loading"></store-donation>
 </div>
