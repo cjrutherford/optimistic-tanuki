@@ -24,6 +24,10 @@ import {
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ToolsService } from './tools.service';
 import { ConfigService } from '@nestjs/config';
+import {
+  generateCoreSystemPrompt,
+  generateToolingGuidance,
+} from './utils/prompt-engineering';
 
 @Injectable()
 export class LangChainService {
@@ -37,7 +41,7 @@ export class LangChainService {
   ) {
     const ollama = this.config.get<{ host: string; port: number }>('ollama');
     this.llm = new ChatOllama({
-      model: 'qwen3',
+      model: 'bjoernb/deepseek-r1-8b',
       baseUrl:
         ollama.host && ollama.port
           ? `http://${ollama.host}:${ollama.port}`
@@ -179,7 +183,7 @@ NEVER fabricate or guess IDs. ALWAYS follow this pattern:
 
 # STRICT OPERATIONAL GUIDELINES
 1. **TOOL DISCOVERY FIRST**: If uncertain about available actions, call 'list_tools' to see what you can do.
-2. **NO ID HALLUCINATION**: You must NEVER invent IDs. If you need an ID (projectId, taskId, etc.), you MUST first query or list the items to find the correct ID.
+2. **NO ID HALLUCINATION**: You must NEVER invent IDs. If you need an ID (projectId, taskId, etc.), you MUST first query or list the items to find the correct ID. **If you don't have an ID, call a tool to find it.**
 3. **TOOL FIRST APPROACH**: If a user request requires data or action, call the appropriate tool immediately. Do not ask for permission.
 4. **ONE TOOL AT A TIME**: Execute one tool call, wait for the result, then decide the next step.
 5. **JSON ONLY OUTPUT**: When calling a tool, output ONLY the JSON object. No markdown, no explanations.
@@ -271,22 +275,25 @@ Before calling any project management tool, verify:
         func: async (input: any) => {
           // Smart parameter enrichment based on tool requirements
           const enrichedInput = { ...input };
-          
+
           // Auto-inject userId if not provided and tool expects it
           if (!enrichedInput.userId && tool.inputSchema?.properties?.userId) {
             enrichedInput.userId = userId;
           }
-          
+
           // Auto-inject createdBy if not provided and tool expects it
-          if (!enrichedInput.createdBy && tool.inputSchema?.properties?.createdBy) {
+          if (
+            !enrichedInput.createdBy &&
+            tool.inputSchema?.properties?.createdBy
+          ) {
             enrichedInput.createdBy = userId;
           }
-          
+
           // Auto-inject owner if not provided and tool expects it
           if (!enrichedInput.owner && tool.inputSchema?.properties?.owner) {
             enrichedInput.owner = userId;
           }
-          
+
           // Always include profileId for context (backwards compatibility)
           enrichedInput.profileId = userId;
 

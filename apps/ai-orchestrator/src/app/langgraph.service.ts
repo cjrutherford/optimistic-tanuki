@@ -268,11 +268,15 @@ export class LangGraphService {
     state: ConversationStateType
   ): Promise<Partial<ConversationStateType>> {
     try {
-      // Simple summary: last user message + topics
+      // Simple summary: last user message + topics + last tool context
       const lastMessage = state.messages[state.messages.length - 1];
-      const summary = `Last discussed: ${this.normalizeContent(
+      let summary = `Last discussed: ${this.normalizeContent(
         lastMessage?.content
       ).slice(0, 100)}... Topics: ${state.recentTopics.join(', ')}`;
+
+      if (state.lastToolCalled) {
+        summary += `. Previous tool action: ${state.lastToolCalled}.`;
+      }
 
       return {
         summary,

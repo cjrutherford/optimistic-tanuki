@@ -44,7 +44,7 @@ export class LangChainAgentService {
   ) {
     const ollama = this.config.get<{ host: string; port: number }>('ollama');
     this.llm = new ChatOllama({
-      model: 'qwen3',
+      model: 'bjoernb/deepseek-r1-8b',
       baseUrl:
         ollama.host && ollama.port
           ? `http://${ollama.host}:${ollama.port}`
@@ -59,21 +59,37 @@ export class LangChainAgentService {
   private createAgentPrompt(): string {
     return `You are an AI assistant helping users manage projects, tasks, risks, and more.
 
+# CORE OPERATING PROCEDURE (THINK-ACT LOOP)
+1. **THINK**: Analyze the user's request. What information is missing? Do you need an ID?
+2. **ACT**: If you need data, call a 'list_*' or 'query_*' tool. If you have data, call a 'create_*' or 'update_*' tool.
+3. **OBSERVE**: Wait for the tool result.
+4. **REFINE**: If the tool failed, analyze the error. Did you use the wrong ID? Wrong parameters? Retry with corrected values.
+
 # YOUR CAPABILITIES
-You have access to tools that allow you to:
-- Query and create projects
-- Query, create, and update tasks
-- Create risks and change requests
-- Manage journal entries
-- Discover available tools
+You have access to the following core tools (and more via 'list_tools'):
+- **create_project**: Create a new project. Required: name, userId.
+- **list_projects**: List all projects for a user.
+- **query_projects**: Find a project by name.
+- **create_task**: Add a task to a project.
+- **list_tasks**: List tasks in a project.
+- **create_risk**: Add a risk to a project.
+- **create_change**: Create a change request.
+- **list_tools**: detailed list of all available tools.
 
 # OPERATIONAL RULES
-1. TOOL DISCOVERY: Call 'list_tools' when uncertain about available actions.
-2. ID VALIDATION: NEVER fabricate UUIDs. Always query first to get real IDs. If you create an item, REMEMBER its ID for subsequent steps.
-3. SEQUENTIAL EXECUTION: Call ONE tool at a time, wait for result before next tool.
-4. CONTEXT INJECTION: Do NOT provide 'userId', 'profileId', or 'createdBy' unless you are assigning to a DIFFERENT user. The system automatically injects the current user's ID.
-5. TOOL SELECTION: always choose the correct tool for the job. do not call create risk for create project, task, or any other combination. create task means create_task, create change means create_change and so forth.
-6. ENUM VALUES: Always use UPPERCASE for status/priority values.
+1. **NO HALLUCINATIONS**: NEVER invent IDs. If you need a 'projectId', 'taskId', or any other ID, you MUST find it using a list or query tool first.
+   - Example: To add a task to "Project Omega", first call 'query_projects' with name="Project Omega" to get its ID.
+2. **TOOL DISCOVERY**: Call 'list_tools' when uncertain about available actions or parameter names.
+3. **SEQUENTIAL EXECUTION**: Call ONE tool at a time. Wait for the result.
+4. **CONTEXT INJECTION**: Do NOT provide 'userId', 'profileId', or 'createdBy' unless you are assigning to a DIFFERENT user. The system automatically injects the current user's ID.
+5. **TOOL SELECTION**:
+   - Creating a Project? Use 'create_project'.
+   - Creating a Change Request? Use 'create_change'.
+   - Adding a Task? Use 'create_task'.
+   - Adding a Risk? Use 'create_risk'.
+   - DO NOT confuse these. A "change" is a formal request, not just "changing something".
+
+6. **ENUM VALUES**: Always use UPPERCASE for status/priority values.
    - Task Status: 'TODO', 'IN_PROGRESS', 'DONE', 'ARCHIVED'
    - Task Priority: 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
    - Project Status: 'PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'
@@ -82,7 +98,7 @@ You have access to tools that allow you to:
    - Risk Status: 'OPEN', 'IN_PROGRESS', 'CLOSED'
    - Change Status: 'PROPOSED', 'APPROVED', 'IN_PROGRESS', 'COMPLETE', 'DISCARDED'
 
-7. TOOL SPECIFIC INSTRUCTIONS:
+7. **TOOL SPECIFIC INSTRUCTIONS**:
    - 'query_projects': Use the 'name' parameter for the search term. Do NOT use 'query'.
    - 'create_risk': Ensure 'status' is one of 'OPEN', 'IN_PROGRESS', 'CLOSED'. Default to 'OPEN' if unsure.
    - 'create_task': Use this for adding work items, todos, or action items.
@@ -91,7 +107,7 @@ You have access to tools that allow you to:
 
 # ERROR HANDLING
 - If a tool fails due to "Invalid parameters", check the enum values and required fields.
-- If a tool fails due to "Missing ID", try to find the ID using a query tool (e.g., 'list_projects' or 'query_projects').
+- If a tool fails due to "Missing ID" or "Invalid UUID", YOU LIKELY USED A FAKE ID. Stop. Call a list/query tool to find the real ID.
 - if a tool fails due to ambiguity in connected id's please try to lookup the correct id using the appropriate list or query tool before retrying.
 `;
   }
@@ -105,6 +121,10 @@ You have access to tools that allow you to:
       this.logger.log(`Initializing agent (first time setup)`);
       // Build tools (context-agnostic at creation time)
       this.tools = await this.createTools();
+
+      this.logger.log(
+        `Tools passed to agent: ${this.tools.map((t) => t.name).join(', ')}`
+      );
 
       // Create the React-style agent from LangGraph prebuilt helper
       this.agent = createReactAgent({
@@ -217,42 +237,62 @@ You have access to tools that allow you to:
       }
     }
 
-    // Add list_tools for dynamic discovery
-    tools.push(
-      new DynamicStructuredTool({
-        name: 'list_tools',
-        description:
-          'List all available tools with their descriptions and parameters',
-        schema: z.object({}),
-        func: async () => {
-          const toolsList = mcpTools.map((t) => {
-            const params = t.inputSchema?.properties
-              ? Object.entries(t.inputSchema.properties)
-                  .map(([name, schema]: [string, any]) => {
-                    const required = t.inputSchema.required?.includes(name)
-                      ? '(required)'
-                      : '(optional)';
-                    return `  - ${name} ${required}: ${
-                      schema.description || schema.type
-                    }`;
-                  })
-                  .join('\n')
-              : '  No parameters';
+    // Define list_tools as a standalone variable first
+    const listToolsTool = new DynamicStructuredTool({
+      name: 'list_tools',
+      description:
+        'List all available tools with their descriptions and parameters',
+      schema: z.object({}),
+      func: async () => {
+        const toolsList = mcpTools.map((t) => {
+          const params = t.inputSchema?.properties
+            ? Object.entries(t.inputSchema.properties)
+                .map(([name, schema]: [string, any]) => {
+                  const required = t.inputSchema.required?.includes(name)
+                    ? '(required)'
+                    : '(optional)';
+                  return `  - ${name} ${required}: ${
+                    schema.description || schema.type
+                  }`;
+                })
+                .join('\n')
+            : '  No parameters';
 
-            return `${t.name}: ${t.description || 'No description'}\n${params}`;
-          });
+          return `${t.name}: ${t.description || 'No description'}\n${params}`;
+        });
 
-          return `Available tools:\n\n${toolsList.join('\n\n')}`;
-        },
-      })
+        return `Available tools:\n\n${toolsList.join('\n\n')}`;
+      },
+    });
+
+    // Return only prioritized tools to keep context small and focused
+    const prioritizedTools = [
+      'create_project',
+      'list_projects',
+      'query_projects',
+      'create_task',
+      'create_risk',
+      'create_change',
+      'list_tools',
+    ];
+
+    // Filter tools to only include prioritized ones
+    const filteredTools = [listToolsTool, ...tools].filter((t) =>
+      prioritizedTools.includes(t.name)
     );
 
+    const sortedTools = filteredTools.sort((a, b) => {
+      const indexA = prioritizedTools.indexOf(a.name);
+      const indexB = prioritizedTools.indexOf(b.name);
+      return indexA - indexB;
+    });
+
     this.logger.log(
-      `Created ${tools.length} LangChain tools (including list_tools): ${tools
+      `Created ${sortedTools.length} focused LangChain tools: ${sortedTools
         .map((t) => t.name)
         .join(', ')}`
     );
-    return tools;
+    return sortedTools as any[];
   }
 
   /**

@@ -75,7 +75,7 @@ export class AppService {
       const systemPromptBase = generatePersonaSystemMessage(assistant);
       this.l.log(`System prompt base: '${systemPromptBase}'`);
       const message: GeneratePrompt = {
-        model: 'qwen3',
+        model: 'bjoernb/deepseek-r1-8b',
         stream: false,
         messages: [
           {
@@ -254,7 +254,7 @@ export class AppService {
         // `;
 
         const personaPrompt: GeneratePrompt = {
-          model: 'qwen3',
+          model: 'bjoernb/deepseek-r1-8b',
           stream: false,
           tools: openAITools,
           messages: [
@@ -729,7 +729,7 @@ export class AppService {
           'The user is just starting out. Please introduce yourself and what your available to help with.';
       }
       const prompt: GeneratePrompt = {
-        model: 'qwen3',
+        model: 'bjoernb/deepseek-r1-8b',
         stream: false,
         messages: [
           {
