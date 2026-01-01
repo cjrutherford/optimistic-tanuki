@@ -3,6 +3,8 @@ import { DataSource } from 'typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { Profile } from '../profiles/entities/profile.entity';
 import { ProfileService } from './profile.service';
 import { ProfilesController } from '../profiles/profiles.controller';
@@ -25,22 +27,21 @@ import loadDatabase from './loadDatabase';
     }),
     LoggerModule,
   ],
-  controllers: [
-    ProfilesController,
-    TimelinesController,
-  ],
+  controllers: [AppController, ProfilesController, TimelinesController],
   providers: [
+    AppService,
     ProfileService,
     TimelineService,
     {
       provide: getRepositoryToken(Profile),
       useFactory: (ds: DataSource) => ds.getRepository(Profile),
       inject: ['PROFILE_CONNECTION'],
-    },{
+    },
+    {
       provide: getRepositoryToken(Timeline),
       useFactory: (ds: DataSource) => ds.getRepository(Timeline),
       inject: ['PROFILE_CONNECTION'],
-    }
+    },
   ],
 })
 export class AppModule {}

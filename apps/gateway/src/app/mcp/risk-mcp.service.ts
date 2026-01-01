@@ -23,11 +23,18 @@ const createRiskSchema = z.object({
   name: z.string().describe('The name of the risk'),
   description: z.string().optional().describe('A description of the risk'),
   userId: z.string().describe('The ID of the user creating the risk'),
-  impact: z.nativeEnum(RiskImpact).describe('The impact level of the risk'),
+  impact: z
+    .nativeEnum(RiskImpact)
+    .optional()
+    .describe('The impact level of the risk (default: LOW)'),
   likelihood: z
     .nativeEnum(RiskLikelihood)
-    .describe('The likelihood of the risk'),
-  status: z.nativeEnum(RiskStatus).describe('The status of the risk'),
+    .optional()
+    .describe('The likelihood of the risk (default: UNLIKELY)'),
+  status: z
+    .nativeEnum(RiskStatus)
+    .optional()
+    .describe('The status of the risk (default: OPEN)'),
 });
 
 const updateRiskSchema = z.object({
@@ -125,9 +132,9 @@ export class RiskMcpService {
         name,
         description,
         riskOwner: userId, // Changed from createdBy to riskOwner
-        impact,
-        likelihood,
-        status,
+        impact: impact || RiskImpact.LOW,
+        likelihood: likelihood || RiskLikelihood.UNLIKELY,
+        status: status || RiskStatus.OPEN,
       };
 
       const risk = await firstValueFrom(

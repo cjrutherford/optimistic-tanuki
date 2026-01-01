@@ -161,7 +161,7 @@ export class TaskMcpService {
       );
       const taskData: CreateTaskDto = {
         title,
-        description,
+        description: description ?? 'No description provided',
         status,
         priority,
         createdBy,

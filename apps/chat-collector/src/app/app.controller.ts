@@ -1,12 +1,20 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 import { AppService } from './app.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { ChatCommands } from '@optimistic-tanuki/constants';
+import { ChatCommands, CommonCommands } from '@optimistic-tanuki/constants';
 import { ChatMessage } from '@optimistic-tanuki/models';
 
 @Controller()
 export class AppController {
-  constructor(private readonly l: Logger, private readonly appService: AppService) {}
+  constructor(
+    private readonly l: Logger,
+    private readonly appService: AppService
+  ) {}
+
+  @MessagePattern({ cmd: CommonCommands.HealthCheck })
+  healthCheck() {
+    return { status: 'healthy' };
+  }
 
   @MessagePattern({ cmd: ChatCommands.POST_MESSAGE })
   async postMessage(@Payload() data: ChatMessage) {

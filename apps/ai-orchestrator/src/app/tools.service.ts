@@ -22,8 +22,10 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
   private readonly gatewayMcpUrl: string;
 
   constructor(private readonly config: ConfigService) {
-    // Ensure this URL points to the SSE endpoint, e.g., http://gateway:3000/sse
+    // Prefer an explicit environment override `MCP_URL`, then config, then default.
+    // This allows docker-compose to point the service at a separate MCP server.
     this.gatewayMcpUrl =
+      this.config.get<string>('MCP_URL') ||
       this.config.get<string>('toolSources.gateway') ||
       'http://gateway:3000/api/mcp';
   }
