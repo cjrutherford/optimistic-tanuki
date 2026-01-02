@@ -1,6 +1,7 @@
 <div class="ag-grid-wrapper" [style.height]="height" [style.width]="width">
   <ag-grid-angular
-    class="ag-theme-optimistic"
+    class="ag-theme-quartz ag-theme-optimistic"
+    style="height: 100%; width: 100%"
     [rowData]="rowDataSignal()"
     [columnDefs]="columnDefsSignal()"
     [gridOptions]="mergedGridOptions"

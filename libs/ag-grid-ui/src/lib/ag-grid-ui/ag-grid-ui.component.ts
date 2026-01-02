@@ -1,4 +1,15 @@
-import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, signal, computed, WritableSignal } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnInit,
+  OnDestroy,
+  OnChanges,
+  SimpleChanges,
+  signal,
+  computed,
+  WritableSignal,
+  ViewEncapsulation,
+} from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
   ColDef,
@@ -8,14 +19,18 @@ import {
   ModuleRegistry,
   AllCommunityModule,
 } from 'ag-grid-community';
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  Themeable,
+  ThemeColors,
+  ThemeService,
+} from '@optimistic-tanuki/theme-lib';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 /**
  * Theme-aware AG Grid wrapper component with reasonable defaults
- * 
+ *
  * This component provides:
  * - Automatic theme integration with the application's ThemeService
  * - Reasonable default grid options (pagination, sorting, filtering)
@@ -28,33 +43,37 @@ ModuleRegistry.registerModules([AllCommunityModule]);
   imports: [AgGridAngular],
   templateUrl: './ag-grid-ui.component.html',
   styleUrls: ['./ag-grid-ui.component.scss'],
+  encapsulation: ViewEncapsulation.None,
   host: {
-    '[style.--ag-background-color]': 'background',
-    '[style.--ag-foreground-color]': 'foreground',
-    '[style.--ag-header-background-color]': 'headerBackground',
-    '[style.--ag-odd-row-background-color]': 'oddRowBackground',
-    '[style.--ag-header-foreground-color]': 'headerForeground',
-    '[style.--ag-border-color]': 'borderColor',
-    '[style.--ag-row-hover-color]': 'rowHoverColor',
-    '[style.--ag-selected-row-background-color]': 'selectedRowBackground',
-    '[style.--ag-accent-color]': 'accent',
-  }
+    '[style.--opt-background]': 'background',
+    '[style.--opt-foreground]': 'foreground',
+    '[style.--opt-header-background]': 'headerBackground',
+    '[style.--opt-odd-row-background]': 'oddRowBackground',
+    '[style.--opt-header-foreground]': 'headerForeground',
+    '[style.--opt-border-color]': 'borderColor',
+    '[style.--opt-row-hover-color]': 'rowHoverColor',
+    '[style.--opt-selected-row-background]': 'selectedRowBackground',
+    '[style.--opt-accent]': 'accent',
+  },
 })
-export class AgGridUiComponent extends Themeable implements OnInit, OnDestroy, OnChanges {
+export class AgGridUiComponent
+  extends Themeable
+  implements OnInit, OnDestroy, OnChanges
+{
   /** Row data to display in the grid */
   @Input() rowData: any[] = [];
-  
+
   /** Column definitions for the grid */
   @Input() columnDefs: ColDef[] = [];
-  
+
   /** Custom grid options (merged with defaults) */
   @Input() gridOptions?: GridOptions;
-  
+
   /** Optional loading hint; when true the AG Grid loading overlay will be shown */
   @Input() loading?: boolean = false;
   /** Height of the grid (default: 500px) */
   @Input() height: string = '500px';
-  
+
   /** Width of the grid (default: 100%) */
   @Input() width: string = '100%';
 
@@ -62,9 +81,10 @@ export class AgGridUiComponent extends Themeable implements OnInit, OnDestroy, O
   public gridApi?: GridApi;
 
   // Internal signals for reactive data flow
-  private rowDataSignal: WritableSignal<any[]> = signal([]);
-  private columnDefsSignal: WritableSignal<ColDef[]> = signal([]);
-  private gridOptionsSignal: WritableSignal<GridOptions | undefined> = signal(undefined);
+  rowDataSignal: WritableSignal<any[]> = signal([]);
+  columnDefsSignal: WritableSignal<ColDef[]> = signal([]);
+  private gridOptionsSignal: WritableSignal<GridOptions | undefined> =
+    signal(undefined);
   private loadingSignal = signal(false);
 
   // Theme variables
@@ -80,10 +100,10 @@ export class AgGridUiComponent extends Themeable implements OnInit, OnDestroy, O
     pagination: true,
     paginationPageSize: 10,
     paginationPageSizeSelector: [10, 25, 50, 100],
-    
+
     // Sorting
-  // sortingOrder is deprecated at the top-level; move to defaultColDef
-    
+    // sortingOrder is deprecated at the top-level; move to defaultColDef
+
     // Filtering
     defaultColDef: {
       sortable: true,
@@ -94,22 +114,23 @@ export class AgGridUiComponent extends Themeable implements OnInit, OnDestroy, O
       // recommended place for sortingOrder
       sortingOrder: ['asc', 'desc', null],
     },
-    
-  // Selection
-  // Use the object form for rowSelection in newer AG Grid versions
+
+    // Selection
+    // Use the object form for rowSelection in newer AG Grid versions
     // Selection
     // Use the object form for rowSelection in newer AG Grid versions
     rowSelection: { mode: 'multiRow' },
-  // suppressRowClickSelection is deprecated; preserve previous intent via comments
-    
+    // suppressRowClickSelection is deprecated; preserve previous intent via comments
+
     // Animation
     animateRows: true,
-    
+
     // Other
     enableCellTextSelection: true,
     ensureDomOrder: true,
     // Default loading overlay template
-    overlayLoadingTemplate: '<span class="ag-overlay-loading-center">Loading...</span>',
+    overlayLoadingTemplate:
+      '<span class="ag-overlay-loading-center">Loading...</span>',
   };
 
   override applyTheme(colors: ThemeColors): void {
@@ -118,7 +139,7 @@ export class AgGridUiComponent extends Themeable implements OnInit, OnDestroy, O
     this.accent = colors.accent;
     this.complement = colors.complementary;
     this.borderColor = colors.complementaryShades[2][1];
-    
+
     if (this.theme === 'dark') {
       this.headerBackground = colors.accentShades[8][1];
       this.headerForeground = colors.foreground;
@@ -159,7 +180,10 @@ export class AgGridUiComponent extends Themeable implements OnInit, OnDestroy, O
       this.gridApi?.hideOverlay();
     }
 
-    console.log('ag-grid: onGridReady, displayedRows=', this.gridApi?.getDisplayedRowCount());
+    console.log(
+      'ag-grid: onGridReady, displayedRows=',
+      this.gridApi?.getDisplayedRowCount()
+    );
   }
 
   /**
@@ -171,16 +195,20 @@ export class AgGridUiComponent extends Themeable implements OnInit, OnDestroy, O
     const opts: GridOptions = {
       ...this.defaultGridOptions,
       ...provided,
-      columnDefs: provided.columnDefs ?? this.columnDefsSignal(),
-      rowData: provided.rowData ?? this.rowDataSignal(),
+      // columnDefs: provided.columnDefs ?? this.columnDefsSignal(),
+      // rowData: provided.rowData ?? this.rowDataSignal(),
     } as GridOptions;
 
-    // Lightweight runtime logging to aid debugging in Storybook
-    console.log('ag-grid: mergedGridOptions', {
-      keys: Object.keys(opts),
-      columnDefsLength: Array.isArray(opts.columnDefs) ? opts.columnDefs.length : undefined,
-      rowDataLength: Array.isArray(opts.rowData) ? opts.rowData.length : undefined,
-    });
+    // // Lightweight runtime logging to aid debugging in Storybook
+    // console.log('ag-grid: mergedGridOptions', {
+    //   keys: Object.keys(opts),
+    //   columnDefsLength: Array.isArray(opts.columnDefs)
+    //     ? opts.columnDefs.length
+    //     : undefined,
+    //   rowDataLength: Array.isArray(opts.rowData)
+    //     ? opts.rowData.length
+    //     : undefined,
+    // });
 
     return opts;
   }
@@ -205,7 +233,10 @@ export class AgGridUiComponent extends Themeable implements OnInit, OnDestroy, O
     }
     if (changes['columnDefs']) {
       this.columnDefsSignal.set(this.columnDefs || []);
-      console.log('ag-grid: columnDefs updated', (this.columnDefs || []).length);
+      console.log(
+        'ag-grid: columnDefs updated',
+        (this.columnDefs || []).length
+      );
     }
     if (changes['gridOptions']) {
       this.gridOptionsSignal.set(this.gridOptions);

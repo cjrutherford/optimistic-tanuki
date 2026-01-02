@@ -6,27 +6,30 @@
 .ag-grid-wrapper {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /**
  * Custom AG Grid theme that uses CSS variables from the host component
  * These variables are set dynamically based on the ThemeService
  */
-.ag-theme-optimistic {
+.ag-theme-quartz.ag-theme-optimistic {
   // Base colors
-  --ag-background-color: var(--ag-background-color);
-  --ag-foreground-color: var(--ag-foreground-color);
-  --ag-border-color: var(--ag-border-color);
+  --ag-background-color: var(--opt-background);
+  --ag-foreground-color: var(--opt-foreground);
+  --ag-border-color: var(--opt-border-color);
   
   // Header
-  --ag-header-background-color: var(--ag-header-background-color);
-  --ag-header-foreground-color: var(--ag-header-foreground-color);
-  --ag-header-cell-hover-background-color: var(--ag-row-hover-color);
+  --ag-header-background-color: var(--opt-header-background);
+  --ag-header-foreground-color: var(--opt-header-foreground);
+  --ag-header-cell-hover-background-color: var(--opt-row-hover-color);
   
   // Rows
-  --ag-odd-row-background-color: var(--ag-odd-row-background-color);
-  --ag-row-hover-color: var(--ag-row-hover-color);
-  --ag-selected-row-background-color: var(--ag-selected-row-background-color);
+  --ag-odd-row-background-color: var(--opt-odd-row-background);
+  --ag-row-hover-color: var(--opt-row-hover-color);
+  --ag-selected-row-background-color: var(--opt-selected-row-background);
   
   // Grid spacing and sizing
   --ag-grid-size: 6px;
@@ -40,11 +43,11 @@
   
   // Borders
   --ag-borders: solid 1px;
-  --ag-row-border-color: var(--ag-border-color);
+  --ag-row-border-color: var(--opt-border-color);
   
   // Inputs and controls
-  --ag-input-focus-border-color: var(--ag-accent-color);
-  --ag-checkbox-checked-color: var(--ag-accent-color);
+  --ag-input-focus-border-color: var(--opt-accent);
+  --ag-checkbox-checked-color: var(--opt-accent);
   
   // Scrollbar styling
   --ag-scrollbar-size: 8px;
@@ -62,7 +65,7 @@
     font-weight: 600;
     
     &:hover {
-      background-color: var(--ag-row-hover-color);
+      background-color: var(--opt-row-hover-color);
     }
   }
   
@@ -71,11 +74,11 @@
     cursor: pointer;
     
     &:hover {
-      background-color: var(--ag-row-hover-color) !important;
+      background-color: var(--opt-row-hover-color) !important;
     }
     
     &.ag-row-selected {
-      background-color: var(--ag-selected-row-background-color) !important;
+      background-color: var(--opt-selected-row-background) !important;
     }
   }
 
