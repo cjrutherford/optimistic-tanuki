@@ -69,7 +69,7 @@ describe('AgGridUiComponent', () => {
         isFirstChange: () => true,
       },
     });
-    const merged = component.mergedGridOptions;
+    const merged = component.mergedGridOptions();
     expect(merged.paginationPageSize).toBe(25);
     expect(merged.pagination).toBe(true); // default preserved
   });
@@ -108,6 +108,7 @@ describe('AgGridUiComponent', () => {
         sizeColumnsToFit: () => {},
         hideOverlay: () => {},
         getDisplayedRowCount: () => 0,
+        setGridOption: () => {},
       },
     } as any;
     

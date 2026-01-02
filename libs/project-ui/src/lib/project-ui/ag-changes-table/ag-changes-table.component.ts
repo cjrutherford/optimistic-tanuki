@@ -85,11 +85,11 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
       cellStyle: (params) => {
         const resolution = params.value;
         if (resolution === 'APPROVED') {
-          return { color: '#48bb78', fontWeight: 'bold' };
+          return { color: 'var(--success)', fontWeight: 'bold' };
         } else if (resolution === 'REJECTED') {
-          return { color: '#e53e3e', fontWeight: 'bold' };
+          return { color: 'var(--danger)', fontWeight: 'bold' };
         }
-        return { color: '#d69e2e', fontWeight: 'bold' };
+        return { color: 'var(--warning)', fontWeight: 'bold' };
       },
     },
     createDateColumn('updatedAt', 'Updated', { flex: 1, minWidth: 120 }),
@@ -139,8 +139,8 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
     editBtn.style.padding = '4px 12px';
     editBtn.style.cursor = 'pointer';
     editBtn.style.borderRadius = '4px';
-    editBtn.style.border = '1px solid var(--ag-accent-color)';
-    editBtn.style.background = 'var(--ag-accent-color)';
+    editBtn.style.border = '1px solid var(--accent)';
+    editBtn.style.background = 'var(--accent)';
     editBtn.style.color = 'white';
     editBtn.onclick = () => this.onEdit(params.data);
 
@@ -149,8 +149,8 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
     deleteBtn.style.padding = '4px 12px';
     deleteBtn.style.cursor = 'pointer';
     deleteBtn.style.borderRadius = '4px';
-    deleteBtn.style.border = '1px solid #e53e3e';
-    deleteBtn.style.background = '#e53e3e';
+    deleteBtn.style.border = '1px solid var(--danger)';
+    deleteBtn.style.background = 'var(--danger)';
     deleteBtn.style.color = 'white';
     deleteBtn.onclick = () => this.onDelete(params.data);
 

@@ -3,7 +3,7 @@
     style="height: 100%; width: 100%"
     [rowData]="rowDataSignal()"
     [columnDefs]="columnDefsSignal()"
-    [gridOptions]="mergedGridOptions"
+    [gridOptions]="mergedGridOptions()"
     (gridReady)="onGridReady($event)"
   ></ag-grid-angular>
 </div>
