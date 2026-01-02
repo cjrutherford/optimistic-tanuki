@@ -18,6 +18,7 @@ import {
   GridApi,
   ModuleRegistry,
   AllCommunityModule,
+  themeQuartz,
 } from 'ag-grid-community';
 import {
   Themeable,
@@ -44,17 +45,6 @@ ModuleRegistry.registerModules([AllCommunityModule]);
   templateUrl: './ag-grid-ui.component.html',
   styleUrls: ['./ag-grid-ui.component.scss'],
   encapsulation: ViewEncapsulation.None,
-  host: {
-    '[style.--opt-background]': 'background',
-    '[style.--opt-foreground]': 'foreground',
-    '[style.--opt-header-background]': 'headerBackground',
-    '[style.--opt-odd-row-background]': 'oddRowBackground',
-    '[style.--opt-header-foreground]': 'headerForeground',
-    '[style.--opt-border-color]': 'borderColor',
-    '[style.--opt-row-hover-color]': 'rowHoverColor',
-    '[style.--opt-selected-row-background]': 'selectedRowBackground',
-    '[style.--opt-accent]': 'accent',
-  },
 })
 export class AgGridUiComponent
   extends Themeable
@@ -87,12 +77,8 @@ export class AgGridUiComponent
     signal(undefined);
   private loadingSignal = signal(false);
 
-  // Theme variables
-  headerBackground = '';
-  headerForeground = '';
-  oddRowBackground = '';
-  rowHoverColor = '';
-  selectedRowBackground = '';
+  // AG Grid theme instance (created with themeQuartz)
+  private gridTheme: any;
 
   /** Default grid options with reasonable defaults */
   public defaultGridOptions: GridOptions = {
@@ -140,21 +126,48 @@ export class AgGridUiComponent
     this.complement = colors.complementary;
     this.borderColor = colors.complementaryShades[2][1];
 
-    if (this.theme === 'dark') {
-      this.headerBackground = colors.accentShades[8][1];
-      this.headerForeground = colors.foreground;
-      // Use a slightly lighter background for odd rows
-      this.oddRowBackground = colors.accentShades[9][1];
-      this.rowHoverColor = colors.accentShades[7][1];
-      this.selectedRowBackground = colors.accentShades[6][1];
-    } else {
-      this.headerBackground = colors.accentShades[2][1];
-      this.headerForeground = colors.foreground;
-      // Use a slightly darker background for odd rows
-      this.oddRowBackground = colors.accentShades[0][1];
-      this.rowHoverColor = colors.accentShades[1][1];
-      this.selectedRowBackground = colors.accentShades[2][1];
-    }
+    // Create AG Grid theme using the new themeQuartz API
+    const isDark = this.theme === 'dark';
+    
+    this.gridTheme = themeQuartz.withParams({
+      // Base colors
+      backgroundColor: colors.background,
+      foregroundColor: colors.foreground,
+      borderColor: colors.complementaryShades[2][1],
+      
+      // Header styling
+      headerBackgroundColor: isDark ? colors.accentShades[8][1] : colors.accentShades[2][1],
+      headerTextColor: colors.foreground,
+      headerCellHoverBackgroundColor: isDark ? colors.accentShades[7][1] : colors.accentShades[1][1],
+      
+      // Row styling
+      oddRowBackgroundColor: isDark ? colors.accentShades[9][1] : colors.accentShades[0][1],
+      rowHoverColor: isDark ? colors.accentShades[7][1] : colors.accentShades[1][1],
+      selectedRowBackgroundColor: isDark ? colors.accentShades[6][1] : colors.accentShades[2][1],
+      
+      // Spacing
+      spacing: 6,
+      cellHorizontalPadding: 12,
+      headerHeight: 48,
+      rowHeight: 42,
+      
+      // Typography
+      fontSize: 14,
+      fontFamily: 'inherit',
+      
+      // Borders
+      borderRadius: 4,
+      wrapperBorderRadius: 4,
+      
+      // Controls
+      inputFocusBorderColor: colors.accent,
+      checkboxCheckedColor: colors.accent,
+      
+      // Scrollbar
+      scrollbarSize: 8,
+    });
+
+    console.log('AG Grid theme applied:', { theme: this.theme, isDark });
   }
 
   /**
@@ -195,20 +208,9 @@ export class AgGridUiComponent
     const opts: GridOptions = {
       ...this.defaultGridOptions,
       ...provided,
-      // columnDefs: provided.columnDefs ?? this.columnDefsSignal(),
-      // rowData: provided.rowData ?? this.rowDataSignal(),
+      // Apply the theme using the new AG Grid API
+      theme: this.gridTheme,
     } as GridOptions;
-
-    // // Lightweight runtime logging to aid debugging in Storybook
-    // console.log('ag-grid: mergedGridOptions', {
-    //   keys: Object.keys(opts),
-    //   columnDefsLength: Array.isArray(opts.columnDefs)
-    //     ? opts.columnDefs.length
-    //     : undefined,
-    //   rowDataLength: Array.isArray(opts.rowData)
-    //     ? opts.rowData.length
-    //     : undefined,
-    // });
 
     return opts;
   }
