@@ -1,0 +1,36 @@
+<div class="ag-changes-table-container">
+  <div class="action-group">
+    <otui-button (click)="showModal.set(true)">➕ Add Change</otui-button>
+  </div>
+  
+  <otui-ag-grid
+    [rowData]="gridData()"
+    [columnDefs]="columnDefs"
+    [gridOptions]="gridOptions"
+    [height]="'600px'"
+    [loading]="loading"
+  />
+</div>
+
+@if (showEditModal() && selectedChange()) {
+  <otui-modal
+    (closeModal)="showEditModal.set(false)"
+    [heading]="'Edit Change'"
+  >
+    <lib-change-form
+      [change]="selectedChange()"
+      (submitted)="onEditFormSubmit($event)"
+    />
+  </otui-modal>
+}
+
+@if (showModal()) {
+  <otui-modal
+    (closeModal)="closeModal()"
+    [heading]="'Add Change'"
+  >
+    <lib-change-form 
+      (submitted)="onCreateFormSubmit($event)"
+    />
+  </otui-modal>
+}

@@ -1,0 +1,70 @@
+{
+  "name": "ag-grid-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/ag-grid-ui/src",
+  "prefix": "otui",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/ag-grid-ui/jest.config.ts",
+        "tsConfig": "libs/ag-grid-ui/tsconfig.spec.json"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "storybook": {
+      "executor": "@storybook/angular:start-storybook",
+      "options": {
+        "port": 4400,
+        "configDir": "libs/ag-grid-ui/.storybook",
+        "browserTarget": "ag-grid-ui:build-storybook",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "build-storybook": {
+      "executor": "@storybook/angular:build-storybook",
+      "outputs": ["{options.outputDir}"],
+      "options": {
+        "outputDir": "dist/storybook/ag-grid-ui",
+        "configDir": "libs/ag-grid-ui/.storybook",
+        "browserTarget": "ag-grid-ui:build-storybook",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "test-storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test-storybook -c libs/ag-grid-ui/.storybook --url=http://localhost:4400"
+      }
+    },
+    "static-storybook": {
+      "executor": "@nx/web:file-server",
+      "dependsOn": ["build-storybook"],
+      "options": {
+        "buildTarget": "ag-grid-ui:build-storybook",
+        "staticFilePath": "dist/storybook/ag-grid-ui",
+        "spa": true
+      },
+      "configurations": {
+        "ci": {
+          "buildTarget": "ag-grid-ui:build-storybook:ci"
+        }
+      }
+    }
+  }
+}

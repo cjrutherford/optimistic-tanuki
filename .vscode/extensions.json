@@ -6,6 +6,7 @@
     "ms-playwright.playwright",
     "prettier.prettier-vscode",
     "angular.ng-template",
-    "orta.vscode-jest"
+    "orta.vscode-jest",
+    "esbenp.prettier-vscode"
   ]
 }
