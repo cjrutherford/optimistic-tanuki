@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CardComponent, TableComponent, TableCell, TableRowAction, HeadingComponent, ModalComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { CardComponent, HeadingComponent, ModalComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { MessageComponent, MessageService } from '@optimistic-tanuki/message-ui';
 import { TextInputComponent, TextAreaComponent } from '@optimistic-tanuki/form-ui';
 import { PermissionDto, CreatePermissionDto, UpdatePermissionDto, AppScopeDto } from '@optimistic-tanuki/ui-models';
 import { PermissionsService } from '../services/permissions.service';
 import { AppScopesService } from '../services/app-scopes.service';
+import { AgPermissionsTableComponent } from './ag-permissions-table.component';
 
 @Component({
   selector: 'app-permissions-management',
@@ -15,13 +16,13 @@ import { AppScopesService } from '../services/app-scopes.service';
     CommonModule,
     FormsModule,
     CardComponent,
-    TableComponent,
     HeadingComponent,
     MessageComponent,
     ModalComponent,
     ButtonComponent,
     TextInputComponent,
     TextAreaComponent,
+    AgPermissionsTableComponent,
   ],
   template: `
     <lib-message></lib-message>
@@ -29,21 +30,13 @@ import { AppScopesService } from '../services/app-scopes.service';
     <otui-card>
       <otui-heading level="2">Permissions Management</otui-heading>
 
-      <div class="action-bar">
-        <otui-button variant="primary" (action)="openCreateModal()">
-          Create New Permission
-        </otui-button>
-      </div>
-
-      <div *ngIf="loading" class="loading-message">Loading permissions...</div>
-
-      <div *ngFor="let perm of permissions" class="perm-row">
-        <otui-table
-          [cells]="getPermissionCells(perm)"
-          [rowIndex]="permissions.indexOf(perm)"
-          [rowActions]="getPermissionActions(perm)"
-        ></otui-table>
-      </div>
+      <app-ag-permissions-table
+        [permissions]="permissions"
+        [loading]="loading"
+        (create)="openCreateModal()"
+        (edit)="openEditModal($event)"
+        (delete)="openDeleteConfirm($event)"
+      />
     </otui-card>
 
     <!-- Create/Edit Modal -->
@@ -195,19 +188,9 @@ import { AppScopesService } from '../services/app-scopes.service';
         justify-content: center;
       }
 
-      .action-bar {
-        margin-bottom: 1.5rem;
-        display: flex;
-        justify-content: flex-end;
-      }
-
-      .loading-message {
-        padding: 2rem;
-        text-align: center;
-      }
-
-      .perm-row {
-        margin-bottom: 0.5rem;
+      :host {
+        display: block;
+        padding: 16px;
       }
 
       .form-container {
@@ -383,30 +366,6 @@ export class PermissionsManagementComponent implements OnInit {
         console.error('Failed to load app scopes:', err);
       },
     });
-  }
-
-  getPermissionCells(perm: PermissionDto): TableCell[] {
-    return [
-      { heading: 'Name', value: perm.name },
-      { heading: 'Description', value: perm.description },
-      { heading: 'Resource', value: perm.resource },
-      { heading: 'Action', value: perm.action },
-      { heading: 'App Scope', value: perm.appScope?.name || 'None' },
-      { heading: 'Target ID', value: perm.targetId || 'Global' },
-    ];
-  }
-
-  getPermissionActions(perm: PermissionDto): TableRowAction[] {
-    return [
-      {
-        title: 'Edit',
-        action: () => this.openEditModal(perm),
-      },
-      {
-        title: 'Delete',
-        action: () => this.openDeleteConfirm(perm),
-      },
-    ];
   }
 
   // Modal controls

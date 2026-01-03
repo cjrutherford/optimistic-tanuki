@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CardComponent, TableComponent, TableCell, TableRowAction, HeadingComponent, ModalComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { CardComponent, HeadingComponent, ModalComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { MessageComponent, MessageService } from '@optimistic-tanuki/message-ui';
 import { TextInputComponent, TextAreaComponent, CheckboxComponent } from '@optimistic-tanuki/form-ui';
 import { AppScopeDto, CreateAppScopeDto, UpdateAppScopeDto, PermissionDto } from '@optimistic-tanuki/ui-models';
 import { AppScopesService } from '../services/app-scopes.service';
 import { PermissionsService } from '../services/permissions.service';
+import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
 
 @Component({
   selector: 'app-app-scopes-management',
@@ -15,7 +16,6 @@ import { PermissionsService } from '../services/permissions.service';
     CommonModule,
     FormsModule,
     CardComponent,
-    TableComponent,
     HeadingComponent,
     MessageComponent,
     ModalComponent,
@@ -23,6 +23,7 @@ import { PermissionsService } from '../services/permissions.service';
     TextInputComponent,
     TextAreaComponent,
     CheckboxComponent,
+    AgAppScopesTableComponent,
   ],
   template: `
     <lib-message></lib-message>
@@ -30,21 +31,14 @@ import { PermissionsService } from '../services/permissions.service';
     <otui-card>
       <otui-heading level="2">App Scopes Management</otui-heading>
 
-      <div class="action-bar">
-        <otui-button variant="primary" (action)="openCreateModal()">
-          Create New App Scope
-        </otui-button>
-      </div>
-
-      <div *ngIf="loading" class="loading-message">Loading app scopes...</div>
-
-      <div *ngFor="let scope of appScopes" class="scope-row">
-        <otui-table
-          [cells]="getAppScopeCells(scope)"
-          [rowIndex]="appScopes.indexOf(scope)"
-          [rowActions]="getAppScopeActions(scope)"
-        ></otui-table>
-      </div>
+      <app-ag-app-scopes-table
+        [appScopes]="appScopes"
+        [permissionCounts]="permissionCountsMap"
+        [loading]="loading"
+        (create)="openCreateModal()"
+        (edit)="openEditModal($event)"
+        (delete)="openDeleteConfirm($event)"
+      />
     </otui-card>
 
     <!-- Create/Edit Modal -->
@@ -201,19 +195,9 @@ import { PermissionsService } from '../services/permissions.service';
         justify-content: center;
       }
 
-      .action-bar {
-        margin-bottom: 1.5rem;
-        display: flex;
-        justify-content: flex-end;
-      }
-
-      .loading-message {
-        padding: 2rem;
-        text-align: center;
-      }
-
-      .scope-row {
-        margin-bottom: 0.5rem;
+      :host {
+        display: block;
+        padding: 16px;
       }
 
       .form-container {
@@ -382,6 +366,7 @@ export class AppScopesManagementComponent implements OnInit {
   appScopes: AppScopeDto[] = [];
   permissions: PermissionDto[] = [];
   relatedPermissions: PermissionDto[] = [];
+  permissionCountsMap: Map<string, number> = new Map();
   loading = false;
 
   // Modal states
@@ -421,6 +406,7 @@ export class AppScopesManagementComponent implements OnInit {
       next: (appScopes) => {
         this.appScopes = appScopes;
         this.loading = false;
+        this.updatePermissionCounts();
         
         if (appScopes.length === 0) {
           this.messageService.addMessage({
@@ -444,6 +430,7 @@ export class AppScopesManagementComponent implements OnInit {
     this.permissionsService.getPermissions().subscribe({
       next: (permissions) => {
         this.permissions = permissions;
+        this.updatePermissionCounts();
       },
       error: (err) => {
         console.error('Failed to load permissions:', err);
@@ -451,27 +438,12 @@ export class AppScopesManagementComponent implements OnInit {
     });
   }
 
-  getAppScopeCells(scope: AppScopeDto): TableCell[] {
-    const relatedPerms = this.getRelatedPermissionsForScope(scope);
-    return [
-      { heading: 'Name', value: scope.name },
-      { heading: 'Description', value: scope.description },
-      { heading: 'Status', value: scope.active ? 'Active' : 'Inactive', isBadge: true },
-      { heading: 'Permissions', value: `${relatedPerms.length} permission(s)` },
-    ];
-  }
-
-  getAppScopeActions(scope: AppScopeDto): TableRowAction[] {
-    return [
-      {
-        title: 'Edit',
-        action: () => this.openEditModal(scope),
-      },
-      {
-        title: 'Delete',
-        action: () => this.openDeleteConfirm(scope),
-      },
-    ];
+  updatePermissionCounts(): void {
+    this.permissionCountsMap.clear();
+    this.appScopes.forEach(scope => {
+      const count = this.getRelatedPermissionsForScope(scope).length;
+      this.permissionCountsMap.set(scope.id, count);
+    });
   }
 
   getRelatedPermissionsForScope(scope: AppScopeDto): PermissionDto[] {
@@ -602,6 +574,7 @@ export class AppScopesManagementComponent implements OnInit {
         this.closeFormModal();
         this.loadAppScopes();
         this.loadPermissions(); // Reload to get updated relationships
+        this.updatePermissionCounts();
       },
       error: (err) => {
         const errorMessage = err.error?.message || err.message || 'Failed to update app scope.';
@@ -625,6 +598,7 @@ export class AppScopesManagementComponent implements OnInit {
         this.closeConfirmModal();
         this.loadAppScopes();
         this.loadPermissions(); // Reload to get updated relationships
+        this.updatePermissionCounts();
       },
       error: (err) => {
         const errorMessage = err.error?.message || err.message || 'Failed to delete app scope.';
