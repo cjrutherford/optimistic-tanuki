@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardComponent, TableComponent, TableCell, HeadingComponent } from '@optimistic-tanuki/common-ui';
+import { CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
 import { MessageComponent, MessageService } from '@optimistic-tanuki/message-ui';
 import { RoleDto } from '@optimistic-tanuki/ui-models';
 import { RolesService } from '../services/roles.service';
+import { AgRolesTableComponent } from './ag-roles-table.component';
 
 @Component({
   selector: 'app-roles-management',
@@ -11,9 +12,9 @@ import { RolesService } from '../services/roles.service';
   imports: [
     CommonModule,
     CardComponent,
-    TableComponent,
     HeadingComponent,
     MessageComponent,
+    AgRolesTableComponent,
   ],
   template: `
     <lib-message></lib-message>
@@ -21,25 +22,17 @@ import { RolesService } from '../services/roles.service';
     <otui-card>
       <otui-heading level="2">Roles Management</otui-heading>
 
-      <div *ngIf="loading" class="loading-message">Loading roles...</div>
-
-      <div *ngFor="let role of roles" class="role-row">
-        <otui-table
-          [cells]="getRoleCells(role)"
-          [rowIndex]="roles.indexOf(role)"
-        ></otui-table>
-      </div>
+      <app-ag-roles-table
+        [roles]="roles"
+        [loading]="loading"
+      />
     </otui-card>
   `,
   styles: [
     `
-      .loading-message {
-        padding: 2rem;
-        text-align: center;
-      }
-
-      .role-row {
-        margin-bottom: 0.5rem;
+      :host {
+        display: block;
+        padding: 16px;
       }
     `,
   ],
@@ -82,13 +75,5 @@ export class RolesManagementComponent implements OnInit {
         });
       },
     });
-  }
-
-  getRoleCells(role: RoleDto): TableCell[] {
-    return [
-      { heading: 'Name', value: role.name },
-      { heading: 'Description', value: role.description },
-      { heading: 'App Scope', value: role.appScope?.name || 'N/A' },
-    ];
   }
 }

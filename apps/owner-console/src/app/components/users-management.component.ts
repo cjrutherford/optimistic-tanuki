@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardComponent, TableComponent, TableCell, TableRowAction, HeadingComponent } from '@optimistic-tanuki/common-ui';
+import { CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
 import { MessageComponent, MessageService } from '@optimistic-tanuki/message-ui';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { UsersService } from '../services/users.service';
 import { RolesService } from '../services/roles.service';
+import { AgUsersTableComponent } from './ag-users-table.component';
 
 @Component({
   selector: 'app-users-management',
@@ -12,9 +13,9 @@ import { RolesService } from '../services/roles.service';
   imports: [
     CommonModule,
     CardComponent,
-    TableComponent,
     HeadingComponent,
     MessageComponent,
+    AgUsersTableComponent,
   ],
   template: `
     <lib-message></lib-message>
@@ -22,26 +23,18 @@ import { RolesService } from '../services/roles.service';
     <otui-card>
       <otui-heading level="2">Users Management</otui-heading>
 
-      <div *ngIf="loading" class="loading-message">Loading users...</div>
-
-      <div *ngFor="let user of users" class="user-row">
-        <otui-table
-          [cells]="getUserCells(user)"
-          [rowIndex]="users.indexOf(user)"
-          [rowActions]="getUserActions(user)"
-        ></otui-table>
-      </div>
+      <app-ag-users-table
+        [users]="users"
+        [loading]="loading"
+        (manageRoles)="onManageRoles($event)"
+      />
     </otui-card>
   `,
   styles: [
     `
-      .loading-message {
-        padding: 2rem;
-        text-align: center;
-      }
-
-      .user-row {
-        margin-bottom: 0.5rem;
+      :host {
+        display: block;
+        padding: 16px;
       }
     `,
   ],
@@ -87,23 +80,12 @@ export class UsersManagementComponent implements OnInit {
     });
   }
 
-  getUserCells(user: ProfileDto): TableCell[] {
-    return [
-      { heading: 'Name', value: user.profileName },
-      { heading: 'User ID', value: user.userId, isOverflowable: true },
-      { heading: 'Bio', value: user.bio || 'N/A' },
-    ];
-  }
-
-  getUserActions(user: ProfileDto): TableRowAction[] {
-    return [
-      {
-        title: 'Manage Roles',
-        action: async (index: number) => {
-          console.log('Manage roles for user:', user);
-          // TODO: Implement role management dialog
-        },
-      },
-    ];
+  onManageRoles(user: ProfileDto): void {
+    console.log('Manage roles for user:', user);
+    // TODO: Implement role management dialog
+    this.messageService.addMessage({
+      content: `Role management for ${user.profileName} is not yet implemented.`,
+      type: 'info'
+    });
   }
 }

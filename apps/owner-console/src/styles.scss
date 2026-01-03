@@ -1,1 +1,29 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* AG Grid base styles */
+@import 'ag-grid-community/styles/ag-grid.css';
+@import 'ag-grid-community/styles/ag-theme-quartz.css';
+
+/* AG Grid action button styles */
+.ag-grid-action-button {
+  padding: 4px 12px;
+  background: var(--accent, #3f51b5);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.ag-grid-action-button:hover {
+  background: var(--accent-darken-10, #303f9f);
+}
+
+.ag-grid-delete-button {
+  background: var(--danger, #f44336);
+}
+
+.ag-grid-delete-button:hover {
+  background: var(--danger-darken-10, #d32f2f);
+}
