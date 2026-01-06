@@ -1,0 +1,130 @@
+name: Build
+
+on:
+  pull_request:
+    branches: [main, develop, MVP-polish]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    name: Build (Affected)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Derive appropriate SHAs for base and head for nx affected commands
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Build affected projects
+        run: npx nx affected -t build --configuration=production --parallel=3 --maxParallel=3
+        env:
+          CI: true
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 7
+
+  build-all:
+    name: Build (All - Weekly)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # Only run on schedule or manual trigger
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build all projects
+        run: npx nx run-many -t build --configuration=production --all --parallel=3
+        env:
+          CI: true
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-all
+          path: dist/
+          retention-days: 7
+
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: github.event_name == 'pull_request'
+
+    strategy:
+      matrix:
+        service:
+          - authentication
+          - gateway
+          - profile
+          - social
+          - assets
+          - blogging
+          - project-planning
+          - permissions
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for ${{ matrix.service }}
+        run: |
+          docker compose build ${{ matrix.service }}
+        env:
+          CI: true
+
+      - name: Test Docker image
+        run: |
+          # Start the service
+          docker compose up -d ${{ matrix.service }}
+          
+          # Wait for service to be ready
+          sleep 10
+          
+          # Check if container is running
+          docker ps | grep ${{ matrix.service }}
+          
+          # Stop the service
+          docker compose down
+        env:
+          CI: true
