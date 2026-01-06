@@ -1,4 +1,5 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { Readable } from 'stream';
@@ -9,6 +10,18 @@ export interface S3ServiceOptions {
   accessKeyId: string;
   secretAccessKey: string;
   bucketName: string;
+}
+
+export interface SignedUrlOptions {
+  key: string;
+  expiresIn?: number; // Expiration time in seconds (default: 3600 = 1 hour)
+  contentType?: string;
+}
+
+export interface SignedUrlResult {
+  url: string;
+  key: string;
+  expiresAt: Date;
 }
 
 export const defaultS3ServiceOptions: S3ServiceOptions = {
@@ -39,6 +52,57 @@ export class S3Service {
       },
       forcePathStyle: true, // Often needed for S3-compatible storage like MinIO
     });
+  }
+
+  /**
+   * Generate a pre-signed URL for uploading a file directly to S3
+   */
+  async generateUploadUrl(options: SignedUrlOptions): Promise<SignedUrlResult> {
+    const expiresIn = options.expiresIn || 3600; // Default 1 hour
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
+
+    this.l.log(`S3Service: Generating upload URL for s3://${this.bucketName}/${options.key} (expires in ${expiresIn}s)`);
+
+    const command = new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: options.key,
+      ContentType: options.contentType,
+    });
+
+    const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+
+    this.l.log(`S3Service: Upload URL generated for ${options.key}, expires at ${expiresAt.toISOString()}`);
+
+    return {
+      url,
+      key: options.key,
+      expiresAt,
+    };
+  }
+
+  /**
+   * Generate a pre-signed URL for downloading a file from S3
+   */
+  async generateDownloadUrl(options: SignedUrlOptions): Promise<SignedUrlResult> {
+    const expiresIn = options.expiresIn || 3600; // Default 1 hour
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
+
+    this.l.log(`S3Service: Generating download URL for s3://${this.bucketName}/${options.key} (expires in ${expiresIn}s)`);
+
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: options.key,
+    });
+
+    const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+
+    this.l.log(`S3Service: Download URL generated for ${options.key}, expires at ${expiresAt.toISOString()}`);
+
+    return {
+      url,
+      key: options.key,
+      expiresAt,
+    };
   }
 
   async uploadObject(key: string, body: Buffer, contentType?: string): Promise<void> {
