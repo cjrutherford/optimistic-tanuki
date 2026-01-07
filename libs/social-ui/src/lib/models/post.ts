@@ -1,5 +1,6 @@
 
-import { AttachmentDto, CommentDto } from '.';
+import { AttachmentDto } from './attachment';
+import { CommentDto } from './comment';
 
 
 export interface CreatePostDto {

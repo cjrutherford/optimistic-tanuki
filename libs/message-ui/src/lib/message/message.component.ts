@@ -4,12 +4,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MessageService } from '../message.service';
 
-export declare type MessageLevelType = 'info' | 'warning' | 'error' | 'success';
 
-export declare type MessageType = {
-  content: string;
-  type: MessageLevelType;
-}
 
 @Component({
   selector: 'lib-message',
