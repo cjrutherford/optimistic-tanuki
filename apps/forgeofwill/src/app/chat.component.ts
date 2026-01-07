@@ -26,6 +26,8 @@ import {
   SOCKET_HOST,
   SOCKET_NAMESPACE,
   SOCKET_IO_INSTANCE,
+  SOCKET_AUTH_TOKEN_PROVIDER,
+  SOCKET_AUTH_ERROR_HANDLER,
 } from '@optimistic-tanuki/chat-ui';
 import { ProfileService } from './profile/profile.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
@@ -43,12 +45,27 @@ import { io } from 'socket.io-client';
         platformId: object,
         socketHost: string,
         socketNamespace: string,
-        socketIoInstance: typeof io
+        socketIoInstance: typeof io,
+        authTokenProvider?: () => string | null,
+        authErrorHandler?: () => void
       ) =>
         isPlatformBrowser(platformId)
-          ? new SocketChatService(socketHost, socketNamespace, socketIoInstance)
+          ? new SocketChatService(
+              socketHost,
+              socketNamespace,
+              socketIoInstance,
+              authTokenProvider,
+              authErrorHandler
+            )
           : null,
-      deps: [PLATFORM_ID, SOCKET_HOST, SOCKET_NAMESPACE, SOCKET_IO_INSTANCE],
+      deps: [
+        PLATFORM_ID,
+        SOCKET_HOST,
+        SOCKET_NAMESPACE,
+        SOCKET_IO_INSTANCE,
+        SOCKET_AUTH_TOKEN_PROVIDER,
+        SOCKET_AUTH_ERROR_HANDLER,
+      ],
     },
   ],
   templateUrl: './chat.component.html',
