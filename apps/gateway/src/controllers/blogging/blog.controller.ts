@@ -46,7 +46,7 @@ export class BlogController {
   }
 
   @Post()
-  @RequirePermissions('create:blog')
+  @RequirePermissions('blog.blog.create')
   async createBlog(@Body() createBlog: CreateBlogDto) {
     try {
       const blog = await firstValueFrom(

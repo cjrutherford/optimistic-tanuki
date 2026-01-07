@@ -1,8 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { IsString, IsNotEmpty } from 'class-validator';
 
-export default class ValidateTokenRequest {
+export class ValidateTokenRequest {
+    @IsString()
+    @IsNotEmpty()
     @ApiProperty()
-    userId = '';
+    userId!: string;
+
+    @IsString()
+    @IsNotEmpty()
     @ApiProperty()
-    token = '';
+    token!: string;
 }

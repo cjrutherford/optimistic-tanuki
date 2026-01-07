@@ -1,32 +1,113 @@
 import { ProfileTelosDto } from "./profile";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsArray, IsOptional, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PartialType } from '@nestjs/mapped-types';
 
 export class ProjectTelosDto {
-    id: string;
-    profile: ProfileTelosDto;
-    name: string;
-    description: string;
-    goals: string[];
-    skills: string[];
-    interests: string[];
-    limitations: string[];
-    strengths: string[];
-    objectives: string[];
-    coreObjective: string;
-    overallProjectSummary: string;
+    @ApiProperty()
+    @IsString()
+    id!: string;
+
+    @ApiProperty({ type: () => ProfileTelosDto })
+    @Type(() => ProfileTelosDto)
+    profile!: ProfileTelosDto;
+
+    @ApiProperty()
+    @IsString()
+    name!: string;
+
+    @ApiProperty()
+    @IsString()
+    description!: string;
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    goals!: string[];
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    skills!: string[];
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    interests!: string[];
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    limitations!: string[];
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    strengths!: string[];
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    objectives!: string[];
+
+    @ApiProperty()
+    @IsString()
+    coreObjective!: string;
+
+    @ApiProperty()
+    @IsString()
+    overallProjectSummary!: string;
 }
 
 export class CreateProjectTelosDto {
-    name: string;
-    description: string;
-    goals: string[];
-    skills: string[];
-    interests: string[];
-    limitations: string[];
-    strengths: string[];
-    objectives: string[];
-    coreObjective: string;
+    @ApiProperty()
+    @IsString()
+    name!: string;
+
+    @ApiProperty()
+    @IsString()
+    description!: string;
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    goals!: string[];
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    skills!: string[];
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    interests!: string[];
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    limitations!: string[];
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    strengths!: string[];
+
+    @ApiProperty()
+    @IsArray()
+    @IsString({ each: true })
+    objectives!: string[];
+
+    @ApiProperty()
+    @IsString()
+    coreObjective!: string;
 }
 
-export declare type UpdateProjectTelosDto = Partial<ProjectTelosDto>;
+export class UpdateProjectTelosDto extends PartialType(CreateProjectTelosDto) {
+    @ApiProperty()
+    @IsUUID()
+    id: string;
+}
 
-export declare type QueryProjectTelosDto = Partial<ProjectTelosDto>;
+export class QueryProjectTelosDto extends PartialType(ProjectTelosDto) {}

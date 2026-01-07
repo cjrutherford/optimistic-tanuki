@@ -284,7 +284,15 @@
       "appScope": "blogging"
     },
     {
-      "name": "project.create",
+      "name": "blog.blog.create",
+      "description": "Create a blog (controller uses create:blog currently, mapping to standard)",
+      "resource": "blog",
+      "action": "create",
+      "targetId": null,
+      "appScope": "blogging"
+    },
+    {
+      "name": "project-planning.project.create",
       "description": "Create project",
       "resource": "project",
       "action": "create",
@@ -292,7 +300,7 @@
       "appScope": "project-planning"
     },
     {
-      "name": "project.read",
+      "name": "project-planning.project.read",
       "description": "Read project",
       "resource": "project",
       "action": "read",
@@ -300,7 +308,7 @@
       "appScope": "project-planning"
     },
     {
-      "name": "project.update",
+      "name": "project-planning.project.update",
       "description": "Update project",
       "resource": "project",
       "action": "update",
@@ -308,7 +316,15 @@
       "appScope": "project-planning"
     },
     {
-      "name": "task.create",
+      "name": "project-planning.project.delete",
+      "description": "Delete project",
+      "resource": "project",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.task.create",
       "description": "Create task",
       "resource": "task",
       "action": "create",
@@ -316,7 +332,7 @@
       "appScope": "project-planning"
     },
     {
-      "name": "task.read",
+      "name": "project-planning.task.read",
       "description": "Read task",
       "resource": "task",
       "action": "read",
@@ -324,10 +340,146 @@
       "appScope": "project-planning"
     },
     {
-      "name": "task.update",
+      "name": "project-planning.task.update",
       "description": "Update task",
       "resource": "task",
       "action": "update",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.task.delete",
+      "description": "Delete task",
+      "resource": "task",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.change.create",
+      "description": "Create change request",
+      "resource": "change",
+      "action": "create",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.change.read",
+      "description": "Read change request",
+      "resource": "change",
+      "action": "read",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.change.update",
+      "description": "Update change request",
+      "resource": "change",
+      "action": "update",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.change.delete",
+      "description": "Delete change request",
+      "resource": "change",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.journal.create",
+      "description": "Create journal entry",
+      "resource": "journal",
+      "action": "create",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.journal.read",
+      "description": "Read journal entry",
+      "resource": "journal",
+      "action": "read",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.journal.update",
+      "description": "Update journal entry",
+      "resource": "journal",
+      "action": "update",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.journal.delete",
+      "description": "Delete journal entry",
+      "resource": "journal",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.risk.create",
+      "description": "Create risk",
+      "resource": "risk",
+      "action": "create",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.risk.read",
+      "description": "Read risk",
+      "resource": "risk",
+      "action": "read",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.risk.update",
+      "description": "Update risk",
+      "resource": "risk",
+      "action": "update",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.risk.delete",
+      "description": "Delete risk",
+      "resource": "risk",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.timer.create",
+      "description": "Create timer",
+      "resource": "timer",
+      "action": "create",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.timer.read",
+      "description": "Read timer",
+      "resource": "timer",
+      "action": "read",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.timer.update",
+      "description": "Update timer",
+      "resource": "timer",
+      "action": "update",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.timer.delete",
+      "description": "Delete timer",
+      "resource": "timer",
+      "action": "delete",
       "targetId": null,
       "appScope": "project-planning"
     },
@@ -348,10 +500,26 @@
       "appScope": "social"
     },
     {
-      "name": "social.post.read",
-      "description": "Read social post",
+      "name": "social.vote.create",
+      "description": "Cast a vote",
+      "resource": "vote",
+      "action": "create",
+      "targetId": null,
+      "appScope": "social"
+    },
+    {
+      "name": "social.comment.create",
+      "description": "Create a comment (social)",
+      "resource": "comment",
+      "action": "create",
+      "targetId": null,
+      "appScope": "social"
+    },
+    {
+      "name": "social.post.update",
+      "description": "Update social post",
       "resource": "post",
-      "action": "read",
+      "action": "update",
       "targetId": null,
       "appScope": "social"
     },
@@ -546,32 +714,82 @@
     },
     {
       "role": "forgeofwill_planner",
-      "permission": "project.create",
+      "permission": "project-planning.project.create",
       "permissionAppScope": "project-planning"
     },
     {
       "role": "forgeofwill_planner",
-      "permission": "project.read",
+      "permission": "project-planning.project.read",
       "permissionAppScope": "project-planning"
     },
     {
       "role": "forgeofwill_planner",
-      "permission": "project.update",
+      "permission": "project-planning.project.update",
       "permissionAppScope": "project-planning"
     },
     {
       "role": "forgeofwill_planner",
-      "permission": "task.create",
+      "permission": "project-planning.task.create",
       "permissionAppScope": "project-planning"
     },
     {
       "role": "forgeofwill_planner",
-      "permission": "task.read",
+      "permission": "project-planning.task.read",
       "permissionAppScope": "project-planning"
     },
     {
       "role": "forgeofwill_planner",
-      "permission": "task.update",
+      "permission": "project-planning.task.update",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.change.create",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.change.read",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.change.update",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.risk.create",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.risk.read",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.risk.update",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.journal.create",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.journal.read",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.timer.create",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.timer.read",
       "permissionAppScope": "project-planning"
     },
     {
@@ -662,6 +880,21 @@
     {
       "role": "social_user",
       "permission": "social.post.read",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.post.update",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.vote.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.comment.create",
       "permissionAppScope": "social"
     },
     {
@@ -758,6 +991,296 @@
       "role": "owner_console_standard_user",
       "permission": "profile.read",
       "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "profile.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "profile.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "asset.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "asset.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "asset.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "asset.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "blog.post.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "blog.post.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "blog.post.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "blog.post.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "blog.post.publish",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "blog.comment.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "blog.comment.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "blog.blog.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.project.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.project.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.project.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.project.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.change.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.change.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.change.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.change.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.journal.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.journal.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.journal.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.journal.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.risk.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.risk.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.risk.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.risk.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.timer.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.timer.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.timer.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.timer.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "social.follow",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "social.post.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "social.post.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "social.post.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "social.vote.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "social.comment.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "permissions.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "permissions.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "permissions.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "permissions.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "roles.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "roles.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "roles.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "roles.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "users.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "users.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "appscopes.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "appscopes.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "appscopes.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "appscopes.delete",
+      "permissionAppScope": "global"
     }
   ]
 }

@@ -1,14 +1,26 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsEmail, IsOptional, MinLength } from 'class-validator';
 
-export default class ResetPasswordRequest {
-    @ApiProperty()
-    email = '';
+export class ResetPasswordRequest {
+  @IsEmail()
   @ApiProperty()
-  oldPass = '';
+  email!: string;
+
+  @IsString()
   @ApiProperty()
-  newConf = '';
+  oldPass!: string;
+
+  @IsString()
   @ApiProperty()
-  newPass = '';
+  newConf!: string;
+
+  @IsString()
+  @MinLength(8)
+  @ApiProperty()
+  newPass!: string;
+
+  @IsOptional()
+  @IsString()
   @ApiPropertyOptional()
-  mfa?:string;
+  mfa?: string;
 }

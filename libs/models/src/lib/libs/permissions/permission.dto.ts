@@ -1,54 +1,73 @@
 import { IsString, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreatePermissionDto {
     @IsString()
-    name: string;
+    @ApiProperty()
+    name!: string;
 
     @IsString()
-    description: string;
+    @ApiProperty()
+    description!: string;
 
     @IsString()
-    resource: string;
+    @ApiProperty()
+    resource!: string;
 
     @IsString()
-    action: string;
+    @ApiProperty()
+    action!: string;
 
     @IsOptional()
     @IsString()
+    @ApiPropertyOptional()
     targetId?: string;
 }
 
 export class UpdatePermissionDto {
     @IsString()
-    id: string;
+    @ApiProperty()
+    id!: string;
 
     @IsOptional()
     @IsString()
+    @ApiPropertyOptional()
     name?: string;
 
     @IsOptional()
     @IsString()
+    @ApiPropertyOptional()
     description?: string;
 
     @IsOptional()
     @IsString()
+    @ApiPropertyOptional()
     resource?: string;
 
     @IsOptional()
     @IsString()
+    @ApiPropertyOptional()
     action?: string;
 
     @IsOptional()
     @IsString()
+    @ApiPropertyOptional()
     targetId?: string;
 }
 
 export class PermissionDto {
-    id: string;
-    name: string;
-    description: string;
-    resource: string;
-    action: string;
+    @ApiProperty()
+    id!: string;
+    @ApiProperty()
+    name!: string;
+    @ApiProperty()
+    description!: string;
+    @ApiProperty()
+    resource!: string;
+    @ApiProperty()
+    action!: string;
+    @ApiPropertyOptional()
     targetId?: string;
-    created_at: Date;
+    @ApiProperty()
+    created_at!: Date;
 }
