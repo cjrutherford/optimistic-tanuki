@@ -8,7 +8,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 async function main() {
     const app = await NestFactory.createApplicationContext(AppModule);
     const personaTelosRepo = app.get<Repository<PersonaTelos>>(getRepositoryToken(PersonaTelos));
-    console.dir(personaTelosRepo)
+    // console.dir(personaTelosRepo)
 
     for(const persona of personas) {
         const existingPersona = await personaTelosRepo.findOneBy({ name: persona.name });
