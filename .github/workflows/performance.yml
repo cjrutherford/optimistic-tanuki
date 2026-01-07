@@ -1,0 +1,165 @@
+name: Performance Testing
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        app:
+          - digital-homestead
+          - owner-console
+          - forgeofwill
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build ${{ matrix.app }}
+        run: npx nx build ${{ matrix.app }} --configuration=production
+        env:
+          CI: true
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start application
+        run: |
+          # Build and start the app
+          docker compose build ${{ matrix.app }}
+          docker compose up -d ${{ matrix.app }}
+          
+          # Wait for app to be ready
+          sleep 30
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            http://localhost:4200
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Stop application
+        if: always()
+        run: docker compose down
+
+  load-test:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build services
+        run: npx nx run-many -t build --configuration=production --parallel=3
+        env:
+          CI: true
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start full stack
+        run: |
+          docker compose up -d
+          
+          # Wait for services to be ready
+          echo "Waiting for services..."
+          sleep 60
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Create load test script
+        run: |
+          cat > load-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+
+          export const options = {
+            stages: [
+              { duration: '30s', target: 10 },  // Ramp up to 10 users
+              { duration: '1m', target: 10 },   // Stay at 10 users
+              { duration: '30s', target: 50 },  // Ramp up to 50 users
+              { duration: '1m', target: 50 },   // Stay at 50 users
+              { duration: '30s', target: 0 },   // Ramp down to 0 users
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<500'], // 95% of requests must complete below 500ms
+              http_req_failed: ['rate<0.05'],   // Error rate must be below 5%
+            },
+          };
+
+          export default function () {
+            const res = http.get('http://localhost:3000/health');
+            check(res, {
+              'status is 200': (r) => r.status === 200,
+              'response time < 500ms': (r) => r.timings.duration < 500,
+            });
+            sleep(1);
+          }
+          EOF
+
+      - name: Run load test
+        run: k6 run load-test.js --out json=load-test-results.json
+
+      - name: Stop services
+        if: always()
+        run: docker compose down
+
+      - name: Upload load test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results
+          path: load-test-results.json
+          retention-days: 30
+
+      - name: Generate load test summary
+        if: always()
+        run: |
+          echo "## 📊 Load Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "load-test-results.json" ]; then
+            echo "Load test completed. See artifacts for detailed results." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Load test results not found." >> $GITHUB_STEP_SUMMARY
+          fi

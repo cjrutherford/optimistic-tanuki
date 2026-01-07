@@ -1,57 +1,81 @@
 import { IsString, IsOptional, IsArray } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateRoleDto {
     @IsString()
-    name: string;
+    @ApiProperty()
+    name!: string;
 
     @IsString()
-    description: string;
+    @ApiProperty()
+    description!: string;
 
     @IsString()
-    appScopeId: string;
+    @ApiProperty()
+    appScopeId!: string;
 }
 
 export class UpdateRoleDto {
     @IsString()
-    id: string;
+    @ApiProperty()
+    id!: string;
 
     @IsOptional()
     @IsString()
+    @ApiPropertyOptional()
     name?: string;
 
     @IsOptional()
     @IsString()
+    @ApiPropertyOptional()
     description?: string;
 
     @IsOptional()
     @IsString()
+    @ApiPropertyOptional()
     appScopeId?: string;
 }
 
 export class AssignRoleDto {
     @IsString()
-    roleId: string;
+    @ApiProperty()
+    roleId!: string;
 
     @IsString()
-    profileId: string;
+    @ApiProperty()
+    profileId!: string;
 
     @IsString()
-    appScopeId: string;
+    @ApiProperty()
+    appScopeId!: string;
 }
 
 export class RoleDto {
-    id: string;
-    name: string;
-    description: string;
+    @ApiProperty()
+    id!: string;
+    @ApiProperty()
+    name!: string;
+    @ApiProperty()
+    description!: string;
+    @ApiPropertyOptional()
     appScope?: any;
-    created_at: Date;
+    @ApiProperty()
+    created_at!: Date;
+    @IsOptional()
+    @IsArray()
+    @ApiPropertyOptional()
     permissions?: any[];
 }
 
 export class RoleAssignmentDto {
-    id: string;
-    profileId: string;
+    @ApiProperty()
+    id!: string;
+    @ApiProperty()
+    profileId!: string;
+    @ApiPropertyOptional()
     appScope?: any;
-    role: RoleDto;
-    created_at: Date;
+    @ApiProperty()
+    role!: RoleDto;
+    @ApiProperty()
+    created_at!: Date;
 }

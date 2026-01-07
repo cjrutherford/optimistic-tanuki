@@ -1,3 +1,3 @@
-export * from './permission.dto';
-export * from './role.dto';
-export * from './app-scope.dto';
+export { AppScopeDto, CreateAppScopeDto, UpdateAppScopeDto } from './app-scope.dto';
+export { PermissionDto, CreatePermissionDto, UpdatePermissionDto } from './permission.dto';
+export { RoleDto, CreateRoleDto, UpdateRoleDto, AssignRoleDto, RoleAssignmentDto } from './role.dto';

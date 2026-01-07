@@ -1,0 +1,181 @@
+name: Code Coverage
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop, MVP-polish]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+jobs:
+  coverage:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Derive appropriate SHAs for base and head for nx affected commands
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Run tests with coverage
+        run: npx nx affected -t test --configuration=ci --parallel=3 --codeCoverage=true
+        env:
+          CI: true
+
+      - name: Generate coverage badges and summary
+        if: always()
+        run: |
+          # Install coverage tools
+          npm install -g istanbul-badges-readme
+          
+          echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Project | Statements | Branches | Functions | Lines |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|------------|----------|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Process each coverage report
+          if [ -d "coverage" ]; then
+            find coverage -name "coverage-summary.json" | while read file; do
+              PROJECT=$(echo $file | cut -d'/' -f2)
+              
+              if [ -f "$file" ]; then
+                STATEMENTS=$(jq -r '.total.statements.pct' "$file" 2>/dev/null || echo "0")
+                BRANCHES=$(jq -r '.total.branches.pct' "$file" 2>/dev/null || echo "0")
+                FUNCTIONS=$(jq -r '.total.functions.pct' "$file" 2>/dev/null || echo "0")
+                LINES=$(jq -r '.total.lines.pct' "$file" 2>/dev/null || echo "0")
+                
+                # Color code based on coverage
+                get_color() {
+                  local pct=$1
+                  if (( $(echo "$pct >= 80" | bc -l) )); then
+                    echo "✅"
+                  elif (( $(echo "$pct >= 60" | bc -l) )); then
+                    echo "⚠️"
+                  else
+                    echo "❌"
+                  fi
+                }
+                
+                STMT_ICON=$(get_color $STATEMENTS)
+                BRANCH_ICON=$(get_color $BRANCHES)
+                FUNC_ICON=$(get_color $FUNCTIONS)
+                LINE_ICON=$(get_color $LINES)
+                
+                echo "| $PROJECT | $STMT_ICON ${STATEMENTS}% | $BRANCH_ICON ${BRANCHES}% | $FUNC_ICON ${FUNCTIONS}% | $LINE_ICON ${LINES}% |" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Coverage Thresholds:**" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Good: ≥80%" >> $GITHUB_STEP_SUMMARY
+            echo "- ⚠️ Fair: 60-79%" >> $GITHUB_STEP_SUMMARY
+            echo "- ❌ Poor: <60%" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No coverage data found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            let comment = '## 📊 Code Coverage Report\n\n';
+            comment += '| Project | Statements | Branches | Functions | Lines |\n';
+            comment += '|---------|------------|----------|-----------|-------|\n';
+            
+            const coverageDir = 'coverage';
+            if (fs.existsSync(coverageDir)) {
+              const findCoverage = (dir) => {
+                const files = fs.readdirSync(dir);
+                files.forEach(file => {
+                  const fullPath = path.join(dir, file);
+                  if (fs.statSync(fullPath).isDirectory()) {
+                    findCoverage(fullPath);
+                  } else if (file === 'coverage-summary.json') {
+                    try {
+                      const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+                      const project = dir.split('/')[1];
+                      const total = data.total;
+                      
+                      const getIcon = (pct) => pct >= 80 ? '✅' : pct >= 60 ? '⚠️' : '❌';
+                      
+                      comment += `| ${project} | ${getIcon(total.statements.pct)} ${total.statements.pct}% | ${getIcon(total.branches.pct)} ${total.branches.pct}% | ${getIcon(total.functions.pct)} ${total.functions.pct}% | ${getIcon(total.lines.pct)} ${total.lines.pct}% |\n`;
+                    } catch (e) {
+                      console.error('Error processing', fullPath, e);
+                    }
+                  }
+                });
+              };
+              
+              findCoverage(coverageDir);
+            } else {
+              comment += 'No coverage data found\n';
+            }
+            
+            comment += '\n**Thresholds:** ✅ ≥80% | ⚠️ 60-79% | ❌ <60%';
+            
+            // Find existing coverage comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('Code Coverage Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }

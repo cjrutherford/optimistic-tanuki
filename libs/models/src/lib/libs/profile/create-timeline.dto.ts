@@ -1,50 +1,71 @@
 import { TimelineEventType } from './timeline-event-type';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsUUID, IsBoolean, IsEnum, IsDateString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateTimelineDto {
-  @ApiProperty({ description: 'Name of the timeline' })
+  @ApiProperty({ description: 'Name of the timeline', example: 'Q1 2026 Roadmap' })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(200)
   name: string;
 
-  @ApiProperty({ description: 'Description of the timeline' })
+  @ApiProperty({ description: 'Description of the timeline', example: 'Key deliverables for first quarter' })
+  @IsString()
+  @MinLength(10)
+  @MaxLength(5000)
   description: string;
 
   @ApiProperty({ description: 'ID of the user' })
+  @IsString()
+  @IsUUID()
   userId: string;
 
   @ApiProperty({ description: 'ID of the profile' })
+  @IsString()
+  @IsUUID()
   profileId: string;
 
   @ApiProperty({ description: 'ID of the project' })
+  @IsString()
+  @IsUUID()
   projectId: string;
 
   @ApiProperty({ description: 'ID of the goal' })
+  @IsString()
+  @IsUUID()
   goalId: string;
 
   @ApiProperty({
     description: 'Start date of the timeline',
     example: '2023-01-01',
   })
+  @IsDateString()
   startDate: string;
 
   @ApiProperty({
     description: 'End date of the timeline',
     example: '2023-12-31',
   })
+  @IsDateString()
   endDate: string;
 
   @ApiProperty({ description: 'Completion status of the timeline' })
+  @IsBoolean()
   isCompleted: boolean;
 
   @ApiProperty({ description: 'Publication status of the timeline' })
+  @IsBoolean()
   isPublished: boolean;
 
   @ApiProperty({ description: 'Deletion status of the timeline' })
+  @IsBoolean()
   isDeleted: boolean;
 
   @ApiProperty({
     description: 'Type of the timeline event',
     enum: TimelineEventType,
   })
+  @IsEnum(TimelineEventType)
   type: TimelineEventType;
 }
 

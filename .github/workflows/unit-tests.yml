@@ -1,0 +1,112 @@
+name: Unit Tests
+
+on:
+  pull_request:
+    branches: [main, develop, MVP-polish]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
+jobs:
+  unit-tests:
+    name: Unit Tests (Affected)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Derive appropriate SHAs for base and head for nx affected commands
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Run affected unit tests
+        run: npx nx affected -t test --configuration=ci --parallel=3 --maxParallel=3
+        env:
+          CI: true
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: coverage/
+          retention-days: 30
+
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          echo "## Unit Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -d "coverage" ]; then
+            find coverage -name "coverage-summary.json" | while read file; do
+              PROJECT=$(echo $file | cut -d'/' -f2)
+              echo "### $PROJECT" >> $GITHUB_STEP_SUMMARY
+              
+              # Extract coverage percentages if file exists
+              if [ -f "$file" ]; then
+                STATEMENTS=$(jq -r '.total.statements.pct' "$file" 2>/dev/null || echo "N/A")
+                BRANCHES=$(jq -r '.total.branches.pct' "$file" 2>/dev/null || echo "N/A")
+                FUNCTIONS=$(jq -r '.total.functions.pct' "$file" 2>/dev/null || echo "N/A")
+                LINES=$(jq -r '.total.lines.pct' "$file" 2>/dev/null || echo "N/A")
+                
+                echo "- Statements: ${STATEMENTS}%" >> $GITHUB_STEP_SUMMARY
+                echo "- Branches: ${BRANCHES}%" >> $GITHUB_STEP_SUMMARY
+                echo "- Functions: ${FUNCTIONS}%" >> $GITHUB_STEP_SUMMARY
+                echo "- Lines: ${LINES}%" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+          else
+            echo "No coverage data found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  unit-tests-all:
+    name: Unit Tests (All - Weekly)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Only run on schedule or manual trigger
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run all unit tests
+        run: npx nx run-many -t test --configuration=ci --all --parallel=3
+        env:
+          CI: true
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports-all
+          path: coverage/
+          retention-days: 30

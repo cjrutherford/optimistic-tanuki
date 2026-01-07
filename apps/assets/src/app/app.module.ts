@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from '@optimistic-tanuki/database';
-import { StorageModule } from '@optimistic-tanuki/storage';
+import { StorageModule, FileValidationService, VirusScanService } from '@optimistic-tanuki/storage';
 import loadDatabase from './loadDatabase';
 import { loadConfig } from './config';
 import AssetEntity from '../entities/asset.entity';
@@ -24,6 +24,8 @@ import { ConfigModule } from '@nestjs/config';
   controllers: [AppController],
   providers: [
     AppService,
+    FileValidationService,
+    VirusScanService,
     {
       provide: getRepositoryToken(AssetEntity),
       useFactory: (ds: DataSource) => ds.getRepository(AssetEntity),

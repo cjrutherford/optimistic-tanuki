@@ -1,4 +1,4 @@
-import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
+import { AssetDto, CreateAssetDto, AssetType, StorageStrategy } from '@optimistic-tanuki/models';
 import { Injectable, Logger } from '@nestjs/common';
 import { S3Service, S3ServiceOptions } from './s3.service'; // Import S3Service and its options
 
@@ -37,7 +37,7 @@ export class NetworkStorageAdapter implements StorageAdapter {
             name: data.name,
             storagePath: `s3://${this.s3Service['bucketName']}/${s3Key}`, // Construct S3 path using service's bucketName
             type: data.type,
-            storageStrategy: 'remote_block_storage',
+            storageStrategy: StorageStrategy.REMOTE_BLOCK_STORAGE,
             profileId: data.profileId,
         };
         return createdAsset;

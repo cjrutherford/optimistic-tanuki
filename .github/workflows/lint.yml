@@ -1,0 +1,72 @@
+name: Lint
+
+on:
+  pull_request:
+    branches: [main, develop, MVP-polish]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  lint:
+    name: Lint (Affected)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Derive appropriate SHAs for base and head for nx affected commands
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Run affected linting
+        run: npx nx affected -t lint --parallel=3 --maxParallel=3
+        env:
+          CI: true
+
+      - name: Check formatting
+        run: npx nx format:check --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
+
+  lint-all:
+    name: Lint (All - Weekly)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Only run on schedule or manual trigger
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run all linting
+        run: npx nx run-many -t lint --all --parallel=3
+        env:
+          CI: true
+
+      - name: Check all formatting
+        run: npx nx format:check --all
