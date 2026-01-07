@@ -22,7 +22,12 @@
           "quill-image-compress",
           "quill-cursors",
           "quill-placeholder-module",
-          "http-proxy-middleware"
+          "http-proxy-middleware",
+          "debug",
+          "xmlhttprequest-ssl",
+          "socket.io-client",
+          "socket.io-parser",
+          "engine.io-client"
         ],
         "polyfills": [
           "zone.js"

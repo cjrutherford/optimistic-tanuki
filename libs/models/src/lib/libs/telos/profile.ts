@@ -1,6 +1,6 @@
-import { ProjectTelosDto } from "./project";
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsArray, IsOptional, IsUUID } from 'class-validator';
+import type { ProjectTelosDto } from './project';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsArray, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 
@@ -13,9 +13,9 @@ export class ProfileTelosDto {
     @IsString()
     name!: string;
 
-    @ApiProperty({ type: () => [ProjectTelosDto] })
+    @ApiProperty({ type: () => [(require('./project').ProjectTelosDto)] })
     @IsArray()
-    @Type(() => ProjectTelosDto)
+    @Type(() => require('./project').ProjectTelosDto)
     projects!: ProjectTelosDto[];
 
     @ApiProperty()

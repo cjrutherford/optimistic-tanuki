@@ -13,6 +13,11 @@
         "outputPath": "dist/apps/forgeofwill",
         "index": "apps/forgeofwill/src/index.html",
         "browser": "apps/forgeofwill/src/main.ts",
+        "allowedCommonJsDependencies": [
+          "debug",
+          "xmlhttprequest-ssl",
+          "@mixmark-io/domino"
+        ],
         "polyfills": ["zone.js"],
         "tsConfig": "apps/forgeofwill/tsconfig.app.json",
         "inlineStyleLanguage": "scss",

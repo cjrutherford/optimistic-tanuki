@@ -8,6 +8,8 @@ import {
   VoteDto,
   FollowEventDto,
 } from '@optimistic-tanuki/ui-models';
+import { AuthStateService } from './state/auth-state.service';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
@@ -22,6 +24,8 @@ export class SocialWebSocketService implements OnDestroy {
   private baseReconnectDelay = 1000;
   private reconnectTimeoutId: NodeJS.Timeout | null = null;
   private apiBaseUrl = inject(API_BASE_URL);
+  private authStateService = inject(AuthStateService);
+  private router = inject(Router);
 
   constructor() {
     // Service initializes on demand via connect()
@@ -44,12 +48,15 @@ export class SocialWebSocketService implements OnDestroy {
 
     console.log('Connecting to Social WebSocket at:', wsUrl);
 
+    const token = this.authStateService.getToken();
     this.socket = io(`${wsUrl}/social`, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: this.baseReconnectDelay,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: this.maxReconnectAttempts,
+      auth: token ? { token } : undefined,
+      extraHeaders: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
 
     this.setupSocketListeners();
@@ -88,7 +95,18 @@ export class SocialWebSocketService implements OnDestroy {
     this.socket.on('connect_error', (error) => {
       console.error('Connection error:', error);
       this.connectionError$.next('Connection error ' + error.message);
-      this.reconnectWithBackoff();
+      
+      // Check if this is an authentication error
+      if (error.message.includes('unauthorized') || 
+          error.message.includes('jwt') || 
+          error.message.includes('token') ||
+          error.message.includes('Unauthorized')) {
+        console.error('Social WebSocket authentication failed - redirecting to login');
+        this.authStateService.logout();
+        this.router.navigate(['/login']);
+      } else {
+        this.reconnectWithBackoff();
+      }
     });
 
     this.socket.on('connect_timeout', () => {
@@ -104,6 +122,20 @@ export class SocialWebSocketService implements OnDestroy {
 
     this.socket.on('error', (error) => {
       console.error('Socket error:', error);
+      
+      // Handle authorization errors from the server
+      if (typeof error === 'object' && error !== null) {
+        const errorObj = error as any;
+        if (errorObj.type === 'UnauthorizedException' || 
+            errorObj.message?.includes('Unauthorized') ||
+            errorObj.statusCode === 401) {
+          console.error('Social WebSocket authorization error - redirecting to login');
+          this.authStateService.logout();
+          this.router.navigate(['/login']);
+          return;
+        }
+      }
+      
       this.reconnectWithBackoff(); // Handle unexpected errors with backoff
     });
     // Post events

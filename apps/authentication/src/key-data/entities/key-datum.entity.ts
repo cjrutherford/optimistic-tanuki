@@ -5,8 +5,8 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { UserEntity } from '../../user/entities/user.entity';
-import { IsObject, IsString } from 'class-validator';
+import { UserEntity } from '../../user/entities';
+import { IsString } from 'class-validator';
 
 @Entity()
 export class KeyDatum {

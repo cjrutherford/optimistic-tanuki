@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-import { MessageType } from './message/message.component';
+import { MessageType } from './message.type';
 
 @Injectable({
   providedIn: 'root'

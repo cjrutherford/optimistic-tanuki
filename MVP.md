@@ -8,35 +8,35 @@ Add a permissions audit and a clear enforcement pattern (gateway + microservice 
 
 ## Top-level plan (priority, tasks, verification, estimate)
 
-### 1. Permissions audit — DEFINE policy then IMPLEMENT — 2–3 days (adjusted) COMPLETE
+### 1. Permissions audit — DEFINE policy then IMPLEMENT — 2–3 days (adjusted) ✅ COMPLETE
 Goal:
 - Produce a permissions matrix, enforce at gateway and validate at microservice boundaries.
 - Reuse existing gateway and permissions-service primitives where possible.
 
-Audit tasks (deliverables: `docs/permissions-audit.md` and test matrix)
-- Inventory enforcement points across gateway and services (start from gateway controllers and guards).
-  - Gateway controllers to inspect: `apps/gateway/src/controllers/*` (e.g. project-planning, social, blogging, asset, permissions).
-- Confirm and extend existing enforcement primitives:
-  - Gateway-side proxy: `PermissionsProxyService` already exists and has a spec to extend.
-  - Gateway guards: `AuthGuard` and `PermissionsGuard` exist; extend tests and map to endpoints.
-  - Decorators: `permissions.decorator.ts` exists for marking controller permissions.
-- Create minimal Roles & Permissions model (seed exists in `apps/permissions/assets/default-permissions.json`).
-- Map endpoints → permissions and verify JWT/user decorator claims.
-- Implement gateway guard + PermissionsProxyService pattern and tests; ensure microservices validate incoming calls.
+Audit tasks (deliverables: `docs/permissions-audit.md` and test matrix) ✅
+- Inventory enforcement points across gateway and services (start from gateway controllers and guards). ✅
+  - Gateway controllers to inspect: `apps/gateway/src/controllers/*` (e.g. project-planning, social, blogging, asset, permissions). ✅
+- Confirm and extend existing enforcement primitives: ✅
+  - Gateway-side proxy: `PermissionsProxyService` already exists and has a spec to extend. ✅
+  - Gateway guards: `AuthGuard` and `PermissionsGuard` exist; extend tests and map to endpoints. ✅
+  - Decorators: `permissions.decorator.ts` exists for marking controller permissions. ✅
+- Create minimal Roles & Permissions model (seed exists in `apps/permissions/assets/default-permissions.json`). ✅
+- Map endpoints → permissions and verify JWT/user decorator claims. ✅
+- Implement gateway guard + PermissionsProxyService pattern and tests; ensure microservices validate incoming calls. ✅
 
 Verification:
-- Unit tests for `PermissionsProxyService` and `AuthGuard` (extend existing specs).
-- Integration tests simulating role tokens with explicit cases across gateway ↔ permissions service and a target microservice.
+- Unit tests for `PermissionsProxyService` and `AuthGuard` (extend existing specs). ✅
+- Integration tests simulating role tokens with explicit cases across gateway ↔ permissions service and a target microservice. ✅
 
 Checklist (deliverables):
-- docs/permissions-audit.md (matrix + endpoint mapping)
-- Unit tests: extend `auth.guard.spec.ts`, `permissions-proxy.service.spec.ts` (already present) and add `permissions.guard.spec.ts`
-- Integration tests: gateway ↔ project-planning role scenarios
-- Logged examples of permission denials (structured logs)
+- docs/permissions-audit.md (matrix + endpoint mapping) ✅
+- Unit tests: extend `auth.guard.spec.ts`, `permissions-proxy.service.spec.ts` (already present) and add `permissions.guard.spec.ts` ✅
+- Integration tests: gateway ↔ project-planning role scenarios ✅
+- Logged examples of permission denials (structured logs) ✅
 
-#### Files not currently covered by permissions guards
-- `blogging/contact.controller.ts`
-- `blogging/event.controller.ts`
+#### Files now covered by permissions guards ✅
+- `blogging/contact.controller.ts` ✅
+- `blogging/event.controller.ts` ✅
 
 Files to inspect / extend:
 - [apps/gateway/src/auth/permissions-proxy.service.ts](apps/gateway/src/auth/permissions-proxy.service.ts) — [`PermissionsProxyService`](apps/gateway/src/auth/permissions-proxy.service.ts)
@@ -84,43 +84,66 @@ Checklist (deliverables):
 Reference:
 - Add `libs/api-client` token; apps wire provider in `AppModule`.
 
-### 4. Social app hardening (client-interface) — 2–3 days
+### 4. Social app hardening (client-interface) — 2–3 days ✅ MOSTLY COMPLETE
 Tasks:
 - Real-time client with exponential reconnect/backoff. ✅
-- Pagination & query limits in `PostService`.✅
-- Input sanitization at UI + server side.
-- Media uploads integrated with assets service.
+- Pagination & query limits in `PostService`. ✅
+- Input sanitization at UI + server side. ✅
+- Media uploads integrated with assets service. ✅
 
 Verification:
 - Unit tests for pagination; E2E create post → comment → vote; role-based permission tests.
 
 Checklist (deliverables):
-- Pagination tests for PostService✅
-- SSE/WebSocket client helper with backoff✅
-- Sanitization checklist + example middleware
-- E2E scenario for post → comment → vote ❌ (delayed.)
+- Pagination tests for PostService ✅
+- SSE/WebSocket client helper with backoff ✅
+- Sanitization checklist + example middleware ✅
+- Maximum limit enforcement (100 posts max per request) ✅
+- Default limit (20 posts) when none specified ✅
+- DTO validation with @Max(100) decorator ✅
+- Unit tests for limit enforcement ✅
+- E2E scenario for post → comment → vote ❌ (delayed - not critical for MVP)
 
 Files:
 - `post.service.ts`, `comment.service.ts`, `http.interceptor.ts`, `server.ts`
+- `libs/models/src/lib/libs/social/searchpost.dto.ts` - Added @Max(100) validation
+- `apps/social/src/app/app.controller.ts` - Added default and max limit enforcement
+- `apps/social/src/app/app.controller.spec.ts` - Added pagination limit tests
 
-### 5. Project Management + AI (forgeofwill) — 3–5 days
+### 5. Project Management + AI (forgeofwill) — 3–5 days ✅ PARTIAL - Core infrastructure complete
 Tasks:
-- AI Orchestrator endpoint holding keys and enforcing quotas.
-- Conversation/context store with privacy settings.
-- Autosave & optimistic update UX patterns.
-- Enforce permissions for project/task operations.
+- AI Orchestrator endpoint holding keys and enforcing quotas. ✅
+- Conversation/context store with privacy settings. ✅ (Context storage with Redis)
+- Autosave & optimistic update UX patterns. ⏳ (UI concern - forgeofwill client)
+- Enforce permissions for project/task operations. ✅ (MCP tools integration)
 
 Verification:
 - Unit tests for prompt generation; integration tests mocking AI responses.
 
 Checklist (deliverables):
-- Orchestrator endpoint scaffold + rate-limit enforcement
-- Prompt-generation unit tests (libs/prompt-generation)
-- Privacy settings design doc
-- Integration test mocking AI responses
+- Orchestrator endpoint scaffold + rate-limit enforcement ✅
+  - AI orchestrator microservice exists with MessagePattern handlers
+  - Rate limiting enabled: 10 requests per profile per 60 seconds
+  - RateLimitGuard implemented with profileId/userId/conversation tracking
+  - Unit tests for rate limit guard ✅
+- Prompt-generation unit tests (libs/prompt-generation) ✅
+  - Comprehensive tests in apps/ai-orchestrator/src/app/utils/prompt-engineering.spec.ts
+  - Tests cover: tool calling, system prompts, user context, response rules
+- Privacy settings design doc ⏳ (Documentation task - not blocking)
+- Integration test mocking AI responses ⏳ (E2E concern - delayed)
+- Context storage service ✅
+  - Redis-based conversation context persistence
+  - Maps profileId to conversation summaries, recent topics, active projects
+  - 7-day TTL for context data
+  - Unit tests for context storage ✅
 
 Files:
-- `project.service.ts`, `index.ts`, prompt libs under `libs/prompt-generation`
+- `apps/ai-orchestrator/src/app/app.module.ts` - Enabled ThrottlerModule and RateLimitGuard
+- `apps/ai-orchestrator/src/app/guards/rate-limit.guard.ts` - Rate limiting implementation
+- `apps/ai-orchestrator/src/app/guards/rate-limit.guard.spec.ts` - Rate limit tests
+- `apps/ai-orchestrator/src/app/context-storage.service.ts` - Conversation context storage
+- `apps/ai-orchestrator/src/app/utils/prompt-engineering.ts` - Prompt generation utilities
+- `apps/ai-orchestrator/src/app/utils/prompt-engineering.spec.ts` - Prompt tests
 
 ### 6. Blog & Portfolio — 1–2 days each
 Tasks:

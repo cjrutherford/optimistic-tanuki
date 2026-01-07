@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { KeyDatum as KeyDataEntity } from "../../key-data/entities/key-datum.entity";
-import { TokenEntity } from "../../tokens/entities/token.entity";
+import { KeyDatum as KeyDataEntity } from "../../key-data/entities";
+import { TokenEntity } from "../../tokens/entities";
 import { v4 as uuidv4 } from 'uuid';
 import { IsObject } from "class-validator";
 

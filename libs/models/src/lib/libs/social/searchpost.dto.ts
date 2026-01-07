@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsOptional, IsUUID, IsString, IsNumber, MaxLength, Min } from 'class-validator';
+import { IsOptional, IsUUID, IsString, IsNumber, MaxLength, Min, Max } from 'class-validator';
 
 export class SearchPostDto {
     @ApiPropertyOptional({ description: 'Post ID' })
@@ -81,10 +81,11 @@ export class SearchPostOptions {
     @IsOptional()
     orderDirection?: 'asc' | 'desc';
 
-    @ApiPropertyOptional({ description: 'Maximum results to return' })
+    @ApiPropertyOptional({ description: 'Maximum results to return (max 100)', default: 20 })
     @IsOptional()
     @IsNumber()
     @Min(1)
+    @Max(100)
     limit?: number;
 
     @ApiPropertyOptional({ description: 'Number of results to skip' })

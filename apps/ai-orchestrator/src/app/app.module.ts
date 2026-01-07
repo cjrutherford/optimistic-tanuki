@@ -13,9 +13,9 @@ import { LangChainService } from './langchain.service';
 import { ContextStorageService } from './context-storage.service';
 import { LangGraphService } from './langgraph.service';
 import { LangChainAgentService } from './langchain-agent.service';
-// import { ThrottlerModule } from '@nestjs/throttler';
-// import { APP_GUARD } from '@nestjs/core';
-// import { RateLimitGuard } from './guards/rate-limit.guard';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { RateLimitGuard } from './guards/rate-limit.guard';
 
 @Module({
   imports: [
@@ -24,12 +24,12 @@ import { LangChainAgentService } from './langchain-agent.service';
       load: [loadConfig],
     }),
     HttpModule,
-    // ThrottlerModule.forRoot([
-    //   {
-    //     ttl: 60000,
-    //     limit: 10,
-    //   },
-    // ]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 60 seconds
+        limit: 10,  // 10 requests per profile per 60 seconds
+      },
+    ]),
   ],
   controllers: [AppController],
   providers: [
@@ -40,10 +40,10 @@ import { LangChainAgentService } from './langchain-agent.service';
     ContextStorageService,
     LangGraphService,
     LangChainAgentService,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: RateLimitGuard,
-    // },
+    {
+      provide: APP_GUARD,
+      useClass: RateLimitGuard,
+    },
     {
       provide: 'ai-enabled-apps',
       useFactory: (config: ConfigService) => {
