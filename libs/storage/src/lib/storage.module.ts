@@ -64,8 +64,8 @@ export class StorageModule {
     return {
       module: StorageModule,
       imports: [LoggerModule],
-      providers: [adapterProvider], // Provide only the selected adapter under the token
-      exports: [STORAGE_ADAPTERS], // Export the token
+      providers: [adapterProvider, ...extraProviders], // Provide the selected adapter and any extra providers (like S3Service)
+      exports: [STORAGE_ADAPTERS, ...extraProviders], // Export the token and extra providers
     };
   }
 }

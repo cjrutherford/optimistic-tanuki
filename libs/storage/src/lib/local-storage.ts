@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
+import { AssetDto, CreateAssetDto, AssetType, StorageStrategy } from '@optimistic-tanuki/models';
 import { Injectable, Logger } from '@nestjs/common';
 import { existsSync, promises as fs, mkdirSync } from 'fs';
 
@@ -57,7 +57,7 @@ export class LocalStorageAdapter implements StorageAdapter {
                 name: data.name,
                 storagePath: relativePath, // Store the relative path
                 type: data.type, // Assuming type is in CreateAssetDto
-                storageStrategy: 'local_block_storage',
+                storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
                 profileId: data.profileId, // Assuming profileId is in CreateAssetDto
             };
 
@@ -104,8 +104,8 @@ export class LocalStorageAdapter implements StorageAdapter {
             id: data.id,
             name: 'mock-retrieved-name',
             storagePath: `/local/path/${data.id}`,
-            type: 'image',
-            storageStrategy: 'local_block_storage',
+            type: AssetType.IMAGE,
+            storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
             profileId: ''
         };
         return mockAsset; // Return mock data
@@ -129,15 +129,15 @@ export class LocalStorageAdapter implements StorageAdapter {
         }
     }
 
-    private getMimeType(type: string): string {
+    private getMimeType(type: AssetType): string {
         switch (type) {
-            case 'image':
+            case AssetType.IMAGE:
                 return 'image/png'; // Default to PNG for simplicity
-            case 'video':
+            case AssetType.VIDEO:
                 return 'video/mp4'; // Default to MP4 for simplicity
-            case 'audio':
+            case AssetType.AUDIO:
                 return 'audio/mpeg'; // Default to MP3 for simplicity
-            case 'document':
+            case AssetType.DOCUMENT:
                 return 'application/pdf'; // Default to PDF for simplicity
             default:
                 return 'application/octet-stream'; // Fallback for unknown types

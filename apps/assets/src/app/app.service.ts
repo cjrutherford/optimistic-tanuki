@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import AssetEntity, { StorageStrategy } from '../entities/asset.entity';
-import { AssetHandle, CreateAssetDto } from '@optimistic-tanuki/models';
+import AssetEntity from '../entities/asset.entity';
+import { AssetHandle, CreateAssetDto, StorageStrategy, AssetType } from '@optimistic-tanuki/models';
 import { RpcException } from '@nestjs/microservices';
 import { STORAGE_ADAPTERS, StorageAdapter, FileValidationService, VirusScanService } from '@optimistic-tanuki/storage';
 
