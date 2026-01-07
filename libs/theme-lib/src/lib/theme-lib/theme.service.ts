@@ -19,9 +19,9 @@ import { STANDARD_THEME_VARIABLES, getAllVariableNames } from './theme-config';
   providedIn: 'root',
 })
 export class ThemeService {
-  private _theme: 'light' | 'dark';
-  private accentColor: string;
-  private complementColor: string;
+  private _theme!: 'light' | 'dark';
+  private accentColor!: string;
+  private complementColor!: string;
   private paletteMode: 'custom' | 'predefined' = 'custom';
   private selectedPalette?: ColorPalette;
   
@@ -32,34 +32,42 @@ export class ThemeService {
   constructor(@Inject(PLATFORM_ID) private platformId: object) {
     if(isPlatformBrowser(this.platformId)) {
       // Initialize available palettes including custom ones
-      this.updateAvailablePalettes();
-      
-      const storedTheme = loadTheme(this.platformId);
-      this._theme = storedTheme.theme;
-      this.accentColor = storedTheme.accentColor;
-      this.complementColor = storedTheme.complementColor;
-      this.paletteMode = storedTheme.paletteMode;
-      
-      if (this.paletteMode === 'predefined' && storedTheme.paletteName) {
-        this.selectedPalette = getPaletteByName(storedTheme.paletteName);
-        if (!this.selectedPalette) {
-          // Check in custom palettes
-          const customPalettes = this.loadCustomPalettes();
-          this.selectedPalette = customPalettes.find(p => p.name === storedTheme.paletteName);
-          // If found in custom palettes, it's not actually predefined
+      const init = () => {
+        this.updateAvailablePalettes();
+        
+        const storedTheme = loadTheme(this.platformId);
+        this._theme = storedTheme.theme;
+        this.accentColor = storedTheme.accentColor;
+        this.complementColor = storedTheme.complementColor;
+        this.paletteMode = storedTheme.paletteMode;
+        
+        if (this.paletteMode === 'predefined' && storedTheme.paletteName) {
+          this.selectedPalette = getPaletteByName(storedTheme.paletteName);
+          if (!this.selectedPalette) {
+            // Check in custom palettes
+            const customPalettes = this.loadCustomPalettes();
+            this.selectedPalette = customPalettes.find(p => p.name === storedTheme.paletteName);
+            // If found in custom palettes, it's not actually predefined
+            if (this.selectedPalette) {
+              this.paletteMode = 'custom';
+            }
+          }
           if (this.selectedPalette) {
-            this.paletteMode = 'custom';
+            this.accentColor = this.selectedPalette.accent;
+            this.complementColor = this.selectedPalette.complementary;
           }
         }
-        if (this.selectedPalette) {
-          this.accentColor = this.selectedPalette.accent;
-          this.complementColor = this.selectedPalette.complementary;
-        }
-      }
+  
+        this.theme.next(this._theme);
+        this.themeColors.next(this.generateThemeColors());
+        this.applyThemeColors();
+      };
 
-      this.theme.next(this._theme);
-      this.themeColors.next(this.generateThemeColors());
-      this.applyThemeColors();
+      if('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(init);
+      } else {
+        setTimeout(init, 0);
+      }
     } else {
       // Initialize default values for SSR
       this._theme = 'light';

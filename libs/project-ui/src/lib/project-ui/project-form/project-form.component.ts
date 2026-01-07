@@ -2,13 +2,13 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { CreateProject, Project } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
+import { TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 
 
 @Component({
   selector: 'lib-project-form',
-  imports: [ReactiveFormsModule, CardComponent, TextInputComponent, TextAreaComponent, ButtonComponent, SelectComponent],
+  imports: [ReactiveFormsModule, CardComponent, TextInputComponent, TextAreaComponent, ButtonComponent],
   templateUrl: './project-form.component.html',
   styleUrl: './project-form.component.scss',
 })
