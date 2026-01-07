@@ -270,6 +270,42 @@ describe('AppController', () => {
     ]);
   });
 
+  it('should enforce maximum limit of 100 posts per request', async () => {
+    const result = await controller.findAllPosts(
+      { title: 'Test' },
+      { limit: 200, offset: 0 } // Request 200 but should be capped at 100
+    );
+
+    expect(postService.findAll).toHaveBeenCalledWith({
+      where: { title: Like('%Test%') },
+      take: 100, // Should be capped at MAX_LIMIT
+    });
+  });
+
+  it('should apply default limit of 20 when no limit specified', async () => {
+    const result = await controller.findAllPosts(
+      { title: 'Test' },
+      {} // No opts provided
+    );
+
+    expect(postService.findAll).toHaveBeenCalledWith({
+      where: { title: Like('%Test%') },
+      take: 20, // Should default to 20
+    });
+  });
+
+  it('should apply default limit when opts is undefined', async () => {
+    const result = await controller.findAllPosts(
+      { title: 'Test' },
+      undefined
+    );
+
+    expect(postService.findAll).toHaveBeenCalledWith({
+      where: { title: Like('%Test%') },
+      take: 20, // Should default to 20
+    });
+  });
+
   it('should call follow methods', async () => {
     followService.follow.mockResolvedValue('followed');
     const result = await controller.follow({

@@ -2,6 +2,7 @@ import { CreatePostDto, UpdatePostDto } from '@optimistic-tanuki/models';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { Post } from '../../entities/post.entity';
+import { Attachment } from '../../entities/attachment.entity';
 import { PostService } from './post.service';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -9,12 +10,23 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 describe('PostService', () => {
   let service: PostService;
   let postRepo: jest.Mocked<Repository<Post>>;
+  let attachmentRepo: jest.Mocked<Repository<Attachment>>;
 
   const mockPostRepo = () => ({
     create: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  });
+
+  const mockAttachmentRepo = () => ({
+    create: jest.fn(),
+    save: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+    findBy: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
   });
@@ -27,11 +39,16 @@ describe('PostService', () => {
           provide: getRepositoryToken(Post),
           useFactory: mockPostRepo,
         },
+        {
+          provide: getRepositoryToken(Attachment),
+          useFactory: mockAttachmentRepo,
+        },
       ],
     }).compile();
 
     service = module.get<PostService>(PostService);
     postRepo = module.get(getRepositoryToken(Post));
+    attachmentRepo = module.get(getRepositoryToken(Attachment));
   });
 
   it('should be defined', () => {
@@ -44,7 +61,12 @@ describe('PostService', () => {
     postRepo.create.mockReturnValue(post);
     postRepo.save.mockResolvedValue(post);
     const result = await service.create(dto);
-    expect(postRepo.create).toHaveBeenCalledWith(dto);
+    // Content should be sanitized, so we check the structure was called with sanitized version
+    expect(postRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Test',
+      profileId: '1',
+      content: expect.any(String), // Sanitized content
+    }));
     expect(postRepo.save).toHaveBeenCalledWith(post);
     expect(result).toBe(post);
   });
@@ -69,7 +91,11 @@ describe('PostService', () => {
     postRepo.update.mockResolvedValue(undefined);
     const dto: UpdatePostDto = { title: 'Updated', content: 'Updated' };
     await service.update(1, dto);
-    expect(postRepo.update).toHaveBeenCalledWith(1, dto);
+    // Content should be sanitized
+    expect(postRepo.update).toHaveBeenCalledWith(1, expect.objectContaining({
+      title: 'Updated',
+      content: expect.any(String), // Sanitized content
+    }));
   });
 
   it('should remove a post', async () => {
