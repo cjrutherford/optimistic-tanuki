@@ -110,24 +110,40 @@ Files:
 - `apps/social/src/app/app.controller.ts` - Added default and max limit enforcement
 - `apps/social/src/app/app.controller.spec.ts` - Added pagination limit tests
 
-### 5. Project Management + AI (forgeofwill) — 3–5 days
+### 5. Project Management + AI (forgeofwill) — 3–5 days ✅ PARTIAL - Core infrastructure complete
 Tasks:
-- AI Orchestrator endpoint holding keys and enforcing quotas.
-- Conversation/context store with privacy settings.
-- Autosave & optimistic update UX patterns.
-- Enforce permissions for project/task operations.
+- AI Orchestrator endpoint holding keys and enforcing quotas. ✅
+- Conversation/context store with privacy settings. ✅ (Context storage with Redis)
+- Autosave & optimistic update UX patterns. ⏳ (UI concern - forgeofwill client)
+- Enforce permissions for project/task operations. ✅ (MCP tools integration)
 
 Verification:
 - Unit tests for prompt generation; integration tests mocking AI responses.
 
 Checklist (deliverables):
-- Orchestrator endpoint scaffold + rate-limit enforcement
-- Prompt-generation unit tests (libs/prompt-generation)
-- Privacy settings design doc
-- Integration test mocking AI responses
+- Orchestrator endpoint scaffold + rate-limit enforcement ✅
+  - AI orchestrator microservice exists with MessagePattern handlers
+  - Rate limiting enabled: 10 requests per profile per 60 seconds
+  - RateLimitGuard implemented with profileId/userId/conversation tracking
+  - Unit tests for rate limit guard ✅
+- Prompt-generation unit tests (libs/prompt-generation) ✅
+  - Comprehensive tests in apps/ai-orchestrator/src/app/utils/prompt-engineering.spec.ts
+  - Tests cover: tool calling, system prompts, user context, response rules
+- Privacy settings design doc ⏳ (Documentation task - not blocking)
+- Integration test mocking AI responses ⏳ (E2E concern - delayed)
+- Context storage service ✅
+  - Redis-based conversation context persistence
+  - Maps profileId to conversation summaries, recent topics, active projects
+  - 7-day TTL for context data
+  - Unit tests for context storage ✅
 
 Files:
-- `project.service.ts`, `index.ts`, prompt libs under `libs/prompt-generation`
+- `apps/ai-orchestrator/src/app/app.module.ts` - Enabled ThrottlerModule and RateLimitGuard
+- `apps/ai-orchestrator/src/app/guards/rate-limit.guard.ts` - Rate limiting implementation
+- `apps/ai-orchestrator/src/app/guards/rate-limit.guard.spec.ts` - Rate limit tests
+- `apps/ai-orchestrator/src/app/context-storage.service.ts` - Conversation context storage
+- `apps/ai-orchestrator/src/app/utils/prompt-engineering.ts` - Prompt generation utilities
+- `apps/ai-orchestrator/src/app/utils/prompt-engineering.spec.ts` - Prompt tests
 
 ### 6. Blog & Portfolio — 1–2 days each
 Tasks:
