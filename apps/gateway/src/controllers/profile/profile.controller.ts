@@ -19,6 +19,8 @@ import {
   AuthCommands,
   ServiceTokens,
   TimelineCommands,
+  RoleCommands,
+  AppScopeCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateProfileDto,
@@ -43,6 +45,12 @@ import {
 @Controller('profile')
 @UseGuards(AuthGuard, PermissionsGuard)
 export class ProfileController {
+  private readonly OWNER_ROLE_NAMES = [
+    'owner_console_owner',
+    'global_admin',
+    'system_admin',
+  ];
+
   constructor(
     private readonly l: Logger,
     @Inject(ServiceTokens.PROFILE_SERVICE) private readonly client: ClientProxy,
@@ -52,6 +60,8 @@ export class ProfileController {
     private readonly authClient: ClientProxy,
     @Inject(ServiceTokens.TELOS_DOCS_SERVICE)
     private readonly telosDocsClient: ClientProxy,
+    @Inject(ServiceTokens.PERMISSIONS_SERVICE)
+    private readonly permissionsClient: ClientProxy,
     private readonly roleInit: RoleInitService
   ) {}
 
@@ -84,19 +94,14 @@ export class ProfileController {
           );
         })
         .catch((e) => this.l.error('Error initializing AI orchestration:', e));
-    // this is where we will initialize the permissions for the user in the app scope we are making the profile for.
 
-    // const profilePermissionsBuilder = new RoleInitBuilder()
-    //   .addDefaultProfileOwner(createdProfile.id, createProfileDto.userId)
-    //   .setScopeName(appScope)
-    //   .addAppScopeDefaults()
-    //   .addAssetOwnerPermissions();
-    // this.l.log(`Initializing permissions for app scope: ${appScope}`);
-    // // Build role-init options and enqueue a job to initialize the default permissions
-    // // Note: CreateProfileDto may not declare `initialPermissions` in the shared models;
-    // // if callers provide additional permissions they can be merged here before enqueue.
-    // const roleInitOptions = profilePermissionsBuilder.build();
-    // this.roleInit.enqueue(roleInitOptions);
+    // Initialize permissions for the profile
+    await this.initializeProfilePermissions(
+      createdProfile,
+      createProfileDto.userId,
+      appScope
+    );
+
     // Attempt to request a refreshed token that includes the profileId so callers can switch tokens
     try {
       const issueResp: any = await firstValueFrom(
@@ -117,6 +122,89 @@ export class ProfileController {
     }
 
     return createdProfile;
+  }
+
+  /**
+   * Initialize permissions for a newly created profile.
+   * Checks for existing global roles to determine if user should get owner or standard roles.
+   * Always includes asset permissions for profile picture/cover uploads.
+   */
+  private async initializeProfilePermissions(
+    profile: ProfileDto,
+    userId: string,
+    appScope: string
+  ): Promise<void> {
+    try {
+      const effectiveAppScope =
+        appScope === 'owner-console' ? 'global' : appScope;
+
+      // Check if user has existing global owner roles
+      const hasGlobalOwnerRoles = await this.checkUserHasGlobalOwnerRoles(
+        profile.id
+      );
+
+      const builder = new RoleInitBuilder()
+        .setScopeName(effectiveAppScope)
+        .setProfile(profile.id)
+        .addDefaultProfileOwner(profile.id, effectiveAppScope)
+        .addAssetOwnerPermissions(); // Always allow asset operations for profile updates
+
+      if (hasGlobalOwnerRoles) {
+        // User has global owner roles, assign owner roles for this app scope
+        this.l.log(
+          `User has global owner roles, assigning owner roles for ${effectiveAppScope}`
+        );
+        builder.addOwnerScopeDefaults();
+      } else {
+        // Assign standard user roles for the app scope
+        this.l.log(`Assigning standard user roles for ${effectiveAppScope}`);
+        builder.addAppScopeDefaults();
+      }
+
+      const roleInitOptions = builder.build();
+      this.l.debug(
+        `initializeProfilePermissions built role init options for profile=${profile.id} scope=${effectiveAppScope}`
+      );
+      // Use processNow to wait for permissions to be set up before returning
+      await this.roleInit.processNow(roleInitOptions);
+    } catch (e) {
+      this.l.error('Error initializing profile permissions:', e?.message || e);
+    }
+  }
+
+  /**
+   * Check if user has global owner-level roles.
+   */
+  private async checkUserHasGlobalOwnerRoles(
+    profileId: string
+  ): Promise<boolean> {
+    try {
+      const globalScope = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: AppScopeCommands.GetByName },
+          'global'
+        )
+      );
+
+      if (!globalScope) return false;
+
+      const userRoles = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetUserRoles },
+          { profileId, appScopeId: globalScope.id }
+        )
+      );
+
+      // Check if any role is an owner-level role
+      return (
+        userRoles?.some((assignment: any) =>
+          this.OWNER_ROLE_NAMES.includes(assignment.role?.name)
+        ) ?? false
+      );
+    } catch (e) {
+      this.l.warn('Could not check global owner roles:', e?.message || e);
+      return false;
+    }
   }
 
   @UseGuards(AuthGuard)
@@ -148,46 +236,54 @@ export class ProfileController {
   @ApiResponse({ status: 404, description: 'Profile not found.' })
   @Get(':id')
   async getProfile(@Param('id') id: string, @AppScope() appScope: string) {
-    const profile: ProfileDto = await firstValueFrom(
-      this.client.send({ cmd: ProfileCommands.Get }, { id })
-    );
-    this.l.log(
-      `Retrieved profile with ID: ${id}: PROFILE: '${JSON.stringify(profile)}'`
-    );
-    if (!profile) {
-      this.l.warn(
-        `Profile not found for ID: ${id} attempting to back-fill with ai persona`
+    try {
+      const profile: ProfileDto = await firstValueFrom(
+        this.client.send({ cmd: ProfileCommands.Get }, { id })
       );
-      const telos: PersonaTelosDto = await firstValueFrom(
-        this.telosDocsClient.send(
-          { cmd: PersonaTelosCommands.FIND_ONE },
-          { id }
-        )
-      );
-      if (!telos) {
-        this.l.error(`No persona found for ID: ${id}`);
-        throw new RpcException(
-          `Profile with ID ${id} not found and no persona available to back-fill.`
-        );
-      }
-      const personaProfile: ProfileDto = {
-        id: telos.id,
-        profileName: telos.name,
-        bio: '',
-        email: '',
-        avatarUrl: `assets/${telos.name}-avatar.png`,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        appScope: appScope === 'owner-console' ? 'global' : appScope,
-      };
       this.l.log(
-        `Back-filled profile with ID: ${id}: PROFILE: '${JSON.stringify(
-          personaProfile
-        )}'`
+        `Retrieved profile with ID: ${id}, appScope=${
+          profile?.appScope ?? 'unknown'
+        }`
       );
-      return personaProfile;
+      if (!profile) {
+        this.l.warn(
+          `Profile not found for ID: ${id} attempting to back-fill with ai persona`
+        );
+        const telos: PersonaTelosDto = await firstValueFrom(
+          this.telosDocsClient.send(
+            { cmd: PersonaTelosCommands.FIND_ONE },
+            { id }
+          )
+        );
+        if (!telos) {
+          this.l.error(`No persona found for ID: ${id}`);
+          throw new RpcException(
+            `Profile with ID ${id} not found and no persona available to back-fill.`
+          );
+        }
+        const personaProfile: ProfileDto = {
+          id: telos.id,
+          userId: telos.id,
+          profileName: telos.name,
+          bio: '',
+          email: `${telos.name}@optimisitic-tanuki.com`,
+          avatarUrl: `assets/${telos.name}-avatar.png`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          appScope: appScope === 'owner-console' ? 'global' : appScope,
+        };
+        this.l.log(
+          `Back-filled profile with ID: ${id}, appScope=${personaProfile.appScope}`
+        );
+        return personaProfile;
+      }
+      return profile;
+    } catch (error) {
+      this.l.error(`Error retrieving profile with ID: ${id}`, error);
+      throw new RpcException(
+        `Failed to retrieve profile with ID ${id}: ${error.message || error}`
+      );
     }
-    return profile;
   }
 
   @UseGuards(AuthGuard)

@@ -81,41 +81,88 @@ export class PermissionsGuard implements CanActivate {
         { cmd: ProfileCommands.GetAll },
         {
           where: {
-            id: user.profileId,
+            userId: user.id,
           },
         }
       )
     );
 
-    let effectiveScope = 'global';
-    const validProfiles = profiles.filter(
-      (p) => p.appScope === appScopeName || p.appScope === 'global'
-    );
-    if (validProfiles.length === 0) {
-      this.logger.warn(
-        `No valid profile found for profileId: ${user.profileId} in app scope: ${appScopeName} or global`
-      );
-      throw new ForbiddenException(
-        `No valid profile found for the specified app scope`
-      );
-    }
-    if (!validProfiles.some((p) => p.appScope === 'global')) {
-      effectiveScope = appScopeName;
-    }
+    // Check for global scope first - if user has permission in global scope, allow access
+    const globalProfile = profiles.find((p) => p.appScope === 'global');
+    const appScopeProfile = profiles.find((p) => p.appScope === appScopeName);
 
-    const fullEffectiveScope = await firstValueFrom(
-      this.permissionsClient.send(
-        { cmd: AppScopeCommands.GetByName },
-        effectiveScope
-      )
-    );
+    // Determine if we should check global scope permissions first
+    const checkGlobalFirst = !!globalProfile;
 
-    this.logger.debug(
-      'Full Effective Scope:',
-      JSON.stringify(fullEffectiveScope)
-    );
+    // Get the global scope for permission checking
+    const globalScope = checkGlobalFirst
+      ? await firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: AppScopeCommands.GetByName },
+            'global'
+          )
+        )
+      : null;
 
     const { permissions } = requirement;
+
+    // First, try to authorize with global scope permissions (if user has global profile)
+    if (checkGlobalFirst && globalScope) {
+      let allGlobalPermissionsGranted = true;
+
+      for (const permission of permissions) {
+        let hasPermission = await this.cacheService.get(
+          user.profileId,
+          permission,
+          globalScope.id
+        );
+
+        if (hasPermission === null) {
+          this.logger.debug(
+            `Cache miss for global permission: ${permission}, checking with permissions service`
+          );
+          hasPermission = await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: RoleCommands.CheckPermission },
+              {
+                profileId: user.profileId,
+                permission,
+                profileAppScope: 'global',
+                appScopeId: globalScope.id,
+              }
+            )
+          );
+
+          await this.cacheService.set(
+            user.profileId,
+            permission,
+            globalScope.id,
+            hasPermission
+          );
+        }
+
+        if (!hasPermission) {
+          allGlobalPermissionsGranted = false;
+          break;
+        }
+      }
+
+      if (allGlobalPermissionsGranted) {
+        this.logger.debug(
+          `Access granted via global scope permissions for profile ${user.profileId}`
+        );
+        return true;
+      }
+    }
+
+    // If global scope didn't grant access, check app-specific scope
+    // User must have a profile matching the app scope
+    if (!appScopeProfile) {
+      this.logger.warn(
+        `No valid profile found for profileId: ${user.profileId} in app scope: ${appScopeName}. Will attempt fallback to global permissions.`
+      );
+      // Don't throw here - try global fallback in the permission check instead
+    }
 
     // Check each required permission for the specific app scope
     for (const permission of permissions) {
@@ -123,7 +170,7 @@ export class PermissionsGuard implements CanActivate {
       let hasPermission = await this.cacheService.get(
         user.profileId,
         permission,
-        fullEffectiveScope.id
+        appScope.id
       );
 
       // If not in cache, check with permissions service
@@ -137,8 +184,9 @@ export class PermissionsGuard implements CanActivate {
             {
               profileId: user.profileId,
               permission,
-              profileAppScope: effectiveScope,
-              appScopeId: fullEffectiveScope.id,
+              profileAppScope: appScopeName,
+              appScopeId: appScope.id,
+              checkGlobalFallback: true, // Enable global fallback for app-scope checks
             }
           )
         );
@@ -149,7 +197,7 @@ export class PermissionsGuard implements CanActivate {
         await this.cacheService.set(
           user.profileId,
           permission,
-          fullEffectiveScope.id,
+          appScope.id,
           hasPermission
         );
       } else {

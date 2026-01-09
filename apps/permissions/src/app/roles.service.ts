@@ -173,7 +173,8 @@ export class RolesService {
     permissionName: string,
     appScopeId: string,
     profileAppScope?: string,
-    targetId?: string
+    targetId?: string,
+    checkGlobalFallback = false
   ): Promise<boolean> {
     this.l.log(
       `Checking permission: ${permissionName} for profile ${profileId} in appScope ${appScopeId}`
@@ -181,6 +182,31 @@ export class RolesService {
     const assignments = await this.getUserRoles(profileId, appScopeId);
 
     if (assignments.length === 0) {
+      this.l.warn(
+        `No role assignments found for profile ${profileId} in appScope ${appScopeId}`
+      );
+
+      // Try global fallback if requested and we're not already checking global
+      if (checkGlobalFallback) {
+        const globalScope = await this.appScopesRepository.findOne({
+          where: { name: 'global' },
+        });
+
+        if (globalScope && globalScope.id !== appScopeId) {
+          this.l.debug(
+            `Attempting global scope fallback for permission: ${permissionName}`
+          );
+          return this.checkPermission(
+            profileId,
+            permissionName,
+            globalScope.id,
+            'global',
+            targetId,
+            false // Don't recurse again
+          );
+        }
+      }
+
       this.l.warn(
         `Permission denied: ${permissionName} for profile ${profileId} - No role assignments found`
       );

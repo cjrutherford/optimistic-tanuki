@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RolesController } from './roles.controller';
 import { RolesService } from '../app/roles.service';
-import { CreateRoleDto, UpdateRoleDto, AssignRoleDto } from '@optimistic-tanuki/models';
+import {
+  CreateRoleDto,
+  UpdateRoleDto,
+  AssignRoleDto,
+} from '@optimistic-tanuki/models';
 
 describe('RolesController', () => {
   let controller: RolesController;
@@ -40,7 +44,11 @@ describe('RolesController', () => {
 
   describe('createRole', () => {
     it('should call service.createRole with the correct data', async () => {
-      const createRoleDto: CreateRoleDto = { name: 'admin', description: 'Admin role', appScopeId: '1' };
+      const createRoleDto: CreateRoleDto = {
+        name: 'admin',
+        description: 'Admin role',
+        appScopeId: '1',
+      };
       await controller.createRole(createRoleDto);
       expect(service.createRole).toHaveBeenCalledWith(createRoleDto);
     });
@@ -96,7 +104,11 @@ describe('RolesController', () => {
 
   describe('assignRole', () => {
     it('should call service.assignRole with the correct data', async () => {
-      const assignRoleDto: AssignRoleDto = { roleId: '1', profileId: '1', appScopeId: '1' };
+      const assignRoleDto: AssignRoleDto = {
+        roleId: '1',
+        profileId: '1',
+        appScopeId: '1',
+      };
       await controller.assignRole(assignRoleDto);
       expect(service.assignRole).toHaveBeenCalledWith(assignRoleDto);
     });
@@ -120,9 +132,59 @@ describe('RolesController', () => {
 
   describe('checkPermission', () => {
     it('should call service.checkPermission with correct data', async () => {
-      const data = { profileId: '1', permission: 'read', appScopeId: 'global', targetId: '1' };
+      const data = {
+        profileId: '1',
+        permission: 'read',
+        appScopeId: 'global',
+        targetId: '1',
+      };
       await controller.checkPermission(data);
-      expect(service.checkPermission).toHaveBeenCalledWith('1', 'read', 'global', '1');
+      expect(service.checkPermission).toHaveBeenCalledWith(
+        '1',
+        'read',
+        'global',
+        undefined,
+        '1',
+        false
+      );
+    });
+
+    it('should pass checkGlobalFallback parameter when provided', async () => {
+      const data = {
+        profileId: '1',
+        permission: 'read',
+        appScopeId: 'global',
+        targetId: '1',
+        checkGlobalFallback: true,
+      };
+      await controller.checkPermission(data);
+      expect(service.checkPermission).toHaveBeenCalledWith(
+        '1',
+        'read',
+        'global',
+        undefined,
+        '1',
+        true
+      );
+    });
+
+    it('should pass profileAppScope parameter when provided', async () => {
+      const data = {
+        profileId: '1',
+        permission: 'read',
+        appScopeId: 'global',
+        profileAppScope: 'forgeofwill',
+        targetId: '1',
+      };
+      await controller.checkPermission(data);
+      expect(service.checkPermission).toHaveBeenCalledWith(
+        '1',
+        'read',
+        'global',
+        'forgeofwill',
+        '1',
+        false
+      );
     });
   });
 });

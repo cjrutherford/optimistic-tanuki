@@ -24,12 +24,12 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
       load: [loadConfig],
     }),
     HttpModule,
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 60 seconds
-        limit: 10,  // 10 requests per profile per 60 seconds
-      },
-    ]),
+    // ThrottlerModule.forRoot([
+    //   {
+    //     ttl: 60000, // 60 seconds
+    //     limit: 10,  // 10 requests per profile per 60 seconds
+    //   },
+    // ]),
   ],
   controllers: [AppController],
   providers: [
@@ -40,10 +40,10 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     ContextStorageService,
     LangGraphService,
     LangChainAgentService,
-    {
-      provide: APP_GUARD,
-      useClass: RateLimitGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: RateLimitGuard,
+    // },
     {
       provide: 'ai-enabled-apps',
       useFactory: (config: ConfigService) => {

@@ -26,6 +26,14 @@ export class RoleInitService {
     this.startWorker();
   }
 
+  /**
+   * Process role initialization synchronously and wait for completion.
+   * Use this when you need permissions to be ready before returning to the caller.
+   */
+  async processNow(options: RoleInitOptions): Promise<void> {
+    await this.processOne(options);
+  }
+
   private startWorker() {
     if (this.processing) return;
     this.processing = true;
@@ -134,24 +142,39 @@ export class RoleInitService {
             {
               name: r.name,
               description: r.description || '',
-              scope: appScopeId,
+              appScopeId: appScopeId,
             }
           )
         );
         createdRoles[r.name] = role;
       } catch (e) {
-        // Creation failed -> try to find existing role by name & scope and use it
+        // Creation failed -> try to find existing role by name & scope, then fall back to global scope
         this.logger.debug(
           `Role.Create failed ${r.name}`,
           (e as { message: string })?.message || e
         );
         try {
-          const existing = await firstValueFrom(
+          // First try to find role in the specific app scope
+          let existing = await firstValueFrom(
             this.permissionsClient.send(
               { cmd: RoleCommands.GetByName },
-              { name: r.name, scope: appScopeId }
+              { name: r.name, appScope: item.scopeName }
             )
           ).catch(() => null);
+
+          // If not found in app scope, try global scope
+          if (!existing && item.scopeName !== 'global') {
+            this.logger.debug(
+              `Role ${r.name} not found in ${item.scopeName}, trying global scope`
+            );
+            existing = await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: RoleCommands.GetByName },
+                { name: r.name, appScope: 'global' }
+              )
+            ).catch(() => null);
+          }
+
           if (existing) {
             this.logger.debug(`Found existing role ${r.name} -> using it`);
             createdRoles[r.name] = existing;
@@ -198,12 +221,23 @@ export class RoleInitService {
       // If we didn't create the role in this run, attempt to lookup an existing role by name/scope
       if (!role) {
         try {
+          // First try app scope
           role = await firstValueFrom(
             this.permissionsClient.send(
               { cmd: RoleCommands.GetByName },
-              { name: a.roleName, scope: appScopeId }
+              { name: a.roleName, appScope: item.scopeName }
             )
           ).catch(() => null);
+
+          // Fall back to global scope if not found
+          if (!role && item.scopeName !== 'global') {
+            role = await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: RoleCommands.GetByName },
+                { name: a.roleName, appScope: 'global' }
+              )
+            ).catch(() => null);
+          }
         } catch (e) {
           this.logger.debug(
             `Role lookup before assignment failed role=${a.roleName}`,

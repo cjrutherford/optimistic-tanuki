@@ -1,8 +1,16 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { ProfileService } from './profile.service';
 import { AuthStateService } from '../auth-state.service';
-import { ProfileDto, CreateProfileDto, UpdateProfileDto, AssetDto } from '@optimistic-tanuki/ui-models';
+import {
+  ProfileDto,
+  CreateProfileDto,
+  UpdateProfileDto,
+  AssetDto,
+} from '@optimistic-tanuki/ui-models';
 
 describe('ProfileService', () => {
   let service: ProfileService;
@@ -21,6 +29,7 @@ describe('ProfileService', () => {
     interests: 'testing',
     skills: 'testing',
     created_at: new Date(),
+    appScope: 'forgeofwill', // Local profile for this app
   };
 
   const mockAsset: AssetDto = {
@@ -51,12 +60,12 @@ describe('ProfileService', () => {
     // Mock localStorage
     let store: { [key: string]: string } = {};
     const mockLocalStorage = {
-        getItem: (key: string): string | null => store[key] || null,
-        setItem: (key: string, value: string) => (store[key] = value),
-        removeItem: (key: string) => delete store[key],
-        clear: () => (store = {}),
-      };
-      Object.defineProperty(window, 'localStorage', { value: mockLocalStorage });
+      getItem: (key: string): string | null => store[key] || null,
+      setItem: (key: string, value: string) => (store[key] = value),
+      removeItem: (key: string) => delete store[key],
+      clear: () => (store = {}),
+    };
+    Object.defineProperty(window, 'localStorage', { value: mockLocalStorage });
   });
 
   afterEach(() => {
@@ -77,8 +86,25 @@ describe('ProfileService', () => {
   });
 
   it('should get all profiles for the current user', async () => {
-    const allProfiles: ProfileDto[] = [mockProfile, { ...mockProfile, id: '2', userId: 'user2' }];
-    const userProfiles = [mockProfile];
+    const otherAppProfile = {
+      ...mockProfile,
+      id: '2',
+      userId: 'user1',
+      appScope: 'other-app',
+    };
+    const globalProfile = {
+      ...mockProfile,
+      id: '3',
+      userId: 'user1',
+      appScope: 'global',
+    };
+    const allProfiles: ProfileDto[] = [
+      mockProfile,
+      otherAppProfile,
+      globalProfile,
+    ];
+    // Should only include local (forgeofwill) and global profiles for current user
+    const userProfiles = [mockProfile, globalProfile];
 
     const promise = service.getAllProfiles();
 
@@ -91,24 +117,28 @@ describe('ProfileService', () => {
     expect(service.allProfiles()).toEqual(allProfiles);
     expect(service.currentUserProfiles()).toEqual(userProfiles);
     const stored = JSON.parse(localStorage.getItem('profiles')!);
-    expect(stored).toEqual(JSON.parse(JSON.stringify(allProfiles)));
+    expect(stored).toEqual(JSON.parse(JSON.stringify(userProfiles)));
   });
 
   it('should create a profile with assets', async () => {
     const createProfileDto: CreateProfileDto = {
-        name: 'New Profile',
-        description: 'A new profile',
-        profilePic: 'data:image/png;base64,abc',
-        coverPic: 'data:image/png;base64,def',
-        userId: 'user1',
-        bio: 'new bio',
-        location: 'new location',
-        occupation: 'new occupation',
-        interests: 'new interests',
-        skills: 'new skills',
+      name: 'New Profile',
+      description: 'A new profile',
+      profilePic: 'data:image/png;base64,abc',
+      coverPic: 'data:image/png;base64,def',
+      userId: 'user1',
+      bio: 'new bio',
+      location: 'new location',
+      occupation: 'new occupation',
+      interests: 'new interests',
+      skills: 'new skills',
     };
-    const createdProfile: ProfileDto = { ...mockProfile, id: '2', profileName: 'New Profile' };
-    
+    const createdProfile: ProfileDto = {
+      ...mockProfile,
+      id: '2',
+      profileName: 'New Profile',
+    };
+
     const createPromise = service.createProfile(createProfileDto);
 
     // First request: create profile
@@ -117,7 +147,7 @@ describe('ProfileService', () => {
     profileReq.flush(createdProfile);
 
     // Wait for the profile creation to complete and first asset request to be made
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Second request: first asset (profile pic) - they are sequential, not parallel
     const assetRequest1 = httpMock.expectOne('/api/asset');
@@ -125,7 +155,7 @@ describe('ProfileService', () => {
     assetRequest1.flush({ ...mockAsset, id: 'asset2' });
 
     // Wait for first asset to complete and second asset request to be made
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Third request: second asset (cover pic)
     const assetRequest2 = httpMock.expectOne('/api/asset');
@@ -133,10 +163,12 @@ describe('ProfileService', () => {
     assetRequest2.flush({ ...mockAsset, id: 'asset3' });
 
     // Wait for second asset to complete and update request to be made
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Fourth request: update profile with asset URLs
-    const updateProfileReq = httpMock.expectOne(`/api/profile/${createdProfile.id}`);
+    const updateProfileReq = httpMock.expectOne(
+      `/api/profile/${createdProfile.id}`
+    );
     expect(updateProfileReq.request.method).toBe('PUT');
     updateProfileReq.flush(createdProfile);
 
@@ -146,7 +178,12 @@ describe('ProfileService', () => {
   });
 
   it('should update a profile', async () => {
-    const updateDto: UpdateProfileDto = { id: '1', bio: 'Updated Bio', name: 'a', description: 'b' };
+    const updateDto: UpdateProfileDto = {
+      id: '1',
+      bio: 'Updated Bio',
+      name: 'a',
+      description: 'b',
+    };
     const updatedProfile: ProfileDto = { ...mockProfile, bio: 'Updated Bio' };
 
     service.currentUserProfiles.set([mockProfile]);

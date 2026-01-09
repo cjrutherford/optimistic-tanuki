@@ -1,4 +1,5 @@
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { DataSource } from 'typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import { LoggerModule } from '@optimistic-tanuki/logger';
@@ -12,8 +13,9 @@ import { Timeline } from '../timelines/entities/timeline.entity';
 import { TimelineService } from './timeline.service';
 import { TimelinesController } from '../timelines/timelines.controller';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import loadConfig from '../config';
+import loadConfig, { ProfileConfigType } from '../config';
 import loadDatabase from './loadDatabase';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
 
 @Module({
   imports: [
@@ -41,6 +43,22 @@ import loadDatabase from './loadDatabase';
       provide: getRepositoryToken(Timeline),
       useFactory: (ds: DataSource) => ds.getRepository(Timeline),
       inject: ['PROFILE_CONNECTION'],
+    },
+    {
+      provide: ServiceTokens.PERMISSIONS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const config = configService.get<
+          ProfileConfigType['services']['permissions']
+        >('services.permissions');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: config.host,
+            port: config.port,
+          },
+        });
+      },
+      inject: [ConfigService],
     },
   ],
 })

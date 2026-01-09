@@ -1,0 +1,47 @@
+﻿# Docker Compose for Profile E2E Tests
+# Setup for testing profile microservice
+services:
+  db:
+    image: postgres:latest
+    restart: always
+    container_name: e2e_db_profile
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-setup:
+    image: node:lts-alpine
+    container_name: e2e_db_setup_profile
+    working_dir: /workspace
+    volumes:
+      - ../../../../:/workspace
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    restart: 'no'
+
+  profile:
+    container_name: e2e_profile
+    build:
+      context: ../../../../
+      dockerfile: ./apps/profile/Dockerfile
+    ports:
+      - '3002:3002'
+    volumes:
+      - ./e2e-config.yaml:/usr/src/app/assets/config.yaml
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully

@@ -11,7 +11,8 @@ import { Role } from '../../roles/entities/role.entity';
 import { AppScope } from '../../app-scopes/entities/app-scope.entity';
 
 @Entity()
-@Index(['roleId', 'profileId', 'appScopeId', 'targetId'], { unique: true })
+// Ensure a profile can only have one assignment for a given role within an app scope
+@Index(['roleId', 'profileId', 'appScopeId'], { unique: true })
 export class RoleAssignment {
   @PrimaryGeneratedColumn('uuid')
   id: string;

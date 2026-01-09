@@ -181,6 +181,54 @@
     },
     {
       "name": "profile.read",
+      "description": "Read profile (digital-homestead)",
+      "resource": "profile",
+      "action": "read",
+      "targetId": null,
+      "appScope": "digital-homestead"
+    },
+    {
+      "name": "profile.update",
+      "description": "Update profile (digital-homestead)",
+      "resource": "profile",
+      "action": "update",
+      "targetId": null,
+      "appScope": "digital-homestead"
+    },
+    {
+      "name": "profile.read",
+      "description": "Read profile (forgeofwill)",
+      "resource": "profile",
+      "action": "read",
+      "targetId": null,
+      "appScope": "forgeofwill"
+    },
+    {
+      "name": "profile.update",
+      "description": "Update profile (forgeofwill)",
+      "resource": "profile",
+      "action": "update",
+      "targetId": null,
+      "appScope": "forgeofwill"
+    },
+    {
+      "name": "profile.read",
+      "description": "Read profile (owner-console)",
+      "resource": "profile",
+      "action": "read",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "profile.update",
+      "description": "Update profile (owner-console)",
+      "resource": "profile",
+      "action": "update",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "profile.read",
       "description": "Read profile (profile service)",
       "resource": "profile",
       "action": "read",
@@ -516,12 +564,52 @@
       "appScope": "social"
     },
     {
+      "name": "social.post.read",
+      "description": "Read social post",
+      "resource": "post",
+      "action": "read",
+      "targetId": null,
+      "appScope": "social"
+    },
+    {
       "name": "social.post.update",
       "description": "Update social post",
       "resource": "post",
       "action": "update",
       "targetId": null,
       "appScope": "social"
+    },
+    {
+      "name": "asset.create",
+      "description": "Create asset (assets service)",
+      "resource": "asset",
+      "action": "create",
+      "targetId": null,
+      "appScope": "assets"
+    },
+    {
+      "name": "asset.read",
+      "description": "Read asset (assets service)",
+      "resource": "asset",
+      "action": "read",
+      "targetId": null,
+      "appScope": "assets"
+    },
+    {
+      "name": "asset.update",
+      "description": "Update asset (assets service)",
+      "resource": "asset",
+      "action": "update",
+      "targetId": null,
+      "appScope": "assets"
+    },
+    {
+      "name": "asset.delete",
+      "description": "Delete asset (assets service)",
+      "resource": "asset",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "assets"
     },
     {
       "name": "permissions.read",
@@ -634,6 +722,470 @@
       "action": "delete",
       "targetId": null,
       "appScope": "owner-console"
+    },
+    {
+      "name": "profile.read",
+      "description": "Read profile (global)",
+      "resource": "profile",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "profile.update",
+      "description": "Update profile (global)",
+      "resource": "profile",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "asset.create",
+      "description": "Create asset (global)",
+      "resource": "asset",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "asset.read",
+      "description": "Read asset (global)",
+      "resource": "asset",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "asset.update",
+      "description": "Update asset (global)",
+      "resource": "asset",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "asset.delete",
+      "description": "Delete asset (global)",
+      "resource": "asset",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "blog.post.create",
+      "description": "Create blog post (global)",
+      "resource": "post",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "blog.post.read",
+      "description": "Read blog post (global)",
+      "resource": "post",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "blog.post.update",
+      "description": "Update blog post (global)",
+      "resource": "post",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "blog.post.delete",
+      "description": "Delete blog post (global)",
+      "resource": "post",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "blog.post.publish",
+      "description": "Publish blog post (global)",
+      "resource": "post",
+      "action": "publish",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "blog.comment.create",
+      "description": "Create blog comment (global)",
+      "resource": "comment",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "blog.comment.read",
+      "description": "Read blog comment (global)",
+      "resource": "comment",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "blog.blog.create",
+      "description": "Create blog (global)",
+      "resource": "blog",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.project.create",
+      "description": "Create project (global)",
+      "resource": "project",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.project.read",
+      "description": "Read project (global)",
+      "resource": "project",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.project.update",
+      "description": "Update project (global)",
+      "resource": "project",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.project.delete",
+      "description": "Delete project (global)",
+      "resource": "project",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.task.create",
+      "description": "Create task (global)",
+      "resource": "task",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.task.read",
+      "description": "Read task (global)",
+      "resource": "task",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.task.update",
+      "description": "Update task (global)",
+      "resource": "task",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.task.delete",
+      "description": "Delete task (global)",
+      "resource": "task",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.change.create",
+      "description": "Create change (global)",
+      "resource": "change",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.change.read",
+      "description": "Read change (global)",
+      "resource": "change",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.change.update",
+      "description": "Update change (global)",
+      "resource": "change",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.change.delete",
+      "description": "Delete change (global)",
+      "resource": "change",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.journal.create",
+      "description": "Create journal (global)",
+      "resource": "journal",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.journal.read",
+      "description": "Read journal (global)",
+      "resource": "journal",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.journal.update",
+      "description": "Update journal (global)",
+      "resource": "journal",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.journal.delete",
+      "description": "Delete journal (global)",
+      "resource": "journal",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.risk.create",
+      "description": "Create risk (global)",
+      "resource": "risk",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.risk.read",
+      "description": "Read risk (global)",
+      "resource": "risk",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.risk.update",
+      "description": "Update risk (global)",
+      "resource": "risk",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.risk.delete",
+      "description": "Delete risk (global)",
+      "resource": "risk",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.timer.create",
+      "description": "Create timer (global)",
+      "resource": "timer",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.timer.read",
+      "description": "Read timer (global)",
+      "resource": "timer",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.timer.update",
+      "description": "Update timer (global)",
+      "resource": "timer",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.timer.delete",
+      "description": "Delete timer (global)",
+      "resource": "timer",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "social.follow",
+      "description": "Follow/unfollow users (global)",
+      "resource": "follow",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "social.post.create",
+      "description": "Create social post (global)",
+      "resource": "post",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "social.post.read",
+      "description": "Read social post (global)",
+      "resource": "post",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "social.post.update",
+      "description": "Update social post (global)",
+      "resource": "post",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "social.vote.create",
+      "description": "Cast a vote (global)",
+      "resource": "vote",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "social.comment.create",
+      "description": "Create a comment (global)",
+      "resource": "comment",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "permissions.read",
+      "description": "Read permissions (global)",
+      "resource": "permissions",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "permissions.create",
+      "description": "Create permissions (global)",
+      "resource": "permissions",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "permissions.update",
+      "description": "Update permissions (global)",
+      "resource": "permissions",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "permissions.delete",
+      "description": "Delete permissions (global)",
+      "resource": "permissions",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "roles.read",
+      "description": "Read roles (global)",
+      "resource": "roles",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "roles.create",
+      "description": "Create roles (global)",
+      "resource": "roles",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "roles.update",
+      "description": "Update roles (global)",
+      "resource": "roles",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "roles.delete",
+      "description": "Delete roles (global)",
+      "resource": "roles",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "users.read",
+      "description": "Read users (global)",
+      "resource": "users",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "users.update",
+      "description": "Update users (global)",
+      "resource": "users",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "appscopes.read",
+      "description": "Read app scopes (global)",
+      "resource": "appscopes",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "appscopes.create",
+      "description": "Create app scopes (global)",
+      "resource": "appscopes",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "appscopes.update",
+      "description": "Update app scopes (global)",
+      "resource": "appscopes",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "appscopes.delete",
+      "description": "Delete app scopes (global)",
+      "resource": "appscopes",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
     }
   ],
   "role_permissions": [
@@ -795,12 +1347,12 @@
     {
       "role": "forgeofwill_profile_owner",
       "permission": "profile.read",
-      "permissionAppScope": "forgeofwill_or_profile"
+      "permissionAppScope": "forgeofwill"
     },
     {
       "role": "forgeofwill_profile_owner",
       "permission": "profile.update",
-      "permissionAppScope": "forgeofwill_or_profile"
+      "permissionAppScope": "forgeofwill"
     },
     {
       "role": "blog_author",

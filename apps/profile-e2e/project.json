@@ -11,7 +11,7 @@
         "jestConfig": "apps/profile-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["profile:build", "profile:serve"]
+      "dependsOn": ["profile:build"]
     }
   }
 }

@@ -43,7 +43,7 @@ describe('Gateway E2E Tests', () => {
           email: 'incomplete@example.com',
         });
 
-        expect(res.status).toBe(500);
+        expect(res.status).toBe(400);
       });
     });
 
@@ -76,7 +76,7 @@ describe('Gateway E2E Tests', () => {
           email: testUser.email,
         });
 
-        expect(res.status).toBe(500);
+        expect(res.status).toBe(400);
       });
     });
 

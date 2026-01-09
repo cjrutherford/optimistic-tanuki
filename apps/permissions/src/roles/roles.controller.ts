@@ -88,13 +88,16 @@ export class RolesController {
       appScopeId: string;
       profileAppScope?: string;
       targetId?: string;
+      checkGlobalFallback?: boolean;
     }
   ) {
     return await this.rolesService.checkPermission(
       data.profileId,
       data.permission,
       data.appScopeId,
-      data.targetId
+      data.profileAppScope,
+      data.targetId,
+      data.checkGlobalFallback ?? false
     );
   }
 }

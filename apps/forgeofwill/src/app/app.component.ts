@@ -93,9 +93,21 @@ export class AppComponent implements OnInit {
         this.updateNavItems();
       });
 
+    // Initialize theme - only in browser to avoid SSR issues
+    if (isPlatformBrowser(this.platformId)) {
+      // Check if there's a stored palette preference, otherwise use default
+      const currentPalette = this.themeService.getCurrentPalette();
+      if (!currentPalette) {
+        // Set default palette for forgeofwill
+        this.themeService.setPalette('Sunset Warmth');
+      }
+      // Apply stored or default theme mode
+      this.themeService.setTheme(this.themeService.getTheme());
+    }
+
     this.themeService.themeColors$.subscribe({
       next: (colors) => {
-        if (!colors) return;
+        if (!colors || !isPlatformBrowser(this.platformId)) return;
         const backgroundPattern = `
           <svg xmlns="http://www.w3.org/2000/svg" width="80" height="105" viewBox="0 0 80 105">
               <g fill-rule="evenodd">

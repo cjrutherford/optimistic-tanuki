@@ -18,9 +18,19 @@ export class AppComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
 
   ngOnInit() {
-    this.themeService.setTheme('dark');
-    // Use predefined palette instead of manual colors
-    this.themeService.setPalette('Retro Gaming'); // Matches the teal theme
+    // Initialize theme - only in browser to avoid SSR issues
+    if (isPlatformBrowser(this.platformId)) {
+      // Check if there's a stored palette preference, otherwise use default
+      const currentPalette = this.themeService.getCurrentPalette();
+      if (!currentPalette) {
+        // Set default palette for christopherrutherford-net
+        this.themeService.setTheme('dark');
+        this.themeService.setPalette('Retro Gaming');
+      } else {
+        // Apply stored theme mode
+        this.themeService.setTheme(this.themeService.getTheme());
+      }
+    }
 
     this.themeService.themeColors$.subscribe({
       next: (colors: ThemeColors | undefined) => {

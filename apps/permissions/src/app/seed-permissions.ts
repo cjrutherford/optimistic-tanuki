@@ -178,13 +178,11 @@ async function main() {
           createdRoles.push(updated);
         } else {
           console.log(`Creating role "${roleData.name}"...`);
-          const roleDto: CreateRoleDto = {
+          const role = roleRepo.create({
             name: roleData.name,
             description: roleData.description,
-            appScopeId: appScope.id,
-          };
-
-          const role = roleRepo.create(roleDto);
+          });
+          role.appScope = appScope;
           const savedRole = await roleRepo.save(role);
           createdRoles.push(savedRole);
           console.log(`Role "${roleData.name}" created successfully.`);
@@ -206,7 +204,9 @@ async function main() {
       try {
         const role = createdRoles.find((r) => r.name === rpData.role);
         const permission = createdPermissions.find(
-          (p) => p.name === rpData.permission && p.appScope?.name === rpData.permissionAppScope
+          (p) =>
+            p.name === rpData.permission &&
+            p.appScope?.name === rpData.permissionAppScope
         );
 
         if (!role) {
@@ -229,7 +229,9 @@ async function main() {
         });
 
         if (!roleWithPermissions) {
-          console.warn(`Role "${rpData.role}" not found when loading with permissions, skipping...`);
+          console.warn(
+            `Role "${rpData.role}" not found when loading with permissions, skipping...`
+          );
           continue;
         }
 

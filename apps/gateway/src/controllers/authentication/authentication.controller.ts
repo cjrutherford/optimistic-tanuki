@@ -56,34 +56,111 @@ export class AuthenticationController {
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   async loginUser(@Body() data: LoginRequest, @AppScope() appScope: string) {
     try {
-      this.logger.debug('loginUser called with data:', JSON.stringify(data));
+      this.logger.debug(`loginUser called for email=${data.email}`);
       const effectiveUser: { userId: string } = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.UserIdFromEmail },
           { email: data.email }
         )
       );
-      this.logger.debug('loginUser effectiveUser:', effectiveUser);
+      this.logger.debug(
+        `loginUser resolved userId=${effectiveUser?.userId} for email=${data.email}`
+      );
       const profiles = await firstValueFrom(
         this.profileClient.send(
           { cmd: ProfileCommands.GetAll },
           { where: { userId: effectiveUser.userId } }
         )
       );
-      this.logger.debug(`Logging in user with profile ID:`, profiles);
+      this.logger.debug(
+        `loginUser found ${profiles?.length || 0} profile(s) for userId=${
+          effectiveUser.userId
+        }`
+      );
+
       const effectiveAppScope =
         appScope === 'owner-console' ? 'global' : appScope;
-      const profile = profiles.find(
-        (p: ProfileDto) => p.appScope === effectiveAppScope || 'global'
+
+      // Prefer an app-scoped profile; fall back to global if necessary
+      let appScopedProfile = profiles.find(
+        (p: ProfileDto) => p.appScope === effectiveAppScope
+      );
+      const globalProfile = profiles.find(
+        (p: ProfileDto) => !p.appScope || p.appScope === 'global'
+      );
+
+      // If the user is signing into a new app for the first time,
+      // create an app-scoped profile and initialize permissions now.
+      if (
+        !appScopedProfile &&
+        effectiveAppScope !== 'global' &&
+        globalProfile
+      ) {
+        this.logger.log(
+          `No app-scoped profile found for userId=${effectiveUser.userId} in scope=${effectiveAppScope}. Creating one from global profile ${globalProfile.id}.`
+        );
+
+        const newProfile: CreateProfileDto & { appScope: string } = {
+          userId: globalProfile.userId,
+          name: globalProfile.profileName || data.email,
+          description: '',
+          profilePic: '',
+          coverPic: '',
+          bio: '',
+          location: '',
+          occupation: '',
+          interests: '',
+          skills: '',
+          appScope: effectiveAppScope,
+        };
+
+        const createdProfile: ProfileDto = await firstValueFrom(
+          this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile)
+        );
+
+        this.logger.log(
+          `Created app-scoped profile ${createdProfile.id} for userId=${effectiveUser.userId} in scope=${effectiveAppScope}`
+        );
+
+        // Initialize permissions for this new app-scoped profile so that
+        // profile.update and asset.* operations work immediately.
+        const builder = new RoleInitBuilder()
+          .setScopeName(effectiveAppScope)
+          .setProfile(createdProfile.id)
+          .addDefaultProfileOwner(createdProfile.id, effectiveAppScope)
+          .addAppScopeDefaults()
+          .addAssetOwnerPermissions();
+
+        const roleInitOptions = builder.build();
+        this.logger.debug(
+          `loginUser initializing permissions for profile=${createdProfile.id} scope=${effectiveAppScope}`
+        );
+        await this.roleInit.processNow(roleInitOptions);
+
+        appScopedProfile = createdProfile;
+      }
+
+      const profileToUse =
+        appScopedProfile || globalProfile || profiles[0] || null;
+
+      if (!profileToUse) {
+        this.logger.error(
+          `loginUser could not resolve a profile for userId=${effectiveUser.userId}`
+        );
+        throw new Error('No profile available for user');
+      }
+
+      this.logger.debug(
+        `loginUser using profileId=${profileToUse.id} appScope=${profileToUse.appScope}`
       );
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Login },
-          { ...data, profileId: profile.id }
+          { ...data, profileId: profileToUse.id }
         )
       );
     } catch (error) {
-      console.error('Error in loginUser:', error);
+      this.logger.error('Error in loginUser:', error?.message || error);
       throw new HttpException(
         `Login failed: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -100,11 +177,13 @@ export class AuthenticationController {
     @AppScope() appScope: string
   ) {
     try {
-      console.log('registerUser:', data);
+      this.logger.debug('registerUser called');
       const result = await firstValueFrom(
         this.authClient.send({ cmd: AuthCommands.Register }, data)
       );
-      console.log('Registered user:', result);
+      this.logger.log(
+        `Registered user with id=${result?.data?.user?.id} email=${result?.data?.user?.email}`
+      );
       const newProfile: CreateProfileDto & { appScope: string } = {
         userId: result.data.user.id,
         name: `${result.data.user.firstName} ${result.data.user.lastName}`,
@@ -118,7 +197,9 @@ export class AuthenticationController {
         skills: '',
         appScope: appScope === 'owner-console' ? 'global' : appScope,
       };
-      console.log('Creating profile for new user:', newProfile);
+      this.logger.debug(
+        `Creating initial profile for userId=${newProfile.userId} scope=${newProfile.appScope}`
+      );
       const createdProfile = await firstValueFrom(
         this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile)
       );
@@ -126,10 +207,10 @@ export class AuthenticationController {
       // Special handling for owner-console: create profiles for all app scopes with owner roles
       if (appScope === 'owner-console') {
         this.logger.log(
-          `Registering owner user - creating profiles for all app scopes`
+          `Registering owner user - initializing global owner permissions`
         );
 
-        //   // Assign owner-level roles for this scope with full control permissions
+        // Assign owner-level roles for this scope with full control permissions
         const builder = new RoleInitBuilder()
           .setScopeName('global')
           .setProfile(createdProfile.id)
@@ -138,7 +219,9 @@ export class AuthenticationController {
           .addAssetOwnerPermissions();
 
         const roleInitOptions = builder.build();
-        this.logger.debug('RoleInitOptions:', JSON.stringify(roleInitOptions));
+        this.logger.debug(
+          `registerUser enqueueing owner permissions for profile=${createdProfile.id} scope=global`
+        );
         this.roleInit.enqueue(roleInitOptions);
       } else {
         // Standard registration flow
@@ -148,15 +231,18 @@ export class AuthenticationController {
           .addDefaultProfileOwner(createdProfile.id, appScope)
           .addAppScopeDefaults()
           .addAssetOwnerPermissions();
-        this.logger.log(`Initializing permissions for app scope: ${appScope}`);
+        this.logger.log(
+          `Initializing standard permissions for userId=${newProfile.userId} scope=${appScope}`
+        );
         const roleInitOptions = profilePermissionsBuilder.build();
-        this.logger.debug('RoleInitOptions:', JSON.stringify(roleInitOptions));
+        this.logger.debug(
+          `registerUser enqueueing standard permissions for profile=${createdProfile.id} scope=${appScope}`
+        );
         this.roleInit.enqueue(roleInitOptions);
       }
       return result;
     } catch (error) {
-      console.dir(error);
-      console.error('Error in registerUser:', error);
+      this.logger.error('Error in registerUser:', error?.message || error);
       throw new HttpException(
         `Registration failed: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR

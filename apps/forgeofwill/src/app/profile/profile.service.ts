@@ -19,6 +19,10 @@ export class ProfileService {
   currentUserProfiles = signal<ProfileDto[]>([]);
   allProfiles = signal<ProfileDto[]>([]);
   currentUserProfile = signal<ProfileDto | null>(null);
+
+  /** The app scope identifier for this application */
+  private readonly appScope = 'forgeofwill';
+
   constructor(
     private readonly http: HttpClient,
     private readonly authState: AuthStateService
@@ -87,12 +91,14 @@ export class ProfileService {
       this.http.get<ProfileDto[]>('/api/profile')
     );
     this.allProfiles.set(profiles);
-    this.currentUserProfiles.set(
-      profiles.filter(
-        (p) => p.userId === this.authState.getDecodedTokenValue()?.userId
-      )
+    // Filter profiles for current user that are either global or for this app scope
+    const userProfiles = profiles.filter(
+      (p) =>
+        p.userId === this.authState.getDecodedTokenValue()?.userId &&
+        (this.isGlobalProfile(p) || this.isLocalProfile(p))
     );
-    localStorage.setItem('profiles', JSON.stringify(profiles));
+    this.currentUserProfiles.set(userProfiles);
+    localStorage.setItem('profiles', JSON.stringify(userProfiles));
   }
 
   async getProfileById(id: string) {
@@ -113,6 +119,53 @@ export class ProfileService {
       }
     }
     return ''; // Return an empty string if no valid extension is found
+  }
+
+  /**
+   * Checks if a profile is a global profile
+   */
+  private isGlobalProfile(profile: ProfileDto): boolean {
+    return profile.appScope === 'global' || !profile.appScope;
+  }
+
+  /**
+   * Checks if a profile belongs to the current app scope
+   */
+  private isLocalProfile(profile: ProfileDto): boolean {
+    return profile.appScope === this.appScope;
+  }
+
+  /**
+   * Gets the local profile for the current app, or falls back to global profile
+   */
+  getEffectiveProfile(): ProfileDto | null {
+    const profiles = this.currentUserProfiles();
+    // First try to find a local profile for this app
+    const localProfile = profiles.find((p) => this.isLocalProfile(p));
+    if (localProfile) {
+      return localProfile;
+    }
+    // Fall back to global profile
+    const globalProfile = profiles.find((p) => this.isGlobalProfile(p));
+    return globalProfile || null;
+  }
+
+  /**
+   * Checks if the user has a local profile for this app
+   */
+  hasLocalProfile(): boolean {
+    return this.currentUserProfiles().some((p) => this.isLocalProfile(p));
+  }
+
+  /**
+   * Checks if the user only has a global profile (no local profile)
+   */
+  hasOnlyGlobalProfile(): boolean {
+    const profiles = this.currentUserProfiles();
+    return (
+      profiles.some((p) => this.isGlobalProfile(p)) &&
+      !profiles.some((p) => this.isLocalProfile(p))
+    );
   }
 
   async createProfile(profile: CreateProfileDto) {
@@ -141,19 +194,23 @@ export class ProfileService {
     } else {
       newProfile = resp as ProfileDto;
     }
+    const profilePhotoExtension =
+      this.getFileExtensionFromDataUrl(originalProfilePic) || 'png';
     const profilePhotoDto: CreateAssetDto = {
-      name: `profile-${newProfile.profileName}-photo`,
+      name: `profile-${newProfile.profileName}-photo.${profilePhotoExtension}`,
       profileId: newProfile.id,
       type: 'image',
       content: originalProfilePic,
-      fileExtension: this.getFileExtensionFromDataUrl(originalProfilePic),
+      fileExtension: profilePhotoExtension,
     };
+    const coverPhotoExtension =
+      this.getFileExtensionFromDataUrl(originalCoverPic) || 'png';
     const coverPhotoDto: CreateAssetDto = {
-      name: `profile-${newProfile.profileName}-cover`,
+      name: `profile-${newProfile.profileName}-cover.${coverPhotoExtension}`,
       profileId: newProfile.id,
       type: 'image',
       content: originalCoverPic,
-      fileExtension: this.getFileExtensionFromDataUrl(originalCoverPic),
+      fileExtension: coverPhotoExtension,
     };
     const profileAsset = await firstValueFrom(
       this.http.post<AssetDto>(`/api/asset`, profilePhotoDto)
@@ -178,7 +235,42 @@ export class ProfileService {
     );
   }
 
+  /**
+   * Updates or creates a profile for the current app scope.
+   * If the user only has a global profile, creates a local profile for this app scope.
+   */
   async updateProfile(id: string, profile: UpdateProfileDto) {
+    // Check if this is a global profile and we need to create a local one
+    const existingProfile = this.currentUserProfiles().find((p) => p.id === id);
+
+    if (
+      existingProfile &&
+      this.isGlobalProfile(existingProfile) &&
+      !this.hasLocalProfile()
+    ) {
+      // User is trying to update a global profile but doesn't have a local one
+      // Create a new local profile for this app scope instead
+      console.log(
+        'Creating local profile from global profile for app scope:',
+        this.appScope
+      );
+      const createDto: CreateProfileDto = {
+        name: existingProfile.profileName,
+        description: '',
+        userId: existingProfile.userId,
+        profilePic: profile.profilePic || existingProfile.profilePic,
+        coverPic: profile.coverPic || existingProfile.coverPic,
+        bio: profile.bio || existingProfile.bio,
+        location: profile.location || existingProfile.location,
+        occupation: profile.occupation || existingProfile.occupation,
+        interests: profile.interests || existingProfile.interests,
+        skills: profile.skills || existingProfile.skills,
+        appScope: this.appScope,
+      };
+      await this.createProfile(createDto);
+      return;
+    }
+
     if (profile.profilePic && !profile.profilePic.startsWith('/api/asset/')) {
       // Get the original profile to compare the current asset
       const originalProfile = await firstValueFrom(
@@ -199,11 +291,14 @@ export class ProfileService {
       }
 
       // Create the new asset with the new image
+      const profilePicExtension =
+        this.getFileExtensionFromDataUrl(profile.profilePic || '') || 'png';
       const newProfilePic: CreateAssetDto = {
-        name: `profile-${originalProfile.profileName}-photo`,
+        name: `profile-${originalProfile.profileName}-photo.${profilePicExtension}`,
         profileId: originalProfile.id,
         type: 'image',
         content: profile.profilePic,
+        fileExtension: profilePicExtension,
       };
       const profileAsset = await firstValueFrom(
         this.http.post<AssetDto>('/api/asset/', newProfilePic)
@@ -226,11 +321,14 @@ export class ProfileService {
           }
         }
       }
+      const coverPicExtension =
+        this.getFileExtensionFromDataUrl(profile.coverPic || '') || 'png';
       const newCoverPic: CreateAssetDto = {
-        name: `profile-${originalProfile.profileName}-cover`,
+        name: `profile-${originalProfile.profileName}-cover.${coverPicExtension}`,
         profileId: originalProfile.id,
         type: 'image',
         content: profile.coverPic,
+        fileExtension: coverPicExtension,
       };
       const coverAsset = await firstValueFrom(
         this.http.post<AssetDto>('/api/asset/', newCoverPic)

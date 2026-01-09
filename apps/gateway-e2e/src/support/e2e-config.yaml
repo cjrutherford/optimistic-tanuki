@@ -1,0 +1,65 @@
+listenPort: 3000
+services:
+  authentication:
+    name: authentication
+    transport: TCP
+    host: authentication
+    port: 3001
+  profile:
+    name: profile
+    transport: TCP
+    host: profile
+    port: 3002
+  social:
+    name: social
+    transport: TCP
+    host: social
+    port: 3003
+  tasks:
+    name: tasks
+    transport: TCP
+    host: tasks
+    port: 3004
+  asset:
+    name: asset
+    transport: TCP
+    host: asset
+    port: 3005
+  project_planning:
+    name: project_planning
+    transport: TCP
+    host: project_planning
+    port: 3006
+  chat_collector:
+    name: chat_collector
+    transport: TCP
+    host: chat_collector
+    port: 3007
+  telos_docs_service:
+    name: telos_docs_service
+    transport: TCP
+    host: telos_docs_service
+    port: 3008
+  ai_orchestration:
+    name: ai_orchestration
+    transport: TCP
+    host: ai_orchestration
+    port: 3010
+  blogging:
+    name: blogging
+    transport: TCP
+    host: blogging
+    port: 3011
+  permissions:
+    name: permissions
+    transport: TCP
+    host: permissions
+    port: 3012
+auth:
+  jwtSecret: |
+    c3VwZXJzZWNyZXRzdHJpbmc=
+permissions:
+  cache:
+    provider: memory
+    ttl: 300000
+    maxSize: 10000

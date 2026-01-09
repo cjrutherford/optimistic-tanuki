@@ -124,6 +124,12 @@ export class RoleInitBuilder {
 
   addAssetOwnerPermissions() {
     this.addPermission(
+      'asset.create',
+      'asset',
+      'create',
+      'Create asset for profile'
+    );
+    this.addPermission(
       'asset.read',
       'asset',
       'read',
@@ -141,6 +147,14 @@ export class RoleInitBuilder {
       'delete',
       'Delete asset owned by user'
     );
+    // Create an AssetUser role and assign it so the permissions are linked
+    this.addRole('AssetUser', 'User with asset upload permissions', [
+      'asset.create',
+      'asset.read',
+      'asset.update',
+      'asset.delete',
+    ]);
+    this.assignRoleToProfile('AssetUser');
     return this;
   }
 
@@ -169,11 +183,13 @@ export class RoleInitBuilder {
   // }
 
   /**
-   * Assigns the owner role for the current app scope.
+   * Assigns the owner role for the current app scope only.
    * Owner role grants full control over all resources in the scope.
    */
   assignOwnerRole() {
-    for (const [, roleNames] of Object.entries(ALL_OWNER_ROLES)) {
+    const scopeName = this.opts.scopeName || 'global';
+    const roleNames = ALL_OWNER_ROLES[scopeName];
+    if (roleNames) {
       for (const roleName of roleNames) {
         this.assignRoleToProfile(roleName);
       }
@@ -250,7 +266,7 @@ export class RoleInitBuilder {
   }
 
   addDefaultProfileOwner(profileId: string, appScope?: string) {
-    this.setScopeName('profile').setScopeResourceId(profileId);
+    this.setScopeResourceId(profileId);
     this.addPermission(
       'profile.read',
       'profile',
@@ -271,6 +287,7 @@ export class RoleInitBuilder {
       'profile.read',
       'profile.update',
     ]);
+    this.assignRoleToProfile('ProfileOwner');
     return this;
   }
 

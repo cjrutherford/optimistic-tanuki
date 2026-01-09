@@ -25,9 +25,19 @@ export class AppComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.themeService.setTheme('dark');
-    // Use predefined palette instead of manual colors
-    this.themeService.setPalette('Cyberpunk Neon'); // Matches the digital homestead aesthetic
+    // Initialize theme - only in browser to avoid SSR issues
+    if (isPlatformBrowser(this.platformId)) {
+      // Check if there's a stored palette preference, otherwise use default
+      const currentPalette = this.themeService.getCurrentPalette();
+      if (!currentPalette) {
+        // Set default palette for digital-homestead
+        this.themeService.setTheme('dark');
+        this.themeService.setPalette('Cyberpunk Neon');
+      } else {
+        // Apply stored theme mode
+        this.themeService.setTheme(this.themeService.getTheme());
+      }
+    }
 
     this.themeService.themeColors$.subscribe({
       next: (colors) => {

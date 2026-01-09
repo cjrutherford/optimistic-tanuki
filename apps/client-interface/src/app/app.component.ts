@@ -84,18 +84,26 @@ export class AppComponent implements OnInit, OnDestroy {
       this.updateNavItems();
     });
 
-    // Initialize theme
-    this.themeService.setTheme(this.themeService.getTheme());
+    // Initialize theme - only in browser to avoid SSR issues
+    if (isPlatformBrowser(this.platformId)) {
+      // Check if there's a stored palette preference, otherwise use default
+      const currentPalette = this.themeService.getCurrentPalette();
+      if (!currentPalette) {
+        // Set default palette for client-interface
+        this.themeService.setPalette('Ocean Breeze');
+      }
+      // Apply stored or default theme mode
+      this.themeService.setTheme(this.themeService.getTheme());
+    }
 
     this.themeSub = this.themeService.themeColors$.subscribe(
       (theme: ThemeColors | undefined) => {
-        if (theme) {
-          this.themeName.set(this.themeService.getTheme());
-          this.background = theme.background;
-          this.foreground = theme.foreground;
-          this.accent = theme.accent;
-          this.backgroundGradient = theme.accentGradients['light'];
-        }
+        if (!theme || !isPlatformBrowser(this.platformId)) return;
+        this.themeName.set(this.themeService.getTheme());
+        this.background = theme.background;
+        this.foreground = theme.foreground;
+        this.accent = theme.accent;
+        this.backgroundGradient = theme.accentGradients['light'];
       }
     );
   }
@@ -152,8 +160,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   toggleNav() {
-    if (!this.authState.isAuthenticated) return;
-    else this.isNavExpanded.set(!this.isNavExpanded());
+    this.isNavExpanded.set(!this.isNavExpanded());
   }
 
   navigateTo(path: string) {
