@@ -81,7 +81,7 @@ export class PermissionsGuard implements CanActivate {
         { cmd: ProfileCommands.GetAll },
         {
           where: {
-            userId: user.id,
+            userId: user.userId,
           },
         }
       )
