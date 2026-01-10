@@ -17,6 +17,8 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 COPY ./dist/apps/store .
 RUN npm i --save typeorm
+# Copy seed script for database population
+COPY ./dist/apps/store/seed-store.js ./seed-store.js
 RUN chown -R node:node .
 USER node
 EXPOSE 3009
