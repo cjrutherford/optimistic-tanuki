@@ -142,6 +142,34 @@ nx e2e blogging-e2e
 nx e2e gateway-e2e
 ```
 
+#### Full-Stack Cross-App Flows (Playwright)
+
+The `full-stack-e2e` project exercises cross-application user journeys (for example, client interface registration, profile creation, and permissions seeding) against the main Docker stack.
+
+For a clean run that resets containers and volumes, then runs the Playwright suite against the running stack, use the helper script from the workspace root:
+
+```bash
+chmod +x ./run-full-stack-e2e.sh   # one-time setup
+
+# Run the full project matrix
+./run-full-stack-e2e.sh
+
+# Or focus on a specific Playwright project
+./run-full-stack-e2e.sh -- --project=client-interface-fullstack
+./run-full-stack-e2e.sh -- --project=digital-homestead-fullstack
+./run-full-stack-e2e.sh -- --project=forgeofwill-fullstack
+./run-full-stack-e2e.sh -- --project=owner-console-fullstack
+
+# Forward options to Playwright (e.g. headed mode)
+./run-full-stack-e2e.sh -- --project=client-interface-fullstack -- --headed
+```
+
+Internally, this script:
+- Runs `docker compose down -v` to clean the main stack and named volumes
+- Runs `docker compose up -d --build` to start the stack
+- Waits for the `ot_gateway` container healthcheck to report `healthy`
+- Invokes `nx e2e full-stack-e2e`, forwarding any additional CLI args you pass
+
 ### Run Tests in Watch Mode
 
 ```bash

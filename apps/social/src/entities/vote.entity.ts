@@ -18,10 +18,10 @@ export class Vote {
     @Column()
     profileId: string;
 
-    @ManyToOne(() => Post, post => post.votes)
+    @ManyToOne(() => Post, post => post.votes, { onDelete: 'CASCADE', nullable: true })
     post?: Post;
 
-    @ManyToOne(() => Comment, comment => comment.votes)
+    @ManyToOne(() => Comment, comment => comment.votes, { onDelete: 'CASCADE', nullable: true })
     comment?: Comment;
 
 }

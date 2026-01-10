@@ -1,24 +1,19 @@
+export { BlogDto, CreateBlogDto, UpdateBlogDto, BlogQueryDto } from './blog';
 export {
-    BlogDto,
-    CreateBlogDto,
-    UpdateBlogDto,
-    BlogQueryDto,
-} from './blog';
-export {
-    ContactDto,
-    CreateContactDto,
-    UpdateContactDto,
-    ContactQueryDto,
+  ContactDto,
+  CreateContactDto,
+  UpdateContactDto,
+  ContactQueryDto,
 } from './contact';
 export {
-    EventDto,
-    CreateEventDto,
-    UpdateEventDto,
-    EventQueryDto,
+  EventDto,
+  CreateEventDto,
+  UpdateEventDto,
+  EventQueryDto,
 } from './event';
 export {
-    PostDto as BlogPostDto,
-    CreatePostDto as CreateBlogPostDto,
-    UpdatePostDto as UpdateBlogPostDto,
-    PostQueryDto as BlogPostQueryDto,
+  PostDto as BlogPostDto,
+  CreateBlogPostDto as CreateBlogPostDto,
+  UpdateBlogPostDto as UpdateBlogPostDto,
+  PostQueryDto as BlogPostQueryDto,
 } from './post';

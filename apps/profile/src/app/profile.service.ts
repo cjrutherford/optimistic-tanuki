@@ -54,7 +54,6 @@ export class ProfileService {
   ): Promise<Profile> {
     const profile = await this.profileRepository.findOne({
       where: { userId, appScope },
-      select: ['id', 'userId', 'appScope', 'profileName', 'blogRole'],
     });
     this.logger.debug(
       `findByUserIdAndAppScope userId=${userId} appScope=${appScope} => profile=${JSON.stringify(

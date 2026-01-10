@@ -54,6 +54,7 @@ export const OWNER_PERMISSION_ACTIONS = [
 ] as const;
 
 const ALL_OWNER_ROLES: { [key: string]: string[] } = {
+  global: ['owner'],
   'digital-homestead': ['digital_homesteader'],
   'client-interface': ['client_profile_owner', 'client_asset_manager'],
   forgeofwill: ['forgeofwill_planner'],

@@ -4,6 +4,11 @@
       <div class="post-profile">
         <lib-profile-photo [src]="profile.avatar" [alt]="profile.name"></lib-profile-photo>
         {{profile.name}}
+        @if (canFollow) {
+          <otui-button size="sm" [variant]="isFollowing ? 'warning' : 'primary'" (action)="onFollowToggle()">
+            {{ isFollowing ? 'Unfollow' : 'Follow' }}
+          </otui-button>
+        }
       </div>
     }
     <div class="title">{{ content.title }}</div>
@@ -38,6 +43,9 @@
     <div class="actions">
       <otui-button variant="success">Like</otui-button>
       <otui-button variant="success">Share</otui-button>
+      @if (canDelete) {
+        <otui-button variant="danger" (action)="onDelete()">Delete</otui-button>
+      }
       <lib-vote></lib-vote>
       <lib-comment (commentAdded)="onCommentAdd($event)"></lib-comment>
     </div>

@@ -61,8 +61,13 @@ export class PostComponent {
   @Input() comments: CommentDto[] = [];
   @Input() attachments: AttachmentDto[] = [];
   @Input() links: LinkType[] = [];
+  @Input() canDelete = false;
+  @Input() canFollow = false;
+  @Input() isFollowing = false;
   @Output() newCommentAdded: EventEmitter<CreateCommentDto> =
   new EventEmitter<CreateCommentDto>();
+  @Output() postDeleted = new EventEmitter<void>();
+  @Output() followToggle = new EventEmitter<void>();
   
   downloadAttachment(attachment: AttachmentDto) {
     // Logic to download the attachment
@@ -73,7 +78,13 @@ export class PostComponent {
     console.log('Opening link:', link);
   }
 
+  onDelete() {
+    this.postDeleted.emit();
+  }
 
+  onFollowToggle() {
+    this.followToggle.emit();
+  }
 
   get attachmentRows() {
     return Math.ceil(this.attachments.length / 6);

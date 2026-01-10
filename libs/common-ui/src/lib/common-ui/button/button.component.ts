@@ -25,6 +25,7 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 export class ButtonComponent extends Themeable {
   @Input() disabled = false;
   @Input() variant: 'primary' | 'secondary' | 'outlined' | 'text' | 'warning' | 'danger' | 'success' | 'rounded' = 'primary';
+  @Input() type: 'button' | 'submit' | 'reset' = 'button';
   @Output() action = new EventEmitter<void>();
 
   override applyTheme(colors: ThemeColors): void {

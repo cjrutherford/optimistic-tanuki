@@ -24,6 +24,7 @@ export class GridComponent implements OnInit, OnChanges {
   }
 
   private setGridDimensions() {
+    this.renderEmpty = false;
     if (this.columns === 0 || this.rows === 0) {
       this.renderEmpty = true;
       return;

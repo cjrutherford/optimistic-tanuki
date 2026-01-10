@@ -103,6 +103,10 @@ export class RoleInitService {
     }
     const appScopeId = appScope?.id ?? item.scopeResourceId ?? item.scopeName;
 
+    // Cache for cross-scope mappings we may need (e.g. mapping
+    // client-interface roles into the social app scope by default).
+    let socialScope: any | null = null;
+
     // 2) create permissions (match CreatePermissionDto)
     const permNameToId: Record<string, string> = {};
     for (const p of item.permissions || []) {
@@ -175,6 +179,19 @@ export class RoleInitService {
             ).catch(() => null);
           }
 
+          // Third try: find role without scope at all (legacy or global fallback)
+          if (!existing) {
+            this.logger.debug(
+              `Role ${r.name} not found in global scope, trying without scope`
+            );
+            existing = await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: RoleCommands.GetByName },
+                { name: r.name }
+              )
+            ).catch(() => null);
+          }
+
           if (existing) {
             this.logger.debug(`Found existing role ${r.name} -> using it`);
             createdRoles[r.name] = existing;
@@ -238,6 +255,16 @@ export class RoleInitService {
               )
             ).catch(() => null);
           }
+
+          // Fall back to no scope if still not found
+          if (!role) {
+            role = await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: RoleCommands.GetByName },
+                { name: a.roleName }
+              )
+            ).catch(() => null);
+          }
         } catch (e) {
           this.logger.debug(
             `Role lookup before assignment failed role=${a.roleName}`,
@@ -267,6 +294,53 @@ export class RoleInitService {
           `Role.Assign failed role=${a.roleName}`,
           (e as { message: string })?.message || e
         );
+        continue;
+      }
+
+      // Default cross-scope mapping: when initializing roles for the
+      // client-interface scope, ensure that profiles which receive the
+      // "client_interface_user" role also get that role assigned in
+      // the "social" app scope. This makes social routes callable by
+      // default for client-interface users without requiring
+      // controller-specific mapping logic.
+      if (
+        item.scopeName === 'client-interface' &&
+        a.profileId &&
+        a.roleName === 'client_interface_user'
+      ) {
+        try {
+          if (!socialScope) {
+            socialScope = await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: AppScopeCommands.GetByName },
+                { name: 'social' }
+              )
+            ).catch(() => null);
+          }
+
+          if (socialScope?.id) {
+            const socialAssignPayload: any = {
+              roleId: role.id,
+              appScopeId: socialScope.id,
+              profileId: a.profileId,
+            };
+            await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: RoleCommands.Assign },
+                socialAssignPayload
+              )
+            );
+          } else {
+            this.logger.debug(
+              'RoleInitService: social app scope not found; skipping client_interface_user -> social mapping'
+            );
+          }
+        } catch (e) {
+          this.logger.debug(
+            `Role.Assign (social mirror) failed role=${a.roleName}`,
+            (e as { message: string })?.message || e
+          );
+        }
       }
     }
 

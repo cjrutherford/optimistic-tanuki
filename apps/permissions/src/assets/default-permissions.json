@@ -611,6 +611,14 @@
       "appScope": "social"
     },
     {
+      "name": "social.post.delete",
+      "description": "Delete social post",
+      "resource": "post",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "social"
+    },
+    {
       "name": "asset.create",
       "description": "Create asset (assets service)",
       "resource": "asset",
@@ -1091,6 +1099,14 @@
       "appScope": "global"
     },
     {
+      "name": "social.post.delete",
+      "description": "Delete social post (global)",
+      "resource": "post",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
       "name": "social.vote.create",
       "description": "Cast a vote (global)",
       "resource": "vote",
@@ -1472,6 +1488,11 @@
     },
     {
       "role": "social_user",
+      "permission": "social.post.delete",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
       "permission": "social.vote.create",
       "permissionAppScope": "social"
     },
@@ -1554,6 +1575,41 @@
       "role": "client_interface_user",
       "permission": "profile.read",
       "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.post.read",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.post.update",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.post.delete",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.comment.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.vote.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.follow",
+      "permissionAppScope": "social"
     },
     {
       "role": "forgeofwill_standard_user",
@@ -1783,6 +1839,21 @@
     {
       "role": "owner",
       "permission": "social.post.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "social.post.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "social.post.delete",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "owner",
+      "permission": "social.post.publish",
       "permissionAppScope": "global"
     },
     {

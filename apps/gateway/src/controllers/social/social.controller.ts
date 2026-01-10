@@ -68,11 +68,11 @@ export class SocialController {
   })
   @Post('post')
   @RequirePermissions('social.post.create')
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 posts per minute
+  @Throttle({ default: { limit: 100, ttl: 60000 } }) // Increased for E2E
   async post(@User() user, @Body() postDto: CreatePostDto) {
-    console.log(user);
+    this.l.log(`Creating post for user: ${user.userId}`);
     postDto.userId = user.userId;
-    console.log('Updated Post Data  ', postDto);
+    this.l.log(`Post Data: ${JSON.stringify(postDto)}`);
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: PostCommands.CREATE }, postDto)
     );

@@ -9,10 +9,21 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = authStateService.getToken();
 
+  // Determine app scope based on API route to align with
+  // permissions configuration (social endpoints use the
+  // "social" app scope, while general client-interface
+  // traffic uses the "client-interface" scope).
+  let appScope = 'client-interface';
+  const url = req.url || '';
+
+  if (url.includes('/api/social')) {
+    appScope = 'social';
+  }
+
   const clonedRequest = req.clone({
     setHeaders: {
-      Authorization: `Bearer ${token}`,
-      'X-ot-appscope': 'client-interface',
+      Authorization: token ? `Bearer ${token}` : '',
+      'X-ot-appscope': appScope,
     },
   });
 

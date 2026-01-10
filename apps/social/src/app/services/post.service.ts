@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Post } from '../../entities/post.entity';
 import { Attachment } from '../../entities/attachment.entity';
+import { Comment } from '../../entities/comment.entity';
 import { Repository, FindOneOptions, FindManyOptions, In } from 'typeorm';
 import { CreatePostDto, UpdatePostDto } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
@@ -12,7 +13,9 @@ export class PostService {
     @Inject(getRepositoryToken(Post))
     private readonly postRepo: Repository<Post>,
     @Inject(getRepositoryToken(Attachment))
-    private readonly attachmentRepo: Repository<Attachment>
+    private readonly attachmentRepo: Repository<Attachment>,
+    @Inject(getRepositoryToken(Comment))
+    private readonly commentRepo: Repository<Comment>
   ) {}
 
   private sanitizeContent(content: string): string {
@@ -85,7 +88,7 @@ export class PostService {
     return await this.postRepo.findOne(finalOptions);
   }
 
-  async update(id: number, updatePostDto: UpdatePostDto): Promise<void> {
+  async update(id: string, updatePostDto: UpdatePostDto): Promise<void> {
     // Sanitize content if provided
     const sanitizedDto = {
       ...updatePostDto,
@@ -96,7 +99,26 @@ export class PostService {
     await this.postRepo.update(id, sanitizedDto);
   }
 
-  async remove(id: number): Promise<void> {
-    await this.postRepo.delete(id);
+  async remove(id: string): Promise<{ success: boolean }> {
+    console.log(`PostService.remove called for ID: ${id}`);
+
+    // Delete related entities first to avoid foreign key constraint errors
+    try {
+      // Remove comments associated with this post
+      await this.commentRepo.delete({ post: { id } as any });
+
+      // Remove attachments associated with this post
+      await this.attachmentRepo.delete({ post: { id } as any });
+
+      // Finally, remove the post itself
+      await this.postRepo.delete(id);
+
+      console.log(`PostService.remove completed for ID: ${id}`);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`Error in PostService.remove for ID ${id}: ${message}`);
+      throw error;
+    }
   }
 }

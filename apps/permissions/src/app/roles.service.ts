@@ -152,20 +152,51 @@ export class RolesService {
 
   async getUserRoles(
     profileId: string,
-    appScopeId?: string
+    appScopeIdOrName?: string
   ): Promise<RoleAssignment[]> {
-    const queryBuilder = this.roleAssignmentsRepository
-      .createQueryBuilder('assignment')
-      .leftJoinAndSelect('assignment.role', 'role')
-      .leftJoinAndSelect('role.permissions', 'permissions')
-      .leftJoinAndSelect('assignment.appScope', 'appScope')
-      .where('assignment.profileId = :profileId', { profileId });
+    try {
+      const queryBuilder = this.roleAssignmentsRepository
+        .createQueryBuilder('assignment')
+        .leftJoinAndSelect('assignment.role', 'role')
+        .leftJoinAndSelect('role.permissions', 'permissions')
+        .leftJoinAndSelect('assignment.appScope', 'appScope')
+        .where('assignment.profileId = :profileId', { profileId });
 
-    if (appScopeId) {
-      queryBuilder.andWhere('appScope.id = :appScopeId', { appScopeId });
+      if (appScopeIdOrName) {
+        // Try to determine if it's a UUID or a name
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(appScopeIdOrName);
+        
+        if (isUuid) {
+          queryBuilder.andWhere(
+            '(appScope.id = :appScopeId OR appScope.name = :globalScope)',
+            { appScopeId: appScopeIdOrName, globalScope: 'global' }
+          );
+        } else {
+          queryBuilder.andWhere(
+            '(appScope.name = :appScopeName OR appScope.name = :globalScope)',
+            { appScopeName: appScopeIdOrName, globalScope: 'global' }
+          );
+        }
+      }
+
+      const roleAssignment = await queryBuilder.getMany();
+      this.l.debug(
+        `Found ${
+          roleAssignment.length
+        } role assignments for profile ${profileId} (appScopeIdOrName=${
+          appScopeIdOrName ?? 'null'
+        })`
+      );
+      return roleAssignment;
+    } catch (error) {
+      this.l.error(
+        `getUserRoles failed for profileId=${profileId} appScopeIdOrName=${
+          appScopeIdOrName ?? 'null'
+        }`,
+        error instanceof Error ? error.stack : String(error)
+      );
+      throw error;
     }
-
-    return await queryBuilder.getMany();
   }
 
   async checkPermission(
@@ -228,7 +259,7 @@ export class RolesService {
 
       for (const p of assignment.role.permissions) {
         if (permissionName === 'public') continue;
-        this.l.debug('Evaluating permission:', p);
+        this.l.debug('Evaluating permission:', p.name, p.appScope);
         this.l.debug('Against permissionName:', permissionName);
         this.l.debug('Against targetId:', targetId);
         this.l.debug('Against appScopeId:', appScopeId);

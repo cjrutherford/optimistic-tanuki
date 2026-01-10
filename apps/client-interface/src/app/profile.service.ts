@@ -41,7 +41,8 @@ export class ProfileService {
    * @param dataUrl The data URL to extract the extension from
    * @returns The file extension (e.g., 'png', 'jpeg') or empty string if not found
    */
-  private getFileExtensionFromDataUrl(dataUrl: string): string {
+  private getFileExtensionFromDataUrl(dataUrl: string | null | undefined): string {
+    if (!dataUrl) return '';
     const matches = dataUrl.match(/^data:(.+?);base64,/);
     if (matches && matches[1]) {
       const mimeType = matches[1];
@@ -86,7 +87,7 @@ export class ProfileService {
    * Checks if the user has a local profile for this app
    */
   hasLocalProfile(): boolean {
-    return this.currentUserProfiles().some((p) => this.isLocalProfile(p));
+    return this.getCurrentUserProfiles().some((p) => this.isLocalProfile(p));
   }
 
   /**
@@ -109,11 +110,26 @@ export class ProfileService {
   }
 
   getCurrentUserProfiles() {
-    return this.currentUserProfiles();
+    let currentProfiles = this.currentUserProfiles();
+    if (!currentProfiles || currentProfiles.length === 0) {
+      const persisted = this.authState.getPersistedProfiles();
+      if (persisted && persisted.length > 0) {
+        this.currentUserProfiles.set(persisted);
+        currentProfiles = persisted;
+      }
+    }
+    return currentProfiles;
   }
 
   getCurrentUserProfile() {
-    return this.currentUserProfile();
+    let currentProfile = this.currentUserProfile();
+    if (!currentProfile) {
+      currentProfile = this.authState.getPersistedSelectedProfile();
+      if (currentProfile) {
+        this.currentUserProfile.set(currentProfile);
+      }
+    }
+    return currentProfile;
   }
 
   async getAllProfiles() {
@@ -163,39 +179,51 @@ export class ProfileService {
     } else {
       newProfile = resp as ProfileDto;
     }
-    const profilePhotoExtension =
-      this.getFileExtensionFromDataUrl(originalProfilePic) || 'png';
-    const profilePhotoDto: CreateAssetDto = {
-      name: `profile-${newProfile.profileName}-photo.${profilePhotoExtension}`,
-      profileId: newProfile.id,
-      type: 'image',
-      content: originalProfilePic,
-      fileExtension: profilePhotoExtension,
-    };
-    const coverPhotoExtension =
-      this.getFileExtensionFromDataUrl(originalCoverPic) || 'png';
-    const coverPhotoDto: CreateAssetDto = {
-      name: `profile-${newProfile.profileName}-cover.${coverPhotoExtension}`,
-      profileId: newProfile.id,
-      type: 'image',
-      content: originalCoverPic,
-      fileExtension: coverPhotoExtension,
-    };
-    const profileAsset = await firstValueFrom(
-      this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, profilePhotoDto)
-    );
-    const coverAsset = await firstValueFrom(
-      this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, coverPhotoDto)
-    );
+    let profilePicUrl = '';
+    let coverPicUrl = '';
 
-    newProfile.profilePic = `${this.apiBaseUrl}/asset/${profileAsset.id}`;
-    newProfile.coverPic = `${this.apiBaseUrl}/asset/${coverAsset.id}`;
-    await firstValueFrom(
-      this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${newProfile.id}`, {
-        profilePic: newProfile.profilePic,
-        coverPic: newProfile.coverPic,
-      })
-    );
+    if (originalProfilePic) {
+      const profilePhotoExtension =
+        this.getFileExtensionFromDataUrl(originalProfilePic) || 'png';
+      const profilePhotoDto: CreateAssetDto = {
+        name: `profile-${newProfile.profileName}-photo.${profilePhotoExtension}`,
+        profileId: newProfile.id,
+        type: 'image',
+        content: originalProfilePic,
+        fileExtension: profilePhotoExtension,
+      };
+      const profileAsset = await firstValueFrom(
+        this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, profilePhotoDto)
+      );
+      profilePicUrl = `${this.apiBaseUrl}/asset/${profileAsset.id}`;
+    }
+
+    if (originalCoverPic) {
+      const coverPhotoExtension =
+        this.getFileExtensionFromDataUrl(originalCoverPic) || 'png';
+      const coverPhotoDto: CreateAssetDto = {
+        name: `profile-${newProfile.profileName}-cover.${coverPhotoExtension}`,
+        profileId: newProfile.id,
+        type: 'image',
+        content: originalCoverPic,
+        fileExtension: coverPhotoExtension,
+      };
+      const coverAsset = await firstValueFrom(
+        this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, coverPhotoDto)
+      );
+      coverPicUrl = `${this.apiBaseUrl}/asset/${coverAsset.id}`;
+    }
+
+    if (profilePicUrl || coverPicUrl) {
+      newProfile.profilePic = profilePicUrl || newProfile.profilePic;
+      newProfile.coverPic = coverPicUrl || newProfile.coverPic;
+      await firstValueFrom(
+        this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${newProfile.id}`, {
+          profilePic: newProfile.profilePic,
+          coverPic: newProfile.coverPic,
+        })
+      );
+    }
 
     this.currentUserProfiles.update((profiles) => [...profiles, newProfile]);
     this.currentUserProfile.set(newProfile);
@@ -209,7 +237,7 @@ export class ProfileService {
    */
   async updateProfile(id: string, profile: UpdateProfileDto) {
     // Check if this is a global profile and we need to create a local one
-    const existingProfile = this.currentUserProfiles().find((p) => p.id === id);
+    const existingProfile = this.getCurrentUserProfiles().find((p) => p.id === id);
 
     if (
       existingProfile &&
@@ -239,7 +267,7 @@ export class ProfileService {
       return;
     }
 
-    if (this.isExternalAssetUrl(profile.profilePic)) {
+    if (profile.profilePic && this.isExternalAssetUrl(profile.profilePic)) {
       // Get the original profile to compare the current asset
       const originalProfile = await firstValueFrom(
         this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
@@ -269,7 +297,7 @@ export class ProfileService {
       );
       profile.profilePic = `${this.apiBaseUrl}/asset/${profileAsset.id}`;
     }
-    if (this.isExternalAssetUrl(profile.coverPic)) {
+    if (profile.coverPic && this.isExternalAssetUrl(profile.coverPic)) {
       const originalProfile = await firstValueFrom(
         this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
       );
@@ -339,25 +367,6 @@ export class ProfileService {
   }
 
   getDisplayProfile(id: string) {
-    return this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`).pipe(
-      switchMap((profile) =>
-        forkJoin({
-          profilePic: this.http
-            .get<{ profilePic: string }>(
-              `${this.apiBaseUrl}/profile/${id}/photo`
-            )
-            .pipe(map((res) => res.profilePic)),
-          coverPic: this.http
-            .get<{ coverPic: string }>(`${this.apiBaseUrl}/profile/${id}/cover`)
-            .pipe(map((res) => res.coverPic)),
-        }).pipe(
-          map(({ profilePic, coverPic }) => {
-            profile.profilePic = profilePic;
-            profile.coverPic = coverPic;
-            return profile;
-          })
-        )
-      )
-    );
+    return this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`);
   }
 }

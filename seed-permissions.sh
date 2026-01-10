@@ -329,6 +329,22 @@ FROM role r JOIN permission p ON p.name IN (
 WHERE r.name = 'client_interface_user'
 ON CONFLICT DO NOTHING;
 
+-- client_interface_user - social permissions via social app scope
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r
+JOIN permission p ON p.name IN (
+  'social.post.create',
+  'social.post.read',
+  'social.post.update',
+  'social.post.delete',
+  'social.comment.create',
+  'social.vote.create',
+  'social.follow'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='social')
+WHERE r.name = 'client_interface_user'
+ON CONFLICT DO NOTHING;
+
 -- digital_standard_user - basic digital homestead permissions
 INSERT INTO "role_permission" ("roleId", "permissionId")
 SELECT r.id, p.id

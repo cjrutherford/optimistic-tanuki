@@ -7,6 +7,7 @@
         [alt]="displayName"
       />
       <p class="profile-name">{{ displayName }}</p>
+      <ng-content select="[actions]"></ng-content>
     </div>
   </div>
 </otui-card>
