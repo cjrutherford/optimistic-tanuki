@@ -10,6 +10,22 @@ import { ProfileDto, RoleDto, PermissionDto } from '@optimistic-tanuki/ui-models
 import { ThemeService } from '@optimistic-tanuki/theme-ui';
 import { Themeable } from '@optimistic-tanuki/common-ui';
 import { themeQuartz } from 'ag-grid-community';
+import { firstValueFrom } from 'rxjs';
+
+interface RoleAssignmentResponse {
+  role?: {
+    id: string;
+    name: string;
+    permissions?: PermissionResponse[];
+  };
+}
+
+interface PermissionResponse {
+  id: string;
+  name?: string;
+  action?: string;
+  description?: string;
+}
 
 interface UserPermissionInfo {
   profileId: string;
@@ -452,19 +468,19 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
         throw new Error('Profile not found');
       }
 
-      const roles = await this.rolesService.getUserRoles(profileId).toPromise();
+      const roles = await firstValueFrom(this.rolesService.getUserRoles(profileId));
       
       // Extract all permissions from all roles
       const permissions = new Set<string>();
       const roleNames: string[] = [];
       
       if (roles && Array.isArray(roles)) {
-        roles.forEach((roleAssignment: any) => {
+        (roles as RoleAssignmentResponse[]).forEach((roleAssignment) => {
           if (roleAssignment.role) {
             roleNames.push(roleAssignment.role.name);
             if (roleAssignment.role.permissions) {
-              roleAssignment.role.permissions.forEach((perm: any) => {
-                permissions.add(perm.name || perm.action);
+              roleAssignment.role.permissions.forEach((perm) => {
+                permissions.add(this.getPermissionName(perm));
               });
             }
           }
@@ -498,22 +514,22 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
 
     try {
       const profiles = this.profiles();
-      const allData: UserPermissionInfo[] = [];
-
-      for (const profile of profiles) {
+      
+      // Process all profiles concurrently for better performance
+      const profilePromises = profiles.map(async (profile) => {
         try {
-          const roles = await this.rolesService.getUserRoles(profile.id).toPromise();
+          const roles = await firstValueFrom(this.rolesService.getUserRoles(profile.id));
           
           const permissions = new Set<string>();
           const roleNames: string[] = [];
           
           if (roles && Array.isArray(roles)) {
-            roles.forEach((roleAssignment: any) => {
+            (roles as RoleAssignmentResponse[]).forEach((roleAssignment) => {
               if (roleAssignment.role) {
                 roleNames.push(roleAssignment.role.name);
                 if (roleAssignment.role.permissions) {
-                  roleAssignment.role.permissions.forEach((perm: any) => {
-                    permissions.add(perm.name || perm.action);
+                  roleAssignment.role.permissions.forEach((perm) => {
+                    permissions.add(this.getPermissionName(perm));
                   });
                 }
               }
@@ -522,7 +538,7 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
 
           const allowedRoutes = this.mapPermissionsToRoutes(Array.from(permissions));
 
-          allData.push({
+          return {
             profileId: profile.id,
             profileName: profile.profileName,
             email: profile.email || '',
@@ -530,13 +546,28 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
             roles: roleNames,
             permissions: Array.from(permissions),
             allowedRoutes
-          });
+          };
         } catch (err) {
           console.error(`Failed to inspect profile ${profile.id}:`, err);
+          // Return minimal info if inspection fails
+          return {
+            profileId: profile.id,
+            profileName: profile.profileName,
+            email: profile.email || '',
+            appScope: profile.appScope || 'unknown',
+            roles: [],
+            permissions: [],
+            allowedRoutes: []
+          };
         }
-      }
+      });
 
-      this.allProfilesData.set(allData);
+      const allData = await Promise.allSettled(profilePromises);
+      const successfulResults = allData
+        .filter((result): result is PromiseFulfilledResult<UserPermissionInfo> => result.status === 'fulfilled')
+        .map(result => result.value);
+
+      this.allProfilesData.set(successfulResults);
       this.loading.set(false);
     } catch (err: any) {
       this.error.set('Failed to inspect all profiles: ' + err.message);
@@ -551,24 +582,24 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
     try {
       // Get all permissions and roles
       const [allPermissions, allRoles] = await Promise.all([
-        this.permissionsService.getPermissions().toPromise(),
-        this.rolesService.getRoles().toPromise()
+        firstValueFrom(this.permissionsService.getPermissions()),
+        firstValueFrom(this.rolesService.getRoles())
       ]);
 
-      // Get all role assignments for all profiles
+      // Get all role assignments for all profiles concurrently
       const profiles = this.profiles();
       const usedRoleIds = new Set<string>();
       const usedPermissionIds = new Set<string>();
 
-      for (const profile of profiles) {
+      const rolePromises = profiles.map(async (profile) => {
         try {
-          const roles = await this.rolesService.getUserRoles(profile.id).toPromise();
+          const roles = await firstValueFrom(this.rolesService.getUserRoles(profile.id));
           if (roles && Array.isArray(roles)) {
-            roles.forEach((roleAssignment: any) => {
+            (roles as RoleAssignmentResponse[]).forEach((roleAssignment) => {
               if (roleAssignment.role) {
                 usedRoleIds.add(roleAssignment.role.id);
                 if (roleAssignment.role.permissions) {
-                  roleAssignment.role.permissions.forEach((perm: any) => {
+                  roleAssignment.role.permissions.forEach((perm) => {
                     usedPermissionIds.add(perm.id);
                   });
                 }
@@ -578,13 +609,15 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
         } catch (err) {
           console.error(`Failed to get roles for profile ${profile.id}:`, err);
         }
-      }
+      });
+
+      await Promise.allSettled(rolePromises);
 
       const unused: UnusedInfo[] = [];
 
       // Find unused permissions
       if (allPermissions) {
-        allPermissions.forEach((perm: any) => {
+        allPermissions.forEach((perm: PermissionDto) => {
           if (!usedPermissionIds.has(perm.id)) {
             unused.push({
               type: 'permission',
@@ -599,7 +632,7 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
 
       // Find unused roles
       if (allRoles) {
-        allRoles.forEach((role: any) => {
+        allRoles.forEach((role: RoleDto) => {
           if (!usedRoleIds.has(role.id)) {
             unused.push({
               type: 'role',
@@ -657,5 +690,9 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
     });
 
     return [...new Set(routes)]; // Remove duplicates
+  }
+
+  private getPermissionName(perm: PermissionResponse): string {
+    return perm.name || perm.action || 'unknown';
   }
 }
