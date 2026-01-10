@@ -7,8 +7,7 @@ import { UsersService } from '../services/users.service';
 import { RolesService } from '../services/roles.service';
 import { PermissionsService } from '../services/permissions.service';
 import { ProfileDto, RoleDto, PermissionDto } from '@optimistic-tanuki/ui-models';
-import { ThemeService } from '@optimistic-tanuki/theme-ui';
-import { Themeable } from '@optimistic-tanuki/common-ui';
+import { ThemeService, Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { themeQuartz } from 'ag-grid-community';
 import { firstValueFrom } from 'rxjs';
 
@@ -30,7 +29,7 @@ interface PermissionResponse {
 interface UserPermissionInfo {
   profileId: string;
   profileName: string;
-  email: string;
+  email?: string; // Email is optional, may need to be fetched from user service
   appScope: string;
   roles: string[];
   permissions: string[];
@@ -422,14 +421,19 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
   constructor(
     private usersService: UsersService,
     private rolesService: RolesService,
-    private permissionsService: PermissionsService,
-    themeService: ThemeService
+    private permissionsService: PermissionsService
   ) {
-    super(themeService);
+    super();
   }
 
   ngOnInit(): void {
+    super.ngOnInit();
     this.loadProfiles();
+  }
+
+  applyTheme(colors: ThemeColors): void {
+    // Theme is automatically applied through the parent class
+    // This method is required by the Themeable abstract class
   }
 
   loadProfiles(): void {
