@@ -66,7 +66,8 @@ export class AssetService {
   /**
    * Extract file extension from data URL
    */
-  getFileExtensionFromDataUrl(dataUrl: string): string {
+  getFileExtensionFromDataUrl(dataUrl: string | null | undefined): string {
+    if (!dataUrl) return '';
     const mimeType = dataUrl.split(',')[0].match(/:(.*?);/)?.[1];
     const extensionMap: { [key: string]: string } = {
       'image/png': 'png',

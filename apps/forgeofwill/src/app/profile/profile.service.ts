@@ -47,16 +47,15 @@ export class ProfileService {
   }
 
   getCurrentUserProfiles() {
-    const currentProfiles = this.currentUserProfiles();
+    let currentProfiles = this.currentUserProfiles();
     if (!currentProfiles || currentProfiles.length === 0) {
       // fallback to local storage if no profiles are selected
       const storedProfiles = localStorage.getItem('profiles');
       if (storedProfiles) {
         const profiles = JSON.parse(storedProfiles) as ProfileDto[];
         this.currentUserProfiles.set(profiles);
-        return profiles;
+        currentProfiles = profiles;
       }
-      return [];
     }
     return currentProfiles;
   }
@@ -109,7 +108,8 @@ export class ProfileService {
     localStorage.setItem('selectedProfile', JSON.stringify(profile));
   }
 
-  getFileExtensionFromDataUrl(dataUrl: string): string {
+  getFileExtensionFromDataUrl(dataUrl: string | null | undefined): string {
+    if (!dataUrl) return '';
     const matches = dataUrl.match(/^data:(.+?);base64,/);
     if (matches && matches[1]) {
       const mimeType = matches[1];
@@ -194,39 +194,51 @@ export class ProfileService {
     } else {
       newProfile = resp as ProfileDto;
     }
-    const profilePhotoExtension =
-      this.getFileExtensionFromDataUrl(originalProfilePic) || 'png';
-    const profilePhotoDto: CreateAssetDto = {
-      name: `profile-${newProfile.profileName}-photo.${profilePhotoExtension}`,
-      profileId: newProfile.id,
-      type: 'image',
-      content: originalProfilePic,
-      fileExtension: profilePhotoExtension,
-    };
-    const coverPhotoExtension =
-      this.getFileExtensionFromDataUrl(originalCoverPic) || 'png';
-    const coverPhotoDto: CreateAssetDto = {
-      name: `profile-${newProfile.profileName}-cover.${coverPhotoExtension}`,
-      profileId: newProfile.id,
-      type: 'image',
-      content: originalCoverPic,
-      fileExtension: coverPhotoExtension,
-    };
-    const profileAsset = await firstValueFrom(
-      this.http.post<AssetDto>(`/api/asset`, profilePhotoDto)
-    );
-    const coverAsset = await firstValueFrom(
-      this.http.post<AssetDto>(`/api/asset`, coverPhotoDto)
-    );
+    let profilePicUrl = '';
+    let coverPicUrl = '';
 
-    newProfile.profilePic = `/api/asset/${profileAsset.id}`;
-    newProfile.coverPic = `/api/asset/${coverAsset.id}`;
-    await firstValueFrom(
-      this.http.put<ProfileDto>(`/api/profile/${newProfile.id}`, {
-        profilePic: newProfile.profilePic,
-        coverPic: newProfile.coverPic,
-      })
-    );
+    if (originalProfilePic) {
+      const profilePhotoExtension =
+        this.getFileExtensionFromDataUrl(originalProfilePic) || 'png';
+      const profilePhotoDto: CreateAssetDto = {
+        name: `profile-${newProfile.profileName}-photo.${profilePhotoExtension}`,
+        profileId: newProfile.id,
+        type: 'image',
+        content: originalProfilePic,
+        fileExtension: profilePhotoExtension,
+      };
+      const profileAsset = await firstValueFrom(
+        this.http.post<AssetDto>(`/api/asset`, profilePhotoDto)
+      );
+      profilePicUrl = `/api/asset/${profileAsset.id}`;
+    }
+
+    if (originalCoverPic) {
+      const coverPhotoExtension =
+        this.getFileExtensionFromDataUrl(originalCoverPic) || 'png';
+      const coverPhotoDto: CreateAssetDto = {
+        name: `profile-${newProfile.profileName}-cover.${coverPhotoExtension}`,
+        profileId: newProfile.id,
+        type: 'image',
+        content: originalCoverPic,
+        fileExtension: coverPhotoExtension,
+      };
+      const coverAsset = await firstValueFrom(
+        this.http.post<AssetDto>(`/api/asset`, coverPhotoDto)
+      );
+      coverPicUrl = `/api/asset/${coverAsset.id}`;
+    }
+
+    if (profilePicUrl || coverPicUrl) {
+      newProfile.profilePic = profilePicUrl || newProfile.profilePic;
+      newProfile.coverPic = coverPicUrl || newProfile.coverPic;
+      await firstValueFrom(
+        this.http.put<ProfileDto>(`/api/profile/${newProfile.id}`, {
+          profilePic: newProfile.profilePic,
+          coverPic: newProfile.coverPic,
+        })
+      );
+    }
 
     this.currentUserProfiles.update((profiles) => [...profiles, newProfile]);
     localStorage.setItem(
@@ -241,7 +253,7 @@ export class ProfileService {
    */
   async updateProfile(id: string, profile: UpdateProfileDto) {
     // Check if this is a global profile and we need to create a local one
-    const existingProfile = this.currentUserProfiles().find((p) => p.id === id);
+    const existingProfile = this.getCurrentUserProfiles().find((p) => p.id === id);
 
     if (
       existingProfile &&

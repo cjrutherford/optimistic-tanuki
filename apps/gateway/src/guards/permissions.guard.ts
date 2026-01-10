@@ -48,8 +48,8 @@ export class PermissionsGuard implements CanActivate {
     const user = request.user;
     this.logger.log(`Checking permissions for user: ${JSON.stringify(user)}`);
 
-    if (!user || !user.profileId) {
-      this.logger.warn('User not authenticated or missing profileId');
+    if (!user) {
+      this.logger.warn('User not authenticated');
       throw new ForbiddenException('User not authenticated');
     }
 
@@ -67,7 +67,7 @@ export class PermissionsGuard implements CanActivate {
     const appScope = await firstValueFrom(
       this.permissionsClient.send(
         { cmd: AppScopeCommands.GetByName },
-        appScopeName
+        { name: appScopeName }
       )
     );
 
@@ -81,11 +81,36 @@ export class PermissionsGuard implements CanActivate {
         { cmd: ProfileCommands.GetAll },
         {
           where: {
-            userId: user.id,
+            userId: user.userId,
           },
         }
       )
     );
+
+    // If the JWT is missing profileId (for example, after initial
+    // registration or before a re-login that encodes it), attempt to
+    // resolve an appropriate profile for this request and attach it to
+    // the user context so permission checks can proceed.
+    if (!user.profileId) {
+      const appScopeProfile = profiles.find((p) => p.appScope === appScopeName);
+      const globalProfile = profiles.find(
+        (p) => !p.appScope || p.appScope === 'global'
+      );
+      const fallbackProfile = appScopeProfile || globalProfile || profiles[0];
+
+      if (!fallbackProfile) {
+        this.logger.warn(
+          `No profile available for userId=${user.userId} to satisfy permission check in app scope ${appScopeName}`
+        );
+        throw new ForbiddenException('User profile required for this action');
+      }
+
+      user.profileId = fallbackProfile.id;
+      request.user = user;
+      this.logger.debug(
+        `Resolved missing profileId from profiles list: profileId=${user.profileId}, appScope=${fallbackProfile.appScope}`
+      );
+    }
 
     // Check for global scope first - if user has permission in global scope, allow access
     const globalProfile = profiles.find((p) => p.appScope === 'global');
@@ -99,7 +124,7 @@ export class PermissionsGuard implements CanActivate {
       ? await firstValueFrom(
           this.permissionsClient.send(
             { cmd: AppScopeCommands.GetByName },
-            'global'
+            { name: 'global' }
           )
         )
       : null;

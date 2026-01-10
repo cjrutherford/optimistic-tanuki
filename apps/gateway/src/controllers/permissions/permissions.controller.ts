@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -59,13 +60,10 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @Get('scope/:name')
   @ApiOperation({ summary: 'Get an app scope by name' })
-  @Get('app-scope/by-name/:name')
   async getAppScopeByName(@Param('name') name: string) {
-    return await firstValueFrom(
-      this.client.send({ cmd: AppScopeCommands.GetByName }, name)
-    );
+    return this.client.send({ cmd: AppScopeCommands.GetByName }, { name });
   }
 
   @UseGuards(AuthGuard)
@@ -255,12 +253,12 @@ export class PermissionsController {
   @Get('user-roles/:profileId')
   async getUserRoles(
     @Param('profileId') profileId: string,
-    @Body() data: { appScope?: string }
+    @Query('appScope') appScope?: string
   ) {
     return await firstValueFrom(
       this.client.send(
         { cmd: RoleCommands.GetUserRoles },
-        { profileId, appScope: data?.appScope }
+        { profileId, appScope }
       )
     );
   }

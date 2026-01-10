@@ -79,7 +79,8 @@ export class CommentService {
     await this.commentRepo.update(id, sanitizedDto);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string): Promise<{ success: boolean }> {
     await this.commentRepo.delete(id);
+    return { success: true };
   }
 }

@@ -26,3 +26,8 @@ for db_with_prefix in $(echo $ADDITIONAL_DBS | tr ',' ' '); do
 done
 
 echo "Database setup and migrations complete."
+
+# Seed permissions (app scopes, roles, and permissions) after migrations
+echo "Seeding permissions into ot_permissions database."
+sh ./seed-permissions.sh
+echo "Permissions seeding complete."

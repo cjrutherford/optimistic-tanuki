@@ -1,0 +1,58 @@
+# Global Docker ignore rules for the Optimistic Tanuki workspace
+# These apply to all builds that use the workspace root as the build context.
+#
+# Goals:
+# - Keep Docker build contexts small and fast
+# - Exclude local-only artifacts (coverage, screenshots, logs, etc.)
+# - Preserve source and dist outputs needed by Nx/Docker builds
+
+# Node / package managers
+node_modules
+npm-debug.log*
+
+# Git / IDE / tooling
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Nx / tooling caches and temp
+# Keep .nx so Docker builds have access to the Nx project graph
+# and cached metadata. Still ignore generic tmp folders.
+.tmp
+tmp
+.temp
+
+# Angular CLI / Vite caches (these confuse Nx project graph inside Docker)
+.angular
+
+# Test / coverage / e2e artifacts
+coverage
+**/coverage
+
+test-results
+**/test-results
+
+# E2E and Playwright outputs
+apps/*-e2e
+apps/**/playwright-report
+**/playwright-report
+**/playwright-report/**
+
+# Large local-only resources
+screenshots
+**/screenshots
+storage
+codepen-material
+
+# Logs
+**/*.log
+
+# Dist notes:
+# Do NOT ignore dist/ globally; backend Dockerfiles copy dist/apps/<service>
+# from the workspace into the image. However, it is safe to ignore any
+# hypothetical e2e app bundles under dist/apps/*-e2e, and Storybook output
+# (which can contain duplicate Nx project definitions under dist/storybook).
+dist/apps/*-e2e
+dist/storybook

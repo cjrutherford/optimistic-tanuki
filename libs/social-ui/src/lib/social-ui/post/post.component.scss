@@ -24,7 +24,8 @@
         word-break: break-word;
         display: grid;
         grid-template-areas: "content content content content"
-            "attachment attachment link link";
+            "attachment attachment link link"
+            "actions actions actions actions";
         .post-content {
             grid-area: content;
             margin: 10px 0;
@@ -51,12 +52,12 @@
                 }
             }
         }
-    }
-
-    .actions{
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 10px;
+        .actions{
+            grid-area: actions;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
     }
 }

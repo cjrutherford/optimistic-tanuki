@@ -31,6 +31,8 @@ import {
   RoleInitService,
 } from '@optimistic-tanuki/permission-lib';
 
+import { Throttle } from '@nestjs/throttler';
+
 @ApiTags('authentication')
 @Controller('authentication')
 export class AuthenticationController {
@@ -57,24 +59,24 @@ export class AuthenticationController {
   async loginUser(@Body() data: LoginRequest, @AppScope() appScope: string) {
     try {
       this.logger.debug(`loginUser called for email=${data.email}`);
-      const effectiveUser: { userId: string } = await firstValueFrom(
+      const userId: string = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.UserIdFromEmail },
           { email: data.email }
         )
       );
       this.logger.debug(
-        `loginUser resolved userId=${effectiveUser?.userId} for email=${data.email}`
+        `loginUser resolved userId=${userId} for email=${data.email}`
       );
       const profiles = await firstValueFrom(
         this.profileClient.send(
           { cmd: ProfileCommands.GetAll },
-          { where: { userId: effectiveUser.userId } }
+          { where: { userId: userId } }
         )
       );
       this.logger.debug(
         `loginUser found ${profiles?.length || 0} profile(s) for userId=${
-          effectiveUser.userId
+          userId
         }`
       );
 
@@ -97,7 +99,7 @@ export class AuthenticationController {
         globalProfile
       ) {
         this.logger.log(
-          `No app-scoped profile found for userId=${effectiveUser.userId} in scope=${effectiveAppScope}. Creating one from global profile ${globalProfile.id}.`
+          `No app-scoped profile found for userId=${userId} in scope=${effectiveAppScope}. Creating one from global profile ${globalProfile.id}.`
         );
 
         const newProfile: CreateProfileDto & { appScope: string } = {
@@ -119,7 +121,7 @@ export class AuthenticationController {
         );
 
         this.logger.log(
-          `Created app-scoped profile ${createdProfile.id} for userId=${effectiveUser.userId} in scope=${effectiveAppScope}`
+          `Created app-scoped profile ${createdProfile.id} for userId=${userId} in scope=${effectiveAppScope}`
         );
 
         // Initialize permissions for this new app-scoped profile so that
@@ -145,7 +147,7 @@ export class AuthenticationController {
 
       if (!profileToUse) {
         this.logger.error(
-          `loginUser could not resolve a profile for userId=${effectiveUser.userId}`
+          `loginUser could not resolve a profile for userId=${userId}`
         );
         throw new Error('No profile available for user');
       }
@@ -172,6 +174,7 @@ export class AuthenticationController {
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
   async registerUser(
     @Body() data: RegisterRequest,
     @AppScope() appScope: string
@@ -220,9 +223,9 @@ export class AuthenticationController {
 
         const roleInitOptions = builder.build();
         this.logger.debug(
-          `registerUser enqueueing owner permissions for profile=${createdProfile.id} scope=global`
+          `registerUser initializing owner permissions for profile=${createdProfile.id} scope=global`
         );
-        this.roleInit.enqueue(roleInitOptions);
+        await this.roleInit.processNow(roleInitOptions);
       } else {
         // Standard registration flow
         const profilePermissionsBuilder = new RoleInitBuilder()
@@ -236,9 +239,9 @@ export class AuthenticationController {
         );
         const roleInitOptions = profilePermissionsBuilder.build();
         this.logger.debug(
-          `registerUser enqueueing standard permissions for profile=${createdProfile.id} scope=${appScope}`
+          `registerUser initializing standard permissions for profile=${createdProfile.id} scope=${appScope}`
         );
-        this.roleInit.enqueue(roleInitOptions);
+        await this.roleInit.processNow(roleInitOptions);
       }
       return result;
     } catch (error) {

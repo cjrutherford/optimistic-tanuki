@@ -7,6 +7,7 @@ import { RolesManagementComponent } from './components/roles-management.componen
 import { PermissionsManagementComponent } from './components/permissions-management.component';
 import { AppScopesManagementComponent } from './components/app-scopes-management.component';
 import { ThemeManagementComponent } from './components/theme-management.component';
+import { PermissionsInspectorComponent } from './components/permissions-inspector.component';
 import { authGuard } from './guards/auth.guard';
 
 export const appRoutes: Route[] = [
@@ -20,6 +21,7 @@ export const appRoutes: Route[] = [
       { path: 'users', component: UsersManagementComponent },
       { path: 'roles', component: RolesManagementComponent },
       { path: 'permissions', component: PermissionsManagementComponent },
+      { path: 'permissions-inspector', component: PermissionsInspectorComponent },
       { path: 'app-scopes', component: AppScopesManagementComponent },
       { path: 'theme', component: ThemeManagementComponent },
       { path: '', redirectTo: 'users', pathMatch: 'full' },

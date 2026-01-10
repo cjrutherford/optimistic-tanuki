@@ -41,9 +41,15 @@ export class SocialWebSocketService implements OnDestroy {
     }
 
     // Parse the API base URL to get the WebSocket URL
-    // Assuming API_BASE_URL is like "http://localhost:3000/api"
+    // Assuming API_BASE_URL is like "http://localhost:3000/api" or "/api"
     // We need to connect to the WebSocket on a different port (3301)
-    const url = new URL(this.apiBaseUrl);
+    let url: URL;
+    try {
+      url = new URL(this.apiBaseUrl);
+    } catch (e) {
+      // If apiBaseUrl is relative, use window.location.origin
+      url = new URL(this.apiBaseUrl, window.location.origin);
+    }
     const wsUrl = `${url.protocol}//${url.hostname}:3301`;
 
     console.log('Connecting to Social WebSocket at:', wsUrl);
@@ -142,7 +148,9 @@ export class SocialWebSocketService implements OnDestroy {
     this.socket.on('post_created', (post: PostDto) => {
       console.log('Post created:', post);
       const currentPosts = this.posts$.value;
-      this.posts$.next([post, ...currentPosts]);
+      if (!currentPosts.some(p => p.id === post.id)) {
+        this.posts$.next([post, ...currentPosts]);
+      }
     });
 
     this.socket.on('post_updated', (post: PostDto) => {

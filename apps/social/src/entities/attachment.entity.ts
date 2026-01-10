@@ -26,7 +26,7 @@ export class Attachment {
     @Column({ type: 'enum', enum: AttachmentType, default: AttachmentType.IMAGE })
     type: AttachmentType;
 
-    @ManyToOne(() => Post, post => post.attachments)
+    @ManyToOne(() => Post, post => post.attachments, { onDelete: 'CASCADE' })
     post: Post;
 }
 export function toFindOptions(searchDto: SearchAttachmentDto): FindOptions<Attachment> {

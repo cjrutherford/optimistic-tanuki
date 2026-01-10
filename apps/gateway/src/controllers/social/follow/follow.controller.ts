@@ -9,7 +9,7 @@ import { firstValueFrom } from 'rxjs';
 import { SocialGateway } from '../../../app/social-gateway/social.gateway';
 import { Throttle } from '@nestjs/throttler';
 
-@Controller('follow')
+@Controller('social/follow')
 export class FollowController {
     constructor(
         @Inject(ServiceTokens.SOCIAL_SERVICE) private readonly socialClient: ClientProxy,

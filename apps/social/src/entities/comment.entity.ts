@@ -21,13 +21,13 @@ export class Comment {
     @Column()
     profileId: string;
 
-    @ManyToOne(() => Post, post => post.comments)
+    @ManyToOne(() => Post, post => post.comments, { onDelete: 'CASCADE' })
     post: Post;
 
     @OneToMany( type => Comment, comment => comment.parent)
     replies: Comment[];
 
-    @ManyToOne( type => Comment, comment => comment.replies)
+    @ManyToOne( type => Comment, comment => comment.replies, { onDelete: 'CASCADE' })
     parent: Comment;
 
     @OneToMany(() => Vote, vote => vote.comment)

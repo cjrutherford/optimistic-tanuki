@@ -108,15 +108,21 @@ export class AppController {
 
   @MessagePattern({ cmd: PostCommands.UPDATE })
   async updatePost(
-    @Payload('id') id: number,
+    @Payload('id') id: string,
     @Payload('data') data: UpdatePostDto
   ) {
     return await this.postService.update(id, data);
   }
 
   @MessagePattern({ cmd: PostCommands.DELETE })
-  async removePost(@Payload('id') id: number) {
-    return await this.postService.remove(id);
+  async removePost(@Payload('id') id: string) {
+    console.log(`Removing post with ID: ${id}`);
+    try {
+      return await this.postService.remove(id);
+    } catch (error) {
+      console.error(`Error in removePost: ${error.message}`);
+      throw error;
+    }
   }
 
   @MessagePattern({ cmd: VoteCommands.UPVOTE })
@@ -148,7 +154,7 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: VoteCommands.UNVOTE })
-  async unvotePost(@Payload('id') id: number) {
+  async unvotePost(@Payload('id') id: string) {
     return await this.voteService.remove(id);
   }
 

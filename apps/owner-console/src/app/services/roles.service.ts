@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { RoleDto, CreateRoleDto, UpdateRoleDto, AssignRoleDto } from '@optimistic-tanuki/ui-models';
+import { RoleDto, CreateRoleDto, UpdateRoleDto, AssignRoleDto, UserRoleDto } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root',
@@ -47,7 +47,7 @@ export class RolesService {
     return this.http.delete(`${this.API_URL}/assignment/${assignmentId}`);
   }
 
-  getUserRoles(profileId: string): Observable<RoleDto[]> {
-    return this.http.get<RoleDto[]>(`${this.API_URL}/user-roles/${profileId}`);
+  getUserRoles(profileId: string): Observable<UserRoleDto[]> {
+    return this.http.get<UserRoleDto[]>(`${this.API_URL}/user-roles/${profileId}`);
   }
 }

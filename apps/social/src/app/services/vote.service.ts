@@ -24,15 +24,16 @@ export class VoteService {
     return this.voteRepo.find(options);
   }
 
-  async findOne(id: number, options?: FindOneOptions<Vote>): Promise<Vote> {
-    return await this.voteRepo.findOne({ where: { id }, ...options });
+  async findOne(id: string, options?: FindOneOptions<Vote>): Promise<Vote> {
+    return await this.voteRepo.findOne({ where: { id: id as any }, ...options });
   }
 
-  async update(id: number, updateVoteDto: UpdateVoteDto): Promise<void> {
-    await await this.voteRepo.update(id, updateVoteDto);
+  async update(id: string, updateVoteDto: UpdateVoteDto): Promise<void> {
+    await this.voteRepo.update(id, updateVoteDto);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<{ success: boolean }> {
     await this.voteRepo.delete(id);
+    return { success: true };
   }
 }

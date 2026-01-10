@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import seedDataRaw from '../assets/default-permissions.json';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AppScope } from '../app-scopes/entities/app-scope.entity';
@@ -99,13 +99,16 @@ async function main() {
 
     for (const permissionData of seedData.permissions) {
       try {
-        let existing = await permissionRepo.findOne({
-          where: { name: permissionData.name },
-        });
-
         const permissionAppScope = permissionData.appScope
           ? createdAppScopes.find((s) => s.name === permissionData.appScope)
           : null;
+
+        let existing = await permissionRepo.findOne({
+          where: { 
+            name: permissionData.name,
+            appScopeId: permissionAppScope ? permissionAppScope.id : IsNull()
+          },
+        });
 
         if (existing) {
           console.log(
@@ -118,8 +121,10 @@ async function main() {
           if (permissionAppScope) {
             existing.appScope = permissionAppScope;
           }
-          const updated = await permissionRepo.save(existing);
-          createdPermissions.push(updated);
+          await permissionRepo.save(existing);
+          // Ensure the appScope object (with its name) is available for later finding
+          if (permissionAppScope) existing.appScope = permissionAppScope;
+          createdPermissions.push(existing);
         } else {
           console.log(`Creating permission "${permissionData.name}"...`);
           const permissionDto: CreatePermissionDto = {
@@ -133,6 +138,8 @@ async function main() {
           const permission = permissionRepo.create(permissionDto);
           permission.appScope = permissionAppScope;
           const savedPermission = await permissionRepo.save(permission);
+          // Ensure the appScope object (with its name) is available for later finding
+          if (permissionAppScope) savedPermission.appScope = permissionAppScope;
           createdPermissions.push(savedPermission);
           console.log(
             `Permission "${permissionData.name}" created successfully.`
@@ -203,21 +210,24 @@ async function main() {
     for (const rpData of seedData.role_permissions) {
       try {
         const role = createdRoles.find((r) => r.name === rpData.role);
-        const permission = createdPermissions.find(
-          (p) =>
-            p.name === rpData.permission &&
-            p.appScope?.name === rpData.permissionAppScope
-        );
+        // Robust finding of permission by name and app scope name
+        const permission = createdPermissions.find((p) => {
+          const nameMatches = p.name === rpData.permission;
+          // Check both p.appScope.name and permissionAppScope match (p.appScope might be joined or just an object we set)
+          const pScopeName = p.appScope?.name;
+          const scopeMatches = pScopeName === rpData.permissionAppScope || (!pScopeName && !rpData.permissionAppScope);
+          return nameMatches && scopeMatches;
+        });
 
         if (!role) {
           console.warn(
-            `Role "${rpData.role}" not found, skipping permission association...`
+            `Role "${rpData.role}" not found, skipping permission association for "${rpData.permission}" in "${rpData.permissionAppScope}"...`
           );
           continue;
         }
         if (!permission) {
           console.warn(
-            `Permission "${rpData.permission}" in app scope "${rpData.permissionAppScope}" not found, skipping association...`
+            `Permission "${rpData.permission}" in app scope "${rpData.permissionAppScope}" not found, skipping association with role "${rpData.role}"...`
           );
           continue;
         }
@@ -241,15 +251,16 @@ async function main() {
         );
 
         if (alreadyHasPermission) {
-          console.log(
-            `Permission "${rpData.permission}" already associated with role "${rpData.role}", skipping...`
-          );
+          // Only log for important roles to reduce noise, or if it was just added
+          if (rpData.role === 'client_interface_user') {
+              console.log(`Permission "${rpData.permission}" already associated with role "${rpData.role}", skipping...`);
+          }
           continue;
         }
 
         // Add permission to role
         console.log(
-          `Associating permission "${rpData.permission}" with role "${rpData.role}"...`
+          `Associating permission "${rpData.permission}" (${rpData.permissionAppScope}) with role "${rpData.role}"...`
         );
         if (!roleWithPermissions.permissions) {
           roleWithPermissions.permissions = [];

@@ -60,6 +60,7 @@ export class SettingsComponent {
     this.profileName = p.profileName || '';
     this.profileImage = p.profilePic || '';
     this.backgroundImage = p.coverPic || '';
+    this.profile.set(p);
   }
 
   toggleThemeDesigner() {

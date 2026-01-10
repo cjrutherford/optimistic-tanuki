@@ -14,10 +14,11 @@ export class CreatePostDto {
   @MaxLength(50000)
   content: string;
 
-  @ApiProperty({ description: 'The ID of the user' })
+  @ApiProperty({ description: 'The ID of the user', required: false })
+  @IsOptional()
   @IsString()
   @IsUUID()
-  userId: string;
+  userId?: string;
 
   @ApiProperty({ description: 'The ID of the profile' })
   @IsString()

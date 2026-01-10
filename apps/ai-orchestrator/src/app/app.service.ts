@@ -156,7 +156,8 @@ export class AppService {
 
       const conversationSummary = `The user has just created a profile as a user of ${appId}. This app's description is: ${
         this.aiEnabledApps[appId] ?? 'No description available'
-      }. The user may have limited information in their profile. Your goal is to assist the user in fleshing out their projects and goals. Behind the scenes, provide JSON output with potential TELOS data points. Inform the user that they can export their TELOS data at any time. TELOS is not an acronym, but a framework for maintaining focus and clarity for both AI and humans. TELOS data should be included at the end of the response in json format separated from the main response with '---'. JSON format should be with keys for goals, skills, interests, limitations, strengths, objectives, coreObjective, and overallProfileSummary.`;
+      }. The user may have limited information in their profile. Your goal is to assist the user in fleshing out their projects and goals. Behind the scenes, provide JSON output with potential TELOS data points. Inform the user that they can export their TELOS data at any time. TELOS is not an acronym, but a framework for maintaining focus and clarity for both AI and humans. TELOS data should be included at the end of the response in json format separated from the main response with '---'. JSON format should be with keys for goals, skills, interests, limitations, strengths, objectives, coreObjective, and overallProfileSummary.
+      Please do not use tools for this initial welcome message. Focus on engaging the user and gathering information.`;
 
       const responses: Partial<ChatMessage>[] = [];
 

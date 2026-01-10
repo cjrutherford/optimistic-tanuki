@@ -13,6 +13,7 @@ import { ProfileController } from '../controllers/profile/profile.controller';
 import { ProjectPlanningController } from '../controllers/project-planning/project-planning.controller';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { SocialController } from '../controllers/social/social.controller';
+import { FollowController } from '../controllers/social/follow/follow.controller';
 import { ChatGateway } from './chat-gateway/chat.gateway';
 import { SocialGateway } from './social-gateway/social.gateway';
 import { ContactController } from '../controllers/blogging/contact.controller';
@@ -37,18 +38,18 @@ import { APP_GUARD } from '@nestjs/core';
     ThrottlerModule.forRoot([
       {
         name: 'short',
-        ttl: 1000, // 1 second
-        limit: 10, // 10 requests per second
+        ttl: 1000,
+        limit: 10000, // Increased for E2E
       },
       {
         name: 'medium',
-        ttl: 10000, // 10 seconds
-        limit: 50, // 50 requests per 10 seconds
+        ttl: 10000,
+        limit: 50000, // Increased for E2E
       },
       {
         name: 'long',
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
+        ttl: 60000,
+        limit: 100000, // Increased for E2E
       },
     ]),
     LoggerModule,
@@ -58,6 +59,7 @@ import { APP_GUARD } from '@nestjs/core';
     AuthenticationController,
     ProfileController,
     SocialController,
+    FollowController,
     AssetController,
     ProjectPlanningController,
     ContactController,
@@ -83,12 +85,12 @@ import { APP_GUARD } from '@nestjs/core';
       inject: [ConfigService],
     },
     {
-      provide: JwtService, 
+      provide: JwtService,
       useFactory: (config: ConfigService) => {
         const secret = config.get('auth.jwt_secret') || 'default_jwt_secret';
         return new JwtService({ secret });
-      }, 
-      inject: [ConfigService]
+      },
+      inject: [ConfigService],
     },
     RoleInitService,
     {

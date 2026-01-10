@@ -1,0 +1,38 @@
+{
+  "name": "full-stack-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/full-stack-e2e/src",
+  "implicitDependencies": [
+    "client-interface",
+    "digital-homestead",
+    "owner-console"
+  ],
+  "targets": {
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "options": {
+        "config": "apps/full-stack-e2e/playwright.config.ts"
+      }
+    },
+    "full-stack": {
+      "executor": "@nx/workspace:run-commands",
+      "options": {
+        "cwd": "./",
+        "commands": [
+          {
+            "command": "docker-compose up -d --build"
+          },
+          {
+            "command": "npx playwright test --config=apps/full-stack-e2e/playwright.config.ts",
+            "forwardAllArgs": true
+          },
+          {
+            "command": "docker-compose down -v"
+          }
+        ],
+        "parallel": false
+      }
+    }
+  }
+}

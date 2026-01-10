@@ -182,7 +182,7 @@ export class ProfileController {
       const globalScope = await firstValueFrom(
         this.permissionsClient.send(
           { cmd: AppScopeCommands.GetByName },
-          'global'
+          { name: 'global' }
         )
       );
 
@@ -223,7 +223,7 @@ export class ProfileController {
     this.l.log(`Fetching all profiles for user: ${user.userId}`);
     return this.client.send(
       { cmd: ProfileCommands.GetAll },
-      { userId: user.userId, query }
+      { where: { userId: user.userId, ...query } }
     );
   }
 

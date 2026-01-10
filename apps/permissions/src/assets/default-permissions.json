@@ -25,20 +25,36 @@
       "description": "Personal website",
       "active": true
     },
-    { "name": "blogging", "description": "Blogging platform", "active": true },
+    {
+      "name": "blogging",
+      "description": "Blogging platform",
+      "active": true
+    },
     {
       "name": "project-planning",
       "description": "Project planning application",
       "active": true
     },
-    { "name": "assets", "description": "Assets service", "active": true },
-    { "name": "social", "description": "Social features", "active": true },
+    {
+      "name": "assets",
+      "description": "Assets service",
+      "active": true
+    },
+    {
+      "name": "social",
+      "description": "Social features",
+      "active": true
+    },
     {
       "name": "authentication",
       "description": "Authentication service",
       "active": true
     },
-    { "name": "profile", "description": "Profile service", "active": true },
+    {
+      "name": "profile",
+      "description": "Profile service",
+      "active": true
+    },
     {
       "name": "owner-console",
       "description": "Owner console for system administration",
@@ -54,6 +70,16 @@
     {
       "name": "owner",
       "description": "Owner with full administrative permissions",
+      "appScope": "global"
+    },
+    {
+      "name": "global_admin",
+      "description": "Global administrator with elevated permissions",
+      "appScope": "global"
+    },
+    {
+      "name": "system_admin",
+      "description": "System administrator with full system access",
       "appScope": "global"
     },
     {
@@ -149,6 +175,11 @@
     {
       "name": "christopherrutherford_standard_user",
       "description": "Standard user for christopherrutherford.net",
+      "appScope": "christopherrutherford-net"
+    },
+    {
+      "name": "christopherrutherford_owner_user",
+      "description": "Owner user for christopherrutherford.net",
       "appScope": "christopherrutherford-net"
     },
     {
@@ -576,6 +607,14 @@
       "description": "Update social post",
       "resource": "post",
       "action": "update",
+      "targetId": null,
+      "appScope": "social"
+    },
+    {
+      "name": "social.post.delete",
+      "description": "Delete social post",
+      "resource": "post",
+      "action": "delete",
       "targetId": null,
       "appScope": "social"
     },
@@ -1060,6 +1099,14 @@
       "appScope": "global"
     },
     {
+      "name": "social.post.delete",
+      "description": "Delete social post (global)",
+      "resource": "post",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
       "name": "social.vote.create",
       "description": "Cast a vote (global)",
       "resource": "vote",
@@ -1441,6 +1488,11 @@
     },
     {
       "role": "social_user",
+      "permission": "social.post.delete",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
       "permission": "social.vote.create",
       "permissionAppScope": "social"
     },
@@ -1523,6 +1575,41 @@
       "role": "client_interface_user",
       "permission": "profile.read",
       "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.post.read",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.post.update",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.post.delete",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.comment.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.vote.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "social.follow",
+      "permissionAppScope": "social"
     },
     {
       "role": "forgeofwill_standard_user",
@@ -1756,6 +1843,21 @@
     },
     {
       "role": "owner",
+      "permission": "social.post.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "social.post.delete",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "owner",
+      "permission": "social.post.publish",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
       "permission": "social.vote.create",
       "permissionAppScope": "global"
     },
@@ -1833,6 +1935,936 @@
       "role": "owner",
       "permission": "appscopes.delete",
       "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "profile.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "profile.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "asset.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "asset.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "asset.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "asset.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "blog.post.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "blog.post.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "blog.post.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "blog.post.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "blog.post.publish",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "blog.comment.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "blog.comment.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "blog.blog.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.project.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.project.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.project.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.project.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.task.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.task.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.task.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.task.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.change.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.change.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.change.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.change.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.journal.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.journal.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.journal.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.journal.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.risk.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.risk.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.risk.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.risk.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.timer.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.timer.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.timer.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "project-planning.timer.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "social.follow",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "social.post.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "social.post.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "social.post.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "social.vote.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "social.comment.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "permissions.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "permissions.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "permissions.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "permissions.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "roles.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "roles.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "roles.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "roles.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "users.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "users.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "appscopes.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "appscopes.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "appscopes.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "appscopes.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "profile.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "profile.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "asset.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "asset.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "asset.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "asset.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "blog.post.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "blog.post.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "blog.post.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "blog.post.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "blog.post.publish",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "blog.comment.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "blog.comment.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "blog.blog.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.project.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.project.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.project.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.project.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.task.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.task.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.task.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.task.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.change.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.change.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.change.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.change.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.journal.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.journal.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.journal.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.journal.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.risk.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.risk.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.risk.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.risk.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.timer.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.timer.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.timer.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "project-planning.timer.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "social.follow",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "social.post.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "social.post.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "social.post.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "social.vote.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "social.comment.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "permissions.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "permissions.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "permissions.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "permissions.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "roles.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "roles.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "roles.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "roles.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "users.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "users.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "appscopes.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "appscopes.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "appscopes.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "appscopes.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "profile.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "profile.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "asset.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "asset.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "asset.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "asset.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "blog.post.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "blog.post.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "blog.post.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "blog.post.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "blog.post.publish",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "blog.comment.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "blog.comment.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "blog.blog.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.project.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.project.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.project.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.project.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.task.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.task.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.task.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.task.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.change.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.change.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.change.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.change.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.journal.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.journal.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.journal.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.journal.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.risk.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.risk.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.risk.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.risk.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.timer.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.timer.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.timer.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "project-planning.timer.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "social.follow",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "social.post.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "social.post.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "social.post.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "social.vote.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "social.comment.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "permissions.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "permissions.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "permissions.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "permissions.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "roles.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "roles.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "roles.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "roles.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "users.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "users.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "appscopes.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "appscopes.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "appscopes.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "appscopes.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "profile.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "profile.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "asset.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "asset.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "asset.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "social.follow",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "social.post.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "social.post.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "social.post.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "social.comment.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "standard_user",
+      "permission": "social.vote.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "forgeofwill_standard_user",
+      "permission": "profile.update",
+      "permissionAppScope": "forgeofwill"
     }
   ]
 }

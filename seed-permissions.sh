@@ -73,6 +73,25 @@ VALUES
   ('social_user', 'Social user (follow/post)', (SELECT id FROM app_scope WHERE name = 'social'))
 ON CONFLICT ("name") DO NOTHING;
 
+-- Global scope roles
+INSERT INTO "role" (name, description, "appScopeId")
+VALUES
+  ('owner_console_owner', 'Owner console administrator with full permissions', (SELECT id FROM app_scope WHERE name = 'global')),
+  ('global_admin', 'Global administrator with elevated permissions', (SELECT id FROM app_scope WHERE name = 'global')),
+  ('system_admin', 'System administrator with full system access', (SELECT id FROM app_scope WHERE name = 'global')),
+  ('standard_user', 'Standard user with basic permissions', (SELECT id FROM app_scope WHERE name = 'global'))
+ON CONFLICT ("name") DO NOTHING;
+
+-- Standard user roles for each app scope
+INSERT INTO "role" (name, description, "appScopeId")
+VALUES
+  ('forgeofwill_standard_user', 'Standard user for Forge of Will', (SELECT id FROM app_scope WHERE name = 'forgeofwill')),
+  ('client_interface_user', 'Standard user for client interface', (SELECT id FROM app_scope WHERE name = 'client-interface')),
+  ('digital_standard_user', 'Standard user for Digital Homestead', (SELECT id FROM app_scope WHERE name = 'digital-homestead')),
+  ('christopherrutherford_standard_user', 'Standard user for Christopher Rutherford site', (SELECT id FROM app_scope WHERE name = 'christopherrutherford-net')),
+  ('christopherrutherford_owner_user', 'Owner user for Christopher Rutherford site', (SELECT id FROM app_scope WHERE name = 'christopherrutherford-net'))
+ON CONFLICT ("name") DO NOTHING;
+
 COMMIT;
 SQL
 
@@ -131,6 +150,48 @@ VALUES
   ('social.follow', 'Follow/unfollow users', 'follow', 'create', NULL, (SELECT id FROM app_scope WHERE name='social')),
   ('social.post.create', 'Create social post', 'post', 'create', NULL, (SELECT id FROM app_scope WHERE name='social')),
   ('social.post.read',   'Read social post',   'post', 'read',   NULL, (SELECT id FROM app_scope WHERE name='social'))
+ON CONFLICT (name, "appScopeId") DO NOTHING;
+
+-- Global scope permissions for owner-console registered users
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+VALUES
+  ('profile.read', 'Read profile (global)', 'profile', 'read', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('profile.update', 'Update profile (global)', 'profile', 'update', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('profile.delete', 'Delete profile (global)', 'profile', 'delete', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('asset.create', 'Create asset (global)', 'asset', 'create', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('asset.read', 'Read asset (global)', 'asset', 'read', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('asset.update', 'Update asset (global)', 'asset', 'update', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('asset.delete', 'Delete asset (global)', 'asset', 'delete', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('social.follow', 'Follow/unfollow users (global)', 'follow', 'create', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('social.post.create', 'Create social post (global)', 'post', 'create', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('social.post.read', 'Read social post (global)', 'post', 'read', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('social.post.update', 'Update social post (global)', 'post', 'update', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('social.post.delete', 'Delete social post (global)', 'post', 'delete', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('blog.post.create', 'Create blog post (global)', 'post', 'create', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('blog.post.read', 'Read blog post (global)', 'post', 'read', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('blog.post.update', 'Update blog post (global)', 'post', 'update', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('blog.post.delete', 'Delete blog post (global)', 'post', 'delete', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('project.create', 'Create project (global)', 'project', 'create', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('project.read', 'Read project (global)', 'project', 'read', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('project.update', 'Update project (global)', 'project', 'update', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('project.delete', 'Delete project (global)', 'project', 'delete', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('task.create', 'Create task (global)', 'task', 'create', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('task.read', 'Read task (global)', 'task', 'read', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('task.update', 'Update task (global)', 'task', 'update', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('task.delete', 'Delete task (global)', 'task', 'delete', NULL, (SELECT id FROM app_scope WHERE name='global'))
+ON CONFLICT (name, "appScopeId") DO NOTHING;
+
+-- Forgeofwill scope permissions
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+VALUES
+  ('profile.read', 'Read profile (forgeofwill)', 'profile', 'read', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill')),
+  ('profile.update', 'Update profile (forgeofwill)', 'profile', 'update', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill')),
+  ('asset.create', 'Create asset (forgeofwill)', 'asset', 'create', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill')),
+  ('asset.read', 'Read asset (forgeofwill)', 'asset', 'read', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill')),
+  ('asset.update', 'Update asset (forgeofwill)', 'asset', 'update', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill')),
+  ('asset.delete', 'Delete asset (forgeofwill)', 'asset', 'delete', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill')),
+  ('social.post.create', 'Create social post (forgeofwill)', 'post', 'create', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill')),
+  ('social.post.read', 'Read social post (forgeofwill)', 'post', 'read', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Map permissions to roles (role_permission)
@@ -225,6 +286,90 @@ INSERT INTO "role_permission" ("roleId", "permissionId")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN ('social.follow', 'social.post.create', 'social.post.read') AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='social')
 WHERE r.name = 'social_user'
+ON CONFLICT DO NOTHING;
+
+-- Global scope owner roles (owner_console_owner, global_admin, system_admin) - full permissions
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r 
+CROSS JOIN permission p 
+WHERE r.name IN ('owner_console_owner', 'global_admin', 'system_admin')
+  AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='global')
+ON CONFLICT DO NOTHING;
+
+-- standard_user (global scope) - basic read/write permissions
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name IN (
+  'profile.read', 'profile.update',
+  'asset.create', 'asset.read', 'asset.update',
+  'social.follow', 'social.post.create', 'social.post.read'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='global')
+WHERE r.name = 'standard_user'
+ON CONFLICT DO NOTHING;
+
+-- forgeofwill_standard_user - profile and social permissions for forgeofwill scope
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name IN (
+  'profile.read', 'profile.update',
+  'asset.create', 'asset.read', 'asset.update', 'asset.delete',
+  'social.post.create', 'social.post.read'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='forgeofwill')
+WHERE r.name = 'forgeofwill_standard_user'
+ON CONFLICT DO NOTHING;
+
+-- client_interface_user - basic client interface permissions
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name IN (
+  'profile.read', 'profile.update',
+  'asset.create', 'asset.read', 'asset.update'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='client-interface')
+WHERE r.name = 'client_interface_user'
+ON CONFLICT DO NOTHING;
+
+-- client_interface_user - social permissions via social app scope
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r
+JOIN permission p ON p.name IN (
+  'social.post.create',
+  'social.post.read',
+  'social.post.update',
+  'social.post.delete',
+  'social.comment.create',
+  'social.vote.create',
+  'social.follow'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='social')
+WHERE r.name = 'client_interface_user'
+ON CONFLICT DO NOTHING;
+
+-- digital_standard_user - basic digital homestead permissions
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r 
+CROSS JOIN permission p 
+WHERE r.name = 'digital_standard_user'
+  AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='digital-homestead')
+ON CONFLICT DO NOTHING;
+
+-- christopherrutherford_standard_user - basic permissions
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r 
+CROSS JOIN permission p 
+WHERE r.name = 'christopherrutherford_standard_user'
+  AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='christopherrutherford-net')
+ON CONFLICT DO NOTHING;
+
+-- christopherrutherford_owner_user - full permissions
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r 
+CROSS JOIN permission p 
+WHERE r.name = 'christopherrutherford_owner_user'
+  AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='christopherrutherford-net')
 ON CONFLICT DO NOTHING;
 
 COMMIT;

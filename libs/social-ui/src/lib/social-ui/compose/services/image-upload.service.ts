@@ -54,7 +54,8 @@ export class ImageUploadService {
   /**
    * Extract file extension from data URL
    */
-  getFileExtensionFromDataUrl(dataUrl: string): string {
+  getFileExtensionFromDataUrl(dataUrl: string | null | undefined): string {
+    if (!dataUrl) return 'png';
     const mimeType = dataUrl.split(',')[0].match(/:(.*?);/)?.[1];
     const extensionMap: { [key: string]: string } = {
       'image/png': 'png',
@@ -70,7 +71,8 @@ export class ImageUploadService {
   /**
    * Get MIME type from data URL
    */
-  getMimeTypeFromDataUrl(dataUrl: string): string {
+  getMimeTypeFromDataUrl(dataUrl: string | null | undefined): string {
+    if (!dataUrl) return 'image/png';
     return dataUrl.split(',')[0].match(/:(.*?);/)?.[1] || 'image/png';
   }
 }

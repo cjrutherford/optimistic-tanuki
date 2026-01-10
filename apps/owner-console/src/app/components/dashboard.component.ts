@@ -86,7 +86,13 @@ export class DashboardComponent implements OnInit {
         label: 'Permissions',
         action: () => this.router.navigate(['/dashboard/permissions']),
         variant: 'text',
-        isActive: this.router.url.includes('/permissions'),
+        isActive: this.router.url.includes('/permissions') && !this.router.url.includes('/permissions-inspector'),
+      },
+      {
+        label: 'Permissions Inspector',
+        action: () => this.router.navigate(['/dashboard/permissions-inspector']),
+        variant: 'text',
+        isActive: this.router.url.includes('/permissions-inspector'),
       },
       {
         label: 'App Scopes',
