@@ -17,7 +17,7 @@ const commonEngine = new CommonEngine();
  * Proxy API requests to the gateway
  */
 app.use('/api', createProxyMiddleware({
-  target: 'http://gateway:3000/api',
+  target: 'http://gateway:3000',
   changeOrigin: true,
 }));
 

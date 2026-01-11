@@ -41,7 +41,7 @@ app.use(
 app.use(
   '/api',
   createProxyMiddleware({
-    target: 'http://gateway:3000/api',
+    target: 'http://gateway:3000',
     ws: true,
     changeOrigin: true,
   })
