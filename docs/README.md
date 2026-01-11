@@ -4,6 +4,8 @@ Welcome to the Optimistic Tanuki documentation! This guide will help you navigat
 
 ## 📚 Documentation Structure
 
+**New to the documentation?** See our [Documentation Organization Guide](./ORGANIZATION.md) to understand how docs are structured and how to find what you need.
+
 ### 🚀 Getting Started
 - [MVP Overview](./getting-started/mvp-overview.md) - Minimum Viable Product plan and roadmap
 
