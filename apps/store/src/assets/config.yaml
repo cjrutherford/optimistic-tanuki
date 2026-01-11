@@ -1,7 +1,7 @@
 listenPort: 3013
 database:
-  host: ${POSTGRES_HOST:localhost}
-  port: ${POSTGRES_PORT:5432}
-  username: ${POSTGRES_USER:postgres}
-  password: ${POSTGRES_PASSWORD:postgres}
-  database: ${POSTGRES_DB:store}
+  host: db
+  port: 5432
+  username: postgres
+  password: postgres
+  database: ot_store

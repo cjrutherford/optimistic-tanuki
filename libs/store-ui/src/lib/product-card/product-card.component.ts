@@ -1,6 +1,10 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ThemeHostBindingsDirective, Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import {
+  ThemeHostBindingsDirective,
+  Themeable,
+  ThemeColors,
+} from '@optimistic-tanuki/theme-lib';
 
 export interface Product {
   id: string;
@@ -29,6 +33,11 @@ export class ProductCardComponent extends Themeable {
     if (this.product?.stock > 0) {
       this.addToCart.emit(this.product);
     }
+  }
+
+  parsePrice(price: number | string): string {
+    const priceNumber = typeof price === 'string' ? parseFloat(price) : price;
+    return priceNumber.toFixed(2);
   }
 
   // Concrete implementation required by Themeable

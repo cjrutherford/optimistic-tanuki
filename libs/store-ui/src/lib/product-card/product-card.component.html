@@ -1,21 +1,27 @@
 <div class="product-card">
   <div class="product-image">
-    <img [src]="product.imageUrl || '/assets/placeholder.png'" [alt]="product.name" />
+    <img
+      [src]="product.imageUrl || '/assets/placeholder.png'"
+      [alt]="product.name"
+    />
   </div>
   <div class="product-details">
     <h3 class="product-name">{{ product.name }}</h3>
-    <p class="product-description" *ngIf="product.description">{{ product.description }}</p>
+    <p class="product-description" *ngIf="product.description">
+      {{ product.description }}
+    </p>
     <div class="product-footer">
-      <span class="product-price">\${{ product.price.toFixed(2) }}</span>
+      <span class="product-price">\${{ parsePrice(product.price) }}</span>
       <span class="product-stock" [class.out-of-stock]="product.stock === 0">
         {{ product.stock > 0 ? product.stock + ' in stock' : 'Out of stock' }}
       </span>
     </div>
-    <button 
-      *ngIf="showAddToCart" 
-      class="add-to-cart-btn" 
+    <button
+      *ngIf="showAddToCart"
+      class="add-to-cart-btn"
       [disabled]="product.stock === 0"
-      (click)="onAddToCart()">
+      (click)="onAddToCart()"
+    >
       Add to Cart
     </button>
   </div>

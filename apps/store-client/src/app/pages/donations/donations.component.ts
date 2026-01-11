@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DonationComponent, DonationRequest } from '@optimistic-tanuki/store-ui';
+import {
+  DonationComponent,
+  DonationRequest,
+} from '@optimistic-tanuki/store-ui';
 import { StoreService } from '../../services/store.service';
 
 @Component({
@@ -14,6 +17,7 @@ export class DonationsComponent {
   loading = false;
   error: string | null = null;
   success: string | null = null;
+  disabled = false;
 
   constructor(private storeService: StoreService) {}
 
@@ -24,7 +28,9 @@ export class DonationsComponent {
 
     this.storeService.createDonation(donation).subscribe({
       next: () => {
-        this.success = `Thank you for your donation of $${donation.amount.toFixed(2)}!`;
+        this.success = `Thank you for your donation of $${donation.amount.toFixed(
+          2
+        )}!`;
         this.loading = false;
       },
       error: (err) => {
