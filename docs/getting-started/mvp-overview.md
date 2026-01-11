@@ -13,7 +13,8 @@ Goal:
 - Produce a permissions matrix, enforce at gateway and validate at microservice boundaries.
 - Reuse existing gateway and permissions-service primitives where possible.
 
-Audit tasks (deliverables: `docs/permissions-audit.md` and test matrix) ✅
+Audit tasks (deliverables: permissions documentation and test matrix) ✅  
+_Note: See [Permissions System](../architecture/permissions.md) for current implementation_
 - Inventory enforcement points across gateway and services (start from gateway controllers and guards). ✅
   - Gateway controllers to inspect: `apps/gateway/src/controllers/*` (e.g. project-planning, social, blogging, asset, permissions). ✅
 - Confirm and extend existing enforcement primitives: ✅
@@ -29,7 +30,7 @@ Verification:
 - Integration tests simulating role tokens with explicit cases across gateway ↔ permissions service and a target microservice. ✅
 
 Checklist (deliverables):
-- docs/permissions-audit.md (matrix + endpoint mapping) ✅
+- Permissions documentation (see [Permissions System](../architecture/permissions.md)) ✅
 - Unit tests: extend `auth.guard.spec.ts`, `permissions-proxy.service.spec.ts` (already present) and add `permissions.guard.spec.ts` ✅
 - Integration tests: gateway ↔ project-planning role scenarios ✅
 - Logged examples of permission denials (structured logs) ✅
@@ -229,7 +230,7 @@ Checklist (deliverables):
 - Rollout plan with feature-flag steps
 
 Files to update:
-- per-app README files and a central `docs/permissions-audit.md`.
+- per-app README files and a central permissions documentation (see [Permissions System](../architecture/permissions.md)).
 
 ---
 
