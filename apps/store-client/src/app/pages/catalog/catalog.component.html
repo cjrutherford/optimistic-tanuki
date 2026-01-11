@@ -1,0 +1,16 @@
+<div class="catalog-page">
+  <header class="page-header">
+    <h1>Product Catalog</h1>
+    <p>Browse our selection of products</p>
+  </header>
+
+  <div class="loading" *ngIf="loading">Loading products...</div>
+  <div class="error" *ngIf="error">{{ error }}</div>
+
+  <store-product-list
+    *ngIf="!loading && !error"
+    [products]="products"
+    [columns]="3"
+    (addToCart)="onAddToCart($event)">
+  </store-product-list>
+</div>

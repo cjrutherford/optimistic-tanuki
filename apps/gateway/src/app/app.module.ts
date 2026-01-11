@@ -28,7 +28,7 @@ import { McpToolsModule } from './mcp/mcp-tools.module';
 import { PersonaController } from '../controllers/persona/persona.controller';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-
+import { StoreController } from '../controllers/store/store.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -68,6 +68,7 @@ import { APP_GUARD } from '@nestjs/core';
     BlogController,
     PermissionsController,
     PersonaController,
+    StoreController,
   ],
   providers: [
     {
@@ -243,6 +244,22 @@ import { APP_GUARD } from '@nestjs/core';
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
           'services.permissions'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.STORE_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.store'
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,

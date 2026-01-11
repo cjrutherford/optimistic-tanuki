@@ -25,9 +25,8 @@ const commonEngine = new CommonEngine();
  * ```
  */
 app.use('/api', createProxyMiddleware({
-  target: 'http://gateway:3000/api', // Change to your API server URL
+  target: 'http://gateway:3000',
   changeOrigin: true,
-  // pathRewrite: { '^/api': '' }, // Remove /api prefix when forwarding to the target
 }))
 
 /**

@@ -1,0 +1,54 @@
+<div class="donation-form">
+  <h2>Make a Donation</h2>
+  
+  <div class="preset-amounts">
+    <button
+      *ngFor="let preset of presetAmounts"
+      class="preset-btn"
+      [class.active]="amount === preset && !customAmount"
+      (click)="selectAmount(preset)">
+      \${{ preset }}
+    </button>
+  </div>
+
+  <div class="custom-amount">
+    <label for="custom-amount">Custom Amount:</label>
+    <div class="input-group">
+      <span class="currency-symbol">\$</span>
+      <input
+        type="number"
+        id="custom-amount"
+        [(ngModel)]="customAmount"
+        (blur)="useCustomAmount()"
+        min="1"
+        step="1"
+        placeholder="Enter amount" />
+    </div>
+  </div>
+
+  <div class="message-field">
+    <label for="message">Message (optional):</label>
+    <textarea
+      id="message"
+      [(ngModel)]="message"
+      rows="3"
+      placeholder="Leave a message with your donation..."></textarea>
+  </div>
+
+  <div class="anonymous-checkbox">
+    <input
+      type="checkbox"
+      id="anonymous"
+      [(ngModel)]="anonymous" />
+    <label for="anonymous">Make this donation anonymous</label>
+  </div>
+
+  <div class="donation-summary">
+    <span>Total Donation:</span>
+    <span class="amount">\${{ amount.toFixed(2) }}</span>
+  </div>
+
+  <button class="donate-btn" (click)="onSubmit()" [disabled]="amount <= 0">
+    Donate Now
+  </button>
+</div>

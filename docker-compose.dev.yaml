@@ -34,8 +34,6 @@ services:
         '-L',
         'main.js',
       ]
-    environment:
-      - NODE_ENV=development
     ports:
       - '9229:9229'
     depends_on: # Added
@@ -456,3 +454,46 @@ services:
     depends_on: # Added
       postgres:
         condition: service_healthy
+
+  store:
+    container_name: ot_store
+    build:
+      context: .
+      dockerfile: ./apps/store/Dockerfile
+    volumes:
+      - ./dist/apps/store:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9241',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9250:9241'
+
+  store-client:
+    container_name: ot_store_client
+    build:
+      context: .
+      dockerfile: ./apps/store-client/Dockerfile
+    volumes:
+      - ./dist/apps/store-client:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command: 
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9243',
+        '-L',
+        '/app/dist/apps/store-client/server/server.mjs',
+      ]
+    ports:
+      - '8085:4000'
+    depends_on:
+      - gateway
+

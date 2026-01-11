@@ -1,0 +1,149 @@
+<div class="product-management">
+  <h2>Product Management</h2>
+
+  <div class="error" *ngIf="error">{{ error }}</div>
+
+  <div class="actions">
+    <button
+      class="btn btn-primary"
+      (click)="startCreate()"
+      [disabled]="loading || isCreating || isEditing"
+    >
+      Add New Product
+    </button>
+  </div>
+
+  <!-- Product Form -->
+  <div class="product-form" *ngIf="isCreating || isEditing">
+    <h3>{{ isCreating ? 'Create Product' : 'Edit Product' }}</h3>
+
+    <div class="form-group">
+      <label for="name">Name *</label>
+      <input type="text" id="name" [(ngModel)]="productForm.name" required />
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea
+        id="description"
+        [(ngModel)]="productForm.description"
+        rows="3"
+      ></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="price">Price *</label>
+        <input
+          type="number"
+          id="price"
+          [(ngModel)]="productForm.price"
+          step="0.01"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="stock">Stock *</label>
+        <input
+          type="number"
+          id="stock"
+          [(ngModel)]="productForm.stock"
+          required
+        />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="type">Type *</label>
+        <select id="type" [(ngModel)]="productForm.type" required>
+          <option value="physical">Physical</option>
+          <option value="digital">Digital</option>
+          <option value="subscription">Subscription</option>
+          <option value="donation">Donation</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="active">Status</label>
+        <select id="active" [(ngModel)]="productForm.active">
+          <option [value]="true">Active</option>
+          <option [value]="false">Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="imageUrl">Image URL</label>
+      <input type="text" id="imageUrl" [(ngModel)]="productForm.imageUrl" />
+    </div>
+
+    <div class="form-actions">
+      <button
+        class="btn btn-primary"
+        (click)="saveProduct()"
+        [disabled]="loading || !productForm.name"
+      >
+        {{ isCreating ? 'Create' : 'Update' }}
+      </button>
+      <button
+        class="btn btn-secondary"
+        (click)="cancelEdit()"
+        [disabled]="loading"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Products List -->
+  <div class="products-list" *ngIf="!isCreating && !isEditing">
+    <div class="loading" *ngIf="loading">Loading products...</div>
+
+    <table *ngIf="!loading && products.length > 0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Price</th>
+          <th>Stock</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let product of products">
+          <td>{{ product.name }}</td>
+          <td>{{ product.type }}</td>
+          <td>\${{ formatPrice(product.price) }}</td>
+          <td>{{ product.stock }}</td>
+          <td>
+            <span
+              class="status"
+              [class.active]="product.active"
+              [class.inactive]="!product.active"
+            >
+              {{ product.active ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <button class="btn btn-sm btn-edit" (click)="startEdit(product)">
+              Edit
+            </button>
+            <button
+              class="btn btn-sm btn-delete"
+              (click)="deleteProduct(product)"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="empty-state" *ngIf="!loading && products.length === 0">
+      <p>No products found. Create your first product to get started.</p>
+    </div>
+  </div>
+</div>

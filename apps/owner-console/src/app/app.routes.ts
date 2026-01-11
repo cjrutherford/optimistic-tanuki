@@ -8,6 +8,9 @@ import { PermissionsManagementComponent } from './components/permissions-managem
 import { AppScopesManagementComponent } from './components/app-scopes-management.component';
 import { ThemeManagementComponent } from './components/theme-management.component';
 import { PermissionsInspectorComponent } from './components/permissions-inspector.component';
+import { ProductManagementComponent } from './components/product-management.component';
+import { OrderManagementComponent } from './components/order-management.component';
+import { StoreOverviewComponent } from './components/store-overview.component';
 import { authGuard } from './guards/auth.guard';
 
 export const appRoutes: Route[] = [
@@ -21,9 +24,15 @@ export const appRoutes: Route[] = [
       { path: 'users', component: UsersManagementComponent },
       { path: 'roles', component: RolesManagementComponent },
       { path: 'permissions', component: PermissionsManagementComponent },
-      { path: 'permissions-inspector', component: PermissionsInspectorComponent },
+      {
+        path: 'permissions-inspector',
+        component: PermissionsInspectorComponent,
+      },
       { path: 'app-scopes', component: AppScopesManagementComponent },
       { path: 'theme', component: ThemeManagementComponent },
+      { path: 'store/overview', component: StoreOverviewComponent },
+      { path: 'store/products', component: ProductManagementComponent },
+      { path: 'store/orders', component: OrderManagementComponent },
       { path: '', redirectTo: 'users', pathMatch: 'full' },
     ],
   },
