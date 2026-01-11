@@ -40,6 +40,9 @@ export const OWNER_PERMISSION_RESOURCES = [
   'project',
   'task',
   'social',
+  'product',
+  'order',
+  'store',
 ] as const;
 
 /**
@@ -63,6 +66,7 @@ const ALL_OWNER_ROLES: { [key: string]: string[] } = {
   social: ['social_user'],
   'christopherrutherford-net': ['christopherrutherford_owner_user'],
   'owner-console': ['owner_console_owner'],
+  store: ['store_manager'],
 };
 
 const ALL_USER_ROLES: { [key: string]: string[] } = {
@@ -73,6 +77,7 @@ const ALL_USER_ROLES: { [key: string]: string[] } = {
   assets: ['asset_viewer'],
   social: ['social_user'],
   'christopherrutherford-net': ['christopherrutherford_standard_user'],
+  store: ['store_customer'],
 };
 
 export class RoleInitBuilder {
@@ -237,6 +242,9 @@ export class RoleInitBuilder {
         return this;
       case 'owner-console':
         this.addOwnerScopeDefaults();
+        return this;
+      case 'store':
+        this.assignRoleToProfile('store_customer');
         return this;
       case 'global':
         this.assignRoleToProfile('standard_user');

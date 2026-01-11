@@ -59,6 +59,11 @@
       "name": "owner-console",
       "description": "Owner console for system administration",
       "active": true
+    },
+    {
+      "name": "store",
+      "description": "Store Application",
+      "active": true
     }
   ],
   "roles": [
@@ -191,6 +196,21 @@
       "name": "owner_console_owner",
       "description": "Owner with full admin rights in owner console",
       "appScope": "owner-console"
+    },
+    {
+      "name": "store_manager",
+      "description": "Manager of the store",
+      "appScope": "store"
+    },
+    {
+      "name": "store_assistant",
+      "description": "Assistant in the store",
+      "appScope": "store"
+    },
+    {
+      "name": "store_customer",
+      "description": "Customer of the store",
+      "appScope": "store"
     }
   ],
   "permissions": [
@@ -1233,6 +1253,86 @@
       "action": "delete",
       "targetId": null,
       "appScope": "global"
+    },
+    {
+      "name": "product.create",
+      "description": "Create product",
+      "resource": "product",
+      "action": "create",
+      "targetId": null,
+      "appScope": "store"
+    },
+    {
+      "name": "product.read",
+      "description": "Read product",
+      "resource": "product",
+      "action": "read",
+      "targetId": null,
+      "appScope": "store"
+    },
+    {
+      "name": "product.update",
+      "description": "Update product",
+      "resource": "product",
+      "action": "update",
+      "targetId": null,
+      "appScope": "store"
+    },
+    {
+      "name": "product.delete",
+      "description": "Delete product",
+      "resource": "product",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "store"
+    },
+    {
+      "name": "order.create",
+      "description": "Create order",
+      "resource": "order",
+      "action": "create",
+      "targetId": null,
+      "appScope": "store"
+    },
+    {
+      "name": "order.read",
+      "description": "Read order",
+      "resource": "order",
+      "action": "read",
+      "targetId": null,
+      "appScope": "store"
+    },
+    {
+      "name": "order.update",
+      "description": "Update order",
+      "resource": "order",
+      "action": "update",
+      "targetId": null,
+      "appScope": "store"
+    },
+    {
+      "name": "order.delete",
+      "description": "Delete order",
+      "resource": "order",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "store"
+    },
+    {
+      "name": "store.read",
+      "description": "Read store details",
+      "resource": "store",
+      "action": "read",
+      "targetId": null,
+      "appScope": "store"
+    },
+    {
+      "name": "store.update",
+      "description": "Update store details",
+      "resource": "store",
+      "action": "update",
+      "targetId": null,
+      "appScope": "store"
     }
   ],
   "role_permissions": [
@@ -2865,6 +2965,76 @@
       "role": "forgeofwill_standard_user",
       "permission": "profile.update",
       "permissionAppScope": "forgeofwill"
+    },
+    {
+      "role": "store_manager",
+      "permission": "product.create",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_manager",
+      "permission": "product.read",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_manager",
+      "permission": "product.update",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_manager",
+      "permission": "product.delete",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_manager",
+      "permission": "order.read",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_manager",
+      "permission": "order.update",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_manager",
+      "permission": "store.read",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_manager",
+      "permission": "store.update",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_assistant",
+      "permission": "product.read",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_assistant",
+      "permission": "order.read",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_assistant",
+      "permission": "order.update",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_customer",
+      "permission": "product.read",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_customer",
+      "permission": "order.create",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "store_customer",
+      "permission": "order.read",
+      "permissionAppScope": "store"
     }
   ]
 }

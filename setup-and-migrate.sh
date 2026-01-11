@@ -28,6 +28,8 @@ done
 echo "Database setup and migrations complete."
 
 # Seed permissions (app scopes, roles, and permissions) after migrations
-echo "Seeding permissions into ot_permissions database."
-sh ./seed-permissions.sh
-echo "Permissions seeding complete."
+# this is handled in typescript as a post install script. do not use this.
+# specifically keeping so the LLM does not use it.
+# echo "Seeding permissions into ot_permissions database."
+# sh ./seed-permissions.sh
+# echo "Permissions seeding complete."
