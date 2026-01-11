@@ -13,6 +13,7 @@ Welcome to the Optimistic Tanuki documentation! This guide will help you navigat
 
 ### 🏗️ Architecture
 Core system architecture and design documentation:
+- **[Architecture Overview](./architecture/README.md)** - High-level system architecture and design
 - [Permissions System](./architecture/permissions.md) - RBAC implementation and usage
 - [Permissions Cache](./architecture/permissions-cache.md) - Caching configuration for permissions
 - [Theme System](./architecture/theme-system.md) - Theme system architecture and reference
@@ -50,13 +51,22 @@ Each application has its own README with specific details:
 
 ### Services
 - [AI Orchestrator](../apps/ai-orchestrator/README.md) - AI task orchestration service
+  - [LangChain Integration](../apps/ai-orchestrator/LANGCHAIN_INTEGRATION.md)
+  - [LangGraph Agent Integration](../apps/ai-orchestrator/LANGGRAPH_AGENT_INTEGRATION.md)
+  - [Multi-Response Handling](../apps/ai-orchestrator/MULTI_RESPONSE_HANDLING.md)
+  - [Utilities Usage Guide](../apps/ai-orchestrator/UTILITIES_USAGE_GUIDE.md)
+  - [Real-time Fix](../apps/ai-orchestrator/REALTIME_FIX.md)
+  - [App Service Integration](../apps/ai-orchestrator/APP_SERVICE_INTEGRATION.md)
 - [Assets](../apps/assets/README.md) - Digital asset management
 - [Authentication](../apps/authentication/README.md) - User authentication and authorization
 - [Blogging](../apps/blogging/README.md) - Blog post management
 - [Chat Collector](../apps/chat-collector/README.md) - Chat message collection
 - [Gateway](../apps/gateway/README.md) - API gateway and routing
 - [Permissions](../apps/permissions/README.md) - Permissions management service
+  - [Deployment Guide](../apps/permissions/DEPLOYMENT.md)
+  - [Usage Guide](../apps/permissions/USAGE.md)
 - [Profile](../apps/profile/README.md) - User profile management
+  - [Blog Permissions](../apps/profile/BLOG_PERMISSIONS.md)
 - [Project Planning](../apps/project-planning/README.md) - Project and task management
 - [Prompt Proxy](../apps/prompt-proxy/README.md) - AI prompt proxying
 - [Social](../apps/social/README.md) - Social features and interactions
@@ -75,6 +85,7 @@ Shared libraries used across applications:
 - [AG Grid UI](../libs/ag-grid-ui/README.md) - AG Grid integration
 - [Auth UI](../libs/auth-ui/README.md) - Authentication UI components
 - [Blogging UI](../libs/blogging-ui/README.md) - Blog UI components
+  - [Component Injection](../libs/blogging-ui/COMPONENT_INJECTION.md)
 - [Chat UI](../libs/chat-ui/README.md) - Chat UI components
 - [Common UI](../libs/common-ui/README.md) - Common UI components
 - [Form UI](../libs/form-ui/README.md) - Form components
@@ -86,6 +97,8 @@ Shared libraries used across applications:
 - [Social UI](../libs/social-ui/README.md) - Social feature UI
 - [Store UI](../libs/store-ui/README.md) - Store/shopping UI
 - [Theme UI](../libs/theme-ui/README.md) - Theme management UI
+  - [Theme System](../libs/theme-ui/THEME_SYSTEM.md)
+  - [Host Binding Migration](../libs/theme-ui/HOST_BINDING_MIGRATION.md)
 
 ### Core Libraries
 - [Constants](../libs/constants/README.md) - Shared constants and tokens
