@@ -2,7 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService, Product } from '../services/store.service';
-import { CreateProductDto, UpdateProductDto } from '@optimistic-tanuki/ui-models';
+import {
+  CreateProductDto,
+  UpdateProductDto,
+} from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-product-management',
@@ -41,6 +44,11 @@ export class ProductManagementComponent implements OnInit {
         console.error(err);
       },
     });
+  }
+
+  formatPrice(price: number | string): string {
+    const priceNumber = typeof price === 'string' ? parseFloat(price) : price;
+    return priceNumber.toFixed(2);
   }
 
   getEmptyForm(): CreateProductDto & { id?: string } {
