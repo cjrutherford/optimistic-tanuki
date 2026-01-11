@@ -3,8 +3,19 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Post } from '../../entities/post.entity';
 import { Attachment } from '../../entities/attachment.entity';
 import { Comment } from '../../entities/comment.entity';
-import { Repository, FindOneOptions, FindManyOptions, In } from 'typeorm';
-import { CreatePostDto, UpdatePostDto } from '@optimistic-tanuki/models';
+import {
+  Repository,
+  FindOneOptions,
+  FindManyOptions,
+  In,
+  FindOperator,
+  FindOptionsWhere,
+} from 'typeorm';
+import {
+  CreatePostDto,
+  UpdatePostDto,
+  SearchPostDto,
+} from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
 
 @Injectable()
@@ -105,10 +116,10 @@ export class PostService {
     // Delete related entities first to avoid foreign key constraint errors
     try {
       // Remove comments associated with this post
-      await this.commentRepo.delete({ post: { id } as any });
+      await this.commentRepo.delete({ post: { id } });
 
       // Remove attachments associated with this post
-      await this.attachmentRepo.delete({ post: { id } as any });
+      await this.attachmentRepo.delete({ post: { id } });
 
       // Finally, remove the post itself
       await this.postRepo.delete(id);
@@ -120,5 +131,23 @@ export class PostService {
       console.error(`Error in PostService.remove for ID ${id}: ${message}`);
       throw error;
     }
+  }
+
+  async getPosts(searchDto: SearchPostDto): Promise<Post[]> {
+    const { userIds, visibility, ...otherFilters } = searchDto;
+
+    const where: FindOptionsWhere<
+      Omit<Post, 'votes' | 'comments' | 'links' | 'attachments'>
+    > = { ...otherFilters };
+
+    if (userIds && userIds.length > 0) {
+      where.userId = In(userIds);
+    }
+
+    if (visibility) {
+      where.visibility = visibility;
+    }
+
+    return await this.postRepo.find({ where });
   }
 }

@@ -24,10 +24,13 @@ const commonEngine = new CommonEngine();
  * });
  * ```
  */
-app.use('/api', createProxyMiddleware({
-  target: 'http://gateway:3000',
-  changeOrigin: true,
-}))
+app.use(
+  '/api',
+  createProxyMiddleware({
+    target: 'http://gateway:3000/api',
+    changeOrigin: true,
+  })
+);
 
 /**
  * Serve static files from /browser

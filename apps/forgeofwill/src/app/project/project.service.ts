@@ -1,23 +1,29 @@
-import { CreateProject, Project, QueryProject } from '@optimistic-tanuki/ui-models';
+import {
+  CreateProject,
+  Project,
+  QueryProject,
+} from '@optimistic-tanuki/ui-models';
 
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ProjectService {
-   baseUrl = '/api/project-planning/projects'
+  baseUrl = '/api/project-planning/projects';
   constructor(
     private readonly http: HttpClient,
     private readonly profileService: ProfileService
-  ) { }
+  ) {}
 
   createProject(data: CreateProject) {
     const profile = this.profileService.getCurrentUserProfile();
-    if(profile !== undefined && profile === null) {
-      throw new Error('No profile selected. Please select a profile before creating a project.');
+    if (profile !== undefined && profile === null) {
+      throw new Error(
+        'No profile selected. Please select a profile before creating a project.'
+      );
     }
     data.createdBy = profile.id;
     data.owner = profile.id;
@@ -42,5 +48,22 @@ export class ProjectService {
 
   deleteProject(id: string) {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  inviteMember(projectId: string, email: string) {
+    const profile = this.profileService.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error(
+        'No profile selected. Please select a profile before inviting members.'
+      );
+    }
+
+    const invite = {
+      projectId,
+      email,
+      createdBy: profile.id,
+    };
+
+    return this.http.post(`${this.baseUrl}/${projectId}/invite`, invite);
   }
 }

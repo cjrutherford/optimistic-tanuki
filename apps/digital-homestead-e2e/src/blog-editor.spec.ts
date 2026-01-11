@@ -313,6 +313,98 @@ test.describe('Blog Editor', () => {
     // Text should be back
     await expect(editor).toContainText('First text');
   });
+
+  test('should create a new blog post', async ({ page }) => {
+    // Fill in the title
+    const titleInput = page.locator('input[name="title"]');
+    await expect(titleInput).toBeVisible();
+    await titleInput.fill('E2E Test Blog Post');
+
+    // Type content into the editor
+    const editor = page.locator('.prosemirror-editor');
+    await expect(editor).toBeVisible();
+    await editor.click();
+    await editor.type('This is the content of the E2E test blog post.');
+
+    // Click the save button
+    const saveButton = page.locator('button:has-text("Save")');
+    await expect(saveButton).toBeVisible();
+    await saveButton.click();
+
+    // Verify the post appears in the list
+    const postList = page.locator('.post-list .post-item');
+    await expect(postList).toContainText('E2E Test Blog Post');
+  });
+
+  test('should edit an existing blog post', async ({ page }) => {
+    // Navigate to an existing post
+    const postItem = page.locator(
+      '.post-list .post-item:has-text("E2E Test Blog Post")'
+    );
+    await postItem.click();
+
+    // Edit the title
+    const titleInput = page.locator('input[name="title"]');
+    await titleInput.fill('Updated E2E Test Blog Post');
+
+    // Edit the content
+    const editor = page.locator('.prosemirror-editor');
+    await editor.click();
+    await editor.type(' Updated content.');
+
+    // Save the changes
+    const saveButton = page.locator('button:has-text("Save")');
+    await saveButton.click();
+
+    // Verify the changes
+    await expect(postItem).toContainText('Updated E2E Test Blog Post');
+  });
+
+  test('should publish a draft', async ({ page }) => {
+    // Navigate to drafts
+    const draftTab = page.locator('button:has-text("Drafts")');
+    await draftTab.click();
+
+    // Select a draft
+    const draftItem = page.locator(
+      '.post-list .post-item:has-text("Draft Blog Post")'
+    );
+    await draftItem.click();
+
+    // Publish the draft
+    const publishButton = page.locator('button:has-text("Publish")');
+    await publishButton.click();
+
+    // Verify the draft is published
+    const publishedTab = page.locator('button:has-text("Published")');
+    await publishedTab.click();
+    const publishedItem = page.locator(
+      '.post-list .post-item:has-text("Draft Blog Post")'
+    );
+    await expect(publishedItem).toBeVisible();
+  });
+
+  test('should delete a blog post', async ({ page }) => {
+    // Navigate to the post
+    const postItem = page.locator(
+      '.post-list .post-item:has-text("E2E Test Blog Post")'
+    );
+    await expect(postItem).toBeVisible();
+    await postItem.click();
+
+    // Delete the post
+    const deleteButton = page.locator('button:has-text("Delete")');
+    await expect(deleteButton).toBeVisible();
+    await deleteButton.click();
+
+    // Confirm deletion
+    const confirmButton = page.locator('button:has-text("Confirm")');
+    await expect(confirmButton).toBeVisible();
+    await confirmButton.click();
+
+    // Verify the post is removed
+    await expect(postItem).toBeHidden();
+  });
 });
 
 test.describe('Blog Search Feature', () => {

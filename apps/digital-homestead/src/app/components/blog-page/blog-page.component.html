@@ -58,7 +58,9 @@
       @if (isSelectedPostDraft()) {
       <div class="draft-banner">
         <span class="draft-icon">📝</span>
-        <span class="draft-text">This post is a draft and is not published yet.</span>
+        <span class="draft-text"
+          >This post is a draft and is not published yet.</span
+        >
         @if (isPostOwner() && canEdit()) {
         <otui-button (action)="publishDraft()">Publish Now</otui-button>
         }
@@ -67,10 +69,11 @@
 
       <div class="view-actions">
         @if (canEdit() && isPostOwner()) {
-        <otui-button (action)="startEditPost()">Edit Post</otui-button>
-        }
-        @if (canEdit()) {
-        <otui-button 
+        <otui-button (action)="editPost(selectedPost()!)"
+          >Edit Post</otui-button
+        >
+        } @if (canEdit()) {
+        <otui-button
           (action)="toggleThemeDesigner()"
           [attr.aria-expanded]="showThemeDesigner()"
         >
@@ -78,7 +81,7 @@
         </otui-button>
         }
       </div>
-      
+
       <!-- Theme Designer (only visible to users with blog editing permissions) -->
       @if (showThemeDesigner() && canEdit()) {
       <div class="theme-designer-section">
@@ -97,9 +100,13 @@
       <!-- Post metadata -->
       <div class="post-metadata">
         @if (selectedPost()!.publishedAt) {
-        <p class="published-date">Published: {{ formatDate(selectedPost()!.publishedAt) }}</p>
+        <p class="published-date">
+          Published: {{ formatDate(selectedPost()!.publishedAt) }}
+        </p>
         }
-        <p class="updated-date">Last updated: {{ formatDate(selectedPost()!.updatedAt) }}</p>
+        <p class="updated-date">
+          Last updated: {{ formatDate(selectedPost()!.updatedAt) }}
+        </p>
       </div>
       } @else {
       <div class="welcome-message">
@@ -135,7 +142,10 @@
         @if (mode() === 'edit' && isSelectedPostDraft()) {
         <div class="edit-draft-notice">
           <span class="draft-icon">📝</span>
-          <span>You are editing a draft. Choose to save as draft or publish when ready.</span>
+          <span
+            >You are editing a draft. Choose to save as draft or publish when
+            ready.</span
+          >
         </div>
         }
       </div>
@@ -150,7 +160,11 @@
       <div class="editor-actions">
         <otui-button (action)="cancelEdit()">Cancel</otui-button>
         <otui-button (action)="saveAsDraft()">Save as Draft</otui-button>
-        <otui-button (action)="publishPost()">{{ mode() === 'edit' && !isSelectedPostDraft() ? 'Update & Publish' : 'Publish' }}</otui-button>
+        <otui-button (action)="publishPost()">{{
+          mode() === 'edit' && !isSelectedPostDraft()
+            ? 'Update & Publish'
+            : 'Publish'
+        }}</otui-button>
       </div>
       } @else {
       <div class="access-denied">

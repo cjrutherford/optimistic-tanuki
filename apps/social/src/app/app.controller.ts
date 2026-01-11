@@ -56,14 +56,14 @@ export class AppController {
     @Payload('opts') opts?: SearchPostOptions
   ) {
     const searchOptions = postSearchDtoToFindManyOptions(data);
-    
+
     // Apply pagination with defaults and max limits
     const DEFAULT_LIMIT = 20;
     const MAX_LIMIT = 100;
     const limit = opts?.limit ? Math.min(opts.limit, MAX_LIMIT) : DEFAULT_LIMIT;
-    
+
     searchOptions.take = limit;
-    
+
     if (opts) {
       if (opts.offset) {
         searchOptions.skip = opts.offset;

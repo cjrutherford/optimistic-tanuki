@@ -43,37 +43,64 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+
+    const request = context.switchToHttp().getRequest();
+    const authHeader = request.headers['authorization'];
+    
+    // Try to attach user if token exists, even for public routes
+    if (authHeader) {
+      try {
+        const token = authHeader.split(' ')[1];
+        if (token) {
+          const user = await this.jwt.verifyAsync<UserDetails>(token);
+          // Optional: Introspect if strict validation needed, but verifyAsync checks signature/exp
+          // const isAuthenticated = await this.introspectToken(token, user.userId);
+          
+          const userContext: UserContext = {
+            userId: user.userId,
+            email: user.email,
+            name: user.name,
+            profileId: user.profileId,
+            scopes: [],
+            roles: [],
+          };
+          request.user = userContext;
+        }
+      } catch (e) {
+        // If public, ignore auth errors. If private, the check below will fail.
+        if (!isPublic) {
+           throw new UnauthorizedException('Unauthorized: Token Invalid or Expired.');
+        }
+      }
+    }
+
     if (isPublic) {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers['authorization'];
-    if (!authHeader) {
-      throw new UnauthorizedException('Unauthorized: No Auth Header Provided.');
+    if (!request.user) {
+       if (!authHeader) {
+          throw new UnauthorizedException('Unauthorized: No Auth Header Provided.');
+       }
+       // If we reached here, auth header existed but parsing failed and caught above
+       throw new UnauthorizedException('Unauthorized: Token Invalid.');
     }
-
+    
+    // If we want to enforce introspection for protected routes:
+    // We can do it here if we didn't do it in the optional block.
+    // Ideally we should reuse the logic.
+    
+    // For now, relying on verifyAsync is standard for stateless JWTs unless revocation checks are strict.
+    // The original code did introspect. Let's restore that for protected routes if needed, 
+    // or assume verifyAsync is enough for now. 
+    // BUT the original code called introspectToken. 
+    
+    // Let's add strict introspection check for protected routes.
     const token = authHeader.split(' ')[1];
-    if (!token) {
-      throw new UnauthorizedException('Unauthorized: No Token Found.');
-    }
-    const user = await this.jwt.verifyAsync<UserDetails>(token);
-    const isAuthenticated = await this.introspectToken(token, user.userId);
-
+    const isAuthenticated = await this.introspectToken(token, request.user.userId);
     if (!isAuthenticated) {
-      throw new UnauthorizedException('Unauthorized: Token Invalid.');
+       throw new UnauthorizedException('Unauthorized: Token Invalid (Introspection failed).');
     }
-
-    const userContext: UserContext = {
-      userId: user.userId,
-      email: user.email,
-      name: user.name,
-      profileId: user.profileId,
-      scopes: [],
-      roles: [],
-    };
-
-    request.user = userContext;
 
     return true;
   }

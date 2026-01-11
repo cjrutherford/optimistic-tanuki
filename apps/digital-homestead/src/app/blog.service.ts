@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
@@ -15,6 +15,7 @@ export class BlogService {
   private readonly http = inject(HttpClient);
 
   createPost(data: CreateBlogPostDto): Observable<BlogPostDto> {
+    console.log(data);
     return this.http.post<BlogPostDto>('/api/post', data);
   }
 
@@ -40,11 +41,11 @@ export class BlogService {
     return this.http.get<BlogPostDto>(`/api/post/${id}`);
   }
 
-  updatePost(
-    id: string,
-    data: Partial<UpdateBlogPostDto>
-  ): Observable<BlogPostDto> {
-    return this.http.patch<BlogPostDto>(`/api/post/${id}`, data);
+  /**
+   * Update an existing blog post
+   */
+  updatePost(id: string, data: UpdateBlogPostDto): Observable<BlogPostDto> {
+    return this.http.put<BlogPostDto>(`/api/post/${id}`, data);
   }
 
   /**
@@ -61,6 +62,9 @@ export class BlogService {
     return this.http.post<BlogPostDto>('/api/post', { ...data, isDraft: true });
   }
 
+  /**
+   * Delete a blog post
+   */
   deletePost(id: string): Observable<void> {
     return this.http.delete<void>(`/api/post/${id}`);
   }
@@ -83,14 +87,18 @@ export class BlogService {
   }
 
   /**
-   * Get SEO metadata for a post
+   * Get SEO metadata for a blog post
    */
-  getSeoMetadata(postId: string, baseUrl?: string): Observable<any> {
-    const params: Record<string, string> = {};
-    if (baseUrl) {
-      params['baseUrl'] = baseUrl;
-    }
-    return this.http.get<any>(`/api/post/${postId}/seo`, { params });
+  getSeoMetadata(
+    postId: string,
+    baseUrl?: string
+  ): Observable<{ title: string; description: string; keywords: string[] }> {
+    const params = new HttpParams(baseUrl ? { fromObject: { baseUrl } } : {});
+    return this.http.get<{
+      title: string;
+      description: string;
+      keywords: string[];
+    }>(`/api/post/${postId}/seo`, { params });
   }
 
   /**
@@ -99,5 +107,12 @@ export class BlogService {
   getSitemapUrl(baseUrl?: string): string {
     const url = '/api/blog/sitemap.xml';
     return baseUrl ? `${url}?baseUrl=${encodeURIComponent(baseUrl)}` : url;
+  }
+
+  /**
+   * Publish a draft
+   */
+  publishDraft(id: string): Observable<BlogPostDto> {
+    return this.http.post<BlogPostDto>(`/api/post/${id}/publish`, {});
   }
 }

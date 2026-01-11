@@ -1,4 +1,11 @@
-import { Component, OnInit, OnDestroy, Input, signal } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  Input,
+  signal,
+  inject,
+} from '@angular/core';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -51,7 +58,7 @@ import { FollowService } from '../../follow.service';
   styleUrls: ['./feed.component.scss'],
 })
 export class FeedComponent implements OnInit, OnDestroy {
-  @Input() posts: PostDto[] = [];
+  posts = signal<PostDto[]>([]);
   followingIds = new Set<string>();
   themeStyles!: {
     backgroundColor: string;
@@ -92,17 +99,15 @@ export class FeedComponent implements OnInit, OnDestroy {
     }
   };
 
-  constructor(
-    private readonly themeService: ThemeService,
-    private readonly postService: PostService,
-    private readonly attachmentService: AttachmentService,
-    private readonly commentService: CommentService,
-    private readonly profileService: ProfileService,
-    private readonly router: Router,
-    private readonly socialWebSocketService: SocialWebSocketService,
-    private readonly assetService: AssetService,
-    private readonly followService: FollowService
-  ) {}
+  themeService = inject(ThemeService);
+  postService = inject(PostService);
+  attachmentService = inject(AttachmentService);
+  commentService = inject(CommentService);
+  profileService = inject(ProfileService);
+  router = inject(Router);
+  socialWebSocketService = inject(SocialWebSocketService);
+  assetService = inject(AssetService);
+  followService = inject(FollowService);
 
   ngOnInit() {
     this.themeService.themeColors$
@@ -146,7 +151,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe((posts) => {
           console.log('Received posts from WebSocket:', posts.length);
-          this.posts = posts;
+          this.posts.set(posts);
           this.loadProfiles(posts);
         });
 
@@ -154,14 +159,14 @@ export class FeedComponent implements OnInit, OnDestroy {
       setTimeout(() => {
         if (
           !this.socialWebSocketService.isConnected() &&
-          this.posts.length === 0
+          this.posts().length === 0
         ) {
           console.log('WebSocket not connected, falling back to HTTP');
           this.postService
             .searchPosts({}, { orderBy: 'createdAt', orderDirection: 'desc' })
             .pipe(takeUntil(this.destroy$))
             .subscribe((posts) => {
-              this.posts = posts;
+              this.posts.set(posts);
               this.loadProfiles(posts);
             });
         }
@@ -171,6 +176,8 @@ export class FeedComponent implements OnInit, OnDestroy {
     }
   }
   profiles = signal<{ [key: string]: PostProfileStub }>({});
+
+  currentFeed: 'public' | 'following' = 'public';
 
   private loadFollowing(profileId: string) {
     this.followService.getFollowing(profileId).subscribe({
@@ -252,8 +259,8 @@ export class FeedComponent implements OnInit, OnDestroy {
           },
         }));
       }
-      if (!this.posts.some((p) => p.id === newPost.id)) {
-        this.posts.unshift(newPost);
+      if (!this.posts().some((p) => p.id === newPost.id)) {
+        this.posts.update((posts) => [newPost, ...posts]);
       }
     });
   }
@@ -278,7 +285,8 @@ export class FeedComponent implements OnInit, OnDestroy {
       console.error('Cannot comment: No current profile found.');
       return;
     }
-    newComment.postId = this.posts[postIndex].id;
+    const posts = this.posts();
+    newComment.postId = posts[postIndex].id;
     newComment.profileId = currentProfile.id;
     console.log(
       '🚀 ~ FeedComponent ~ commented ~ assigning profileId:',
@@ -289,16 +297,20 @@ export class FeedComponent implements OnInit, OnDestroy {
       next: (comment) => {
         console.log('Comment created successfully:', comment);
         // Immutable update to trigger change detection
-        const updatedPosts = [...this.posts];
-        const post = updatedPosts.find((p) => p.id === newComment.postId);
-        if (post) {
-          post.comments = [...(post.comments || []), comment];
-          this.posts = updatedPosts;
-          console.log(
-            'Posts array updated immutably. Comments count:',
-            post.comments.length
-          );
-        }
+        this.posts.update((currentPosts) => {
+          const updatedPosts = [...currentPosts];
+          const postIndex = updatedPosts.findIndex((p) => p.id === newComment.postId);
+          if (postIndex !== -1) {
+            const post = { ...updatedPosts[postIndex] };
+            post.comments = [...(post.comments || []), comment];
+            updatedPosts[postIndex] = post;
+            console.log(
+              'Posts array updated immutably. Comments count:',
+              post.comments.length
+            );
+          }
+          return updatedPosts;
+        });
       },
       error: (error) => {
         console.error('Error creating comment:', error);
@@ -320,7 +332,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (confirm('Are you sure you want to delete this post?')) {
       this.postService.deletePost(post.id).subscribe({
         next: () => {
-          this.posts = this.posts.filter((p) => p.id !== post.id);
+          this.posts.update((posts) => posts.filter((p) => p.id !== post.id));
         },
         error: (err) => console.error('Failed to delete post', err),
       });
@@ -370,6 +382,31 @@ export class FeedComponent implements OnInit, OnDestroy {
   onScroll() {
     // const length = this.posts.length;
     // this.posts.push(...Array.from({ length: 20 }, (_, i) => `Post #${length + i + 1}`));
+  }
+
+  loadPublicFeed() {
+    this.currentFeed = 'public';
+    this.postService
+      .getPosts({ visibility: 'public' })
+      .subscribe((posts: PostDto[]) => {
+        this.posts.set(posts);
+        this.loadProfiles(posts);
+      });
+  }
+
+  loadFollowingFeed() {
+    this.currentFeed = 'following';
+    const currentProfile = this.profileService.currentUserProfile();
+    if (!currentProfile) {
+      console.error('No current profile found');
+      return;
+    }
+    this.postService
+      .getPosts({ visibility: 'followers', profileId: currentProfile.id })
+      .subscribe((posts: PostDto[]) => {
+        this.posts.set(posts);
+        this.loadProfiles(posts);
+      });
   }
 
   private getFileExtensionFromDataUrl(

@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpException,
   Inject,
   Logger,
@@ -27,6 +28,7 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { Public } from '../../decorators/public.decorator';
+import { PermissionsProxyService } from '../../auth/permissions-proxy.service';
 
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller('post')
@@ -34,7 +36,8 @@ export class PostController {
   constructor(
     @Inject(ServiceTokens.BLOG_SERVICE)
     private readonly postService: ClientProxy,
-    private readonly l: Logger
+    private readonly l: Logger,
+    private readonly permissionsProxy: PermissionsProxyService
   ) {
     this.l.log('PostController initialized');
     console.log('PostController connecting to postService...');
@@ -126,7 +129,7 @@ export class PostController {
       const posts = await firstValueFrom(
         this.postService.send(
           { cmd: BlogPostCommands.FIND_DRAFTS_BY_AUTHOR },
-          authorId
+          { authorId }
         )
       );
       this.l.log(`Drafts for author ${authorId} retrieved successfully`);
@@ -181,20 +184,37 @@ export class PostController {
    */
   @Get('/:id')
   @Public()
-  async getPost(@Param('id') id: string) {
+  async getPost(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @Headers('x-ot-appscope') appScope: string
+  ) {
     try {
       const post = await firstValueFrom(
-        this.postService.send({ cmd: BlogPostCommands.FIND }, id)
+        this.postService.send({ cmd: BlogPostCommands.FIND }, { id })
       );
       if (!post) {
         this.l.error(`Post ${id} not found`);
         throw new HttpException('Post not found', 404);
       }
-      // Only return published posts to public
-      // Drafts will be handled by the /drafts/:authorId endpoint
+
+      // If it's a draft, check permissions
       if (post.isDraft) {
-        throw new HttpException('Post not found', 404);
+        if (!user || !user.profileId) {
+          throw new HttpException('Post not found', 404);
+        }
+
+        const canReadDrafts = await this.permissionsProxy.checkPermission(
+          user.profileId,
+          'blog.post.read',
+          appScope || 'digital-homestead'
+        );
+
+        if (!canReadDrafts) {
+          throw new HttpException('Post not found', 404);
+        }
       }
+
       this.l.log(`Post ${id} retrieved successfully`);
       return post;
     } catch (error) {
@@ -251,7 +271,7 @@ export class PostController {
   async deletePost(@Param('id') id: string) {
     try {
       await firstValueFrom(
-        this.postService.send({ cmd: BlogPostCommands.DELETE }, id)
+        this.postService.send({ cmd: BlogPostCommands.DELETE }, { id })
       );
       this.l.log(`Post ${id} deleted successfully`);
       return { message: 'Post deleted successfully' };

@@ -40,6 +40,7 @@ export class PermissionService implements OnDestroy {
     'owner',
     'admin',
     'blog_author',
+    'Owner', // Add capitalized version just in case
   ];
 
   // Permission names that grant blog writing access

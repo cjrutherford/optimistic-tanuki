@@ -1,4 +1,11 @@
-import { Component, inject, signal, computed, effect, ViewChild } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  effect,
+  ViewChild,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +17,11 @@ import { BlogService } from '../../blog.service';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { AuthStateService } from '../../auth-state.service';
 import { PermissionService } from '../../permission.service';
-import { BlogPostDto } from '@optimistic-tanuki/ui-models';
+import {
+  BlogPostDto,
+  CreateBlogPostDto,
+  UpdateBlogPostDto,
+} from '@optimistic-tanuki/ui-models';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
 
 /**
@@ -46,7 +57,7 @@ type SaveAction = 'draft' | 'publish';
 })
 export class BlogPageComponent {
   @ViewChild('blogCompose') blogCompose?: BlogComposeComponent;
-  
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly blogService = inject(BlogService);
@@ -59,7 +70,7 @@ export class BlogPageComponent {
   });
 
   // Signals for state management
-  readonly posts = signal<BlogPostDto[]>([]);
+  private readonly allPosts = signal<BlogPostDto[]>([]);
   readonly selectedPost = signal<BlogPostDto | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -92,6 +103,21 @@ export class BlogPageComponent {
     () => this.isAuthenticated() && this.hasFullAccess()
   );
 
+  // Computed: filtered and sorted posts
+  readonly posts = computed(() => {
+    const all = this.allPosts();
+    const canViewDrafts = this.canEdit();
+
+    // Filter: Show all if canEdit, otherwise only non-drafts
+    const filtered = canViewDrafts ? all : all.filter((post) => !post.isDraft);
+
+    // Sort: Newest first
+    return [...filtered].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  });
+
   // Computed: get current post ID from route
   readonly currentPostId = computed(() => {
     const params = this.routeParams();
@@ -111,29 +137,33 @@ export class BlogPageComponent {
     return post && profileId && post.authorId === profileId;
   });
 
-  // Flag to track if posts have been loaded
-  private postsInitialized = false;
+  // Effect to load posts when authentication state changes
+  private readonly authEffect = effect(
+    () => {
+      // Establish dependency on auth state
+      this.isAuthenticated();
+      this.loadAllPosts();
+    },
+    { allowSignalWrites: true }
+  );
 
   // Effect to handle route changes
-  private readonly routeEffect = effect(() => {
-    const postId = this.currentPostId();
+  private readonly routeEffect = effect(
+    () => {
+      const postId = this.currentPostId();
 
-    // Load posts only once on initialization
-    if (!this.postsInitialized) {
-      this.postsInitialized = true;
-      this.loadAllPosts();
-    }
-
-    if (postId) {
-      // Load specific post
-      this.loadPost(postId);
-      this.mode.set('view');
-    } else {
-      // No post selected, show list view
-      this.selectedPost.set(null);
-      this.mode.set('view');
-    }
-  });
+      if (postId) {
+        // Load specific post
+        this.loadPost(postId);
+        this.mode.set('view');
+      } else {
+        // No post selected, show list view
+        this.selectedPost.set(null);
+        this.mode.set('view');
+      }
+    },
+    { allowSignalWrites: true }
+  );
 
   /**
    * Load all blog posts for the sidebar
@@ -144,12 +174,7 @@ export class BlogPageComponent {
 
     this.blogService.getAllPosts().subscribe({
       next: (posts) => {
-        // Sort by date descending (newest first)
-        const sortedPosts = [...posts].sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        this.posts.set(sortedPosts);
+        this.allPosts.set(posts);
         this.loading.set(false);
       },
       error: (err) => {
@@ -190,19 +215,19 @@ export class BlogPageComponent {
    * Navigate to a specific post
    */
   selectPost(post: BlogPostDto): void {
+    if (post.isDraft && !this.isAuthenticated()) {
+      this.error.set('You must be signed in to view draft posts.');
+      return;
+    }
+
     this.router.navigate(['/blog', post.id]);
   }
 
   /**
-   * Start creating a new post (only if user has permission)
+   * Start creating a new post
    */
   startCreatePost(): void {
-    if (!this.canEdit()) {
-      this.error.set('You do not have permission to create blog posts.');
-      return;
-    }
     this.mode.set('create');
-    this.selectedPost.set(null);
     this.editorData.set({
       title: '',
       content: '',
@@ -212,21 +237,78 @@ export class BlogPageComponent {
   }
 
   /**
-   * Start editing the current post (only if user has permission)
+   * Edit the selected post
    */
-  startEditPost(): void {
-    if (!this.canEdit()) {
-      this.error.set('You do not have permission to edit blog posts.');
+  editPost(post: BlogPostDto): void {
+    this.mode.set('edit');
+    this.editorData.set({
+      title: post.title,
+      content: post.content,
+      links: post.links || [],
+      attachments: [],
+    });
+  }
+
+  /**
+   * Save the post (draft or publish)
+   */
+  savePost(action: SaveAction): void {
+    const authorId = this.authState.getProfileId();
+    if (!authorId) {
+      this.error.set('Unable to save post: User not authenticated.');
       return;
     }
-    const post = this.selectedPost();
-    if (post) {
-      this.mode.set('edit');
-      this.editorData.set({
-        title: post.title,
-        content: post.content,
-        links: [],
-        attachments: [],
+
+    const selectedPost = this.selectedPost();
+    if (selectedPost && action === 'publish') {
+      const postId = selectedPost.id;
+      this.blogService.publishDraft(postId).subscribe({
+        next: (post) => {
+          console.log('Published post:', post);
+          this.loadAllPosts();
+          this.mode.set('view');
+        },
+        error: (err) => {
+          this.error.set(`Failed to publish post: ${err.message}`);
+          console.error('Error publishing post:', err);
+        },
+      });
+    } else if (selectedPost) {
+      const updateData: UpdateBlogPostDto = {
+        id: selectedPost.id,
+        title: this.editorData().title,
+        content: this.editorData().content,
+        authorId,
+        isDraft: action === 'draft',
+      };
+      this.blogService.updatePost(selectedPost.id, updateData).subscribe({
+        next: (post) => {
+          console.log('Updated post:', post);
+          this.loadAllPosts();
+          this.mode.set('view');
+        },
+        error: (err) => {
+          this.error.set(`Failed to update post: ${err.message}`);
+          console.error('Error updating post:', err);
+        },
+      });
+    } else {
+      const createData: CreateBlogPostDto = {
+        title: this.editorData().title,
+        content: this.editorData().content,
+        authorId,
+        isDraft: action === 'draft',
+      };
+      this.blogService.createPost(createData).subscribe({
+        next: (post) => {
+          console.log('Saved post:', post);
+          this.loadAllPosts();
+          this.mode.set('view');
+        },
+        error: (err) => {
+          this.error.set(`Failed to save post: ${err.message}`);
+          console.error('Error saving post:', err);
+        },
       });
     }
   }
@@ -319,17 +401,18 @@ export class BlogPageComponent {
     const saveAction = this.pendingSaveAction();
     const isDraft = saveAction === 'draft';
 
-    const postPayload = {
-      title: postData.title,
-      content: postData.content,
-      authorId: authorId,
-      isDraft: isDraft,
-    };
+    const postId = this.currentPostId(); // Move this above postPayload
 
     const currentMode = this.mode();
-    const postId = this.currentPostId();
 
     if (currentMode === 'edit' && postId) {
+      const postPayload = {
+        id: postId, // Ensure the ID is included for updates
+        title: postData.title,
+        content: postData.content,
+        authorId: authorId,
+        isDraft: isDraft,
+      };
       // Update existing post
       this.blogService.updatePost(postId, postPayload).subscribe({
         next: (updatedPost) => {
@@ -346,6 +429,12 @@ export class BlogPageComponent {
         },
       });
     } else {
+      const postPayload = {
+        title: postData.title,
+        content: postData.content,
+        authorId: authorId,
+        isDraft: isDraft,
+      };
       // Create new post
       this.blogService.createPost(postPayload).subscribe({
         next: (newPost) => {
@@ -391,25 +480,25 @@ export class BlogPageComponent {
    * Add a new post to the beginning of the posts list
    */
   private addPostToList(post: BlogPostDto): void {
-    const currentPosts = this.posts();
-    this.posts.set([post, ...currentPosts]);
+    const currentPosts = this.allPosts();
+    this.allPosts.set([post, ...currentPosts]);
   }
 
   /**
    * Update an existing post in the posts list
    */
   private updatePostInList(updatedPost: BlogPostDto): void {
-    const currentPosts = this.posts();
+    const currentPosts = this.allPosts();
     const updatedPosts = currentPosts.map((post) =>
       post.id === updatedPost.id ? updatedPost : post
     );
-    this.posts.set(updatedPosts);
+    this.allPosts.set(updatedPosts);
   }
 
   /**
    * Toggle theme designer visibility
    */
   toggleThemeDesigner(): void {
-    this.showThemeDesigner.update(value => !value);
+    this.showThemeDesigner.set(!this.showThemeDesigner());
   }
 }

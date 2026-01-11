@@ -13,6 +13,7 @@ export interface BlogPostDto {
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  links?: { url: string }[];
 }
 
 export interface CreateBlogPostDto {

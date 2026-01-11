@@ -29,6 +29,7 @@ import { PersonaController } from '../controllers/persona/persona.controller';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { StoreController } from '../controllers/store/store.controller';
+import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -77,6 +78,7 @@ import { StoreController } from '../controllers/store/store.controller';
     },
     AuthGuard,
     PermissionsGuard,
+    PermissionsProxyService,
     {
       provide: PermissionsCacheService,
       useFactory: (configService: ConfigService) => {
@@ -258,9 +260,8 @@ import { StoreController } from '../controllers/store/store.controller';
     {
       provide: ServiceTokens.STORE_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.store'
-        );
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.store');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

@@ -1,6 +1,6 @@
 // Color Utility functions
 
-const hexToRgb = (hex: string) => {
+export const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? {
@@ -151,7 +151,6 @@ export function generateSuccessColor(
   saturationFactor = 0.3,
   lightnessFactor = 0.2
 ): string {
-
   const rgb = hexToRgb(baseColor);
   if (!rgb) return baseColor;
 
@@ -174,7 +173,6 @@ export function generateDangerColor(
   saturationFactor = 0.3,
   lightnessFactor = 0.2
 ): string {
-
   const rgb = hexToRgb(baseColor);
   if (!rgb) return baseColor;
 

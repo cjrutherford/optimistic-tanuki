@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder } from '@optimistic-tanuki/common-ui';
-import { hexToRgb } from 'libs/common-ui/src/lib/common-ui/glass-container.component';
+import { hexToRgb } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   imports: [RouterModule, TitleBarComponent],

@@ -27,6 +27,17 @@ import DOMPurify from 'dompurify';
       overflow: hidden;
     }
 
+    .draft-banner {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1rem;
+      border-radius: 0.25rem;
+      font-weight: bold;
+      text-align: center;
+    }
+
     .blog-header {
       margin-bottom: 2rem;
       padding-bottom: 1rem;
