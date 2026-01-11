@@ -281,9 +281,9 @@ curl -X POST http://localhost:3000/api/contact \
 
 ## 🔗 Related Documents
 
-- [Permissions Audit](../permissions-audit.md)
-- [MVP Plan](../MVP.md)
-- [Testing Strategy](../TESTING_QUICK_REFERENCE.md)
+- [Permissions System](./permissions.md)
+- [MVP Plan](../getting-started/mvp-overview.md)
+- [Testing Quick Reference](../testing/quick-reference.md)
 
 ---
 

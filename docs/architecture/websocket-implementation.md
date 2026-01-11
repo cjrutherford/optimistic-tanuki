@@ -1,8 +1,8 @@
-# Social WebSocket Implementation Summary
+# Social WebSocket Implementation
 
 ## Overview
 
-This document summarizes the implementation of WebSocket support for the social service, enabling real-time updates for posts, comments, votes, and follows.
+This document describes the WebSocket implementation for the social service, enabling real-time updates for posts, comments, votes, and follows.
 
 ## Architecture
 

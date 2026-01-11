@@ -1,10 +1,10 @@
-# Permissions System - Implementation Summary
+# Permissions System
 
-This document summarizes the permissions system that has been added to the Optimistic Tanuki platform.
+This document describes the permissions system in the Optimistic Tanuki platform.
 
-## What Was Added
+## Overview
 
-A comprehensive permissions system has been implemented as a new microservice that enables fine-grained access control across all applications in the stack.
+The platform includes a comprehensive permissions system implemented as a microservice that enables fine-grained role-based access control (RBAC) across all applications in the stack.
 
 ## Quick Start
 
