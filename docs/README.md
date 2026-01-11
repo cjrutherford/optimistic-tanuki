@@ -118,6 +118,7 @@ Shared libraries used across applications:
 - [Main README](../README.md) - Project overview and quick start
 - [Contributing Guidelines](../README.md#-contributing) - How to contribute
 - [License](../README.md#-license) - MIT License
+- [Examples](../examples/README.md) - Code examples and reference implementations
 
 ## 📝 Documentation Standards
 
