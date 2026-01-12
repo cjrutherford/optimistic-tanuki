@@ -41,32 +41,56 @@ export class ThemeService {
     if (isPlatformBrowser(this.platformId)) {
       // Initialize available palettes including custom ones
       const init = async () => {
-        await this.updateAvailablePalettes();
+        // Load predefined palettes from gateway first
+        try {
+          this.predefinedPalettes = await loadPredefinedPalettes();
+        } catch (e) {
+          this.predefinedPalettes = PREDEFINED_PALETTES;
+        }
+        
+        // Update available palettes list
+        const customPalettes = this.loadCustomPalettes();
+        const allPalettes = [...this.predefinedPalettes, ...customPalettes];
+        this.availablePalettes.next(allPalettes);
 
         const storedTheme = loadTheme(this.platformId);
-        this._theme = storedTheme.theme;
-        this.accentColor = storedTheme.accentColor;
-        this.complementColor = storedTheme.complementColor;
-        this.paletteMode = storedTheme.paletteMode;
+        
+        // Check if this is a first-time user (no stored accentColor means never initialized)
+        const isFirstTime = !localStorage.getItem('accentColor');
+        
+        if (isFirstTime && this.predefinedPalettes.length > 0) {
+          // Default to the first predefined palette from the gateway
+          this.selectedPalette = this.predefinedPalettes[0];
+          this.paletteMode = 'predefined';
+          this.accentColor = this.selectedPalette.accent;
+          this.complementColor = this.selectedPalette.complementary;
+          this._theme = storedTheme.theme;
+          this.saveCurrentTheme();
+        } else {
+          // Use stored theme preferences
+          this._theme = storedTheme.theme;
+          this.accentColor = storedTheme.accentColor;
+          this.complementColor = storedTheme.complementColor;
+          this.paletteMode = storedTheme.paletteMode;
 
-        if (this.paletteMode === 'predefined' && storedTheme.paletteName) {
-          this.selectedPalette = this.predefinedPalettes.find(
-            (p) => p.name === storedTheme.paletteName
-          );
-          if (!this.selectedPalette) {
-            // Check in custom palettes
-            const customPalettes = this.loadCustomPalettes();
-            this.selectedPalette = customPalettes.find(
+          if (this.paletteMode === 'predefined' && storedTheme.paletteName) {
+            this.selectedPalette = this.predefinedPalettes.find(
               (p) => p.name === storedTheme.paletteName
             );
-            // If found in custom palettes, it's not actually predefined
-            if (this.selectedPalette) {
-              this.paletteMode = 'custom';
+            if (!this.selectedPalette) {
+              // Check in custom palettes
+              this.selectedPalette = customPalettes.find(
+                (p) => p.name === storedTheme.paletteName
+              );
+              // If found in custom palettes, it's not actually predefined
+              if (this.selectedPalette) {
+                this.paletteMode = 'custom';
+              }
             }
-          }
-          if (this.selectedPalette) {
-            this.accentColor = this.selectedPalette.accent;
-            this.complementColor = this.selectedPalette.complementary;
+            if (this.selectedPalette) {
+              this.accentColor = this.selectedPalette.accent;
+              this.complementColor = this.selectedPalette.complementary;
+            }
           }
         }
 
@@ -154,21 +178,20 @@ export class ThemeService {
     }
 
     localStorage.setItem('customPalettes', JSON.stringify(palettes));
+    // Update available palettes asynchronously
     this.updateAvailablePalettes();
   }
 
-  private updateAvailablePalettes(): void {
+  private async updateAvailablePalettes(): Promise<void> {
     // Fetch predefined palettes (from API in browser) and merge with custom palettes
-    (async () => {
-      try {
-        this.predefinedPalettes = await loadPredefinedPalettes();
-      } catch (e) {
-        this.predefinedPalettes = PREDEFINED_PALETTES;
-      }
-      const customPalettes = this.loadCustomPalettes();
-      const allPalettes = [...this.predefinedPalettes, ...customPalettes];
-      this.availablePalettes.next(allPalettes);
-    })();
+    try {
+      this.predefinedPalettes = await loadPredefinedPalettes();
+    } catch (e) {
+      this.predefinedPalettes = PREDEFINED_PALETTES;
+    }
+    const customPalettes = this.loadCustomPalettes();
+    const allPalettes = [...this.predefinedPalettes, ...customPalettes];
+    this.availablePalettes.next(allPalettes);
   }
 
   getAllPalettes(): ColorPalette[] {

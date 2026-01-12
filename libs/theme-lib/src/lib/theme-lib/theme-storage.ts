@@ -10,18 +10,18 @@ export interface SavedTheme {
 
 export function loadTheme(platformId: object): SavedTheme {
   if (isPlatformBrowser(platformId)) {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
-    const savedAccentColor = localStorage.getItem('accentColor') || '#3f51b5';
-    const savedComplementColor = localStorage.getItem('complementColor') || '#c0af4b';
-    const savedPaletteMode = localStorage.getItem('paletteMode') as 'custom' | 'predefined' || 'custom';
-    const savedPaletteName = localStorage.getItem('paletteName') || undefined;
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
+    const savedAccentColor = localStorage.getItem('accentColor');
+    const savedComplementColor = localStorage.getItem('complementColor');
+    const savedPaletteMode = localStorage.getItem('paletteMode') as 'custom' | 'predefined';
+    const savedPaletteName = localStorage.getItem('paletteName');
     
     return { 
-      theme: savedTheme, 
-      accentColor: savedAccentColor, 
-      complementColor: savedComplementColor,
-      paletteMode: savedPaletteMode,
-      paletteName: savedPaletteName
+      theme: savedTheme || 'light', 
+      accentColor: savedAccentColor || '#3f51b5', 
+      complementColor: savedComplementColor || '#c0af4b',
+      paletteMode: savedPaletteMode || 'custom',
+      paletteName: savedPaletteName || undefined
     };
   }
   return { 
