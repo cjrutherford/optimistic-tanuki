@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChange
 import { CommonModule } from '@angular/common';
 import { CdkDragDrop, DragDropModule, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { Task, CreateTask } from '@optimistic-tanuki/ui-models';
-import { ButtonComponent, ModalComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import { TaskFormComponent } from '../task-form/task-form.component';
 
 interface KanbanColumn {
@@ -20,7 +20,7 @@ interface KanbanColumn {
 @Component({
   selector: 'lib-task-kanban',
   standalone: true,
-  imports: [CommonModule, DragDropModule, ButtonComponent, ModalComponent, CardComponent, TaskFormComponent],
+  imports: [CommonModule, DragDropModule, ButtonComponent, ModalComponent, TaskFormComponent],
   templateUrl: './task-kanban.component.html',
   styleUrls: ['./task-kanban.component.scss'],
 })
@@ -43,6 +43,9 @@ export class TaskKanbanComponent implements OnInit, OnChanges {
     { id: 'done', title: 'Done', status: 'DONE', tasks: [] },
     { id: 'archived', title: 'Archived', status: 'ARCHIVED', tasks: [] },
   ]);
+
+  // Computed property for connected drop lists
+  connectedDropLists = computed(() => this.columns().map(c => c.id));
 
   ngOnInit(): void {
     this.updateKanbanColumns();
@@ -95,12 +98,12 @@ export class TaskKanbanComponent implements OnInit, OnChanges {
     this.showModal.set(true);
   }
 
-  onEditFormSubmit(task: Task): void {
-    this.editTask.emit(task);
+  onEditFormSubmit(task: any): void {
+    this.editTask.emit(task as Task);
     this.showEditModal.set(false);
   }
 
-  onCreateFormSubmit(task: Task): void {
+  onCreateFormSubmit(task: any): void {
     const newTask: CreateTask = {
       title: task.title,
       description: task.description,

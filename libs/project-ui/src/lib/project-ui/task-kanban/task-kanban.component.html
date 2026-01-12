@@ -19,7 +19,7 @@
           cdkDropList
           [cdkDropListData]="column.tasks"
           [id]="column.id"
-          [cdkDropListConnectedTo]="columns().map(c => c.id)"
+          [cdkDropListConnectedTo]="connectedDropLists()"
           (cdkDropListDropped)="drop($event, column)"
         >
           @for (task of column.tasks; track task.id) {

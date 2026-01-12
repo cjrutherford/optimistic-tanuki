@@ -7,7 +7,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import { Task, CreateTask } from '@optimistic-tanuki/ui-models';
-import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
+import { ModalComponent } from '@optimistic-tanuki/common-ui';
 import { TaskFormComponent } from '../task-form/task-form.component';
 
 /**
@@ -17,7 +17,7 @@ import { TaskFormComponent } from '../task-form/task-form.component';
 @Component({
   selector: 'lib-task-calendar',
   standalone: true,
-  imports: [CommonModule, FullCalendarModule, ButtonComponent, ModalComponent, TaskFormComponent],
+  imports: [CommonModule, FullCalendarModule, ModalComponent, TaskFormComponent],
   templateUrl: './task-calendar.component.html',
   styleUrls: ['./task-calendar.component.scss'],
 })
@@ -68,7 +68,7 @@ export class TaskCalendarComponent implements OnInit, OnChanges {
       }
       
       // Add priority-based class
-      if (task.priority === 'HIGH' || task.priority === 'CRITICAL') {
+      if (task.priority === 'HIGH') {
         classes.push('fc-event-high-priority');
       }
       
@@ -147,12 +147,12 @@ export class TaskCalendarComponent implements OnInit, OnChanges {
     this.showModal.set(true);
   }
 
-  onEditFormSubmit(task: Task): void {
-    this.editTask.emit(task);
+  onEditFormSubmit(task: any): void {
+    this.editTask.emit(task as Task);
     this.showEditModal.set(false);
   }
 
-  onCreateFormSubmit(task: Task): void {
+  onCreateFormSubmit(task: any): void {
     const newTask: CreateTask = {
       title: task.title,
       description: task.description,
