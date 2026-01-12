@@ -3,6 +3,12 @@
 // Import AG Grid styles
 // @import 'ag-grid-community/styles/ag-grid.css';
 
+// Import FullCalendar styles
+@import '@fullcalendar/core/main.css';
+@import '@fullcalendar/daygrid/main.css';
+@import '@fullcalendar/timegrid/main.css';
+@import '@fullcalendar/list/main.css';
+
 body {
     background-color: var(--background-color);
     /* Use accent color variable for SVG fill via mask and background-color */

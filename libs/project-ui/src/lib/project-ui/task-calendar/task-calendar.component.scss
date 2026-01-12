@@ -1,0 +1,55 @@
+.task-calendar-container {
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+  
+  :host ::ng-deep {
+    .fc {
+      height: 100%;
+    }
+    
+    .fc-event-custom {
+      cursor: pointer;
+      border-radius: 4px;
+      padding: 2px 4px;
+    }
+    
+    .fc-event-done {
+      opacity: 0.7;
+      text-decoration: line-through;
+    }
+    
+    .fc-event-in-progress {
+      border-left: 4px solid #007bff;
+    }
+    
+    .fc-event-todo {
+      border-left: 4px solid #17a2b8;
+    }
+    
+    .fc-event-high-priority {
+      font-weight: bold;
+      border-width: 2px;
+    }
+    
+    .fc-toolbar-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    
+    .fc-button {
+      background-color: var(--accent);
+      border-color: var(--accent);
+      
+      &:hover {
+        background-color: var(--accent-dark, var(--accent));
+        border-color: var(--accent-dark, var(--accent));
+      }
+    }
+    
+    .fc-button-active {
+      background-color: var(--accent-dark, var(--accent)) !important;
+      border-color: var(--accent-dark, var(--accent)) !important;
+    }
+  }
+}

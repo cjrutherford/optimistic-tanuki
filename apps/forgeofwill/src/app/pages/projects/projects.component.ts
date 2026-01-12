@@ -1,7 +1,8 @@
 import { ButtonComponent, CardComponent, GlassContainerComponent, ModalComponent, TileComponent } from '@optimistic-tanuki/common-ui';
 import { Change, CreateChange, CreateProject, CreateProjectJournal, CreateRisk, CreateTask, Project, ProjectJournal, Risk, Task } from '@optimistic-tanuki/ui-models';
-import { ProjectFormComponent, ProjectOverviewComponent, ProjectSelectorComponent, SummaryBlockComponent, AgTasksTableComponent, AgRisksTableComponent, AgChangesTableComponent, AgProjectJournalTableComponent } from '@optimistic-tanuki/project-ui';
+import { ProjectFormComponent, ProjectOverviewComponent, ProjectSelectorComponent, SummaryBlockComponent, AgTasksTableComponent, AgRisksTableComponent, AgChangesTableComponent, AgProjectJournalTableComponent, TaskCalendarComponent, TaskKanbanComponent, MindMapComponent } from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 import { ChangeService } from '../../change/change.service';
 
@@ -15,6 +16,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 @Component({
   selector: 'app-projects',
   imports: [
+    CommonModule,
     ModalComponent,
     CardComponent,
     SummaryBlockComponent,
@@ -22,6 +24,9 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     AgRisksTableComponent,
     AgChangesTableComponent,
     AgProjectJournalTableComponent,
+    TaskCalendarComponent,
+    TaskKanbanComponent,
+    MindMapComponent,
     ButtonComponent,
     TileComponent,
     ProjectSelectorComponent,
@@ -55,9 +60,10 @@ export class ProjectsComponent implements OnInit {
   selectedProjectIndex = signal<number | null>(null);
   selectedProject = signal<Project | null>(null);
   detailsShown = signal<boolean>(false); // Whether to show the details section
-  shownDetails = signal<'tasks' | 'risks' | 'changes' | 'journal'>('tasks'); // Details to show
+  shownDetails = signal<'tasks' | 'risks' | 'changes' | 'journal' | 'mindmap'>('tasks'); // Details to show
+  taskViewMode = signal<'list' | 'calendar' | 'kanban'>('list'); // Task view mode
 
-  showDetails(details: 'tasks' | 'risks' | 'changes' | 'journal'): void {
+  showDetails(details: 'tasks' | 'risks' | 'changes' | 'journal' | 'mindmap'): void {
     console.log('Showing details:', details);
     this.selectedProjectIndex.set(this.projects().findIndex(p => p.id === this.selectedProject()?.id));
     this.shownDetails.set(details);
@@ -68,6 +74,11 @@ export class ProjectsComponent implements OnInit {
     console.log('Hiding details');
     this.detailsShown.set(false);
     this.shownDetails.set('tasks'); // Reset to tasks view
+  }
+
+  setTaskViewMode(mode: 'list' | 'calendar' | 'kanban'): void {
+    console.log('Setting task view mode:', mode);
+    this.taskViewMode.set(mode);
   }
 
   taskCount = computed(() => {

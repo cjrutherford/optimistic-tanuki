@@ -1,0 +1,93 @@
+<div class="kanban-board">
+  <div class="kanban-columns">
+    @for (column of columns(); track column.id) {
+      <div class="kanban-column">
+        <div class="column-header">
+          <h3>{{ column.title }}</h3>
+          <span class="task-count">{{ getTaskCount(column) }}</span>
+          <otui-button
+            (click)="onAddTask(column)"
+            class="add-task-btn"
+            [style]="'width: auto; padding: 0.25rem 0.5rem; font-size: 0.875rem;'"
+          >
+            + Add
+          </otui-button>
+        </div>
+        
+        <div
+          class="column-content"
+          cdkDropList
+          [cdkDropListData]="column.tasks"
+          [id]="column.id"
+          [cdkDropListConnectedTo]="columns().map(c => c.id)"
+          (cdkDropListDropped)="drop($event, column)"
+        >
+          @for (task of column.tasks; track task.id) {
+            <div
+              class="kanban-card"
+              [class]="getTaskPriorityClass(task.priority)"
+              cdkDrag
+              (click)="onTaskClick(task)"
+            >
+              <div class="card-header">
+                <h4>{{ task.title }}</h4>
+                <button
+                  class="delete-btn"
+                  (click)="onDeleteTask(task.id, $event)"
+                  aria-label="Delete task"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <p class="card-description">{{ task.description }}</p>
+              
+              <div class="card-footer">
+                <span class="priority-badge" [class]="getTaskPriorityClass(task.priority)">
+                  {{ task.priority }}
+                </span>
+                @if (task.assignee) {
+                  <span class="assignee">{{ task.assignee }}</span>
+                }
+                @if (task.dueDate) {
+                  <span class="due-date">{{ task.dueDate | date: 'shortDate' }}</span>
+                }
+              </div>
+            </div>
+          }
+          
+          @if (column.tasks.length === 0) {
+            <div class="empty-column">
+              <p>No tasks in this column</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Create Task Modal -->
+@if(showModal()) {
+<otui-modal
+  [title]="'Create Task'"
+  (closeModal)="closeModal()"
+>
+  <lib-task-form (submitEvent)="onCreateFormSubmit($event)">
+  </lib-task-form>
+</otui-modal>
+}
+
+<!-- Edit Task Modal -->
+@if(showEditModal() && selectedTask()) {
+<otui-modal
+  [title]="'Edit Task'"
+  (closeModal)="closeEditModal()"
+>
+  <lib-task-form
+    [task]="selectedTask()"
+    (submitEvent)="onEditFormSubmit($event)"
+  >
+  </lib-task-form>
+</otui-modal>
+}
