@@ -55,8 +55,8 @@ export class ThemeService {
 
         const storedTheme = loadTheme(this.platformId);
         
-        // Check if this is a first-time user (no stored accentColor means never initialized)
-        const isFirstTime = !localStorage.getItem('accentColor');
+        // Check if this is a first-time user using the isInitialized flag from loadTheme
+        const isFirstTime = !storedTheme.isInitialized;
         
         if (isFirstTime && this.predefinedPalettes.length > 0) {
           // Default to the first predefined palette from the gateway
@@ -178,8 +178,9 @@ export class ThemeService {
     }
 
     localStorage.setItem('customPalettes', JSON.stringify(palettes));
-    // Update available palettes asynchronously
-    this.updateAvailablePalettes();
+    // Update available palettes asynchronously - fire and forget is acceptable here
+    // as this is a non-critical background update
+    void this.updateAvailablePalettes();
   }
 
   private async updateAvailablePalettes(): Promise<void> {
@@ -297,6 +298,7 @@ export class ThemeService {
       complementColor: this.complementColor,
       paletteMode: this.paletteMode,
       paletteName: this.selectedPalette?.name,
+      isInitialized: true, // Always true when saving
     };
 
     if (isPlatformBrowser(this.platformId)) {

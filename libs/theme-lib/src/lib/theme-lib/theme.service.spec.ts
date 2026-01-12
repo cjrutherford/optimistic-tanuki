@@ -73,6 +73,7 @@ describe('ThemeService', () => {
       accentColor: '#ff0000',
       complementColor: '#00ff00',
       paletteMode: 'custom',
+      isInitialized: true, // Simulate existing user
     });
     (generateColorShades as jest.Mock).mockReturnValue([
       [0, '#shade1'],
@@ -125,6 +126,7 @@ describe('ThemeService', () => {
       complementColor: '#00ff00',
       paletteMode: 'custom',
       paletteName: undefined,
+      isInitialized: true,
     });
   });
 
@@ -137,6 +139,7 @@ describe('ThemeService', () => {
       complementColor: '#00ff00',
       paletteMode: 'custom',
       paletteName: undefined,
+      isInitialized: true,
     });
   });
 

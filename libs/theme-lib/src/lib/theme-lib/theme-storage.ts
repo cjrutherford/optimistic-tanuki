@@ -6,6 +6,7 @@ export interface SavedTheme {
   complementColor: string;
   paletteMode: 'custom' | 'predefined';
   paletteName?: string;
+  isInitialized: boolean; // Indicates if theme has been set before
 }
 
 export function loadTheme(platformId: object): SavedTheme {
@@ -16,19 +17,24 @@ export function loadTheme(platformId: object): SavedTheme {
     const savedPaletteMode = localStorage.getItem('paletteMode') as 'custom' | 'predefined';
     const savedPaletteName = localStorage.getItem('paletteName');
     
+    // User is initialized if accentColor exists in localStorage
+    const isInitialized = savedAccentColor !== null;
+    
     return { 
       theme: savedTheme || 'light', 
       accentColor: savedAccentColor || '#3f51b5', 
       complementColor: savedComplementColor || '#c0af4b',
       paletteMode: savedPaletteMode || 'custom',
-      paletteName: savedPaletteName || undefined
+      paletteName: savedPaletteName || undefined,
+      isInitialized
     };
   }
   return { 
     theme: 'light', 
     accentColor: '#3f51b5', 
     complementColor: '#c0af4b',
-    paletteMode: 'custom'
+    paletteMode: 'custom',
+    isInitialized: false
   }; // Default values for server-side
 }
 
