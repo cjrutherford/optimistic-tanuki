@@ -45,6 +45,7 @@ export class ThemeService {
         try {
           this.predefinedPalettes = await loadPredefinedPalettes();
         } catch (e) {
+          console.warn('Failed to load predefined palettes from gateway, using fallback:', e);
           this.predefinedPalettes = PREDEFINED_PALETTES;
         }
         
@@ -188,6 +189,7 @@ export class ThemeService {
     try {
       this.predefinedPalettes = await loadPredefinedPalettes();
     } catch (e) {
+      console.warn('Failed to update predefined palettes from gateway, using fallback:', e);
       this.predefinedPalettes = PREDEFINED_PALETTES;
     }
     const customPalettes = this.loadCustomPalettes();
