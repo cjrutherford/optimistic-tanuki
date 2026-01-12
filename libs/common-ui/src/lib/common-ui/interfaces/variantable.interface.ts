@@ -1,4 +1,8 @@
-import { Themeable, ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  Themeable,
+  ThemeColors,
+  ThemeService,
+} from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder, GradientType } from '../gradient-builder';
 import { Directive, ElementRef, HostBinding, Renderer2 } from '@angular/core';
 
@@ -49,7 +53,7 @@ export function variantOptionsToCssVars(
   const cssVars: Record<string, string> = {};
   for (const [key, value] of Object.entries(options)) {
     const kebabKey = camelToKebab(key);
-    cssVars[`style.--${kebabKey}`] = Array.isArray(value)
+    cssVars[`[style.--${kebabKey}]`] = Array.isArray(value)
       ? value.join(', ')
       : String(value) || '';
   }
@@ -82,7 +86,6 @@ export abstract class Variantable extends Themeable {
       .setOptions({ colors, angle })
       .build();
   }
-
 
   /**
    * Utility: Generate SVG pattern string (stub for extension).

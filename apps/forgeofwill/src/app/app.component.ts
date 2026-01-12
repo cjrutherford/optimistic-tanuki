@@ -99,7 +99,7 @@ export class AppComponent implements OnInit {
       const currentPalette = this.themeService.getCurrentPalette();
       if (!currentPalette) {
         // Set default palette for forgeofwill
-        this.themeService.setPalette('Sunset Warmth');
+        this.themeService.setPalette('Forest Dream');
       }
       // Apply stored or default theme mode
       this.themeService.setTheme(this.themeService.getTheme());

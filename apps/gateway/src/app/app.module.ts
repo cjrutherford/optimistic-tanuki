@@ -4,6 +4,7 @@ import { TcpServiceConfig, loadConfig } from '../config';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 
 import { AssetController } from '../controllers/asset.controller';
+import { PalettesController } from '../controllers/palettes.controller';
 import { AuthGuard } from '../auth/auth.guard';
 import { AuthenticationController } from '../controllers/authentication/authentication.controller';
 import { JwtService } from '@nestjs/jwt';
@@ -57,6 +58,7 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
     McpToolsModule,
   ],
   controllers: [
+    PalettesController,
     AuthenticationController,
     ProfileController,
     SocialController,

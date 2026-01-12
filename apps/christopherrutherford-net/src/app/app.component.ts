@@ -25,7 +25,7 @@ export class AppComponent implements OnInit {
       if (!currentPalette) {
         // Set default palette for christopherrutherford-net
         this.themeService.setTheme('dark');
-        this.themeService.setPalette('Retro Gaming');
+        this.themeService.setPalette('Ocean Breeze');
       } else {
         // Apply stored theme mode
         this.themeService.setTheme(this.themeService.getTheme());

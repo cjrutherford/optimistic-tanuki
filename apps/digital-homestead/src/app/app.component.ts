@@ -32,7 +32,7 @@ export class AppComponent implements OnInit {
       if (!currentPalette) {
         // Set default palette for digital-homestead
         this.themeService.setTheme('dark');
-        this.themeService.setPalette('Cyberpunk Neon');
+        this.themeService.setPalette('Optimistic Blue');
       } else {
         // Apply stored theme mode
         this.themeService.setTheme(this.themeService.getTheme());

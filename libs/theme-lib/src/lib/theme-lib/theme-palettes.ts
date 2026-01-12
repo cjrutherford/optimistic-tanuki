@@ -1,5 +1,9 @@
 import { ColorPalette } from './theme.interface';
 
+/**
+ * Fallback predefined palettes for non-browser or failure cases.
+ * The real source of truth is `apps/assets/src/assets/palettes.json` served by the gateway.
+ */
 export const PREDEFINED_PALETTES: ColorPalette[] = [
   {
     name: 'Optimistic Blue',
@@ -7,14 +11,8 @@ export const PREDEFINED_PALETTES: ColorPalette[] = [
     accent: '#3f51b5',
     complementary: '#c0af4b',
     tertiary: '#7e57c2',
-    background: {
-      light: '#ffffff',
-      dark: '#1a1a2e'
-    },
-    foreground: {
-      light: '#212121',
-      dark: '#ffffff'
-    }
+    background: { light: '#ffffff', dark: '#1a1a2e' },
+    foreground: { light: '#212121', dark: '#ffffff' },
   },
   {
     name: 'Electric Sunset',
@@ -22,14 +20,8 @@ export const PREDEFINED_PALETTES: ColorPalette[] = [
     accent: '#ff6b35',
     complementary: '#359dff',
     tertiary: '#ff35a6',
-    background: {
-      light: '#fafafa',
-      dark: '#1e1e1e'
-    },
-    foreground: {
-      light: '#2c2c2c',
-      dark: '#f5f5f5'
-    }
+    background: { light: '#fafafa', dark: '#1e1e1e' },
+    foreground: { light: '#2c2c2c', dark: '#f5f5f5' },
   },
   {
     name: 'Forest Dream',
@@ -37,14 +29,8 @@ export const PREDEFINED_PALETTES: ColorPalette[] = [
     accent: '#4caf50',
     complementary: '#af4c95',
     tertiary: '#ff9800',
-    background: {
-      light: '#f1f8e9',
-      dark: '#1b2e1b'
-    },
-    foreground: {
-      light: '#2e7d32',
-      dark: '#c8e6c9'
-    }
+    background: { light: '#f1f8e9', dark: '#1b2e1b' },
+    foreground: { light: '#2e7d32', dark: '#c8e6c9' },
   },
   {
     name: 'Cyberpunk Neon',
@@ -52,14 +38,8 @@ export const PREDEFINED_PALETTES: ColorPalette[] = [
     accent: '#00ffff',
     complementary: '#ff00ff',
     tertiary: '#ffff00',
-    background: {
-      light: '#f0f0f0',
-      dark: '#0a0a0a'
-    },
-    foreground: {
-      light: '#1a1a1a',
-      dark: '#ffffff'
-    }
+    background: { light: '#f0f0f0', dark: '#0a0a0a' },
+    foreground: { light: '#1a1a1a', dark: '#ffffff' },
   },
   {
     name: 'Royal Purple',
@@ -67,14 +47,8 @@ export const PREDEFINED_PALETTES: ColorPalette[] = [
     accent: '#673ab7',
     complementary: '#ffc107',
     tertiary: '#e91e63',
-    background: {
-      light: '#faf8ff',
-      dark: '#2a1a3a'
-    },
-    foreground: {
-      light: '#4a148c',
-      dark: '#e1bee7'
-    }
+    background: { light: '#faf8ff', dark: '#2a1a3a' },
+    foreground: { light: '#4a148c', dark: '#e1bee7' },
   },
   {
     name: 'Ocean Breeze',
@@ -82,14 +56,8 @@ export const PREDEFINED_PALETTES: ColorPalette[] = [
     accent: '#0097a7',
     complementary: '#ff7043',
     tertiary: '#26c6da',
-    background: {
-      light: '#e0f2f1',
-      dark: '#1a2e3a'
-    },
-    foreground: {
-      light: '#00695c',
-      dark: '#b2dfdb'
-    }
+    background: { light: '#e0f2f1', dark: '#1a2e3a' },
+    foreground: { light: '#00695c', dark: '#b2dfdb' },
   },
   {
     name: 'Retro Gaming',
@@ -97,14 +65,8 @@ export const PREDEFINED_PALETTES: ColorPalette[] = [
     accent: '#e91e63',
     complementary: '#1ee963',
     tertiary: '#63e91e',
-    background: {
-      light: '#fff3e0',
-      dark: '#0f0f23'
-    },
-    foreground: {
-      light: '#bf360c',
-      dark: '#ff8a65'
-    }
+    background: { light: '#fff3e0', dark: '#0f0f23' },
+    foreground: { light: '#bf360c', dark: '#ff8a65' },
   },
   {
     name: 'Minimal Monochrome',
@@ -112,21 +74,30 @@ export const PREDEFINED_PALETTES: ColorPalette[] = [
     accent: '#424242',
     complementary: '#bdbdbd',
     tertiary: '#2196f3',
-    background: {
-      light: '#ffffff',
-      dark: '#121212'
-    },
-    foreground: {
-      light: '#212121',
-      dark: '#ffffff'
-    }
-  }
+    background: { light: '#ffffff', dark: '#121212' },
+    foreground: { light: '#212121', dark: '#ffffff' },
+  },
 ];
 
-export function getPaletteByName(name: string): ColorPalette | undefined {
-  return PREDEFINED_PALETTES.find(palette => palette.name === name);
+export async function loadPredefinedPalettes(): Promise<ColorPalette[]> {
+  if (typeof window === 'undefined') {
+    return PREDEFINED_PALETTES;
+  }
+
+  try {
+    const res = await fetch('/api/palettes');
+    if (!res.ok) {
+      return PREDEFINED_PALETTES;
+    }
+    const data = await res.json();
+    return Array.isArray(data) ? (data as ColorPalette[]) : PREDEFINED_PALETTES;
+  } catch (err) {
+    return PREDEFINED_PALETTES;
+  }
 }
 
 export function getRandomPalette(): ColorPalette {
-  return PREDEFINED_PALETTES[Math.floor(Math.random() * PREDEFINED_PALETTES.length)];
+  return PREDEFINED_PALETTES[
+    Math.floor(Math.random() * PREDEFINED_PALETTES.length)
+  ];
 }
