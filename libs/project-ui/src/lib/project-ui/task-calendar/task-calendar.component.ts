@@ -87,20 +87,26 @@ export class TaskCalendarComponent implements OnInit, OnChanges {
   }
 
   private updateCalendarEvents(): void {
-    const events = this.tasks.map(task => ({
-      id: task.id,
-      title: task.title,
-      start: task.dueDate || task.createdAt,
-      end: task.dueDate || task.createdAt,
-      extendedProps: {
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        assignee: task.assignee,
-      },
-      backgroundColor: this.getTaskColor(task),
-      borderColor: this.getTaskBorderColor(task),
-    }));
+    const events = this.tasks.map(task => {
+      const startDate = task.dueDate || task.createdAt;
+      const endDate = task.dueDate || task.createdAt;
+      
+      return {
+        id: task.id,
+        title: task.title,
+        start: startDate,
+        end: endDate,
+        allDay: !task.dueDate, // Use all-day event if no specific due date
+        extendedProps: {
+          description: task.description,
+          status: task.status,
+          priority: task.priority,
+          assignee: task.assignee,
+        },
+        backgroundColor: this.getTaskColor(task),
+        borderColor: this.getTaskBorderColor(task),
+      };
+    });
 
     this.calendarOptions = {
       ...this.calendarOptions,

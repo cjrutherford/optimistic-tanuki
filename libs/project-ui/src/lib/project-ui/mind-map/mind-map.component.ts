@@ -450,7 +450,7 @@ export class MindMapComponent implements OnInit, OnChanges, AfterViewInit {
   private getChangeColor(status: Change['changeStatus']): string {
     switch (status) {
       case 'COMPLETE': return '#86efac';
-      case 'IMPELEMENTING': return '#fbbf24';
+      case 'IMPELEMENTING': return '#fbbf24'; // Note: typo in original Change model
       case 'PENDING_APPROVAL': return '#c4b5fd';
       case 'DISCARDED': return '#d1d5db';
       default: return '#e9d5ff';
