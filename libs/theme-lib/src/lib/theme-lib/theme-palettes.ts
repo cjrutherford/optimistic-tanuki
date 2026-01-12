@@ -1,8 +1,10 @@
 import { ColorPalette } from './theme.interface';
 
 /**
- * Fallback predefined palettes for non-browser or failure cases.
- * The real source of truth is `apps/assets/src/assets/palettes.json` served by the gateway.
+ * Minimal fallback predefined palettes for non-browser, SSR, or gateway failure cases.
+ * The primary source of truth is the gateway API at /api/palettes which serves
+ * palettes.json from the assets service. These fallbacks ensure the application
+ * can still function if the gateway is temporarily unavailable.
  */
 export const PREDEFINED_PALETTES: ColorPalette[] = [
   {
