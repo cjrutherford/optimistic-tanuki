@@ -1,9 +1,10 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, signal, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CdkDragDrop, DragDropModule, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { Task, CreateTask } from '@optimistic-tanuki/ui-models';
 import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import { TaskFormComponent } from '../task-form/task-form.component';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 interface KanbanColumn {
   id: string;
@@ -16,6 +17,7 @@ interface KanbanColumn {
  * Kanban board component for tasks
  * Displays tasks in columns based on their status
  * Supports drag-and-drop to change task status
+ * Extends Themeable for automatic theme integration
  */
 @Component({
   selector: 'lib-task-kanban',
@@ -23,8 +25,17 @@ interface KanbanColumn {
   imports: [CommonModule, DragDropModule, ButtonComponent, ModalComponent, TaskFormComponent],
   templateUrl: './task-kanban.component.html',
   styleUrls: ['./task-kanban.component.scss'],
+  host: {
+    '[style.--background]': 'background',
+    '[style.--foreground]': 'foreground',
+    '[style.--accent]': 'accent',
+    '[style.--complement]': 'complement',
+    '[style.--success]': 'success',
+    '[style.--danger]': 'danger',
+    '[style.--warning]': 'warning',
+  }
 })
-export class TaskKanbanComponent implements OnInit, OnChanges {
+export class TaskKanbanComponent extends Themeable implements OnInit, OnChanges, OnDestroy {
   @Input() tasks: Task[] = [];
   @Input() loading: boolean = false;
   @Output() createTask = new EventEmitter<CreateTask>();
@@ -47,8 +58,13 @@ export class TaskKanbanComponent implements OnInit, OnChanges {
   // Computed property for connected drop lists
   connectedDropLists = computed(() => this.columns().map(c => c.id));
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
+    super.ngOnInit();
     this.updateKanbanColumns();
+  }
+
+  override ngOnDestroy(): void {
+    super.ngOnDestroy();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -152,5 +168,10 @@ export class TaskKanbanComponent implements OnInit, OnChanges {
 
   getTaskCount(column: KanbanColumn): number {
     return column.tasks.length;
+  }
+
+  override applyTheme(colors: ThemeColors): void {
+    // Theme is applied via CSS variables in host bindings
+    // Additional theme-specific logic can be added here if needed
   }
 }

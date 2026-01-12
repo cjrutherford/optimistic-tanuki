@@ -5,6 +5,7 @@
   flex-direction: column;
   position: relative;
   background: var(--background, #ffffff);
+  color: var(--foreground, #212121);
 }
 
 .mind-map-toolbar {
@@ -12,13 +13,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  background: var(--background-secondary, #f9fafb);
+  border-bottom: 1px solid var(--complement, #e5e7eb);
+  background: var(--background, #f9fafb);
   
   h3 {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
+    color: var(--foreground, #212121);
   }
   
   .toolbar-actions {
@@ -31,6 +33,7 @@
   flex: 1;
   position: relative;
   overflow: hidden;
+  background: var(--background, #ffffff);
   
   canvas {
     display: block;
@@ -48,8 +51,9 @@
   position: absolute;
   bottom: 1rem;
   left: 1rem;
-  background: white;
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--background, white);
+  color: var(--foreground, #212121);
+  border: 1px solid var(--complement, #e5e7eb);
   border-radius: 8px;
   padding: 1rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -59,7 +63,8 @@
     font-size: 0.875rem;
     font-weight: 600;
     text-transform: uppercase;
-    color: #6b7280;
+    color: var(--foreground, #6b7280);
+    opacity: 0.8;
   }
   
   .legend-items {
@@ -73,12 +78,13 @@
     align-items: center;
     gap: 0.5rem;
     font-size: 0.875rem;
+    color: var(--foreground, #212121);
     
     .legend-color {
       width: 20px;
       height: 20px;
       border-radius: 4px;
-      border: 1px solid #d1d5db;
+      border: 1px solid var(--complement, #d1d5db);
     }
   }
 }
@@ -87,8 +93,9 @@
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: white;
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--background, white);
+  color: var(--foreground, #212121);
+  border: 1px solid var(--complement, #e5e7eb);
   border-radius: 8px;
   padding: 1rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -98,12 +105,14 @@
     margin: 0 0 0.5rem 0;
     font-size: 1rem;
     font-weight: 600;
+    color: var(--foreground, #212121);
   }
   
   p {
     margin: 0;
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--foreground, #6b7280);
+    opacity: 0.8;
     line-height: 1.4;
   }
 }

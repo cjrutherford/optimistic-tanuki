@@ -2,6 +2,8 @@
   width: 100%;
   height: 100%;
   padding: 1rem;
+  background: var(--background, #ffffff);
+  color: var(--foreground, #212121);
   
   // Basic FullCalendar styling since we can't import the CSS
   ::ng-deep {
@@ -19,20 +21,21 @@
       .fc-toolbar-title {
         font-size: 1.5rem;
         font-weight: 600;
+        color: var(--foreground, #212121);
       }
       
       // Buttons
       .fc-button {
         background-color: var(--accent, #007bff);
         border-color: var(--accent, #007bff);
-        color: white;
+        color: var(--background, white);
         padding: 0.375rem 0.75rem;
         border-radius: 4px;
         cursor: pointer;
         
         &:hover {
-          background-color: var(--accent-dark, #0056b3);
-          border-color: var(--accent-dark, #0056b3);
+          background-color: var(--complement, #0056b3);
+          border-color: var(--complement, #0056b3);
         }
         
         &:disabled {
@@ -42,28 +45,31 @@
       }
       
       .fc-button-active {
-        background-color: var(--accent-dark, #0056b3) !important;
-        border-color: var(--accent-dark, #0056b3) !important;
+        background-color: var(--complement, #0056b3) !important;
+        border-color: var(--complement, #0056b3) !important;
       }
       
       // Calendar grid
       .fc-scrollgrid {
-        border: 1px solid #ddd;
+        border: 1px solid var(--complement, #ddd);
       }
       
       .fc-col-header-cell {
-        background: #f8f9fa;
+        background: var(--background, #f8f9fa);
         padding: 0.5rem;
-        border: 1px solid #ddd;
+        border: 1px solid var(--complement, #ddd);
         font-weight: 600;
+        color: var(--foreground, #212121);
       }
       
       .fc-daygrid-day {
-        border: 1px solid #ddd;
+        border: 1px solid var(--complement, #ddd);
+        background: var(--background, #ffffff);
       }
       
       .fc-daygrid-day-number {
         padding: 0.25rem;
+        color: var(--foreground, #212121);
       }
       
       .fc-daygrid-day-top {
@@ -106,11 +112,11 @@
     }
     
     .fc-event-in-progress {
-      border-left: 4px solid #007bff;
+      border-left: 4px solid var(--accent, #007bff);
     }
     
     .fc-event-todo {
-      border-left: 4px solid #17a2b8;
+      border-left: 4px solid var(--complement, #17a2b8);
     }
     
     .fc-event-high-priority {

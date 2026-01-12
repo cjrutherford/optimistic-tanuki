@@ -3,6 +3,8 @@
   height: 100%;
   padding: 1rem;
   overflow-x: auto;
+  background: var(--background, #ffffff);
+  color: var(--foreground, #212121);
 }
 
 .kanban-columns {
@@ -16,7 +18,8 @@
   flex: 1;
   min-width: 280px;
   max-width: 350px;
-  background: var(--background-secondary, #f8f9fa);
+  background: var(--background, #f8f9fa);
+  border: 1px solid var(--complement, #dee2e6);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -25,7 +28,7 @@
 
 .column-header {
   padding: 1rem;
-  border-bottom: 2px solid var(--border-color, #dee2e6);
+  border-bottom: 2px solid var(--complement, #dee2e6);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -36,11 +39,12 @@
     font-size: 1.125rem;
     font-weight: 600;
     flex: 1;
+    color: var(--foreground, #212121);
   }
   
   .task-count {
     background: var(--accent, #007bff);
-    color: white;
+    color: var(--background, white);
     border-radius: 12px;
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
@@ -60,7 +64,8 @@
 }
 
 .kanban-card {
-  background: white;
+  background: var(--background, white);
+  color: var(--foreground, #212121);
   border-radius: 6px;
   padding: 1rem;
   margin-bottom: 0.75rem;
@@ -76,23 +81,23 @@
   
   &.priority-high,
   &.priority-critical {
-    border-left-color: #dc3545;
+    border-left-color: var(--danger, #dc3545);
   }
   
   &.priority-medium-high {
-    border-left-color: #fd7e14;
+    border-left-color: var(--warning, #fd7e14);
   }
   
   &.priority-medium {
-    border-left-color: #ffc107;
+    border-left-color: var(--warning, #ffc107);
   }
   
   &.priority-medium-low {
-    border-left-color: #17a2b8;
+    border-left-color: var(--complement, #17a2b8);
   }
   
   &.priority-low {
-    border-left-color: #28a745;
+    border-left-color: var(--success, #28a745);
   }
 }
 
@@ -106,13 +111,14 @@
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
+    color: var(--foreground, #212121);
     flex: 1;
   }
   
   .delete-btn {
     background: none;
     border: none;
-    color: #dc3545;
+    color: var(--danger, #dc3545);
     font-size: 1.5rem;
     cursor: pointer;
     padding: 0;
@@ -124,8 +130,8 @@
     border-radius: 4px;
     
     &:hover {
-      background: #dc3545;
-      color: white;
+      background: var(--danger, #dc3545);
+      color: var(--background, white);
     }
   }
 }
@@ -133,7 +139,8 @@
 .card-description {
   margin: 0.5rem 0;
   font-size: 0.875rem;
-  color: #6c757d;
+  color: var(--foreground, #6c757d);
+  opacity: 0.8;
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;

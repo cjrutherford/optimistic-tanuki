@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { CalendarOptions, EventClickArg, DateSelectArg } from '@fullcalendar/core';
@@ -9,10 +9,12 @@ import listPlugin from '@fullcalendar/list';
 import { Task, CreateTask } from '@optimistic-tanuki/ui-models';
 import { ModalComponent } from '@optimistic-tanuki/common-ui';
 import { TaskFormComponent } from '../task-form/task-form.component';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 /**
  * Calendar view component for tasks
  * Uses FullCalendar to display tasks in a calendar format
+ * Extends Themeable for automatic theme integration
  */
 @Component({
   selector: 'lib-task-calendar',
@@ -20,8 +22,17 @@ import { TaskFormComponent } from '../task-form/task-form.component';
   imports: [CommonModule, FullCalendarModule, ModalComponent, TaskFormComponent],
   templateUrl: './task-calendar.component.html',
   styleUrls: ['./task-calendar.component.scss'],
+  host: {
+    '[style.--background]': 'background',
+    '[style.--foreground]': 'foreground',
+    '[style.--accent]': 'accent',
+    '[style.--complement]': 'complement',
+    '[style.--success]': 'success',
+    '[style.--danger]': 'danger',
+    '[style.--warning]': 'warning',
+  }
 })
-export class TaskCalendarComponent implements OnInit, OnChanges {
+export class TaskCalendarComponent extends Themeable implements OnInit, OnChanges, OnDestroy {
   @Input() tasks: Task[] = [];
   @Input() loading: boolean = false;
   @Output() createTask = new EventEmitter<CreateTask>();
@@ -76,7 +87,8 @@ export class TaskCalendarComponent implements OnInit, OnChanges {
     }
   };
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
+    super.ngOnInit();
     this.updateCalendarEvents();
   }
 
@@ -179,5 +191,19 @@ export class TaskCalendarComponent implements OnInit, OnChanges {
   closeEditModal(): void {
     this.showEditModal.set(false);
     this.selectedTask.set(null);
+  }
+
+  override ngOnDestroy(): void {
+    super.ngOnDestroy();
+  }
+
+  override applyTheme(colors: ThemeColors): void {
+    // Update calendar colors based on theme
+    this.calendarOptions = {
+      ...this.calendarOptions,
+      eventColor: this.accent,
+      eventBorderColor: this.complement,
+      eventTextColor: this.foreground,
+    };
   }
 }

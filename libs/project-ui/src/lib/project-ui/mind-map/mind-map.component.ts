@@ -10,11 +10,13 @@ import {
   ElementRef,
   ViewChild,
   AfterViewInit,
+  OnDestroy,
   CUSTOM_ELEMENTS_SCHEMA,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Task, Risk, Change } from '@optimistic-tanuki/ui-models';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 export interface MindMapNode {
   id: string;
@@ -38,6 +40,7 @@ export interface MindMapConnection {
 /**
  * Mind map component for visualizing project entities (tasks, risks, changes)
  * Uses a canvas-based drawing approach similar to Excalidraw
+ * Extends Themeable for automatic theme integration
  */
 @Component({
   selector: 'lib-mind-map',
@@ -46,8 +49,17 @@ export interface MindMapConnection {
   templateUrl: './mind-map.component.html',
   styleUrls: ['./mind-map.component.scss'],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  host: {
+    '[style.--background]': 'background',
+    '[style.--foreground]': 'foreground',
+    '[style.--accent]': 'accent',
+    '[style.--complement]': 'complement',
+    '[style.--success]': 'success',
+    '[style.--danger]': 'danger',
+    '[style.--warning]': 'warning',
+  }
 })
-export class MindMapComponent implements OnInit, OnChanges, AfterViewInit {
+export class MindMapComponent extends Themeable implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   @Input() tasks: Task[] = [];
   @Input() risks: Risk[] = [];
   @Input() changes: Change[] = [];
@@ -72,7 +84,8 @@ export class MindMapComponent implements OnInit, OnChanges, AfterViewInit {
   private panX = 0;
   private panY = 0;
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
+    super.ngOnInit();
     this.generateMindMap();
   }
 
@@ -83,6 +96,10 @@ export class MindMapComponent implements OnInit, OnChanges, AfterViewInit {
       this.setupCanvas();
       this.draw();
     }
+  }
+
+  override ngOnDestroy(): void {
+    super.ngOnDestroy();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -472,5 +489,12 @@ export class MindMapComponent implements OnInit, OnChanges, AfterViewInit {
     link.download = 'mind-map.png';
     link.href = dataUrl;
     link.click();
+  }
+
+  override applyTheme(colors: ThemeColors): void {
+    // Update colors based on theme and redraw
+    if (this.ctx) {
+      this.draw();
+    }
   }
 }
