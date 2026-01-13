@@ -59,7 +59,7 @@ jobs:
           COMPOSE_FILE="e2e/docker-compose.${{ matrix.service }}.yaml"
           if [ -f "$COMPOSE_FILE" ]; then
             echo "Using independent compose file: $COMPOSE_FILE"
-            docker-compose -f $COMPOSE_FILE up -d
+            docker compose -f $COMPOSE_FILE up -d
             # Wait for services to be ready
             sleep 30
           fi
@@ -76,7 +76,7 @@ jobs:
         run: |
           COMPOSE_FILE="e2e/docker-compose.${{ matrix.service }}.yaml"
           if [ -f "$COMPOSE_FILE" ]; then
-            docker-compose -f $COMPOSE_FILE down -v
+            docker compose -f $COMPOSE_FILE down -v
           fi
 
       - name: Upload test results
@@ -129,7 +129,7 @@ jobs:
           COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
           if [ -f "$COMPOSE_FILE" ]; then
             echo "Using independent compose file: $COMPOSE_FILE"
-            docker-compose -f $COMPOSE_FILE up -d --build
+            docker compose -f $COMPOSE_FILE up -d --build
             # Wait for services to be ready
             sleep 45
           fi
@@ -149,7 +149,7 @@ jobs:
         run: |
           COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
           if [ -f "$COMPOSE_FILE" ]; then
-            docker-compose -f $COMPOSE_FILE down -v
+            docker compose -f $COMPOSE_FILE down -v
           fi
 
       - name: Upload Playwright report
@@ -197,7 +197,7 @@ jobs:
       - name: Build and start full environment with docker-compose
         run: |
           # Use the main docker-compose.yaml for full stack browser tests
-          docker-compose up -d --build
+          docker compose up -d --build
           
           # Wait for all services to be healthy
           echo "Waiting for services to be ready..."
@@ -229,8 +229,8 @@ jobs:
         if: failure()
         run: |
           mkdir -p docker-logs
-          docker-compose logs > docker-logs/all-services.log
-          docker-compose ps > docker-logs/services-status.txt
+          docker compose logs > docker-logs/all-services.log
+          docker compose ps > docker-logs/services-status.txt
 
       - name: Upload docker logs
         if: failure()
@@ -242,7 +242,7 @@ jobs:
 
       - name: Stop full environment
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
 
       - name: Upload Full Stack E2E report
         if: always()
@@ -289,7 +289,7 @@ jobs:
           COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
           if [ -f "$COMPOSE_FILE" ]; then
             echo "Using compose file: $COMPOSE_FILE"
-            docker-compose -f $COMPOSE_FILE up -d --build
+            docker compose -f $COMPOSE_FILE up -d --build
             echo "Waiting for services..."
             sleep 45
           fi
@@ -310,7 +310,7 @@ jobs:
         run: |
           COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
           if [ -f "$COMPOSE_FILE" ]; then
-            docker-compose -f $COMPOSE_FILE down -v
+            docker compose -f $COMPOSE_FILE down -v
           fi
 
       - name: Upload browser E2E report
