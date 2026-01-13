@@ -14,20 +14,16 @@ import * as path from 'path';
 
 // Resolve relative to workspace root. Do NOT use a leading slash in the second arg
 // because that makes the path absolute from the filesystem root.
-const PALETTES_PATH = path.resolve(
-  process.cwd(),
-  'apps',
-  'assets',
-  'src',
-  'assets',
-  'palettes.json'
-);
+const PALETTES_PATH = path.resolve(__dirname, './assets/palettes.json');
+
 
 @Controller('palettes')
 export class PalettesController {
   private async readFile(): Promise<any[]> {
     try {
+      console.log('Reading palettes from', PALETTES_PATH);
       const raw = await fs.readFile(PALETTES_PATH, 'utf-8');
+      console.log('Palettes data:', raw);
       return JSON.parse(raw || '[]');
     } catch (err: any) {
       if (err.code === 'ENOENT') return [];

@@ -13,6 +13,7 @@
       "options": {
         "command": "webpack-cli build",
         "args": ["node-env=production"],
+        "additionalEntrypoints": ["./src/seed-store.ts"],
         "packageJson": {
           "dependencies": {
             "pg": "^8.16.0"
