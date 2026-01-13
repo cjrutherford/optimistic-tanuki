@@ -1,6 +1,6 @@
 import { ButtonComponent, CardComponent, GlassContainerComponent, ModalComponent, TileComponent } from '@optimistic-tanuki/common-ui';
 import { Change, CreateChange, CreateProject, CreateProjectJournal, CreateRisk, CreateTask, Project, ProjectJournal, Risk, Task } from '@optimistic-tanuki/ui-models';
-import { ProjectFormComponent, ProjectOverviewComponent, ProjectSelectorComponent, SummaryBlockComponent, AgTasksTableComponent, AgRisksTableComponent, AgChangesTableComponent, AgProjectJournalTableComponent, TaskCalendarComponent, TaskKanbanComponent, MindMapComponent } from '@optimistic-tanuki/project-ui';
+import { ProjectFormComponent, ProjectSelectorComponent, SummaryBlockComponent, AgTasksTableComponent, AgRisksTableComponent, AgChangesTableComponent, AgProjectJournalTableComponent, TaskCalendarComponent, TaskKanbanComponent, MindMapComponent } from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 

@@ -1,12 +1,29 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateTaskDto } from './create-task.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsUUID, IsOptional, IsBoolean } from 'class-validator';
+import { IsUUID, IsOptional, IsBoolean, IsString, IsDateString } from 'class-validator';
 
 export class UpdateTaskDto extends PartialType(CreateTaskDto) {
   @ApiProperty({ description: 'The unique identifier of the task' })
   @IsUUID()
   id: string;
+
+  @ApiPropertyOptional({ description: 'User assigned to the task' })
+  @IsOptional()
+  @IsString()
+  @IsUUID()
+  assignee?: string;
+
+  @ApiPropertyOptional({ description: 'Due date of the task' })
+  @IsOptional()
+  @IsDateString()
+  dueDate?: Date;
+
+  @ApiPropertyOptional({ description: 'User who last updated the task' })
+  @IsOptional()
+  @IsString()
+  @IsUUID()
+  updatedBy?: string;
 }
 
 export class QueryTaskDto extends PartialType(CreateTaskDto) {
