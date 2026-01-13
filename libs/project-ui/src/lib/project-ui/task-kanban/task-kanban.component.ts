@@ -1,7 +1,23 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, signal, computed, OnDestroy } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  signal,
+  computed,
+  OnDestroy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CdkDragDrop, DragDropModule, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
-import { Task, CreateTask } from '@optimistic-tanuki/ui-models';
+import {
+  CdkDragDrop,
+  DragDropModule,
+  moveItemInArray,
+  transferArrayItem,
+} from '@angular/cdk/drag-drop';
+import { Task, CreateTask, UpdateTask } from '@optimistic-tanuki/ui-models';
 import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import { TaskFormComponent } from '../task-form/task-form.component';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
@@ -22,7 +38,13 @@ interface KanbanColumn {
 @Component({
   selector: 'lib-task-kanban',
   standalone: true,
-  imports: [CommonModule, DragDropModule, ButtonComponent, ModalComponent, TaskFormComponent],
+  imports: [
+    CommonModule,
+    DragDropModule,
+    ButtonComponent,
+    ModalComponent,
+    TaskFormComponent,
+  ],
   templateUrl: './task-kanban.component.html',
   styleUrls: ['./task-kanban.component.scss'],
   host: {
@@ -33,15 +55,21 @@ interface KanbanColumn {
     '[style.--success]': 'success',
     '[style.--danger]': 'danger',
     '[style.--warning]': 'warning',
-  }
+  },
 })
-export class TaskKanbanComponent extends Themeable implements OnInit, OnChanges, OnDestroy {
+export class TaskKanbanComponent
+  extends Themeable
+  implements OnInit, OnChanges, OnDestroy
+{
   @Input() tasks: Task[] = [];
   @Input() loading: boolean = false;
   @Output() createTask = new EventEmitter<CreateTask>();
-  @Output() editTask = new EventEmitter<Task>();
+  @Output() editTask = new EventEmitter<UpdateTask>();
   @Output() deleteTask = new EventEmitter<string>();
-  @Output() statusChanged = new EventEmitter<{ taskId: string; newStatus: Task['status'] }>();
+  @Output() statusChanged = new EventEmitter<{
+    taskId: string;
+    newStatus: Task['status'];
+  }>();
 
   showModal = signal(false);
   showEditModal = signal(false);
@@ -50,13 +78,18 @@ export class TaskKanbanComponent extends Themeable implements OnInit, OnChanges,
 
   columns = signal<KanbanColumn[]>([
     { id: 'todo', title: 'To Do', status: 'TODO', tasks: [] },
-    { id: 'in-progress', title: 'In Progress', status: 'IN_PROGRESS', tasks: [] },
+    {
+      id: 'in-progress',
+      title: 'In Progress',
+      status: 'IN_PROGRESS',
+      tasks: [],
+    },
     { id: 'done', title: 'Done', status: 'DONE', tasks: [] },
     { id: 'archived', title: 'Archived', status: 'ARCHIVED', tasks: [] },
   ]);
 
   // Computed property for connected drop lists
-  connectedDropLists = computed(() => this.columns().map(c => c.id));
+  connectedDropLists = computed(() => this.columns().map((c) => c.id));
 
   override ngOnInit(): void {
     super.ngOnInit();
@@ -74,9 +107,9 @@ export class TaskKanbanComponent extends Themeable implements OnInit, OnChanges,
   }
 
   private updateKanbanColumns(): void {
-    const newColumns = this.columns().map(column => ({
+    const newColumns = this.columns().map((column) => ({
       ...column,
-      tasks: this.tasks.filter(task => task.status === column.status),
+      tasks: this.tasks.filter((task) => task.status === column.status),
     }));
     this.columns.set(newColumns);
   }
@@ -84,11 +117,15 @@ export class TaskKanbanComponent extends Themeable implements OnInit, OnChanges,
   drop(event: CdkDragDrop<Task[]>, targetColumn: KanbanColumn): void {
     if (event.previousContainer === event.container) {
       // Reorder within the same column
-      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      moveItemInArray(
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex
+      );
     } else {
       // Move to a different column
       const task = event.previousContainer.data[event.previousIndex];
-      
+
       // Transfer the item
       transferArrayItem(
         event.previousContainer.data,
@@ -98,9 +135,12 @@ export class TaskKanbanComponent extends Themeable implements OnInit, OnChanges,
       );
 
       // Update the task status
-      const updatedTask = { ...task, status: targetColumn.status };
+      const updatedTask = { id: task.id, status: targetColumn.status };
       this.editTask.emit(updatedTask);
-      this.statusChanged.emit({ taskId: task.id, newStatus: targetColumn.status });
+      this.statusChanged.emit({
+        taskId: task.id,
+        newStatus: targetColumn.status,
+      });
     }
   }
 

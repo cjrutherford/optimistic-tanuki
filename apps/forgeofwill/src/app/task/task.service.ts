@@ -1,18 +1,23 @@
-import { CreateTask, QueryTask, Task } from '@optimistic-tanuki/ui-models';
+import {
+  CreateTask,
+  QueryTask,
+  Task,
+  UpdateTask,
+} from '@optimistic-tanuki/ui-models';
 
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TaskService {
   private baseUrl = '/api/project-planning/tasks';
   constructor(
     private readonly http: HttpClient,
-    private readonly profileService: ProfileService,
-  ) { }
+    private readonly profileService: ProfileService
+  ) {}
 
   createTask(data: CreateTask) {
     const currentProfile = this.profileService.getCurrentUserProfile();
@@ -35,7 +40,7 @@ export class TaskService {
     return this.http.get<Task>(`${this.baseUrl}/${id}`);
   }
 
-  updateTask(data: Task) {
+  updateTask(data: UpdateTask) {
     return this.http.patch<Task>(`${this.baseUrl}`, data);
   }
 
