@@ -7,6 +7,7 @@ import {
   generateTertiaryColor,
 } from './color-utils';
 import { loadTheme, saveTheme } from './theme-storage';
+import { loadPredefinedPalettes } from './theme-palettes';
 
 import { TestBed } from '@angular/core/testing';
 import { ThemeService } from './theme.service';
@@ -25,16 +26,54 @@ jest.mock('./theme-storage', () => ({
   saveTheme: jest.fn(),
 }));
 
+jest.mock('./theme-palettes', () => ({
+  loadPredefinedPalettes: jest.fn(),
+  PREDEFINED_PALETTES: [
+    {
+      name: 'Test Palette',
+      description: 'A test palette',
+      accent: '#ff0000',
+      complementary: '#00ff00',
+      tertiary: '#0000ff',
+    },
+  ],
+}));
+
 describe('ThemeService', () => {
   let service: ThemeService;
+  let localStorageMock: { [key: string]: string };
 
   beforeEach(() => {
+    // Mock localStorage
+    localStorageMock = {
+      'accentColor': '#ff0000', // Simulate existing user to avoid first-time logic
+    };
+    global.Storage.prototype.getItem = jest.fn((key: string) => localStorageMock[key] || null);
+    global.Storage.prototype.setItem = jest.fn((key: string, value: string) => {
+      localStorageMock[key] = value;
+    });
+    global.Storage.prototype.removeItem = jest.fn((key: string) => {
+      delete localStorageMock[key];
+    });
+
+    // Mock loadPredefinedPalettes to return test palettes
+    (loadPredefinedPalettes as jest.Mock).mockResolvedValue([
+      {
+        name: 'Test Palette',
+        description: 'A test palette',
+        accent: '#ff0000',
+        complementary: '#00ff00',
+        tertiary: '#0000ff',
+      },
+    ]);
+
     // Mock return values for dependencies
     (loadTheme as jest.Mock).mockReturnValue({
       theme: 'light',
       accentColor: '#ff0000',
       complementColor: '#00ff00',
       paletteMode: 'custom',
+      isInitialized: true, // Simulate existing user
     });
     (generateColorShades as jest.Mock).mockReturnValue([
       [0, '#shade1'],
@@ -87,6 +126,7 @@ describe('ThemeService', () => {
       complementColor: '#00ff00',
       paletteMode: 'custom',
       paletteName: undefined,
+      isInitialized: true,
     });
   });
 
@@ -99,6 +139,7 @@ describe('ThemeService', () => {
       complementColor: '#00ff00',
       paletteMode: 'custom',
       paletteName: undefined,
+      isInitialized: true,
     });
   });
 
