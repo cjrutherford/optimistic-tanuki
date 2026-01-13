@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-COMPOSE_FILE="docker-compose.e2e.ai-orchestrator.yaml"
+COMPOSE_FILE="e2e/docker-compose.ai-orchestrator-e2e.yaml"
 CONTAINER_NAME="ot_telos_docs_service_e2e"
 
 echo "Starting E2E stack..."

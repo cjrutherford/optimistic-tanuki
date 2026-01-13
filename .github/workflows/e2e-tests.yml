@@ -102,6 +102,7 @@ jobs:
           - digital-homestead-e2e
           - christopherrutherford-net-e2e
           - owner-console-e2e
+          - store-client-e2e
       fail-fast: false
     
     steps:
@@ -119,6 +120,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start E2E environment for ${{ matrix.app }}
+        run: |
+          # Check if independent docker-compose exists for this service
+          COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
+          if [ -f "$COMPOSE_FILE" ]; then
+            echo "Using independent compose file: $COMPOSE_FILE"
+            docker-compose -f $COMPOSE_FILE up -d --build
+            # Wait for services to be ready
+            sleep 45
+          fi
+        env:
+          CI: true
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
@@ -126,6 +143,14 @@ jobs:
         run: npx nx e2e ${{ matrix.app }}
         env:
           CI: true
+
+      - name: Stop E2E environment
+        if: always()
+        run: |
+          COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
+          if [ -f "$COMPOSE_FILE" ]; then
+            docker-compose -f $COMPOSE_FILE down -v
+          fi
 
       - name: Upload Playwright report
         if: always()

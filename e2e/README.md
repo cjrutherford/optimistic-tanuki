@@ -15,11 +15,20 @@ Each E2E test has its own Docker Compose file that includes only the necessary s
 - `docker-compose.social-e2e.yaml` - Social service tests
 - `docker-compose.assets-e2e.yaml` - Assets service tests
 - `docker-compose.gateway-e2e.yaml` - Gateway integration tests (includes dependent services)
+- `docker-compose.chat-collector-e2e.yaml` - Chat collector service tests
+- `docker-compose.project-planning-e2e.yaml` - Project planning service tests
+- `docker-compose.prompt-proxy-e2e.yaml` - Prompt proxy service tests
+- `docker-compose.telos-docs-service-e2e.yaml` - Telos docs service tests
+- `docker-compose.ai-orchestrator-e2e.yaml` - AI orchestrator integration tests (includes dependent services)
 
 ### UI E2E Tests
 
 - `docker-compose.digital-homestead-e2e.yaml` - Digital Homestead UI tests with backend
 - `docker-compose.owner-console-e2e.yaml` - Owner Console UI tests with backend
+- `docker-compose.client-interface-e2e.yaml` - Client Interface UI tests with backend
+- `docker-compose.forgeofwill-e2e.yaml` - Forge of Will UI tests with backend
+- `docker-compose.christopherrutherford-net-e2e.yaml` - Christopher Rutherford Net UI tests with backend
+- `docker-compose.store-client-e2e.yaml` - Store Client UI tests with backend
 
 ## Usage
 
