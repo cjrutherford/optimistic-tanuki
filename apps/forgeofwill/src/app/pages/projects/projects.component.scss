@@ -48,3 +48,34 @@
     border-radius: 10px;
     margin: 50px;
 }
+
+.view-selector {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    background: var(--background-secondary, #f9fafb);
+    
+    h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .view-buttons {
+        display: flex;
+        gap: 0.5rem;
+        
+        otui-button {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            
+            &:hover {
+                transform: translateY(-1px);
+            }
+        }
+    }
+}

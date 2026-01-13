@@ -27,11 +27,43 @@
           [count]="changeCount()"
           (onClick)="showDetails('changes')"
         ></lib-summary-block>
+        <lib-summary-block
+          title="Mind Map"
+          [count]="taskCount() + riskCount() + changeCount()"
+          (onClick)="showDetails('mindmap')"
+        ></lib-summary-block>
       </div>
       @if (detailsShown()) {
       <div class="row-container">
         <otui-tile class="parent-container">
           @if (shownDetails() === 'tasks') {
+          <!-- Task View Selector -->
+          <div class="view-selector">
+            <h3>Task Management</h3>
+            <div class="view-buttons">
+              <otui-button
+                (click)="setTaskViewMode('list')"
+                [style]="taskViewMode() === 'list' ? 'background: var(--accent);' : 'background: var(--background-secondary);'"
+              >
+                List View
+              </otui-button>
+              <otui-button
+                (click)="setTaskViewMode('calendar')"
+                [style]="taskViewMode() === 'calendar' ? 'background: var(--accent);' : 'background: var(--background-secondary);'"
+              >
+                Calendar View
+              </otui-button>
+              <otui-button
+                (click)="setTaskViewMode('kanban')"
+                [style]="taskViewMode() === 'kanban' ? 'background: var(--accent);' : 'background: var(--background-secondary);'"
+              >
+                Kanban View
+              </otui-button>
+            </div>
+          </div>
+          
+          <!-- Task Views -->
+          @if (taskViewMode() === 'list') {
           <lib-ag-tasks-table
             (deleteTask)="onDeleteTask($event)"
             (editTask)="onEditTask($event)"
@@ -39,6 +71,23 @@
             [tasks]="selectedProject()!.tasks"
             style="width: 100%; height: 100%"
           ></lib-ag-tasks-table>
+          } @else if (taskViewMode() === 'calendar') {
+          <lib-task-calendar
+            (deleteTask)="onDeleteTask($event)"
+            (editTask)="onEditTask($event)"
+            (createTask)="onCreateTask($event)"
+            [tasks]="selectedProject()!.tasks"
+            style="width: 100%; height: 100%"
+          ></lib-task-calendar>
+          } @else if (taskViewMode() === 'kanban') {
+          <lib-task-kanban
+            (deleteTask)="onDeleteTask($event)"
+            (editTask)="onEditTask($event)"
+            (createTask)="onCreateTask($event)"
+            [tasks]="selectedProject()!.tasks"
+            style="width: 100%; height: 100%"
+          ></lib-task-kanban>
+          }
           } @else if (shownDetails() === 'risks') {
           <lib-ag-risks-table
             (createRisk)="onCreateRisk($event)"
@@ -55,6 +104,14 @@
             [changes]="selectedProject()!.changes"
             style="width: 100%; height: 100%"
           ></lib-ag-changes-table>
+          } @else if (shownDetails() === 'mindmap') {
+          <lib-mind-map
+            [tasks]="selectedProject()!.tasks"
+            [risks]="selectedProject()!.risks"
+            [changes]="selectedProject()!.changes"
+            [projectId]="selectedProject()!.id"
+            style="width: 100%; height: 600px; display: block;"
+          ></lib-mind-map>
           }
           <otui-button (click)="hideDetails()" class="close-button"
             >X</otui-button

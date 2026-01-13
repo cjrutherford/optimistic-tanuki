@@ -1,0 +1,28 @@
+<div class="task-calendar-container">
+  <full-calendar [options]="calendarOptions"></full-calendar>
+</div>
+
+<!-- Create Task Modal -->
+@if(showModal()) {
+<otui-modal
+  [title]="'Create Task'"
+  (closeModal)="closeModal()"
+>
+  <lib-task-form (submitEvent)="onCreateFormSubmit($event)">
+  </lib-task-form>
+</otui-modal>
+}
+
+<!-- Edit Task Modal -->
+@if(showEditModal() && selectedTask()) {
+<otui-modal
+  [title]="'Edit Task'"
+  (closeModal)="closeEditModal()"
+>
+  <lib-task-form
+    [task]="selectedTask()"
+    (submitEvent)="onEditFormSubmit($event)"
+  >
+  </lib-task-form>
+</otui-modal>
+}

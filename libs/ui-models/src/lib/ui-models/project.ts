@@ -33,15 +33,15 @@ export interface CreateProject {
 }
 
 export interface QueryProject {
-    owner: string;
+  owner: string;
   members: string[];
   name: string;
   description: string;
-  createdAt: [Date, Date]; 
-  updatedAt: [Date, Date]; 
+  createdAt: [Date, Date];
+  updatedAt: [Date, Date];
   createdBy?: string;
   updatedBy?: string;
-  deleted?: boolean; 
+  deleted?: boolean;
 }
 
 // src/app/models/task.model.ts
@@ -63,12 +63,19 @@ export interface Task {
 }
 
 export interface CreateTask {
-  projectId: string; 
+  projectId: string;
   title: string;
   description: string;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
-  priority: 'LOW' | 'MEDIUM_LOW' | 'MEDIUM' | 'MEDIUM_HIGH' | 'HIGH'; 
+  priority: 'LOW' | 'MEDIUM_LOW' | 'MEDIUM' | 'MEDIUM_HIGH' | 'HIGH';
   createdBy: string;
+}
+
+export interface UpdateTask {
+  id: string; // uuid
+  assignee?: string;
+  dueDate?: Date;
+  updatedBy?: string;
 }
 
 export interface QueryTask {
@@ -77,19 +84,19 @@ export interface QueryTask {
   description?: string;
   status?: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
   priority?: 'LOW' | 'MEDIUM_LOW' | 'MEDIUM' | 'MEDIUM_HIGH' | 'HIGH';
-  assignee?: string; 
-  dueDate?: [Date, Date]; 
-  createdAt?: [Date, Date]; 
-  updatedAt?: [Date, Date]; 
+  assignee?: string;
+  dueDate?: [Date, Date];
+  createdAt?: [Date, Date];
+  updatedAt?: [Date, Date];
   createdBy?: string;
   updatedBy?: string;
-  deleted?: boolean; 
+  deleted?: boolean;
 }
 
 // src/app/models/timer.model.ts
 export interface Timer {
   id?: string; // uuid
-  taskId: string; 
+  taskId: string;
   status: 'Running' | 'Paused' | 'Stopped';
   startTime: Date;
   endTime?: Date;
@@ -108,18 +115,25 @@ export interface CreateTimer {
   elapsedTime: number; // in seconds
 }
 
-
 // src/app/models/risk.model.ts
 export interface Risk {
   id: string; // uuid
   projectId: string; // Foreign key to Project
   description: string;
   impact: 'LOW' | 'MEDIUM' | 'HIGH';
-  likelihood: 'UNLIKELY' | 'POSSIBLE' | 'LIKELY' | 'IMMINENT' | 'ALMOST_CERTAIN' | 'CERTAIN' | 'NOT_APPLICABLE' | 'UNKNOWN'; 
+  likelihood:
+    | 'UNLIKELY'
+    | 'POSSIBLE'
+    | 'LIKELY'
+    | 'IMMINENT'
+    | 'ALMOST_CERTAIN'
+    | 'CERTAIN'
+    | 'NOT_APPLICABLE'
+    | 'UNKNOWN';
   status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
-  resolution?: 'PENDING' |'ACCEPTED' | 'MITIGATED' |'ESCALATED' | 'AVOIDED';
+  resolution?: 'PENDING' | 'ACCEPTED' | 'MITIGATED' | 'ESCALATED' | 'AVOIDED';
   mitigationPlan?: string;
-  riskOwner?: string; 
+  riskOwner?: string;
   createdBy: string;
   createdAt: Date;
   updatedBy?: string;
@@ -132,9 +146,17 @@ export interface CreateRisk {
   projectId: string; // Foreign key to Project
   description: string;
   impact: 'LOW' | 'MEDIUM' | 'HIGH';
-  likelihood: 'UNLIKELY' | 'POSSIBLE' | 'LIKELY' | 'IMMINENT' | 'ALMOST_CERTAIN' | 'CERTAIN' | 'NOT_APPLICABLE' | 'UNKNOWN'; 
+  likelihood:
+    | 'UNLIKELY'
+    | 'POSSIBLE'
+    | 'LIKELY'
+    | 'IMMINENT'
+    | 'ALMOST_CERTAIN'
+    | 'CERTAIN'
+    | 'NOT_APPLICABLE'
+    | 'UNKNOWN';
   status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
-  resolution?: 'PENDING' |'ACCEPTED' | 'MITIGATED' |'ESCALATED' | 'AVOIDED';
+  resolution?: 'PENDING' | 'ACCEPTED' | 'MITIGATED' | 'ESCALATED' | 'AVOIDED';
   mitigationPlan?: string;
   riskOwner?: string; // Assuming this is a user profile ID
   createdBy: string;
@@ -144,57 +166,89 @@ export interface QueryRisk {
   projectId?: string; // Optional filter by project ID
   description?: string;
   impact?: 'LOW' | 'MEDIUM' | 'HIGH';
-  likelihood?: 'UNLIKELY' | 'POSSIBLE' | 'LIKELY' | 'IMMINENT' | 'ALMOST_CERTAIN' | 'CERTAIN' | 'NOT_APPLICABLE' | 'UNKNOWN'; 
+  likelihood?:
+    | 'UNLIKELY'
+    | 'POSSIBLE'
+    | 'LIKELY'
+    | 'IMMINENT'
+    | 'ALMOST_CERTAIN'
+    | 'CERTAIN'
+    | 'NOT_APPLICABLE'
+    | 'UNKNOWN';
   status?: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
-  resolution?: 'PENDING' |'ACCEPTED' | 'MITIGATED' |'ESCALATED' | 'AVOIDED';
+  resolution?: 'PENDING' | 'ACCEPTED' | 'MITIGATED' | 'ESCALATED' | 'AVOIDED';
   riskOwner?: string; // Assuming this is a user profile ID
   createdAt?: [Date, Date]; // Range for createdAt
   updatedAt?: [Date, Date]; // Range for updatedAt
   createdBy?: string;
   updatedBy?: string;
-  deleted?: boolean; 
+  deleted?: boolean;
 }
 
 // src/app/models/change.model.ts
 export interface Change {
   id: string; // uuid
   projectId: string; // Foreign key to Project
-  changeType: 'ADDITION' | 'MODIFICATION' | 'DELETION'; 
-  changeStatus: 'PENDING' | 'RESEARCHING' | 'DISCUSSING' | 'DESIGNING' | 'PENDING_APPROVAL' | 'IMPELEMENTING' | 'COMPLETE' | 'DISCARDED'; 
+  changeType: 'ADDITION' | 'MODIFICATION' | 'DELETION';
+  changeStatus:
+    | 'PENDING'
+    | 'RESEARCHING'
+    | 'DISCUSSING'
+    | 'DESIGNING'
+    | 'PENDING_APPROVAL'
+    | 'IMPELEMENTING'
+    | 'COMPLETE'
+    | 'DISCARDED';
   changeDescription: string;
   changeDate: Date;
   requestor: string;
   approver?: string;
-  resolution: 'PENDING' | 'APPROVED' | 'REJECTED'; 
+  resolution: 'PENDING' | 'APPROVED' | 'REJECTED';
   updatedBy?: string;
   updatedAt?: Date;
 }
 
 export interface CreateChange {
   projectId: string; // Foreign key to Project
-  changeType: 'ADDITION' | 'MODIFICATION' | 'DELETION'; 
-  changeStatus: 'PENDING' | 'RESEARCHING' | 'DISCUSSING' | 'DESIGNING' | 'PENDING_APPROVAL' | 'IMPELEMENTING' | 'COMPLETE' | 'DISCARDED'; 
+  changeType: 'ADDITION' | 'MODIFICATION' | 'DELETION';
+  changeStatus:
+    | 'PENDING'
+    | 'RESEARCHING'
+    | 'DISCUSSING'
+    | 'DESIGNING'
+    | 'PENDING_APPROVAL'
+    | 'IMPELEMENTING'
+    | 'COMPLETE'
+    | 'DISCARDED';
   changeDescription: string;
   changeDate: Date;
   requestor: string;
   approver?: string;
-  resolution: 'PENDING' | 'APPROVED' | 'REJECTED'; 
+  resolution: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 export interface QueryChange {
   projectId?: string; // Optional filter by project ID
   changeType?: 'ADDITION' | 'MODIFICATION' | 'DELETION';
-  changeStatus?: 'PENDING' | 'RESEARCHING' | 'DISCUSSING' | 'DESIGNING' | 'PENDING_APPROVAL' | 'IMPELEMENTING' | 'COMPLETE' | 'DISCARDED';
+  changeStatus?:
+    | 'PENDING'
+    | 'RESEARCHING'
+    | 'DISCUSSING'
+    | 'DESIGNING'
+    | 'PENDING_APPROVAL'
+    | 'IMPELEMENTING'
+    | 'COMPLETE'
+    | 'DISCARDED';
   changeDescription?: string;
   changeDate?: [Date, Date]; // Range for changeDate
   requestor?: string;
   approver?: string;
   resolution?: 'PENDING' | 'APPROVED' | 'REJECTED';
-  createdAt: [Date, Date]; 
-  updatedAt: [Date, Date]; 
+  createdAt: [Date, Date];
+  updatedAt: [Date, Date];
   createdBy?: string;
   updatedBy?: string;
-  deleted?: boolean; 
+  deleted?: boolean;
 }
 
 // src/app/models/project-journal.model.ts
@@ -226,5 +280,5 @@ export interface QueryProjectJournal {
   updatedAt?: [Date, Date]; // Range for updatedAt
   createdBy?: string;
   updatedBy?: string;
-  deleted?: boolean; 
+  deleted?: boolean;
 }

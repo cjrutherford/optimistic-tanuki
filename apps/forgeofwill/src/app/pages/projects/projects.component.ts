@@ -1,7 +1,37 @@
-import { ButtonComponent, CardComponent, GlassContainerComponent, ModalComponent, TileComponent } from '@optimistic-tanuki/common-ui';
-import { Change, CreateChange, CreateProject, CreateProjectJournal, CreateRisk, CreateTask, Project, ProjectJournal, Risk, Task } from '@optimistic-tanuki/ui-models';
-import { ProjectFormComponent, ProjectOverviewComponent, ProjectSelectorComponent, SummaryBlockComponent, AgTasksTableComponent, AgRisksTableComponent, AgChangesTableComponent, AgProjectJournalTableComponent } from '@optimistic-tanuki/project-ui';
+import {
+  ButtonComponent,
+  CardComponent,
+  GlassContainerComponent,
+  ModalComponent,
+  TileComponent,
+} from '@optimistic-tanuki/common-ui';
+import {
+  Change,
+  CreateChange,
+  CreateProject,
+  CreateProjectJournal,
+  CreateRisk,
+  CreateTask,
+  Project,
+  ProjectJournal,
+  Risk,
+  Task,
+  UpdateTask,
+} from '@optimistic-tanuki/ui-models';
+import {
+  ProjectFormComponent,
+  ProjectSelectorComponent,
+  SummaryBlockComponent,
+  AgTasksTableComponent,
+  AgRisksTableComponent,
+  AgChangesTableComponent,
+  AgProjectJournalTableComponent,
+  TaskCalendarComponent,
+  TaskKanbanComponent,
+  MindMapComponent,
+} from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 import { ChangeService } from '../../change/change.service';
 
@@ -15,6 +45,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 @Component({
   selector: 'app-projects',
   imports: [
+    CommonModule,
     ModalComponent,
     CardComponent,
     SummaryBlockComponent,
@@ -22,17 +53,20 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     AgRisksTableComponent,
     AgChangesTableComponent,
     AgProjectJournalTableComponent,
+    TaskCalendarComponent,
+    TaskKanbanComponent,
+    MindMapComponent,
     ButtonComponent,
     TileComponent,
     ProjectSelectorComponent,
     ProjectFormComponent,
-    GlassContainerComponent
-],
+    GlassContainerComponent,
+  ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
   host: {
-    '[style.--filter-color]': 'filterColor'
-  }
+    '[style.--filter-color]': 'filterColor',
+  },
 })
 export class ProjectsComponent implements OnInit {
   constructor(
@@ -42,10 +76,10 @@ export class ProjectsComponent implements OnInit {
     private readonly changeService: ChangeService,
     private readonly journalService: JournalService,
     private readonly messageService: MessageService,
-    private readonly themeService: ThemeService,
+    private readonly themeService: ThemeService
   ) {}
 
-  filterColor = 'rgba(255,255,255,0.4)'
+  filterColor = 'rgba(255,255,255,0.4)';
 
   projects = signal<Project[]>([]);
 
@@ -55,11 +89,18 @@ export class ProjectsComponent implements OnInit {
   selectedProjectIndex = signal<number | null>(null);
   selectedProject = signal<Project | null>(null);
   detailsShown = signal<boolean>(false); // Whether to show the details section
-  shownDetails = signal<'tasks' | 'risks' | 'changes' | 'journal'>('tasks'); // Details to show
+  shownDetails = signal<'tasks' | 'risks' | 'changes' | 'journal' | 'mindmap'>(
+    'tasks'
+  ); // Details to show
+  taskViewMode = signal<'list' | 'calendar' | 'kanban'>('list'); // Task view mode
 
-  showDetails(details: 'tasks' | 'risks' | 'changes' | 'journal'): void {
+  showDetails(
+    details: 'tasks' | 'risks' | 'changes' | 'journal' | 'mindmap'
+  ): void {
     console.log('Showing details:', details);
-    this.selectedProjectIndex.set(this.projects().findIndex(p => p.id === this.selectedProject()?.id));
+    this.selectedProjectIndex.set(
+      this.projects().findIndex((p) => p.id === this.selectedProject()?.id)
+    );
     this.shownDetails.set(details);
     this.detailsShown.set(true);
   }
@@ -70,35 +111,49 @@ export class ProjectsComponent implements OnInit {
     this.shownDetails.set('tasks'); // Reset to tasks view
   }
 
+  setTaskViewMode(mode: 'list' | 'calendar' | 'kanban'): void {
+    console.log('Setting task view mode:', mode);
+    this.taskViewMode.set(mode);
+  }
+
   taskCount = computed(() => {
     const selectedProject = this.selectedProject();
     if (!selectedProject) return 0;
     if (!selectedProject.tasks) return 0;
-    return selectedProject.tasks.filter(t => !['DONE', 'ARCHIVED'].includes(t.status))?.length || 0;
+    return (
+      selectedProject.tasks.filter(
+        (t) => !['DONE', 'ARCHIVED'].includes(t.status)
+      )?.length || 0
+    );
   });
 
   riskCount = computed(() => {
     const selectedProject = this.selectedProject();
     if (!selectedProject) return 0;
     if (!selectedProject.risks) return 0;
-    return selectedProject.risks.filter(r => r.status !== 'CLOSED')?.length || 0;
+    return (
+      selectedProject.risks.filter((r) => r.status !== 'CLOSED')?.length || 0
+    );
   });
 
   changeCount = computed(() => {
     const selectedProject = this.selectedProject();
     if (!selectedProject) return 0;
     if (!selectedProject.changes) return 0;
-    return selectedProject.changes.filter(c => !['COMPLETE', 'DISCARDED'].includes(c.changeStatus))?.length || 0;
+    return (
+      selectedProject.changes.filter(
+        (c) => !['COMPLETE', 'DISCARDED'].includes(c.changeStatus)
+      )?.length || 0
+    );
   });
 
   ngOnInit() {
     console.log('ProjectsComponent initialized');
     this.loadProjects();
-    const theme = this.themeService.getTheme()
-    this.filterColor = theme === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)'
+    const theme = this.themeService.getTheme();
+    this.filterColor =
+      theme === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
   }
-
-  
 
   private loadProjects() {
     this.projectService.getProjects().subscribe({
@@ -110,7 +165,8 @@ export class ProjectsComponent implements OnInit {
       error: (error) => {
         console.error('Error loading projects:', error);
         this.messageService.addMessage({
-          content: 'Error loading projects: ' + (error.message || 'Unknown error'),
+          content:
+            'Error loading projects: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
       },
@@ -119,7 +175,7 @@ export class ProjectsComponent implements OnInit {
 
   onProjectSelected(projectId: string) {
     console.log('Selected project ID:', projectId);
-    const project = this.projects().find(p => p.id === projectId);
+    const project = this.projects().find((p) => p.id === projectId);
     if (project) {
       this.selectedProject.set(project);
       console.log('Selected project:', project);
@@ -155,7 +211,7 @@ export class ProjectsComponent implements OnInit {
           });
           return {
             ...project,
-            tasks: project.tasks.filter(t => t.id !== taskId),
+            tasks: project.tasks.filter((t) => t.id !== taskId),
           };
         });
       },
@@ -208,7 +264,7 @@ export class ProjectsComponent implements OnInit {
     });
   }
 
-  onEditTask(task: Task) {
+  onEditTask(task: UpdateTask) {
     console.log('Edit task:', task);
     this.taskService.updateTask(task).subscribe({
       next: (updatedTask) => {
@@ -221,7 +277,9 @@ export class ProjectsComponent implements OnInit {
           if (!project) return project;
           return {
             ...project,
-            tasks: project.tasks.map(t => (t.id === updatedTask.id ? updatedTask : t)),
+            tasks: project.tasks.map((t) =>
+              t.id === updatedTask.id ? updatedTask : t
+            ),
           };
         });
       },
@@ -278,7 +336,9 @@ export class ProjectsComponent implements OnInit {
           if (!project) return project;
           return {
             ...project,
-            risks: project.risks.map(r => (r.id === updatedRisk.id ? updatedRisk : r)),
+            risks: project.risks.map((r) =>
+              r.id === updatedRisk.id ? updatedRisk : r
+            ),
           };
         });
       },
@@ -305,7 +365,7 @@ export class ProjectsComponent implements OnInit {
           if (!project) return project;
           return {
             ...project,
-            risks: project.risks.filter(r => r.id !== riskId),
+            risks: project.risks.filter((r) => r.id !== riskId),
           };
         });
       },
@@ -329,14 +389,18 @@ export class ProjectsComponent implements OnInit {
           type: 'success',
         });
         console.log('New project created:', createdProject);
-        this.projects.update((currentProjects) => [...currentProjects, createdProject]); 
+        this.projects.update((currentProjects) => [
+          ...currentProjects,
+          createdProject,
+        ]);
         this.loadProjects();
         this.showCreateModal.set(false);
       },
       error: (error) => {
         console.error('Error creating project:', error);
         this.messageService.addMessage({
-          content: 'Error creating project: ' + (error.message || 'Unknown error'),
+          content:
+            'Error creating project: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
         this.showCreateModal.set(false);
@@ -345,7 +409,10 @@ export class ProjectsComponent implements OnInit {
   }
 
   onProjectUpdated(project: CreateProject) {
-    const updatedProject: Project = { ...this.selectedProject(), ...project } as Project;
+    const updatedProject: Project = {
+      ...this.selectedProject(),
+      ...project,
+    } as Project;
     console.log('Project updated:', updatedProject);
 
     this.projectService.updateProject(updatedProject).subscribe({
@@ -356,14 +423,17 @@ export class ProjectsComponent implements OnInit {
         });
         console.log('Project updated successfully:', systemUpdatedProject);
         this.projects.update((currentProjects) =>
-          currentProjects.map((p) => (p.id === systemUpdatedProject.id ? systemUpdatedProject : p))
+          currentProjects.map((p) =>
+            p.id === systemUpdatedProject.id ? systemUpdatedProject : p
+          )
         );
         this.showEditModal.set(false);
       },
       error: (error) => {
         console.error('Error updating project:', error);
         this.messageService.addMessage({
-          content: 'Error updating project: ' + (error.message || 'Unknown error'),
+          content:
+            'Error updating project: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
       },
@@ -386,14 +456,18 @@ export class ProjectsComponent implements OnInit {
           type: 'success',
         });
         console.log('Change created successfully:', createdChange);
-        currentProject.changes = [...(currentProject.changes || []), createdChange];
+        currentProject.changes = [
+          ...(currentProject.changes || []),
+          createdChange,
+        ];
         this.selectedProject.set(currentProject);
         console.log('Updated project with new change:', currentProject);
       },
       error: (error) => {
         console.error('Error creating change:', error);
         this.messageService.addMessage({
-          content: 'Error creating change: ' + (error.message || 'Unknown error'),
+          content:
+            'Error creating change: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
       },
@@ -413,14 +487,17 @@ export class ProjectsComponent implements OnInit {
           if (!project) return project;
           return {
             ...project,
-            changes: project.changes.map(c => (c.id === updatedChange.id ? updatedChange : c)),
+            changes: project.changes.map((c) =>
+              c.id === updatedChange.id ? updatedChange : c
+            ),
           };
         });
       },
       error: (error) => {
         console.error('Error updating change:', error);
         this.messageService.addMessage({
-          content: 'Error updating change: ' + (error.message || 'Unknown error'),
+          content:
+            'Error updating change: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
       },
@@ -440,20 +517,20 @@ export class ProjectsComponent implements OnInit {
           if (!project) return project;
           return {
             ...project,
-            changes: project.changes.filter(c => c.id !== changeId),
+            changes: project.changes.filter((c) => c.id !== changeId),
           };
         });
       },
       error: (error) => {
         console.error('Error deleting change:', error);
         this.messageService.addMessage({
-          content: 'Error deleting change: ' + (error.message || 'Unknown error'),
+          content:
+            'Error deleting change: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
       },
     });
   }
-
 
   onCreateJournalEntry(entry: CreateProjectJournal) {
     console.log('Create journal entry:', entry);
@@ -472,14 +549,19 @@ export class ProjectsComponent implements OnInit {
           type: 'success',
         });
         console.log('Journal entry created successfully:', createdEntry);
-        currentProject.journalEntries = [...(currentProject.journalEntries || []), createdEntry];
+        currentProject.journalEntries = [
+          ...(currentProject.journalEntries || []),
+          createdEntry,
+        ];
         this.selectedProject.set(currentProject);
         console.log('Updated project with new journal entry:', currentProject);
       },
       error: (error) => {
         console.error('Error creating journal entry:', error);
         this.messageService.addMessage({
-          content: 'Error creating journal entry: ' + (error.message || 'Unknown error'),
+          content:
+            'Error creating journal entry: ' +
+            (error.message || 'Unknown error'),
           type: 'error',
         });
       },
@@ -499,14 +581,18 @@ export class ProjectsComponent implements OnInit {
           if (!project) return project;
           return {
             ...project,
-            journalEntries: project.journalEntries.map(e => (e.id === updatedEntry.id ? updatedEntry : e)),
+            journalEntries: project.journalEntries.map((e) =>
+              e.id === updatedEntry.id ? updatedEntry : e
+            ),
           };
         });
       },
       error: (error) => {
         console.error('Error updating journal entry:', error);
         this.messageService.addMessage({
-          content: 'Error updating journal entry: ' + (error.message || 'Unknown error'),
+          content:
+            'Error updating journal entry: ' +
+            (error.message || 'Unknown error'),
           type: 'error',
         });
       },
@@ -526,14 +612,18 @@ export class ProjectsComponent implements OnInit {
           if (!project) return project;
           return {
             ...project,
-            journalEntries: project.journalEntries.filter(e => e.id !== entryId),
+            journalEntries: project.journalEntries.filter(
+              (e) => e.id !== entryId
+            ),
           };
         });
       },
       error: (error) => {
         console.error('Error deleting journal entry:', error);
         this.messageService.addMessage({
-          content: 'Error deleting journal entry: ' + (error.message || 'Unknown error'),
+          content:
+            'Error deleting journal entry: ' +
+            (error.message || 'Unknown error'),
           type: 'error',
         });
       },

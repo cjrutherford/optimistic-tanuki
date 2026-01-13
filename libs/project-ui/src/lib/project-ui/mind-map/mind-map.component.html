@@ -1,0 +1,60 @@
+<div class="mind-map-container">
+  <div class="mind-map-toolbar">
+    <h3>Project Mind Map</h3>
+    <div class="toolbar-actions">
+      <otui-button (click)="resetView()" [style]="'padding: 0.5rem 1rem;'">
+        Reset View
+      </otui-button>
+      <otui-button (click)="exportAsImage()" [style]="'padding: 0.5rem 1rem;'">
+        Export as Image
+      </otui-button>
+    </div>
+  </div>
+  
+  <div class="canvas-container">
+    <canvas #canvas></canvas>
+  </div>
+  
+  <div class="mind-map-legend">
+    <h4>Legend</h4>
+    <div class="legend-items">
+      <div class="legend-item">
+        <div class="legend-color" style="background: #6366f1;"></div>
+        <span>Project</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #93c5fd;"></div>
+        <span>Task (TODO)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #fbbf24;"></div>
+        <span>Task (In Progress)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #86efac;"></div>
+        <span>Task (Done)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #fca5a5;"></div>
+        <span>Risk (High)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #fed7aa;"></div>
+        <span>Risk (Medium)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #e9d5ff;"></div>
+        <span>Change</span>
+      </div>
+    </div>
+  </div>
+  
+  @if (selectedNode()) {
+    <div class="node-details">
+      <h4>{{ selectedNode()!.type | titlecase }}: {{ selectedNode()!.title }}</h4>
+      @if (selectedNode()!.description) {
+        <p>{{ selectedNode()!.description }}</p>
+      }
+    </div>
+  }
+</div>

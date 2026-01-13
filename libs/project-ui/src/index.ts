@@ -17,3 +17,6 @@ export * from './lib/project-ui/ag-tasks-table/ag-tasks-table.component';
 export * from './lib/project-ui/ag-risks-table/ag-risks-table.component';
 export * from './lib/project-ui/ag-changes-table/ag-changes-table.component';
 export * from './lib/project-ui/ag-project-journal-table/ag-project-journal-table.component';
+export * from './lib/project-ui/task-calendar/task-calendar.component';
+export * from './lib/project-ui/task-kanban/task-kanban.component';
+export * from './lib/project-ui/mind-map/mind-map.component';
