@@ -49,6 +49,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build applications
+        run: |
+          # Build all applications needed for microservices
+          npx nx run-many -t build --projects=authentication,profile,social,assets,blogging,gateway,permissions,project-planning,chat-collector,prompt-proxy,telos-docs-service,ai-orchestrator --parallel=3
+        env:
+          CI: true
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -118,6 +125,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build applications
+        run: |
+          # Build all applications and backend services needed for UI e2e tests
+          npx nx run-many -t build --projects=authentication,profile,social,assets,blogging,gateway,permissions,client-interface,forgeofwill,digital-homestead,christopherrutherford-net,owner-console,store-client,project-planning --parallel=3
+        env:
+          CI: true
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -189,6 +203,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build all applications
+        run: |
+          # Build all applications for full stack browser tests
+          npx nx run-many -t build --all --parallel=3
+        env:
+          CI: true
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -279,6 +300,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build applications
+        run: |
+          # Build all applications and backend services needed for cross-browser e2e tests
+          npx nx run-many -t build --projects=authentication,profile,social,assets,blogging,gateway,permissions,digital-homestead,owner-console,project-planning --parallel=3
+        env:
+          CI: true
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
