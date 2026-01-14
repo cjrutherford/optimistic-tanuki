@@ -15,6 +15,8 @@ import { ConfigService } from '@nestjs/config';
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ToolsService } from './tools.service';
 import { z } from 'zod';
+import { ModelInitializerService } from './model-initializer.service';
+import { WorkflowControlService } from './workflow-control.service';
 
 export interface AgentExecutionResult {
   output: string;
@@ -40,17 +42,39 @@ export class LangChainAgentService {
   constructor(
     private readonly toolsService: ToolsService,
     private readonly mcpExecutor: MCPToolExecutor,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly modelInitializer: ModelInitializerService,
+    private readonly workflowControl: WorkflowControlService
   ) {
+    this.initializeAgentModel();
+  }
+
+  /**
+   * Initialize the agent model
+   */
+  private initializeAgentModel(): void {
+    const modelConfig = this.modelInitializer.getModelConfig('tool_calling');
     const ollama = this.config.get<{ host: string; port: number }>('ollama');
-    this.llm = new ChatOllama({
-      model: 'bjoernb/deepseek-r1-8b',
-      baseUrl:
-        ollama.host && ollama.port
-          ? `http://${ollama.host}:${ollama.port}`
-          : 'http://prompt-proxy:11434',
-      temperature: 0.7,
-    });
+    const baseUrl =
+      ollama?.host && ollama?.port
+        ? `http://${ollama.host}:${ollama.port}`
+        : 'http://prompt-proxy:11434';
+
+    if (modelConfig) {
+      this.llm = new ChatOllama({
+        model: modelConfig.name,
+        baseUrl,
+        temperature: modelConfig.temperature,
+      });
+      this.logger.log(`Initialized agent with model: ${modelConfig.name}`);
+    } else {
+      this.llm = new ChatOllama({
+        model: 'bjoernb/deepseek-r1-8b',
+        baseUrl,
+        temperature: 0.7,
+      });
+      this.logger.warn('Using default model for agent');
+    }
   }
 
   /**
@@ -521,6 +545,7 @@ Example:
         }
       }
 
+<<<<<<< HEAD
       // FALLBACK: Check for XML or raw JSON function calls if no native tool calls were found
       // This handles models like DeepSeek-R1 that prefer text output over native tool calling
       if (allToolCalls.length === 0 && typeof output === 'string') {
@@ -639,9 +664,15 @@ Example:
           }
         }
       }
+=======
+      // Filter thinking tokens from final output
+      const cleanedOutput = this.workflowControl.filterThinkingTokens(
+        typeof output === 'string' ? output : JSON.stringify(output)
+      );
+>>>>>>> 55adcd5 (Add model configuration and workflow control services)
 
       return {
-        output: typeof output === 'string' ? output : JSON.stringify(output),
+        output: cleanedOutput,
         intermediateSteps: messages.map((msg: any) => ({
           action: msg.tool_calls?.[0]?.name || 'response',
           observation: msg.content || '',

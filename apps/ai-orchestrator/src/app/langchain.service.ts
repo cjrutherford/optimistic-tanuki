@@ -28,26 +28,74 @@ import {
   generateCoreSystemPrompt,
   generateToolingGuidance,
 } from './utils/prompt-engineering';
+import { ModelInitializerService } from './model-initializer.service';
+import { WorkflowControlService } from './workflow-control.service';
 
 @Injectable()
 export class LangChainService {
   private readonly logger = new Logger(LangChainService.name);
-  private llm: ChatOllama;
+  private conversationalLLM: ChatOllama;
+  private toolCallingLLM: ChatOllama;
 
   constructor(
     private readonly toolsService: ToolsService,
     private readonly mcpExecutor: MCPToolExecutor,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly modelInitializer: ModelInitializerService,
+    private readonly workflowControl: WorkflowControlService
   ) {
+    this.initializeModels();
+  }
+
+  /**
+   * Initialize models based on configuration
+   */
+  private initializeModels(): void {
     const ollama = this.config.get<{ host: string; port: number }>('ollama');
-    this.llm = new ChatOllama({
-      model: 'bjoernb/deepseek-r1-8b',
-      baseUrl:
-        ollama.host && ollama.port
-          ? `http://${ollama.host}:${ollama.port}`
-          : 'http://prompt-proxy:11434',
-      temperature: 0.7,
-    });
+    const baseUrl =
+      ollama?.host && ollama?.port
+        ? `http://${ollama.host}:${ollama.port}`
+        : 'http://prompt-proxy:11434';
+
+    // Initialize conversational model
+    const conversationalConfig =
+      this.modelInitializer.getModelConfig('conversational');
+    if (conversationalConfig) {
+      this.conversationalLLM = new ChatOllama({
+        model: conversationalConfig.name,
+        baseUrl,
+        temperature: conversationalConfig.temperature,
+      });
+      this.logger.log(
+        `Initialized conversational model: ${conversationalConfig.name}`
+      );
+    } else {
+      // Fallback to default
+      this.conversationalLLM = new ChatOllama({
+        model: 'bjoernb/deepseek-r1-8b',
+        baseUrl,
+        temperature: 0.7,
+      });
+      this.logger.warn('Using default conversational model');
+    }
+
+    // Initialize tool calling model
+    const toolCallingConfig =
+      this.modelInitializer.getModelConfig('tool_calling');
+    if (toolCallingConfig) {
+      this.toolCallingLLM = new ChatOllama({
+        model: toolCallingConfig.name,
+        baseUrl,
+        temperature: toolCallingConfig.temperature,
+      });
+      this.logger.log(
+        `Initialized tool calling model: ${toolCallingConfig.name}`
+      );
+    } else {
+      // Fallback to same as conversational
+      this.toolCallingLLM = this.conversationalLLM;
+      this.logger.warn('Using conversational model for tool calling');
+    }
   }
 
   /**
@@ -475,10 +523,30 @@ Always verify parameter names match tool schemas before calling!`;
       new HumanMessage(userMessage),
     ];
 
-    // Bind tools to LLM so it knows what tools are available and their schemas
-    const llmWithTools = this.llm.bindTools(tools);
+    // Detect workflow type to determine which model to use
+    const toolNames = tools.map((t) => t.name);
+    const workflow = await this.workflowControl.detectWorkflow(
+      userMessage,
+      toolNames,
+      conversationSummary
+    );
+
     this.logger.log(
-      `Executing conversation with ${tools.length} tools bound to LLM`
+      `Workflow detected: ${workflow.type} (confidence: ${workflow.confidence})`
+    );
+
+    // Select appropriate model based on workflow
+    const selectedLLM = workflow.requiresToolCalling
+      ? this.toolCallingLLM
+      : this.conversationalLLM;
+
+    // Bind tools to LLM if tool calling is required
+    const llmWithTools = workflow.requiresToolCalling
+      ? selectedLLM.bindTools(tools)
+      : selectedLLM;
+
+    this.logger.log(
+      `Executing conversation with ${workflow.requiresToolCalling ? tools.length + ' tools bound to' : ''} LLM`
     );
 
     const response = await llmWithTools.invoke(messages);
@@ -551,8 +619,13 @@ Always verify parameter names match tool schemas before calling!`;
         const finalMessages = [...messages, response, ...toolResultMessages];
         const finalResponse = await llmWithTools.invoke(finalMessages);
 
+        // Filter thinking tokens from final response
+        const cleanedResponse = this.workflowControl.filterThinkingTokens(
+          finalResponse.content as string
+        );
+
         return {
-          response: finalResponse.content as string,
+          response: cleanedResponse,
           intermediateSteps: [],
           toolCalls,
         };
@@ -560,8 +633,13 @@ Always verify parameter names match tool schemas before calling!`;
     }
 
     // No tool calls, just return the response
+    // Filter thinking tokens from response
+    const cleanedResponse = this.workflowControl.filterThinkingTokens(
+      response.content as string
+    );
+
     return {
-      response: response.content as string,
+      response: cleanedResponse,
       intermediateSteps: [],
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
@@ -600,10 +678,26 @@ Always verify parameter names match tool schemas before calling!`;
       new HumanMessage(userMessage),
     ];
 
-    // Bind tools to LLM so it knows what tools are available and their schemas
-    const llmWithTools = this.llm.bindTools(tools);
+    // Detect workflow type to determine which model to use
+    const toolNames = tools.map((t) => t.name);
+    const workflow = await this.workflowControl.detectWorkflow(
+      userMessage,
+      toolNames,
+      conversationSummary
+    );
+
+    // Select appropriate model based on workflow
+    const selectedLLM = workflow.requiresToolCalling
+      ? this.toolCallingLLM
+      : this.conversationalLLM;
+
+    // Bind tools to LLM if tool calling is required
+    const llmWithTools = workflow.requiresToolCalling
+      ? selectedLLM.bindTools(tools)
+      : selectedLLM;
+
     this.logger.log(
-      `Streaming conversation with ${tools.length} tools bound to LLM`
+      `Streaming conversation with ${workflow.requiresToolCalling ? tools.length + ' tools bound to' : ''} LLM`
     );
 
     const stream = await llmWithTools.stream(messages);
@@ -623,7 +717,9 @@ Always verify parameter names match tool schemas before calling!`;
       }
     }
 
-    // Final yield with complete response
-    yield { type: 'final_response', content: fullResponse };
+    // Final yield with complete response (filtered for thinking tokens)
+    const cleanedResponse =
+      this.workflowControl.filterThinkingTokens(fullResponse);
+    yield { type: 'final_response', content: cleanedResponse };
   }
 }

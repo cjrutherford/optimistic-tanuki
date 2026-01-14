@@ -13,6 +13,8 @@ import { LangChainService } from './langchain.service';
 import { ContextStorageService } from './context-storage.service';
 import { LangGraphService } from './langgraph.service';
 import { LangChainAgentService } from './langchain-agent.service';
+import { ModelInitializerService } from './model-initializer.service';
+import { WorkflowControlService } from './workflow-control.service';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { RateLimitGuard } from './guards/rate-limit.guard';
@@ -36,6 +38,8 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     AppService,
     ToolsService,
     MCPToolExecutor,
+    ModelInitializerService,
+    WorkflowControlService,
     LangChainService,
     ContextStorageService,
     LangGraphService,

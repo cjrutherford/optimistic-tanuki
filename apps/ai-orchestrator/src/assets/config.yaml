@@ -24,6 +24,22 @@ ai-enabled-apps:
   forgeofwill: The Forge of Will is a personal project management platform to allow users to plan, track, collaborate, and achieve their goals effectively. It combines task management, goal setting, and collaboration tools to help individuals and teams stay organized and productive.
 toolSources:
   gateway: http://gateway:3000/api/mcp
+models:
+  workflow_control:
+    name: 'qwen2.5:3b'
+    description: 'Fast model for detecting if a prompt requires tool calling'
+    temperature: 0.3
+    pullOnStartup: true
+  tool_calling:
+    name: 'bjoernb/deepseek-r1-8b'
+    description: 'Model optimized for tool calling and function execution'
+    temperature: 0.5
+    pullOnStartup: true
+  conversational:
+    name: 'bjoernb/deepseek-r1-8b'
+    description: 'Model for generating conversational responses'
+    temperature: 0.7
+    pullOnStartup: true
 ollama:
   host: 192.168.50.238
   port: 11434
