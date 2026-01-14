@@ -3,13 +3,22 @@
     <div class="theme-switch">
       <div class="theme-label">☀</div>
       <label class="switch">
-        <input type="checkbox" [checked]="theme === 'dark'" (change)="toggleTheme()">
+        <input
+          type="checkbox"
+          [checked]="theme === 'dark'"
+          (change)="toggleTheme()"
+        />
         <span class="slider round">️</span>
       </label>
       <div class="theme-label">🌙</div>
     </div>
     <div class="accent-picker">
-      <input type="color" name="accent-color" [(ngModel)]="accentColor" (change)="updateAccentColor()" />
+      <input
+        type="color"
+        name="accent-color"
+        [(ngModel)]="accentColor"
+        (change)="updateAccentColor()"
+      />
     </div>
   </form>
 </div>

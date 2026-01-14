@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { S3Service, S3ServiceOptions } from './s3.service';
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
 
 // Mock the S3Client and its commands
@@ -26,10 +31,9 @@ describe('S3Service', () => {
 
     // Create a mock S3Client instance
     mockS3Client = {
-        send: jest.fn(),
+      send: jest.fn(),
     } as any;
     (S3Client as jest.Mock).mockImplementation(() => mockS3Client);
-
 
     mockLogger = {
       log: jest.fn(),
@@ -80,7 +84,9 @@ describe('S3Service', () => {
         })
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringContaining(`Uploading object to s3://${s3Options.bucketName}/${key}`)
+        expect.stringContaining(
+          `Uploading object to s3://${s3Options.bucketName}/${key}`
+        )
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringContaining('Object uploaded successfully')
@@ -105,7 +111,9 @@ describe('S3Service', () => {
       const key = 'test-file.txt';
       const body = Buffer.from('test content');
 
-      await expect(service.uploadObject(key, body)).rejects.toThrow('Upload failed');
+      await expect(service.uploadObject(key, body)).rejects.toThrow(
+        'Upload failed'
+      );
     });
   });
 
@@ -126,7 +134,9 @@ describe('S3Service', () => {
         })
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringContaining(`Deleting object from s3://${s3Options.bucketName}/${key}`)
+        expect.stringContaining(
+          `Deleting object from s3://${s3Options.bucketName}/${key}`
+        )
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringContaining('Object deleted successfully')

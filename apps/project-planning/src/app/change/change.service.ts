@@ -1,4 +1,8 @@
-import { CreateChangeDto, QueryChangeDto, UpdateChangeDto } from '@optimistic-tanuki/models';
+import {
+  CreateChangeDto,
+  QueryChangeDto,
+  UpdateChangeDto,
+} from '@optimistic-tanuki/models';
 
 import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -8,14 +12,17 @@ import { Project } from '../entities/project.entity';
 
 @Injectable()
 export class ChangeService {
-
   constructor(
-    @Inject(getRepositoryToken(Change)) private readonly changeRepository: Repository<Change>,
-    @Inject(getRepositoryToken(Project)) private readonly projectRepository: Repository<Project>,
+    @Inject(getRepositoryToken(Change))
+    private readonly changeRepository: Repository<Change>,
+    @Inject(getRepositoryToken(Project))
+    private readonly projectRepository: Repository<Project>
   ) {}
 
   async create(createChangeDto: CreateChangeDto) {
-    const project = await this.projectRepository.findOne({ where: { id: createChangeDto.projectId } });
+    const project = await this.projectRepository.findOne({
+      where: { id: createChangeDto.projectId },
+    });
     if (!project) {
       throw new Error(`Project with id ${createChangeDto.projectId} not found`);
     }
@@ -33,14 +40,21 @@ export class ChangeService {
 
   async findAll(query: QueryChangeDto) {
     const where: FindOptionsWhere<Change> = {};
-    for (const key of ['createdBy', 'updatedBy', 'requestor', 'approver', 'changeType', 'changeDate']) {
+    for (const key of [
+      'createdBy',
+      'updatedBy',
+      'requestor',
+      'approver',
+      'changeType',
+      'changeDate',
+    ]) {
       if (query[key]) {
         where[key] = query[key];
       }
     }
     for (const key of ['createdAt', 'updatedAt']) {
       if (query[key]) {
-        where[key] = Between(...query[key] as [Date, Date])
+        where[key] = Between(...(query[key] as [Date, Date]));
       }
     }
     if (query.projectId) {
@@ -57,14 +71,10 @@ export class ChangeService {
   }
 
   async update(id: string, updateChangeDto: UpdateChangeDto) {
-    const {
-      changeStatus: status,
-      projectId,
-      ...updateData
-    } = updateChangeDto;
+    const { changeStatus: status, projectId, ...updateData } = updateChangeDto;
     const updatedChange: Partial<Change> = {
       ...updateData,
-      status, 
+      status,
       updatedAt: new Date(),
       updatedBy: updateChangeDto.requestor,
     };

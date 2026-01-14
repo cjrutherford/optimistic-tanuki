@@ -19,8 +19,11 @@
     inset: 0;
     pointer-events: none;
     border-radius: inherit;
-    background: 
-      repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 8px),
+    background: repeating-linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.08) 0 2px,
+        transparent 2px 8px
+      ),
       linear-gradient(120deg, rgba(255, 255, 255, 0.12) 0%, transparent 100%);
     mix-blend-mode: screen;
     filter: blur($blur / 2);

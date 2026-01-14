@@ -4,7 +4,10 @@ import { Repository } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import { AppScopesService } from './app-scopes.service';
 import { AppScope } from '../app-scopes/entities/app-scope.entity';
-import { CreateAppScopeDto, UpdateAppScopeDto } from '@optimistic-tanuki/models';
+import {
+  CreateAppScopeDto,
+  UpdateAppScopeDto,
+} from '@optimistic-tanuki/models';
 
 const mockAppScopeRepository = () => ({
   create: jest.fn(),
@@ -32,14 +35,12 @@ describe('AppScopesService', () => {
           useValue: {
             log: jest.fn(),
           },
-        }
+        },
       ],
     }).compile();
 
     service = module.get<AppScopesService>(AppScopesService);
-    repository = module.get<Repository<AppScope>>(
-      getRepositoryToken(AppScope)
-    );
+    repository = module.get<Repository<AppScope>>(getRepositoryToken(AppScope));
   });
 
   it('should be defined', () => {
@@ -48,7 +49,10 @@ describe('AppScopesService', () => {
 
   describe('createAppScope', () => {
     it('should create and save a new app scope', async () => {
-      const createAppScopeDto: CreateAppScopeDto = { name: 'test', description: 'Test Scope' };
+      const createAppScopeDto: CreateAppScopeDto = {
+        name: 'test',
+        description: 'Test Scope',
+      };
       const appScope = new AppScope();
 
       jest.spyOn(repository, 'create').mockReturnValue(appScope);
@@ -74,7 +78,7 @@ describe('AppScopesService', () => {
       expect(result).toEqual(appScope);
     });
   });
-  
+
   describe('getAppScopeByName', () => {
     it('should return an app scope if it exists', async () => {
       const appScope = new AppScope();
@@ -83,7 +87,9 @@ describe('AppScopesService', () => {
 
       const result = await service.getAppScopeByName('test');
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { name: 'test' } });
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { name: 'test' },
+      });
       expect(result).toEqual(appScope);
     });
   });

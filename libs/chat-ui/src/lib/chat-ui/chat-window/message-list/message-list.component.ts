@@ -24,8 +24,7 @@ export class MessageListComponent {
    */
   @Input() messages: ChatMessage[] = [];
 
-
-  getMessageHtml(content: string){
+  getMessageHtml(content: string) {
     return marked.parse(content);
   }
   /**
@@ -34,6 +33,6 @@ export class MessageListComponent {
    * @returns The contact information for the sender, or undefined if not found.
    */
   getContact(senderId: string): ChatContact | undefined {
-    return this.contacts.find(c => c.id === senderId);
+    return this.contacts.find((c) => c.id === senderId);
   }
 }

@@ -5,6 +5,7 @@ This monorepo contains the source code for the Optimistic Tanuki project, a coll
 ## 🚀 Getting Started
 
 **New to this project?** Start with our comprehensive [Getting Started Guide](./docs/getting-started/README.md) which includes:
+
 - Detailed installation instructions
 - Multiple ways to run the application
 - First-time setup steps
@@ -14,6 +15,7 @@ This monorepo contains the source code for the Optimistic Tanuki project, a coll
 ### Quick Start
 
 1. Clone the repo and install dependencies:
+
    ```sh
    git clone https://github.com/cjrutherford/optimistic-tanuki.git
    cd optimistic-tanuki
@@ -21,6 +23,7 @@ This monorepo contains the source code for the Optimistic Tanuki project, a coll
    ```
 
 2. Start all services:
+
    ```sh
    ./start-local.sh
    ```
@@ -59,6 +62,7 @@ For Docker-based development with debugging and hot-reload support, see the [Deb
 - Troubleshooting common issues
 
 Quick start with debugging:
+
 ```bash
 # Build all applications
 npm run build:dev
@@ -118,11 +122,13 @@ nx test common-ui
 ### Setup
 
 Before running tests, install Playwright browsers:
+
 ```bash
 npx playwright install
 ```
 
 **Key Testing Resources:**
+
 - [E2E Testing Guide](./docs/testing/e2e-testing.md) - Comprehensive E2E testing with Playwright
 - [Test Portability Guide](./docs/testing/test-portability.md) - Running tests in different environments
 - [Quick Reference](./docs/testing/quick-reference.md) - Common testing tasks

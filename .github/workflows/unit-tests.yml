@@ -54,7 +54,7 @@ jobs:
         run: |
           echo "## Unit Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ -d "coverage" ]; then
             find coverage -name "coverage-summary.json" | while read file; do
               PROJECT=$(echo $file | cut -d'/' -f2)

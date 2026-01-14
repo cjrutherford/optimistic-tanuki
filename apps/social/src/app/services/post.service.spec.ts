@@ -56,17 +56,23 @@ describe('PostService', () => {
   });
 
   it('should create a post', async () => {
-    const dto: CreatePostDto = { title: 'Test', content: 'Content', profileId: '1' };
+    const dto: CreatePostDto = {
+      title: 'Test',
+      content: 'Content',
+      profileId: '1',
+    };
     const post = { id: '1', ...dto } as Post;
     postRepo.create.mockReturnValue(post);
     postRepo.save.mockResolvedValue(post);
     const result = await service.create(dto);
     // Content should be sanitized, so we check the structure was called with sanitized version
-    expect(postRepo.create).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Test',
-      profileId: '1',
-      content: expect.any(String), // Sanitized content
-    }));
+    expect(postRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Test',
+        profileId: '1',
+        content: expect.any(String), // Sanitized content
+      })
+    );
     expect(postRepo.save).toHaveBeenCalledWith(post);
     expect(result).toBe(post);
   });
@@ -92,10 +98,13 @@ describe('PostService', () => {
     const dto: UpdatePostDto = { title: 'Updated', content: 'Updated' };
     await service.update(1, dto);
     // Content should be sanitized
-    expect(postRepo.update).toHaveBeenCalledWith(1, expect.objectContaining({
-      title: 'Updated',
-      content: expect.any(String), // Sanitized content
-    }));
+    expect(postRepo.update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        title: 'Updated',
+        content: expect.any(String), // Sanitized content
+      })
+    );
   });
 
   it('should remove a post', async () => {

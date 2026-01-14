@@ -15,7 +15,5 @@ export default {
       statements: 80,
     },
   },
-  transformIgnorePatterns: [
-    'node_modules/(?!(isomorphic-dompurify|parse5)/)',
-  ],
+  transformIgnorePatterns: ['node_modules/(?!(isomorphic-dompurify|parse5)/)'],
 };

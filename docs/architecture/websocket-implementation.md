@@ -9,12 +9,14 @@ This document describes the WebSocket implementation for the social service, ena
 ### Components
 
 1. **Social Gateway** (`apps/gateway/src/app/social-gateway/social.gateway.ts`)
+
    - WebSocket server running on port 3301
    - Uses Socket.IO with namespace `/social`
    - Manages client connections and subscriptions
    - Broadcasts events to subscribed clients
 
 2. **Controller Integration**
+
    - `SocialController` - Broadcasts post, comment, and vote events
    - `FollowController` - Broadcasts follow/unfollow events
 
@@ -36,17 +38,20 @@ Client → WebSocket (port 3301) → Social Gateway → Social Service (microser
 ### Gateway Features
 
 **Connection Management:**
+
 - Bidirectional client mapping for O(1) lookups
 - Handles client reconnections gracefully
 - Cleans up stale connections automatically
 
 **Subscription System:**
+
 - Subscribe to all posts: `SUBSCRIBE_POSTS` (no postIds)
 - Subscribe to specific posts: `SUBSCRIBE_POSTS` (with postIds array)
 - Subscribe to user activity: `SUBSCRIBE_USER_ACTIVITY`
 - Unsubscribe options for all subscription types
 
 **Broadcasting:**
+
 - Only sends events to subscribed clients
 - Supports multiple subscription types per client
 - Efficient event filtering based on subscriptions
@@ -54,6 +59,7 @@ Client → WebSocket (port 3301) → Social Gateway → Social Service (microser
 ### Events
 
 **Outbound (Server → Client):**
+
 - `post_created` - New post created
 - `post_updated` - Post updated
 - `post_deleted` - Post deleted
@@ -69,6 +75,7 @@ Client → WebSocket (port 3301) → Social Gateway → Social Service (microser
 - `error` - Error occurred
 
 **Inbound (Client → Server):**
+
 - `SUBSCRIBE_POSTS` - Subscribe to post updates
 - `UNSUBSCRIBE_POSTS` - Unsubscribe from posts
 - `SUBSCRIBE_USER_ACTIVITY` - Subscribe to user activity
@@ -80,19 +87,19 @@ Client → WebSocket (port 3301) → Social Gateway → Social Service (microser
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SOCIAL_SOCKET_PORT` | 3301 | Port for social WebSocket server |
-| `CORS_ORIGIN` | '*' | CORS origin configuration |
+| Variable             | Default | Description                      |
+| -------------------- | ------- | -------------------------------- |
+| `SOCIAL_SOCKET_PORT` | 3301    | Port for social WebSocket server |
+| `CORS_ORIGIN`        | '\*'    | CORS origin configuration        |
 
 ### Docker Configuration
 
 ```yaml
 gateway:
   ports:
-    - '3000:3000'   # HTTP API
-    - '3300:3300'   # Chat WebSocket
-    - '3301:3301'   # Social WebSocket
+    - '3000:3000' # HTTP API
+    - '3300:3300' # Chat WebSocket
+    - '3301:3301' # Social WebSocket
 ```
 
 ## Security
@@ -112,10 +119,12 @@ gateway:
 ## Performance Optimizations
 
 1. **O(1) Client Lookups**
+
    - Uses `clientToProfileMap` for efficient disconnect handling
    - Avoids linear searches through connected clients
 
 2. **Subscription-Based Broadcasting**
+
    - Only sends events to interested clients
    - Reduces unnecessary network traffic
 
@@ -126,11 +135,13 @@ gateway:
 ## Error Handling
 
 ### Gateway
+
 - Type-safe error handling with instanceof checks
 - Sanitized error messages sent to clients
 - Full error logging on server side
 
 ### Controllers
+
 - Optional gateway injection (won't break if gateway unavailable)
 - Graceful degradation if WebSocket not available
 - Error logging with safe message extraction
@@ -140,6 +151,7 @@ gateway:
 ### Unit Tests
 
 Located in `apps/gateway/src/app/social-gateway/social.gateway.spec.ts`:
+
 - Connection handling
 - Subscription management
 - Feed retrieval
@@ -167,6 +179,7 @@ socket.on('post_created', (post) => {
 ### Logging
 
 The gateway logs:
+
 - Client connections/disconnections
 - Subscription changes
 - Broadcast events
@@ -182,14 +195,17 @@ The gateway logs:
 ## Known Limitations
 
 1. **No Authentication**
+
    - WebSocket connections not authenticated
    - Future enhancement required
 
 2. **No Rate Limiting**
+
    - Clients can subscribe/unsubscribe without limits
    - Consider adding rate limiting in production
 
 3. **No Persistence**
+
    - Client state not persisted
    - Clients must re-subscribe after reconnection
 
@@ -200,11 +216,13 @@ The gateway logs:
 ## Future Enhancements
 
 ### Short Term
+
 - [ ] Add WebSocket authentication
 - [ ] Implement rate limiting
 - [ ] Add connection pooling
 
 ### Long Term
+
 - [ ] Redis adapter for horizontal scaling
 - [ ] Message queuing for offline clients
 - [ ] Compression for large payloads
@@ -226,11 +244,13 @@ To add a new event type:
 ### Debugging Tips
 
 1. **Client not receiving events:**
+
    - Check if client is subscribed
    - Verify subscription type matches broadcast
    - Check network connectivity
 
 2. **Gateway not starting:**
+
    - Check port availability (3301)
    - Verify environment variables
    - Check logs for errors
@@ -250,6 +270,7 @@ To add a new event type:
 ## Support
 
 For questions or issues:
+
 1. Check the client implementation guide
 2. Review the gateway logs
 3. Check Socket.IO connection status
@@ -258,12 +279,14 @@ For questions or issues:
 ## MVP Compliance
 
 This implementation fully satisfies MVP requirements:
+
 - ✅ Real-time client with exponential reconnect/backoff (MVP.md line 89)
 - ✅ SSE/WebSocket client helper with backoff (MVP.md line 99)
 
 ## Changelog
 
 ### Version 1.0.0 (Initial Release)
+
 - Social gateway implementation
 - Subscription-based broadcasting
 - Post, comment, vote, and follow events

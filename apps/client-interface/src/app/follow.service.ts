@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL, FollowDto } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class FollowService {
   private baseUrl: string;

@@ -1,7 +1,11 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ChangeService } from './change.service';
-import { CreateChangeDto, QueryChangeDto, UpdateChangeDto } from '@optimistic-tanuki/models'
+import {
+  CreateChangeDto,
+  QueryChangeDto,
+  UpdateChangeDto,
+} from '@optimistic-tanuki/models';
 import { ChangeCommands } from '@optimistic-tanuki/constants';
 
 @Controller()

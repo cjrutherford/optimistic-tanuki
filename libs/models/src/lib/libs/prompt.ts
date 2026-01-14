@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsArray, IsOptional, IsBoolean, IsObject, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  IsOptional,
+  IsBoolean,
+  IsObject,
+  IsEnum,
+} from 'class-validator';
 
 export class PromptSendDto {
   @ApiProperty()
@@ -37,7 +44,9 @@ export class GeneratePrompt {
 
   @ApiProperty()
   @IsArray()
-  messages!: OpenAIMessage[] | { role: string; content: string; [key: string]: any }[];
+  messages!:
+    | OpenAIMessage[]
+    | { role: string; content: string; [key: string]: any }[];
 
   @ApiPropertyOptional()
   @IsOptional()

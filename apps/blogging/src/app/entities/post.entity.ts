@@ -21,7 +21,7 @@ export class Post {
   @Column({ type: 'timestamp', nullable: true })
   publishedAt: Date | null;
 
-  @ManyToOne(() => Blog, blog => blog.posts)
+  @ManyToOne(() => Blog, (blog) => blog.posts)
   blog: Blog;
 
   @Column({ default: () => 'CURRENT_TIMESTAMP' })

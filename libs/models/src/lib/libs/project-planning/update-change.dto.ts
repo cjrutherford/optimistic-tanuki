@@ -7,11 +7,14 @@ export class UpdateChangeDto extends PartialType(CreateChangeDto) {
   @ApiProperty({ description: 'Change ID' })
   @IsUUID()
   id: string;
-  
-  @ApiPropertyOptional({ enum: ChangeResolution, description: 'Change resolution' })
+
+  @ApiPropertyOptional({
+    enum: ChangeResolution,
+    description: 'Change resolution',
+  })
   @IsOptional()
   @IsEnum(ChangeResolution)
-  resolution?: ChangeResolution
+  resolution?: ChangeResolution;
 }
 
 export class QueryChangeDto extends PartialType(CreateChangeDto) {
@@ -19,16 +22,16 @@ export class QueryChangeDto extends PartialType(CreateChangeDto) {
   @IsOptional()
   @IsUUID()
   createdBy?: string;
-  
+
   @ApiPropertyOptional({ description: 'Updated by user ID' })
   @IsOptional()
   @IsUUID()
   updatedBy?: string;
-  
+
   @ApiPropertyOptional({ type: [Date], description: 'Created at range' })
   @IsOptional()
   createdAt?: [Date, Date];
-  
+
   @ApiPropertyOptional({ type: [Date], description: 'Updated at range' })
   @IsOptional()
   updatedAt?: [Date, Date];

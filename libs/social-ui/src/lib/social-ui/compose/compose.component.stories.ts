@@ -8,10 +8,10 @@ const meta: Meta<ComposeComponent> = {
   component: ComposeComponent,
   title: 'ComposeComponent',
   decorators: [
-      moduleMetadata({
-        imports: [QuillModule.forRoot()],
-      })
-  ]
+    moduleMetadata({
+      imports: [QuillModule.forRoot()],
+    }),
+  ],
 };
 export default meta;
 type Story = StoryObj<ComposeComponent>;

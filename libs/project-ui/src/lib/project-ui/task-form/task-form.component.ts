@@ -1,14 +1,35 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Input, Output, signal, OnInit } from '@angular/core';
-import { CreateProfileDto, ProfileDto, Task, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  signal,
+  OnInit,
+} from '@angular/core';
+import {
+  CreateProfileDto,
+  ProfileDto,
+  Task,
+  UpdateProfileDto,
+} from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { SelectComponent, TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
-
-
+import {
+  SelectComponent,
+  TextAreaComponent,
+  TextInputComponent,
+} from '@optimistic-tanuki/form-ui';
 
 @Component({
   selector: 'lib-task-form',
-  imports: [ReactiveFormsModule, CardComponent, TextInputComponent, TextAreaComponent, ButtonComponent, SelectComponent],
+  imports: [
+    ReactiveFormsModule,
+    CardComponent,
+    TextInputComponent,
+    TextAreaComponent,
+    ButtonComponent,
+    SelectComponent,
+  ],
   templateUrl: './task-form.component.html',
   styleUrl: './task-form.component.scss',
 })
@@ -71,7 +92,7 @@ export class TaskFormComponent implements OnInit {
         createdBy: this.task ? this.task.createdBy : '',
         createdAt: this.task ? this.task.createdAt : new Date(),
         updatedAt: new Date(),
-      }
+      };
       this.formSubmit.emit(emittedValue);
       this.taskForm.reset();
     }

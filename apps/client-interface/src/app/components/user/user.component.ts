@@ -4,7 +4,6 @@ import { AuthStateService, UserData } from '../../state/auth-state.service';
 import { Router } from '@angular/router';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 
-
 @Component({
   selector: 'app-user',
   standalone: true,
@@ -26,12 +25,16 @@ export class UserComponent implements OnInit, OnDestroy {
   showPanel = false;
 
   ngOnInit() {
-    this.authState.isAuthenticated$.pipe(takeUntil(this.unsubscribe$)).subscribe((isAuthenticated) => {
-      this.isLoggedIn = isAuthenticated;
-    });
-    this.authState.decodedToken$.pipe(takeUntil(this.unsubscribe$)).subscribe((userData) => {
-      this.user = userData;
-    });
+    this.authState.isAuthenticated$
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe((isAuthenticated) => {
+        this.isLoggedIn = isAuthenticated;
+      });
+    this.authState.decodedToken$
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe((userData) => {
+        this.user = userData;
+      });
   }
 
   ngOnDestroy() {

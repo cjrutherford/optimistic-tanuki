@@ -1,3 +1,3 @@
 export const PromptCommands = {
-    SEND: 'SEND',
-}
+  SEND: 'SEND',
+};

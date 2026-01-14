@@ -27,7 +27,8 @@ describe('ProductListComponent', () => {
   });
 
   it('should display all products', () => {
-    const productCards = fixture.nativeElement.querySelectorAll('store-product-card');
+    const productCards =
+      fixture.nativeElement.querySelectorAll('store-product-card');
     expect(productCards.length).toBe(2);
   });
 

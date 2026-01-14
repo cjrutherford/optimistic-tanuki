@@ -13,7 +13,6 @@ export class Project {
   @Column()
   owner: string; // manual reference to the User Profile Entity from the [Profile Service] represneting owner of the project
 
-
   @Column({ type: 'text', array: true })
   members: string[]; // manual reference to the User Profile Entity from the [Profile Service] representing a related party to the project
 
@@ -59,7 +58,6 @@ export class Project {
   @OneToMany(() => Change, (change) => change.project)
   changes: Change[];
 
-  @OneToMany(() => ProjectJournal, journal => journal.project)
+  @OneToMany(() => ProjectJournal, (journal) => journal.project)
   journalEntries: ProjectJournal[];
-
 }

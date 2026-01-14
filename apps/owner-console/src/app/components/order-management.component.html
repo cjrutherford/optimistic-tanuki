@@ -32,7 +32,7 @@
       <tbody>
         <tr *ngFor="let order of filteredOrders">
           <td>{{ order.id.substring(0, 8) }}...</td>
-          <td>{{ order.createdAt | date:'short' }}</td>
+          <td>{{ order.createdAt | date : 'short' }}</td>
           <td>{{ order.userId.substring(0, 8) }}...</td>
           <td>{{ getTotalItems(order) }}</td>
           <td>{{ order.currency }} \${{ order.total.toFixed(2) }}</td>
@@ -42,12 +42,15 @@
             </span>
           </td>
           <td class="actions-cell">
-            <button class="btn btn-sm btn-view" (click)="viewOrder(order)">View</button>
-            <select 
+            <button class="btn btn-sm btn-view" (click)="viewOrder(order)">
+              View
+            </button>
+            <select
               class="status-select"
               [value]="order.status"
               (change)="updateOrderStatus(order, $any($event.target).value)"
-              [disabled]="loading">
+              [disabled]="loading"
+            >
               <option value="pending">Pending</option>
               <option value="processing">Processing</option>
               <option value="completed">Completed</option>
@@ -64,7 +67,11 @@
   </div>
 
   <!-- Order Details Modal -->
-  <div class="modal-overlay" *ngIf="selectedOrder" (click)="closeOrderDetails()">
+  <div
+    class="modal-overlay"
+    *ngIf="selectedOrder"
+    (click)="closeOrderDetails()"
+  >
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Order Details</h3>
@@ -81,7 +88,7 @@
         </div>
         <div class="detail-row">
           <strong>Date:</strong>
-          <span>{{ selectedOrder.createdAt | date:'full' }}</span>
+          <span>{{ selectedOrder.createdAt | date : 'full' }}</span>
         </div>
         <div class="detail-row">
           <strong>Status:</strong>
@@ -111,7 +118,13 @@
           <tfoot>
             <tr>
               <td colspan="3"><strong>Total:</strong></td>
-              <td><strong>{{ selectedOrder.currency }} \${{ selectedOrder.total.toFixed(2) }}</strong></td>
+              <td>
+                <strong
+                  >{{ selectedOrder.currency }} \${{
+                    selectedOrder.total.toFixed(2)
+                  }}</strong
+                >
+              </td>
             </tr>
           </tfoot>
         </table>

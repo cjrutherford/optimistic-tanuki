@@ -20,12 +20,18 @@ const samplePost: PostDto = {
   profileId: '',
   comments: [
     {
-      userId: 'User1', content: 'Great post!', id: '1', postId: '1',
-      profileId: ''
+      userId: 'User1',
+      content: 'Great post!',
+      id: '1',
+      postId: '1',
+      profileId: '',
     },
     {
-      userId: 'User2', content: 'Thanks for sharing.', id: '2', postId: '1',
-      profileId: ''
+      userId: 'User2',
+      content: 'Thanks for sharing.',
+      id: '2',
+      postId: '1',
+      profileId: '',
     },
   ],
   createdAt: new Date(),
@@ -35,13 +41,27 @@ export const Primary: Story = {
   args: {
     content: samplePost,
     attachments: [
-      { id: '1', type: 'image', postId: '1', userId: '1', name: 'Attachment1', url: 'http://example.com/attachment1' },
-      { id: '2', type: 'image', postId: '1', userId: '1', name: 'Attachment2', url: 'http://example.com/attachment2' }
+      {
+        id: '1',
+        type: 'image',
+        postId: '1',
+        userId: '1',
+        name: 'Attachment1',
+        url: 'http://example.com/attachment1',
+      },
+      {
+        id: '2',
+        type: 'image',
+        postId: '1',
+        userId: '1',
+        name: 'Attachment2',
+        url: 'http://example.com/attachment2',
+      },
     ],
     links: [
       { title: 'Link1', url: 'http://example.com/link1' },
-      { title: 'Link2', url: 'http://example.com/link2' }
-    ]
+      { title: 'Link2', url: 'http://example.com/link2' },
+    ],
   },
 };
 
@@ -49,7 +69,7 @@ export const Heading: Story = {
   args: {
     content: samplePost,
     attachments: [],
-    links: []
+    links: [],
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

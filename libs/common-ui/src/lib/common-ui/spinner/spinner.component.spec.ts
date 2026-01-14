@@ -26,12 +26,18 @@ describe('SpinnerComponent', () => {
       complementary: '#456',
     } as any;
     component.applyTheme(mockColors);
-    
+
     const nativeElement = fixture.nativeElement;
     expect(nativeElement.style.getPropertyValue('--local-accent')).toBe('#123');
-    expect(nativeElement.style.getPropertyValue('--local-foreground')).toBe('#abc');
-    expect(nativeElement.style.getPropertyValue('--local-background')).toBe('#def');
-    expect(nativeElement.style.getPropertyValue('--local-complement')).toBe('#456');
+    expect(nativeElement.style.getPropertyValue('--local-foreground')).toBe(
+      '#abc'
+    );
+    expect(nativeElement.style.getPropertyValue('--local-background')).toBe(
+      '#def'
+    );
+    expect(nativeElement.style.getPropertyValue('--local-complement')).toBe(
+      '#456'
+    );
   });
 
   it('should set styleType and size', () => {
@@ -40,5 +46,4 @@ describe('SpinnerComponent', () => {
     expect(component.styleType).toBe('circle');
     expect(component.size).toBe('48px');
   });
-
 });

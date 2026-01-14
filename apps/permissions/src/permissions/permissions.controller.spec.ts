@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PermissionsController } from './permissions.controller';
 import { PermissionsService } from '../app/permissions.service';
-import { CreatePermissionDto, UpdatePermissionDto } from '@optimistic-tanuki/models';
+import {
+  CreatePermissionDto,
+  UpdatePermissionDto,
+} from '@optimistic-tanuki/models';
 
 describe('PermissionsController', () => {
   let controller: PermissionsController;
@@ -34,9 +37,16 @@ describe('PermissionsController', () => {
 
   describe('createPermission', () => {
     it('should call service.createPermission with the correct data', async () => {
-      const createPermissionDto: CreatePermissionDto = { name: 'test:read', description: 'Test Read', resource: 'test', action: 'read' };
+      const createPermissionDto: CreatePermissionDto = {
+        name: 'test:read',
+        description: 'Test Read',
+        resource: 'test',
+        action: 'read',
+      };
       await controller.createPermission(createPermissionDto);
-      expect(service.createPermission).toHaveBeenCalledWith(createPermissionDto);
+      expect(service.createPermission).toHaveBeenCalledWith(
+        createPermissionDto
+      );
     });
   });
 
@@ -58,9 +68,15 @@ describe('PermissionsController', () => {
 
   describe('updatePermission', () => {
     it('should call service.updatePermission with the correct data', async () => {
-      const updatePermissionDto: UpdatePermissionDto = { id: '1', name: 'updated' };
+      const updatePermissionDto: UpdatePermissionDto = {
+        id: '1',
+        name: 'updated',
+      };
       await controller.updatePermission(updatePermissionDto);
-      expect(service.updatePermission).toHaveBeenCalledWith('1', updatePermissionDto);
+      expect(service.updatePermission).toHaveBeenCalledWith(
+        '1',
+        updatePermissionDto
+      );
     });
   });
 

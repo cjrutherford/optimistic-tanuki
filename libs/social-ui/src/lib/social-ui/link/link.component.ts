@@ -1,12 +1,16 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { ButtonComponent, CardComponent, GridComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ButtonComponent,
+  CardComponent,
+  GridComponent,
+} from '@optimistic-tanuki/common-ui';
 
 export declare type LinkType = {
   url: string;
   title: string;
-}
+};
 
 @Component({
   selector: 'lib-link',
@@ -17,7 +21,11 @@ export declare type LinkType = {
 })
 export class LinkComponent {
   @Input() links: LinkType[] = [];
-  @Output() linksChange = new EventEmitter<{ all: LinkType[], added?: LinkType, removed?: LinkType }>();
+  @Output() linksChange = new EventEmitter<{
+    all: LinkType[];
+    added?: LinkType;
+    removed?: LinkType;
+  }>();
   linkValue = '';
 
   addLink() {
@@ -25,7 +33,7 @@ export class LinkComponent {
       return;
     }
     const title = this.linkValue;
-    const newLink = { url: this.linkValue, title};
+    const newLink = { url: this.linkValue, title };
     this.links.push(newLink);
     this.linksChange.emit({ all: this.links, added: newLink });
     this.linkValue = '';
@@ -33,7 +41,7 @@ export class LinkComponent {
 
   removeLink(link: LinkType) {
     const initialLength = this.links.length;
-    this.links = this.links.filter(l => l !== link);
+    this.links = this.links.filter((l) => l !== link);
     if (this.links.length < initialLength) {
       this.linksChange.emit({ all: this.links, removed: link });
     }

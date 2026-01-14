@@ -46,12 +46,12 @@ jobs:
         run: |
           # Install coverage tools
           npm install -g istanbul-badges-readme
-          
+
           echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Project | Statements | Branches | Functions | Lines |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|------------|----------|-----------|-------|" >> $GITHUB_STEP_SUMMARY
-          
+
           # Process each coverage report
           if [ -d "coverage" ]; then
             find coverage -name "coverage-summary.json" | while read file; do
@@ -117,11 +117,11 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            
+
             let comment = '## 📊 Code Coverage Report\n\n';
             comment += '| Project | Statements | Branches | Functions | Lines |\n';
             comment += '|---------|------------|----------|-----------|-------|\n';
-            
+
             const coverageDir = 'coverage';
             if (fs.existsSync(coverageDir)) {
               const findCoverage = (dir) => {
@@ -150,20 +150,20 @@ jobs:
             } else {
               comment += 'No coverage data found\n';
             }
-            
+
             comment += '\n**Thresholds:** ✅ ≥80% | ⚠️ 60-79% | ❌ <60%';
-            
+
             // Find existing coverage comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
+
             const botComment = comments.find(comment => 
               comment.user.type === 'Bot' && comment.body.includes('Code Coverage Report')
             );
-            
+
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,

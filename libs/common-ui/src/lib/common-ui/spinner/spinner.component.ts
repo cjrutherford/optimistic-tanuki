@@ -1,4 +1,3 @@
-
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
@@ -18,7 +17,12 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
   },
 })
 export class SpinnerComponent extends Themeable {
-  @Input() styleType: 'default' | 'circle' | 'dots'| 'dual-ring' | 'hourglass' = 'default';
+  @Input() styleType:
+    | 'default'
+    | 'circle'
+    | 'dots'
+    | 'dual-ring'
+    | 'hourglass' = 'default';
   size = '32px';
 
   override applyTheme(colors: ThemeColors): void {

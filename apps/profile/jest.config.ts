@@ -14,5 +14,5 @@ export default {
       lines: 80,
       statements: 80,
     },
-  }
+  },
 };

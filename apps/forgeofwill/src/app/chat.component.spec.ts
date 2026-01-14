@@ -1,4 +1,9 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { of } from 'rxjs';
 import { io } from 'socket.io-client';
@@ -6,7 +11,14 @@ import { io } from 'socket.io-client';
 import { ChatComponent } from './chat.component';
 import { ProfileService } from './profile/profile.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
-import { SocketChatService, ChatConversation, ChatMessage, SOCKET_HOST, SOCKET_NAMESPACE, SOCKET_IO_INSTANCE } from '@optimistic-tanuki/chat-ui';
+import {
+  SocketChatService,
+  ChatConversation,
+  ChatMessage,
+  SOCKET_HOST,
+  SOCKET_NAMESPACE,
+  SOCKET_IO_INSTANCE,
+} from '@optimistic-tanuki/chat-ui';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
 class MockSocketChatService {
@@ -65,15 +77,19 @@ describe('ChatComponent', () => {
         { provide: SocketChatService, useValue: socketChatServiceMock },
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],
-    }).overrideComponent(ChatComponent, {
-      set: { providers: [] } // Remove component-level providers to use the test-level one
-    }).compileComponents();
+    })
+      .overrideComponent(ChatComponent, {
+        set: { providers: [] }, // Remove component-level providers to use the test-level one
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(ChatComponent);
     component = fixture.componentInstance;
     profileService = TestBed.inject(ProfileService);
     messageService = TestBed.inject(MessageService);
-    socketChatService = TestBed.inject(SocketChatService) as unknown as MockSocketChatService;
+    socketChatService = TestBed.inject(
+      SocketChatService
+    ) as unknown as MockSocketChatService;
     fixture.detectChanges();
   });
 
@@ -95,21 +111,24 @@ describe('ChatComponent', () => {
     const messageText = 'Hello, world!';
     component.handleNewMessage(messageText, mockConversation.id);
 
-    expect(socketChatService.sendMessage).toHaveBeenCalledWith(expect.objectContaining({
-      content: messageText,
-      conversationId: mockConversation.id,
-      senderId: 'user1',
-    }));
+    expect(socketChatService.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: messageText,
+        conversationId: mockConversation.id,
+        senderId: 'user1',
+      })
+    );
   });
 
   it('should update contacts when conversations are received', async () => {
-    const conversationsCallback = socketChatService.onConversations.mock.calls[0][0];
+    const conversationsCallback =
+      socketChatService.onConversations.mock.calls[0][0];
     conversationsCallback([mockConversation]);
-    
+
     // Wait for the async updateContacts to complete
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     fixture.detectChanges();
-    
+
     // The current user profile should be added to contacts (even if no other participants)
     expect(component.contacts().length).toBeGreaterThan(0);
   });
@@ -135,6 +154,8 @@ describe('ChatComponent', () => {
     component.socketChat = null;
     const message: Partial<ChatMessage> = { content: 'test' };
     component.postMessage(message);
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   });
 });

@@ -4,11 +4,11 @@
 // @import 'ag-grid-community/styles/ag-grid.css';
 
 body {
-    background-color: var(--background-color);
-    /* Use accent color variable for SVG fill via mask and background-color */
-    -webkit-background-image: var(--background-pattern);
-    background-image: var(--background-pattern);
-    -webkit-background-repeat: repeat;
-    background-repeat: repeat;
-    background-size: 20px 20px;
+  background-color: var(--background-color);
+  /* Use accent color variable for SVG fill via mask and background-color */
+  -webkit-background-image: var(--background-pattern);
+  background-image: var(--background-pattern);
+  -webkit-background-repeat: repeat;
+  background-repeat: repeat;
+  background-size: 20px 20px;
 }

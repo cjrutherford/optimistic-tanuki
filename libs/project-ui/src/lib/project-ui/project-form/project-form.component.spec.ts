@@ -55,7 +55,9 @@ describe('ProjectFormComponent', () => {
     fixture.detectChanges();
 
     expect(component.projectForm.value.projectName).toEqual(mockProject.name);
-    expect(component.projectForm.value.projectDescription).toEqual(mockProject.description);
+    expect(component.projectForm.value.projectDescription).toEqual(
+      mockProject.description
+    );
   });
 
   it('should emit submitEvent with correct data when form is valid', () => {
@@ -65,7 +67,9 @@ describe('ProjectFormComponent', () => {
     const projectDescription = 'New Description';
 
     component.projectForm.controls['projectName'].setValue(projectName);
-    component.projectForm.controls['projectDescription'].setValue(projectDescription);
+    component.projectForm.controls['projectDescription'].setValue(
+      projectDescription
+    );
 
     component.onSubmit();
 

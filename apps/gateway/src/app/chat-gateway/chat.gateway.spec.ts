@@ -88,56 +88,68 @@ describe('ChatGateway', () => {
         conversationId: 'conv-id',
         content: 'hello',
         timestamp: new Date(),
-        type: 'chat'
+        type: 'chat',
       };
       const messageReceipt = { id: 'msg-1' };
       const aiRecipients = [];
       const conversations = [{ id: 'conv-id' }];
-      
+
       chatCollectorService.send
         .mockReturnValueOnce(of(messageReceipt)) // post message
         .mockReturnValueOnce(of(conversations)); // get conversations
-        
+
       telosDocsService.send.mockReturnValue(of(aiRecipients));
 
       await gateway.handleMessage(payload, socket);
 
-      expect(chatCollectorService.send).toHaveBeenCalledWith({ cmd: ChatCommands.POST_MESSAGE }, payload);
+      expect(chatCollectorService.send).toHaveBeenCalledWith(
+        { cmd: ChatCommands.POST_MESSAGE },
+        payload
+      );
       expect(telosDocsService.send).toHaveBeenCalled();
       expect(aiOrchestrationService.send).not.toHaveBeenCalled();
-      expect(chatCollectorService.send).toHaveBeenCalledWith({ cmd: ChatCommands.GET_CONVERSATIONS }, { profileId: 'sender-id' });
+      expect(chatCollectorService.send).toHaveBeenCalledWith(
+        { cmd: ChatCommands.GET_CONVERSATIONS },
+        { profileId: 'sender-id' }
+      );
     });
 
     it('should handle a message with AI recipients', async () => {
-        const payload: ChatMessage = {
-            id: 'msg-id',
-            senderId: 'sender-id',
-            senderName: 'sender-name',
-            recipientId: ['ai-recipient-id'],
-            recipientName: ['ai-recipient-name'],
-            conversationId: 'conv-id',
-            content: 'hello',
-            timestamp: new Date(),
-            type: 'chat'
-          };
-          const messageReceipt = { id: 'msg-1' };
-          const aiRecipients = [{ id: 'ai-recipient-id' }];
-          const conversation = { id: 'conv-id', messages: [] };
-          const conversations = [conversation];
-          
-          chatCollectorService.send
-            .mockReturnValueOnce(of(messageReceipt)) // post message
-            .mockReturnValueOnce(of(conversation)) // get conversation
-            .mockReturnValueOnce(of(conversations)); // get conversations
-            
-          telosDocsService.send.mockReturnValue(of(aiRecipients));
-    
-          await gateway.handleMessage(payload, socket);
-    
-          expect(chatCollectorService.send).toHaveBeenCalledWith({ cmd: ChatCommands.POST_MESSAGE }, payload);
-          expect(telosDocsService.send).toHaveBeenCalled();
-          expect(aiOrchestrationService.send).toHaveBeenCalled();
-          expect(chatCollectorService.send).toHaveBeenCalledWith({ cmd: ChatCommands.GET_CONVERSATIONS }, { profileId: 'sender-id' });
+      const payload: ChatMessage = {
+        id: 'msg-id',
+        senderId: 'sender-id',
+        senderName: 'sender-name',
+        recipientId: ['ai-recipient-id'],
+        recipientName: ['ai-recipient-name'],
+        conversationId: 'conv-id',
+        content: 'hello',
+        timestamp: new Date(),
+        type: 'chat',
+      };
+      const messageReceipt = { id: 'msg-1' };
+      const aiRecipients = [{ id: 'ai-recipient-id' }];
+      const conversation = { id: 'conv-id', messages: [] };
+      const conversations = [conversation];
+
+      chatCollectorService.send
+        .mockReturnValueOnce(of(messageReceipt)) // post message
+        .mockReturnValueOnce(of(conversation)) // get conversation
+        .mockReturnValueOnce(of(conversations)); // get conversations
+
+      telosDocsService.send.mockReturnValue(of(aiRecipients));
+
+      await gateway.handleMessage(payload, socket);
+
+      expect(chatCollectorService.send).toHaveBeenCalledWith(
+        { cmd: ChatCommands.POST_MESSAGE },
+        payload
+      );
+      expect(telosDocsService.send).toHaveBeenCalled();
+      expect(aiOrchestrationService.send).toHaveBeenCalled();
+      expect(chatCollectorService.send).toHaveBeenCalledWith(
+        { cmd: ChatCommands.GET_CONVERSATIONS },
+        { profileId: 'sender-id' }
+      );
     });
   });
 

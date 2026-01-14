@@ -1,8 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
-import { PropertyEditorComponent, PropertyDefinition } from './property-editor.component';
+import {
+  PropertyEditorComponent,
+  PropertyDefinition,
+} from './property-editor.component';
 import { Component } from '@angular/core';
-import { InjectedComponentInstance, InjectableComponent } from '../interfaces/component-injection.interface';
+import {
+  InjectedComponentInstance,
+  InjectableComponent,
+} from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'test-host',
@@ -106,7 +112,9 @@ describe('PropertyEditorComponent', () => {
       component.propertyDefinitions = [prop];
       fixture.detectChanges();
 
-      expect(component.propertyDefinitions[0].description).toBe('Enter the title text');
+      expect(component.propertyDefinitions[0].description).toBe(
+        'Enter the title text'
+      );
     });
 
     it('should support property with default value', () => {
@@ -136,7 +144,9 @@ describe('PropertyEditorComponent', () => {
       fixture.detectChanges();
 
       expect(component.propertyDefinitions[0].isOutput).toBe(true);
-      expect(component.propertyDefinitions[0].outputSchema).toEqual({ type: 'event' });
+      expect(component.propertyDefinitions[0].outputSchema).toEqual({
+        type: 'event',
+      });
     });
   });
 
@@ -185,14 +195,16 @@ describe('PropertyEditorComponent', () => {
     });
 
     it('should clean up temporary JSON strings after save', () => {
-      component.propertyDefinitions = [{
-        key: 'items',
-        type: 'array',
-        label: 'Items'
-      }];
+      component.propertyDefinitions = [
+        {
+          key: 'items',
+          type: 'array',
+          label: 'Items',
+        },
+      ];
       component.editedData = {
         items: ['item1'],
-        items_json: '["item1"]'
+        items_json: '["item1"]',
       };
 
       component.propertiesUpdated.subscribe((data) => {
@@ -266,10 +278,10 @@ describe('PropertyEditorComponent', () => {
   describe('Visibility', () => {
     it('should toggle visibility', () => {
       expect(component.isVisible).toBe(false);
-      
+
       component.isVisible = true;
       fixture.detectChanges();
-      
+
       expect(component.isVisible).toBe(true);
     });
   });

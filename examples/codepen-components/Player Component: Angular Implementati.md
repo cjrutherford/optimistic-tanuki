@@ -7,12 +7,14 @@ This spec analyzes the player UI in `swiper-card-music-player.html` and recommen
 ## 1. **Player Component**
 
 ### **Effect**
+
 - Modern player UI with glassmorphism background, controls, progress bar, volume, and playlist.
 - Supports both audio and video playback.
 
 ### **Angular Implementation**
 
 #### **A. New Component: `PlayerComponent`**
+
 - **Location:** `libs/common-ui/src/lib/player/`
 - **Inputs:**
   - `type: 'audio' | 'video'` (player mode)
@@ -34,19 +36,9 @@ This spec analyzes the player UI in `swiper-card-music-player.html` and recommen
   - Configurable for audio or video content.
 
 **Sample Usage:**
+
 ```html
-<common-ui-player
-  [type]="'audio'"
-  [sources]="audioSources"
-  [playlist]="playlistItems"
-  [options]="playerOptions"
-  (play)="onPlay()"
-  (pause)="onPause()"
-  (next)="onNext()"
-  (prev)="onPrev()"
-  (seek)="onSeek($event)"
-  (volumeChange)="onVolumeChange($event)"
-></common-ui-player>
+<common-ui-player [type]="'audio'" [sources]="audioSources" [playlist]="playlistItems" [options]="playerOptions" (play)="onPlay()" (pause)="onPause()" (next)="onNext()" (prev)="onPrev()" (seek)="onSeek($event)" (volumeChange)="onVolumeChange($event)"></common-ui-player>
 ```
 
 #### **B. Player Options Interface**
@@ -78,6 +70,7 @@ export interface PlaylistItem {
 ```
 
 #### **C. Enhancement: Add Glass Effect Option**
+
 - Use `GlassEffectDirective` or SCSS mixin for player background.
 
 ---

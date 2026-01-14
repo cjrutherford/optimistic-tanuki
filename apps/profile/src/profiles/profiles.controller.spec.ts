@@ -53,7 +53,7 @@ describe('ProfilesController', () => {
       location: 'Earth',
       occupation: 'Dev',
       interests: 'coding',
-      skills: 'TypeScript'
+      skills: 'TypeScript',
     };
     (service.create as jest.Mock).mockResolvedValue('created');
     const result = await controller.createProfile(dto);
@@ -73,7 +73,9 @@ describe('ProfilesController', () => {
     const query = { where: { userId: '1' } };
     (service.findAll as jest.Mock).mockResolvedValue(['profile']);
     const result = await controller.getAllProfiles(query);
-    expect(service.findAll).toHaveBeenCalledWith(expect.objectContaining(query));
+    expect(service.findAll).toHaveBeenCalledWith(
+      expect.objectContaining(query)
+    );
     expect(result).toEqual(['profile']);
   });
 
@@ -89,12 +91,11 @@ describe('ProfilesController', () => {
       location: 'Earth',
       occupation: 'Dev',
       interests: 'coding',
-      skills: 'TypeScript'
+      skills: 'TypeScript',
     };
     (service.update as jest.Mock).mockResolvedValue('updated');
     const result = await controller.updateProfile(dto);
     expect(service.update).toHaveBeenCalledWith('1', dto);
     expect(result).toBe('updated');
   });
-
 });

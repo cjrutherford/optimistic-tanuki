@@ -1,5 +1,11 @@
-
-import { Component, EventEmitter, Output, HostListener, Input, OnInit } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Output,
+  HostListener,
+  Input,
+  OnInit,
+} from '@angular/core';
 
 @Component({
   selector: 'lib-image-upload',
@@ -7,44 +13,55 @@ import { Component, EventEmitter, Output, HostListener, Input, OnInit } from '@a
   imports: [],
   template: `
     <div class="upload-container" [class.dragover]="isDragOver">
-      <input type="file" accept="image/*" (change)="handleImageChange($event)" />
-      <div class="drop-target" (drop)="handleDrop($event)" (dragover)="handleDragOver($event)" (dragleave)="handleDragLeave($event)">
+      <input
+        type="file"
+        accept="image/*"
+        (change)="handleImageChange($event)"
+      />
+      <div
+        class="drop-target"
+        (drop)="handleDrop($event)"
+        (dragover)="handleDragOver($event)"
+        (dragleave)="handleDragLeave($event)"
+      >
         <p>Drag and drop an image here, or click to select one</p>
       </div>
       @if (image) {
-        <img [src]="image" alt="Image preview" class="image-preview" />
+      <img [src]="image" alt="Image preview" class="image-preview" />
       }
     </div>
+  `,
+  styles: [
+    `
+      .upload-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        border: 2px dashed #ccc;
+        padding: 1rem;
+        position: relative;
+      }
+      .upload-container.dragover {
+        border-color: #000;
+      }
+      .drop-target {
+        width: 100%;
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        cursor: pointer;
+      }
+      .image-preview {
+        max-width: 300px;
+        margin-top: 1rem;
+      }
     `,
-  styles: [`
-    .upload-container {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      border: 2px dashed #ccc;
-      padding: 1rem;
-      position: relative;
-    }
-    .upload-container.dragover {
-      border-color: #000;
-    }
-    .drop-target {
-      width: 100%;
-      height: 150px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      cursor: pointer;
-    }
-    .image-preview {
-      max-width: 300px;
-     margin-top: 1rem;
-    }
-  `]
+  ],
 })
 export class ImageUploadComponent implements OnInit {
   @Output() imageUpload = new EventEmitter<string>();

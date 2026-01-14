@@ -16,7 +16,6 @@ import * as path from 'path';
 // because that makes the path absolute from the filesystem root.
 const PALETTES_PATH = path.resolve(__dirname, './assets/palettes.json');
 
-
 @Controller('palettes')
 export class PalettesController {
   private async readFile(): Promise<any[]> {

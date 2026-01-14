@@ -1,4 +1,7 @@
-import { CreateTimelineDto, CreateTimelineDtoFactory } from './create-timeline.dto';
+import {
+  CreateTimelineDto,
+  CreateTimelineDtoFactory,
+} from './create-timeline.dto';
 
 import { TimelineEventType } from '@optimistic-tanuki/models';
 
@@ -16,7 +19,7 @@ describe('CreateTimelineDto', () => {
       isCompleted: false,
       isPublished: true,
       isDeleted: false,
-      type: TimelineEventType.AddedGoal
+      type: TimelineEventType.AddedGoal,
     };
     expect(dto).toBeDefined();
     expect(dto.name).toBe('Timeline');
@@ -47,9 +50,7 @@ describe('CreateTimelineDto', () => {
   });
 
   it('should allow partial DTOs and undefined values', () => {
-    const dto = new CreateTimelineDtoFactory()
-      .setName('Partial')
-      .build();
+    const dto = new CreateTimelineDtoFactory().setName('Partial').build();
     expect(dto.name).toBe('Partial');
     expect(dto.description).toBeUndefined();
     expect(dto.type).toBeUndefined();

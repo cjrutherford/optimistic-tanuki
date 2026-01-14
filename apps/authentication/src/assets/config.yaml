@@ -5,6 +5,6 @@ database:
   name: ot_authentication
   username: postgres
   password: postgres
-auth: 
+auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

@@ -1,4 +1,14 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, signal, computed } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+  signal,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
@@ -20,22 +30,24 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
       />
     </div>
   `,
-  styles: [`
-    .ag-users-table-container {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      width: 100%;
-      height: 100%;
-      padding: 16px;
-    }
+  styles: [
+    `
+      .ag-users-table-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        width: 100%;
+        height: 100%;
+        padding: 16px;
+      }
 
-    .action-group {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-  `]
+      .action-group {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+    `,
+  ],
 })
 export class AgUsersTableComponent implements OnInit, OnChanges {
   @Input() users: ProfileDto[] = [];

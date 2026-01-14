@@ -1,7 +1,14 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ProductCardComponent, Product } from '../product-card/product-card.component';
-import { ThemeHostBindingsDirective, Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import {
+  ProductCardComponent,
+  Product,
+} from '../product-card/product-card.component';
+import {
+  ThemeHostBindingsDirective,
+  Themeable,
+  ThemeColors,
+} from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'store-product-list',

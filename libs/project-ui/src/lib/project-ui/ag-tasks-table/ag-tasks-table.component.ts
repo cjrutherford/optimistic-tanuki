@@ -1,4 +1,14 @@
-import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges, signal, computed } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  signal,
+  computed,
+} from '@angular/core';
 import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
@@ -8,10 +18,7 @@ import {
   createStatusColumn,
   CellClickedEvent,
 } from '@optimistic-tanuki/ag-grid-ui';
-import {
-  ButtonComponent,
-  ModalComponent,
-} from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import { CreateTask, Task } from '@optimistic-tanuki/ui-models';
 import { TaskFormComponent } from '../task-form/task-form.component';
 
@@ -22,7 +29,12 @@ import { TaskFormComponent } from '../task-form/task-form.component';
  */
 @Component({
   selector: 'lib-ag-tasks-table',
-  imports: [AgGridUiComponent, ButtonComponent, ModalComponent, TaskFormComponent],
+  imports: [
+    AgGridUiComponent,
+    ButtonComponent,
+    ModalComponent,
+    TaskFormComponent,
+  ],
   templateUrl: './ag-tasks-table.component.html',
   styleUrls: ['./ag-tasks-table.component.scss'],
 })
@@ -38,10 +50,10 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
   showModal = signal(false);
   showEditModal = signal(false);
   selectedTask = signal<Task | null>(null);
-  
+
   // Internal signal for grid data (reactive to input changes)
   private tasksSignal = signal<Task[]>([]);
-  
+
   // Computed signal for grid data (allows for filtering, sorting, etc.)
   gridData = computed(() => this.tasksSignal());
 
@@ -121,7 +133,11 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.tasksSignal.set(this.tasks || []);
-    console.log('ag-tasks-table initialized with', this.tasks?.length || 0, 'tasks');
+    console.log(
+      'ag-tasks-table initialized with',
+      this.tasks?.length || 0,
+      'tasks'
+    );
   }
 
   ngOnChanges(changes: SimpleChanges): void {

@@ -8,7 +8,8 @@ const meta: Meta<PaletteSelectorComponent> = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Interactive component for selecting predefined color palettes or creating custom ones. This component showcases the new streamlined theme system with standardized CSS variables and design tokens.',
+        component:
+          'Interactive component for selecting predefined color palettes or creating custom ones. This component showcases the new streamlined theme system with standardized CSS variables and design tokens.',
       },
     },
   },
@@ -22,7 +23,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'The default palette selector showing all available predefined palettes. Click on any palette to see the theme change throughout the application.',
+        story:
+          'The default palette selector showing all available predefined palettes. Click on any palette to see the theme change throughout the application.',
       },
     },
   },
@@ -32,7 +34,8 @@ export const DarkMode: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Palette selector in dark mode. The theme automatically adapts background and foreground colors based on the selected mode.',
+        story:
+          'Palette selector in dark mode. The theme automatically adapts background and foreground colors based on the selected mode.',
       },
     },
   },
@@ -46,7 +49,8 @@ export const WithCustomColors: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates the custom color mode where users can pick their own accent and complementary colors using color pickers.',
+        story:
+          'Demonstrates the custom color mode where users can pick their own accent and complementary colors using color pickers.',
       },
     },
   },

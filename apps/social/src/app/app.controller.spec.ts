@@ -295,10 +295,7 @@ describe('AppController', () => {
   });
 
   it('should apply default limit when opts is undefined', async () => {
-    const result = await controller.findAllPosts(
-      { title: 'Test' },
-      undefined
-    );
+    const result = await controller.findAllPosts({ title: 'Test' }, undefined);
 
     expect(postService.findAll).toHaveBeenCalledWith({
       where: { title: Like('%Test%') },

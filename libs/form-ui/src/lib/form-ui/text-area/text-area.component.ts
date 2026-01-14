@@ -53,7 +53,7 @@ export class TextAreaComponent
     this.accent = colors.accent;
     this.complement = colors.complementary;
     this.transitionDuration = '0.15s'; // Use standardized duration
-    
+
     // Use standardized gradient names
     if (this.theme === 'dark') {
       this.borderGradient = colors.accentGradients['dark'];

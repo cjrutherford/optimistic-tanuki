@@ -26,7 +26,7 @@ export const appConfig: ApplicationConfig = {
     // ... other providers
     {
       provide: API_BASE_URL,
-      useValue: '/api',  // Static value
+      useValue: '/api', // Static value
     },
     // OR use a factory for dynamic values:
     {
@@ -49,15 +49,12 @@ import { HttpClient } from '@angular/common/http';
 import { API_BASE_URL } from '@optimistic-tanuki/constants';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MyService {
   private baseUrl: string;
 
-  constructor(
-    @Inject(API_BASE_URL) private apiBaseUrl: string,
-    private http: HttpClient
-  ) {
+  constructor(@Inject(API_BASE_URL) private apiBaseUrl: string, private http: HttpClient) {
     this.baseUrl = `${this.apiBaseUrl}/my-endpoint`;
   }
 
@@ -77,7 +74,7 @@ import { HttpClient } from '@angular/common/http';
 import { API_BASE_URL } from '@optimistic-tanuki/constants';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MyService {
   private readonly http = inject(HttpClient);
@@ -97,12 +94,13 @@ export class MyService {
 To migrate an existing service that has hardcoded URLs:
 
 **Before:**
+
 ```typescript
 @Injectable({ providedIn: 'root' })
 export class PostService {
   private baseUrl = '/api/social/post';
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   getPost(id: string) {
     return this.http.get(`${this.baseUrl}/${id}`);
@@ -111,6 +109,7 @@ export class PostService {
 ```
 
 **After:**
+
 ```typescript
 import { Inject } from '@angular/core';
 import { API_BASE_URL } from '@optimistic-tanuki/constants';
@@ -119,10 +118,7 @@ import { API_BASE_URL } from '@optimistic-tanuki/constants';
 export class PostService {
   private baseUrl: string;
 
-  constructor(
-    @Inject(API_BASE_URL) private apiBaseUrl: string,
-    private http: HttpClient
-  ) {
+  constructor(@Inject(API_BASE_URL) private apiBaseUrl: string, private http: HttpClient) {
     this.baseUrl = `${this.apiBaseUrl}/social/post`;
   }
 
@@ -137,6 +133,7 @@ export class PostService {
 ### Client Interface App
 
 The `client-interface` app has been configured to use the API_BASE_URL token. See:
+
 - Configuration: `apps/client-interface/src/app/app.config.ts`
 - Example services:
   - `apps/client-interface/src/app/post.service.ts`
@@ -224,6 +221,7 @@ This means you forgot to provide a value for `API_BASE_URL` in your app configur
 ### Services still using hardcoded URLs
 
 Make sure to:
+
 1. Import `API_BASE_URL` from `@optimistic-tanuki/constants`
 2. Inject it in the constructor or using `inject()`
 3. Use the injected value to build your URLs

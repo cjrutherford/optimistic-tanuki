@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { TaskService } from './task.service';
 import { ProfileService } from '../profile/profile.service';
 import { CreateTask, Task } from '@optimistic-tanuki/ui-models';

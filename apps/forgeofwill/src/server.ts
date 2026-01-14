@@ -50,7 +50,7 @@ app.use(
 app.use(
   '/chat',
   createProxyMiddleware({
-    target: 'http://gateway:3300', 
+    target: 'http://gateway:3300',
     ws: true,
     changeOrigin: true,
   })
@@ -71,10 +71,12 @@ app.use('/**', (req, res, next) => {
   angularApp
     .handle(req, {
       document: (html: string) => {
-        const envScript = `<script>window['env'] = { SOCKET_URL: '${process.env['SOCKET_URL'] || 'http://localhost:3300'}' };</script>`;
+        const envScript = `<script>window['env'] = { SOCKET_URL: '${
+          process.env['SOCKET_URL'] || 'http://localhost:3300'
+        }' };</script>`;
         const finalDoc = html.replace('</body>', `${envScript}</body>`);
         return finalDoc;
-      }
+      },
     })
     .then((response) =>
       response ? writeResponseToNodeResponse(response, res) : next()

@@ -4,9 +4,8 @@ import { Observable } from 'rxjs';
 import { VoteDto, CreateVoteDto } from '@optimistic-tanuki/social-ui';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class VoteService {
   private baseUrl: string;

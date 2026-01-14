@@ -1,7 +1,21 @@
-import { ButtonComponent, ModalComponent, TableCell, TableComponent, TableRowAction } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Input, Output, SimpleChanges, signal, OnInit, OnChanges } from '@angular/core';
+import {
+  ButtonComponent,
+  ModalComponent,
+  TableCell,
+  TableComponent,
+  TableRowAction,
+} from '@optimistic-tanuki/common-ui';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  SimpleChanges,
+  signal,
+  OnInit,
+  OnChanges,
+} from '@angular/core';
 import { CreateRisk, Risk } from '@optimistic-tanuki/ui-models';
-
 
 import { RiskFormComponent } from '../risk-form/risk-form.component';
 
@@ -16,7 +30,8 @@ export class RisksTableComponent implements OnInit, OnChanges {
   showModal = signal<boolean>(false);
   showEditModal = signal<boolean>(false);
   selectedRisk = signal<Risk | null>(null);
-  @Output() createRisk: EventEmitter<CreateRisk> = new EventEmitter<CreateRisk>();
+  @Output() createRisk: EventEmitter<CreateRisk> =
+    new EventEmitter<CreateRisk>();
   @Output() editRisk: EventEmitter<Risk> = new EventEmitter<Risk>();
   @Output() deleteRisk: EventEmitter<string> = new EventEmitter<string>();
   tableActions = signal<TableRowAction[]>([
@@ -53,7 +68,7 @@ export class RisksTableComponent implements OnInit, OnChanges {
       projectId: '',
       status: 'OPEN',
       createdBy: '',
-      createdAt: new Date('2024-06-01')
+      createdAt: new Date('2024-06-01'),
     },
     {
       id: '2',
@@ -73,10 +88,9 @@ export class RisksTableComponent implements OnInit, OnChanges {
       projectId: '',
       status: 'OPEN',
       createdBy: '',
-      createdAt: new Date('2024-06-01')
+      createdAt: new Date('2024-06-01'),
     },
   ];
-
 
   ngOnInit() {
     this.setCellularData();
@@ -90,14 +104,20 @@ export class RisksTableComponent implements OnInit, OnChanges {
   }
 
   private setCellularData() {
-    const currentCells = this.risks?.map((risk, index) => [
-      { id: risk.id, heading: 'Description', value: risk.description, index },
-      { id: risk.id, heading: 'Impact', value: risk.impact, index },
-      { id: risk.id, heading: 'Likelihood', value: risk.likelihood, index },
-      { id: risk.id, heading: 'Status', value: risk.status, index },
-      { id: risk.id, heading: 'Created By', value: risk.createdBy, index },
-      { id: risk.id, heading: 'Created At', value: new Date(risk.createdAt)?.toLocaleDateString(), index },
-    ]) || [];
+    const currentCells =
+      this.risks?.map((risk, index) => [
+        { id: risk.id, heading: 'Description', value: risk.description, index },
+        { id: risk.id, heading: 'Impact', value: risk.impact, index },
+        { id: risk.id, heading: 'Likelihood', value: risk.likelihood, index },
+        { id: risk.id, heading: 'Status', value: risk.status, index },
+        { id: risk.id, heading: 'Created By', value: risk.createdBy, index },
+        {
+          id: risk.id,
+          heading: 'Created At',
+          value: new Date(risk.createdAt)?.toLocaleDateString(),
+          index,
+        },
+      ]) || [];
     this.cells.set(currentCells);
   }
 
@@ -112,7 +132,8 @@ export class RisksTableComponent implements OnInit, OnChanges {
 
   onCreateFormSubmit(risk: CreateRisk) {
     console.log('Creating risk with data:', risk);
-    const { description, impact, likelihood, projectId, status, createdBy } = risk;
+    const { description, impact, likelihood, projectId, status, createdBy } =
+      risk;
     const newRisk: CreateRisk = {
       description,
       impact,

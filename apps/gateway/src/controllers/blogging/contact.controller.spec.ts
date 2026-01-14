@@ -51,11 +51,11 @@ describe('ContactController', () => {
         },
       ],
     })
-    .overrideGuard(AuthGuard)
-    .useValue({ canActivate: () => true })
-    .overrideGuard(PermissionsGuard)
-    .useValue({ canActivate: () => true })
-    .compile();
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ContactController>(ContactController);
   });

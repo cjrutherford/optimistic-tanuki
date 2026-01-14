@@ -1,17 +1,17 @@
 import path from 'path';
 import * as yaml from 'js-yaml';
-import { readFileSync } from "fs";
+import { readFileSync } from 'fs';
 
 export declare type TelosDocsConfigType = {
-    listenPort: number;
-    database: {
-        host: string;
-        port: number;
-        username: string;
-        password: string;
-        database: string;
-    };
-}
+  listenPort: number;
+  database: {
+    host: string;
+    port: number;
+    username: string;
+    password: string;
+    database: string;
+  };
+};
 
 export const loadConfig = () => {
   const configPath = path.resolve(__dirname, './assets/config.yaml');

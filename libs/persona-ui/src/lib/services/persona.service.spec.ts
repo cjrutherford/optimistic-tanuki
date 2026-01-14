@@ -11,8 +11,8 @@ describe('PersonaService', () => {
       imports: [HttpClientTestingModule],
       providers: [
         PersonaService,
-        { provide: API_BASE_URL, useValue: 'http://localhost:3000' }
-      ]
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+      ],
     });
     service = TestBed.inject(PersonaService);
   });

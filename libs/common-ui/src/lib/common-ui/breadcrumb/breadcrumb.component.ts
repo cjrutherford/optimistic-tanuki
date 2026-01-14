@@ -16,7 +16,7 @@ import { CommonModule } from '@angular/common';
     '[style.--border-color]': 'borderColor',
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
-  }
+  },
 })
 export class BreadcrumbComponent {
   @Input() nodes: string[] = [];
@@ -27,7 +27,8 @@ export class BreadcrumbComponent {
   @Input() accent = 'var(--accent, #b1baec)';
   @Input() complement = 'var(--complement, #919ee4)';
   @Input() borderColor = 'var(--border-color, #b1baec)';
-  @Input() borderGradient = 'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
+  @Input() borderGradient =
+    'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
   @Input() transitionDuration = '0.3s';
   showPopup = false;
 

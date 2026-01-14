@@ -48,9 +48,7 @@ describe('ProfileComponent', () => {
         BannerComponent,
       ],
       declarations: [],
-      providers: [
-        { provide: ProfileService, useValue: profileServiceMock },
-      ],
+      providers: [{ provide: ProfileService, useValue: profileServiceMock }],
     }).compileComponents();
 
     profileService = TestBed.inject(ProfileService);
@@ -97,7 +95,10 @@ describe('ProfileComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    expect(profileService.selectProfile).toHaveBeenCalledWith({...mockProfile, created_at: mockProfile.created_at.toISOString()});
+    expect(profileService.selectProfile).toHaveBeenCalledWith({
+      ...mockProfile,
+      created_at: mockProfile.created_at.toISOString(),
+    });
     localStorage.removeItem('selectedProfile');
   });
 

@@ -5,6 +5,7 @@
 The ForgeOfWill MCP (Model Context Protocol) Tools provide a comprehensive set of capabilities for AI assistants to interact with the project management system and collaborate with other AI personas.
 
 **See Also:**
+
 - [MCP Validation Guide](./MCP_VALIDATION_GUIDE.md) - Detailed information on tool call validation and standardization
 
 ## Architecture
@@ -16,6 +17,7 @@ The MCP tools are implemented in the Gateway service using the `@nestjs-mcp/serv
 3. Collaborate across different AI capabilities
 
 All tool calls go through a standardized validation and execution pipeline that ensures:
+
 - Type safety with Zod schemas
 - Argument validation and normalization
 - Consistent error handling
@@ -28,28 +30,36 @@ For implementation details, see the [MCP Validation Guide](./MCP_VALIDATION_GUID
 ### Project Management Tools
 
 #### `list_projects`
+
 Lists all projects for a specific user.
 
 **Parameters:**
+
 - `userId` (required): The ID of the user whose projects to list
 
 **Returns:**
+
 - Array of projects with full details
 - Count of projects
 
 #### `get_project`
+
 Retrieves detailed information about a specific project.
 
 **Parameters:**
+
 - `projectId` (required): The ID of the project
 
 **Returns:**
+
 - Complete project details including tasks, risks, changes, and journal entries
 
 #### `create_project`
+
 Creates a new project.
 
 **Parameters:**
+
 - `name` (required): Project name
 - `description` (required): Project description
 - `userId` (required): User creating the project
@@ -58,38 +68,48 @@ Creates a new project.
 - `members` (optional): Array of member IDs
 
 **Returns:**
+
 - Created project object
 
 #### `update_project`
+
 Updates an existing project.
 
 **Parameters:**
+
 - `projectId` (required): Project to update
 - `userId` (required): User making the update
 - `name`, `description`, `status`, `endDate` (optional): Fields to update
 
 **Returns:**
+
 - Updated project object
 
 #### `delete_project`
+
 Deletes a project.
 
 **Parameters:**
+
 - `projectId` (required): Project to delete
 - `userId` (required): User deleting the project
 
 ### Task Management Tools
 
 #### `list_tasks`
+
 Lists all tasks for a project.
 
 **Parameters:**
+
 - `projectId` (required): The project ID
 
 #### `create_task`
+
 Creates a new task.
 
 **Parameters:**
+
 - `projectId` (required): Project ID
 - `name` (required): Task name
 - `description` (required): Task description
@@ -100,17 +120,21 @@ Creates a new task.
 - `dueDate` (optional): Task due date
 
 #### `update_task` / `delete_task`
+
 Update or delete existing tasks.
 
 ### Risk Management Tools
 
 #### `list_risks`
+
 Lists all risks for a project.
 
 #### `create_risk`
+
 Creates a new risk.
 
 **Parameters:**
+
 - `projectId` (required): Project ID
 - `name` (required): Risk name
 - `description` (required): Risk description
@@ -123,12 +147,15 @@ Creates a new risk.
 ### Change Management Tools
 
 #### `list_changes`
+
 Lists all change requests for a project.
 
 #### `create_change`
+
 Creates a new change request.
 
 **Parameters:**
+
 - `projectId` (required): Project ID
 - `changeName` (required): Change name
 - `changeDescription` (required): Change description
@@ -140,12 +167,15 @@ Creates a new change request.
 ### Journal Management Tools
 
 #### `list_journal_entries`
+
 Lists all journal entries for a project.
 
 #### `create_journal_entry`
+
 Creates a new journal entry.
 
 **Parameters:**
+
 - `projectId` (required): Project ID
 - `profileId` (required): Profile ID
 - `entry` (required): Entry content
@@ -155,47 +185,60 @@ Creates a new journal entry.
 ### AI Persona Collaboration Tools
 
 #### `list_ai_personas`
+
 Lists all available AI personas/assistants.
 
 **Parameters:**
+
 - `specialty` (optional): Filter by specialty
 
 **Returns:**
+
 - Array of personas with their capabilities
 
 #### `get_ai_persona`
+
 Gets detailed information about a specific AI persona.
 
 **Parameters:**
+
 - `personaId` or `personaName`: Identifier for the persona
 
 **Returns:**
+
 - Complete persona details including skills, expertise, goals, strengths, and limitations
 
 #### `find_specialist_persona`
+
 Finds the most appropriate AI specialist for a given requirement.
 
 **Parameters:**
+
 - `requirement` (required): Description of the task or requirement
 - `skillsNeeded` (optional): Array of required skills
 
 **Returns:**
+
 - Ranked list of recommended personas with match scores
 
 **Example Use Cases:**
+
 - "I need help with React development"
 - "Need a specialist in project risk assessment"
 - "Looking for UI/UX design expertise"
 
 #### `refer_to_persona`
+
 Generates a referral message to introduce another AI persona to the user.
 
 **Parameters:**
+
 - `personaId` (required): Persona to refer to
 - `reason` (required): Reason for the referral
 - `userQuery` (optional): Original user query
 
 **Returns:**
+
 - Formatted referral message explaining why the user should connect with the specialist
 
 ## Usage Examples
@@ -207,11 +250,11 @@ Generates a referral message to introduce another AI persona to the user.
 
 // AI calls MCP tool:
 const result = await create_project({
-  name: "Mobile App",
-  description: "Development of our company iOS application",
-  userId: "user-123",
-  status: "PLANNING",
-  startDate: "2025-01-15"
+  name: 'Mobile App',
+  description: 'Development of our company iOS application',
+  userId: 'user-123',
+  status: 'PLANNING',
+  startDate: '2025-01-15',
 });
 
 // AI responds: "I've created the project 'Mobile App' for you. Would you like me to add some initial tasks?"
@@ -224,15 +267,15 @@ const result = await create_project({
 
 // AI finds specialist:
 const specialists = await find_specialist_persona({
-  requirement: "UI/UX design for mobile app",
-  skillsNeeded: ["UI design", "mobile", "user experience"]
+  requirement: 'UI/UX design for mobile app',
+  skillsNeeded: ['UI design', 'mobile', 'user experience'],
 });
 
 // AI generates referral:
 const referral = await refer_to_persona({
   personaId: specialists.recommendedPersonas[0].id,
-  reason: "This persona specializes in UI/UX design and has extensive mobile app experience",
-  userQuery: "I need help designing the user interface for my app"
+  reason: 'This persona specializes in UI/UX design and has extensive mobile app experience',
+  userQuery: 'I need help designing the user interface for my app',
 });
 
 // AI responds with the generated referral message
@@ -244,13 +287,13 @@ const referral = await refer_to_persona({
 // AI receives: "Add a task to implement user authentication"
 
 const task = await create_task({
-  projectId: "project-456",
-  name: "Implement User Authentication",
-  description: "Add JWT-based authentication to the mobile app",
-  userId: "user-123",
-  status: "TODO",
-  priority: "HIGH",
-  dueDate: "2025-02-01"
+  projectId: 'project-456',
+  name: 'Implement User Authentication',
+  description: 'Add JWT-based authentication to the mobile app',
+  userId: 'user-123',
+  status: 'TODO',
+  priority: 'HIGH',
+  dueDate: '2025-02-01',
 });
 ```
 
@@ -286,6 +329,7 @@ Potential future additions to the MCP toolset:
 ### MCP Tools Not Available
 
 If MCP tools are not working:
+
 1. Verify `@nestjs-mcp/server` package is installed
 2. Check that `McpToolsModule` is imported in `AppModule`
 3. Ensure all required services (PROJECT_PLANNING_SERVICE, TELOS_DOCS_SERVICE) are configured
@@ -293,6 +337,7 @@ If MCP tools are not working:
 ### Persona Referrals Not Finding Matches
 
 If `find_specialist_persona` returns no matches:
+
 1. Verify TELOS-docs service has personas seeded
 2. Check that persona metadata includes skills and specialty fields
 3. Try broader search terms or fewer required skills
@@ -300,6 +345,7 @@ If `find_specialist_persona` returns no matches:
 ## Support
 
 For issues or questions about MCP tools:
+
 - Check the AI Orchestrator logs for detailed error messages
 - Review Gateway logs for MCP tool execution traces
 - Consult the TELOS-docs service for persona availability

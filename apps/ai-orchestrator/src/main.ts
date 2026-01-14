@@ -13,18 +13,19 @@ async function bootstrap() {
   const listenPort = configService.get<number>('listenPort') || 3010;
 
   // Now create the microservice using the config value
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
-    transport: Transport.TCP,
-    options: {
-      host: '0.0.0.0',
-      port: listenPort,
-    },
-  });
+  const app = await NestFactory.createMicroservice<MicroserviceOptions>(
+    AppModule,
+    {
+      transport: Transport.TCP,
+      options: {
+        host: '0.0.0.0',
+        port: listenPort,
+      },
+    }
+  );
 
   await app.listen();
-  Logger.log(
-    `🚀 Microservice is running on: tcp://localhost:${listenPort}`
-  );
+  Logger.log(`🚀 Microservice is running on: tcp://localhost:${listenPort}`);
 }
 
 bootstrap();

@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/angular';
 import { ChangesTableComponent } from './changes-table.component';
 import { within, expect } from 'storybook/internal/test';
 
-
 const meta: Meta<ChangesTableComponent> = {
   component: ChangesTableComponent,
   title: 'ChangesTableComponent',

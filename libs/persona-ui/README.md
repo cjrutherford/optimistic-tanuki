@@ -27,12 +27,9 @@ import { PersonaSelectionMenuComponent } from '@optimistic-tanuki/persona-ui';
   imports: [PersonaSelectionMenuComponent],
   template: `
     @if (showMenu) {
-      <lib-persona-selection-menu
-        (personaSelected)="onPersonaSelected($event)"
-        (menuClose)="onMenuClose()">
-      </lib-persona-selection-menu>
+    <lib-persona-selection-menu (personaSelected)="onPersonaSelected($event)" (menuClose)="onMenuClose()"> </lib-persona-selection-menu>
     }
-  `
+  `,
 })
 export class MyComponent {
   showMenu = false;
@@ -74,7 +71,7 @@ export class MyComponent {
   private personaService = inject(PersonaService);
 
   loadPersonas() {
-    this.personaService.getAllPersonas().subscribe(personas => {
+    this.personaService.getAllPersonas().subscribe((personas) => {
       console.log('Available personas:', personas);
     });
   }
@@ -92,7 +89,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     { provide: API_BASE_URL, useValue: environment.apiBaseUrl },
     // ... other providers
-  ]
+  ],
 };
 ```
 

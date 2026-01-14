@@ -122,10 +122,15 @@ export class StoreService {
   }
 
   getUserSubscriptions(userId: string): Observable<Subscription[]> {
-    return this.http.get<Subscription[]>(`${this.API_URL}/subscriptions/user/${userId}`);
+    return this.http.get<Subscription[]>(
+      `${this.API_URL}/subscriptions/user/${userId}`
+    );
   }
 
   cancelSubscription(id: string): Observable<Subscription> {
-    return this.http.put<Subscription>(`${this.API_URL}/subscriptions/${id}/cancel`, {});
+    return this.http.put<Subscription>(
+      `${this.API_URL}/subscriptions/${id}/cancel`,
+      {}
+    );
   }
 }

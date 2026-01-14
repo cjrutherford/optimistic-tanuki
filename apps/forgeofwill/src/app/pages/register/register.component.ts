@@ -1,4 +1,7 @@
-import { RegisterSubmitType, submitTypeToRegisterRequest } from '@optimistic-tanuki/ui-models';
+import {
+  RegisterSubmitType,
+  submitTypeToRegisterRequest,
+} from '@optimistic-tanuki/ui-models';
 
 import { AuthenticationService } from '../../authentication.service';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
@@ -18,7 +21,7 @@ export class RegisterComponent {
   constructor(
     private readonly authService: AuthenticationService,
     private readonly router: Router,
-    private readonly messageService: MessageService,
+    private readonly messageService: MessageService
   ) {}
 
   onSubmit(event: RegisterSubmitType) {

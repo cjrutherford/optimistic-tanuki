@@ -44,7 +44,7 @@ export class OrderManagementComponent implements OnInit {
     if (this.filterStatus === 'all') {
       return this.orders;
     }
-    return this.orders.filter(order => order.status === this.filterStatus);
+    return this.orders.filter((order) => order.status === this.filterStatus);
   }
 
   viewOrder(order: Order): void {
@@ -59,7 +59,7 @@ export class OrderManagementComponent implements OnInit {
     this.loading = true;
     this.error = null;
     const dto: UpdateOrderDto = { status: newStatus };
-    
+
     this.storeService.updateOrder(order.id, dto).subscribe({
       next: () => {
         this.loadOrders();
@@ -78,10 +78,10 @@ export class OrderManagementComponent implements OnInit {
 
   getStatusClass(status: string): string {
     const statusMap: { [key: string]: string } = {
-      'pending': 'status-pending',
-      'processing': 'status-processing',
-      'completed': 'status-completed',
-      'cancelled': 'status-cancelled',
+      pending: 'status-pending',
+      processing: 'status-processing',
+      completed: 'status-completed',
+      cancelled: 'status-cancelled',
     };
     return statusMap[status] || '';
   }

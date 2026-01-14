@@ -1,34 +1,34 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
-import { Post } from "./post.entity";
-import { Contact } from "./contact.entity";
-import { Event } from "./event.entity";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Post } from './post.entity';
+import { Contact } from './contact.entity';
+import { Event } from './event.entity';
 
 @Entity()
 export class Blog {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
-    
-    @Column()
-    name: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    description: string;
+  @Column()
+  name: string;
 
-    @Column()
-    ownerId: string;
+  @Column()
+  description: string;
 
-    @Column({ default: () => 'CURRENT_TIMESTAMP' })
-    createdAt: Date;
+  @Column()
+  ownerId: string;
 
-    @Column({ default: () => 'CURRENT_TIMESTAMP' })
-    updatedAt: Date;
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
 
-    @OneToMany(() => Post, post => post.blog)
-    posts: Post[];
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
 
-    @OneToMany(() => Contact, contact => contact.blog)
-    contacts: Contact[];
+  @OneToMany(() => Post, (post) => post.blog)
+  posts: Post[];
 
-    @OneToMany(() => Event, event => event.blog)
-    events: Event[];
+  @OneToMany(() => Contact, (contact) => contact.blog)
+  contacts: Contact[];
+
+  @OneToMany(() => Event, (event) => event.blog)
+  events: Event[];
 }

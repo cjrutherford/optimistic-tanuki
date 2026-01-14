@@ -299,7 +299,9 @@ export class FeedComponent implements OnInit, OnDestroy {
         // Immutable update to trigger change detection
         this.posts.update((currentPosts) => {
           const updatedPosts = [...currentPosts];
-          const postIndex = updatedPosts.findIndex((p) => p.id === newComment.postId);
+          const postIndex = updatedPosts.findIndex(
+            (p) => p.id === newComment.postId
+          );
           if (postIndex !== -1) {
             const post = { ...updatedPosts[postIndex] };
             post.comments = [...(post.comments || []), comment];

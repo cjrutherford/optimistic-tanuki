@@ -5,6 +5,7 @@ This guide explains how to run end-to-end (E2E) tests for the Optimistic Tanuki 
 ## Overview
 
 The workspace includes comprehensive E2E tests for:
+
 - **Angular Applications** - Using Playwright
 - **NestJS TCP Microservices** - Using NestJS ClientProxy
 - **Gateway HTTP API** - Using Axios
@@ -12,11 +13,13 @@ The workspace includes comprehensive E2E tests for:
 ## Prerequisites
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Install Playwright browsers (required for UI tests):
+
 ```bash
 npx playwright install
 ```
@@ -28,12 +31,14 @@ npx playwright install
 ### Angular Applications (Playwright)
 
 The following applications have Playwright E2E tests:
+
 - `client-interface-e2e`
 - `forgeofwill-e2e`
 - `digital-homestead-e2e`
 - `christopherrutherford-net-e2e`
 
 These tests verify:
+
 - Page loading and rendering
 - Navigation functionality
 - Responsive design (mobile, tablet, desktop)
@@ -45,8 +50,10 @@ These tests verify:
 The following microservices have E2E tests using NestJS ClientProxy:
 
 #### Authentication Service (`authentication-e2e`)
+
 Port: 3001
 Tests:
+
 - User registration
 - User login
 - Token validation
@@ -54,8 +61,10 @@ Tests:
 - Multi-factor authentication
 
 #### Profile Service (`profile-e2e`)
+
 Port: 3002
 Tests:
+
 - Create profile
 - Get profile by ID
 - Get all profiles
@@ -63,8 +72,10 @@ Tests:
 - Query profiles with filters
 
 #### Social Service (`social-e2e`)
+
 Port: 3003
 Tests:
+
 - Post CRUD operations
 - Comment CRUD operations
 - Vote operations (upvote, downvote, unvote)
@@ -73,16 +84,20 @@ Tests:
 - Get followers/following
 
 #### Assets Service (`assets-e2e`)
+
 Port: 3005
 Tests:
+
 - Create asset
 - Retrieve asset metadata
 - Read asset data
 - Remove asset
 
 #### Blogging Service (`blogging-e2e`)
+
 Port: 3011
 Tests:
+
 - Blog post CRUD operations
 - Event CRUD operations
 - Publish/unpublish posts
@@ -91,6 +106,7 @@ Tests:
 
 Port: 3000
 Tests:
+
 - Authentication endpoints
 - Health checks
 - Swagger documentation availability
@@ -107,6 +123,7 @@ nx run-many --target=e2e --all
 ### Run Specific Application Tests
 
 #### Angular Applications (Playwright)
+
 ```bash
 # Client Interface
 nx e2e client-interface-e2e
@@ -122,6 +139,7 @@ nx e2e christopherrutherford-net-e2e
 ```
 
 #### Microservices (Jest + NestJS ClientProxy)
+
 ```bash
 # Authentication
 nx e2e authentication-e2e
@@ -165,6 +183,7 @@ chmod +x ./run-full-stack-e2e.sh   # one-time setup
 ```
 
 Internally, this script:
+
 - Runs `docker compose down -v` to clean the main stack and named volumes
 - Runs `docker compose up -d --build` to start the stack
 - Waits for the `ot_gateway` container healthcheck to report `healthy`
@@ -191,11 +210,13 @@ nx e2e authentication-e2e --configuration=ci
 Each microservice E2E test includes:
 
 1. **Global Setup** (`src/support/global-setup.ts`)
+
    - Starts Docker containers for the service and dependencies
    - Waits for services to be ready
    - Sets up test database
 
 2. **Global Teardown** (`src/support/global-teardown.ts`)
+
    - Stops and removes Docker containers
    - Cleans up test resources
 
@@ -204,6 +225,7 @@ Each microservice E2E test includes:
    - Sets up test utilities
 
 Example connection setup in tests:
+
 ```typescript
 const client = ClientProxyFactory.create({
   transport: Transport.TCP,
@@ -229,6 +251,7 @@ Playwright tests are configured in `playwright.config.ts` for each Angular appli
 ### Adding a New Microservice Test
 
 1. Use the ClientProxy pattern to connect to the microservice:
+
 ```typescript
 import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -251,9 +274,7 @@ afterAll(async () => {
 });
 
 it('should test command', async () => {
-  const result = await firstValueFrom(
-    client.send({ cmd: 'YOUR_COMMAND' }, payload)
-  );
+  const result = await firstValueFrom(client.send({ cmd: 'YOUR_COMMAND' }, payload));
   expect(result).toBeDefined();
 });
 ```
@@ -265,6 +286,7 @@ it('should test command', async () => {
 ### Adding a New Playwright Test
 
 1. Follow the existing pattern:
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -272,7 +294,7 @@ test.describe('Feature Name', () => {
   test('should do something', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    
+
     // Your assertions here
   });
 });
@@ -287,11 +309,13 @@ test.describe('Feature Name', () => {
 ### Microservice Tests
 
 **Issue**: Connection timeout
+
 - Ensure Docker containers are running
 - Check if ports are available
 - Verify service is listening on correct port
 
 **Issue**: Database connection errors
+
 - Ensure PostgreSQL container is healthy
 - Check database migrations have run
 - Verify connection credentials
@@ -299,16 +323,19 @@ test.describe('Feature Name', () => {
 ### Playwright Tests
 
 **Issue**: Playwright executable not found or browser not installed
+
 - Run `npx playwright install` to install all browsers (Chromium, Firefox, WebKit)
 - For specific browser: `npx playwright install chromium`
 - If installation fails, try `npx playwright install --with-deps`
 - Verify installation: `ls ~/.cache/ms-playwright/`
 
 **Issue**: Element not found
+
 - Add proper wait conditions (`waitForLoadState`, `waitForSelector`)
 - Check if element is within viewport
 
 **Issue**: Test timeout
+
 - Increase timeout in test or config
 - Check if dev server started successfully
 
@@ -331,6 +358,7 @@ Tests can be integrated into CI/CD pipelines.
 The GitHub Actions workflow is **now enabled** at `.github/workflows/e2e-tests.yml`.
 
 The workflow will:
+
 - Run automatically on PRs and pushes to main/develop branches
 - Execute all microservice and UI tests in parallel
 - Upload test results and artifacts
@@ -339,6 +367,7 @@ The workflow will:
 To disable it, remove or rename the workflow file.
 
 Features of the example workflow:
+
 - Runs microservice and UI tests in parallel
 - Matrix strategy for concurrent test execution
 - Uploads test results and artifacts
@@ -360,10 +389,12 @@ For a simpler setup:
 ## Additional Resources
 
 ### Project Documentation
+
 - [Test Coverage Report](./TEST_COVERAGE.md) - Detailed breakdown of all tests
 - [Testing Quick Reference](./TESTING_QUICK_REFERENCE.md) - Quick commands and patterns
 
 ### External Documentation
+
 - [Playwright Documentation](https://playwright.dev/)
 - [NestJS Microservices](https://docs.nestjs.com/microservices/basics)
 - [NX Testing](https://nx.dev/recipes/testing)

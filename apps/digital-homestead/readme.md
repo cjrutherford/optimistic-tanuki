@@ -6,4 +6,5 @@ This is a small blog dedicated to exploring the world of digital homesteading—
 Stay tuned for updates and new posts!
 
 ---
-*This project is part of the optimistic-tanuki Nx workspace. This service is a blog/info site.*
+
+_This project is part of the optimistic-tanuki Nx workspace. This service is a blog/info site._

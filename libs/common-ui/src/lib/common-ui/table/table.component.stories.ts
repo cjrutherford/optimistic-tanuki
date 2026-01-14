@@ -116,7 +116,10 @@ export const LightMode: Story = {
       { heading: 'Name', value: 'John Doe' },
       { heading: 'Age', value: '30' },
     ],
-    tableStyles: { backgroundColor: 'var(--accent-shade-lighten-50, #b1baec)', color: 'var(--foreground-color, #000)' },
+    tableStyles: {
+      backgroundColor: 'var(--accent-shade-lighten-50, #b1baec)',
+      color: 'var(--foreground-color, #000)',
+    },
   },
 };
 
@@ -126,7 +129,10 @@ export const DarkMode: Story = {
       { heading: 'Name', value: 'John Doe' },
       { heading: 'Age', value: '30' },
     ],
-    tableStyles: { backgroundColor: 'var(--accent-shade-darken-50, #313a6c)', color: 'var(--foreground-color, #fff)' },
+    tableStyles: {
+      backgroundColor: 'var(--accent-shade-darken-50, #313a6c)',
+      color: 'var(--foreground-color, #fff)',
+    },
   },
 };
 
@@ -136,6 +142,9 @@ export const FastCycleMode: Story = {
       { heading: 'Name', value: 'John Doe' },
       { heading: 'Age', value: '30' },
     ],
-    tableStyles: { background: 'var(--gradient-fastCycle)', color: 'var(--foreground-color, #fff)' },
+    tableStyles: {
+      background: 'var(--gradient-fastCycle)',
+      color: 'var(--foreground-color, #fff)',
+    },
   },
 };

@@ -27,7 +27,7 @@ All CSS variables now use consistent naming:
 
 // NEW (standardized)
 '[style.--local-accent]': 'accent',
-'[style.--local-foreground]': 'foreground', 
+'[style.--local-foreground]': 'foreground',
 '[style.--local-complement]': 'complement',
 ```
 
@@ -81,7 +81,7 @@ host: {
   '[style.--complement]': 'complement',
 }
 
-// After  
+// After
 host: {
   '[style.--local-background]': 'background',
   '[style.--local-foreground]': 'foreground',
@@ -139,14 +139,14 @@ Remove manual `document.documentElement.style.setProperty` calls for theme color
 
 ```typescript
 // Before - Remove this code
-this.themeService.themeColors$.subscribe(colors => {
+this.themeService.themeColors$.subscribe((colors) => {
   document.documentElement.style.setProperty('--accent', colors.accent);
   document.documentElement.style.setProperty('--complementary', colors.complementary);
   // etc...
 });
 
 // After - Only set app-specific variables
-this.themeService.themeColors$.subscribe(colors => {
+this.themeService.themeColors$.subscribe((colors) => {
   // Only set non-theme variables like patterns, app-specific styling
   document.documentElement.style.setProperty('--background-pattern', myPattern);
 });
@@ -165,7 +165,7 @@ this.themeService.themeColors$.subscribe(colors => {
 
 /* Component-level overrides */
 .my-component {
-  --local-accent: #ff6b35;  /* This component uses different accent */
+  --local-accent: #ff6b35; /* This component uses different accent */
 }
 
 /* Child components inherit the override */
@@ -189,14 +189,14 @@ Components can now use design tokens in their host bindings:
 // Using the new ThemeHostBindingsDirective (advanced usage)
 @Component({
   selector: 'my-component',
-  template: '<div themeHostBindings [themeHostBindings]="bindings">Content</div>'
+  template: '<div themeHostBindings [themeHostBindings]="bindings">Content</div>',
 })
 export class MyComponent {
   bindings = {
     accent: '#custom-color',
-    spacing: 'lg',        // Uses --spacing-lg
-    shadow: 'md',         // Uses --shadow-md
-    borderRadius: 'xl'    // Uses --border-radius-xl
+    spacing: 'lg', // Uses --spacing-lg
+    shadow: 'md', // Uses --shadow-md
+    borderRadius: 'xl', // Uses --border-radius-xl
   };
 }
 ```
@@ -204,6 +204,7 @@ export class MyComponent {
 ## Examples of Updated Components
 
 See the following updated components for reference:
+
 - `CardComponent` - Complex variant system with local overrides
 - `TextInputComponent` - Form component with focus states
 - `BlogComposeComponent` - Complex component with multiple theme elements

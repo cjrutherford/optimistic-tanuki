@@ -5,9 +5,11 @@ This directory contains advanced task management components for the Forge of Wil
 ## Components
 
 ### Task Calendar Component
+
 **Location:** `task-calendar/task-calendar.component.ts`
 
 A FullCalendar-based calendar view for tasks with the following features:
+
 - **Color Coding**: Tasks are color-coded by status (TODO, IN_PROGRESS, DONE, ARCHIVED)
 - **Priority Highlighting**: High-priority tasks have bold borders
 - **Multiple Views**: Supports day, week, month, and list views
@@ -16,6 +18,7 @@ A FullCalendar-based calendar view for tasks with the following features:
 - **All-Day Events**: Tasks without specific due dates are shown as all-day events
 
 #### Usage
+
 ```typescript
 <lib-task-calendar
   [tasks]="tasks"
@@ -28,6 +31,7 @@ A FullCalendar-based calendar view for tasks with the following features:
 ```
 
 #### Color Scheme
+
 - **Green (#28a745)**: Completed tasks
 - **Blue (#007bff)**: In progress tasks
 - **Gray (#6c757d)**: Archived tasks
@@ -39,9 +43,11 @@ A FullCalendar-based calendar view for tasks with the following features:
 ---
 
 ### Task Kanban Component
+
 **Location:** `task-kanban/task-kanban.component.ts`
 
 A drag-and-drop kanban board for managing tasks with the following features:
+
 - **Four Columns**: TODO, In Progress, Done, Archived
 - **Drag & Drop**: Drag tasks between columns to change status
 - **Task Count Badges**: Shows number of tasks per column
@@ -50,6 +56,7 @@ A drag-and-drop kanban board for managing tasks with the following features:
 - **Due Date Display**: Shows formatted due dates
 
 #### Usage
+
 ```typescript
 <lib-task-kanban
   [tasks]="tasks"
@@ -62,6 +69,7 @@ A drag-and-drop kanban board for managing tasks with the following features:
 ```
 
 #### Features
+
 - **Reordering**: Drag tasks within the same column to reorder
 - **Status Change**: Drag tasks to different columns to update status
 - **Priority Classes**: Each task card is color-coded by priority
@@ -70,9 +78,11 @@ A drag-and-drop kanban board for managing tasks with the following features:
 ---
 
 ### Mind Map Component
+
 **Location:** `mind-map/mind-map.component.ts`
 
 A canvas-based mind map visualization for project entities with the following features:
+
 - **Multiple Entity Types**: Displays tasks, risks, and changes
 - **Interactive Nodes**: Click nodes to select and view details
 - **Draggable Nodes**: Drag nodes to rearrange the map
@@ -81,6 +91,7 @@ A canvas-based mind map visualization for project entities with the following fe
 - **Color Coding**: Entities color-coded by type and status
 
 #### Usage
+
 ```typescript
 <lib-mind-map
   [tasks]="tasks"
@@ -93,24 +104,29 @@ A canvas-based mind map visualization for project entities with the following fe
 ```
 
 #### Node Colors
+
 **Tasks:**
+
 - **Light Blue (#93c5fd)**: TODO
 - **Yellow (#fbbf24)**: In Progress
 - **Green (#86efac)**: Done
 - **Gray (#d1d5db)**: Archived
 
 **Risks:**
+
 - **Red (#fca5a5)**: High impact
 - **Orange (#fed7aa)**: Medium impact
 - **Blue (#bfdbfe)**: Low impact
 
 **Changes:**
+
 - **Green (#86efac)**: Complete
 - **Yellow (#fbbf24)**: Implementing
 - **Purple (#c4b5fd)**: Pending approval
 - **Gray (#d1d5db)**: Discarded
 
 #### Controls
+
 - **Left Click + Drag**: Move nodes
 - **Mouse Wheel**: Zoom in/out
 - **Reset View Button**: Reset zoom and pan
@@ -149,6 +165,7 @@ setTaskViewMode(mode: 'list' | 'calendar' | 'kanban'): void {
 ## Dependencies
 
 - **FullCalendar**: v6.x
+
   - @fullcalendar/core
   - @fullcalendar/angular
   - @fullcalendar/daygrid
@@ -157,6 +174,7 @@ setTaskViewMode(mode: 'list' | 'calendar' | 'kanban'): void {
   - @fullcalendar/list
 
 - **Angular CDK**: For drag-and-drop in kanban board
+
   - @angular/cdk/drag-drop
 
 - **HTML5 Canvas**: For mind map rendering (native browser API)
@@ -164,6 +182,7 @@ setTaskViewMode(mode: 'list' | 'calendar' | 'kanban'): void {
 ## Browser Support
 
 All components are compatible with modern browsers that support:
+
 - ES2020+
 - HTML5 Canvas API
 - CSS Grid and Flexbox
@@ -172,6 +191,7 @@ All components are compatible with modern browsers that support:
 ## Testing
 
 Unit tests are provided for each component:
+
 - `task-calendar.component.spec.ts`
 - `task-kanban.component.spec.ts`
 - `mind-map.component.spec.ts`
@@ -181,6 +201,7 @@ Note: Mind map tests may show canvas warnings in JSDOM environment, which is exp
 ## Styling
 
 Components use CSS custom properties for theming:
+
 - `--accent`: Primary accent color
 - `--accent-dark`: Darker accent color for hover states
 - `--background`: Background color

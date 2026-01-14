@@ -37,17 +37,17 @@
       }
     }
     .action {
-        display: flex;
-        flex-direction: row-reverse;
-        justify-content: flex-start;
-        align-items: center;
+      display: flex;
+      flex-direction: row-reverse;
+      justify-content: flex-start;
+      align-items: center;
     }
   }
 }
 .row {
   .form-group {
-      width: 100%;
-      text-align: left;
+    width: 100%;
+    text-align: left;
   }
   width: 100%;
   justify-content: stretch;
@@ -59,13 +59,13 @@
 
 @media screen and (max-width: 768px) {
   .row {
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
   }
   .section-container {
-      form {
-          width: 90%;
-      }
+    form {
+      width: 90%;
+    }
   }
 }

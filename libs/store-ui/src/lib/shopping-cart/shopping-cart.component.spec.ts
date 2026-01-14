@@ -32,7 +32,10 @@ describe('ShoppingCartComponent', () => {
   it('should emit updateQuantity event', () => {
     jest.spyOn(component.updateQuantity, 'emit');
     component.onQuantityChange('1', 3);
-    expect(component.updateQuantity.emit).toHaveBeenCalledWith({ productId: '1', quantity: 3 });
+    expect(component.updateQuantity.emit).toHaveBeenCalledWith({
+      productId: '1',
+      quantity: 3,
+    });
   });
 
   it('should emit removeItem event', () => {

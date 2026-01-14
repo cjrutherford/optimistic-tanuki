@@ -72,7 +72,8 @@
   .about-layout {
     flex-direction: column;
   }
-  .about-left-card, .about-right-cards {
+  .about-left-card,
+  .about-right-cards {
     max-width: 100%;
     width: 100%;
   }

@@ -5,12 +5,12 @@ export interface ThemeGradients {
 export interface DesignTokens {
   // Spacing scale
   spacing: {
-    xs: string;    // 4px
-    sm: string;    // 8px
-    md: string;    // 16px
-    lg: string;    // 24px
-    xl: string;    // 32px
-    xxl: string;   // 48px
+    xs: string; // 4px
+    sm: string; // 8px
+    md: string; // 16px
+    lg: string; // 24px
+    xl: string; // 32px
+    xxl: string; // 48px
   };
 
   // Shadow scale

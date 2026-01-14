@@ -31,7 +31,10 @@ describe('PermissionsGuard', () => {
         {
           provide: 'ICacheProvider', // Use a string token for the interface
           useFactory: () => {
-            const cache = new Map<string, { value: boolean, timestamp: number }>();
+            const cache = new Map<
+              string,
+              { value: boolean; timestamp: number }
+            >();
             return {
               get: jest.fn(async (key: string) => {
                 const entry = cache.get(key);
@@ -75,11 +78,29 @@ describe('PermissionsGuard', () => {
         },
         {
           provide: PermissionsGuard,
-          useFactory: (reflector: Reflector, permissionsClient: ClientProxy, logger: Logger, cacheService: PermissionsCacheService, profileService: ClientProxy) => {
-            return new PermissionsGuard(reflector, permissionsClient, logger, cacheService, profileService);
+          useFactory: (
+            reflector: Reflector,
+            permissionsClient: ClientProxy,
+            logger: Logger,
+            cacheService: PermissionsCacheService,
+            profileService: ClientProxy
+          ) => {
+            return new PermissionsGuard(
+              reflector,
+              permissionsClient,
+              logger,
+              cacheService,
+              profileService
+            );
           },
-          inject: [Reflector, ServiceTokens.PERMISSIONS_SERVICE, Logger, PermissionsCacheService, ServiceTokens.PROFILE_SERVICE],
-        }
+          inject: [
+            Reflector,
+            ServiceTokens.PERMISSIONS_SERVICE,
+            Logger,
+            PermissionsCacheService,
+            ServiceTokens.PROFILE_SERVICE,
+          ],
+        },
       ],
     }).compile();
 
@@ -213,9 +234,10 @@ describe('PermissionsGuard', () => {
     });
 
     it('should throw ForbiddenException when permission check fails', async () => {
-      jest.spyOn(permissionsClient, 'send')
+      jest
+        .spyOn(permissionsClient, 'send')
         .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope  
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope
         .mockReturnValueOnce(of(false)); // CheckPermission
 
       const context = createMockContext(
@@ -281,7 +303,7 @@ describe('PermissionsGuard', () => {
       );
 
       await guard.canActivate(context2);
-      
+
       // Two additional calls for GetByName (appScope and fullEffectiveScope), no CheckPermission call
       expect(permissionsClient.send).toHaveBeenCalledTimes(5);
     });

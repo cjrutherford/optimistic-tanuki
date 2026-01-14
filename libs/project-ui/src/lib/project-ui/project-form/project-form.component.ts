@@ -2,20 +2,28 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { CreateProject, Project } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { TextAreaComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
-
-
+import {
+  TextAreaComponent,
+  TextInputComponent,
+} from '@optimistic-tanuki/form-ui';
 
 @Component({
   selector: 'lib-project-form',
-  imports: [ReactiveFormsModule, CardComponent, TextInputComponent, TextAreaComponent, ButtonComponent],
+  imports: [
+    ReactiveFormsModule,
+    CardComponent,
+    TextInputComponent,
+    TextAreaComponent,
+    ButtonComponent,
+  ],
   templateUrl: './project-form.component.html',
   styleUrl: './project-form.component.scss',
 })
 export class ProjectFormComponent implements OnInit {
   @Input() project: Project | null = null;
   projectForm: FormGroup;
-  @Output() submitEvent: EventEmitter<CreateProject> = new  EventEmitter<CreateProject>();
+  @Output() submitEvent: EventEmitter<CreateProject> =
+    new EventEmitter<CreateProject>();
 
   constructor(private readonly fb: FormBuilder) {
     this.projectForm = this.fb.group({
@@ -34,7 +42,11 @@ export class ProjectFormComponent implements OnInit {
   }
 
   onSubmit() {
-        if (this.projectForm.valid && this.projectForm.value.projectName && this.projectForm.value.projectDescription) {
+    if (
+      this.projectForm.valid &&
+      this.projectForm.value.projectName &&
+      this.projectForm.value.projectDescription
+    ) {
       console.log('Form Submitted!', this.projectForm.value);
       this.submitEvent.emit({
         name: this.projectForm.value.projectName,

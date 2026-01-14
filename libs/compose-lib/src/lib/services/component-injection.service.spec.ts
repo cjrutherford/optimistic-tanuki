@@ -1,7 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { Component, ViewContainerRef } from '@angular/core';
 import { ComponentInjectionService } from './component-injection.service';
-import { InjectableComponent, InjectedComponentInstance } from '../interfaces/component-injection.interface';
+import {
+  InjectableComponent,
+  InjectedComponentInstance,
+} from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'test-component',
@@ -149,7 +152,7 @@ describe('ComponentInjectionService', () => {
     it('should return components by category', () => {
       const categoryA = service.getComponentsByCategory('Category A');
       expect(categoryA.length).toBe(2);
-      expect(categoryA.every(c => c.category === 'Category A')).toBe(true);
+      expect(categoryA.every((c) => c.category === 'Category A')).toBe(true);
     });
 
     it('should return empty array for non-existent category', () => {

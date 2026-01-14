@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 
-import { ButtonComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ButtonComponent,
+  HeadingComponent,
+} from '@optimistic-tanuki/common-ui';
 import { HeroComponent } from '@optimistic-tanuki/blogging-ui';
 
 @Component({

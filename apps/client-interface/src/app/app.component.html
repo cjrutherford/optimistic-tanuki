@@ -1,18 +1,23 @@
-<div class="container" [ngStyle]="{ 'background': backgroundGradient, 'color': foreground }">
+<div
+  class="container"
+  [ngStyle]="{ background: backgroundGradient, color: foreground }"
+>
   <otui-app-bar
     appTitle="Optimistic Tanuki"
     logoSrc="assets/tanuki.jpg"
     logoAlt="Optimistic Tanuki Logo"
     [showThemeToggle]="true"
     [useTile]="false"
-    (menuToggle)="toggleNav()">
+    (menuToggle)="toggleNav()"
+  >
   </otui-app-bar>
 
   <otui-nav-sidebar
     [isOpen]="isNavExpanded()"
     [navItems]="navItems()"
     heading="Navigation"
-    (close)="isNavExpanded.set(false)">
+    (close)="isNavExpanded.set(false)"
+  >
   </otui-nav-sidebar>
 
   <div class="content">

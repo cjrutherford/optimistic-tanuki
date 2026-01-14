@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/angular';
 import { ChangeFormComponent } from './change-form.component';
 import { within, expect } from 'storybook/internal/test';
 
-
 const meta: Meta<ChangeFormComponent> = {
   component: ChangeFormComponent,
   title: 'ChangeFormComponent',

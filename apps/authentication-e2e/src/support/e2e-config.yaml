@@ -5,6 +5,6 @@ database:
   name: authentication_e2e
   username: postgres
   password: postgres
-auth: 
+auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

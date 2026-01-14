@@ -5,7 +5,7 @@ test.describe('Forge of Will E2E Tests', () => {
     test('should load the homepage', async ({ page }) => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
-      
+
       // Verify page loads successfully
       const body = page.locator('body');
       await expect(body).toBeVisible();
@@ -14,7 +14,7 @@ test.describe('Forge of Will E2E Tests', () => {
     test('should have proper page structure', async ({ page }) => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
-      
+
       // Check for HTML structure
       const html = page.locator('html');
       await expect(html).toBeVisible();
@@ -25,7 +25,7 @@ test.describe('Forge of Will E2E Tests', () => {
     test('should allow basic navigation', async ({ page }) => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
-      
+
       // Verify URL is correct
       expect(page.url()).toBeTruthy();
     });
@@ -33,10 +33,10 @@ test.describe('Forge of Will E2E Tests', () => {
     test('should handle page reload', async ({ page }) => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
-      
+
       await page.reload();
       await page.waitForLoadState('networkidle');
-      
+
       const body = page.locator('body');
       await expect(body).toBeVisible();
     });
@@ -47,7 +47,7 @@ test.describe('Forge of Will E2E Tests', () => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
       await page.waitForLoadState('networkidle');
-      
+
       const body = page.locator('body');
       await expect(body).toBeVisible();
     });
@@ -56,7 +56,7 @@ test.describe('Forge of Will E2E Tests', () => {
       await page.setViewportSize({ width: 1920, height: 1080 });
       await page.goto('/');
       await page.waitForLoadState('networkidle');
-      
+
       const body = page.locator('body');
       await expect(body).toBeVisible();
     });
@@ -68,7 +68,7 @@ test.describe('Forge of Will E2E Tests', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
       const loadTime = Date.now() - startTime;
-      
+
       expect(loadTime).toBeLessThan(10000);
     });
   });

@@ -39,7 +39,11 @@ describe('AppService', () => {
   });
 
   describe('sendMessage', () => {
-    const mockGeneratePrompt = { model: 'test-model', stream: false, messages: [] };
+    const mockGeneratePrompt = {
+      model: 'test-model',
+      stream: false,
+      messages: [],
+    };
 
     it('should send a POST request and return data', async () => {
       const mockResponse = { data: { message: 'AI response' } };
@@ -56,10 +60,16 @@ describe('AppService', () => {
 
     it('should throw RpcException on HTTP error', async () => {
       const errorMessage = 'Network error';
-      jest.spyOn(httpService, 'post').mockReturnValue(throwError(() => new Error(errorMessage)));
+      jest
+        .spyOn(httpService, 'post')
+        .mockReturnValue(throwError(() => new Error(errorMessage)));
 
-      await expect(service.sendMessage(mockGeneratePrompt)).rejects.toThrow(RpcException);
-      await expect(service.sendMessage(mockGeneratePrompt)).rejects.toThrow(errorMessage);
+      await expect(service.sendMessage(mockGeneratePrompt)).rejects.toThrow(
+        RpcException
+      );
+      await expect(service.sendMessage(mockGeneratePrompt)).rejects.toThrow(
+        errorMessage
+      );
     });
   });
 });

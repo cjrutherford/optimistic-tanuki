@@ -11,14 +11,13 @@ import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
       <div class="header">
         <h1>Theme Management</h1>
         <p class="subtitle">
-          Customize the theme for christopherrutherford-net. These settings
-          will be applied globally across the site.
+          Customize the theme for christopherrutherford-net. These settings will
+          be applied globally across the site.
         </p>
         <div class="info-box">
           <strong>Note:</strong> This is a proof of concept for centralized
-          theme management. In a production environment, these settings would
-          be persisted to a backend service and applied to the target
-          application.
+          theme management. In a production environment, these settings would be
+          persisted to a backend service and applied to the target application.
         </div>
       </div>
 

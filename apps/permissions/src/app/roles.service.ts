@@ -164,8 +164,11 @@ export class RolesService {
 
       if (appScopeIdOrName) {
         // Try to determine if it's a UUID or a name
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(appScopeIdOrName);
-        
+        const isUuid =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            appScopeIdOrName
+          );
+
         if (isUuid) {
           queryBuilder.andWhere(
             '(appScope.id = :appScopeId OR appScope.name = :globalScope)',

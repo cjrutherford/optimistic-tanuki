@@ -23,10 +23,11 @@
     (close)="showEditModal.set(false)"
   ></lib-risk-form>
 </otui-modal>
-}
-
-@if (showModal()) {
+} @if (showModal()) {
 <otui-modal (closeModal)="closeModal()" [heading]="'Add Risk'">
-  <lib-risk-form (submitted)="onCreateFormSubmit($event)" (close)="closeModal()"></lib-risk-form>
+  <lib-risk-form
+    (submitted)="onCreateFormSubmit($event)"
+    (close)="closeModal()"
+  ></lib-risk-form>
 </otui-modal>
 }

@@ -4,4 +4,4 @@ export declare type UserDto = {
   iat: number;
   name: string;
   userId: string;
-}
+};

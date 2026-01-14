@@ -20,12 +20,11 @@ import TurndownService from 'turndown';
     '[style.--border-color]': 'borderColor',
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
-  }
+  },
 })
-export class ComposeChatComponent extends Themeable{
+export class ComposeChatComponent extends Themeable {
   @Output() messageSubmitted: EventEmitter<string> = new EventEmitter<string>();
   content = '';
-  
 
   override applyTheme(colors: ThemeColors): void {
     this.background = `radial-gradient(ellipse, ${colors.background}, ${colors.accent})`;

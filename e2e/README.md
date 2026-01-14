@@ -64,12 +64,12 @@ docker-compose down -v
 
 All E2E environments use consistent environment variables:
 
-| Variable | Value | Description |
-|----------|-------|-------------|
-| `POSTGRES_USER` | postgres | Database username |
-| `POSTGRES_PASSWORD` | postgres | Database password |
-| `POSTGRES_DB` | postgres | Database name |
-| `JWT_SECRET` | e2e-test-jwt-secret | JWT signing secret for testing |
+| Variable            | Value               | Description                    |
+| ------------------- | ------------------- | ------------------------------ |
+| `POSTGRES_USER`     | postgres            | Database username              |
+| `POSTGRES_PASSWORD` | postgres            | Database password              |
+| `POSTGRES_DB`       | postgres            | Database name                  |
+| `JWT_SECRET`        | e2e-test-jwt-secret | JWT signing secret for testing |
 
 ## CI/CD Integration
 

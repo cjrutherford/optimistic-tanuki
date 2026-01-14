@@ -8,17 +8,15 @@ import { LoginType } from '@optimistic-tanuki/ui-models';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    LoginBlockComponent,
-  ],
+  imports: [CommonModule, RouterModule, LoginBlockComponent],
   template: `
     <div class="login-container">
       <lib-login-block
         title="Owner Console"
         description="Sign in to manage users, roles, and permissions"
-        [heroSrc]="'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070'"
+        [heroSrc]="
+          'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070'
+        "
         [heroAlt]="'Owner Console'"
         (submitEvent)="onLogin($event)"
       ></lib-login-block>

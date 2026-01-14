@@ -13,21 +13,24 @@ describe('ProfileService', () => {
       imports: [HttpClientTestingModule],
       providers: [
         ProfileService,
-        { provide: AuthStateService, useValue: { getDecodedTokenValue: jest.fn() } },
+        {
+          provide: AuthStateService,
+          useValue: { getDecodedTokenValue: jest.fn() },
+        },
         { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
-      ]
+      ],
     });
     service = TestBed.inject(ProfileService);
   });
 
   describe('getCurrentUserProfile', () => {
     it('should return the current user profile', () => {
-      const mockProfile: ProfileDto = { 
-        id: '1', 
+      const mockProfile: ProfileDto = {
+        id: '1',
         userId: '123',
-        profileName: 'Test User', 
-        profilePic: '', 
-        coverPic: '' ,
+        profileName: 'Test User',
+        profilePic: '',
+        coverPic: '',
         bio: '',
         occupation: '',
         location: '',

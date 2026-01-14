@@ -1,8 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 
 import { ChangeService } from './change.service';
-import { Change, CreateChange, QueryChange } from '@optimistic-tanuki/ui-models';
+import {
+  Change,
+  CreateChange,
+  QueryChange,
+} from '@optimistic-tanuki/ui-models';
 
 describe('ChangeService', () => {
   let service: ChangeService;
@@ -26,10 +33,22 @@ describe('ChangeService', () => {
 
   describe('createChange', () => {
     it('should create a change successfully', () => {
-      const mockChange: CreateChange = { changeDate: new Date(), projectId: '1', changeType: 'ADDITION', changeStatus: 'PENDING', changeDescription: 'Test', requestor: 'User', resolution: 'PENDING' };
-      const expectedResponse: Change = { id: '1', ...mockChange, updatedAt: new Date() };
+      const mockChange: CreateChange = {
+        changeDate: new Date(),
+        projectId: '1',
+        changeType: 'ADDITION',
+        changeStatus: 'PENDING',
+        changeDescription: 'Test',
+        requestor: 'User',
+        resolution: 'PENDING',
+      };
+      const expectedResponse: Change = {
+        id: '1',
+        ...mockChange,
+        updatedAt: new Date(),
+      };
 
-      service.createChange(mockChange).subscribe(response => {
+      service.createChange(mockChange).subscribe((response) => {
         expect(response).toEqual(expectedResponse);
       });
 
@@ -41,9 +60,21 @@ describe('ChangeService', () => {
 
   describe('getChanges', () => {
     it('should retrieve changes successfully', () => {
-      const expectedResponse: Change[] = [{ id: '1', changeDate: new Date(), projectId: '1', changeType: 'ADDITION', changeStatus: 'PENDING', changeDescription: 'Test', requestor: 'User', resolution: 'PENDING', updatedAt: new Date() }];
+      const expectedResponse: Change[] = [
+        {
+          id: '1',
+          changeDate: new Date(),
+          projectId: '1',
+          changeType: 'ADDITION',
+          changeStatus: 'PENDING',
+          changeDescription: 'Test',
+          requestor: 'User',
+          resolution: 'PENDING',
+          updatedAt: new Date(),
+        },
+      ];
 
-      service.getChanges().subscribe(response => {
+      service.getChanges().subscribe((response) => {
         expect(response).toEqual(expectedResponse);
       });
 
@@ -55,10 +86,26 @@ describe('ChangeService', () => {
 
   describe('queryChanges', () => {
     it('should query changes successfully', () => {
-      const mockQuery: QueryChange = { projectId: '1', createdAt: [new Date(), new Date()], updatedAt: [new Date(), new Date()] };
-      const expectedResponse: Change[] = [{ id: '1', changeDate: new Date(), projectId: '1', changeType: 'ADDITION', changeStatus: 'PENDING', changeDescription: 'Test', requestor: 'User', resolution: 'PENDING', updatedAt: new Date() }];
+      const mockQuery: QueryChange = {
+        projectId: '1',
+        createdAt: [new Date(), new Date()],
+        updatedAt: [new Date(), new Date()],
+      };
+      const expectedResponse: Change[] = [
+        {
+          id: '1',
+          changeDate: new Date(),
+          projectId: '1',
+          changeType: 'ADDITION',
+          changeStatus: 'PENDING',
+          changeDescription: 'Test',
+          requestor: 'User',
+          resolution: 'PENDING',
+          updatedAt: new Date(),
+        },
+      ];
 
-      service.queryChanges(mockQuery).subscribe(response => {
+      service.queryChanges(mockQuery).subscribe((response) => {
         expect(response).toEqual(expectedResponse);
       });
 
@@ -71,7 +118,7 @@ describe('ChangeService', () => {
 
   describe('deleteChange', () => {
     it('should delete a change successfully', () => {
-      service.deleteChange('1').subscribe(response => {
+      service.deleteChange('1').subscribe((response) => {
         expect(response).toBeNull(); // DELETE often returns null or empty object
       });
 
@@ -83,9 +130,19 @@ describe('ChangeService', () => {
 
   describe('getChangeById', () => {
     it('should retrieve a change by ID successfully', () => {
-      const expectedResponse: Change = { id: '1', changeDate: new Date(), projectId: '1', changeType: 'ADDITION', changeStatus: 'PENDING', changeDescription: 'Test', requestor: 'User', resolution: 'PENDING', updatedAt: new Date() };
+      const expectedResponse: Change = {
+        id: '1',
+        changeDate: new Date(),
+        projectId: '1',
+        changeType: 'ADDITION',
+        changeStatus: 'PENDING',
+        changeDescription: 'Test',
+        requestor: 'User',
+        resolution: 'PENDING',
+        updatedAt: new Date(),
+      };
 
-      service.getChangeById('1').subscribe(response => {
+      service.getChangeById('1').subscribe((response) => {
         expect(response).toEqual(expectedResponse);
       });
 
@@ -97,10 +154,23 @@ describe('ChangeService', () => {
 
   describe('updateChange', () => {
     it('should update a change successfully', () => {
-      const mockChange: Change = { id: '1', changeDate: new Date(), projectId: '1', changeType: 'ADDITION', changeStatus: 'PENDING', changeDescription: 'Updated', requestor: 'User', resolution: 'PENDING', updatedAt: new Date() };
-      const expectedResponse: Change = { ...mockChange, changeDescription: 'Updated' };
+      const mockChange: Change = {
+        id: '1',
+        changeDate: new Date(),
+        projectId: '1',
+        changeType: 'ADDITION',
+        changeStatus: 'PENDING',
+        changeDescription: 'Updated',
+        requestor: 'User',
+        resolution: 'PENDING',
+        updatedAt: new Date(),
+      };
+      const expectedResponse: Change = {
+        ...mockChange,
+        changeDescription: 'Updated',
+      };
 
-      service.updateChange(mockChange).subscribe(response => {
+      service.updateChange(mockChange).subscribe((response) => {
         expect(response).toEqual(expectedResponse);
       });
 

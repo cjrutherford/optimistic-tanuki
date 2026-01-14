@@ -1,4 +1,9 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import { RegisterComponent } from './register.component';
 import { AuthenticationService } from '../../authentication.service';
 import { Router } from '@angular/router';
@@ -46,7 +51,13 @@ describe('RegisterComponent', () => {
   });
 
   describe('onSubmit', () => {
-    const registerData: RegisterSubmitType = { email: 'test@example.com', password: 'password', confirmation: 'password', firstName: 'Test', lastName: 'User' };
+    const registerData: RegisterSubmitType = {
+      email: 'test@example.com',
+      password: 'password',
+      confirmation: 'password',
+      firstName: 'Test',
+      lastName: 'User',
+    };
 
     it('should handle successful registration', fakeAsync(() => {
       component.onSubmit(registerData);
@@ -61,7 +72,9 @@ describe('RegisterComponent', () => {
     }));
 
     it('should handle registration failure', fakeAsync(() => {
-      jest.spyOn(authService, 'register').mockReturnValue(throwError(() => new Error('Registration failed')));
+      jest
+        .spyOn(authService, 'register')
+        .mockReturnValue(throwError(() => new Error('Registration failed')));
 
       component.onSubmit(registerData);
       tick();

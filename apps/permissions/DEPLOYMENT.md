@@ -22,16 +22,19 @@ This builds all services including the new permissions service.
 ### 2. Start with Docker Compose
 
 For development:
+
 ```bash
 npm run docker:dev
 ```
 
 For production:
+
 ```bash
 npm run docker:up
 ```
 
 The permissions service will:
+
 - Start on port 3012
 - Connect to PostgreSQL database `ot_permissions`
 - Run migrations automatically via db-setup service
@@ -40,16 +43,19 @@ The permissions service will:
 ### 3. Verify Service is Running
 
 Check Docker logs:
+
 ```bash
 docker logs ot_permissions
 ```
 
 Expected output:
+
 ```
 Microservice is listening On Port: 3012
 ```
 
 Check service health via gateway:
+
 ```bash
 curl http://localhost:3000/permissions/role
 ```
@@ -132,6 +138,7 @@ docker exec -it db psql -U postgres -d ot_permissions
 ```
 
 Expected tables:
+
 - permission
 - role
 - role_assignment
@@ -159,11 +166,13 @@ SELECT * FROM role_permissions;
 ### Service Won't Start
 
 Check logs:
+
 ```bash
 docker logs ot_permissions
 ```
 
 Common issues:
+
 - Database connection: Verify `ot_permissions` database exists
 - Port conflict: Ensure port 3012 is not in use
 - Dependencies: Check that db-setup service completed successfully
@@ -171,6 +180,7 @@ Common issues:
 ### Migrations Failed
 
 Manually run migrations:
+
 ```bash
 cd apps/permissions
 export POSTGRES_HOST=localhost
@@ -207,51 +217,55 @@ async function setup() {
   const headers = { Authorization: `Bearer ${TOKEN}` };
 
   // Create permissions
-  const readPerm = await axios.post(`${API_BASE}/permission`, {
-    name: 'global:read',
-    description: 'Read access',
-    resource: 'all',
-    action: 'read'
-  }, { headers });
+  const readPerm = await axios.post(
+    `${API_BASE}/permission`,
+    {
+      name: 'global:read',
+      description: 'Read access',
+      resource: 'all',
+      action: 'read',
+    },
+    { headers }
+  );
 
-  const writePerm = await axios.post(`${API_BASE}/permission`, {
-    name: 'global:write',
-    description: 'Write access',
-    resource: 'all',
-    action: 'write'
-  }, { headers });
+  const writePerm = await axios.post(
+    `${API_BASE}/permission`,
+    {
+      name: 'global:write',
+      description: 'Write access',
+      resource: 'all',
+      action: 'write',
+    },
+    { headers }
+  );
 
   // Create roles
-  const userRole = await axios.post(`${API_BASE}/role`, {
-    name: 'user',
-    description: 'Basic user',
-    appScope: 'global'
-  }, { headers });
+  const userRole = await axios.post(
+    `${API_BASE}/role`,
+    {
+      name: 'user',
+      description: 'Basic user',
+      appScope: 'global',
+    },
+    { headers }
+  );
 
-  const adminRole = await axios.post(`${API_BASE}/role`, {
-    name: 'admin',
-    description: 'Administrator',
-    appScope: 'global'
-  }, { headers });
+  const adminRole = await axios.post(
+    `${API_BASE}/role`,
+    {
+      name: 'admin',
+      description: 'Administrator',
+      appScope: 'global',
+    },
+    { headers }
+  );
 
   // Add permissions to roles
-  await axios.post(
-    `${API_BASE}/role/${userRole.data.id}/permission/${readPerm.data.id}`,
-    {},
-    { headers }
-  );
+  await axios.post(`${API_BASE}/role/${userRole.data.id}/permission/${readPerm.data.id}`, {}, { headers });
 
-  await axios.post(
-    `${API_BASE}/role/${adminRole.data.id}/permission/${readPerm.data.id}`,
-    {},
-    { headers }
-  );
+  await axios.post(`${API_BASE}/role/${adminRole.data.id}/permission/${readPerm.data.id}`, {}, { headers });
 
-  await axios.post(
-    `${API_BASE}/role/${adminRole.data.id}/permission/${writePerm.data.id}`,
-    {},
-    { headers }
-  );
+  await axios.post(`${API_BASE}/role/${adminRole.data.id}/permission/${writePerm.data.id}`, {}, { headers });
 
   console.log('Initial setup complete!');
 }
@@ -260,6 +274,7 @@ setup().catch(console.error);
 ```
 
 Run with:
+
 ```bash
 npx ts-node create-initial-permissions.ts
 ```
@@ -284,11 +299,13 @@ async health() {
 ### Logs
 
 Monitor permissions service logs:
+
 ```bash
 docker logs -f ot_permissions
 ```
 
 Monitor all services:
+
 ```bash
 docker-compose logs -f
 ```
@@ -313,6 +330,7 @@ docker-compose logs -f
 ## Support
 
 For issues or questions:
+
 - Check the README.md for architecture details
 - Review USAGE.md for code examples
 - Consult service logs for error messages

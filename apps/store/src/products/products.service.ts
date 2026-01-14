@@ -24,7 +24,10 @@ export class ProductsService {
     return this.productRepository.findOne({ where: { id } });
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto): Promise<ProductEntity> {
+  async update(
+    id: string,
+    updateProductDto: UpdateProductDto
+  ): Promise<ProductEntity> {
     await this.productRepository.update(id, updateProductDto);
     return this.findOne(id);
   }

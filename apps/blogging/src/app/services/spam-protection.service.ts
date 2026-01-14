@@ -43,7 +43,9 @@ export class SpamProtectionService {
     }
 
     // Check for spam keywords
-    const content = `${data.name || ''} ${data.email || ''} ${data.message || ''}`.toLowerCase();
+    const content = `${data.name || ''} ${data.email || ''} ${
+      data.message || ''
+    }`.toLowerCase();
     for (const keyword of this.spamKeywords) {
       if (content.includes(keyword.toLowerCase())) {
         return {

@@ -3,7 +3,7 @@ import { Injectable, signal } from '@angular/core';
 import { MessageType } from './message.type';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MessageService {
   messages = signal<MessageType[]>([]);

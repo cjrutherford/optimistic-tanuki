@@ -157,14 +157,18 @@ describe('Prompt Engineering Utilities', () => {
 
     it('should return null when only tool calls present', () => {
       const content = '';
-      const toolCalls = [{ id: '1', type: 'function', function: { name: 'test' } }];
+      const toolCalls = [
+        { id: '1', type: 'function', function: { name: 'test' } },
+      ];
       const result = extractUserFacingContent(content, toolCalls);
       expect(result).toBeNull();
     });
 
     it('should return content even with tool calls if content exists', () => {
       const content = 'Creating your project...';
-      const toolCalls = [{ id: '1', type: 'function', function: { name: 'create_project' } }];
+      const toolCalls = [
+        { id: '1', type: 'function', function: { name: 'create_project' } },
+      ];
       const result = extractUserFacingContent(content, toolCalls);
       expect(result).toBe(content);
     });
@@ -184,14 +188,18 @@ describe('Prompt Engineering Utilities', () => {
 
     it('should return false for empty content with tool calls', () => {
       const content = '';
-      const toolCalls = [{ id: '1', type: 'function', function: { name: 'test' } }];
+      const toolCalls = [
+        { id: '1', type: 'function', function: { name: 'test' } },
+      ];
       const result = shouldEmitToUser(content, toolCalls);
       expect(result).toBe(false);
     });
 
     it('should return true for content with tool calls', () => {
       const content = 'Processing your request...';
-      const toolCalls = [{ id: '1', type: 'function', function: { name: 'test' } }];
+      const toolCalls = [
+        { id: '1', type: 'function', function: { name: 'test' } },
+      ];
       const result = shouldEmitToUser(content, toolCalls);
       expect(result).toBe(true);
     });

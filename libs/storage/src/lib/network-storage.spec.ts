@@ -34,7 +34,8 @@ describe('NetworkStorageAdapter', () => {
       providers: [
         {
           provide: NetworkStorageAdapter,
-          useFactory: (logger: Logger, s3Service: S3Service) => new NetworkStorageAdapter(logger, s3Service),
+          useFactory: (logger: Logger, s3Service: S3Service) =>
+            new NetworkStorageAdapter(logger, s3Service),
           inject: [Logger, S3Service],
         },
         {

@@ -5,5 +5,5 @@ export type {
   ThemeGradients,
   ThemeColors,
   DesignTokens,
-  ColorPalette
+  ColorPalette,
 } from '@optimistic-tanuki/theme-lib';

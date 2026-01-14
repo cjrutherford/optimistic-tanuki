@@ -16,10 +16,13 @@ export function validateRequiredFields<T>(
 }
 
 export function validateObjectValues<T>(
-    obj: Partial<T>,
-    fields: {[key in keyof T]: ((value: T[key]) => boolean);}
+  obj: Partial<T>,
+  fields: { [key in keyof T]: (value: T[key]) => boolean }
 ): boolean {
-  for (const [key, validateFn] of Object.entries(fields) as [keyof T, (value: T[keyof T]) => boolean][]) {
+  for (const [key, validateFn] of Object.entries(fields) as [
+    keyof T,
+    (value: T[keyof T]) => boolean
+  ][]) {
     const value = obj[key as keyof T];
     if (value === undefined || !validateFn(value as T[keyof T])) {
       return false;

@@ -66,23 +66,26 @@ describe('AppService', () => {
       const dto = { name: 'test', type: 'image', content: '' } as any;
       const asset = { id: '1', ...dto };
       jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
-      jest
-        .spyOn(storageAdapter, 'create')
-        .mockResolvedValue({
-          id: asset.id,
-          name: asset.name,
-          type: asset.type,
-          storageStrategy: asset.storageStrategy,
-          storagePath: 'some/path',
-          profileId: asset.profileId,
-          content: Buffer.from('some_content'),
-        });
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue({
+        id: asset.id,
+        name: asset.name,
+        type: asset.type,
+        storageStrategy: asset.storageStrategy,
+        storagePath: 'some/path',
+        profileId: asset.profileId,
+        content: Buffer.from('some_content'),
+      });
       jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
 
       const result = await appService.createAsset(dto);
 
       expect(result).toEqual(asset);
-      expect(assetRepo.create).toHaveBeenCalledWith({ name: 'test.png', storageStrategy: 'local_block_storage', type: 'image', profileId: undefined });;
+      expect(assetRepo.create).toHaveBeenCalledWith({
+        name: 'test.png',
+        storageStrategy: 'local_block_storage',
+        type: 'image',
+        profileId: undefined,
+      });
       expect(storageAdapter.create).toHaveBeenCalledWith(asset);
       expect(assetRepo.save).toHaveBeenCalledWith({
         ...asset,
@@ -110,26 +113,30 @@ describe('AppService', () => {
     });
 
     it('should log the creation of an asset', async () => {
-      const dto = { name: 'test', type: 'image', content: ''} as any;
+      const dto = { name: 'test', type: 'image', content: '' } as any;
       const asset = { id: '1', ...dto };
       jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
-      jest
-        .spyOn(storageAdapter, 'create')
-        .mockResolvedValue({
-          id: asset.id,
-          name: asset.name,
-          type: asset.type,
-          storageStrategy: asset.storageStrategy,
-          storagePath: 'some/path',
-          profileId: asset.profileId,
-          content: Buffer.from('some_content'),
-        });
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue({
+        id: asset.id,
+        name: asset.name,
+        type: asset.type,
+        storageStrategy: asset.storageStrategy,
+        storagePath: 'some/path',
+        profileId: asset.profileId,
+        content: Buffer.from('some_content'),
+      });
       jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
       const logSpy = jest.spyOn(logger, 'log');
 
       await appService.createAsset(dto);
 
-      expect(logSpy).toHaveBeenCalledWith('Creating asset with data:', dto.name, dto.profileId, dto.type, dto.content.length);
+      expect(logSpy).toHaveBeenCalledWith(
+        'Creating asset with data:',
+        dto.name,
+        dto.profileId,
+        dto.type,
+        dto.content.length
+      );
     });
   });
 

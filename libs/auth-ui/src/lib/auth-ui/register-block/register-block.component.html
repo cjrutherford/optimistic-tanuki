@@ -8,10 +8,7 @@
           <img [src]="heroSource" alt="Hero Image" width="300px" />
         </div>
         <div class="form">
-          <form
-            [formGroup]="registerForm"
-            (ngSubmit)="onSubmit()"
-          >
+          <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
             <lib-text-input
               formControlName="firstName"
               [label]="'First Name'"

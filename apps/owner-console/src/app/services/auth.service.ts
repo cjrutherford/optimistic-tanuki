@@ -3,7 +3,11 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
-import { AuthResponse, LoginRequest, RegisterRequest } from '@optimistic-tanuki/ui-models';
+import {
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
+} from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root',
@@ -11,7 +15,9 @@ import { AuthResponse, LoginRequest, RegisterRequest } from '@optimistic-tanuki/
 export class AuthService {
   private readonly API_URL = '/api';
   private readonly TOKEN_KEY = 'auth_token';
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
+  private isAuthenticatedSubject = new BehaviorSubject<boolean>(
+    this.hasToken()
+  );
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
   constructor(
@@ -34,16 +40,22 @@ export class AuthService {
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
-  login(email: string, password: string, mfa?: string): Observable<AuthResponse> {
+  login(
+    email: string,
+    password: string,
+    mfa?: string
+  ): Observable<AuthResponse> {
     const loginData: LoginRequest = { email, password, mfa };
-    return this.http.post<AuthResponse>(`${this.API_URL}/authentication/login`, loginData).pipe(
-      tap((response) => {
-        if (response.data?.newToken && isPlatformBrowser(this.platformId)) {
-          localStorage.setItem(this.TOKEN_KEY, response.data.newToken);
-          this.isAuthenticatedSubject.next(true);
-        }
-      })
-    );
+    return this.http
+      .post<AuthResponse>(`${this.API_URL}/authentication/login`, loginData)
+      .pipe(
+        tap((response) => {
+          if (response.data?.newToken && isPlatformBrowser(this.platformId)) {
+            localStorage.setItem(this.TOKEN_KEY, response.data.newToken);
+            this.isAuthenticatedSubject.next(true);
+          }
+        })
+      );
   }
 
   register(
@@ -54,15 +66,27 @@ export class AuthService {
     confirm: string,
     bio?: string
   ): Observable<AuthResponse> {
-    const registerData: RegisterRequest = { email, fn, ln, password, confirm, bio };
-    return this.http.post<AuthResponse>(`${this.API_URL}/authentication/register`, registerData).pipe(
-      tap((response) => {
-        if (response.data?.newToken && isPlatformBrowser(this.platformId)) {
-          localStorage.setItem(this.TOKEN_KEY, response.data.newToken);
-          this.isAuthenticatedSubject.next(true);
-        }
-      })
-    );
+    const registerData: RegisterRequest = {
+      email,
+      fn,
+      ln,
+      password,
+      confirm,
+      bio,
+    };
+    return this.http
+      .post<AuthResponse>(
+        `${this.API_URL}/authentication/register`,
+        registerData
+      )
+      .pipe(
+        tap((response) => {
+          if (response.data?.newToken && isPlatformBrowser(this.platformId)) {
+            localStorage.setItem(this.TOKEN_KEY, response.data.newToken);
+            this.isAuthenticatedSubject.next(true);
+          }
+        })
+      );
   }
 
   logout(): void {

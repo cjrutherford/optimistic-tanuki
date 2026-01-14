@@ -20,7 +20,10 @@ describe('KeyService', () => {
         {
           provide: AsymmetricService,
           useValue: {
-            generateKeyPair: jest.fn().mockResolvedValue({ private: 'privateKey', public: 'publicKey' }),
+            generateKeyPair: jest.fn().mockResolvedValue({
+              private: 'privateKey',
+              public: 'publicKey',
+            }),
           },
         },
       ],
@@ -56,8 +59,15 @@ describe('KeyService', () => {
     expect(asymmetricService.generateKeyPair).toHaveBeenCalledWith(hash);
     expect(fs.existsSync).toHaveBeenCalled();
     expect(fs.mkdirSync).toHaveBeenCalled();
-    expect(fsPromises.writeFile).toHaveBeenCalledWith(expect.any(String), 'privateKey', 'utf-8');
-    expect(result).toEqual({ pubKey: 'publicKey', privLocation: expect.any(String) });
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
+      expect.any(String),
+      'privateKey',
+      'utf-8'
+    );
+    expect(result).toEqual({
+      pubKey: 'publicKey',
+      privLocation: expect.any(String),
+    });
   });
 
   it('should not create directory if it exists', async () => {
@@ -75,8 +85,12 @@ describe('KeyService', () => {
   it('should throw an error if key generation fails', async () => {
     const userId = 'test-user';
     const hash = 'test-hash';
-    jest.spyOn(asymmetricService, 'generateKeyPair').mockRejectedValue(new Error('test error'));
+    jest
+      .spyOn(asymmetricService, 'generateKeyPair')
+      .mockRejectedValue(new Error('test error'));
 
-    await expect(service.generateUserKeys(userId, hash)).rejects.toThrow('Failed to generate keys for user test-user');
+    await expect(service.generateUserKeys(userId, hash)).rejects.toThrow(
+      'Failed to generate keys for user test-user'
+    );
   });
 });

@@ -31,7 +31,7 @@ describe('HeroSectionComponent', () => {
     component.overlayColor = '#ffffff';
     component.minHeight = '80vh';
     component.centerContent = false;
-    
+
     expect(component.overlayOpacity).toBe(0.6);
     expect(component.overlayColor).toBe('#ffffff');
     expect(component.minHeight).toBe('80vh');

@@ -1,7 +1,11 @@
 import { Component, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ThemeHostBindingsDirective, Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import {
+  ThemeHostBindingsDirective,
+  Themeable,
+  ThemeColors,
+} from '@optimistic-tanuki/theme-lib';
 
 export interface DonationRequest {
   amount: number;

@@ -23,11 +23,16 @@ import { ButtonComponent } from '../button/button.component';
     '[class.sm]': 'size === "sm"',
     '[class.md]': 'size === "md"',
     '[class.lg]': 'size === "lg"',
-  }
+  },
 })
 export class ModalComponent extends Themeable {
   @Input() heading = '';
-  @Input() mode: 'sidebar'| 'sidebar-left' | 'trough' | 'standard-modal' | 'captive-modal' = 'standard-modal';
+  @Input() mode:
+    | 'sidebar'
+    | 'sidebar-left'
+    | 'trough'
+    | 'standard-modal'
+    | 'captive-modal' = 'standard-modal';
   @Input() variant: 'default' | 'glass' | 'gradient' = 'default';
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
   @Input() override background = 'var(--background, #222)';
@@ -35,7 +40,8 @@ export class ModalComponent extends Themeable {
   @Input() override accent = 'var(--accent, #b1baec)';
   @Input() override complement = 'var(--complement, #919ee4)';
   @Input() override borderColor = 'var(--border-color, #b1baec)';
-  @Input() override borderGradient = 'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
+  @Input() override borderGradient =
+    'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
   @Input() override transitionDuration = '0.5s';
   @Output() closeModal = new EventEmitter<void>();
 

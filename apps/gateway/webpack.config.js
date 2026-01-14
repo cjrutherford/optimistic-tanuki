@@ -15,7 +15,7 @@ module.exports = {
       optimization: false,
       outputHashing: 'none',
       generatePackageJson: true,
-      devtool:'source-map',
+      devtool: 'source-map',
     }),
   ],
 };

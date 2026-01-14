@@ -5,6 +5,7 @@ Welcome! This guide will help you get Optimistic Tanuki running on your local ma
 ## Overview
 
 Optimistic Tanuki is a monorepo containing microservices and frontend applications for:
+
 - **Digital Homestead**: Personal content management and social features
 - **Forge of Will**: Project management and planning tool
 - **Personal Website**: Portfolio and blog platform
@@ -45,12 +46,14 @@ Use the provided start script to run all services:
 ```
 
 This script will:
+
 1. Start the PostgreSQL database
 2. Run database migrations
 3. Start all backend services
 4. Launch the frontend applications
 
 **Services Started:**
+
 - PostgreSQL Database (port 5432)
 - Gateway (port 3333)
 - Authentication Service (port 3001)
@@ -63,6 +66,7 @@ This script will:
 - Forge of Will (port 4201) - Project management app
 
 **Access the Applications:**
+
 - Main App: http://localhost:4200
 - Forge of Will: http://localhost:4201
 - API Gateway: http://localhost:3333
@@ -72,16 +76,19 @@ This script will:
 Run services in Docker containers:
 
 **Standard Stack** (Main application):
+
 ```bash
 docker-compose up -d
 ```
 
 **Forge of Will Stack**:
+
 ```bash
 docker-compose -f fow.docker-compose.yaml up -d
 ```
 
 **Development Mode with Debugging**:
+
 ```bash
 # Build applications
 npm run build:dev
@@ -114,7 +121,7 @@ nx serve authentication
 
 ### 1. Database Setup
 
-The database should be automatically set up when using `start-local.sh` or Docker Compose. 
+The database should be automatically set up when using `start-local.sh` or Docker Compose.
 
 To manually set up the database:
 
@@ -212,6 +219,7 @@ optimistic-tanuki/
 ### Viewing Logs
 
 When running with Docker:
+
 ```bash
 # View all logs
 docker-compose logs -f
@@ -246,6 +254,7 @@ pnpm install
 ### Port Already in Use
 
 If you get port conflict errors:
+
 ```bash
 # Check what's using a port (e.g., 3333)
 lsof -i :3333

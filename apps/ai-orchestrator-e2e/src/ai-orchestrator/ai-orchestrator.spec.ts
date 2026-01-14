@@ -338,7 +338,8 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
             { projectId: createdProjectId }
           )
         );
-        if (risks && risks.find((r: any) => r.description === 'Budget Overrun')) break;
+        if (risks && risks.find((r: any) => r.description === 'Budget Overrun'))
+          break;
       } catch (e) {
         console.log(`Attempt ${i + 1} to find risk failed, retrying...`);
       }

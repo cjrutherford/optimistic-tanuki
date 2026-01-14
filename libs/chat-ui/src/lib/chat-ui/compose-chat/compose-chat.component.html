@@ -2,10 +2,7 @@
   <quill-editor
     [(ngModel)]="content"
     [modules]="{
-      toolbar: [
-        ['bold', 'italic', 'underline'],
-        ['link']
-      ]
+      toolbar: [['bold', 'italic', 'underline'], ['link']]
     }"
     (onContentChanged)="onContentChanged($event)"
     [style.background]="background"

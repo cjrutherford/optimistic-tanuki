@@ -1,6 +1,21 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent, HttpEventType, HttpResponse, HTTP_INTERCEPTORS, HttpClient, HttpClientModule, withInterceptors } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting, HttpClientTestingModule } from '@angular/common/http/testing';
+import {
+  HttpInterceptorFn,
+  HttpRequest,
+  HttpHandlerFn,
+  HttpEvent,
+  HttpEventType,
+  HttpResponse,
+  HTTP_INTERCEPTORS,
+  HttpClient,
+  HttpClientModule,
+  withInterceptors,
+} from '@angular/common/http';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+  HttpClientTestingModule,
+} from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -20,7 +35,10 @@ describe('authenticationInterceptor', () => {
       providers: [
         provideHttpClient(withInterceptors([authenticationInterceptor])),
         provideHttpClientTesting(),
-        { provide: AuthStateService, useValue: { getToken: jest.fn(), logout: jest.fn() } },
+        {
+          provide: AuthStateService,
+          useValue: { getToken: jest.fn(), logout: jest.fn() },
+        },
         { provide: Router, useValue: { navigate: jest.fn() } },
       ],
     });
@@ -41,7 +59,9 @@ describe('authenticationInterceptor', () => {
     httpClient.get('/api/data').subscribe();
 
     const testReq = httpMock.expectOne('/api/data');
-    expect(testReq.request.headers.get('Authorization')).toBe('Bearer test-token');
+    expect(testReq.request.headers.get('Authorization')).toBe(
+      'Bearer test-token'
+    );
     testReq.flush({});
     tick();
   }));
@@ -86,7 +106,10 @@ describe('authenticationInterceptor', () => {
     });
 
     const testReq = httpMock.expectOne('/api/data');
-    testReq.error(new ErrorEvent('Server Error'), { status: 500, statusText: 'Server Error' });
+    testReq.error(new ErrorEvent('Server Error'), {
+      status: 500,
+      statusText: 'Server Error',
+    });
     tick();
   }));
 });

@@ -1,18 +1,35 @@
-import { CreateProjectDto, QueryProjectDto, UpdateProjectDto } from '@optimistic-tanuki/models';
+import {
+  CreateProjectDto,
+  QueryProjectDto,
+  UpdateProjectDto,
+} from '@optimistic-tanuki/models';
 
 import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Project } from '../entities/project.entity';
-import { ArrayContains, Between, FindOptionsWhere, In, IsNull, Not, Repository } from 'typeorm';
+import {
+  ArrayContains,
+  Between,
+  FindOptionsWhere,
+  In,
+  IsNull,
+  Not,
+  Repository,
+} from 'typeorm';
 
 @Injectable()
 export class ProjectService {
-
   constructor(
-    @Inject(getRepositoryToken(Project)) private readonly projectRepository: Repository<Project>,
+    @Inject(getRepositoryToken(Project))
+    private readonly projectRepository: Repository<Project>
   ) {}
   async create(createProjectDto: CreateProjectDto) {
-    const project = this.projectRepository.create({ ...createProjectDto, updatedBy: createProjectDto.owner, createdAt: new Date(), updatedAt: new Date() });
+    const project = this.projectRepository.create({
+      ...createProjectDto,
+      updatedBy: createProjectDto.owner,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
     return await this.projectRepository.save(project);
   }
 
@@ -49,15 +66,24 @@ export class ProjectService {
     if (query.members) {
       where.members = ArrayContains(query.members);
     }
-    return await this.projectRepository.find({ where, relations: ['tasks', 'risks', 'changes', 'journalEntries'] });
+    return await this.projectRepository.find({
+      where,
+      relations: ['tasks', 'risks', 'changes', 'journalEntries'],
+    });
   }
 
   async findOne(id: string) {
-    return await this.projectRepository.findOne({ where: { id }, relations: ['tasks', 'risks', 'changes', 'journalEntries'] });
+    return await this.projectRepository.findOne({
+      where: { id },
+      relations: ['tasks', 'risks', 'changes', 'journalEntries'],
+    });
   }
 
   async update(id: string, updateProjectDto: UpdateProjectDto) {
-    return await this.projectRepository.update(id, { ...updateProjectDto, updatedAt: new Date() });
+    return await this.projectRepository.update(id, {
+      ...updateProjectDto,
+      updatedAt: new Date(),
+    });
   }
 
   async remove(id: string) {

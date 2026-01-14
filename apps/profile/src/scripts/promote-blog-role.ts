@@ -4,7 +4,7 @@
  * Script to promote a user to blog poster or owner
  * Usage: npm run promote-blog-role <userId> <role>
  * Role can be: 'poster' or 'owner'
- * 
+ *
  * Example:
  * npm run promote-blog-role user-123 poster
  * npm run promote-blog-role user-456 owner
@@ -16,14 +16,16 @@ import * as config from '../config';
 
 async function promoteBlogRole(userId: string, role: string) {
   const validRoles = ['poster', 'owner', 'none'];
-  
+
   if (!validRoles.includes(role.toLowerCase())) {
-    console.error(`Invalid role: ${role}. Must be one of: ${validRoles.join(', ')}`);
+    console.error(
+      `Invalid role: ${role}. Must be one of: ${validRoles.join(', ')}`
+    );
     process.exit(1);
   }
 
   const blogRole = role.toLowerCase() as BlogRole;
-  
+
   // Initialize data source
   const dbConfig = config.default();
   const dataSource = new DataSource({
@@ -42,10 +44,10 @@ async function promoteBlogRole(userId: string, role: string) {
     console.log('Database connection established');
 
     const profileRepository = dataSource.getRepository(Profile);
-    
+
     // Find profile by userId
     const profile = await profileRepository.findOne({ where: { userId } });
-    
+
     if (!profile) {
       console.error(`Profile not found for userId: ${userId}`);
       await dataSource.destroy();
@@ -53,17 +55,17 @@ async function promoteBlogRole(userId: string, role: string) {
     }
 
     const oldRole = profile.blogRole || BlogRole.NONE;
-    
+
     // Update blog role
     profile.blogRole = blogRole;
     await profileRepository.save(profile);
-    
+
     console.log(`Successfully updated blog role for user ${userId}`);
     console.log(`  Profile ID: ${profile.id}`);
     console.log(`  Profile Name: ${profile.profileName}`);
     console.log(`  Old Role: ${oldRole}`);
     console.log(`  New Role: ${blogRole}`);
-    
+
     await dataSource.destroy();
     process.exit(0);
   } catch (error) {

@@ -1,7 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { SubscriptionsService } from './subscriptions.service';
-import { CreateSubscriptionDto, UpdateSubscriptionDto } from '@optimistic-tanuki/models';
+import {
+  CreateSubscriptionDto,
+  UpdateSubscriptionDto,
+} from '@optimistic-tanuki/models';
 
 @Controller()
 export class SubscriptionsController {
@@ -28,8 +31,17 @@ export class SubscriptionsController {
   }
 
   @MessagePattern({ cmd: 'updateSubscription' })
-  update(@Payload() data: { id: string; updateSubscriptionDto: UpdateSubscriptionDto }) {
-    return this.subscriptionsService.update(data.id, data.updateSubscriptionDto);
+  update(
+    @Payload()
+    data: {
+      id: string;
+      updateSubscriptionDto: UpdateSubscriptionDto;
+    }
+  ) {
+    return this.subscriptionsService.update(
+      data.id,
+      data.updateSubscriptionDto
+    );
   }
 
   @MessagePattern({ cmd: 'cancelSubscription' })

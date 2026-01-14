@@ -106,9 +106,7 @@ describe('PalettesController', () => {
         JSON.stringify(mockPalettes)
       );
 
-      await expect(
-        controller.create({ ...mockPalettes[0] })
-      ).rejects.toThrow(
+      await expect(controller.create({ ...mockPalettes[0] })).rejects.toThrow(
         new HttpException('Palette already exists', HttpStatus.CONFLICT)
       );
     });

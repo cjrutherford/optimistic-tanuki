@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-
 import { TileComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({

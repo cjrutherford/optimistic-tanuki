@@ -41,7 +41,9 @@ export class ProfileService {
    * @param dataUrl The data URL to extract the extension from
    * @returns The file extension (e.g., 'png', 'jpeg') or empty string if not found
    */
-  private getFileExtensionFromDataUrl(dataUrl: string | null | undefined): string {
+  private getFileExtensionFromDataUrl(
+    dataUrl: string | null | undefined
+  ): string {
     if (!dataUrl) return '';
     const matches = dataUrl.match(/^data:(.+?);base64,/);
     if (matches && matches[1]) {
@@ -218,10 +220,13 @@ export class ProfileService {
       newProfile.profilePic = profilePicUrl || newProfile.profilePic;
       newProfile.coverPic = coverPicUrl || newProfile.coverPic;
       await firstValueFrom(
-        this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${newProfile.id}`, {
-          profilePic: newProfile.profilePic,
-          coverPic: newProfile.coverPic,
-        })
+        this.http.put<ProfileDto>(
+          `${this.apiBaseUrl}/profile/${newProfile.id}`,
+          {
+            profilePic: newProfile.profilePic,
+            coverPic: newProfile.coverPic,
+          }
+        )
       );
     }
 
@@ -237,7 +242,9 @@ export class ProfileService {
    */
   async updateProfile(id: string, profile: UpdateProfileDto) {
     // Check if this is a global profile and we need to create a local one
-    const existingProfile = this.getCurrentUserProfiles().find((p) => p.id === id);
+    const existingProfile = this.getCurrentUserProfiles().find(
+      (p) => p.id === id
+    );
 
     if (
       existingProfile &&

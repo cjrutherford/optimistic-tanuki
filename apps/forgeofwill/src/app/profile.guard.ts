@@ -5,7 +5,7 @@ import { AuthStateService } from './auth-state.service';
 import { ProfileService } from './profile/profile.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ProfileGuard implements CanActivate {
   private router = inject(Router);
@@ -13,12 +13,10 @@ export class ProfileGuard implements CanActivate {
   private profileService = inject(ProfileService);
   private isAuthenticated = false;
 
-  constructor(
-  ) {
-    this.authStateService.isAuthenticated$().subscribe(isAuthenticated => {
+  constructor() {
+    this.authStateService.isAuthenticated$().subscribe((isAuthenticated) => {
       this.isAuthenticated = isAuthenticated;
     });
-
   }
 
   async canActivate(): Promise<boolean> {

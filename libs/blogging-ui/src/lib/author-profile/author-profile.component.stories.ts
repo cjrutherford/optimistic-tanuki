@@ -14,8 +14,10 @@ type Story = StoryObj<AuthorProfileComponent>;
 export const Primary: Story = {
   args: {},
   decorators: [
-    componentWrapperDecorator((story) => `<div style="width: 600px; margin: auto;">${story}</div>`),
-  ]
+    componentWrapperDecorator(
+      (story) => `<div style="width: 600px; margin: auto;">${story}</div>`
+    ),
+  ],
 };
 
 export const Heading: Story = {

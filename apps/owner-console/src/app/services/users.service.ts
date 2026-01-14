@@ -19,7 +19,10 @@ export class UsersService {
     return this.http.get<ProfileDto>(`${this.API_URL}/${id}`);
   }
 
-  updateProfile(id: string, profile: Partial<ProfileDto>): Observable<ProfileDto> {
+  updateProfile(
+    id: string,
+    profile: Partial<ProfileDto>
+  ): Observable<ProfileDto> {
     return this.http.put<ProfileDto>(`${this.API_URL}/${id}`, profile);
   }
 }

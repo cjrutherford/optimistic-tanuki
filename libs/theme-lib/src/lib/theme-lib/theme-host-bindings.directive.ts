@@ -1,4 +1,12 @@
-import { Directive, ElementRef, Input, OnChanges, SimpleChanges, OnDestroy, OnInit } from '@angular/core';
+import {
+  Directive,
+  ElementRef,
+  Input,
+  OnChanges,
+  SimpleChanges,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import { ThemeService } from './theme.service';
 import { ThemeColors } from './theme.interface';
 import { Subject, takeUntil } from 'rxjs';
@@ -27,11 +35,11 @@ export interface HostThemeBindings {
 
 const SPACING_MAP = {
   xs: 'var(--spacing-xs, 4px)',
-  sm: 'var(--spacing-sm, 8px)', 
+  sm: 'var(--spacing-sm, 8px)',
   md: 'var(--spacing-md, 16px)',
   lg: 'var(--spacing-lg, 24px)',
   xl: 'var(--spacing-xl, 32px)',
-  xxl: 'var(--spacing-xxl, 48px)'
+  xxl: 'var(--spacing-xxl, 48px)',
 } as const;
 
 const SHADOW_MAP = {
@@ -39,7 +47,7 @@ const SHADOW_MAP = {
   sm: 'var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05))',
   md: 'var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1))',
   lg: 'var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1))',
-  xl: 'var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1))'
+  xl: 'var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1))',
 } as const;
 
 const BORDER_RADIUS_MAP = {
@@ -48,7 +56,7 @@ const BORDER_RADIUS_MAP = {
   md: 'var(--border-radius-md, 4px)',
   lg: 'var(--border-radius-lg, 8px)',
   xl: 'var(--border-radius-xl, 12px)',
-  full: 'var(--border-radius-full, 50%)'
+  full: 'var(--border-radius-full, 50%)',
 } as const;
 
 const FONT_SIZE_MAP = {
@@ -57,14 +65,16 @@ const FONT_SIZE_MAP = {
   base: 'var(--font-size-base, 1rem)',
   lg: 'var(--font-size-lg, 1.125rem)',
   xl: 'var(--font-size-xl, 1.25rem)',
-  xxl: 'var(--font-size-xxl, 1.5rem)'
+  xxl: 'var(--font-size-xxl, 1.5rem)',
 } as const;
 
 @Directive({
   selector: '[themeHostBindings]',
-  standalone: true
+  standalone: true,
 })
-export class ThemeHostBindingsDirective implements OnInit, OnChanges, OnDestroy {
+export class ThemeHostBindingsDirective
+  implements OnInit, OnChanges, OnDestroy
+{
   @Input() themeHostBindings: HostThemeBindings = {};
   @Input() useThemeColors = true; // Whether to auto-bind to theme service colors
   @Input() useLocalScope = true; // Whether to use --local-* prefix for component-scoped variables
@@ -79,7 +89,7 @@ export class ThemeHostBindingsDirective implements OnInit, OnChanges, OnDestroy 
 
   ngOnInit() {
     this.isInitialized = true;
-    
+
     // Subscribe to theme changes if useThemeColors is enabled
     if (this.useThemeColors) {
       this.themeService.themeColors$
@@ -90,7 +100,7 @@ export class ThemeHostBindingsDirective implements OnInit, OnChanges, OnDestroy 
           }
         });
     }
-    
+
     // Apply any initial bindings that were set before ngOnInit
     this.applyBindings();
   }
@@ -109,7 +119,7 @@ export class ThemeHostBindingsDirective implements OnInit, OnChanges, OnDestroy 
   private applyThemeColors(colors: ThemeColors) {
     const element = this.elementRef.nativeElement;
     const prefix = this.useLocalScope ? '--local-' : '--';
-    
+
     // Apply global theme colors as CSS custom properties on this element
     this.setProperty(element, `${prefix}accent`, colors.accent);
     this.setProperty(element, `${prefix}complement`, colors.complementary);
@@ -130,20 +140,44 @@ export class ThemeHostBindingsDirective implements OnInit, OnChanges, OnDestroy 
     const prefix = this.useLocalScope ? '--local-' : '--';
 
     // Apply core color overrides (these take precedence over theme colors)
-    if (bindings.accent) this.setProperty(element, `${prefix}accent`, bindings.accent);
-    if (bindings.complement) this.setProperty(element, `${prefix}complement`, bindings.complement);
-    if (bindings.tertiary) this.setProperty(element, `${prefix}tertiary`, bindings.tertiary);
-    if (bindings.success) this.setProperty(element, `${prefix}success`, bindings.success);
-    if (bindings.danger) this.setProperty(element, `${prefix}danger`, bindings.danger);
-    if (bindings.warning) this.setProperty(element, `${prefix}warning`, bindings.warning);
-    if (bindings.background) this.setProperty(element, `${prefix}background`, bindings.background);
-    if (bindings.foreground) this.setProperty(element, `${prefix}foreground`, bindings.foreground);
+    if (bindings.accent)
+      this.setProperty(element, `${prefix}accent`, bindings.accent);
+    if (bindings.complement)
+      this.setProperty(element, `${prefix}complement`, bindings.complement);
+    if (bindings.tertiary)
+      this.setProperty(element, `${prefix}tertiary`, bindings.tertiary);
+    if (bindings.success)
+      this.setProperty(element, `${prefix}success`, bindings.success);
+    if (bindings.danger)
+      this.setProperty(element, `${prefix}danger`, bindings.danger);
+    if (bindings.warning)
+      this.setProperty(element, `${prefix}warning`, bindings.warning);
+    if (bindings.background)
+      this.setProperty(element, `${prefix}background`, bindings.background);
+    if (bindings.foreground)
+      this.setProperty(element, `${prefix}foreground`, bindings.foreground);
 
     // Apply design token references
-    if (bindings.spacing) this.setProperty(element, `${prefix}spacing`, SPACING_MAP[bindings.spacing]);
-    if (bindings.shadow) this.setProperty(element, `${prefix}shadow`, SHADOW_MAP[bindings.shadow]);
-    if (bindings.borderRadius) this.setProperty(element, `${prefix}border-radius`, BORDER_RADIUS_MAP[bindings.borderRadius]);
-    if (bindings.fontSize) this.setProperty(element, `${prefix}font-size`, FONT_SIZE_MAP[bindings.fontSize]);
+    if (bindings.spacing)
+      this.setProperty(
+        element,
+        `${prefix}spacing`,
+        SPACING_MAP[bindings.spacing]
+      );
+    if (bindings.shadow)
+      this.setProperty(element, `${prefix}shadow`, SHADOW_MAP[bindings.shadow]);
+    if (bindings.borderRadius)
+      this.setProperty(
+        element,
+        `${prefix}border-radius`,
+        BORDER_RADIUS_MAP[bindings.borderRadius]
+      );
+    if (bindings.fontSize)
+      this.setProperty(
+        element,
+        `${prefix}font-size`,
+        FONT_SIZE_MAP[bindings.fontSize]
+      );
 
     // Apply custom variables
     if (bindings.customVars) {

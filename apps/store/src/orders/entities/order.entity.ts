@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { OrderItemEntity } from './order-item.entity';
 
 @Entity('orders')
@@ -18,7 +25,7 @@ export class OrderEntity {
   @Column({ type: 'varchar', length: 3, default: 'USD' })
   currency: string;
 
-  @OneToMany(() => OrderItemEntity, item => item.order, { cascade: true })
+  @OneToMany(() => OrderItemEntity, (item) => item.order, { cascade: true })
   items: OrderItemEntity[];
 
   @CreateDateColumn()

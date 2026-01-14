@@ -29,7 +29,19 @@ describe('ChatUiComponent', () => {
   it('should call syncWindowStates on ngOnChanges when contacts change', () => {
     const syncSpy = jest.spyOn(component as any, 'syncWindowStates');
     const changes: SimpleChanges = {
-      contacts: new SimpleChange(undefined, [{ id: '4', name: 'Test', avatarUrl: '', lastMessage: '', lastMessageTime: '' }], true)
+      contacts: new SimpleChange(
+        undefined,
+        [
+          {
+            id: '4',
+            name: 'Test',
+            avatarUrl: '',
+            lastMessage: '',
+            lastMessageTime: '',
+          },
+        ],
+        true
+      ),
     };
     component.ngOnChanges(changes);
     expect(syncSpy).toHaveBeenCalled();
@@ -38,39 +50,105 @@ describe('ChatUiComponent', () => {
   it('should call syncWindowStates on ngOnChanges when conversations change', () => {
     const syncSpy = jest.spyOn(component as any, 'syncWindowStates');
     const changes: SimpleChanges = {
-      conversations: new SimpleChange(undefined, [], true)
+      conversations: new SimpleChange(undefined, [], true),
     };
     component.ngOnChanges(changes);
     expect(syncSpy).toHaveBeenCalled();
   });
 
   it('should initialize windowStates with existing contacts', () => {
-    component.contacts = [{ id: 'test1', name: 'Test1', avatarUrl: '', lastMessage: '', lastMessageTime: '' }];
-    component.conversations = [{ id: 'test1', messages: [], participants: [], createdAt: new Date(), updatedAt: new Date() }];
+    component.contacts = [
+      {
+        id: 'test1',
+        name: 'Test1',
+        avatarUrl: '',
+        lastMessage: '',
+        lastMessageTime: '',
+      },
+    ];
+    component.conversations = [
+      {
+        id: 'test1',
+        messages: [],
+        participants: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
     (component as any).syncWindowStates();
     expect(component.windowStates()['test1']).toBeDefined();
     expect(component.windowStates()['test1'].windowState).toBe('hidden');
   });
 
   it('should not overwrite existing windowState', () => {
-    component.contacts = [{ id: 'test1', name: 'Test1', avatarUrl: '', lastMessage: '', lastMessageTime: '' }];
-    component.conversations = [{ id: 'test1', messages: [], participants: [], createdAt: new Date(), updatedAt: new Date() }];
-    component.windowStates.set({ 'test1': { windowState: 'popout', conversation: [] } });
+    component.contacts = [
+      {
+        id: 'test1',
+        name: 'Test1',
+        avatarUrl: '',
+        lastMessage: '',
+        lastMessageTime: '',
+      },
+    ];
+    component.conversations = [
+      {
+        id: 'test1',
+        messages: [],
+        participants: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    component.windowStates.set({
+      test1: { windowState: 'popout', conversation: [] },
+    });
     (component as any).syncWindowStates();
     expect(component.windowStates()['test1'].windowState).toBe('popout');
   });
 
   it('should open chat window to popout state', () => {
-    component.contacts = [{ id: 'test1', name: 'Test1', avatarUrl: '', lastMessage: '', lastMessageTime: '' }];
-    component.conversations = [{ id: 'test1', messages: [], participants: [], createdAt: new Date(), updatedAt: new Date() }];
+    component.contacts = [
+      {
+        id: 'test1',
+        name: 'Test1',
+        avatarUrl: '',
+        lastMessage: '',
+        lastMessageTime: '',
+      },
+    ];
+    component.conversations = [
+      {
+        id: 'test1',
+        messages: [],
+        participants: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
     (component as any).syncWindowStates();
     component.openChat('test1');
     expect(component.windowStates()['test1'].windowState).toBe('popout');
   });
 
   it('should handle window state change', () => {
-    component.contacts = [{ id: 'test1', name: 'Test1', avatarUrl: '', lastMessage: '', lastMessageTime: '' }];
-    component.conversations = [{ id: 'test1', messages: [], participants: [], createdAt: new Date(), updatedAt: new Date() }];
+    component.contacts = [
+      {
+        id: 'test1',
+        name: 'Test1',
+        avatarUrl: '',
+        lastMessage: '',
+        lastMessageTime: '',
+      },
+    ];
+    component.conversations = [
+      {
+        id: 'test1',
+        messages: [],
+        participants: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
     (component as any).syncWindowStates();
     component.handleWindowStateChange('test1', 'hidden');
     expect(component.windowStates()['test1'].windowState).toBe('hidden');
@@ -83,8 +161,32 @@ describe('ChatUiComponent', () => {
   });
 
   it('should return constructed conversation contacts', () => {
-    const profiles = [{ id: '1', profileName: 'Test User', profilePic: '', userId: '', coverPic: '', bio: '', location: '', occupation: '', interests: '', skills: '', created_at: new Date() }];
-    const messages = [{ id: '1', conversationId: '1', senderId: '1', recipientId: ['2'], content: 'Hello', timestamp: new Date(), type: 'chat' as const }];
+    const profiles = [
+      {
+        id: '1',
+        profileName: 'Test User',
+        profilePic: '',
+        userId: '',
+        coverPic: '',
+        bio: '',
+        location: '',
+        occupation: '',
+        interests: '',
+        skills: '',
+        created_at: new Date(),
+      },
+    ];
+    const messages = [
+      {
+        id: '1',
+        conversationId: '1',
+        senderId: '1',
+        recipientId: ['2'],
+        content: 'Hello',
+        timestamp: new Date(),
+        type: 'chat' as const,
+      },
+    ];
     const result = component.getConversationContacts(profiles, messages);
     expect(result.length).toBe(1);
     expect(result[0].name).toBe('Test User');

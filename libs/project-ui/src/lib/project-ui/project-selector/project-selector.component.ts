@@ -14,10 +14,11 @@ import {
   Output,
   SimpleChanges,
   computed,
-  signal, OnChanges, OnInit,
+  signal,
+  OnChanges,
+  OnInit,
 } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-
 
 import { SelectComponent } from '@optimistic-tanuki/form-ui';
 
@@ -27,8 +28,8 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
     CardComponent,
     ReactiveFormsModule,
     SelectComponent,
-    ButtonComponent
-],
+    ButtonComponent,
+  ],
   templateUrl: './project-selector.component.html',
   styleUrl: './project-selector.component.scss',
 })
@@ -56,7 +57,6 @@ export class ProjectSelectorComponent implements OnChanges, OnInit {
       label: project.name,
     }))
   );
-
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['projects']) {
@@ -89,7 +89,9 @@ export class ProjectSelectorComponent implements OnChanges, OnInit {
     const selectElement = event.target as HTMLSelectElement;
     const projectId = selectElement.value;
     console.log('Selected project ID:', projectId);
-    this.selectedProject.set(this.projects.find(p => p.id === projectId) || null);
+    this.selectedProject.set(
+      this.projects.find((p) => p.id === projectId) || null
+    );
     this.projectSelected.emit(projectId);
   }
 }

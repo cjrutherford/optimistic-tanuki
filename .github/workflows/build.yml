@@ -117,13 +117,13 @@ jobs:
         run: |
           # Start the service
           docker compose up -d ${{ matrix.service }}
-          
+
           # Wait for service to be ready
           sleep 10
-          
+
           # Check if container is running
           docker ps | grep ${{ matrix.service }}
-          
+
           # Stop the service
           docker compose down
         env:

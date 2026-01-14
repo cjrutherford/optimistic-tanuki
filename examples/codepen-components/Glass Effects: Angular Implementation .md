@@ -7,30 +7,34 @@ This spec analyzes the glassmorphism effects in `swiper-card-music-player.html` 
 ## 1. **Glass Effect Utility**
 
 ### **Effect**
+
 - Frosted glass backgrounds using `backdrop-filter: blur(...)`, semi-transparent backgrounds, and subtle borders.
 - Used for containers, overlays, cards, and player backgrounds.
 
 ### **Angular Implementation**
 
 #### **A. SCSS Mixin: `glass-effect`**
+
 - **Location:** `libs/common-ui/src/lib/styles/_glass-effect.scss`
 - **Features:**
   - Applies glassmorphism styles: background, blur, border, shadow.
   - Accepts parameters for blur amount, background color, border radius.
 
 **Sample Mixin:**
+
 ```scss
-@mixin glass-effect($blur: 10px, $bg: rgba(255,255,255,0.2), $radius: 15px) {
+@mixin glass-effect($blur: 10px, $bg: rgba(255, 255, 255, 0.2), $radius: 15px) {
   background: $bg;
   backdrop-filter: blur($blur);
   -webkit-backdrop-filter: blur($blur);
   border-radius: $radius;
-  border: 1px solid rgba(255,255,255,0.5);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 ```
 
 #### **B. Directive: `GlassEffectDirective`**
+
 - **Location:** `libs/common-ui/src/lib/glass-effect.directive.ts`
 - **Inputs:**
   - `blur: string`
@@ -41,6 +45,7 @@ This spec analyzes the glassmorphism effects in `swiper-card-music-player.html` 
   - Configurable via directive inputs.
 
 **Sample Usage:**
+
 ```html
 <div commonUiGlassEffect [blur]="'12px'" [background]="'rgba(53,54,72,0.2)'" [radius]="'20px'">
   <!-- Content -->
@@ -48,6 +53,7 @@ This spec analyzes the glassmorphism effects in `swiper-card-music-player.html` 
 ```
 
 #### **C. Enhancement: Add Glass Effect Option to Card/Modal Components**
+
 - **Location:** `libs/common-ui/src/lib/card/`, `libs/common-ui/src/lib/modal/`
 - **Modification:**
   - Add `@Input() glassEffect: boolean` and related style inputs.

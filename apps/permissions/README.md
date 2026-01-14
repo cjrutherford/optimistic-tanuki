@@ -15,6 +15,7 @@ The Permissions Service is a microservice that manages roles, permissions, and a
 ### Entities
 
 1. **Permission**: Defines what actions can be performed on resources
+
    - `name`: Unique permission name
    - `description`: Human-readable description
    - `resource`: The resource this permission applies to
@@ -22,6 +23,7 @@ The Permissions Service is a microservice that manages roles, permissions, and a
    - `targetId`: Optional ID for item-level permissions
 
 2. **Role**: Groups permissions together under a named role
+
    - `name`: Unique role name
    - `description`: Human-readable description
    - `appScope`: Application scope (global, forgeofwill, client-interface, etc.)
@@ -35,6 +37,7 @@ The Permissions Service is a microservice that manages roles, permissions, and a
 ## API Commands
 
 ### Permission Commands
+
 - `Create:Permission` - Create a new permission
 - `Get:Permission` - Get a permission by ID
 - `GetAll:Permission` - Get all permissions
@@ -42,6 +45,7 @@ The Permissions Service is a microservice that manages roles, permissions, and a
 - `Delete:Permission` - Delete a permission
 
 ### Role Commands
+
 - `Create:Role` - Create a new role
 - `Get:Role` - Get a role by ID
 - `GetAll:Role` - Get all roles
@@ -65,7 +69,7 @@ const hasPermission = await permissionsService.send(
     profileId: 'user-profile-id',
     permission: 'posts:write',
     appScope: 'forgeofwill',
-    targetId: 'optional-item-id'
+    targetId: 'optional-item-id',
   }
 );
 ```
@@ -78,7 +82,7 @@ await permissionsService.send(
   {
     roleId: 'role-id',
     profileId: 'user-profile-id',
-    appScope: 'forgeofwill'
+    appScope: 'forgeofwill',
   }
 );
 ```
@@ -123,6 +127,7 @@ The guard automatically checks permissions based on the `@RequirePermissions` de
 **Required Header**: `X-ot-appscope: <app-scope-name>`
 
 Example request:
+
 ```bash
 curl -X POST http://localhost:3000/blog/posts \
   -H "Authorization: Bearer <token>" \
@@ -134,16 +139,19 @@ curl -X POST http://localhost:3000/blog/posts \
 ## Database Migrations
 
 Generate a new migration:
+
 ```bash
 nx run permissions:typeorm:migration:generate --name=migration-name
 ```
 
 Run migrations:
+
 ```bash
 nx run permissions:typeorm:migration:run
 ```
 
 Revert last migration:
+
 ```bash
 nx run permissions:typeorm:migration:revert
 ```
@@ -155,6 +163,7 @@ The permissions service relies on the profile service for user profile managemen
 ## Application Scopes
 
 Application scopes define where permissions apply. Common scopes include:
+
 - `global` - Applies across all applications
 - `forgeofwill` - Specific to Forge of Will application
 - `client-interface` - Specific to main client interface

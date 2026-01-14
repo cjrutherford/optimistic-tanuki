@@ -7,6 +7,7 @@ This breakdown analyzes the visual effects and UI patterns in `project-carousel.
 ## 1. **Generic Carousel Component**
 
 ### **Effect**
+
 - Swipeable, animated carousel supporting any child content.
 - Effects (holographic borders, glows, HUD overlays, etc.) are applied via directives and are fully configurable.
 - Responsive, interactive navigation with keyboard, mouse, and touch support.
@@ -14,6 +15,7 @@ This breakdown analyzes the visual effects and UI patterns in `project-carousel.
 ### **Angular Implementation**
 
 #### **A. New Component: `CarouselComponent`**
+
 - **Location:** `libs/common-ui/src/lib/carousel/`
 - **Inputs:**
   - `activeIndex: number` (optional, for controlled carousel)
@@ -25,6 +27,7 @@ This breakdown analyzes the visual effects and UI patterns in `project-carousel.
   - Provides context for child directives (e.g., active/prev/next state).
 
 **Sample Usage:**
+
 ```html
 <common-ui-carousel [options]="carouselOptions" (activeSlideChange)="onSlideChange($event)">
   <ng-container *ngFor="let item of items">
@@ -55,12 +58,14 @@ export interface CarouselOptions {
 ## 2. **Carousel Card Directive**
 
 ### **Effect**
+
 - Applies visual effects (holographic border, glow, HUD overlay, etc.) to carousel content.
 - Configurable via directive options.
 
 ### **Angular Implementation**
 
 #### **A. New Directive: `CarouselCardDirective`**
+
 - **Location:** `libs/common-ui/src/lib/carousel-card.directive.ts`
 - **Inputs:**
   - `carouselCardOptions: CarouselCardOptions`
@@ -69,6 +74,7 @@ export interface CarouselOptions {
   - Supports active/prev/next state styling.
 
 **Sample Usage:**
+
 ```html
 <div commonUiCarouselCard [carouselCardOptions]="{ effect: 'holographic', glowColor: '#00fff7' }">
   <!-- Custom content -->
@@ -92,11 +98,13 @@ export interface CarouselCardOptions {
 ## 3. **Carousel Navigation & Indicators**
 
 ### **Effect**
+
 - Futuristic navigation buttons and indicator dots.
 
 ### **Angular Implementation**
 
 #### **A. New Component: `CarouselNavigationComponent`**
+
 - **Location:** `libs/common-ui/src/lib/carousel-navigation/`
 - **Inputs:**
   - `activeIndex: number`
@@ -113,11 +121,13 @@ export interface CarouselCardOptions {
 ## 4. **SCSS Mixins & CSS Variables**
 
 ### **Effect**
+
 - Uses CSS custom properties for glow colors, neon gradients, border radius, and animation.
 
 ### **Angular Implementation**
 
 #### **A. SCSS Mixins:**
+
 - `carousel-card`
 - `holographic-border`
 - `hud-overlay`
@@ -127,6 +137,7 @@ export interface CarouselCardOptions {
   - Centralize variables for easy theme customization.
 
 #### **B. Theme Integration**
+
 - Add neon, glow, and holographic variables to global theme files for consistency.
 
 ---
@@ -134,15 +145,18 @@ export interface CarouselCardOptions {
 ## 5. **Accessibility & Responsiveness**
 
 ### **Effect**
+
 - Responsive layout, accessible navigation, and alt text for images.
 
 ### **Angular Implementation**
 
 #### **A. Responsive Layout**
+
 - Use Angular Flex Layout or CSS Grid in the carousel template.
 - Ensure cards scale and maintain aspect ratio.
 
 #### **B. Accessibility**
+
 - Ensure navigation buttons are keyboard accessible.
 - Provide alt text for images via `@Input()` or projected content.
 
@@ -151,11 +165,13 @@ export interface CarouselCardOptions {
 ## 6. **Animation & Effects**
 
 ### **Effect**
+
 - Floating, glitch, scan line, and progress bar animations.
 
 ### **Angular Implementation**
 
 #### **A. Animation Utilities**
+
 - Use Angular animation APIs or encapsulate CSS keyframes in SCSS.
 - Optionally, provide a service for triggering scan/glitch effects.
 
@@ -163,13 +179,13 @@ export interface CarouselCardOptions {
 
 ## **Summary Table**
 
-| Feature                | Implementation                        | Library/Location                |
-|------------------------|---------------------------------------|---------------------------------|
-| Generic Carousel       | `CarouselComponent`                   | `libs/common-ui`                |
-| Carousel Card Directive| `CarouselCardDirective`               | `libs/common-ui`                |
-| Carousel Navigation    | `CarouselNavigationComponent`         | `libs/common-ui`                |
-| SCSS Mixins            | `_carousel-card.scss`, `_holographic-border.scss`, `_hud-overlay.scss` | `libs/theme-ui`      |
-| Theme Variables        | Add to global theme                   | `libs/theme-ui`                 |
+| Feature                 | Implementation                                                         | Library/Location |
+| ----------------------- | ---------------------------------------------------------------------- | ---------------- |
+| Generic Carousel        | `CarouselComponent`                                                    | `libs/common-ui` |
+| Carousel Card Directive | `CarouselCardDirective`                                                | `libs/common-ui` |
+| Carousel Navigation     | `CarouselNavigationComponent`                                          | `libs/common-ui` |
+| SCSS Mixins             | `_carousel-card.scss`, `_holographic-border.scss`, `_hud-overlay.scss` | `libs/theme-ui`  |
+| Theme Variables         | Add to global theme                                                    | `libs/theme-ui`  |
 
 ---
 
@@ -178,7 +194,6 @@ export interface CarouselCardOptions {
 1. Scaffold `CarouselComponent`, `CarouselCardDirective`, and `CarouselNavigationComponent` in `common-ui`.
 2. Create SCSS mixins and theme variables for carousel and holographic effects.
 3. Document usage in
-
 
 ---
 

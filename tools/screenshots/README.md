@@ -5,6 +5,7 @@ This tool uses Playwright to automatically capture screenshots of all Angular ap
 ## Overview
 
 The screenshot capture tool:
+
 - Uses Playwright with Chrome browser only (as specified)
 - Captures full-page screenshots of each route
 - Supports multiple viewport sizes (desktop, tablet, mobile)
@@ -16,6 +17,7 @@ The screenshot capture tool:
 The tool captures screenshots from these Angular applications:
 
 1. **client-interface** (port 4200)
+
    - Landing page
    - Login page
    - Register page
@@ -25,6 +27,7 @@ The tool captures screenshots from these Angular applications:
    - Settings (requires auth)
 
 2. **forgeofwill** (port 4201)
+
    - Projects page (requires auth)
    - Login page
    - Register page
@@ -32,6 +35,7 @@ The tool captures screenshots from these Angular applications:
    - Settings (requires auth)
 
 3. **christopherrutherford-net** (port 4202)
+
    - Landing page
 
 4. **digital-homestead** (port 4203)
@@ -41,26 +45,30 @@ The tool captures screenshots from these Angular applications:
 ## Prerequisites
 
 1. Install dependencies (from the root of the workspace):
+
    ```bash
    npm install
    ```
 
 2. Install Playwright browsers:
+
    ```bash
    npx playwright install chromium
    ```
-   
+
    **Note**: If the Playwright browser download fails, you can try:
+
    - Using a different mirror: `PLAYWRIGHT_DOWNLOAD_HOST=https://mirrors.huaweicloud.com/playwright npx playwright install chromium`
    - Clearing the cache: `rm -rf ~/.cache/ms-playwright && npx playwright install chromium`
    - Installing all browsers: `npx playwright install`
 
 3. Validate your setup:
+
    ```bash
    cd tools/screenshots
    ./validate-setup.sh
    ```
-   
+
    This will check that all dependencies are installed and the configuration is correct.
 
 ## Usage
@@ -75,6 +83,7 @@ cd tools/screenshots
 ```
 
 Examples:
+
 ```bash
 ./capture-single.sh client-interface 4200
 ./capture-single.sh forgeofwill 4201
@@ -92,6 +101,7 @@ cd tools/screenshots
 ```
 
 This script will:
+
 1. Start each Angular application one at a time
 2. Wait for the application to be ready
 3. Capture screenshots of all routes
@@ -131,6 +141,7 @@ screenshots/
 ```
 
 To view the Playwright HTML report:
+
 ```bash
 cd tools/screenshots
 npm run report
@@ -181,6 +192,7 @@ Routes that require authentication will currently capture the redirect or login 
 2. Or use Playwright's storage state feature to save authentication state
 
 Example:
+
 ```typescript
 {
   path: '/feed',
@@ -200,6 +212,7 @@ Example:
 ### Port Already in Use
 
 If you get an error about a port being in use:
+
 ```bash
 # Find and kill the process using the port
 lsof -ti:4200 | xargs kill -9
@@ -220,6 +233,7 @@ npx playwright install chromium
 ### Server Fails to Start
 
 Check the server logs:
+
 ```bash
 cat /tmp/<app-name>-serve.log
 ```
@@ -234,6 +248,7 @@ cd tools/screenshots
 ```
 
 This will create a `FEATURES_BREAKDOWN.md` file at the root of the workspace that includes:
+
 - List of all applications analyzed
 - All screens/routes captured for each application
 - Responsive viewport coverage (desktop, tablet, mobile)
@@ -253,6 +268,7 @@ The screenshots can also be manually analyzed to generate a more detailed featur
 3. Creating a feature matrix based on visual inspection
 
 For automated feature detection, consider:
+
 - Using OCR to extract text from screenshots
 - Analyzing DOM structure at screenshot time
 - Using AI vision models to identify UI components
@@ -280,6 +296,7 @@ tar -czf screenshots.tar.gz ../../screenshots/
 ```
 
 The provided GitHub Actions workflow:
+
 - Runs on a schedule (weekly) or can be triggered manually
 - Builds and serves each Angular application
 - Captures screenshots using Playwright

@@ -1,4 +1,3 @@
-
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -9,7 +8,9 @@ import { CommonModule } from '@angular/common';
   template: `
     <ul [ngClass]="[type, variant, size]">
       <ng-container *ngFor="let item of items; let i = index">
-        <li><ng-content select="[list-item-{{i}}]"></ng-content>{{ item }}</li>
+        <li>
+          <ng-content select="[list-item-{{ i }}]"></ng-content>{{ item }}
+        </li>
       </ng-container>
     </ul>
   `,
@@ -23,7 +24,7 @@ import { CommonModule } from '@angular/common';
     '[style.--border-color]': 'borderColor',
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
-  }
+  },
 })
 export class ListComponent {
   @Input() items: string[] = [];
@@ -35,7 +36,8 @@ export class ListComponent {
   @Input() accent = 'var(--accent, #b1baec)';
   @Input() complement = 'var(--complement, #919ee4)';
   @Input() borderColor = 'var(--border-color, #b1baec)';
-  @Input() borderGradient = 'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
+  @Input() borderGradient =
+    'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
   @Input() transitionDuration = '0.3s';
   theme = 'dark';
 }

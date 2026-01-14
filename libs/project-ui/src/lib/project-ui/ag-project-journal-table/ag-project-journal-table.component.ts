@@ -16,11 +16,11 @@ import {
   createDateColumn,
   CellClickedEvent,
 } from '@optimistic-tanuki/ag-grid-ui';
+import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import {
-  ButtonComponent,
-  ModalComponent,
-} from '@optimistic-tanuki/common-ui';
-import { CreateProjectJournal, ProjectJournal } from '@optimistic-tanuki/ui-models';
+  CreateProjectJournal,
+  ProjectJournal,
+} from '@optimistic-tanuki/ui-models';
 import { ProjectJournalFormComponent } from '../project-journal-form/project-journal-form.component';
 
 /**
@@ -29,7 +29,12 @@ import { ProjectJournalFormComponent } from '../project-journal-form/project-jou
  */
 @Component({
   selector: 'lib-ag-project-journal-table',
-  imports: [AgGridUiComponent, ButtonComponent, ModalComponent, ProjectJournalFormComponent],
+  imports: [
+    AgGridUiComponent,
+    ButtonComponent,
+    ModalComponent,
+    ProjectJournalFormComponent,
+  ],
   templateUrl: './ag-project-journal-table.component.html',
   styleUrl: './ag-project-journal-table.component.scss',
 })
@@ -45,10 +50,10 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
   showModal = signal(false);
   showEditModal = signal(false);
   selectedJournal = signal<ProjectJournal | null>(null);
-  
+
   // Internal signal for grid data
   private journalsSignal = signal<ProjectJournal[]>([]);
-  
+
   // Computed signal for grid data
   gridData = computed(() => this.journalsSignal());
 
@@ -61,10 +66,10 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
       filter: 'agTextColumnFilter',
       wrapText: true,
       autoHeight: true,
-      cellStyle: { 
+      cellStyle: {
         whiteSpace: 'normal',
         lineHeight: '1.5',
-        padding: '8px 12px'
+        padding: '8px 12px',
       },
     },
     {
@@ -75,10 +80,10 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
       filter: 'agTextColumnFilter',
       wrapText: true,
       autoHeight: true,
-      cellStyle: { 
+      cellStyle: {
         whiteSpace: 'normal',
         lineHeight: '1.5',
-        padding: '8px 12px'
+        padding: '8px 12px',
       },
     },
     createDateColumn('createdAt', 'Created', { flex: 1, minWidth: 120 }),
@@ -108,13 +113,20 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.journalsSignal.set(this.journals || []);
-    console.log('ag-project-journal-table initialized with', this.journals?.length || 0, 'journals');
+    console.log(
+      'ag-project-journal-table initialized with',
+      this.journals?.length || 0,
+      'journals'
+    );
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['journals']) {
       this.journalsSignal.set(this.journals || []);
-      console.log('ag-project-journal-table journals updated:', this.journals?.length || 0);
+      console.log(
+        'ag-project-journal-table journals updated:',
+        this.journals?.length || 0
+      );
     }
   }
 

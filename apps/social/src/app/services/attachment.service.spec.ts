@@ -1,5 +1,8 @@
 import { Attachment, AttachmentType } from '../../entities/attachment.entity';
-import { CreateAttachmentDto, UpdateAttachmentDto } from '@optimistic-tanuki/models';
+import {
+  CreateAttachmentDto,
+  UpdateAttachmentDto,
+} from '@optimistic-tanuki/models';
 
 import { AttachmentService } from './attachment.service';
 import { Post } from '../../entities/post.entity';
@@ -29,13 +32,27 @@ describe('AttachmentService', () => {
 
   describe('create', () => {
     it('should create and save an attachment', async () => {
-      const dto: CreateAttachmentDto = { url: 'file.png', type: AttachmentType.IMAGE, post: '1' };
+      const dto: CreateAttachmentDto = {
+        url: 'file.png',
+        type: AttachmentType.IMAGE,
+        post: '1',
+      };
       const post = { id: '1' } as Post;
-      const created = { id: '2', name: 'test', filePath: 'file.png', type: AttachmentType.IMAGE, post } as Attachment;
+      const created = {
+        id: '2',
+        name: 'test',
+        filePath: 'file.png',
+        type: AttachmentType.IMAGE,
+        post,
+      } as Attachment;
       repo.create.mockReturnValue(created);
       repo.save.mockResolvedValue(created);
       const result = await service.create(dto, post);
-      expect(repo.create).toHaveBeenCalledWith({ post, filePath: 'file.png', type: AttachmentType.IMAGE });
+      expect(repo.create).toHaveBeenCalledWith({
+        post,
+        filePath: 'file.png',
+        type: AttachmentType.IMAGE,
+      });
       expect(repo.save).toHaveBeenCalledWith(created);
       expect(result).toBe(created);
     });

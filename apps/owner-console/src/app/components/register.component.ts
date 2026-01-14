@@ -8,18 +8,16 @@ import { RegisterSubmitType } from '@optimistic-tanuki/ui-models';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    RegisterBlockComponent,
-  ],
+  imports: [CommonModule, RouterModule, RegisterBlockComponent],
   template: `
     <div class="register-container">
       <lib-register-block
         registerHeader="Owner Console Registration"
         callToAction="Create an owner account with full administrative access to all apps"
         registerButtonText="Register as Owner"
-        [heroSource]="'https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=2070'"
+        [heroSource]="
+          'https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=2070'
+        "
         (submitEvent)="onRegister($event)"
       ></lib-register-block>
       <div class="login-link">
@@ -85,23 +83,26 @@ export class RegisterComponent {
     this.error = '';
     this.success = '';
 
-    this.authService.register(
-      registerData.email,
-      registerData.firstName,
-      registerData.lastName,
-      registerData.password,
-      registerData.confirmation,
-      registerData.bio
-    ).subscribe({
-      next: () => {
-        this.success = 'Registration successful! Redirecting to dashboard...';
-        setTimeout(() => {
-          this.router.navigate(['/dashboard']);
-        }, 2000);
-      },
-      error: (err) => {
-        this.error = err.error?.message || 'Registration failed. Please try again.';
-      },
-    });
+    this.authService
+      .register(
+        registerData.email,
+        registerData.firstName,
+        registerData.lastName,
+        registerData.password,
+        registerData.confirmation,
+        registerData.bio
+      )
+      .subscribe({
+        next: () => {
+          this.success = 'Registration successful! Redirecting to dashboard...';
+          setTimeout(() => {
+            this.router.navigate(['/dashboard']);
+          }, 2000);
+        },
+        error: (err) => {
+          this.error =
+            err.error?.message || 'Registration failed. Please try again.';
+        },
+      });
   }
 }

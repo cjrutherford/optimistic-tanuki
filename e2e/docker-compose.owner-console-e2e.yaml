@@ -118,4 +118,3 @@ services:
         condition: service_started
       permissions:
         condition: service_started
-

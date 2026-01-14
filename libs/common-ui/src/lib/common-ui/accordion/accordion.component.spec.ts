@@ -50,9 +50,7 @@ describe('AccordionComponent', () => {
   });
 
   it('should expand section if only one section exists, even if already expanded', () => {
-    component.sections = [
-      { heading: 'Section 1', content: 'Content 1' },
-    ];
+    component.sections = [{ heading: 'Section 1', content: 'Content 1' }];
     component.expandedIndex = 0;
     component.toggleSection(0);
     expect(component.expandedIndex).toBe(0);

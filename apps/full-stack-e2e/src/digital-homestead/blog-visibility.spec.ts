@@ -71,39 +71,53 @@ test.describe('Digital Homestead Blog Visibility', () => {
 
     // Re-login to get token with profileId/permissions
     const loginResp2 = await request.post('/api/authentication/login', {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-ot-appscope': 'digital-homestead',
-        },
-        data: { email: ownerEmail, password },
-      });
-      const loginBody2 = await loginResp2.json();
-      const effectiveToken = loginBody2.data?.newToken || loginBody2.newToken;
+      headers: {
+        'Content-Type': 'application/json',
+        'x-ot-appscope': 'digital-homestead',
+      },
+      data: { email: ownerEmail, password },
+    });
+    const loginBody2 = await loginResp2.json();
+    const effectiveToken = loginBody2.data?.newToken || loginBody2.newToken;
 
     // Verify Roles (Best effort but we need it to be there)
-    const rolesResp = await request.get(`/api/permissions/user-roles/${authorId}`, {
+    const rolesResp = await request.get(
+      `/api/permissions/user-roles/${authorId}`,
+      {
         headers: {
-            Authorization: `Bearer ${effectiveToken}`,
-            'Content-Type': 'application/json',
+          Authorization: `Bearer ${effectiveToken}`,
+          'Content-Type': 'application/json',
         },
-    });
+      }
+    );
     expect(rolesResp.ok()).toBeTruthy();
     const roles: any[] = await rolesResp.json();
-    const hasOwnerRole = roles.some(r => r.role?.name === 'owner' || r.role?.name === 'digital_homesteader');
+    const hasOwnerRole = roles.some(
+      (r) => r.role?.name === 'owner' || r.role?.name === 'digital_homesteader'
+    );
     if (!hasOwnerRole) {
-        console.warn('WARNING: User does not have owner or digital_homesteader role yet. Permissions might be propagating.');
-        // Wait a bit and retry roles check once
-        await page.waitForTimeout(2000);
-        const rolesResp2 = await request.get(`/api/permissions/user-roles/${authorId}`, {
-            headers: {
-                Authorization: `Bearer ${effectiveToken}`,
-                'Content-Type': 'application/json',
-            },
-        });
-        const roles2 = await rolesResp2.json();
-        expect(roles2.some(r => r.role?.name === 'owner' || r.role?.name === 'digital_homesteader')).toBeTruthy();
+      console.warn(
+        'WARNING: User does not have owner or digital_homesteader role yet. Permissions might be propagating.'
+      );
+      // Wait a bit and retry roles check once
+      await page.waitForTimeout(2000);
+      const rolesResp2 = await request.get(
+        `/api/permissions/user-roles/${authorId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${effectiveToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const roles2 = await rolesResp2.json();
+      expect(
+        roles2.some(
+          (r) =>
+            r.role?.name === 'owner' || r.role?.name === 'digital_homesteader'
+        )
+      ).toBeTruthy();
     }
-
 
     // 2. Create Content: One Published Post, One Draft Post
     const publishedTitle = `Published Post ${Date.now()}`;
@@ -121,7 +135,7 @@ test.describe('Digital Homestead Blog Visibility', () => {
         title: publishedTitle,
         content: '<p>This is public content.</p>',
         authorId,
-        isDraft: false, 
+        isDraft: false,
       },
     });
     expect(pubPostResp.ok()).toBeTruthy();
@@ -144,13 +158,16 @@ test.describe('Digital Homestead Blog Visibility', () => {
 
     // 3. Verify Public Visibility (Unauthenticated)
     await page.goto('/blog');
-    
-    // Published post should be visible
-    await expect(page.locator('button.post-item', { hasText: publishedTitle })).toBeVisible();
-    
-    // Draft post should NOT be visible
-    await expect(page.locator('button.post-item', { hasText: draftTitle })).not.toBeVisible();
 
+    // Published post should be visible
+    await expect(
+      page.locator('button.post-item', { hasText: publishedTitle })
+    ).toBeVisible();
+
+    // Draft post should NOT be visible
+    await expect(
+      page.locator('button.post-item', { hasText: draftTitle })
+    ).not.toBeVisible();
 
     // 4. Verify Owner Visibility (Authenticated)
     await page.goto('/login');
@@ -161,31 +178,37 @@ test.describe('Digital Homestead Blog Visibility', () => {
     await page.waitForURL(/\/blog/);
 
     // Published post should be visible
-    await expect(page.locator('button.post-item', { hasText: publishedTitle })).toBeVisible();
+    await expect(
+      page.locator('button.post-item', { hasText: publishedTitle })
+    ).toBeVisible();
 
     // Draft post SHOULD be visible now
     const draftItem = page.locator('button.post-item', { hasText: draftTitle });
     await expect(draftItem).toBeVisible();
-    
+
     // Verify Draft Badge
     await expect(draftItem.locator('.draft-badge')).toBeVisible();
 
     // 5. Verify View State
     // Click the draft post
     await draftItem.click();
-    
+
     // Give it a moment to load
     await page.waitForTimeout(2000);
 
     // Verify main content area updates
     // Check for draft banner
-    await expect(page.locator('.draft-banner')).toContainText('This post is a draft');
-    
+    await expect(page.locator('.draft-banner')).toContainText(
+      'This post is a draft'
+    );
+
     // Check title in viewer
     await expect(page.locator('dh-blog-viewer h1')).toContainText(draftTitle);
 
     // Check content in viewer (using the specific locator structure we saw in component)
-    await expect(page.locator('dh-blog-viewer')).toContainText('This is private draft content.');
+    await expect(page.locator('dh-blog-viewer')).toContainText(
+      'This is private draft content.'
+    );
 
     // 6. Publish Draft
     // Click 'Publish Now' in the banner
@@ -205,7 +228,11 @@ test.describe('Digital Homestead Blog Visibility', () => {
     await page.goto('/blog');
 
     // Both posts should now be visible to public
-    await expect(page.locator('button.post-item', { hasText: publishedTitle })).toBeVisible();
-    await expect(page.locator('button.post-item', { hasText: draftTitle })).toBeVisible();
+    await expect(
+      page.locator('button.post-item', { hasText: publishedTitle })
+    ).toBeVisible();
+    await expect(
+      page.locator('button.post-item', { hasText: draftTitle })
+    ).toBeVisible();
   });
 });

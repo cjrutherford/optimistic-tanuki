@@ -26,7 +26,9 @@ describe('AuthenticationController', () => {
     } as unknown as jest.Mocked<ClientProxy>;
 
     profileService = {
-      send: jest.fn().mockReturnValue(of([{ id: 'profile-1', appScope: 'test' }])),
+      send: jest
+        .fn()
+        .mockReturnValue(of([{ id: 'profile-1', appScope: 'test' }])),
       connect: jest.fn().mockResolvedValue({}),
     } as unknown as jest.Mocked<ClientProxy>;
 
@@ -68,7 +70,9 @@ describe('AuthenticationController', () => {
     (clientProxy.send as jest.Mock)
       .mockReturnValueOnce(of({ userId: 'user-1' })) // UserIdFromEmail
       .mockReturnValueOnce(of(true)); // Login
-    await expect(controller.loginUser(loginRequest, 'test')).resolves.toBe(true);
+    await expect(controller.loginUser(loginRequest, 'test')).resolves.toBe(
+      true
+    );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Login },
       { ...loginRequest, profileId: 'profile-1' }
@@ -80,8 +84,12 @@ describe('AuthenticationController', () => {
       email: 'fail@test.com',
       password: 'fail',
     };
-    (clientProxy.send as jest.Mock).mockImplementationOnce(() => { throw new Error('login error'); });
-    await expect(controller.loginUser(loginRequest, 'test')).rejects.toThrow(HttpException);
+    (clientProxy.send as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('login error');
+    });
+    await expect(controller.loginUser(loginRequest, 'test')).rejects.toThrow(
+      HttpException
+    );
   });
 
   it('should register user', async () => {
@@ -93,9 +101,20 @@ describe('AuthenticationController', () => {
       confirm: 'test',
       bio: "I'm just a test, and life is a nightmare.",
     };
-    const mockResult = { data: { user: { id: '12345' , profileId: '54321', firstName: 'Test', lastName: 'Testerson' } } };
+    const mockResult = {
+      data: {
+        user: {
+          id: '12345',
+          profileId: '54321',
+          firstName: 'Test',
+          lastName: 'Testerson',
+        },
+      },
+    };
     jest.spyOn(clientProxy, 'send').mockReturnValueOnce(of(mockResult));
-    await expect(controller.registerUser(registerRequest, 'test')).resolves.toEqual(mockResult);
+    await expect(
+      controller.registerUser(registerRequest, 'test')
+    ).resolves.toEqual(mockResult);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Register },
       registerRequest
@@ -111,8 +130,12 @@ describe('AuthenticationController', () => {
       confirm: 'fail',
       bio: 'fail',
     };
-    (clientProxy.send as jest.Mock).mockImplementationOnce(() => { throw new Error('register error'); });
-    await expect(controller.registerUser(registerRequest, 'test')).rejects.toThrow(HttpException);
+    (clientProxy.send as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('register error');
+    });
+    await expect(
+      controller.registerUser(registerRequest, 'test')
+    ).rejects.toThrow(HttpException);
   });
 
   it('should reset password', async () => {
@@ -138,8 +161,12 @@ describe('AuthenticationController', () => {
       newConf: 'fail',
       email: 'fail@test.com',
     };
-    (clientProxy.send as jest.Mock).mockImplementationOnce(() => { throw new Error('reset error'); });
-    await expect(controller.resetPassword(resetPasswordRequest)).rejects.toThrow(HttpException);
+    (clientProxy.send as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('reset error');
+    });
+    await expect(
+      controller.resetPassword(resetPasswordRequest)
+    ).rejects.toThrow(HttpException);
   });
 
   it('should enable MFA', async () => {
@@ -161,8 +188,12 @@ describe('AuthenticationController', () => {
       password: 'fail',
       initialTotp: 'fail',
     };
-    (clientProxy.send as jest.Mock).mockImplementationOnce(() => { throw new Error('mfa error'); });
-    await expect(controller.enableMfa(enableMfaRequest)).rejects.toThrow(HttpException);
+    (clientProxy.send as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('mfa error');
+    });
+    await expect(controller.enableMfa(enableMfaRequest)).rejects.toThrow(
+      HttpException
+    );
   });
 
   it('should validate token', async () => {
@@ -184,8 +215,12 @@ describe('AuthenticationController', () => {
       token: 'fail',
       userId: 'fail',
     };
-    (clientProxy.send as jest.Mock).mockImplementationOnce(() => { throw new Error('validate error'); });
-    await expect(controller.validateToken(validateTokenRequest)).rejects.toThrow(HttpException);
+    (clientProxy.send as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('validate error');
+    });
+    await expect(
+      controller.validateToken(validateTokenRequest)
+    ).rejects.toThrow(HttpException);
   });
 
   it('should validate MFA', async () => {
@@ -201,7 +236,11 @@ describe('AuthenticationController', () => {
 
   it('should throw HttpException if validateMfa fails', async () => {
     const validateMfaRequest = { userId: 'fail', token: 'fail' };
-    (clientProxy.send as jest.Mock).mockImplementationOnce(() => { throw new Error('validate mfa error'); });
-    await expect(controller.validateMfa(validateMfaRequest)).rejects.toThrow(HttpException);
+    (clientProxy.send as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('validate mfa error');
+    });
+    await expect(controller.validateMfa(validateMfaRequest)).rejects.toThrow(
+      HttpException
+    );
   });
 });

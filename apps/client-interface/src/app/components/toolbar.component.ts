@@ -11,7 +11,14 @@ import { UserComponent } from './user/user.component';
 @Component({
   selector: 'app-toolbar',
   standalone: true,
-  imports: [CommonModule, MatToolbarModule, MatIconModule, MatButtonModule, ThemeToggleComponent, UserComponent],
+  imports: [
+    CommonModule,
+    MatToolbarModule,
+    MatIconModule,
+    MatButtonModule,
+    ThemeToggleComponent,
+    UserComponent,
+  ],
   templateUrl: './toolbar.component.html',
   styleUrl: './toolbar.component.scss',
 })
@@ -24,19 +31,20 @@ export class ToolbarComponent implements OnDestroy {
     border: string;
   };
   constructor(private readonly themeService: ThemeService) {
-    this.themeSub = this.themeService.themeColors$.pipe(filter(v => !!v)).subscribe((colors) => {
-      this.themeStyles = {
-        backgroundColor: colors.background,
-        color: colors.foreground,
-        border: `1px solid ${colors.accent}`,
-
-      };
-    });
+    this.themeSub = this.themeService.themeColors$
+      .pipe(filter((v) => !!v))
+      .subscribe((colors) => {
+        this.themeStyles = {
+          backgroundColor: colors.background,
+          color: colors.foreground,
+          border: `1px solid ${colors.accent}`,
+        };
+      });
   }
 
   ngOnDestroy() {
     this.themeSub.unsubscribe();
-  } 
+  }
 
   emit() {
     this.navToggle.emit();

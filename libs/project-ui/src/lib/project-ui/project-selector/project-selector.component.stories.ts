@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/angular';
 import { ProjectSelectorComponent } from './project-selector.component';
 import { within, expect } from 'storybook/internal/test';
 
-
 const meta: Meta<ProjectSelectorComponent> = {
   component: ProjectSelectorComponent,
   title: 'ProjectSelectorComponent',

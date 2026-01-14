@@ -36,7 +36,7 @@ describe('TimelinesController', () => {
   });
 
   it('should create a timeline', async () => {
-    const createTimelineDto: CreateTimelineDto = { 
+    const createTimelineDto: CreateTimelineDto = {
       name: 'Test Timeline',
       description: 'Test Description',
       userId: '1',

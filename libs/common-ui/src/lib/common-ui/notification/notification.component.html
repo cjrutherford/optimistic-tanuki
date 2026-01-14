@@ -1,4 +1,9 @@
-<div class="notification-icon" tabindex="0" (keypress)="toggleMenu()" (click)="toggleMenu()">
+<div
+  class="notification-icon"
+  tabindex="0"
+  (keypress)="toggleMenu()"
+  (click)="toggleMenu()"
+>
   <otui-button tabIndex="1" class="unread-count">{{ unreadCount }}</otui-button>
 </div>
 <div class="notification-menu" *ngIf="menuVisible">
@@ -7,7 +12,12 @@
       <div [ngClass]="notification.variant">
         <p>{{ notification.message }}</p>
         <div class="actions">
-          <button *ngFor="let action of notification.actions" (click)="action.callback()">{{ action.label }}</button>
+          <button
+            *ngFor="let action of notification.actions"
+            (click)="action.callback()"
+          >
+            {{ action.label }}
+          </button>
           <button (click)="clearNotification(notification.id)">Clear</button>
         </div>
       </div>

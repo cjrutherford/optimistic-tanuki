@@ -12,7 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [client-interface, forgeofwill, christopherrutherford-net, digital-homestead]
+        service:
+          [
+            client-interface,
+            forgeofwill,
+            christopherrutherford-net,
+            digital-homestead,
+          ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -50,7 +56,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [assets, authentication, social, profile, gateway, project-planning, chat-collector, prompt-proxy, ai-orchestrator, telos-docs-service, blogging]
+        service:
+          [
+            assets,
+            authentication,
+            social,
+            profile,
+            gateway,
+            project-planning,
+            chat-collector,
+            prompt-proxy,
+            ai-orchestrator,
+            telos-docs-service,
+            blogging,
+          ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

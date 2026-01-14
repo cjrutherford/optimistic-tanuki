@@ -36,7 +36,9 @@ export class SeoService {
       title: post.title,
       description,
       author: post.authorId,
-      publishedTime: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
+      publishedTime: post.publishedAt
+        ? new Date(post.publishedAt).toISOString()
+        : undefined,
       modifiedTime: new Date(post.updatedAt).toISOString(),
       ogTitle: post.title,
       ogDescription: description,

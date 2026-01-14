@@ -2,18 +2,16 @@
   <otui-button (click)="onFirstPageClick()">First</otui-button>
   <otui-button (click)="onPreviousPageClick()">Previous</otui-button>
   @if (showStartEllipsis()) {
-    <otui-button [disabled]="true">...</otui-button>
-  }
-  @for (page of pages(); track page) {
-    <otui-button
-      [class.active]="page === currentPage"
-      (click)="onPageClick(page)"
-      >
-      {{ page }}
-    </otui-button>
-  }
-  @if (showEndEllipsis()) {
-    <otui-button [disabled]="true">...</otui-button>
+  <otui-button [disabled]="true">...</otui-button>
+  } @for (page of pages(); track page) {
+  <otui-button
+    [class.active]="page === currentPage"
+    (click)="onPageClick(page)"
+  >
+    {{ page }}
+  </otui-button>
+  } @if (showEndEllipsis()) {
+  <otui-button [disabled]="true">...</otui-button>
   }
   <otui-button (click)="onNextPageClick()">Next</otui-button>
   <otui-button (click)="onLastPageClick()">Last</otui-button>

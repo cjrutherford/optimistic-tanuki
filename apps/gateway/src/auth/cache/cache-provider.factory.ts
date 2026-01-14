@@ -16,7 +16,7 @@ export class CacheProviderFactory {
    */
   static create(configService: ConfigService): ICacheProvider {
     const config = this.loadConfig(configService);
-    
+
     this.logger.log(`Creating cache provider: ${config.provider}`);
 
     switch (config.provider) {
@@ -63,10 +63,7 @@ export class CacheProviderFactory {
         'permissions.cache.ttl',
         5 * 60 * 1000 // 5 minutes default
       ),
-      maxSize: configService.get<number>(
-        'permissions.cache.maxSize',
-        10000
-      ),
+      maxSize: configService.get<number>('permissions.cache.maxSize', 10000),
     };
 
     // Load file-specific config
@@ -110,7 +107,10 @@ export class CacheProviderFactory {
   static validateConfig(config: CacheConfig): string[] {
     const errors: string[] = [];
 
-    if (!config.provider || !['memory', 'file', 'redis'].includes(config.provider)) {
+    if (
+      !config.provider ||
+      !['memory', 'file', 'redis'].includes(config.provider)
+    ) {
       errors.push(`Invalid cache provider: ${config.provider}`);
     }
 
@@ -119,14 +119,20 @@ export class CacheProviderFactory {
     }
 
     if (config.maxSize && config.maxSize < 100) {
-      errors.push(`maxSize too low: ${config.maxSize} (minimum 100 recommended)`);
+      errors.push(
+        `maxSize too low: ${config.maxSize} (minimum 100 recommended)`
+      );
     }
 
     if (config.provider === 'redis') {
       if (!config.redisHost) {
         errors.push('Redis host is required for redis provider');
       }
-      if (!config.redisPort || config.redisPort < 1 || config.redisPort > 65535) {
+      if (
+        !config.redisPort ||
+        config.redisPort < 1 ||
+        config.redisPort > 65535
+      ) {
         errors.push(`Invalid Redis port: ${config.redisPort}`);
       }
     }

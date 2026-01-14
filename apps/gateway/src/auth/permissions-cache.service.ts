@@ -4,7 +4,7 @@ import { ICacheProvider } from './cache/cache-provider.interface';
 /**
  * Service for caching permission check results to reduce load on the permissions service
  * and improve response times for frequently checked permissions.
- * 
+ *
  * Supports multiple cache backends: memory, file, Redis
  */
 @Injectable()

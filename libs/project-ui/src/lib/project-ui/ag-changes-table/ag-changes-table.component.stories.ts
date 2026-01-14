@@ -87,22 +87,34 @@ export const Empty: Story = {
 
 export const PendingChanges: Story = {
   args: {
-    changes: mockChanges.filter(c => c.resolution === 'PENDING'),
+    changes: mockChanges.filter((c) => c.resolution === 'PENDING'),
   },
 };
 
 export const ApprovedChanges: Story = {
   args: {
-    changes: mockChanges.filter(c => c.resolution === 'APPROVED'),
+    changes: mockChanges.filter((c) => c.resolution === 'APPROVED'),
   },
 };
 
 export const AllChangeTypes: Story = {
   args: {
     changes: [
-      { ...mockChanges[0], changeType: 'ADDITION', changeDescription: 'Addition Type' },
-      { ...mockChanges[1], changeType: 'MODIFICATION', changeDescription: 'Modification Type' },
-      { ...mockChanges[2], changeType: 'DELETION', changeDescription: 'Deletion Type' },
+      {
+        ...mockChanges[0],
+        changeType: 'ADDITION',
+        changeDescription: 'Addition Type',
+      },
+      {
+        ...mockChanges[1],
+        changeType: 'MODIFICATION',
+        changeDescription: 'Modification Type',
+      },
+      {
+        ...mockChanges[2],
+        changeType: 'DELETION',
+        changeDescription: 'Deletion Type',
+      },
     ],
   },
 };
@@ -110,9 +122,21 @@ export const AllChangeTypes: Story = {
 export const AllResolutions: Story = {
   args: {
     changes: [
-      { ...mockChanges[0], resolution: 'PENDING', changeDescription: 'Pending Resolution' },
-      { ...mockChanges[1], resolution: 'APPROVED', changeDescription: 'Approved Resolution' },
-      { ...mockChanges[2], resolution: 'REJECTED', changeDescription: 'Rejected Resolution' },
+      {
+        ...mockChanges[0],
+        resolution: 'PENDING',
+        changeDescription: 'Pending Resolution',
+      },
+      {
+        ...mockChanges[1],
+        resolution: 'APPROVED',
+        changeDescription: 'Approved Resolution',
+      },
+      {
+        ...mockChanges[2],
+        resolution: 'REJECTED',
+        changeDescription: 'Rejected Resolution',
+      },
     ],
   },
 };

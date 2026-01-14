@@ -1,6 +1,9 @@
 import { Component, inject } from '@angular/core';
 
-import { ThemeService, PREDEFINED_PALETTES } from '@optimistic-tanuki/theme-lib';
+import {
+  ThemeService,
+  PREDEFINED_PALETTES,
+} from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'theme-palette-selector',
@@ -11,28 +14,40 @@ import { ThemeService, PREDEFINED_PALETTES } from '@optimistic-tanuki/theme-lib'
       <h3>Theme Palettes</h3>
       <div class="palette-grid">
         @for (palette of palettes; track palette.name) {
-          <div 
-            class="palette-card"
-            [class.active]="isCurrentPalette(palette.name)"
-            (click)="selectPalette(palette.name)"
-          >
-            <div class="palette-colors">
-              <div class="color-swatch" [style.background-color]="palette.accent" title="Accent"></div>
-              <div class="color-swatch" [style.background-color]="palette.complementary" title="Complementary"></div>
-              @if (palette.tertiary) {
-                <div class="color-swatch" [style.background-color]="palette.tertiary" title="Tertiary"></div>
-              }
-            </div>
-            <div class="palette-info">
-              <h4>{{ palette.name }}</h4>
-              <p>{{ palette.description }}</p>
-            </div>
+        <div
+          class="palette-card"
+          [class.active]="isCurrentPalette(palette.name)"
+          (click)="selectPalette(palette.name)"
+        >
+          <div class="palette-colors">
+            <div
+              class="color-swatch"
+              [style.background-color]="palette.accent"
+              title="Accent"
+            ></div>
+            <div
+              class="color-swatch"
+              [style.background-color]="palette.complementary"
+              title="Complementary"
+            ></div>
+            @if (palette.tertiary) {
+            <div
+              class="color-swatch"
+              [style.background-color]="palette.tertiary"
+              title="Tertiary"
+            ></div>
+            }
           </div>
+          <div class="palette-info">
+            <h4>{{ palette.name }}</h4>
+            <p>{{ palette.description }}</p>
+          </div>
+        </div>
         }
       </div>
-      
+
       <div class="custom-mode">
-        <button 
+        <button
           class="custom-btn"
           [class.active]="themeService.getPaletteMode() === 'custom'"
           (click)="enableCustomMode()"
@@ -40,35 +55,36 @@ import { ThemeService, PREDEFINED_PALETTES } from '@optimistic-tanuki/theme-lib'
           Custom Colors
         </button>
         @if (themeService.getPaletteMode() === 'custom') {
-          <div class="custom-inputs">
-            <label>
-              Accent Color:
-              <input 
-                type="color" 
-                [value]="themeService.getAccentColor()"
-                (input)="updateAccentColor($event)"
-              />
-            </label>
-            <label>
-              Complementary Color:
-              <input 
-                type="color" 
-                [value]="themeService.getComplementaryColor()"
-                (input)="updateComplementaryColor($event)"
-              />
-            </label>
-          </div>
+        <div class="custom-inputs">
+          <label>
+            Accent Color:
+            <input
+              type="color"
+              [value]="themeService.getAccentColor()"
+              (input)="updateAccentColor($event)"
+            />
+          </label>
+          <label>
+            Complementary Color:
+            <input
+              type="color"
+              [value]="themeService.getComplementaryColor()"
+              (input)="updateComplementaryColor($event)"
+            />
+          </label>
+        </div>
         }
       </div>
-      
+
       <div class="theme-toggle">
         <button (click)="toggleTheme()">
-          Switch to {{ themeService.getTheme() === 'light' ? 'Dark' : 'Light' }} Mode
+          Switch to
+          {{ themeService.getTheme() === 'light' ? 'Dark' : 'Light' }} Mode
         </button>
       </div>
     </div>
   `,
-  styleUrls: ['./palette-selector.component.scss']
+  styleUrls: ['./palette-selector.component.scss'],
 })
 export class PaletteSelectorComponent {
   themeService = inject(ThemeService);
@@ -94,7 +110,10 @@ export class PaletteSelectorComponent {
 
   updateComplementaryColor(event: Event) {
     const input = event.target as HTMLInputElement;
-    this.themeService.setAccentColor(this.themeService.getAccentColor(), input.value);
+    this.themeService.setAccentColor(
+      this.themeService.getAccentColor(),
+      input.value
+    );
   }
 
   toggleTheme() {

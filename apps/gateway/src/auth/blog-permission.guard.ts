@@ -44,11 +44,17 @@ export class BlogPermissionGuard implements CanActivate {
 
     try {
       const blogRole = await firstValueFrom(
-        this.profileService.send({ cmd: ProfileCommands.GetBlogRole }, user.userId)
+        this.profileService.send(
+          { cmd: ProfileCommands.GetBlogRole },
+          user.userId
+        )
       );
 
       // Check if user has required permissions
-      const hasPermission = this.checkPermissions(blogRole, requiredPermissions);
+      const hasPermission = this.checkPermissions(
+        blogRole,
+        requiredPermissions
+      );
 
       if (!hasPermission) {
         throw new ForbiddenException(
@@ -58,14 +64,20 @@ export class BlogPermissionGuard implements CanActivate {
 
       return true;
     } catch (error) {
-      if (error instanceof ForbiddenException || error instanceof UnauthorizedException) {
+      if (
+        error instanceof ForbiddenException ||
+        error instanceof UnauthorizedException
+      ) {
         throw error;
       }
       throw new ForbiddenException('Unable to verify blog permissions');
     }
   }
 
-  private checkPermissions(blogRole: string, requiredPermissions: BlogPermission[]): boolean {
+  private checkPermissions(
+    blogRole: string,
+    requiredPermissions: BlogPermission[]
+  ): boolean {
     // OWNER has all permissions
     if (blogRole === 'owner') {
       return true;
@@ -73,7 +85,9 @@ export class BlogPermissionGuard implements CanActivate {
 
     // POSTER can only post, not promote
     if (blogRole === 'poster') {
-      return requiredPermissions.every(permission => permission === BlogPermission.POST);
+      return requiredPermissions.every(
+        (permission) => permission === BlogPermission.POST
+      );
     }
 
     // NONE has no permissions

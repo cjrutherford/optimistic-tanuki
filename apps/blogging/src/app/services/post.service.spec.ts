@@ -292,13 +292,11 @@ describe('PostService', () => {
     });
 
     it('should set publishedAt when publishing a draft', async () => {
-      postRepo.findOne
-        .mockResolvedValueOnce(mockPost)
-        .mockResolvedValueOnce({
-          ...mockPost,
-          isDraft: false,
-          publishedAt: new Date(),
-        });
+      postRepo.findOne.mockResolvedValueOnce(mockPost).mockResolvedValueOnce({
+        ...mockPost,
+        isDraft: false,
+        publishedAt: new Date(),
+      });
       postRepo.update.mockResolvedValue(undefined);
 
       const updateDto: UpdateBlogPostDto = { id: 'post-1', isDraft: false };
@@ -362,13 +360,11 @@ describe('PostService', () => {
     });
 
     it('should set publishedAt when publishing a draft via admin', async () => {
-      postRepo.findOne
-        .mockResolvedValueOnce(mockPost)
-        .mockResolvedValueOnce({
-          ...mockPost,
-          isDraft: false,
-          publishedAt: new Date(),
-        });
+      postRepo.findOne.mockResolvedValueOnce(mockPost).mockResolvedValueOnce({
+        ...mockPost,
+        isDraft: false,
+        publishedAt: new Date(),
+      });
       postRepo.update.mockResolvedValue(undefined);
 
       const updateDto: UpdateBlogPostDto = { id: 'post-1', isDraft: false };
@@ -386,13 +382,11 @@ describe('PostService', () => {
 
   describe('publish', () => {
     it('should publish a draft post', async () => {
-      postRepo.findOne
-        .mockResolvedValueOnce(mockPost)
-        .mockResolvedValueOnce({
-          ...mockPost,
-          isDraft: false,
-          publishedAt: new Date(),
-        });
+      postRepo.findOne.mockResolvedValueOnce(mockPost).mockResolvedValueOnce({
+        ...mockPost,
+        isDraft: false,
+        publishedAt: new Date(),
+      });
       postRepo.update.mockResolvedValue(undefined);
 
       const result = await service.publish('post-1', 'author-1');

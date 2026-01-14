@@ -10,7 +10,6 @@ const meta: Meta<CommentComponent> = {
 export default meta;
 type Story = StoryObj<CommentComponent>;
 
-
 export const Heading: Story = {
   args: {},
   play: async ({ canvasElement }) => {

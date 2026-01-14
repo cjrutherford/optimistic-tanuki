@@ -1,4 +1,9 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 
 import { ProjectsComponent } from './projects.component';
@@ -8,7 +13,18 @@ import { RiskService } from '../../risk/risk.service';
 import { ChangeService } from '../../change/change.service';
 import { JournalService } from '../../journal/journal.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
-import { Project, Task, Risk, Change, ProjectJournal, CreateTask, CreateRisk, CreateChange, CreateProjectJournal, CreateProject } from '@optimistic-tanuki/ui-models';
+import {
+  Project,
+  Task,
+  Risk,
+  Change,
+  ProjectJournal,
+  CreateTask,
+  CreateRisk,
+  CreateChange,
+  CreateProjectJournal,
+  CreateProject,
+} from '@optimistic-tanuki/ui-models';
 
 describe('ProjectsComponent', () => {
   let component: ProjectsComponent;
@@ -21,15 +37,68 @@ describe('ProjectsComponent', () => {
   let messageService: jest.Mocked<MessageService>;
 
   const mockProject: Project = {
-    id: '1', name: 'Test Project', description: '', owner: 'owner1', createdBy: 'creator1', createdAt: new Date(), updatedAt: new Date(),
-    members: [], startDate: new Date(), endDate: new Date(), status: 'IN_PROGRESS',
-    timers: [], tasks: [], risks: [], changes: [], journalEntries: [],
+    id: '1',
+    name: 'Test Project',
+    description: '',
+    owner: 'owner1',
+    createdBy: 'creator1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    members: [],
+    startDate: new Date(),
+    endDate: new Date(),
+    status: 'IN_PROGRESS',
+    timers: [],
+    tasks: [],
+    risks: [],
+    changes: [],
+    journalEntries: [],
   };
 
-  const mockTask: Task = { id: 'task1', title: 'Task 1', description: '', projectId: '1', status: 'TODO', priority: 'MEDIUM', createdBy: 'creator1', createdAt: new Date(), updatedAt: new Date(), assignee: 'assignee1', dueDate: new Date() };
-  const mockRisk: Risk = { id: 'risk1', description: 'Risk 1', projectId: '1', impact: 'LOW', likelihood: 'UNLIKELY', status: 'OPEN', riskOwner: 'owner1', createdBy: 'creator1', createdAt: new Date(), updatedAt: new Date() };
-  const mockChange: Change = { id: 'change1', changeDate: new Date(), projectId: '1', changeType: 'ADDITION', changeStatus: 'PENDING', changeDescription: '', requestor: '', resolution: 'PENDING', updatedAt: new Date() };
-  const mockJournal: ProjectJournal = { id: 'journal1', content: 'Journal 1', projectId: '1', profileId: 'profile1', createdAt: new Date(), updatedAt: new Date() };
+  const mockTask: Task = {
+    id: 'task1',
+    title: 'Task 1',
+    description: '',
+    projectId: '1',
+    status: 'TODO',
+    priority: 'MEDIUM',
+    createdBy: 'creator1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    assignee: 'assignee1',
+    dueDate: new Date(),
+  };
+  const mockRisk: Risk = {
+    id: 'risk1',
+    description: 'Risk 1',
+    projectId: '1',
+    impact: 'LOW',
+    likelihood: 'UNLIKELY',
+    status: 'OPEN',
+    riskOwner: 'owner1',
+    createdBy: 'creator1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  const mockChange: Change = {
+    id: 'change1',
+    changeDate: new Date(),
+    projectId: '1',
+    changeType: 'ADDITION',
+    changeStatus: 'PENDING',
+    changeDescription: '',
+    requestor: '',
+    resolution: 'PENDING',
+    updatedAt: new Date(),
+  };
+  const mockJournal: ProjectJournal = {
+    id: 'journal1',
+    content: 'Journal 1',
+    projectId: '1',
+    profileId: 'profile1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 
   beforeEach(async () => {
     const projectServiceMock = {
@@ -38,24 +107,24 @@ describe('ProjectsComponent', () => {
       updateProject: jest.fn().mockReturnValue(of(mockProject)),
     };
     const taskServiceMock = {
-        createTask: jest.fn().mockReturnValue(of(mockTask)),
-        updateTask: jest.fn().mockReturnValue(of(mockTask)),
-        deleteTask: jest.fn().mockReturnValue(of(undefined))
+      createTask: jest.fn().mockReturnValue(of(mockTask)),
+      updateTask: jest.fn().mockReturnValue(of(mockTask)),
+      deleteTask: jest.fn().mockReturnValue(of(undefined)),
     };
     const riskServiceMock = {
-        createRisk: jest.fn().mockReturnValue(of(mockRisk)),
-        updateRisk: jest.fn().mockReturnValue(of(mockRisk)),
-        deleteRisk: jest.fn().mockReturnValue(of(undefined))
+      createRisk: jest.fn().mockReturnValue(of(mockRisk)),
+      updateRisk: jest.fn().mockReturnValue(of(mockRisk)),
+      deleteRisk: jest.fn().mockReturnValue(of(undefined)),
     };
     const changeServiceMock = {
-        createChange: jest.fn().mockReturnValue(of(mockChange)),
-        updateChange: jest.fn().mockReturnValue(of(mockChange)),
-        deleteChange: jest.fn().mockReturnValue(of(undefined))
+      createChange: jest.fn().mockReturnValue(of(mockChange)),
+      updateChange: jest.fn().mockReturnValue(of(mockChange)),
+      deleteChange: jest.fn().mockReturnValue(of(undefined)),
     };
     const journalServiceMock = {
-        createJournalEntry: jest.fn().mockReturnValue(of(mockJournal)),
-        updateJournalEntry: jest.fn().mockReturnValue(of(mockJournal)),
-        deleteJournalEntry: jest.fn().mockReturnValue(of(undefined))
+      createJournalEntry: jest.fn().mockReturnValue(of(mockJournal)),
+      updateJournalEntry: jest.fn().mockReturnValue(of(mockJournal)),
+      deleteJournalEntry: jest.fn().mockReturnValue(of(undefined)),
     };
     const messageServiceMock = { addMessage: jest.fn() };
 
@@ -73,12 +142,18 @@ describe('ProjectsComponent', () => {
 
     fixture = TestBed.createComponent(ProjectsComponent);
     component = fixture.componentInstance;
-    projectService = TestBed.inject(ProjectService) as jest.Mocked<ProjectService>;
+    projectService = TestBed.inject(
+      ProjectService
+    ) as jest.Mocked<ProjectService>;
     taskService = TestBed.inject(TaskService) as jest.Mocked<TaskService>;
     riskService = TestBed.inject(RiskService) as jest.Mocked<RiskService>;
     changeService = TestBed.inject(ChangeService) as jest.Mocked<ChangeService>;
-    journalService = TestBed.inject(JournalService) as jest.Mocked<JournalService>;
-    messageService = TestBed.inject(MessageService) as jest.Mocked<MessageService>;
+    journalService = TestBed.inject(
+      JournalService
+    ) as jest.Mocked<JournalService>;
+    messageService = TestBed.inject(
+      MessageService
+    ) as jest.Mocked<MessageService>;
     fixture.detectChanges();
   });
 
@@ -107,52 +182,118 @@ describe('ProjectsComponent', () => {
   });
 
   it('should handle creating a project', fakeAsync(() => {
-    const createProjectDto: CreateProject = { name: 'New Project', description: '', owner: '', createdBy: '', members: [], status: 'IN_PROGRESS', startDate: new Date() };
+    const createProjectDto: CreateProject = {
+      name: 'New Project',
+      description: '',
+      owner: '',
+      createdBy: '',
+      members: [],
+      status: 'IN_PROGRESS',
+      startDate: new Date(),
+    };
     component.onProjectCreated(createProjectDto);
     tick();
     expect(projectService.createProject).toHaveBeenCalledWith(createProjectDto);
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'New project created successfully', type: 'success' });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'New project created successfully',
+      type: 'success',
+    });
     expect(component.showCreateModal()).toBe(false);
   }));
 
   it('should handle creating a task', fakeAsync(() => {
     component.selectedProject.set(mockProject);
-    const createTaskDto: CreateTask = { title: 'New Task', description: '', projectId: '', status: 'TODO', priority: 'MEDIUM', createdBy: '' };
+    const createTaskDto: CreateTask = {
+      title: 'New Task',
+      description: '',
+      projectId: '',
+      status: 'TODO',
+      priority: 'MEDIUM',
+      createdBy: '',
+    };
     component.onCreateTask(createTaskDto);
     tick();
-    expect(taskService.createTask).toHaveBeenCalledWith({ ...createTaskDto, projectId: mockProject.id });
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Task created successfully', type: 'success' });
+    expect(taskService.createTask).toHaveBeenCalledWith({
+      ...createTaskDto,
+      projectId: mockProject.id,
+    });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Task created successfully',
+      type: 'success',
+    });
     expect(component.selectedProject()?.tasks).toContainEqual(mockTask);
   }));
 
   it('should handle creating a risk', fakeAsync(() => {
     component.selectedProject.set(mockProject);
-    const createRiskDto: CreateRisk = { description: 'New Risk' , projectId: '', impact: 'LOW', likelihood: 'UNLIKELY', status: 'OPEN', riskOwner: '', createdBy: ''};
+    const createRiskDto: CreateRisk = {
+      description: 'New Risk',
+      projectId: '',
+      impact: 'LOW',
+      likelihood: 'UNLIKELY',
+      status: 'OPEN',
+      riskOwner: '',
+      createdBy: '',
+    };
     component.onCreateRisk(createRiskDto);
     tick();
-    expect(riskService.createRisk).toHaveBeenCalledWith({ ...createRiskDto, projectId: mockProject.id });
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Risk created successfully', type: 'success' });
+    expect(riskService.createRisk).toHaveBeenCalledWith({
+      ...createRiskDto,
+      projectId: mockProject.id,
+    });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Risk created successfully',
+      type: 'success',
+    });
     expect(component.selectedProject()?.risks).toContainEqual(mockRisk);
   }));
 
   it('should handle creating a change', fakeAsync(() => {
     component.selectedProject.set(mockProject);
-    const createChangeDto: CreateChange = { changeDate: new Date(), projectId: '', changeType: 'ADDITION', changeStatus: 'PENDING', changeDescription: '', requestor: '', resolution: 'PENDING' };
+    const createChangeDto: CreateChange = {
+      changeDate: new Date(),
+      projectId: '',
+      changeType: 'ADDITION',
+      changeStatus: 'PENDING',
+      changeDescription: '',
+      requestor: '',
+      resolution: 'PENDING',
+    };
     component.onCreateChange(createChangeDto);
     tick();
-    expect(changeService.createChange).toHaveBeenCalledWith({ ...createChangeDto, projectId: mockProject.id });
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Change created successfully', type: 'success' });
+    expect(changeService.createChange).toHaveBeenCalledWith({
+      ...createChangeDto,
+      projectId: mockProject.id,
+    });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Change created successfully',
+      type: 'success',
+    });
     expect(component.selectedProject()?.changes).toContainEqual(mockChange);
   }));
 
   it('should handle creating a journal entry', fakeAsync(() => {
     component.selectedProject.set(mockProject);
-    const createJournalDto: CreateProjectJournal = { content: 'New Entry', projectId: '', profileId: '', createdAt: new Date() };
+    const createJournalDto: CreateProjectJournal = {
+      content: 'New Entry',
+      projectId: '',
+      profileId: '',
+      createdAt: new Date(),
+    };
     component.onCreateJournalEntry(createJournalDto);
     tick();
-    expect(journalService.createJournalEntry).toHaveBeenCalledWith({ ...createJournalDto, projectId: mockProject.id, profileId: mockProject.owner });
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Journal entry created successfully', type: 'success' });
-    expect(component.selectedProject()?.journalEntries).toContainEqual(mockJournal);
+    expect(journalService.createJournalEntry).toHaveBeenCalledWith({
+      ...createJournalDto,
+      projectId: mockProject.id,
+      profileId: mockProject.owner,
+    });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Journal entry created successfully',
+      type: 'success',
+    });
+    expect(component.selectedProject()?.journalEntries).toContainEqual(
+      mockJournal
+    );
   }));
 
   it('should handle deleting a task', fakeAsync(() => {
@@ -160,7 +301,10 @@ describe('ProjectsComponent', () => {
     component.onDeleteTask(mockTask.id);
     tick();
     expect(taskService.deleteTask).toHaveBeenCalledWith(mockTask.id);
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Task deleted successfully', type: 'success' });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Task deleted successfully',
+      type: 'success',
+    });
     expect(component.selectedProject()?.tasks).not.toContainEqual(mockTask);
   }));
 
@@ -175,7 +319,10 @@ describe('ProjectsComponent', () => {
     tick();
 
     expect(taskService.updateTask).toHaveBeenCalledWith(updatedTask);
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Task updated successfully', type: 'success' });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Task updated successfully',
+      type: 'success',
+    });
     expect(component.selectedProject()?.tasks).toEqual([updatedTask]);
   }));
 
@@ -189,8 +336,14 @@ describe('ProjectsComponent', () => {
     component.onEditRisk(updatedRisk);
     tick();
 
-    expect(riskService.updateRisk).toHaveBeenCalledWith(updatedRisk.id, updatedRisk);
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Risk updated successfully', type: 'success' });
+    expect(riskService.updateRisk).toHaveBeenCalledWith(
+      updatedRisk.id,
+      updatedRisk
+    );
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Risk updated successfully',
+      type: 'success',
+    });
     expect(component.selectedProject()?.risks).toEqual([updatedRisk]);
   }));
 
@@ -199,22 +352,34 @@ describe('ProjectsComponent', () => {
     component.onDeleteRisk(mockRisk.id);
     tick();
     expect(riskService.deleteRisk).toHaveBeenCalledWith(mockRisk.id);
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Risk deleted successfully', type: 'success' });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Risk deleted successfully',
+      type: 'success',
+    });
     expect(component.selectedProject()?.risks).not.toContainEqual(mockRisk);
   }));
 
   it('should handle editing a change', fakeAsync(() => {
-    const initialChange: Change = { ...mockChange, changeDescription: 'Original Change' };
+    const initialChange: Change = {
+      ...mockChange,
+      changeDescription: 'Original Change',
+    };
     component.selectedProject.set({ ...mockProject, changes: [initialChange] });
 
-    const updatedChange: Change = { ...initialChange, changeDescription: 'Updated Change' };
+    const updatedChange: Change = {
+      ...initialChange,
+      changeDescription: 'Updated Change',
+    };
     changeService.updateChange.mockReturnValue(of(updatedChange));
 
     component.onEditChange(updatedChange);
     tick();
 
     expect(changeService.updateChange).toHaveBeenCalledWith(updatedChange);
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Change updated successfully', type: 'success' });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Change updated successfully',
+      type: 'success',
+    });
     expect(component.selectedProject()?.changes).toEqual([updatedChange]);
   }));
 
@@ -223,32 +388,61 @@ describe('ProjectsComponent', () => {
     component.onDeleteChange(mockChange.id);
     tick();
     expect(changeService.deleteChange).toHaveBeenCalledWith(mockChange.id);
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Change deleted successfully', type: 'success' });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Change deleted successfully',
+      type: 'success',
+    });
     expect(component.selectedProject()?.changes).not.toContainEqual(mockChange);
   }));
 
   it('should handle updating a journal entry', fakeAsync(() => {
-    const initialJournal: ProjectJournal = { ...mockJournal, content: 'Original Journal' };
-    component.selectedProject.set({ ...mockProject, journalEntries: [initialJournal] });
+    const initialJournal: ProjectJournal = {
+      ...mockJournal,
+      content: 'Original Journal',
+    };
+    component.selectedProject.set({
+      ...mockProject,
+      journalEntries: [initialJournal],
+    });
 
-    const updatedJournal: ProjectJournal = { ...initialJournal, content: 'Updated Journal' };
+    const updatedJournal: ProjectJournal = {
+      ...initialJournal,
+      content: 'Updated Journal',
+    };
     journalService.updateJournalEntry.mockReturnValue(of(updatedJournal));
 
     component.onUpdateJournalEntry(updatedJournal);
     tick();
 
-    expect(journalService.updateJournalEntry).toHaveBeenCalledWith(updatedJournal);
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Journal entry updated successfully', type: 'success' });
-    expect(component.selectedProject()?.journalEntries).toEqual([updatedJournal]);
+    expect(journalService.updateJournalEntry).toHaveBeenCalledWith(
+      updatedJournal
+    );
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Journal entry updated successfully',
+      type: 'success',
+    });
+    expect(component.selectedProject()?.journalEntries).toEqual([
+      updatedJournal,
+    ]);
   }));
 
   it('should handle deleting a journal entry', fakeAsync(() => {
-    component.selectedProject.set({ ...mockProject, journalEntries: [mockJournal] });
+    component.selectedProject.set({
+      ...mockProject,
+      journalEntries: [mockJournal],
+    });
     component.onDeleteJournalEntry(mockJournal.id);
     tick();
-    expect(journalService.deleteJournalEntry).toHaveBeenCalledWith(mockJournal.id);
-    expect(messageService.addMessage).toHaveBeenCalledWith({ content: 'Journal entry deleted successfully', type: 'success' });
-    expect(component.selectedProject()?.journalEntries).not.toContainEqual(mockJournal);
+    expect(journalService.deleteJournalEntry).toHaveBeenCalledWith(
+      mockJournal.id
+    );
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Journal entry deleted successfully',
+      type: 'success',
+    });
+    expect(component.selectedProject()?.journalEntries).not.toContainEqual(
+      mockJournal
+    );
   }));
 
   it('should show details', () => {
@@ -265,19 +459,40 @@ describe('ProjectsComponent', () => {
   });
 
   it('should calculate task count correctly', () => {
-    const projectWithTasks = { ...mockProject, tasks: [{ status: 'TODO' }, { status: 'DONE' }, { status: 'IN_PROGRESS' }] as Task[] };
+    const projectWithTasks = {
+      ...mockProject,
+      tasks: [
+        { status: 'TODO' },
+        { status: 'DONE' },
+        { status: 'IN_PROGRESS' },
+      ] as Task[],
+    };
     component.selectedProject.set(projectWithTasks);
     expect(component.taskCount()).toBe(2);
   });
 
   it('should calculate risk count correctly', () => {
-    const projectWithRisks = { ...mockProject, risks: [{ status: 'OPEN' }, { status: 'CLOSED' }, { status: 'MITIGATED' }] as Risk[] };
+    const projectWithRisks = {
+      ...mockProject,
+      risks: [
+        { status: 'OPEN' },
+        { status: 'CLOSED' },
+        { status: 'MITIGATED' },
+      ] as Risk[],
+    };
     component.selectedProject.set(projectWithRisks);
     expect(component.riskCount()).toBe(2);
   });
 
   it('should calculate change count correctly', () => {
-    const projectWithChanges = { ...mockProject, changes: [{ changeStatus: 'PENDING' }, { changeStatus: 'COMPLETE' }, { changeStatus: 'IN_PROGRESS' }] as Change[] };
+    const projectWithChanges = {
+      ...mockProject,
+      changes: [
+        { changeStatus: 'PENDING' },
+        { changeStatus: 'COMPLETE' },
+        { changeStatus: 'IN_PROGRESS' },
+      ] as Change[],
+    };
     component.selectedProject.set(projectWithChanges);
     expect(component.changeCount()).toBe(2);
   });

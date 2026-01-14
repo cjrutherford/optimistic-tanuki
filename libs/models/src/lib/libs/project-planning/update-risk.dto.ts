@@ -14,16 +14,16 @@ export class QueryRiskDto extends PartialType(CreateRiskDto) {
   @IsOptional()
   @IsUUID()
   createdBy?: string;
-  
+
   @ApiPropertyOptional({ description: 'Updated by user ID' })
   @IsOptional()
   @IsUUID()
   updatedBy?: string;
-  
+
   @ApiPropertyOptional({ type: [Date], description: 'Created at range' })
   @IsOptional()
   createdAt?: [Date, Date];
-  
+
   @ApiPropertyOptional({ type: [Date], description: 'Updated at range' })
   @IsOptional()
   updatedAt?: [Date, Date];

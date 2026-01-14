@@ -28,7 +28,7 @@ import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
 @Component({
   selector: 'app-settings',
   template: `<lib-theme-designer></lib-theme-designer>`,
-  imports: [ThemeDesignerComponent]
+  imports: [ThemeDesignerComponent],
 })
 export class SettingsComponent {}
 ```
@@ -118,10 +118,7 @@ A comprehensive set of SCSS mixins has been created to promote DRY (Don't Repeat
 @include transition-base(all, 0.3s, ease-in-out);
 
 // Multiple transitions
-@include transition-multi(
-  box-shadow 0.3s ease-in-out,
-  transform 0.3s ease-in-out
-);
+@include transition-multi(box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out);
 ```
 
 #### Typography Mixins
@@ -153,16 +150,12 @@ import { HeroSectionComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   template: `
-    <otui-hero-section 
-      [backgroundImage]="'url(/assets/hero.jpg)'"
-      [overlayOpacity]="0.5"
-      [minHeight]="'80vh'"
-      [centerContent]="true">
+    <otui-hero-section [backgroundImage]="'url(/assets/hero.jpg)'" [overlayOpacity]="0.5" [minHeight]="'80vh'" [centerContent]="true">
       <h1>Welcome to Our Platform</h1>
       <p>Build amazing things</p>
     </otui-hero-section>
   `,
-  imports: [HeroSectionComponent]
+  imports: [HeroSectionComponent],
 })
 export class LandingComponent {}
 ```
@@ -195,15 +188,12 @@ import { ContentSectionComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   template: `
-    <otui-content-section 
-      [maxWidth]="'1200px'"
-      [padding]="'3rem'"
-      [backgroundColor]="'#f5f5f5'">
+    <otui-content-section [maxWidth]="'1200px'" [padding]="'3rem'" [backgroundColor]="'#f5f5f5'">
       <h2>About Us</h2>
       <p>Our story begins...</p>
     </otui-content-section>
   `,
-  imports: [ContentSectionComponent]
+  imports: [ContentSectionComponent],
 })
 export class AboutComponent {}
 ```
@@ -241,35 +231,29 @@ Both components have been refactored to use the new mixins, making the codebase 
 
 ```typescript
 import { Component } from '@angular/core';
-import { 
-  HeroSectionComponent, 
-  ContentSectionComponent 
-} from '@optimistic-tanuki/common-ui';
+import { HeroSectionComponent, ContentSectionComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'app-blog-post',
   standalone: true,
   imports: [HeroSectionComponent, ContentSectionComponent],
   template: `
-    <otui-hero-section 
-      [backgroundImage]="post.heroImage"
-      [minHeight]="'50vh'"
-      [overlayOpacity]="0.3">
+    <otui-hero-section [backgroundImage]="post.heroImage" [minHeight]="'50vh'" [overlayOpacity]="0.3">
       <h1>{{ post.title }}</h1>
       <p>{{ post.subtitle }}</p>
     </otui-hero-section>
-    
+
     <otui-content-section [maxWidth]="'800px'">
       <div [innerHTML]="post.content"></div>
     </otui-content-section>
-  `
+  `,
 })
 export class BlogPostComponent {
   post = {
     title: 'My Blog Post',
     subtitle: 'A great article',
     heroImage: '/assets/blog-hero.jpg',
-    content: '<p>Article content...</p>'
+    content: '<p>Article content...</p>',
   };
 }
 ```
@@ -278,28 +262,18 @@ export class BlogPostComponent {
 
 ```typescript
 import { Component } from '@angular/core';
-import { 
-  HeroSectionComponent, 
-  ContentSectionComponent,
-  CardComponent 
-} from '@optimistic-tanuki/common-ui';
+import { HeroSectionComponent, ContentSectionComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [
-    HeroSectionComponent, 
-    ContentSectionComponent,
-    CardComponent
-  ],
+  imports: [HeroSectionComponent, ContentSectionComponent, CardComponent],
   template: `
-    <otui-hero-section 
-      [backgroundColor]="'#3f51b5'"
-      [minHeight]="'80vh'">
+    <otui-hero-section [backgroundColor]="'#3f51b5'" [minHeight]="'80vh'">
       <h1>Transform Your Ideas</h1>
       <p>Build the future with our platform</p>
     </otui-hero-section>
-    
+
     <otui-content-section>
       <h2>Why Choose Us</h2>
       <div class="features">
@@ -317,7 +291,7 @@ import {
         </otui-card>
       </div>
     </otui-content-section>
-  `
+  `,
 })
 export class LandingComponent {}
 ```

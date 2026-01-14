@@ -20,15 +20,29 @@ describe('PaginationComponent', () => {
     expect(component).toBeTruthy();
   });
 
-    it('should set complement style variable based on theme colors for light theme', () => {
+  it('should set complement style variable based on theme colors for light theme', () => {
     const mockColors = {
       background: '#fff',
       accent: '#f00',
       foreground: '#000',
       complementary: '#0f0',
-      complementaryGradients: { dark: 'linear-gradient(#0f0, #000)', light: 'linear-gradient(#0f0, #000)' },
-      accentGradients: { light: 'linear-gradient(#f00, #fff)', dark: 'linear-gradient(#f00, #fff)' },
-      complementaryShades: [[null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0']],
+      complementaryGradients: {
+        dark: 'linear-gradient(#0f0, #000)',
+        light: 'linear-gradient(#0f0, #000)',
+      },
+      accentGradients: {
+        light: 'linear-gradient(#f00, #fff)',
+        dark: 'linear-gradient(#f00, #fff)',
+      },
+      complementaryShades: [
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+      ],
     } as any;
 
     component.theme = 'light';
@@ -45,9 +59,23 @@ describe('PaginationComponent', () => {
       accent: '#f00',
       foreground: '#000',
       complementary: '#0f0',
-      complementaryGradients: { dark: 'linear-gradient(#0f0, #000)', light: 'linear-gradient(#0f0, #000)' },
-      accentGradients: { light: 'linear-gradient(#f00, #fff)', dark: 'linear-gradient(#f00, #fff)' },
-      complementaryShades: [[null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0']],
+      complementaryGradients: {
+        dark: 'linear-gradient(#0f0, #000)',
+        light: 'linear-gradient(#0f0, #000)',
+      },
+      accentGradients: {
+        light: 'linear-gradient(#f00, #fff)',
+        dark: 'linear-gradient(#f00, #fff)',
+      },
+      complementaryShades: [
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+      ],
     } as any;
 
     component.theme = 'dark';
@@ -64,9 +92,23 @@ describe('PaginationComponent', () => {
       accent: '#f00',
       foreground: '#000',
       complementary: '#0f0',
-      complementaryGradients: { dark: 'linear-gradient(#0f0, #000)', light: 'linear-gradient(#0f0, #000)' },
-      accentGradients: { light: 'linear-gradient(#f00, #fff)', dark: 'linear-gradient(#f00, #fff)' },
-      complementaryShades: [[null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0'], [null, '#0f0']],
+      complementaryGradients: {
+        dark: 'linear-gradient(#0f0, #000)',
+        light: 'linear-gradient(#0f0, #000)',
+      },
+      accentGradients: {
+        light: 'linear-gradient(#f00, #fff)',
+        dark: 'linear-gradient(#f00, #fff)',
+      },
+      complementaryShades: [
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+        [null, '#0f0'],
+      ],
     } as any;
 
     component.theme = 'dark';
@@ -82,7 +124,7 @@ describe('PaginationComponent', () => {
     component.currentPage = 1;
     component.maxVisiblePages = 5;
     component.ngOnInit();
-    expect(component.pages()).toEqual([1,2,3,4,5]);
+    expect(component.pages()).toEqual([1, 2, 3, 4, 5]);
     expect(component.showStartEllipsis()).toBe(false);
     expect(component.showEndEllipsis()).toBe(true);
   });
@@ -102,7 +144,7 @@ describe('PaginationComponent', () => {
     component.maxVisiblePages = 5;
     component.currentPage = 10;
     component.updatePageList();
-    expect(component.pages()).toEqual([6,7,8,9,10]);
+    expect(component.pages()).toEqual([6, 7, 8, 9, 10]);
     expect(component.showStartEllipsis()).toBe(true);
     expect(component.showEndEllipsis()).toBe(false);
   });
@@ -121,7 +163,7 @@ describe('PaginationComponent', () => {
     component.currentPage = 5;
     component.onFirstPageClick();
     expect(component.currentPage).toBe(1);
-    expect(component.pages()).toEqual([1,2,3,4,5]);
+    expect(component.pages()).toEqual([1, 2, 3, 4, 5]);
   });
 
   it('should handle onLastPageClick', () => {
@@ -130,7 +172,7 @@ describe('PaginationComponent', () => {
     component.currentPage = 1;
     component.onLastPageClick();
     expect(component.currentPage).toBe(10);
-    expect(component.pages()).toEqual([6,7,8,9,10]);
+    expect(component.pages()).toEqual([6, 7, 8, 9, 10]);
   });
 
   it('should handle onNextPageClick', () => {

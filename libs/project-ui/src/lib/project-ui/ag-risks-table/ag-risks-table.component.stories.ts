@@ -87,13 +87,13 @@ export const Empty: Story = {
 
 export const HighImpactRisks: Story = {
   args: {
-    risks: mockRisks.filter(r => r.impact === 'HIGH'),
+    risks: mockRisks.filter((r) => r.impact === 'HIGH'),
   },
 };
 
 export const OpenRisks: Story = {
   args: {
-    risks: mockRisks.filter(r => r.status === 'OPEN'),
+    risks: mockRisks.filter((r) => r.status === 'OPEN'),
   },
 };
 
@@ -111,10 +111,26 @@ export const AllImpactLevels: Story = {
 export const AllLikelihoodLevels: Story = {
   args: {
     risks: [
-      { ...mockRisks[0], likelihood: 'CERTAIN', description: 'Certain Likelihood' },
-      { ...mockRisks[1], likelihood: 'LIKELY', description: 'Likely Likelihood' },
-      { ...mockRisks[2], likelihood: 'POSSIBLE', description: 'Possible Likelihood' },
-      { ...mockRisks[3], likelihood: 'UNLIKELY', description: 'Unlikely Likelihood' },
+      {
+        ...mockRisks[0],
+        likelihood: 'CERTAIN',
+        description: 'Certain Likelihood',
+      },
+      {
+        ...mockRisks[1],
+        likelihood: 'LIKELY',
+        description: 'Likely Likelihood',
+      },
+      {
+        ...mockRisks[2],
+        likelihood: 'POSSIBLE',
+        description: 'Possible Likelihood',
+      },
+      {
+        ...mockRisks[3],
+        likelihood: 'UNLIKELY',
+        description: 'Unlikely Likelihood',
+      },
     ],
   },
 };

@@ -11,16 +11,20 @@ import { Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
-  const config = (await NestFactory.createApplicationContext(AppModule)).get(ConfigService);
+  const config = (await NestFactory.createApplicationContext(AppModule)).get(
+    ConfigService
+  );
   const app = await NestFactory.createMicroservice(AppModule, {
     transport: Transport.TCP,
     options: {
       host: '0.0.0.0',
       port: config.get('listenPort') || 3003,
-    }
+    },
   });
   app.listen().then(() => {
-    Logger.log('Microservice is listening On Port: ' + config.get('listenPort') || 3003); 
+    Logger.log(
+      'Microservice is listening On Port: ' + config.get('listenPort') || 3003
+    );
   });
 }
 

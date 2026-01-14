@@ -32,7 +32,14 @@
   background: var(--background-gradient, #5969c3);
   @include pulse-animation(16s, (var(--accent), var(--complement)));
   color: var(--foreground, #fff);
-  @include box-shadow-multi-glow(var(--accent), var(--complement), 20px, 8px, 20px, 8px);
+  @include box-shadow-multi-glow(
+    var(--accent),
+    var(--complement),
+    20px,
+    8px,
+    20px,
+    8px
+  );
 }
 
 .tile.row {
@@ -42,7 +49,8 @@
   @include transition-base(box-shadow, 0.3s);
   background: var(--background, #5969c3);
   @include box-shadow-glow(var(--accent), 6px, 10px);
-  box-shadow: 4px 4px 6px 10px var(--accent), inset 0 2px 12px 0 rgba(0, 0, 0, 0.15);
+  box-shadow: 4px 4px 6px 10px var(--accent),
+    inset 0 2px 12px 0 rgba(0, 0, 0, 0.15);
 }
 
 .tile:hover {
@@ -87,7 +95,11 @@
   display: block;
   box-sizing: border-box;
   @include border-radius-standard(var(--border-radius, 1em));
-  @include border-base(var(--border-width, 2px), solid, var(--border-color, transparent));
+  @include border-base(
+    var(--border-width, 2px),
+    solid,
+    var(--border-color, transparent)
+  );
   background: var(--background, #fff);
   color: var(--foreground, #222);
   @include transition-base(box-shadow, var(--transition-duration, 0.3s));

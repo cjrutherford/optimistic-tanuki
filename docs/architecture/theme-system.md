@@ -85,6 +85,7 @@ All theme variables use a consistent naming convention:
 ### 2. Color Generation
 
 The system automatically generates:
+
 - **Color shades**: 10 shades (0-9) for each color
 - **Gradients**: 3 gradient variants per color
 - **Semantic colors**: Success, danger, warning derived from accent
@@ -93,6 +94,7 @@ The system automatically generates:
 ### 3. Theme Modes
 
 Two theme modes are supported:
+
 - **light**: Light background, dark text
 - **dark**: Dark background, light text
 
@@ -101,6 +103,7 @@ Palettes can define custom background/foreground for each mode.
 ### 4. Palette Modes
 
 Two palette modes are supported:
+
 - **predefined**: Using one of 8 built-in palettes
 - **custom**: User-defined accent and complementary colors
 
@@ -149,7 +152,7 @@ export class MyComponent {
 
   ngOnInit() {
     // Subscribe to theme changes
-    this.themeService.themeColors$.subscribe(colors => {
+    this.themeService.themeColors$.subscribe((colors) => {
       if (colors) {
         console.log('Current accent:', colors.accent);
       }
@@ -223,21 +226,25 @@ import { ThemeHostBindingsDirective } from '@optimistic-tanuki/theme-lib';
     </div>
 
     <!-- Apply design tokens -->
-    <div [themeHostBindings]="{ 
-      spacing: 'lg',
-      shadow: 'md',
-      borderRadius: 'lg'
-    }">
+    <div
+      [themeHostBindings]="{
+        spacing: 'lg',
+        shadow: 'md',
+        borderRadius: 'lg'
+      }"
+    >
       <p>With design tokens</p>
     </div>
 
     <!-- Custom variables -->
-    <div [themeHostBindings]="{ 
-      customVars: { 'my-custom-var': '#00ff00' }
-    }">
+    <div
+      [themeHostBindings]="{
+        customVars: { 'my-custom-var': '#00ff00' }
+      }"
+    >
       <p style="color: var(--local-my-custom-var)">Custom variable</p>
     </div>
-  `
+  `,
 })
 export class MyComponent {}
 ```
@@ -283,25 +290,14 @@ import { ThemeVariableService } from '@optimistic-tanuki/theme-lib';
   // ...
 })
 export class MyComponent {
-  constructor(
-    private themeVarService: ThemeVariableService,
-    private elementRef: ElementRef
-  ) {}
+  constructor(private themeVarService: ThemeVariableService, private elementRef: ElementRef) {}
 
   ngOnInit() {
     // Apply local-scoped variables
-    this.themeVarService.applyThemeVariables(
-      this.elementRef,
-      { accent: '#ff0000', complement: '#00ff00' },
-      'local'
-    );
+    this.themeVarService.applyThemeVariables(this.elementRef, { accent: '#ff0000', complement: '#00ff00' }, 'local');
 
     // Create fallback chain for use in templates
-    const colorWithFallback = this.themeVarService.createFallbackChain([
-      '--local-accent',
-      '--accent',
-      '#3f51b5'
-    ]);
+    const colorWithFallback = this.themeVarService.createFallbackChain(['--local-accent', '--accent', '#3f51b5']);
     // Returns: 'var(--local-accent), var(--accent), #3f51b5'
   }
 }
@@ -411,7 +407,7 @@ document.documentElement.style.setProperty('--accent', '#ff0000');
 .card {
   padding: 24px;
   border-radius: 4px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 ```
 
@@ -421,11 +417,11 @@ document.documentElement.style.setProperty('--accent', '#ff0000');
 // ✅ Good - Uses generated shades
 .button {
   background: var(--accent-5); // Base color
-  
+
   &:hover {
     background: var(--accent-3); // Lighter
   }
-  
+
   &:active {
     background: var(--accent-7); // Darker
   }
@@ -434,7 +430,7 @@ document.documentElement.style.setProperty('--accent', '#ff0000');
 // ❌ Bad - Manual color calculations
 .button {
   background: #3f51b5;
-  
+
   &:hover {
     background: lighten(#3f51b5, 20%);
   }
@@ -476,21 +472,23 @@ import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
       <p>This card uses the current theme.</p>
     </div>
   `,
-  styles: [`
-    .card {
-      background: var(--background);
-      color: var(--foreground);
-      border: 2px solid var(--accent);
-      border-radius: var(--border-radius-lg);
-      padding: var(--spacing-lg);
-      box-shadow: var(--shadow-md);
-    }
+  styles: [
+    `
+      .card {
+        background: var(--background);
+        color: var(--foreground);
+        border: 2px solid var(--accent);
+        border-radius: var(--border-radius-lg);
+        padding: var(--spacing-lg);
+        box-shadow: var(--shadow-md);
+      }
 
-    h2 {
-      color: var(--accent);
-      margin-bottom: var(--spacing-sm);
-    }
-  `]
+      h2 {
+        color: var(--accent);
+        margin-bottom: var(--spacing-sm);
+      }
+    `,
+  ],
 })
 export class ThemedCardComponent {}
 ```
@@ -505,9 +503,9 @@ import { ThemeHostBindingsDirective } from '@optimistic-tanuki/theme-lib';
   selector: 'app-custom-themed-card',
   imports: [ThemeHostBindingsDirective],
   template: `
-    <div 
+    <div
       class="card"
-      [themeHostBindings]="{ 
+      [themeHostBindings]="{
         accent: '#ff6b35',
         complement: '#359dff',
         spacing: 'xl'
@@ -517,18 +515,20 @@ import { ThemeHostBindingsDirective } from '@optimistic-tanuki/theme-lib';
       <p>This card overrides the global theme.</p>
     </div>
   `,
-  styles: [`
-    .card {
-      background: var(--local-background, var(--background));
-      color: var(--local-foreground, var(--foreground));
-      border: 2px solid var(--local-accent, var(--accent));
-      padding: var(--local-spacing, var(--spacing-md));
-    }
+  styles: [
+    `
+      .card {
+        background: var(--local-background, var(--background));
+        color: var(--local-foreground, var(--foreground));
+        border: 2px solid var(--local-accent, var(--accent));
+        padding: var(--local-spacing, var(--spacing-md));
+      }
 
-    h2 {
-      color: var(--local-accent, var(--accent));
-    }
-  `]
+      h2 {
+        color: var(--local-accent, var(--accent));
+      }
+    `,
+  ],
 })
 export class CustomThemedCardComponent {}
 ```
@@ -546,39 +546,43 @@ import { ThemeService, PREDEFINED_PALETTES } from '@optimistic-tanuki/theme-lib'
       <button (click)="toggleTheme()">
         {{ currentTheme() === 'light' ? '🌙' : '☀️' }}
       </button>
-      
+
       <select (change)="onPaletteChange($event)">
         <option value="">Select Palette</option>
         @for (palette of palettes; track palette.name) {
-          <option [value]="palette.name">{{ palette.name }}</option>
+        <option [value]="palette.name">{{ palette.name }}</option>
         }
       </select>
     </div>
   `,
-  styles: [`
-    .theme-switcher {
-      display: flex;
-      gap: var(--spacing-md);
-      padding: var(--spacing-md);
-      background: var(--background);
-      border: 1px solid var(--complement);
-      border-radius: var(--border-radius-md);
-    }
+  styles: [
+    `
+      .theme-switcher {
+        display: flex;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        background: var(--background);
+        border: 1px solid var(--complement);
+        border-radius: var(--border-radius-md);
+      }
 
-    button, select {
-      padding: var(--spacing-sm) var(--spacing-md);
-      background: var(--accent);
-      color: var(--background);
-      border: none;
-      border-radius: var(--border-radius-sm);
-      cursor: pointer;
-      font-size: var(--font-size-base);
-    }
+      button,
+      select {
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: var(--accent);
+        color: var(--background);
+        border: none;
+        border-radius: var(--border-radius-sm);
+        cursor: pointer;
+        font-size: var(--font-size-base);
+      }
 
-    button:hover, select:hover {
-      background: var(--accent-3);
-    }
-  `]
+      button:hover,
+      select:hover {
+        background: var(--accent-3);
+      }
+    `,
+  ],
 })
 export class ThemeSwitcherComponent {
   palettes = PREDEFINED_PALETTES;
@@ -618,13 +622,15 @@ import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
       <p>Content that adapts to the theme</p>
     </div>
   `,
-  styles: [`
-    .content {
-      padding: var(--spacing-xl);
-      border-radius: var(--border-radius-lg);
-      box-shadow: var(--shadow-lg);
-    }
-  `]
+  styles: [
+    `
+      .content {
+        padding: var(--spacing-xl);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-lg);
+      }
+    `,
+  ],
 })
 export class DynamicContentComponent implements OnInit, OnDestroy {
   dynamicBackground = '';
@@ -634,16 +640,14 @@ export class DynamicContentComponent implements OnInit, OnDestroy {
   constructor(private themeService: ThemeService) {}
 
   ngOnInit() {
-    this.themeService.themeColors$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((colors: ThemeColors | undefined) => {
-        if (colors) {
-          // Use gradient from theme
-          this.dynamicBackground = colors.accentGradients['light'];
-          // Use complementary color for heading
-          this.headingColor = colors.complementary;
-        }
-      });
+    this.themeService.themeColors$.pipe(takeUntil(this.destroy$)).subscribe((colors: ThemeColors | undefined) => {
+      if (colors) {
+        // Use gradient from theme
+        this.dynamicBackground = colors.accentGradients['light'];
+        // Use complementary color for heading
+        this.headingColor = colors.complementary;
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -668,23 +672,18 @@ const customPalette: ColorPalette = {
   tertiary: '#ff35a6',
   background: {
     light: '#ffffff',
-    dark: '#1a1a1a'
+    dark: '#1a1a1a',
   },
   foreground: {
     light: '#212121',
-    dark: '#f5f5f5'
-  }
+    dark: '#f5f5f5',
+  },
 };
 
 // Save to localStorage
-const customPalettes = JSON.parse(
-  localStorage.getItem('optimistic-tanuki-custom-palettes') || '[]'
-);
+const customPalettes = JSON.parse(localStorage.getItem('optimistic-tanuki-custom-palettes') || '[]');
 customPalettes.push(customPalette);
-localStorage.setItem(
-  'optimistic-tanuki-custom-palettes',
-  JSON.stringify(customPalettes)
-);
+localStorage.setItem('optimistic-tanuki-custom-palettes', JSON.stringify(customPalettes));
 
 // Apply the palette
 this.themeService.setPalette('My Custom Palette');
@@ -746,6 +745,7 @@ const colors = this.themeService.themeColors$.value;
 ## Summary
 
 The Optimistic Tanuki theme system provides:
+
 - ✅ Consistent and maintainable theming
 - ✅ Type-safe API with TypeScript support
 - ✅ Flexible configuration and customization

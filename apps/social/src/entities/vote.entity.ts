@@ -6,22 +6,27 @@ import { Post } from './post.entity';
 
 @Entity()
 export class Vote {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column()
-    value: number;
+  @Column()
+  value: number;
 
-    @Column()
-    userId: string; // Changed from relation to user ID string
+  @Column()
+  userId: string; // Changed from relation to user ID string
 
-    @Column()
-    profileId: string;
+  @Column()
+  profileId: string;
 
-    @ManyToOne(() => Post, post => post.votes, { onDelete: 'CASCADE', nullable: true })
-    post?: Post;
+  @ManyToOne(() => Post, (post) => post.votes, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
+  post?: Post;
 
-    @ManyToOne(() => Comment, comment => comment.votes, { onDelete: 'CASCADE', nullable: true })
-    comment?: Comment;
-
+  @ManyToOne(() => Comment, (comment) => comment.votes, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
+  comment?: Comment;
 }

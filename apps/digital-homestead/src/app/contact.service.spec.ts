@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 
 import { ContactService } from './contact.service';
 import { of } from 'rxjs';
@@ -40,7 +43,7 @@ describe('ContactService', () => {
       subject: '[Digital Homestead] General Inquiry',
     };
 
-    service.postContact(data).subscribe(result => {
+    service.postContact(data).subscribe((result) => {
       expect(result).toEqual(expectedResponse);
       done();
     });
@@ -65,7 +68,7 @@ describe('ContactService', () => {
       subject: '[Digital Homestead] General Inquiry',
     };
 
-    service.postContact(data).subscribe(result => {
+    service.postContact(data).subscribe((result) => {
       expect(result).toEqual(expectedResponse);
       done();
     });

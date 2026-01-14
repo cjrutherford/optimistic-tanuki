@@ -1,7 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui'
+import {
+  AppBarComponent,
+  NavSidebarComponent,
+  NavItem,
+} from '@optimistic-tanuki/navigation-ui';
 
 @Component({
   selector: 'dh-title-bar',
@@ -56,4 +60,3 @@ export class TitleBarComponent {
     this.menuOpen.set(false);
   }
 }
-

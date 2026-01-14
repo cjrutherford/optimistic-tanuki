@@ -97,7 +97,11 @@ export function extractUserFacingContent(
   content: string | undefined,
   toolCalls?: any[]
 ): string | null {
-  if (toolCalls && toolCalls.length > 0 && (!content || content.trim() === '')) {
+  if (
+    toolCalls &&
+    toolCalls.length > 0 &&
+    (!content || content.trim() === '')
+  ) {
     return null;
   }
   return content || null;

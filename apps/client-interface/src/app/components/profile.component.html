@@ -1,17 +1,18 @@
 @if (profile) {
-  <lib-banner class="profile-banner"
-    [profileName]="profile.profileName"
-    [profileImage]="profile.profilePic"
-    [backgroundImage]="profile.coverPic"
-  >
-  </lib-banner>
+<lib-banner
+  class="profile-banner"
+  [profileName]="profile.profileName"
+  [profileImage]="profile.profilePic"
+  [backgroundImage]="profile.coverPic"
+>
+</lib-banner>
 } @else {
-  <otui-card>
-    <div class="no-profile">
-  <p>No profile selected. Go to Settings to create your profile.</p>
-  <otui-button (click)="goToSettings()">Open Settings</otui-button>
-    </div>
-  </otui-card>
+<otui-card>
+  <div class="no-profile">
+    <p>No profile selected. Go to Settings to create your profile.</p>
+    <otui-button (click)="goToSettings()">Open Settings</otui-button>
+  </div>
+</otui-card>
 }
 
 <!-- <otui-card >

@@ -41,7 +41,6 @@ export interface Contact {
   styleUrl: './contact-bubble.component.scss',
 })
 export class ContactBubbleComponent {
-
   /**
    * The contact data to display.
    */

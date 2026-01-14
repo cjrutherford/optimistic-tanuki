@@ -1,44 +1,47 @@
 /* istanbul ignore file */
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
-import { Profile } from "../../profiles/entities/profile.entity";
+import { Profile } from '../../profiles/entities/profile.entity';
 
 export enum TimelineEventType {
-    AddedGoal = 'AddedGoal',
-    AddedProject = 'AddedProject',
-    UpdatedGoal = 'UpdatedGoal',
-    UpdatedProject = 'UpdatedProject',
-    CreateProfile = 'CreateProfile',
-    UpdatedProfile = 'UpdatedProfile',
-    CompletedGoal = 'CompletedGoal',
-    CompletedProject = 'CompletedProject',
-    DeletedGoal = 'DeletedGoal',
-    Posted = 'Posted',
-    Commented = 'Commented',
-    Liked = 'Liked',
-    Contrubuted = 'Contributed'
+  AddedGoal = 'AddedGoal',
+  AddedProject = 'AddedProject',
+  UpdatedGoal = 'UpdatedGoal',
+  UpdatedProject = 'UpdatedProject',
+  CreateProfile = 'CreateProfile',
+  UpdatedProfile = 'UpdatedProfile',
+  CompletedGoal = 'CompletedGoal',
+  CompletedProject = 'CompletedProject',
+  DeletedGoal = 'DeletedGoal',
+  Posted = 'Posted',
+  Commented = 'Commented',
+  Liked = 'Liked',
+  Contrubuted = 'Contributed',
 }
 @Entity()
 export class Timeline {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @Column()
+  userId: string;
 
-    @Column()
-    userId: string;
+  @Column()
+  title: string;
 
-    @Column()
-    title: string;
+  @Column()
+  description: string;
 
-    @Column()
-    description: string;
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  timeStamp: Date;
 
-    @Column({ default: () => 'CURRENT_TIMESTAMP' })
-    timeStamp: Date;
+  @ManyToOne((type) => Profile, (profile) => profile.timeLineEvents)
+  related_profile: Profile;
 
-    @ManyToOne(type => Profile, profile => profile.timeLineEvents)
-    related_profile: Profile;
-
-    @Column({ type: 'enum', enum: TimelineEventType, default: TimelineEventType.Posted })
-    eventType: TimelineEventType;
+  @Column({
+    type: 'enum',
+    enum: TimelineEventType,
+    default: TimelineEventType.Posted,
+  })
+  eventType: TimelineEventType;
 }

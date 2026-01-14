@@ -1,6 +1,10 @@
 import { Component } from '@angular/core';
 
-import { GridComponent, HeadingComponent, TileComponent } from '@optimistic-tanuki/common-ui';
+import {
+  GridComponent,
+  HeadingComponent,
+  TileComponent,
+} from '@optimistic-tanuki/common-ui';
 import { BlogPostCardComponent } from '@optimistic-tanuki/blogging-ui';
 
 @Component({

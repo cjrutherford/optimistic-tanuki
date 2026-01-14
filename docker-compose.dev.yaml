@@ -151,7 +151,14 @@ services:
       - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
-      ['dumb-init', 'nodemon', '--exec', 'node --inspect=0.0.0.0:9000', '-L', 'dist/apps/gateway/main.js']
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9000',
+        '-L',
+        'dist/apps/gateway/main.js',
+      ]
     ports:
       - '3300:3300' # expose chat socket
       - '9000:9000' # Expose the debugging port
@@ -483,7 +490,7 @@ services:
     volumes:
       - ./dist/apps/store-client:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: 
+    command:
       [
         'dumb-init',
         'nodemon',
@@ -496,4 +503,3 @@ services:
       - '8085:4000'
     depends_on:
       - gateway
-

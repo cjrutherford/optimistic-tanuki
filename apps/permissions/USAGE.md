@@ -5,6 +5,7 @@ This guide provides examples of how to use the permissions system in the Optimis
 ## Overview
 
 The permissions system consists of three main concepts:
+
 - **Permissions**: Define what actions can be performed on resources
 - **Roles**: Group permissions together
 - **Role Assignments**: Assign roles to user profiles with application scope
@@ -58,7 +59,7 @@ POST /permissions/role
 
 ```typescript
 // Add the blog:posts:write permission to the blogger role
-POST /permissions/role/{roleId}/permission/{permissionId}
+POST / permissions / role / { roleId } / permission / { permissionId };
 ```
 
 ## Assigning Roles to Users
@@ -77,7 +78,7 @@ POST /permissions/assignment
 ### Remove a Role Assignment
 
 ```typescript
-DELETE /permissions/assignment/{assignmentId}
+DELETE / permissions / assignment / { assignmentId };
 ```
 
 ## Checking Permissions
@@ -111,6 +112,7 @@ GET /permissions/user-roles/{profileId}
 The `PermissionsGuard` requires the `X-ot-appscope` header to be present in all requests to protected endpoints. This header specifies which application scope the request is for, and the guard will verify permissions specifically for that scope.
 
 **Example API Request:**
+
 ```bash
 curl -X POST http://localhost:3000/blog/posts \
   -H "Authorization: Bearer <your-jwt-token>" \
@@ -133,7 +135,6 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 @Controller('blog')
 @UseGuards(AuthGuard, PermissionsGuard)
 export class BlogController {
-  
   @Post('posts')
   @RequirePermissions('blog:posts:write')
   async createPost(@User() user: UserDetails, @Body() dto: CreatePostDto) {
@@ -174,12 +175,14 @@ async createUser(@Body() dto: CreateUserDto) {
 ### Case 1: Blog System with Roles
 
 1. Create permissions:
+
    - `blog:posts:write` - Create/edit posts
    - `blog:posts:delete` - Delete posts
    - `blog:comments:moderate` - Moderate comments
    - `blog:settings:manage` - Manage blog settings
 
 2. Create roles:
+
    - **Blogger** (appScope: forgeofwill)
      - Permissions: blog:posts:write
    - **Moderator** (appScope: forgeofwill)
@@ -192,11 +195,13 @@ async createUser(@Body() dto: CreateUserDto) {
 ### Case 2: Project Management with Item-Level Permissions
 
 1. Create general permissions:
+
    - `projects:read` - View projects
    - `projects:write` - Create/edit projects
    - `projects:delete` - Delete projects
 
 2. Create item-specific permissions:
+
    - `projects:write` with targetId="{project-id}" - Edit specific project
    - `projects:delete` with targetId="{project-id}" - Delete specific project
 
@@ -256,6 +261,7 @@ Follow these conventions for permission names:
 ## Application Scopes
 
 Common application scopes:
+
 - `global` - Applies across all applications
 - `forgeofwill` - Forge of Will application
 - `client-interface` - Main client interface
@@ -266,6 +272,7 @@ Common application scopes:
 ## API Endpoints Summary
 
 ### Permissions
+
 - `POST /permissions/permission` - Create permission
 - `GET /permissions/permission/:id` - Get permission
 - `GET /permissions/permission` - Get all permissions
@@ -273,6 +280,7 @@ Common application scopes:
 - `DELETE /permissions/permission/:id` - Delete permission
 
 ### Roles
+
 - `POST /permissions/role` - Create role
 - `GET /permissions/role/:id` - Get role
 - `GET /permissions/role` - Get all roles
@@ -282,6 +290,7 @@ Common application scopes:
 - `DELETE /permissions/role/:roleId/permission/:permissionId` - Remove permission from role
 
 ### Assignments
+
 - `POST /permissions/assignment` - Assign role to user
 - `DELETE /permissions/assignment/:assignmentId` - Unassign role
 - `GET /permissions/user-roles/:profileId` - Get user roles

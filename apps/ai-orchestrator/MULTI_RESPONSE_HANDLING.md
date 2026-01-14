@@ -7,6 +7,7 @@ The chat pipeline now supports **multiple responses** from the AI orchestrator a
 ## Message Flow
 
 ### Before (Single Response)
+
 ```
 User: "Create a project called MyApp"
   ↓
@@ -16,6 +17,7 @@ AI: "I've created the project MyApp for you."
 ```
 
 ### After (Multiple Responses with Notifications)
+
 ```
 User: "Create a project called MyApp"
   ↓
@@ -42,10 +44,7 @@ The AI orchestrator now emits messages at multiple stages:
 
 ```typescript
 // 1. Extract and emit user-facing content
-const userFacingContent = extractUserFacingContent(
-  response.message.content,
-  response.message.tool_calls
-);
+const userFacingContent = extractUserFacingContent(response.message.content, response.message.tool_calls);
 if (userFacingContent) {
   const intermediateMessage: Partial<ChatMessage> = {
     conversationId: conversation.id,
@@ -58,10 +57,7 @@ if (userFacingContent) {
     type: 'system',
   };
   responses.push(intermediateMessage);
-  await chatCollectorService.send(
-    { cmd: ChatCommands.POST_MESSAGE },
-    intermediateMessage
-  );
+  await chatCollectorService.send({ cmd: ChatCommands.POST_MESSAGE }, intermediateMessage);
 }
 
 // 2. Emit tool call notification
@@ -76,10 +72,7 @@ const toolCallMessage: Partial<ChatMessage> = {
   type: 'system',
 };
 responses.push(toolCallMessage);
-await chatCollectorService.send(
-  { cmd: ChatCommands.POST_MESSAGE },
-  toolCallMessage
-);
+await chatCollectorService.send({ cmd: ChatCommands.POST_MESSAGE }, toolCallMessage);
 
 // 3. Execute tool and continue...
 ```
@@ -87,20 +80,16 @@ await chatCollectorService.send(
 ### Chat Gateway (`chat.gateway.ts`)
 
 The chat gateway now:
+
 1. **Captures** the array of responses from the AI orchestrator
-2. **Processes** each response 
+2. **Processes** each response
 3. **Emits** updated conversations to all participants after each message
 
 #### Code Example
 
 ```typescript
 // Send to AI orchestrator and get responses
-const aiResponses: Partial<ChatMessage>[] = await firstValueFrom(
-  this.aiOrchestrationClient.send(
-    { cmd: AIOrchestrationCommands.CONVERSATION_UPDATE },
-    { conversation: aiPayload, aiPersonas: aiRecipients }
-  )
-);
+const aiResponses: Partial<ChatMessage>[] = await firstValueFrom(this.aiOrchestrationClient.send({ cmd: AIOrchestrationCommands.CONVERSATION_UPDATE }, { conversation: aiPayload, aiPersonas: aiRecipients }));
 
 this.l.log(`AI orchestrator returned ${aiResponses.length} messages`);
 
@@ -109,17 +98,10 @@ for (const aiResponse of aiResponses) {
   // Get updated conversations for all participants
   const allParticipantIds = [...new Set([senderId, ...recipientIds])];
   for (const participantId of allParticipantIds) {
-    const participantSocket = this.connectedClients.find(
-      (c) => c.id === participantId
-    );
-    
+    const participantSocket = this.connectedClients.find((c) => c.id === participantId);
+
     if (participantSocket) {
-      const conversations = await firstValueFrom(
-        this.chatCollectorClient.send(
-          { cmd: ChatCommands.GET_CONVERSATIONS },
-          { profileId: participantId }
-        )
-      );
+      const conversations = await firstValueFrom(this.chatCollectorClient.send({ cmd: ChatCommands.GET_CONVERSATIONS }, { profileId: participantId }));
       participantSocket.client.emit('conversations', conversations || []);
     }
   }
@@ -134,8 +116,8 @@ Tool call notifications and intermediate messages use `type: 'system'` to differ
 
 ```typescript
 interface ChatMessage {
-  type: 'chat' | 'system';  // 'system' for tool notifications
-  content: string;          // Message content
+  type: 'chat' | 'system'; // 'system' for tool notifications
+  content: string; // Message content
   // ... other fields
 }
 ```
@@ -147,6 +129,7 @@ interface ChatMessage {
 ```
 
 Examples:
+
 - `🔧 Calling tool: create_project`
 - `🔧 Calling tool: list_tasks`
 - `🔧 Calling tool: update_risk`
@@ -154,23 +137,29 @@ Examples:
 ## Benefits
 
 ### 1. Real-Time Visibility
+
 Users see each stage of AI processing:
+
 - What the AI is thinking
 - Which tools are being called
 - Final results
 
 ### 2. Better UX
+
 - Users know the AI is working (not frozen)
 - Clear indication of tool execution
 - Understanding of AI's step-by-step process
 
 ### 3. Debugging
+
 - Easier to identify where issues occur
 - Clear audit trail of tool calls
 - Better error visibility
 
 ### 4. Multiple Participants
+
 All conversation participants receive updates simultaneously:
+
 - User sees their message acknowledged
 - User sees tool execution
 - User sees final response
@@ -185,8 +174,8 @@ All conversation participants receive updates simultaneously:
 
 [System]: 🔧 Calling tool: create_project
 
-[AI]: I've successfully created the project "Website Redesign" for you! 
-     The project is now in PLANNING status. Would you like to add any 
+[AI]: I've successfully created the project "Website Redesign" for you!
+     The project is now in PLANNING status. Would you like to add any
      initial tasks or team members?
 ```
 
@@ -226,7 +215,9 @@ socket.emit('message', {
 ## Performance Considerations
 
 ### Database Operations
+
 Each emitted message:
+
 1. Posts to chat collector (writes to database)
 2. Triggers conversation retrieval (reads from database)
 3. Emits to all connected participants
@@ -234,6 +225,7 @@ Each emitted message:
 For conversations with many participants or rapid tool calls, this can result in multiple database operations.
 
 ### Optimization Opportunities
+
 1. **Batch emissions**: Could emit all messages at once after AI completes
 2. **Debouncing**: Could delay emissions slightly to batch rapid updates
 3. **Selective updates**: Could emit only to active participants
@@ -249,6 +241,7 @@ To **disable** intermediate messages (keep only tool notifications and final res
 ## Backward Compatibility
 
 ✅ Fully backward compatible:
+
 - Existing clients receive multiple `conversations` events (as before)
 - Message format unchanged
 - No API changes required
@@ -257,6 +250,7 @@ To **disable** intermediate messages (keep only tool notifications and final res
 ## Future Enhancements
 
 Potential improvements:
+
 1. **Progress indicators**: Show percentage for multi-step operations
 2. **Cancellation**: Allow users to cancel long-running tool chains
 3. **Tool result preview**: Show brief summary of tool results
@@ -266,16 +260,19 @@ Potential improvements:
 ## Troubleshooting
 
 ### Issue: Not seeing intermediate messages
+
 - Check AI orchestrator logs for "LLM user-facing message"
 - Verify messages are being posted to chat collector
 - Confirm socket connection is active
 
 ### Issue: Messages arriving out of order
+
 - This shouldn't happen as messages are processed sequentially
 - Check for race conditions in client-side message handling
 - Verify timestamp ordering on client
 
 ### Issue: Too many conversation updates
+
 - This is expected - one update per emitted message
 - Client should handle rapid updates gracefully
 - Consider debouncing UI updates if necessary
@@ -283,6 +280,7 @@ Potential improvements:
 ## Summary
 
 The multi-response handling and tool call notifications provide:
+
 - ✅ Real-time visibility into AI processing
 - ✅ Clear indication of tool execution
 - ✅ Better user experience

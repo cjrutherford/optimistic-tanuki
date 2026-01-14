@@ -33,7 +33,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
-  
+
   h3 {
     margin: 0;
     font-size: 1.125rem;
@@ -41,7 +41,7 @@
     flex: 1;
     color: var(--foreground, #212121);
   }
-  
+
   .task-count {
     background: var(--accent, #007bff);
     color: var(--background, white);
@@ -50,7 +50,7 @@
     font-size: 0.875rem;
     font-weight: 600;
   }
-  
+
   .add-task-btn {
     font-size: 0.875rem;
   }
@@ -73,29 +73,29 @@
   cursor: pointer;
   transition: all 0.2s ease;
   border-left: 4px solid var(--accent, #007bff);
-  
+
   &:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     transform: translateY(-2px);
   }
-  
+
   &.priority-high,
   &.priority-critical {
     border-left-color: var(--danger, #dc3545);
   }
-  
+
   &.priority-medium-high {
     border-left-color: var(--warning, #fd7e14);
   }
-  
+
   &.priority-medium {
     border-left-color: var(--warning, #ffc107);
   }
-  
+
   &.priority-medium-low {
     border-left-color: var(--complement, #17a2b8);
   }
-  
+
   &.priority-low {
     border-left-color: var(--success, #28a745);
   }
@@ -106,7 +106,7 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 0.5rem;
-  
+
   h4 {
     margin: 0;
     font-size: 1rem;
@@ -114,7 +114,7 @@
     color: var(--foreground, #212121);
     flex: 1;
   }
-  
+
   .delete-btn {
     background: none;
     border: none;
@@ -128,7 +128,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 4px;
-    
+
     &:hover {
       background: var(--danger, #dc3545);
       color: var(--background, white);
@@ -155,40 +155,40 @@
   gap: 0.5rem;
   margin-top: 0.75rem;
   font-size: 0.75rem;
-  
+
   .priority-badge {
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-weight: 600;
     text-transform: uppercase;
-    
+
     &.priority-high,
     &.priority-critical {
       background: #dc354520;
       color: #dc3545;
     }
-    
+
     &.priority-medium-high {
       background: #fd7e1420;
       color: #fd7e14;
     }
-    
+
     &.priority-medium {
       background: #ffc10720;
       color: #856404;
     }
-    
+
     &.priority-medium-low {
       background: #17a2b820;
       color: #0c5460;
     }
-    
+
     &.priority-low {
       background: #28a74520;
       color: #155724;
     }
   }
-  
+
   .assignee,
   .due-date {
     padding: 0.25rem 0.5rem;

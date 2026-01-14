@@ -4,7 +4,7 @@ import {
   getAllVariableNames,
   getStandardVariable,
   DEFAULT_THEME_CONFIG,
-  THEME_STORAGE_CONFIG
+  THEME_STORAGE_CONFIG,
 } from './theme-config';
 
 describe('Theme Configuration', () => {
@@ -23,7 +23,9 @@ describe('Theme Configuration', () => {
     it('should define design token prefixes', () => {
       expect(STANDARD_THEME_VARIABLES.SPACING_PREFIX).toBe('--spacing-');
       expect(STANDARD_THEME_VARIABLES.SHADOW_PREFIX).toBe('--shadow-');
-      expect(STANDARD_THEME_VARIABLES.BORDER_RADIUS_PREFIX).toBe('--border-radius-');
+      expect(STANDARD_THEME_VARIABLES.BORDER_RADIUS_PREFIX).toBe(
+        '--border-radius-'
+      );
       expect(STANDARD_THEME_VARIABLES.FONT_SIZE_PREFIX).toBe('--font-size-');
       expect(STANDARD_THEME_VARIABLES.Z_INDEX_PREFIX).toBe('--z-index-');
     });
@@ -31,11 +33,15 @@ describe('Theme Configuration', () => {
 
   describe('LEGACY_VARIABLE_MAPPINGS', () => {
     it('should map legacy background variables', () => {
-      expect(LEGACY_VARIABLE_MAPPINGS['--background-color']).toBe('--background');
+      expect(LEGACY_VARIABLE_MAPPINGS['--background-color']).toBe(
+        '--background'
+      );
     });
 
     it('should map legacy foreground variables', () => {
-      expect(LEGACY_VARIABLE_MAPPINGS['--foreground-color']).toBe('--foreground');
+      expect(LEGACY_VARIABLE_MAPPINGS['--foreground-color']).toBe(
+        '--foreground'
+      );
     });
 
     it('should map legacy accent variables', () => {
@@ -43,7 +49,9 @@ describe('Theme Configuration', () => {
     });
 
     it('should map legacy complementary variables', () => {
-      expect(LEGACY_VARIABLE_MAPPINGS['--complementary-color']).toBe('--complement');
+      expect(LEGACY_VARIABLE_MAPPINGS['--complementary-color']).toBe(
+        '--complement'
+      );
       expect(LEGACY_VARIABLE_MAPPINGS['--complementary']).toBe('--complement');
     });
 
@@ -101,12 +109,16 @@ describe('Theme Configuration', () => {
   describe('THEME_STORAGE_CONFIG', () => {
     it('should define storage keys', () => {
       expect(THEME_STORAGE_CONFIG.STORAGE_KEY).toBe('optimistic-tanuki-theme');
-      expect(THEME_STORAGE_CONFIG.CUSTOM_PALETTES_KEY).toBe('optimistic-tanuki-custom-palettes');
+      expect(THEME_STORAGE_CONFIG.CUSTOM_PALETTES_KEY).toBe(
+        'optimistic-tanuki-custom-palettes'
+      );
     });
 
     it('should have consistent naming pattern', () => {
       expect(THEME_STORAGE_CONFIG.STORAGE_KEY).toContain('optimistic-tanuki');
-      expect(THEME_STORAGE_CONFIG.CUSTOM_PALETTES_KEY).toContain('optimistic-tanuki');
+      expect(THEME_STORAGE_CONFIG.CUSTOM_PALETTES_KEY).toContain(
+        'optimistic-tanuki'
+      );
     });
   });
 
@@ -127,8 +139,8 @@ describe('Theme Configuration', () => {
   describe('Integration', () => {
     it('should ensure all legacy mappings point to valid standard variables', () => {
       const standardValues = Object.values(STANDARD_THEME_VARIABLES);
-      
-      Object.values(LEGACY_VARIABLE_MAPPINGS).forEach(standardVar => {
+
+      Object.values(LEGACY_VARIABLE_MAPPINGS).forEach((standardVar) => {
         // Each mapped value should be a standard variable (or at least follow the pattern)
         expect(standardVar).toMatch(/^--[a-z-]+$/);
       });
@@ -144,12 +156,12 @@ describe('Theme Configuration', () => {
       // Every core color should have at least one legacy mapping
       const coreColors = [
         '--background',
-        '--foreground', 
+        '--foreground',
         '--accent',
-        '--complement'
+        '--complement',
       ];
 
-      coreColors.forEach(coreColor => {
+      coreColors.forEach((coreColor) => {
         const allNames = getAllVariableNames(coreColor);
         // Should have the standard name plus at least one legacy name
         expect(allNames.length).toBeGreaterThan(1);

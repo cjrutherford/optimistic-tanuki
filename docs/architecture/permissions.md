@@ -17,7 +17,6 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 @Controller('your-resource')
 @UseGuards(AuthGuard, PermissionsGuard)
 export class YourController {
-  
   @Post()
   @RequirePermissions('your-app:resource:create')
   async create(@Body() dto: CreateDto) {
@@ -43,21 +42,27 @@ All available via the gateway at `http://localhost:3000/permissions`:
 ## Key Concepts
 
 ### Permission
+
 Defines what action can be performed on a resource:
+
 - **name**: Unique identifier (e.g., "blog:posts:write")
 - **resource**: What the permission applies to
 - **action**: What can be done (read, write, delete, etc.)
 - **targetId**: (Optional) For item-level permissions
 
 ### Role
+
 Groups permissions together:
+
 - **name**: Role identifier (e.g., "blogger", "admin")
 - **description**: Human-readable description
 - **appScope**: Where the role applies (global, forgeofwill, etc.)
 - **permissions**: Collection of permissions
 
 ### Role Assignment
+
 Links a role to a user profile:
+
 - **roleId**: The role being assigned
 - **profileId**: The user's profile ID
 - **appScope**: Where this assignment applies
@@ -72,18 +77,24 @@ Links a role to a user profile:
 ## Integration Points
 
 ### Gateway
+
 The gateway exposes all permissions endpoints via REST API and includes the PermissionsGuard for protecting routes.
 
 ### Profile Service
+
 Role assignments reference profiles maintained by the profile service via profileId.
 
 ### Constants Library
+
 New command constants exported:
+
 - `PermissionCommands`
 - `RoleCommands`
 
 ### Models Library
+
 New DTOs exported:
+
 - `CreatePermissionDto`, `UpdatePermissionDto`, `PermissionDto`
 - `CreateRoleDto`, `UpdateRoleDto`, `AssignRoleDto`, `RoleDto`, `RoleAssignmentDto`
 
@@ -109,6 +120,7 @@ Common application scopes used in the platform:
 ## Example Use Cases
 
 ### Blog Permissions
+
 ```typescript
 // Create permissions for blog
 POST /permissions/permission
@@ -137,6 +149,7 @@ POST /permissions/assignment
 ```
 
 ### Protecting Endpoints
+
 ```typescript
 @Post('posts')
 @RequirePermissions('blog:posts:write')
@@ -148,6 +161,7 @@ async createPost(@Body() dto: CreatePostDto) {
 ## Database Schema
 
 The permissions database includes:
+
 - `permission` - Stores all permissions
 - `role` - Stores all roles
 - `role_assignment` - Links roles to profiles
@@ -156,18 +170,21 @@ The permissions database includes:
 ## Running the System
 
 ### Development
+
 ```bash
 npm run build
 npm run docker:dev
 ```
 
 ### Production
+
 ```bash
 npm run build
 docker-compose up -d
 ```
 
 The permissions service will:
+
 1. Start on port 3012
 2. Create the ot_permissions database
 3. Run migrations automatically
@@ -226,11 +243,13 @@ To migrate existing authorization logic:
 ## Files Modified/Created
 
 ### New Service Files (apps/permissions/)
+
 - Entities, DTOs, Services, Controllers
 - Configuration, migrations, Dockerfile
 - README, USAGE, DEPLOYMENT docs
 
 ### Modified Files
+
 - `apps/gateway/` - Added controller, guard, decorator
 - `libs/constants/` - Added permission commands
 - `libs/models/` - Added permission DTOs
@@ -256,6 +275,7 @@ To migrate existing authorization logic:
 ## Questions?
 
 Refer to the detailed documentation:
+
 - [Architecture](apps/permissions/README.md)
 - [Usage Examples](apps/permissions/USAGE.md)
 - [Deployment](apps/permissions/DEPLOYMENT.md)

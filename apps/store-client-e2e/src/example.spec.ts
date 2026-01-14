@@ -6,7 +6,9 @@ test.describe('Store Client E2E Tests', () => {
     await page.goto('/');
   });
 
-  test.skip('should display the catalog page with products', async ({ page }) => {
+  test.skip('should display the catalog page with products', async ({
+    page,
+  }) => {
     await page.goto('/catalog');
 
     // Wait for products to load
@@ -44,12 +46,14 @@ test.describe('Store Client E2E Tests', () => {
 
     // The loading indicator might appear briefly
     // We'll just verify the page eventually loads successfully
-    await page.waitForSelector('store-product-list, .error', { timeout: 10000 });
+    await page.waitForSelector('store-product-list, .error', {
+      timeout: 10000,
+    });
   });
 
   test('should display error message when API fails', async ({ page }) => {
     // Intercept API call and make it fail
-    await page.route('**/api/store/products', route => {
+    await page.route('**/api/store/products', (route) => {
       route.abort();
     });
 
@@ -61,7 +65,9 @@ test.describe('Store Client E2E Tests', () => {
     await expect(errorMessage).toContainText('Failed to load products');
   });
 
-  test('should navigate to cart page when add to cart is clicked', async ({ page }) => {
+  test('should navigate to cart page when add to cart is clicked', async ({
+    page,
+  }) => {
     await page.goto('/catalog');
 
     // Wait for products to load
@@ -89,7 +95,7 @@ test.describe('Store Client E2E Tests', () => {
 
   test('should submit a donation successfully', async ({ page }) => {
     // Mock successful donation API response
-    await page.route('**/api/store/donations', route => {
+    await page.route('**/api/store/donations', (route) => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -119,7 +125,9 @@ test.describe('Store Client E2E Tests', () => {
     await submitButton.click();
 
     // Verify success message
-    await expect(page.locator('.success-message')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.success-message')).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('should display cart page', async ({ page }) => {
@@ -150,7 +158,7 @@ test.describe('Store Client E2E Tests', () => {
 
     // Get first product details
     const firstProduct = page.locator('store-product-card').first();
-    
+
     // Check product has name
     const productName = firstProduct.locator('h3');
     await expect(productName).not.toBeEmpty();
@@ -162,7 +170,7 @@ test.describe('Store Client E2E Tests', () => {
 
   test('should handle network errors gracefully', async ({ page }) => {
     // Simulate network failure
-    await page.route('**/api/store/**', route => {
+    await page.route('**/api/store/**', (route) => {
       route.abort('failed');
     });
 
@@ -179,7 +187,7 @@ test.describe('Store Client E2E Tests', () => {
 
     // Verify page loads in mobile view
     await page.waitForSelector('store-product-list', { timeout: 10000 });
-    
+
     // Check that content is visible
     const heading = page.locator('h1');
     await expect(heading).toBeVisible();

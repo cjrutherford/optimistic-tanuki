@@ -16,11 +16,13 @@ A theme-aware AG Grid wrapper component for the Optimistic Tanuki workspace. Thi
 This library is already part of the workspace. To use it in your application:
 
 1. Add the library to your imports:
+
 ```typescript
 import { AgGridUiComponent } from '@optimistic-tanuki/ag-grid-ui';
 ```
 
 2. Import AG Grid styles in your application's `styles.scss` or `angular.json`:
+
 ```scss
 @import 'ag-grid-community/styles/ag-grid.css';
 @import 'ag-grid-community/styles/ag-theme-quartz.css';
@@ -37,13 +39,7 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 @Component({
   selector: 'app-my-table',
   imports: [AgGridUiComponent],
-  template: `
-    <otui-ag-grid
-      [rowData]="rowData"
-      [columnDefs]="columnDefs"
-      [height]="'600px'"
-    />
-  `
+  template: ` <otui-ag-grid [rowData]="rowData" [columnDefs]="columnDefs" [height]="'600px'" /> `,
 })
 export class MyTableComponent {
   columnDefs: ColDef[] = [
@@ -51,7 +47,7 @@ export class MyTableComponent {
     { field: 'age', headerName: 'Age' },
     { field: 'email', headerName: 'Email' },
   ];
-  
+
   rowData = [
     { name: 'John Doe', age: 30, email: 'john@example.com' },
     { name: 'Jane Smith', age: 25, email: 'jane@example.com' },

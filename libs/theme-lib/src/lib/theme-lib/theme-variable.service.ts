@@ -7,21 +7,20 @@ import { STANDARD_THEME_VARIABLES, getAllVariableNames } from './theme-config';
  * Uses standardized variable names for consistency
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ThemeVariableService {
-  
   /**
    * Apply standardized theme variables to an element with proper cascade handling
    */
   applyThemeVariables(
-    elementRef: ElementRef<HTMLElement>, 
+    elementRef: ElementRef<HTMLElement>,
     variables: Record<string, string>,
     scope: 'local' | 'inherited' = 'local'
   ) {
     const element = elementRef.nativeElement;
     const prefix = scope === 'local' ? '--local-' : '--';
-    
+
     Object.entries(variables).forEach(([key, value]) => {
       element.style.setProperty(`${prefix}${key}`, value);
     });
@@ -39,28 +38,36 @@ export class ThemeVariableService {
    * This replaces the manual host binding definitions in component decorators
    * Automatically normalizes legacy variable names to standardized names
    */
-  createStandardizedHostBindings(bindings: Record<string, string>): Record<string, string> {
+  createStandardizedHostBindings(
+    bindings: Record<string, string>
+  ): Record<string, string> {
     const hostBindings: Record<string, string> = {};
-    
+
     // Map of common variations to standard variable names
     const variableMap: Record<string, string> = {
-      'accent': this.removeVarPrefix(STANDARD_THEME_VARIABLES.ACCENT),
+      accent: this.removeVarPrefix(STANDARD_THEME_VARIABLES.ACCENT),
       'accent-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.ACCENT),
-      'complement': this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT), 
-      'complementary': this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT),
-      'complementary-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT),
-      'foreground': this.removeVarPrefix(STANDARD_THEME_VARIABLES.FOREGROUND),
-      'foreground-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.FOREGROUND),
-      'background': this.removeVarPrefix(STANDARD_THEME_VARIABLES.BACKGROUND),
-      'background-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.BACKGROUND),
-      'tertiary': this.removeVarPrefix(STANDARD_THEME_VARIABLES.TERTIARY),
+      complement: this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT),
+      complementary: this.removeVarPrefix(STANDARD_THEME_VARIABLES.COMPLEMENT),
+      'complementary-color': this.removeVarPrefix(
+        STANDARD_THEME_VARIABLES.COMPLEMENT
+      ),
+      foreground: this.removeVarPrefix(STANDARD_THEME_VARIABLES.FOREGROUND),
+      'foreground-color': this.removeVarPrefix(
+        STANDARD_THEME_VARIABLES.FOREGROUND
+      ),
+      background: this.removeVarPrefix(STANDARD_THEME_VARIABLES.BACKGROUND),
+      'background-color': this.removeVarPrefix(
+        STANDARD_THEME_VARIABLES.BACKGROUND
+      ),
+      tertiary: this.removeVarPrefix(STANDARD_THEME_VARIABLES.TERTIARY),
       'tertiary-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.TERTIARY),
-      'success': this.removeVarPrefix(STANDARD_THEME_VARIABLES.SUCCESS),
+      success: this.removeVarPrefix(STANDARD_THEME_VARIABLES.SUCCESS),
       'success-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.SUCCESS),
-      'danger': this.removeVarPrefix(STANDARD_THEME_VARIABLES.DANGER), 
+      danger: this.removeVarPrefix(STANDARD_THEME_VARIABLES.DANGER),
       'danger-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.DANGER),
-      'warning': this.removeVarPrefix(STANDARD_THEME_VARIABLES.WARNING),
-      'warning-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.WARNING)
+      warning: this.removeVarPrefix(STANDARD_THEME_VARIABLES.WARNING),
+      'warning-color': this.removeVarPrefix(STANDARD_THEME_VARIABLES.WARNING),
     };
 
     Object.entries(bindings).forEach(([property, value]) => {
@@ -86,17 +93,17 @@ export class ThemeVariableService {
     localOverrides: Record<string, string> = {}
   ): Record<string, string> {
     const cssVars: Record<string, string> = {};
-    
+
     // Set theme colors as fallbacks
     Object.entries(themeColors).forEach(([key, value]) => {
       cssVars[`--${key}`] = value;
     });
-    
+
     // Apply local overrides
     Object.entries(localOverrides).forEach(([key, value]) => {
       cssVars[`--local-${key}`] = value;
     });
-    
+
     return cssVars;
   }
 
@@ -106,7 +113,7 @@ export class ThemeVariableService {
   clearLocalVariables(elementRef: ElementRef<HTMLElement>) {
     const element = elementRef.nativeElement;
     const styles = element.style;
-    
+
     // Remove all --local-* properties
     for (let i = styles.length - 1; i >= 0; i--) {
       const property = styles.item(i);
@@ -121,6 +128,8 @@ export class ThemeVariableService {
    * Usage: `color: ${createFallbackChain(['--local-accent', '--accent', '#3f51b5'])}`
    */
   createFallbackChain(variables: string[]): string {
-    return variables.map(v => v.startsWith('--') ? `var(${v})` : v).join(', ');
+    return variables
+      .map((v) => (v.startsWith('--') ? `var(${v})` : v))
+      .join(', ');
   }
 }

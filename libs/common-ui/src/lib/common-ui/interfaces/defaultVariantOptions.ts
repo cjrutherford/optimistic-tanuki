@@ -48,21 +48,29 @@ export function getDefaultVariantOptions(
         transitionDuration: '0.3s',
         backgroundPattern: '',
         svgPattern: '',
-        insetShadow: `inset 2px 4px 6px rgba(${hexToRgb(colors.background)}, 0.1)`,
+        insetShadow: `inset 2px 4px 6px rgba(${hexToRgb(
+          colors.background
+        )}, 0.1)`,
         animation: 'rotate 4s linear infinite',
         glowFilter: 'url(#glow-0)',
         hoverBoxShadow: `2px 4px 8px 6px ${colors.accent}, 2px 4px 12px 8px ${colors.complementary}`,
         hoverGlowFilter: 'url(#glow-1)',
         hoverBorderColor: colors.complementary,
-        hoverBackgroundGradient: buildGradientFromOptions('conic', stops.reverse(), {
-          direction: 'to top',
-        }),
+        hoverBackgroundGradient: buildGradientFromOptions(
+          'conic',
+          stops.reverse(),
+          {
+            direction: 'to top',
+          }
+        ),
         hoverBorderGradient: buildGradientFromOptions('conic', stops.reverse()),
         hoverGradientColors: [colors.complementary],
         hoverTransitionDuration: '0.3s',
         hoverBackgroundPattern: '',
         hoverSvgPattern: '',
-        hoverInsetShadow: `inset 2px 4px 6px rgba(${hexToRgb(colors.foreground)}, 0.15)`,
+        hoverInsetShadow: `inset 2px 4px 6px rgba(${hexToRgb(
+          colors.foreground
+        )}, 0.15)`,
         hoverAnimation: 'rotate 2s linear infinite',
       };
     }
@@ -92,9 +100,13 @@ export function getDefaultVariantOptions(
         hoverGlowFilter: 'url(#turbulent-displace-hover)',
         hoverBorderColor: colors.success,
         hoverBackgroundGradient: '',
-        hoverBorderGradient: buildGradientFromOptions('linear', stops.reverse(), {
-          direction: 'to left',
-        }),
+        hoverBorderGradient: buildGradientFromOptions(
+          'linear',
+          stops.reverse(),
+          {
+            direction: 'to left',
+          }
+        ),
         hoverGradientColors: [colors.success],
         hoverTransitionDuration: '0.3s',
         hoverBackgroundPattern: '',
@@ -130,12 +142,20 @@ export function getDefaultVariantOptions(
         hoverBoxShadow: `0 0 8px 2px ${colors.success}`,
         hoverGlowFilter: '',
         hoverBorderColor: colors.accent,
-        hoverBackgroundGradient: buildGradientFromOptions('linear', stops.reverse(), {
-          direction: 'to left',
-        }),
-        hoverBorderGradient: buildGradientFromOptions('linear', stops.reverse(), {
-          direction: 'to left',
-        }),
+        hoverBackgroundGradient: buildGradientFromOptions(
+          'linear',
+          stops.reverse(),
+          {
+            direction: 'to left',
+          }
+        ),
+        hoverBorderGradient: buildGradientFromOptions(
+          'linear',
+          stops.reverse(),
+          {
+            direction: 'to left',
+          }
+        ),
         hoverGradientColors: [colors.accent],
         hoverTransitionDuration: '0.3s',
         hoverBackgroundPattern: '',
@@ -174,12 +194,20 @@ export function getDefaultVariantOptions(
         hoverBoxShadow: `0 0 8px 2px ${colors.foreground}`,
         hoverGlowFilter: '',
         hoverBorderColor: colors.complementary,
-        hoverBackgroundGradient: buildGradientFromOptions('linear', stops.reverse(), {
-          direction: 'to left',
-        }),
-        hoverBorderGradient: buildGradientFromOptions('linear', stops.reverse(), {
-          direction: 'to left',
-        }),
+        hoverBackgroundGradient: buildGradientFromOptions(
+          'linear',
+          stops.reverse(),
+          {
+            direction: 'to left',
+          }
+        ),
+        hoverBorderGradient: buildGradientFromOptions(
+          'linear',
+          stops.reverse(),
+          {
+            direction: 'to left',
+          }
+        ),
         hoverGradientColors: [colors.complementary],
         hoverTransitionDuration: '0.3s',
         hoverBackgroundPattern: '',
@@ -195,9 +223,11 @@ export function getDefaultVariantOptions(
         // ...generateColorShades(colors.background, 3).map((s) => s[1]),
         ...generateColorShades(colors.complementary, 3).map((s) => s[1]),
       ];
-      const borderStops = generateColorShades(colors.accent, 3).map((s) => s[1]);
+      const borderStops = generateColorShades(colors.accent, 3).map(
+        (s) => s[1]
+      );
       const stops = [
-        ...generateColorShades(colors.complementary, 2).map((s) => s[1]), 
+        ...generateColorShades(colors.complementary, 2).map((s) => s[1]),
         ...generateColorShades(colors.accent, 2).map((s) => s[1]),
       ];
       return {
@@ -225,12 +255,20 @@ export function getDefaultVariantOptions(
         hoverBoxShadow: `0 0 8px 2px ${colors.complementary}`,
         hoverGlowFilter: '',
         hoverBorderColor: colors.accent,
-        hoverBackgroundGradient: buildGradientFromOptions('linear', shadowStops.reverse(), {
-          direction: 'to left',
-        }),
-        hoverBorderGradient: buildGradientFromOptions('linear', shadowStops.reverse(), {
-          direction: 'to left',
-        }),
+        hoverBackgroundGradient: buildGradientFromOptions(
+          'linear',
+          shadowStops.reverse(),
+          {
+            direction: 'to left',
+          }
+        ),
+        hoverBorderGradient: buildGradientFromOptions(
+          'linear',
+          shadowStops.reverse(),
+          {
+            direction: 'to left',
+          }
+        ),
         hoverGradientColors: [colors.accent],
         hoverTransitionDuration: '0.3s',
         hoverBackgroundPattern: '',

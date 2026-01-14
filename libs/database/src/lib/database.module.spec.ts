@@ -42,7 +42,10 @@ describe('DatabaseModule', () => {
     expect(module.exports).toBeDefined();
     expect(module.exports?.length).toBe(1); // Expecting one connection export
 
-    const connectionProvider = module.providers?.[0] as Provider & { provide: string, useFactory: (...args: any[]) => any };
+    const connectionProvider = module.providers?.[0] as Provider & {
+      provide: string;
+      useFactory: (...args: any[]) => any;
+    };
     expect(connectionProvider.provide).toEqual('TEST_CONNECTION');
 
     // Test the factory function by calling it

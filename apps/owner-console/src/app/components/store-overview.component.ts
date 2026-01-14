@@ -1,6 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { StoreService, Donation, Subscription } from '../services/store.service';
+import {
+  StoreService,
+  Donation,
+  Subscription,
+} from '../services/store.service';
 
 @Component({
   selector: 'app-store-overview',
@@ -53,7 +57,7 @@ export class StoreOverviewComponent implements OnInit {
   }
 
   get activeSubscriptions(): number {
-    return this.subscriptions.filter(s => s.status === 'active').length;
+    return this.subscriptions.filter((s) => s.status === 'active').length;
   }
 
   cancelSubscription(subscription: Subscription): void {
@@ -77,12 +81,12 @@ export class StoreOverviewComponent implements OnInit {
 
   getStatusClass(status: string): string {
     const statusMap: { [key: string]: string } = {
-      'active': 'status-active',
-      'cancelled': 'status-cancelled',
-      'expired': 'status-expired',
-      'pending': 'status-pending',
-      'completed': 'status-completed',
-      'failed': 'status-failed',
+      active: 'status-active',
+      cancelled: 'status-cancelled',
+      expired: 'status-expired',
+      pending: 'status-pending',
+      completed: 'status-completed',
+      failed: 'status-failed',
     };
     return statusMap[status] || '';
   }

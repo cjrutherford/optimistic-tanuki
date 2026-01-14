@@ -14,24 +14,24 @@ This document outlines a plan for implementing reusable components for blogs and
 
 ## Deliverables Checklist
 
-- [x] **Hero Section Component**  
-    - Uses: `glass-container`, `heading`, `button` (from `common-ui`)
-- [x] **Blog Post Card Component**  
-    - Uses: `card`, `button`, `heading`, `button` (from `common-ui`)
-- [x] **Author Profile Component**  
-    - Uses: `card`, `profile-photo`, `heading` (from `common-ui`)
-- [ ] ~~**Comments Section Component**~~  
-    - ~~Uses: `comment-list`, `comment`, `compose` (from `social-ui`)~~
-- [x] **Newsletter Signup Component**  
-    - Uses: `modal`, `button`, `input` (from `common-ui`)
-- [x] **Contact Component**  
-    - Uses: `card`, `button`, `input` (from `common-ui`)
-- [x] **Featured Posts Carousel**  
-    - Uses: `carousel` (from `common-ui`), `post` (from `social-ui`)
-- [ ] **Tag/Category List**  
-    - Uses: `list` (from `common-ui`)
-- [ ] **Social Sharing Buttons**  
-    - Uses: `button` (from `common-ui`), icons (custom or from library)
+- [x] **Hero Section Component**
+  - Uses: `glass-container`, `heading`, `button` (from `common-ui`)
+- [x] **Blog Post Card Component**
+  - Uses: `card`, `button`, `heading`, `button` (from `common-ui`)
+- [x] **Author Profile Component**
+  - Uses: `card`, `profile-photo`, `heading` (from `common-ui`)
+- [ ] ~~**Comments Section Component**~~
+  - ~~Uses: `comment-list`, `comment`, `compose` (from `social-ui`)~~
+- [x] **Newsletter Signup Component**
+  - Uses: `modal`, `button`, `input` (from `common-ui`)
+- [x] **Contact Component**
+  - Uses: `card`, `button`, `input` (from `common-ui`)
+- [x] **Featured Posts Carousel**
+  - Uses: `carousel` (from `common-ui`), `post` (from `social-ui`)
+- [ ] **Tag/Category List**
+  - Uses: `list` (from `common-ui`)
+- [ ] **Social Sharing Buttons**
+  - Uses: `button` (from `common-ui`), icons (custom or from library)
 
 ---
 
@@ -44,14 +44,14 @@ This document outlines a plan for implementing reusable components for blogs and
 import { GlassContainerComponent, HeadingComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
-    selector: 'app-hero-section',
-    template: `
-        <glass-container>
-            <heading [level]="1">Welcome to Our Blog</heading>
-            <p>Insights, stories, and updates.</p>
-            <button variant="primary">Get Started</button>
-        </glass-container>
-    `
+  selector: 'app-hero-section',
+  template: `
+    <glass-container>
+      <heading [level]="1">Welcome to Our Blog</heading>
+      <p>Insights, stories, and updates.</p>
+      <button variant="primary">Get Started</button>
+    </glass-container>
+  `,
 })
 export class HeroSectionComponent {}
 ```
@@ -66,16 +66,16 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { PostComponent } from '@optimistic-tanuki/social-ui';
 
 @Component({
-    selector: 'app-blog-post-card',
-    template: `
-        <card>
-            <post [post]="postData"></post>
-            <button variant="secondary">Read More</button>
-        </card>
-    `
+  selector: 'app-blog-post-card',
+  template: `
+    <card>
+      <post [post]="postData"></post>
+      <button variant="secondary">Read More</button>
+    </card>
+  `,
 })
 export class BlogPostCardComponent {
-    @Input() postData: Post;
+  @Input() postData: Post;
 }
 ```
 
@@ -88,15 +88,17 @@ export class BlogPostCardComponent {
 import { CommentListComponent, ComposeComponent } from '@optimistic-tanuki/social-ui';
 
 @Component({
-    selector: 'app-comments-section',
-    template: `
-        <comment-list [comments]="comments"></comment-list>
-        <compose (submit)="addComment($event)"></compose>
-    `
+  selector: 'app-comments-section',
+  template: `
+    <comment-list [comments]="comments"></comment-list>
+    <compose (submit)="addComment($event)"></compose>
+  `,
 })
 export class CommentsSectionComponent {
-    @Input() comments: Comment[];
-    addComment(comment: Comment) { /* ... */ }
+  @Input() comments: Comment[];
+  addComment(comment: Comment) {
+    /* ... */
+  }
 }
 ```
 
@@ -109,21 +111,21 @@ export class CommentsSectionComponent {
 import { CardComponent, GradientBuilderComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
-    selector: 'app-author-profile',
-    template: `
-        <card>
-            <gradient-builder>
-                <div class="author-info">
-                    <avatar [src]="author.avatarUrl"></avatar>
-                    <h3>{{ author.name }}</h3>
-                    <p>{{ author.bio }}</p>
-                </div>
-            </gradient-builder>
-        </card>
-    `
+  selector: 'app-author-profile',
+  template: `
+    <card>
+      <gradient-builder>
+        <div class="author-info">
+          <avatar [src]="author.avatarUrl"></avatar>
+          <h3>{{ author.name }}</h3>
+          <p>{{ author.bio }}</p>
+        </div>
+      </gradient-builder>
+    </card>
+  `,
 })
 export class AuthorProfileComponent {
-    @Input() author: { name: string; bio: string; avatarUrl: string };
+  @Input() author: { name: string; bio: string; avatarUrl: string };
 }
 ```
 
@@ -136,20 +138,22 @@ export class AuthorProfileComponent {
 import { ModalComponent, ButtonComponent, InputComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
-    selector: 'app-newsletter-signup',
-    template: `
-        <modal [open]="isOpen" (close)="isOpen = false">
-            <h2>Subscribe to our Newsletter</h2>
-            <input placeholder="Your email" [(ngModel)]="email" />
-            <button variant="primary" (click)="subscribe()">Sign Up</button>
-        </modal>
-        <button variant="secondary" (click)="isOpen = true">Subscribe</button>
-    `
+  selector: 'app-newsletter-signup',
+  template: `
+    <modal [open]="isOpen" (close)="isOpen = false">
+      <h2>Subscribe to our Newsletter</h2>
+      <input placeholder="Your email" [(ngModel)]="email" />
+      <button variant="primary" (click)="subscribe()">Sign Up</button>
+    </modal>
+    <button variant="secondary" (click)="isOpen = true">Subscribe</button>
+  `,
 })
 export class NewsletterSignupComponent {
-    isOpen = false;
-    email = '';
-    subscribe() { /* ... */ }
+  isOpen = false;
+  email = '';
+  subscribe() {
+    /* ... */
+  }
 }
 ```
 
@@ -163,17 +167,17 @@ import { CarouselComponent } from '@optimistic-tanuki/common-ui';
 import { PostComponent } from '@optimistic-tanuki/social-ui';
 
 @Component({
-    selector: 'app-featured-posts-carousel',
-    template: `
-        <carousel>
-            <ng-container *ngFor="let post of featuredPosts">
-                <post [post]="post"></post>
-            </ng-container>
-        </carousel>
-    `
+  selector: 'app-featured-posts-carousel',
+  template: `
+    <carousel>
+      <ng-container *ngFor="let post of featuredPosts">
+        <post [post]="post"></post>
+      </ng-container>
+    </carousel>
+  `,
 })
 export class FeaturedPostsCarouselComponent {
-    @Input() featuredPosts: Post[];
+  @Input() featuredPosts: Post[];
 }
 ```
 
@@ -186,15 +190,15 @@ export class FeaturedPostsCarouselComponent {
 import { ListComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
-    selector: 'app-tag-category-list',
-    template: `
-        <list>
-            <li *ngFor="let tag of tags">{{ tag }}</li>
-        </list>
-    `
+  selector: 'app-tag-category-list',
+  template: `
+    <list>
+      <li *ngFor="let tag of tags">{{ tag }}</li>
+    </list>
+  `,
 })
 export class TagCategoryListComponent {
-    @Input() tags: string[];
+  @Input() tags: string[];
 }
 ```
 
@@ -207,18 +211,18 @@ export class TagCategoryListComponent {
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
-    selector: 'app-social-sharing-buttons',
-    template: `
-        <div class="social-buttons">
-            <button *ngFor="let platform of platforms" (click)="share(platform)">
-                <i [class]="platform.icon"></i> Share on {{ platform.name }}
-            </button>
-        </div>
-    `
+  selector: 'app-social-sharing-buttons',
+  template: `
+    <div class="social-buttons">
+      <button *ngFor="let platform of platforms" (click)="share(platform)"><i [class]="platform.icon"></i> Share on {{ platform.name }}</button>
+    </div>
+  `,
 })
 export class SocialSharingButtonsComponent {
-    @Input() platforms: { name: string; icon: string }[];
-    share(platform: any) { /* ... */ }
+  @Input() platforms: { name: string; icon: string }[];
+  share(platform: any) {
+    /* ... */
+  }
 }
 ```
 
@@ -236,4 +240,3 @@ export class SocialSharingButtonsComponent {
 
 - [`common-ui` library](../libs/common-ui/README.md)
 - [`social-ui` library](../libs/social-ui/README.md)
-

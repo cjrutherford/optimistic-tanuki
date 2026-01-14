@@ -16,24 +16,33 @@ The project uses Nx for workspace management and Docker Compose for running appl
 ### Running Applications
 
 #### Standard Stack
+
 To start the main application stack:
+
 ```bash
 docker-compose up -d
 ```
+
 This includes services like `client-interface`, `gateway`, `profile`, and more.
 
 #### Forge of Will Stack
+
 To start the "Forge of Will" stack:
+
 ```bash
 docker-compose -f fow.docker-compose.yaml up -d
 ```
+
 This includes services like `forgeofwill` and `project-planning`.
 
 ### Running Unit Tests
+
 Each library and application has unit tests managed by Nx. For example:
+
 ```bash
 nx test common-ui
 ```
+
 Replace `common-ui` with the desired library or application name.
 
 ## Project-Specific Conventions
@@ -64,11 +73,13 @@ Replace `common-ui` with the desired library or application name.
 Each stack will have it's own dev docker compose file to run the services in a development mode. This will typically include volume mounts to allow for live reloading of code changes. this is currently a work in progress and doesn't actually reload code changes yet. it requires a rebuild and restart.
 
 To start the development stack for the main application:
+
 ```bash
 docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
 ```
 
 To start the development stack for the Forge of Will application:
+
 ```bash
 docker-compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml up -d
 ```

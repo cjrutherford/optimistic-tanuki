@@ -27,7 +27,9 @@ describe('bootstrap', () => {
     };
 
     jest.spyOn(NestFactory, 'create').mockResolvedValue(appMock);
-    createMicroserviceSpy = jest.spyOn(NestFactory, 'createMicroservice').mockResolvedValue(appMock);
+    createMicroserviceSpy = jest
+      .spyOn(NestFactory, 'createMicroservice')
+      .mockResolvedValue(appMock);
     listenSpy = jest.spyOn(appMock, 'listen');
     jest.spyOn(Logger, 'log').mockImplementation((...args) => {
       console.log(...args); // Mock Logger.log to console.log for visibility in tests

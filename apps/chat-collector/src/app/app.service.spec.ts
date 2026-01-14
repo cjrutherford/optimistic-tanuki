@@ -37,15 +37,29 @@ describe('AppService', () => {
     }).compile();
 
     service = module.get<AppService>(AppService);
-    messageRepository = module.get<Repository<Message>>(getRepositoryToken(Message));
-    conversationRepository = module.get<Repository<Conversation>>(getRepositoryToken(Conversation));
+    messageRepository = module.get<Repository<Message>>(
+      getRepositoryToken(Message)
+    );
+    conversationRepository = module.get<Repository<Conversation>>(
+      getRepositoryToken(Conversation)
+    );
     logger = module.get<Logger>(Logger);
 
     // Mock repository methods
-    jest.spyOn(messageRepository, 'create').mockImplementation((entity) => entity as Message);
-    jest.spyOn(messageRepository, 'save').mockImplementation(async (entity) => entity as Message);
-    jest.spyOn(conversationRepository, 'create').mockImplementation((entity) => Object.assign(new Conversation(), entity));
-    jest.spyOn(conversationRepository, 'save').mockImplementation(async (entity) => entity as Conversation);
+    jest
+      .spyOn(messageRepository, 'create')
+      .mockImplementation((entity) => entity as Message);
+    jest
+      .spyOn(messageRepository, 'save')
+      .mockImplementation(async (entity) => entity as Message);
+    jest
+      .spyOn(conversationRepository, 'create')
+      .mockImplementation((entity) =>
+        Object.assign(new Conversation(), entity)
+      );
+    jest
+      .spyOn(conversationRepository, 'save')
+      .mockImplementation(async (entity) => entity as Conversation);
   });
 
   describe('postMessage', () => {
@@ -66,21 +80,25 @@ describe('AppService', () => {
 
       const result = await service.postMessage(mockChatMessage);
 
-      expect(messageRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'test-message-id',
-        senderId: 'user1',
-        recipients: ['user2'],
-        content: 'Hello',
-        type: MessageType.CHAT,
-      }));
+      expect(messageRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'test-message-id',
+          senderId: 'user1',
+          recipients: ['user2'],
+          content: 'Hello',
+          type: MessageType.CHAT,
+        })
+      );
       expect(messageRepository.save).toHaveBeenCalled();
-      expect(conversationRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'test-conversation-id',
-        title: 'User Two, User Two',
-        participants: ['user1', 'user2'],
-        messages: expect.any(Array),
-        updatedAt: expect.any(Date),
-      }));
+      expect(conversationRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'test-conversation-id',
+          title: 'User Two, User Two',
+          participants: ['user1', 'user2'],
+          messages: expect.any(Array),
+          updatedAt: expect.any(Date),
+        })
+      );
       expect(conversationRepository.save).toHaveBeenCalled();
       expect(result).toBeInstanceOf(Conversation);
     });
@@ -89,19 +107,26 @@ describe('AppService', () => {
       const existingConversation = new Conversation();
       existingConversation.id = 'existing-conv-id';
       existingConversation.messages = [];
-      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(existingConversation);
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(existingConversation);
 
-      const chatMessageWithConvId = { ...mockChatMessage, conversationId: 'existing-conv-id' };
+      const chatMessageWithConvId = {
+        ...mockChatMessage,
+        conversationId: 'existing-conv-id',
+      };
       const result = await service.postMessage(chatMessageWithConvId);
 
       expect(messageRepository.create).toHaveBeenCalled();
       expect(messageRepository.save).toHaveBeenCalled();
       expect(conversationRepository.create).not.toHaveBeenCalled();
-      expect(conversationRepository.save).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'existing-conv-id',
-        messages: expect.any(Array),
-        updatedAt: expect.any(Date),
-      }));
+      expect(conversationRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'existing-conv-id',
+          messages: expect.any(Array),
+          updatedAt: expect.any(Date),
+        })
+      );
       expect(result).toBeInstanceOf(Conversation);
     });
   });
@@ -119,33 +144,51 @@ describe('AppService', () => {
           ],
         },
       ];
-      jest.spyOn(conversationRepository, 'find').mockResolvedValue(mockConversations as any);
+      jest
+        .spyOn(conversationRepository, 'find')
+        .mockResolvedValue(mockConversations as any);
 
       const result = await service.getConversations(profileId);
 
-      expect(logger.log).toHaveBeenCalledWith(`Retrieving conversations for profile ID: ${profileId}`);
-      expect(conversationRepository.find).toHaveBeenCalledWith(expect.objectContaining({
-        where: { participants: expect.anything() },
-        relations: ['messages'],
-        order: { createdAt: 'DESC' },
-      }));
-      expect(result[0].messages[0].createdAt.getTime()).toBe(new Date('2023-01-01').getTime()); // Check sorting
+      expect(logger.log).toHaveBeenCalledWith(
+        `Retrieving conversations for profile ID: ${profileId}`
+      );
+      expect(conversationRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { participants: expect.anything() },
+          relations: ['messages'],
+          order: { createdAt: 'DESC' },
+        })
+      );
+      expect(result[0].messages[0].createdAt.getTime()).toBe(
+        new Date('2023-01-01').getTime()
+      ); // Check sorting
     });
   });
 
   describe('getConversation', () => {
     it('should return a single conversation by ID', async () => {
       const conversationId = 'conv1';
-      const mockConversation = { id: conversationId, participants: [], messages: [] };
-      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(mockConversation as any);
+      const mockConversation = {
+        id: conversationId,
+        participants: [],
+        messages: [],
+      };
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(mockConversation as any);
 
       const result = await service.getConversation(conversationId);
 
-      expect(logger.log).toHaveBeenCalledWith(`Retrieving conversation for ID: ${conversationId}`);
-      expect(conversationRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
-        where: { id: conversationId },
-        relations: ['messages'],
-      }));
+      expect(logger.log).toHaveBeenCalledWith(
+        `Retrieving conversation for ID: ${conversationId}`
+      );
+      expect(conversationRepository.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: conversationId },
+          relations: ['messages'],
+        })
+      );
       expect(result).toEqual(mockConversation);
     });
   });

@@ -23,7 +23,7 @@ export const hexToRgb = (hex: string): string => {
   }
 
   return `${r}, ${g}, ${b}`;
-}
+};
 
 @Component({
   selector: 'otui-glass-container',
@@ -40,8 +40,7 @@ export const hexToRgb = (hex: string): string => {
     '[style.--border]': 'borderColor',
     '[style.--shadow-1]': 'shadow1',
     '[style.--shadow-2]': 'shadow2',
-
-  }
+  },
 })
 export class GlassContainerComponent extends Themeable {
   radius = '10px';
@@ -50,7 +49,11 @@ export class GlassContainerComponent extends Themeable {
   shadow2 = 'rgba(0, 0, 0, 0.1)';
 
   override applyTheme(colors: ThemeColors): void {
-    this.background = `linear-gradient(to bottom, rgba(${hexToRgb(colors.accent)}, 0.15), rgba(${hexToRgb(colors.complementary)}, 0.06)), rgba(${hexToRgb(colors.background)}, 0.5)`;
+    this.background = `linear-gradient(to bottom, rgba(${hexToRgb(
+      colors.accent
+    )}, 0.15), rgba(${hexToRgb(colors.complementary)}, 0.06)), rgba(${hexToRgb(
+      colors.background
+    )}, 0.5)`;
     this.foreground = hexToRgb(colors.foreground);
     this.accent = hexToRgb(colors.accent);
     this.complement = hexToRgb(colors.complementary);

@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
-import { AsymmetricService, SaltedHashService } from '@optimistic-tanuki/encryption';
+import {
+  AsymmetricService,
+  SaltedHashService,
+} from '@optimistic-tanuki/encryption';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import * as jwt from 'jsonwebtoken';
 import { authenticator } from 'otplib';
@@ -32,12 +35,12 @@ import { JwtService } from '@nestjs/jwt';
   controllers: [AppController],
   providers: [
     {
-      provide: JwtService, 
+      provide: JwtService,
       useFactory: (config: ConfigService) => {
         const secret = config.get('auth.jwt_secret') || 'default_jwt_secret';
         return new JwtService({ secret });
-      }, 
-      inject: [ConfigService]
+      },
+      inject: [ConfigService],
     },
     AppService,
     SaltedHashService,
@@ -49,22 +52,25 @@ import { JwtService } from '@nestjs/jwt';
     },
     {
       provide: 'JWT_SECRET',
-      useFactory: (config: ConfigService) => config.get('auth')?.jwt_secret || 'default_jwt_secret',
+      useFactory: (config: ConfigService) =>
+        config.get('auth')?.jwt_secret || 'default_jwt_secret',
       inject: [ConfigService],
     },
     {
       provide: getRepositoryToken(UserEntity),
       useFactory: (ds: DataSource) => ds.getRepository(UserEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
-    }, {
+    },
+    {
       provide: getRepositoryToken(TokenEntity),
       useFactory: (ds: DataSource) => ds.getRepository(TokenEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
-    }, {
+    },
+    {
       provide: getRepositoryToken(KeyDatum),
       useFactory: (ds: DataSource) => ds.getRepository(KeyDatum),
       inject: ['AUTHENTICATION_CONNECTION'],
-    }
+    },
   ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -67,7 +67,7 @@ describe('AppController', () => {
     });
   });
 
-    describe('readAsset', () => {
+  describe('readAsset', () => {
     it('should call appService.readAsset with the correct data', async () => {
       const handle: AssetHandle = { id: '1' } as any;
       const result = 'base64encodedstring';

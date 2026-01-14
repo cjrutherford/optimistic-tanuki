@@ -17,7 +17,7 @@ export const STANDARD_THEME_VARIABLES = {
   SUCCESS: '--success',
   DANGER: '--danger',
   WARNING: '--warning',
-  
+
   // Design tokens
   SPACING_PREFIX: '--spacing-',
   SHADOW_PREFIX: '--shadow-',
@@ -47,14 +47,16 @@ export const LEGACY_VARIABLE_MAPPINGS: Record<string, string> = {
  */
 export function getAllVariableNames(standardVariable: string): string[] {
   const allNames = [standardVariable];
-  
+
   // Add legacy names that map to this standard variable
-  for (const [legacyName, standardName] of Object.entries(LEGACY_VARIABLE_MAPPINGS)) {
+  for (const [legacyName, standardName] of Object.entries(
+    LEGACY_VARIABLE_MAPPINGS
+  )) {
     if (standardName === standardVariable) {
       allNames.push(legacyName);
     }
   }
-  
+
   return allNames;
 }
 
@@ -79,11 +81,14 @@ export const DEFAULT_THEME_CONFIG = {
 /**
  * Type-safe way to access theme variable names
  */
-export type StandardThemeVariable = typeof STANDARD_THEME_VARIABLES[keyof typeof STANDARD_THEME_VARIABLES];
+export type StandardThemeVariable =
+  (typeof STANDARD_THEME_VARIABLES)[keyof typeof STANDARD_THEME_VARIABLES];
 
 /**
  * Helper to ensure type safety when working with CSS variables
  */
-export function getStandardVariable(key: keyof typeof STANDARD_THEME_VARIABLES): string {
+export function getStandardVariable(
+  key: keyof typeof STANDARD_THEME_VARIABLES
+): string {
   return STANDARD_THEME_VARIABLES[key];
 }

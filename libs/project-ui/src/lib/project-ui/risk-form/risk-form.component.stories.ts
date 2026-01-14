@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/angular';
 import { RiskFormComponent } from './risk-form.component';
 import { within, expect } from 'storybook/internal/test';
 
-
 const meta: Meta<RiskFormComponent> = {
   component: RiskFormComponent,
   title: 'RiskFormComponent',

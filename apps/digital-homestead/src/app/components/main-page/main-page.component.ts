@@ -19,8 +19,8 @@ import { ResourcesComponent } from '../resources/resources.component';
     ResourcesComponent,
     BlogSectionComponent,
     ContactComponent,
-    FooterComponent
-],
+    FooterComponent,
+  ],
   templateUrl: './main-page.component.html',
   styleUrl: './main-page.component.scss',
 })

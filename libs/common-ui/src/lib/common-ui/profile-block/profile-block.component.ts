@@ -12,5 +12,5 @@ export class ProfileBlockComponent {
   @Input() profileName = '';
   @Input() profileImage = '';
   @Input() bio = '';
-  @Input() actions: { label: string, callback: () => void }[] = [];
+  @Input() actions: { label: string; callback: () => void }[] = [];
 }

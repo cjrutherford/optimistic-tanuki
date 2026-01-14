@@ -12,7 +12,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Single worker to ensure sequential execution
   reporter: [['html', { outputFolder: './playwright-report' }]],
-  
+
   use: {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',

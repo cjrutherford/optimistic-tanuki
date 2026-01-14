@@ -104,9 +104,9 @@ async function main() {
           : null;
 
         let existing = await permissionRepo.findOne({
-          where: { 
+          where: {
             name: permissionData.name,
-            appScopeId: permissionAppScope ? permissionAppScope.id : IsNull()
+            appScopeId: permissionAppScope ? permissionAppScope.id : IsNull(),
           },
         });
 
@@ -215,7 +215,9 @@ async function main() {
           const nameMatches = p.name === rpData.permission;
           // Check both p.appScope.name and permissionAppScope match (p.appScope might be joined or just an object we set)
           const pScopeName = p.appScope?.name;
-          const scopeMatches = pScopeName === rpData.permissionAppScope || (!pScopeName && !rpData.permissionAppScope);
+          const scopeMatches =
+            pScopeName === rpData.permissionAppScope ||
+            (!pScopeName && !rpData.permissionAppScope);
           return nameMatches && scopeMatches;
         });
 
@@ -253,7 +255,9 @@ async function main() {
         if (alreadyHasPermission) {
           // Only log for important roles to reduce noise, or if it was just added
           if (rpData.role === 'client_interface_user') {
-              console.log(`Permission "${rpData.permission}" already associated with role "${rpData.role}", skipping...`);
+            console.log(
+              `Permission "${rpData.permission}" already associated with role "${rpData.role}", skipping...`
+            );
           }
           continue;
         }

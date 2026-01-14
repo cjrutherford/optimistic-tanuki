@@ -36,7 +36,7 @@ describe('ToolbarComponent', () => {
     component.ngOnDestroy();
     fixture.destroy();
     jest.resetAllMocks();
-  })
+  });
 
   it('should create', () => {
     expect(component).toBeTruthy();

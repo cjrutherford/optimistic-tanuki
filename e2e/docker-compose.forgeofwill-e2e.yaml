@@ -164,4 +164,3 @@ services:
         condition: service_started
       chat-collector:
         condition: service_started
-

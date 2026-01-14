@@ -19,7 +19,7 @@ import { ButtonComponent } from './button/button.component';
     '[style.--border-color]': 'borderColor',
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
-  }
+  },
 })
 export class PaginationComponent extends Themeable implements OnInit {
   override applyTheme(colors: ThemeColors): void {
@@ -28,10 +28,10 @@ export class PaginationComponent extends Themeable implements OnInit {
     this.accent = colors.accent;
     this.complement = colors.complementary;
     if (this.theme === 'dark') {
-      this.borderGradient = colors.complementaryGradients['dark']
+      this.borderGradient = colors.complementaryGradients['dark'];
       this.borderColor = colors.complementaryShades[6][1];
     } else {
-      this.borderGradient = colors.accentGradients['light']
+      this.borderGradient = colors.accentGradients['light'];
       this.borderColor = colors.complementaryShades[2][1];
     }
     this.transitionDuration = '0.3s';
@@ -47,11 +47,10 @@ export class PaginationComponent extends Themeable implements OnInit {
   readonly lastPage = signal<number>(this.pages.length);
 
   override ngOnInit(): void {
-    this.updatePageList();  
+    this.updatePageList();
   }
 
   updatePageList(): void {
-
     const half = Math.floor(this.maxVisiblePages / 2);
     let start = Math.max(1, this.currentPage - half);
     let end = Math.min(this.totalPages, this.currentPage + half);
@@ -68,10 +67,10 @@ export class PaginationComponent extends Themeable implements OnInit {
     const finalPages: number[] = [];
     let actualStart = start;
 
-    if(this.showStartEllipsis()) {
+    if (this.showStartEllipsis()) {
       actualStart++;
     }
-    if(!this.showEndEllipsis()) {
+    if (!this.showEndEllipsis()) {
       actualStart--;
     }
 

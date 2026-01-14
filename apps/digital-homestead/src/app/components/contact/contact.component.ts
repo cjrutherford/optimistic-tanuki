@@ -1,18 +1,25 @@
 import { Component } from '@angular/core';
 
-import { ButtonComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ButtonComponent,
+  HeadingComponent,
+} from '@optimistic-tanuki/common-ui';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { ContactService } from '../../contact.service';
 
 @Component({
   selector: 'dh-contact',
-  imports: [HeadingComponent, ButtonComponent, ReactiveFormsModule, ContactFormComponent],
+  imports: [
+    HeadingComponent,
+    ButtonComponent,
+    ReactiveFormsModule,
+    ContactFormComponent,
+  ],
   templateUrl: './contact.component.html',
   styleUrl: './contact.component.scss',
 })
 export class ContactComponent {
-
   constructor(private readonly contactService: ContactService) {}
 
   subjects = [
@@ -29,7 +36,7 @@ export class ContactComponent {
       },
       error: (error) => {
         console.error('Error submitting contact form', error);
-      }
+      },
     });
   }
 }

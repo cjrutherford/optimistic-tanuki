@@ -69,8 +69,12 @@ export class SocketChatService {
     @Inject(SOCKET_HOST) private readonly hostUrl = 'http://localhost:3000',
     @Inject(SOCKET_NAMESPACE) private readonly namespace = 'chat',
     @Inject(SOCKET_IO_INSTANCE) private readonly ioInstance: typeof io,
-    @Optional() @Inject(SOCKET_AUTH_TOKEN_PROVIDER) private readonly authTokenProvider?: () => string | null,
-    @Optional() @Inject(SOCKET_AUTH_ERROR_HANDLER) private readonly authErrorHandler?: () => void
+    @Optional()
+    @Inject(SOCKET_AUTH_TOKEN_PROVIDER)
+    private readonly authTokenProvider?: () => string | null,
+    @Optional()
+    @Inject(SOCKET_AUTH_ERROR_HANDLER)
+    private readonly authErrorHandler?: () => void
   ) {
     const token = this.authTokenProvider?.();
     this.socket = this.ioInstance(`${this.hostUrl}/${this.namespace}`, {
@@ -86,12 +90,14 @@ export class SocketChatService {
     });
     this.socket.on('connect_error', (error) => {
       console.error(`Socket connection error: ${error.message}`);
-      
+
       // Check if this is an authentication error
-      if (error.message.includes('unauthorized') || 
-          error.message.includes('jwt') || 
-          error.message.includes('token') ||
-          error.message.includes('Unauthorized')) {
+      if (
+        error.message.includes('unauthorized') ||
+        error.message.includes('jwt') ||
+        error.message.includes('token') ||
+        error.message.includes('Unauthorized')
+      ) {
         console.error('Socket authentication failed - redirecting to login');
         if (this.authErrorHandler) {
           this.authErrorHandler();
@@ -112,13 +118,15 @@ export class SocketChatService {
     });
     this.socket.on('error', (error) => {
       console.error(`Socket error: ${error}`);
-      
+
       // Handle authorization errors from the server
       if (typeof error === 'object' && error !== null) {
         const errorObj = error as any;
-        if (errorObj.type === 'UnauthorizedException' || 
-            errorObj.message?.includes('Unauthorized') ||
-            errorObj.statusCode === 401) {
+        if (
+          errorObj.type === 'UnauthorizedException' ||
+          errorObj.message?.includes('Unauthorized') ||
+          errorObj.statusCode === 401
+        ) {
           console.error('Socket authorization error - redirecting to login');
           if (this.authErrorHandler) {
             this.authErrorHandler();

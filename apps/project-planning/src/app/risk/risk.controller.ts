@@ -1,7 +1,11 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { RiskService } from './risk.service';
-import { CreateRiskDto, QueryRiskDto, UpdateRiskDto } from '@optimistic-tanuki/models';
+import {
+  CreateRiskDto,
+  QueryRiskDto,
+  UpdateRiskDto,
+} from '@optimistic-tanuki/models';
 import { RiskCommands } from '@optimistic-tanuki/constants';
 
 @Controller()

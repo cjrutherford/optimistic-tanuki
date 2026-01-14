@@ -23,15 +23,15 @@ export function filterContactsByConversation(
   messages: ChatMessage[]
 ): ChatContact[] {
   const participantIds = new Set<string>();
-  messages.forEach(msg => {
+  messages.forEach((msg) => {
     participantIds.add(msg.senderId);
     if (Array.isArray(msg.recipientId)) {
-      msg.recipientId.forEach(id => participantIds.add(id));
+      msg.recipientId.forEach((id) => participantIds.add(id));
     } else {
       participantIds.add(msg.recipientId);
     }
   });
-  return contacts.filter(contact => participantIds.has(contact.id));
+  return contacts.filter((contact) => participantIds.has(contact.id));
 }
 
 /**
@@ -43,10 +43,16 @@ export function constructConversation(
 ): ChatContact[] {
   const contacts = profiles.map(profileDtoToChatContact);
   const filteredContacts = filterContactsByConversation(contacts, messages);
-  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  const lastMessage =
+    messages.length > 0 ? messages[messages.length - 1] : null;
   // Optionally, update lastMessage and lastMessageTime for each contact
-  filteredContacts.forEach(contact => {
-    if (lastMessage && (lastMessage.senderId === contact.id || (Array.isArray(lastMessage.recipientId) && lastMessage.recipientId.includes(contact.id)))) {
+  filteredContacts.forEach((contact) => {
+    if (
+      lastMessage &&
+      (lastMessage.senderId === contact.id ||
+        (Array.isArray(lastMessage.recipientId) &&
+          lastMessage.recipientId.includes(contact.id)))
+    ) {
       contact.lastMessage = lastMessage.content;
       contact.lastMessageTime = lastMessage.timestamp?.toString() ?? '';
     }

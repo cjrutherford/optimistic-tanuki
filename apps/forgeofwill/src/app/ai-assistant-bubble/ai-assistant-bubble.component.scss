@@ -5,7 +5,11 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent, #667eea) 0%, var(--complement, #764ba2) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent, #667eea) 0%,
+    var(--complement, #764ba2) 100%
+  );
   border: none;
   cursor: pointer;
   display: flex;

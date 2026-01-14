@@ -1,12 +1,24 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButtonComponent, CardComponent, TileComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ButtonComponent,
+  CardComponent,
+  TileComponent,
+  HeadingComponent,
+} from '@optimistic-tanuki/common-ui';
 import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
 
 @Component({
   selector: 'otui-app-bar',
   standalone: true,
-  imports: [CommonModule, ButtonComponent, CardComponent, TileComponent, HeadingComponent, ThemeToggleComponent],
+  imports: [
+    CommonModule,
+    ButtonComponent,
+    CardComponent,
+    TileComponent,
+    HeadingComponent,
+    ThemeToggleComponent,
+  ],
   templateUrl: './app-bar.component.html',
   styleUrls: ['./app-bar.component.scss'],
 })

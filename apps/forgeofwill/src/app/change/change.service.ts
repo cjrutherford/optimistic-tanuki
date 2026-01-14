@@ -1,14 +1,18 @@
-import { Change, CreateChange, QueryChange } from '@optimistic-tanuki/ui-models';
+import {
+  Change,
+  CreateChange,
+  QueryChange,
+} from '@optimistic-tanuki/ui-models';
 
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ChangeService {
   private baseUrl = '/api/project-planning/changes';
-  constructor(private readonly http: HttpClient) { }
+  constructor(private readonly http: HttpClient) {}
 
   createChange(data: CreateChange) {
     return this.http.post<Change>(`${this.baseUrl}`, data);

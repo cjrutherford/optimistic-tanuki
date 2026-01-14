@@ -18,16 +18,16 @@ The theme system has been significantly improved with:
 
 The theme system now uses standardized CSS variable names:
 
-| Old Variable Name          | New Standard Name  | Status     |
-|---------------------------|--------------------|------------|
-| `--accent-color`          | `--accent`         | Deprecated |
-| `--complementary-color`   | `--complement`     | Deprecated |
-| `--background-color`      | `--background`     | Deprecated |
-| `--foreground-color`      | `--foreground`     | Deprecated |
-| `--tertiary-color`        | `--tertiary`       | Deprecated |
-| `--success-color`         | `--success`        | Deprecated |
-| `--danger-color`          | `--danger`         | Deprecated |
-| `--warning-color`         | `--warning`        | Deprecated |
+| Old Variable Name       | New Standard Name | Status     |
+| ----------------------- | ----------------- | ---------- |
+| `--accent-color`        | `--accent`        | Deprecated |
+| `--complementary-color` | `--complement`    | Deprecated |
+| `--background-color`    | `--background`    | Deprecated |
+| `--foreground-color`    | `--foreground`    | Deprecated |
+| `--tertiary-color`      | `--tertiary`      | Deprecated |
+| `--success-color`       | `--success`       | Deprecated |
+| `--danger-color`        | `--danger`        | Deprecated |
+| `--warning-color`       | `--warning`       | Deprecated |
 
 **Note**: Legacy names still work but will be removed in a future version.
 
@@ -36,11 +36,13 @@ The theme system now uses standardized CSS variable names:
 #### Theme Interfaces
 
 **Before:**
+
 ```typescript
 import { ThemeColors } from '@optimistic-tanuki/common-ui';
 ```
 
 **After (Recommended):**
+
 ```typescript
 import { ThemeColors } from '@optimistic-tanuki/theme-lib';
 ```
@@ -57,26 +59,26 @@ import {
   ThemeService,
   ThemeColors,
   ColorPalette,
-  
+
   // Configuration and constants
   STANDARD_THEME_VARIABLES,
   LEGACY_VARIABLE_MAPPINGS,
   DEFAULT_THEME_CONFIG,
   THEME_STORAGE_CONFIG,
-  
+
   // Helper functions
   getAllVariableNames,
   getStandardVariable,
-  
+
   // Directives and services
   ThemeHostBindingsDirective,
   ThemeVariableService,
-  
+
   // Palettes and tokens
   PREDEFINED_PALETTES,
   getPaletteByName,
   DEFAULT_DESIGN_TOKENS,
-  generateDesignTokenCSSVariables
+  generateDesignTokenCSSVariables,
 } from '@optimistic-tanuki/theme-lib';
 ```
 
@@ -87,6 +89,7 @@ import {
 Update your component stylesheets to use the new standardized names:
 
 **Before:**
+
 ```scss
 .my-component {
   background-color: var(--background-color);
@@ -100,6 +103,7 @@ Update your component stylesheets to use the new standardized names:
 ```
 
 **After:**
+
 ```scss
 .my-component {
   background-color: var(--background);
@@ -117,6 +121,7 @@ Update your component stylesheets to use the new standardized names:
 If you're using host bindings in your components, update to standardized names:
 
 **Before:**
+
 ```typescript
 @Component({
   // ...
@@ -128,6 +133,7 @@ If you're using host bindings in your components, update to standardized names:
 ```
 
 **After:**
+
 ```typescript
 @Component({
   // ...
@@ -139,6 +145,7 @@ If you're using host bindings in your components, update to standardized names:
 ```
 
 **Better (Using the directive):**
+
 ```typescript
 import { ThemeHostBindingsDirective } from '@optimistic-tanuki/theme-lib';
 
@@ -158,11 +165,13 @@ import { ThemeHostBindingsDirective } from '@optimistic-tanuki/theme-lib';
 Update your imports to use `theme-lib` directly:
 
 **Before:**
+
 ```typescript
 import { ThemeColors, ThemeGradients } from '@optimistic-tanuki/common-ui';
 ```
 
 **After:**
+
 ```typescript
 import { ThemeColors, ThemeGradients } from '@optimistic-tanuki/theme-lib';
 ```
@@ -172,26 +181,23 @@ import { ThemeColors, ThemeGradients } from '@optimistic-tanuki/theme-lib';
 When working with theme variables programmatically, use the standardized configuration:
 
 **Before:**
+
 ```typescript
 document.documentElement.style.setProperty('--accent-color', '#ff0000');
 document.documentElement.style.setProperty('--complementary-color', '#00ff00');
 ```
 
 **After:**
+
 ```typescript
 import { STANDARD_THEME_VARIABLES } from '@optimistic-tanuki/theme-lib';
 
-document.documentElement.style.setProperty(
-  STANDARD_THEME_VARIABLES.ACCENT, 
-  '#ff0000'
-);
-document.documentElement.style.setProperty(
-  STANDARD_THEME_VARIABLES.COMPLEMENT, 
-  '#00ff00'
-);
+document.documentElement.style.setProperty(STANDARD_THEME_VARIABLES.ACCENT, '#ff0000');
+document.documentElement.style.setProperty(STANDARD_THEME_VARIABLES.COMPLEMENT, '#00ff00');
 ```
 
 **Better (Using ThemeService):**
+
 ```typescript
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
@@ -245,7 +251,7 @@ ngOnInit() {
     { accent: '#ff0000', complement: '#00ff00' },
     'local'
   );
-  
+
   // Create fallback chains
   const colorValue = this.themeVarService.createFallbackChain([
     '--local-accent',
@@ -258,11 +264,7 @@ ngOnInit() {
 ### Centralized Configuration Access
 
 ```typescript
-import {
-  STANDARD_THEME_VARIABLES,
-  DEFAULT_THEME_CONFIG,
-  THEME_STORAGE_CONFIG
-} from '@optimistic-tanuki/theme-lib';
+import { STANDARD_THEME_VARIABLES, DEFAULT_THEME_CONFIG, THEME_STORAGE_CONFIG } from '@optimistic-tanuki/theme-lib';
 
 // Use standardized constants
 const accentVar = STANDARD_THEME_VARIABLES.ACCENT; // '--accent'
@@ -334,7 +336,8 @@ npx nx test theme-lib
 
 **Problem**: Component styles show default colors instead of theme colors.
 
-**Solution**: 
+**Solution**:
+
 1. Verify you're using standardized variable names
 2. Check that ThemeService is properly initialized in your app
 3. Ensure the component subscribes to theme changes if needed
@@ -344,6 +347,7 @@ npx nx test theme-lib
 **Problem**: TypeScript can't find types after migration.
 
 **Solution**:
+
 ```typescript
 // Add explicit import from theme-lib
 import { ThemeColors, ColorPalette } from '@optimistic-tanuki/theme-lib';
@@ -417,6 +421,7 @@ const accentVar = '--accent';
 ## Summary
 
 The improved theme system provides:
+
 - ✅ Better consistency across components
 - ✅ Improved type safety
 - ✅ Centralized configuration

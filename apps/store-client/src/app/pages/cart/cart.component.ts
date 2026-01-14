@@ -31,14 +31,14 @@ export class CartComponent {
   constructor(private router: Router) {}
 
   onUpdateQuantity(event: { productId: string; quantity: number }): void {
-    const item = this.items.find(i => i.productId === event.productId);
+    const item = this.items.find((i) => i.productId === event.productId);
     if (item) {
       item.quantity = event.quantity;
     }
   }
 
   onRemoveItem(productId: string): void {
-    this.items = this.items.filter(i => i.productId !== productId);
+    this.items = this.items.filter((i) => i.productId !== productId);
   }
 
   onCheckout(): void {

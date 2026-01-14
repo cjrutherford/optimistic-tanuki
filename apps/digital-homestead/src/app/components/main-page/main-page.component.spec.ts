@@ -15,10 +15,10 @@ describe('MainPageComponent', () => {
         {
           provide: ContactService,
           useValue: {
-            postContact: jest.fn(() => of({}))
-          }
-        }
-      ]
+            postContact: jest.fn(() => of({})),
+          },
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(MainPageComponent);

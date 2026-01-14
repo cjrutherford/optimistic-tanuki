@@ -86,9 +86,7 @@ export function createActionsColumn(
 /**
  * Creates grid options with common configurations
  */
-export function createGridOptions(
-  customOptions?: GridOptions
-): GridOptions {
+export function createGridOptions(customOptions?: GridOptions): GridOptions {
   return {
     pagination: true,
     paginationPageSize: 10,
@@ -120,15 +118,16 @@ export function generateColumnsFromData<T extends Record<string, unknown>>(
   customColumns: Record<string, Partial<ColDef>> = {}
 ): ColDef[] {
   if (!data || data.length === 0) return [];
-  
+
   const firstRow = data[0];
   const fields = Object.keys(firstRow).filter(
     (field) => !excludeFields.includes(field)
   );
-  
+
   return fields.map((field) => ({
     field,
-    headerName: field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1'),
+    headerName:
+      field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1'),
     ...(customColumns[field] || {}),
   }));
 }

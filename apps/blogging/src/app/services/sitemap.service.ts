@@ -4,7 +4,14 @@ import { BlogPostDto, BlogDto } from '@optimistic-tanuki/models';
 export interface SitemapUrl {
   loc: string;
   lastmod?: string;
-  changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+  changefreq?:
+    | 'always'
+    | 'hourly'
+    | 'daily'
+    | 'weekly'
+    | 'monthly'
+    | 'yearly'
+    | 'never';
   priority?: number;
 }
 
@@ -31,7 +38,9 @@ export class SitemapService {
     posts.forEach((post) => {
       urls.push({
         loc: `${baseUrl}/post/${post.id}`,
-        lastmod: post.publishedAt ? new Date(post.publishedAt).toISOString().split('T')[0] : new Date(post.updatedAt).toISOString().split('T')[0],
+        lastmod: post.publishedAt
+          ? new Date(post.publishedAt).toISOString().split('T')[0]
+          : new Date(post.updatedAt).toISOString().split('T')[0],
         changefreq: 'weekly',
         priority: 0.8,
       });

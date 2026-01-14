@@ -11,21 +11,17 @@ import {
   Input,
   Output,
   SimpleChanges,
-  signal, OnInit, OnChanges,
+  signal,
+  OnInit,
+  OnChanges,
 } from '@angular/core';
 import { CreateTask, ProfileDto, Task } from '@optimistic-tanuki/ui-models';
-
 
 import { TaskFormComponent } from '../task-form/task-form.component';
 
 @Component({
   selector: 'lib-tasks-table',
-  imports: [
-    TableComponent,
-    ButtonComponent,
-    ModalComponent,
-    TaskFormComponent
-],
+  imports: [TableComponent, ButtonComponent, ModalComponent, TaskFormComponent],
   templateUrl: './tasks-table.component.html',
   styleUrl: './tasks-table.component.scss',
 })
@@ -34,7 +30,8 @@ export class TasksTableComponent implements OnInit, OnChanges {
   showModal = signal<boolean>(false);
   showEditModal = signal<boolean>(false);
   selectedTask = signal<Task | null>(null);
-  @Output() createTask: EventEmitter<CreateTask> = new EventEmitter<CreateTask>();
+  @Output() createTask: EventEmitter<CreateTask> =
+    new EventEmitter<CreateTask>();
   @Output() editTask: EventEmitter<Task> = new EventEmitter<Task>();
   @Output() deleteTask: EventEmitter<string> = new EventEmitter<string>();
   @Input() tasks: Task[] = [
@@ -167,7 +164,7 @@ export class TasksTableComponent implements OnInit, OnChanges {
   }
 
   setShowEditModal(task: Task) {
-    console.log("🚀 ~ TasksTableComponent ~ setShowEditModal ~ task:", task)
+    console.log('🚀 ~ TasksTableComponent ~ setShowEditModal ~ task:', task);
     this.selectedTask.set(task);
     this.showEditModal.set(true);
     console.log('Selected task for editing:', task);

@@ -37,10 +37,7 @@ describe('AgRisksTableComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AgRisksTableComponent],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting()
-      ]
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AgRisksTableComponent);
@@ -59,13 +56,13 @@ describe('AgRisksTableComponent', () => {
   it('should accept risks input and render grid', (done) => {
     component.risks = mockRisks;
     fixture.detectChanges();
-    
+
     setTimeout(() => {
       expect(component.risks.length).toBe(2);
-      
+
       const agGrid = compiled.querySelector('otui-ag-grid');
       expect(agGrid).toBeTruthy();
-      
+
       done();
     }, 500);
   });
@@ -73,12 +70,20 @@ describe('AgRisksTableComponent', () => {
   it('should have column definitions configured with all required columns', () => {
     expect(component.columnDefs).toBeDefined();
     expect(component.columnDefs.length).toBeGreaterThan(0);
-    
-    const descriptionColumn = component.columnDefs.find(col => col.field === 'description');
-    const impactColumn = component.columnDefs.find(col => col.field === 'impact');
-    const likelihoodColumn = component.columnDefs.find(col => col.field === 'likelihood');
-    const statusColumn = component.columnDefs.find(col => col.field === 'status');
-    
+
+    const descriptionColumn = component.columnDefs.find(
+      (col) => col.field === 'description'
+    );
+    const impactColumn = component.columnDefs.find(
+      (col) => col.field === 'impact'
+    );
+    const likelihoodColumn = component.columnDefs.find(
+      (col) => col.field === 'likelihood'
+    );
+    const statusColumn = component.columnDefs.find(
+      (col) => col.field === 'status'
+    );
+
     expect(descriptionColumn).toBeDefined();
     expect(impactColumn).toBeDefined();
     expect(likelihoodColumn).toBeDefined();
@@ -125,18 +130,18 @@ describe('AgRisksTableComponent', () => {
   it('should update grid when risks input changes', (done) => {
     component.risks = [];
     fixture.detectChanges();
-    
+
     component.risks = mockRisks;
     component.ngOnChanges({
       risks: {
         currentValue: mockRisks,
         previousValue: [],
         firstChange: false,
-        isFirstChange: () => false
-      }
+        isFirstChange: () => false,
+      },
     });
     fixture.detectChanges();
-    
+
     setTimeout(() => {
       expect(component.risks.length).toBe(2);
       done();
@@ -149,7 +154,9 @@ describe('AgRisksTableComponent', () => {
   });
 
   it('should render action column with edit and delete buttons', () => {
-    const actionsColumn = component.columnDefs.find(col => col.headerName === 'Actions');
+    const actionsColumn = component.columnDefs.find(
+      (col) => col.headerName === 'Actions'
+    );
     expect(actionsColumn).toBeDefined();
     expect(actionsColumn?.cellRenderer).toBeDefined();
   });

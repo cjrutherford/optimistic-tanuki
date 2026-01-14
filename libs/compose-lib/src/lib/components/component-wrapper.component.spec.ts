@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { ComponentWrapperComponent } from './component-wrapper.component';
-import { InjectedComponentInstance, InjectableComponent } from '../interfaces/component-injection.interface';
+import {
+  InjectedComponentInstance,
+  InjectableComponent,
+} from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'test-component',
@@ -61,14 +64,18 @@ describe('ComponentWrapperComponent', () => {
       component.componentInstance = mockComponentInstance;
       fixture.detectChanges();
 
-      expect(component.componentInstance.componentDef.name).toBe('Test Component');
+      expect(component.componentInstance.componentDef.name).toBe(
+        'Test Component'
+      );
     });
 
     it('should display component description', () => {
       component.componentInstance = mockComponentInstance;
       fixture.detectChanges();
 
-      expect(component.componentInstance.componentDef.description).toBe('Test Description');
+      expect(component.componentInstance.componentDef.description).toBe(
+        'Test Description'
+      );
     });
   });
 

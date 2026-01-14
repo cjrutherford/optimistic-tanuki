@@ -1,4 +1,8 @@
-import { ButtonComponent, CardComponent, TileComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ButtonComponent,
+  CardComponent,
+  TileComponent,
+} from '@optimistic-tanuki/common-ui';
 import { Component, Input, signal, OnInit } from '@angular/core';
 
 import { ChangesTableComponent } from '../changes-table/changes-table.component';
@@ -19,8 +23,8 @@ import { TasksTableComponent } from '../tasks-table/tasks-table.component';
     ProjectJournalTableComponent,
     TasksTableComponent,
     RisksTableComponent,
-    ChangesTableComponent
-],
+    ChangesTableComponent,
+  ],
   templateUrl: './project-overview.component.html',
   styleUrl: './project-overview.component.scss',
 })
@@ -55,13 +59,23 @@ export class ProjectOverviewComponent implements OnInit {
       this.projectName.set(this.project.name);
     }
     if (this.project.tasks) {
-      this.taskCount.set(this.project.tasks.filter(t => !['DONE', 'ARCHIVED'].includes(t.status)).length);
+      this.taskCount.set(
+        this.project.tasks.filter(
+          (t) => !['DONE', 'ARCHIVED'].includes(t.status)
+        ).length
+      );
     }
     if (this.project.risks) {
-      this.riskCount.set(this.project.risks.filter(r => r.status !== 'CLOSED').length);
+      this.riskCount.set(
+        this.project.risks.filter((r) => r.status !== 'CLOSED').length
+      );
     }
     if (this.project.changes) {
-      this.changeCount.set(this.project.changes.filter(c => !['COMPLETE', 'DISCARDED'].includes(c.changeStatus)).length);
+      this.changeCount.set(
+        this.project.changes.filter(
+          (c) => !['COMPLETE', 'DISCARDED'].includes(c.changeStatus)
+        ).length
+      );
     }
   }
 

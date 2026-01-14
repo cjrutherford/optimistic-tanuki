@@ -58,7 +58,8 @@ describe('SocialController', () => {
           useValue: {
             send: jest.fn().mockImplementation(() => of({})),
           },
-        }, {
+        },
+        {
           provide: 'PERMISSIONS_SERVICE',
           useValue: {
             send: jest.fn().mockImplementation(() => of({})),
@@ -85,11 +86,11 @@ describe('SocialController', () => {
         },
       ],
     })
-    .overrideGuard(AuthGuard)
-    .useValue({ canActivate: () => of(true) })
-    .overrideGuard(PermissionsGuard)
-    .useValue({ canActivate: () => of(true) }) // Mock PermissionsGuard
-    .compile();
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => of(true) })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => of(true) }) // Mock PermissionsGuard
+      .compile();
 
     socialController = module.get<SocialController>(SocialController);
     clientProxy = module.get<ClientProxy>('SOCIAL_SERVICE');

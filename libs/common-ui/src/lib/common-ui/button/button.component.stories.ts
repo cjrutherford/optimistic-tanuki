@@ -178,5 +178,3 @@ export const FastCycleMode: Story = {
     template: `<otui-button [disabled]="disabled" variant="primary" class="fast-cycle-mode">Fast Cycle Mode</otui-button>`,
   }),
 };
-
-

@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate]
     timeout-minutes: 30
-    
+
     strategy:
       matrix:
         target: [lint, test, build]
@@ -104,25 +104,25 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate, affected]
     if: always()
-    
+
     steps:
       - name: Check CI status
         run: |
           echo "## CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ needs.validate.result }}" = "success" ]; then
             echo "✅ Validation: Passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Validation: Failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           if [ "${{ needs.affected.result }}" = "success" ]; then
             echo "✅ Affected Build & Test: Passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Affected Build & Test: Failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Fail if any job failed
           if [ "${{ needs.validate.result }}" != "success" ] || [ "${{ needs.affected.result }}" != "success" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY

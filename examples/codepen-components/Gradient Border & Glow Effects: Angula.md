@@ -20,13 +20,7 @@ This spec describes a unified approach for robust, reusable Angular UI effects u
 import { Themeable } from './themeable.interface';
 import { ThemeColors } from './theme.interface';
 
-export type VariantType =
-  | 'default'
-  | 'gradient-glow'
-  | 'electric-border'
-  | 'gradient-glow-card'
-  | 'gradient-background'
-  | 'custom';
+export type VariantType = 'default' | 'gradient-glow' | 'electric-border' | 'gradient-glow-card' | 'gradient-background' | 'custom';
 
 export interface VariantOptions {
   variant?: VariantType;
@@ -49,19 +43,12 @@ export abstract class Variantable extends Themeable {
   /**
    * Apply the theme colors and variant options to generate styles.
    */
-  abstract applyVariant(
-    colors: ThemeColors,
-    options?: VariantOptions
-  ): void;
+  abstract applyVariant(colors: ThemeColors, options?: VariantOptions): void;
 
   /**
    * Utility: Generate gradient CSS string from theme colors and options.
    */
-  protected buildGradient(
-    colors: string[],
-    type: 'linear' | 'conic' | 'radial' = 'linear',
-    angle: string = '90deg'
-  ): string {
+  protected buildGradient(colors: string[], type: 'linear' | 'conic' | 'radial' = 'linear', angle: string = '90deg'): string {
     switch (type) {
       case 'linear':
         return `linear-gradient(${angle}, ${colors.join(', ')})`;
@@ -97,16 +84,17 @@ export abstract class Variantable extends Themeable {
 ## **Key CSS Rules for Effects**
 
 ### **Gradient Glow Border**
+
 ```css
-img, .card, .tile, .modal, .table {
+img,
+.card,
+.tile,
+.modal,
+.table {
   box-sizing: border-box;
   border: solid var(--b) #0000;
   border-radius: calc(2 * var(--b));
-  background: repeating-conic-gradient(
-      from var(--a, 0deg),
-      var(--l, #0000 0% 70%, #0000ff7f)
-    )
-    border-box;
+  background: repeating-conic-gradient(from var(--a, 0deg), var(--l, #0000 0% 70%, #0000ff7f)) border-box;
   filter: var(--f, url(#glow-0));
   animation: a 2s linear infinite;
 }
@@ -118,22 +106,16 @@ img, .card, .tile, .modal, .table {
 ```
 
 ### **Electric Border**
+
 ```css
-.card-container, .tile, .modal, .table {
+.card-container,
+.tile,
+.modal,
+.table {
   padding: 2px;
   border-radius: 24px;
   position: relative;
-  background: linear-gradient(
-      -30deg,
-      var(--gradient-color),
-      transparent,
-      var(--gradient-color)
-    ),
-    linear-gradient(
-      to bottom,
-      var(--color-neutral-900),
-      var(--color-neutral-900)
-    );
+  background: linear-gradient(-30deg, var(--gradient-color), transparent, var(--gradient-color)), linear-gradient(to bottom, var(--color-neutral-900), var(--color-neutral-900));
 }
 .border-outer {
   border: 2px solid rgba(221, 132, 72, 0.5);
@@ -141,63 +123,70 @@ img, .card, .tile, .modal, .table {
   padding-right: 4px;
   padding-bottom: 4px;
 }
-.main-card, .tile, .modal, .table {
+.main-card,
+.tile,
+.modal,
+.table {
   border: 2px solid var(--electric-border-color);
   filter: url(#turbulent-displace);
 }
-.glow-layer-1, .glow-layer-2 {
+.glow-layer-1,
+.glow-layer-2 {
   position: absolute;
   border-radius: 24px;
   width: 100%;
   height: 100%;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   filter: blur(1px) / blur(4px);
 }
-.overlay-1, .overlay-2 {
+.overlay-1,
+.overlay-2 {
   position: absolute;
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   border-radius: 24px;
   mix-blend-mode: overlay;
   transform: scale(1.1);
   filter: blur(16px);
-  background: linear-gradient(
-    -30deg,
-    white,
-    transparent 30%,
-    transparent 70%,
-    white
-  );
+  background: linear-gradient(-30deg, white, transparent 30%, transparent 70%, white);
 }
 .background-glow {
   position: absolute;
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   border-radius: 24px;
   filter: blur(32px);
   transform: scale(1.1);
   opacity: 0.3;
   z-index: -1;
-  background: linear-gradient(
-    -30deg,
-    var(--electric-light-color),
-    transparent,
-    var(--electric-border-color)
-  );
+  background: linear-gradient(-30deg, var(--electric-light-color), transparent, var(--electric-border-color));
 }
 ```
 
 ### **Gradient Glow Card**
+
 ```css
-.box, .card, .tile, .modal, .table {
+.box,
+.card,
+.tile,
+.modal,
+.table {
   --list: #ffbc00, #ff0058;
   --grad: linear-gradient(45deg, var(--list));
   position: relative;
   border: solid 4px #0000;
   aspect-ratio: 7/10;
   border-radius: 1em;
-  background: conic-gradient(rgb(0 0 0/ 0.75) 0 0) padding-box,
-    var(--grad) border-box;
+  background: conic-gradient(rgb(0 0 0/ 0.75) 0 0) padding-box, var(--grad) border-box;
 }
-.box::before, .card::before, .tile::before, .modal::before, .table::before {
+.box::before,
+.card::before,
+.tile::before,
+.modal::before,
+.table::before {
   position: absolute;
   inset: 0;
   z-index: -1;
@@ -234,12 +223,12 @@ img, .card, .tile, .modal, .table {
 
 ## **Summary Table**
 
-| Component | Variants Supported                | Customization Options                | Themeable Enforcement | Gradient Utilities |
-|-----------|-----------------------------------|--------------------------------------|----------------------|-------------------|
-| Card      | default, gradient-glow, electric  | borderColor, gradientStops, svgPattern | Yes                  | Yes               |
-| Tile      | default, gradient, electric       | backgroundGradient, borderRadius     | Yes                  | Yes               |
-| Modal     | default, gradient, electric       | overlayGradient, borderColor         | Yes                  | Yes               |
-| Table     | default, gradient-background      | gradientColors, svgPattern           | Yes                  | Yes               |
+| Component | Variants Supported               | Customization Options                  | Themeable Enforcement | Gradient Utilities |
+| --------- | -------------------------------- | -------------------------------------- | --------------------- | ------------------ |
+| Card      | default, gradient-glow, electric | borderColor, gradientStops, svgPattern | Yes                   | Yes                |
+| Tile      | default, gradient, electric      | backgroundGradient, borderRadius       | Yes                   | Yes                |
+| Modal     | default, gradient, electric      | overlayGradient, borderColor           | Yes                   | Yes                |
+| Table     | default, gradient-background     | gradientColors, svgPattern             | Yes                   | Yes                |
 
 ---
 
@@ -255,9 +244,9 @@ img, .card, .tile, .modal, .table {
 ## **Deliverables Checklist**
 
 - [ ] Refactor to use `Variantable`
-  - [x] Card, 
-  - [ ] Tile, 
-  - [ ] Table, 
+  - [x] Card,
+  - [ ] Tile,
+  - [ ] Table,
   - [ ] Modal
 - [ ] Create shared SVG filter asset in `libs/common-ui/src/assets/svg-filters.svg`
 - [ ] Develop SCSS mixins in `libs/theme-ui/src/styles/`

@@ -59,7 +59,7 @@ jobs:
         run: |
           # Tag images with commit SHA and staging tag
           export IMAGE_TAG="${GITHUB_SHA:0:7}-staging"
-          
+
           # Build and push all services
           docker compose build
           docker compose push
@@ -123,11 +123,11 @@ jobs:
         run: |
           # Tag images with commit SHA and latest tag
           export IMAGE_TAG="${GITHUB_SHA:0:7}"
-          
+
           # Build and push all services
           docker compose build
           docker compose push
-          
+
           # Also tag as latest
           docker compose build
           docker tag $(docker images -q | head -1) latest

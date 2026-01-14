@@ -1,8 +1,4 @@
-import {
-  Component,
-  forwardRef,
-  Input,
-} from '@angular/core';
+import { Component, forwardRef, Input } from '@angular/core';
 
 import {
   ControlValueAccessor,
@@ -51,7 +47,7 @@ export class SelectComponent extends Themeable implements ControlValueAccessor {
     this.borderColor = colors.complementary;
     this.complement = colors.complementary;
     this.transitionDuration = '0.15s'; // Use standardized duration
-    
+
     // Use numbered shades instead of hardcoded shade access
     if (this.theme === 'dark') {
       this.borderColor = colors.complementaryShades[6][1]; // Darker shade

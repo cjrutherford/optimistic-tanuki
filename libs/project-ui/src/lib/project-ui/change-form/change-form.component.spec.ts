@@ -42,7 +42,7 @@ describe('ChangeFormComponent', () => {
       requestor: 'test-user',
     });
     component.onSubmit();
-        expect(component.submitted.emit).toHaveBeenCalledWith({
+    expect(component.submitted.emit).toHaveBeenCalledWith({
       changeType: 'ADDITION',
       changeDescription: 'New feature',
       changeStatus: 'PENDING',

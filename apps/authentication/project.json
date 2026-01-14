@@ -40,9 +40,7 @@
       "options": {
         "buildTarget": "authentication:build",
         "runBuildTargetDependencies": false,
-        "externalDependencies": [
-          "pg"
-        ]
+        "externalDependencies": ["pg"]
       },
       "configurations": {
         "development": {

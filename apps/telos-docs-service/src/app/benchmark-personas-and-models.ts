@@ -34,14 +34,20 @@ function loadIntermediateResults(filePath: string): any[] {
   return [];
 }
 
-async function generateBenchmarkResults(model: any, personas: PersonaTelosDto[], existingResults: any[]) {
+async function generateBenchmarkResults(
+  model: any,
+  personas: PersonaTelosDto[],
+  existingResults: any[]
+) {
   const results = [];
   for (const persona of personas) {
     const existingResult = existingResults.find(
       (r) => r.persona === persona.name && r.model === model.name
     );
     if (existingResult) {
-      console.log(`Skipping benchmark for ${persona.name} with model ${model.name} (already completed).`);
+      console.log(
+        `Skipping benchmark for ${persona.name} with model ${model.name} (already completed).`
+      );
       results.push(existingResult);
       continue;
     }
@@ -72,31 +78,31 @@ async function generateBenchmarkResults(model: any, personas: PersonaTelosDto[],
   return results;
 }
 
-async function evaluateResponses(results: any[], models: any[], existingResults: any[]) {
+async function evaluateResponses(
+  results: any[],
+  models: any[],
+  existingResults: any[]
+) {
   for (const evaluationModel of models) {
     for (const r of results) {
       const existingEvaluation = r.evaluations.find(
         (e: any) => e.model === evaluationModel.name
       );
       if (existingEvaluation) {
-        console.log(`Skipping evaluation for ${r.persona} with model ${r.model} on ${evaluationModel.name} (already completed).`);
+        console.log(
+          `Skipping evaluation for ${r.persona} with model ${r.model} on ${evaluationModel.name} (already completed).`
+        );
         continue;
       }
 
-      const {
-        personaSystemPrompt,
-        userPrompt,
-        duration,
-        response,
-      } = r;
+      const { personaSystemPrompt, userPrompt, duration, response } = r;
       const ratingPrompt = {
         model: evaluationModel.name,
         stream: false,
         messages: [
           {
             role: 'system',
-            content:
-              `You are an expert evaluator. You are simply interested in scoring the response. 
+            content: `You are an expert evaluator. You are simply interested in scoring the response. 
               Rate the user input as a system prompt and response.
               The goal of the evaluation is to assess the quality of the response based on the model's system prompt and the user's input.
               Our categories of interest are informativeness, relevance, and clarity on a scale of 1 (poor) to 10 (excellent). 
@@ -130,7 +136,11 @@ async function evaluateResponses(results: any[], models: any[], existingResults:
 }
 
 function writeResultsToJson(results: any[], outputFile: string) {
-  fs.writeFileSync(path.resolve(outputFile), JSON.stringify(results, null, 2), 'utf8');
+  fs.writeFileSync(
+    path.resolve(outputFile),
+    JSON.stringify(results, null, 2),
+    'utf8'
+  );
 }
 
 const main = async () => {
@@ -142,14 +152,20 @@ const main = async () => {
   console.log(`Loaded ${personasArr.length} personas.`);
 
   const intermediateJsonFile = 'intermediate_results.json';
-  console.log(`Checking for existing intermediate results in ${intermediateJsonFile}...`);
+  console.log(
+    `Checking for existing intermediate results in ${intermediateJsonFile}...`
+  );
   const allResults = loadIntermediateResults(intermediateJsonFile);
   console.log(`Loaded ${allResults.length} existing results.`);
 
   // Generate benchmark results for all models
   for (const model of models) {
     console.log(`Generating benchmark results for model: ${model.name}...`);
-    const modelResults = await generateBenchmarkResults(model, personasArr, allResults);
+    const modelResults = await generateBenchmarkResults(
+      model,
+      personasArr,
+      allResults
+    );
     allResults.push(...modelResults);
     console.log(`Completed benchmark results for model: ${model.name}.`);
     writeResultsToJson(allResults, intermediateJsonFile); // Save intermediate results to JSON
@@ -161,7 +177,9 @@ const main = async () => {
   await evaluateResponses(allResults, models, allResults);
   console.log('Completed evaluation of responses.');
   writeResultsToJson(allResults, intermediateJsonFile); // Save intermediate results after evaluations
-  console.log(`Intermediate results after evaluations saved to ${intermediateJsonFile}.`);
+  console.log(
+    `Intermediate results after evaluations saved to ${intermediateJsonFile}.`
+  );
 
   // Save all results to a single JSON file
   const finalJson = process.argv[2] || 'final_results.json';

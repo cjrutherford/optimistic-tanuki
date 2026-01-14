@@ -82,7 +82,9 @@ describe('ProjectJournalTableComponent', () => {
     component.selectedJournal.set(journal);
     const updatedContent = 'Updated content';
     component.entryUpdated({ content: updatedContent });
-    expect(emitSpy).toHaveBeenCalledWith(expect.objectContaining({ content: updatedContent }));
+    expect(emitSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ content: updatedContent })
+    );
     expect(component.showEditModal()).toBe(false);
     expect(component.selectedJournal()).toBeNull();
   });

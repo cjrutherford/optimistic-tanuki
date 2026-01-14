@@ -1,12 +1,16 @@
 import { Injectable, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CommentDto, UpdateCommentDto, CreateCommentDto, SearchCommentDto } from '@optimistic-tanuki/social-ui';
+import {
+  CommentDto,
+  UpdateCommentDto,
+  CreateCommentDto,
+  SearchCommentDto,
+} from '@optimistic-tanuki/social-ui';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CommentService {
   private baseUrl: string;
@@ -26,8 +30,14 @@ export class CommentService {
     return this.http.get<CommentDto>(`${this.baseUrl}/${id}`);
   }
 
-  updateComment(id: string, updateCommentDto: UpdateCommentDto): Observable<CommentDto> {
-    return this.http.put<CommentDto>(`${this.baseUrl}/update/${id}`, updateCommentDto);
+  updateComment(
+    id: string,
+    updateCommentDto: UpdateCommentDto
+  ): Observable<CommentDto> {
+    return this.http.put<CommentDto>(
+      `${this.baseUrl}/update/${id}`,
+      updateCommentDto
+    );
   }
 
   deleteComment(id: string): Observable<void> {

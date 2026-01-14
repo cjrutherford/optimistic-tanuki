@@ -35,7 +35,9 @@ describe('UserDetailsDecorator', () => {
       userId: 'user-1',
       profileId: '',
     };
-    const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
+    const base64Payload = Buffer.from(JSON.stringify(payload)).toString(
+      'base64'
+    );
     const token = `header.${base64Payload}.signature`;
     const ctx = createContext(`Bearer ${token}`);
     const result = UserDetailsDecorator(null, ctx);

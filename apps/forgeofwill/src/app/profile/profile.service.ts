@@ -253,7 +253,9 @@ export class ProfileService {
    */
   async updateProfile(id: string, profile: UpdateProfileDto) {
     // Check if this is a global profile and we need to create a local one
-    const existingProfile = this.getCurrentUserProfiles().find((p) => p.id === id);
+    const existingProfile = this.getCurrentUserProfiles().find(
+      (p) => p.id === id
+    );
 
     if (
       existingProfile &&

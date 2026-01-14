@@ -1,7 +1,21 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, signal, OnDestroy } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  signal,
+  OnDestroy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FullCalendarModule } from '@fullcalendar/angular';
-import { CalendarOptions, EventClickArg, DateSelectArg } from '@fullcalendar/core';
+import {
+  CalendarOptions,
+  EventClickArg,
+  DateSelectArg,
+} from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -19,7 +33,12 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 @Component({
   selector: 'lib-task-calendar',
   standalone: true,
-  imports: [CommonModule, FullCalendarModule, ModalComponent, TaskFormComponent],
+  imports: [
+    CommonModule,
+    FullCalendarModule,
+    ModalComponent,
+    TaskFormComponent,
+  ],
   templateUrl: './task-calendar.component.html',
   styleUrls: ['./task-calendar.component.scss'],
   host: {
@@ -30,9 +49,12 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
     '[style.--success]': 'success',
     '[style.--danger]': 'danger',
     '[style.--warning]': 'warning',
-  }
+  },
 })
-export class TaskCalendarComponent extends Themeable implements OnInit, OnChanges, OnDestroy {
+export class TaskCalendarComponent
+  extends Themeable
+  implements OnInit, OnChanges, OnDestroy
+{
   @Input() tasks: Task[] = [];
   @Input() loading: boolean = false;
   @Output() createTask = new EventEmitter<CreateTask>();
@@ -51,7 +73,7 @@ export class TaskCalendarComponent extends Themeable implements OnInit, OnChange
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
     },
     weekends: true,
     editable: true,
@@ -64,11 +86,11 @@ export class TaskCalendarComponent extends Themeable implements OnInit, OnChange
     eventColor: '#378006',
     eventTextColor: '#ffffff',
     eventClassNames: (arg) => {
-      const task = this.tasks.find(t => t.id === arg.event.id);
+      const task = this.tasks.find((t) => t.id === arg.event.id);
       if (!task) return [];
-      
+
       const classes = ['fc-event-custom'];
-      
+
       // Add status-based class
       if (task.status === 'DONE') {
         classes.push('fc-event-done');
@@ -77,14 +99,14 @@ export class TaskCalendarComponent extends Themeable implements OnInit, OnChange
       } else if (task.status === 'TODO') {
         classes.push('fc-event-todo');
       }
-      
+
       // Add priority-based class
       if (task.priority === 'HIGH') {
         classes.push('fc-event-high-priority');
       }
-      
+
       return classes;
-    }
+    },
   };
 
   override ngOnInit(): void {
@@ -99,10 +121,10 @@ export class TaskCalendarComponent extends Themeable implements OnInit, OnChange
   }
 
   private updateCalendarEvents(): void {
-    const events = this.tasks.map(task => {
+    const events = this.tasks.map((task) => {
       const startDate = task.dueDate || task.createdAt;
       const endDate = task.dueDate || task.createdAt;
-      
+
       return {
         id: task.id,
         title: task.title,
@@ -134,7 +156,7 @@ export class TaskCalendarComponent extends Themeable implements OnInit, OnChange
     } else if (task.status === 'ARCHIVED') {
       return '#6c757d'; // Gray
     }
-    
+
     // Priority-based colors for TODO tasks
     if (task.priority === 'HIGH') {
       return '#dc3545'; // Red
@@ -143,7 +165,7 @@ export class TaskCalendarComponent extends Themeable implements OnInit, OnChange
     } else if (task.priority === 'MEDIUM') {
       return '#ffc107'; // Yellow
     }
-    
+
     return '#17a2b8'; // Teal for low priority
   }
 
@@ -152,7 +174,7 @@ export class TaskCalendarComponent extends Themeable implements OnInit, OnChange
   }
 
   handleEventClick(clickInfo: EventClickArg): void {
-    const task = this.tasks.find(t => t.id === clickInfo.event.id);
+    const task = this.tasks.find((t) => t.id === clickInfo.event.id);
     if (task) {
       this.selectedTask.set(task);
       this.showEditModal.set(true);

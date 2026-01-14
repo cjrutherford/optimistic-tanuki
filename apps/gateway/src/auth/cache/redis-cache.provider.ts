@@ -97,7 +97,9 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
       return value === 'true';
     } catch (error) {
       this.misses++;
-      this.logger.error(`Error reading from Redis for key ${key}: ${error.message}`);
+      this.logger.error(
+        `Error reading from Redis for key ${key}: ${error.message}`
+      );
       return null;
     }
   }
@@ -113,9 +115,13 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
       const ttlSeconds = Math.floor((ttl || this.cacheTTL) / 1000);
 
       await this.client.setEx(prefixedKey, ttlSeconds, value.toString());
-      this.logger.debug(`Cached value for key: ${key} = ${value} (TTL: ${ttlSeconds}s)`);
+      this.logger.debug(
+        `Cached value for key: ${key} = ${value} (TTL: ${ttlSeconds}s)`
+      );
     } catch (error) {
-      this.logger.error(`Error writing to Redis for key ${key}: ${error.message}`);
+      this.logger.error(
+        `Error writing to Redis for key ${key}: ${error.message}`
+      );
     }
   }
 
@@ -130,7 +136,9 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
       await this.client.del(prefixedKey);
       this.logger.debug(`Deleted cache entry: ${key}`);
     } catch (error) {
-      this.logger.error(`Error deleting from Redis for key ${key}: ${error.message}`);
+      this.logger.error(
+        `Error deleting from Redis for key ${key}: ${error.message}`
+      );
     }
   }
 
@@ -143,10 +151,12 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
     try {
       const prefixedPattern = this.getPrefixedKey(pattern);
       const keys = await this.client.keys(prefixedPattern);
-      
+
       if (keys.length > 0) {
         await this.client.del(keys);
-        this.logger.log(`Deleted ${keys.length} cache entries matching pattern: ${pattern}`);
+        this.logger.log(
+          `Deleted ${keys.length} cache entries matching pattern: ${pattern}`
+        );
       }
     } catch (error) {
       this.logger.error(`Error deleting pattern from Redis: ${error.message}`);
@@ -162,7 +172,7 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
     try {
       const pattern = this.getPrefixedKey('*');
       const keys = await this.client.keys(pattern);
-      
+
       if (keys.length > 0) {
         await this.client.del(keys);
       }

@@ -1,4 +1,3 @@
-
 .chat-window-container {
   position: relative;
   background: var(--border-gradient);
@@ -28,7 +27,7 @@
   min-width: 300px;
   max-width: 800px;
   z-index: 1001;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
 }
 
 .chat-window-container.hidden {
@@ -43,7 +42,6 @@
   background: var(--border-gradient);
   border-bottom: 1px solid var(--border-color);
 }
-
 
 .chat-window-actions button {
   margin-left: 8px;

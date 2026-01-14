@@ -7,7 +7,12 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 @Component({
   selector: 'lib-mfa-block',
   standalone: true,
-  imports: [ReactiveFormsModule, TextInputComponent, ButtonComponent, CardComponent],
+  imports: [
+    ReactiveFormsModule,
+    TextInputComponent,
+    ButtonComponent,
+    CardComponent,
+  ],
   templateUrl: './mfa-block.component.html',
   styleUrls: ['./mfa-block.component.scss'],
 })
@@ -19,7 +24,7 @@ export class MfaBlockComponent {
 
   constructor(private fb: FormBuilder) {
     this.mfaForm = this.fb.group({
-      token: ['']
+      token: [''],
     });
   }
 

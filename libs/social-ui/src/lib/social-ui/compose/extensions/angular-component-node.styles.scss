@@ -90,10 +90,10 @@
   .angular-component-node {
     display: block;
     margin: var(--spacing-md, 16px) 0;
-    
+
     &[data-drag-handle] {
       cursor: grab;
-      
+
       &:active {
         cursor: grabbing;
       }
@@ -132,28 +132,28 @@
 @media (max-width: 768px) {
   .component-controls {
     padding: var(--spacing-xs, 4px);
-    
+
     .component-label {
       font-size: var(--font-size-xs, 0.75rem);
       margin: 0 var(--spacing-xs, 4px);
     }
-    
+
     button {
       padding: var(--spacing-xs, 2px);
       font-size: 12px;
     }
   }
-  
+
   .component-content {
     padding: var(--spacing-sm, 8px);
     min-height: 60px;
   }
-  
+
   .component-preview {
     h4 {
       font-size: var(--font-size-md, 1rem);
     }
-    
+
     p {
       font-size: var(--font-size-xs, 0.75rem);
     }

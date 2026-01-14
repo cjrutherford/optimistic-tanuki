@@ -74,7 +74,7 @@ describe('AppController', () => {
       };
       jest.spyOn(appService, 'login').mockRejectedValue(new Error('Error'));
       await expect(appController.login(loginRequest)).rejects.toThrow(
-        new RpcException("Error")
+        new RpcException('Error')
       );
     });
 
@@ -188,7 +188,9 @@ describe('AppController', () => {
         oldPass: 'oldPass',
         mfa: '123456',
       };
-      const resetResponse = await appController.resetPassword(resetPasswordRequest);
+      const resetResponse = await appController.resetPassword(
+        resetPasswordRequest
+      );
       expect(appService.resetPassword).toHaveBeenCalledWith(
         'test@example.com',
         'newPass',
@@ -215,7 +217,7 @@ describe('AppController', () => {
         .mockRejectedValue(new Error('Error'));
       await expect(
         appController.resetPassword(resetPasswordRequest)
-      ).rejects.toThrow(new RpcException("Error"));
+      ).rejects.toThrow(new RpcException('Error'));
     });
 
     it('should throw RpcException if missing fields', async () => {
@@ -254,7 +256,9 @@ describe('AppController', () => {
         token: 'token',
         userId: 'userId',
       };
-      const validateTokenResponse = await appController.validate(validateTokenRequest);
+      const validateTokenResponse = await appController.validate(
+        validateTokenRequest
+      );
       expect(appService.validateToken).toHaveBeenCalledWith('token');
       expect(validateTokenResponse).toEqual({ userId: 'userId', valid: true });
     });
@@ -269,7 +273,7 @@ describe('AppController', () => {
         .mockRejectedValue(new Error('Error'));
       await expect(
         appController.validate(validateTokenRequest)
-      ).rejects.toThrow(new RpcException("Error"));
+      ).rejects.toThrow(new RpcException('Error'));
     });
 
     it('should throw RpcException if missing fields', async () => {
@@ -317,7 +321,7 @@ describe('AppController', () => {
       };
       jest.spyOn(appService, 'setupTotp').mockRejectedValue(new Error('Error'));
       await expect(appController.enableMfa(enableMfaRequest)).rejects.toThrow(
-        new RpcException("Error")
+        new RpcException('Error')
       );
     });
 
@@ -347,7 +351,9 @@ describe('AppController', () => {
         message: 'TOTP validated successfully',
       });
       const validateTotpRequest = { userId: 'userId', token: 'token' };
-      const validateResponse = await appController.validateTotp(validateTotpRequest);
+      const validateResponse = await appController.validateTotp(
+        validateTotpRequest
+      );
       expect(appService.validateTotp).toHaveBeenCalledWith('userId', 'token');
       expect(validateResponse).toEqual({
         message: 'TOTP validated successfully',
@@ -361,7 +367,7 @@ describe('AppController', () => {
         .mockRejectedValue(new Error('Error'));
       await expect(
         appController.validateTotp(validateTotpRequest)
-      ).rejects.toThrow(new RpcException("Error"));
+      ).rejects.toThrow(new RpcException('Error'));
     });
 
     it('should throw RpcException if missing fields', async () => {

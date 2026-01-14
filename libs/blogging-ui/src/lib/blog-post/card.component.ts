@@ -1,6 +1,10 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-import { ButtonComponent, CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ButtonComponent,
+  CardComponent,
+  HeadingComponent,
+} from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'lib-blog-post-card',
@@ -18,7 +22,8 @@ export class BlogPostCardComponent {
   @Input() readMoreText = 'Read More';
   @Input() readMoreLink = '#';
   @Input() secondaryButtonText = '';
-  @Output() secondaryButtonAction: EventEmitter<void> = new EventEmitter<void>();
+  @Output() secondaryButtonAction: EventEmitter<void> =
+    new EventEmitter<void>();
 
   onReadMoreClick() {
     window.open(this.readMoreLink, '_blank');

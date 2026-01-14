@@ -43,10 +43,7 @@ describe('AgTasksTableComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AgTasksTableComponent],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting()
-      ]
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AgTasksTableComponent);
@@ -65,19 +62,19 @@ describe('AgTasksTableComponent', () => {
   it('should accept tasks input and update the grid', (done) => {
     component.tasks = mockTasks;
     fixture.detectChanges();
-    
+
     // Wait for AG Grid to initialize and render
     setTimeout(() => {
       expect(component.tasks.length).toBe(2);
-      
+
       // Verify AG Grid component is rendered
       const agGrid = compiled.querySelector('otui-ag-grid');
       expect(agGrid).toBeTruthy();
-      
+
       // Verify that AG Grid Angular wrapper is present
       const agGridAngular = compiled.querySelector('ag-grid-angular');
       expect(agGridAngular).toBeTruthy();
-      
+
       done();
     }, 500);
   });
@@ -85,12 +82,18 @@ describe('AgTasksTableComponent', () => {
   it('should have column definitions configured', () => {
     expect(component.columnDefs).toBeDefined();
     expect(component.columnDefs.length).toBeGreaterThan(0);
-    
+
     // Verify key columns exist
-    const titleColumn = component.columnDefs.find(col => col.field === 'title');
-    const statusColumn = component.columnDefs.find(col => col.field === 'status');
-    const priorityColumn = component.columnDefs.find(col => col.field === 'priority');
-    
+    const titleColumn = component.columnDefs.find(
+      (col) => col.field === 'title'
+    );
+    const statusColumn = component.columnDefs.find(
+      (col) => col.field === 'status'
+    );
+    const priorityColumn = component.columnDefs.find(
+      (col) => col.field === 'priority'
+    );
+
     expect(titleColumn).toBeDefined();
     expect(statusColumn).toBeDefined();
     expect(priorityColumn).toBeDefined();
@@ -106,7 +109,7 @@ describe('AgTasksTableComponent', () => {
     // Start with empty tasks
     component.tasks = [];
     fixture.detectChanges();
-    
+
     // Add tasks
     component.tasks = mockTasks;
     component.ngOnChanges({
@@ -114,11 +117,11 @@ describe('AgTasksTableComponent', () => {
         currentValue: mockTasks,
         previousValue: [],
         firstChange: false,
-        isFirstChange: () => false
-      }
+        isFirstChange: () => false,
+      },
     });
     fixture.detectChanges();
-    
+
     setTimeout(() => {
       expect(component.tasks.length).toBe(2);
       done();
@@ -168,10 +171,10 @@ describe('AgTasksTableComponent', () => {
 
   it('should handle modal open/close correctly', () => {
     expect(component.showModal).toBe(false);
-    
+
     component.showModal = true;
     expect(component.showModal).toBe(true);
-    
+
     component.closeModal();
     expect(component.showModal).toBe(false);
   });
@@ -179,13 +182,15 @@ describe('AgTasksTableComponent', () => {
   it('should set selected task for editing and open edit modal', () => {
     const task = mockTasks[0];
     component.onEdit(task);
-    
+
     expect(component.selectedTask).toEqual(task);
     expect(component.showEditModal).toBe(true);
   });
 
   it('should properly configure action column with edit and delete buttons', () => {
-    const actionsColumn = component.columnDefs.find(col => col.headerName === 'Actions');
+    const actionsColumn = component.columnDefs.find(
+      (col) => col.headerName === 'Actions'
+    );
     expect(actionsColumn).toBeDefined();
     expect(actionsColumn?.cellRenderer).toBeDefined();
   });
@@ -193,7 +198,7 @@ describe('AgTasksTableComponent', () => {
   it('should render grid with proper height', (done) => {
     component.tasks = mockTasks;
     fixture.detectChanges();
-    
+
     setTimeout(() => {
       const agGrid = compiled.querySelector('otui-ag-grid');
       expect(agGrid).toBeTruthy();

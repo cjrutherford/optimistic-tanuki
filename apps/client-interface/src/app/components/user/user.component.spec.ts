@@ -26,7 +26,12 @@ describe('UserComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [UserComponent, CommonModule, ButtonComponent, HttpClientTestingModule],
+      imports: [
+        UserComponent,
+        CommonModule,
+        ButtonComponent,
+        HttpClientTestingModule,
+      ],
       providers: [
         { provide: AuthStateService, useValue: authStateServiceMock },
         { provide: Router, useValue: routerMock },
@@ -75,5 +80,4 @@ describe('UserComponent', () => {
     component.register();
     expect(router.navigate).toHaveBeenCalledWith(['/register']);
   });
-
 });

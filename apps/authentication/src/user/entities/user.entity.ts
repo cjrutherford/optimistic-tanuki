@@ -1,12 +1,21 @@
-import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { KeyDatum as KeyDataEntity } from "../../key-data/entities";
-import { TokenEntity } from "../../tokens/entities";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { KeyDatum as KeyDataEntity } from '../../key-data/entities';
+import { TokenEntity } from '../../tokens/entities';
 import { v4 as uuidv4 } from 'uuid';
-import { IsObject } from "class-validator";
+import { IsObject } from 'class-validator';
 
 @Entity()
 export class UserEntity {
-    constructor() { this.id = uuidv4()}
+  constructor() {
+    this.id = uuidv4();
+  }
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -24,7 +33,7 @@ export class UserEntity {
 
   @Column({ type: 'text' })
   bio: string;
-  
+
   @Column({ default: null })
   totpSecret?: string;
 

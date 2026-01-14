@@ -46,9 +46,11 @@ describe('ThemeService', () => {
   beforeEach(() => {
     // Mock localStorage
     localStorageMock = {
-      'accentColor': '#ff0000', // Simulate existing user to avoid first-time logic
+      accentColor: '#ff0000', // Simulate existing user to avoid first-time logic
     };
-    global.Storage.prototype.getItem = jest.fn((key: string) => localStorageMock[key] || null);
+    global.Storage.prototype.getItem = jest.fn(
+      (key: string) => localStorageMock[key] || null
+    );
     global.Storage.prototype.setItem = jest.fn((key: string, value: string) => {
       localStorageMock[key] = value;
     });

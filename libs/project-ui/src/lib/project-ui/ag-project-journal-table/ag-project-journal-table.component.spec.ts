@@ -37,10 +37,7 @@ describe('AgProjectJournalTableComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AgProjectJournalTableComponent],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting()
-      ]
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AgProjectJournalTableComponent);
@@ -59,13 +56,13 @@ describe('AgProjectJournalTableComponent', () => {
   it('should accept journals input and render grid', (done) => {
     component.journals = mockJournals;
     fixture.detectChanges();
-    
+
     setTimeout(() => {
       expect(component.journals.length).toBe(2);
-      
+
       const agGrid = compiled.querySelector('otui-ag-grid');
       expect(agGrid).toBeTruthy();
-      
+
       done();
     }, 500);
   });
@@ -73,11 +70,17 @@ describe('AgProjectJournalTableComponent', () => {
   it('should have column definitions configured with all required columns', () => {
     expect(component.columnDefs).toBeDefined();
     expect(component.columnDefs.length).toBeGreaterThan(0);
-    
-    const contentColumn = component.columnDefs.find(col => col.field === 'content');
-    const analysisColumn = component.columnDefs.find(col => col.field === 'analysis');
-    const createdColumn = component.columnDefs.find(col => col.field === 'createdAt');
-    
+
+    const contentColumn = component.columnDefs.find(
+      (col) => col.field === 'content'
+    );
+    const analysisColumn = component.columnDefs.find(
+      (col) => col.field === 'analysis'
+    );
+    const createdColumn = component.columnDefs.find(
+      (col) => col.field === 'createdAt'
+    );
+
     expect(contentColumn).toBeDefined();
     expect(analysisColumn).toBeDefined();
     expect(createdColumn).toBeDefined();
@@ -85,11 +88,15 @@ describe('AgProjectJournalTableComponent', () => {
 
   it('should have auto-height row configuration for long content', () => {
     expect(component.gridOptions).toBeDefined();
-    
+
     // Check if wrapText is enabled for content columns
-    const contentColumn = component.columnDefs.find(col => col.field === 'content');
-    const analysisColumn = component.columnDefs.find(col => col.field === 'analysis');
-    
+    const contentColumn = component.columnDefs.find(
+      (col) => col.field === 'content'
+    );
+    const analysisColumn = component.columnDefs.find(
+      (col) => col.field === 'analysis'
+    );
+
     expect(contentColumn?.wrapText).toBe(true);
     expect(analysisColumn?.wrapText).toBe(true);
   });
@@ -110,7 +117,7 @@ describe('AgProjectJournalTableComponent', () => {
 
   it('should emit editJournalEntry event with correct data', (done) => {
     component.selectedJournal = mockJournals[0];
-    
+
     component.editJournalEntry.subscribe((journal) => {
       expect(journal.id).toBe('1');
       expect(journal.content).toContain('Updated');
@@ -132,18 +139,18 @@ describe('AgProjectJournalTableComponent', () => {
   it('should update grid when journals input changes', (done) => {
     component.journals = [];
     fixture.detectChanges();
-    
+
     component.journals = mockJournals;
     component.ngOnChanges({
       journals: {
         currentValue: mockJournals,
         previousValue: [],
         firstChange: false,
-        isFirstChange: () => false
-      }
+        isFirstChange: () => false,
+      },
     });
     fixture.detectChanges();
-    
+
     setTimeout(() => {
       expect(component.journals.length).toBe(2);
       done();
@@ -156,17 +163,19 @@ describe('AgProjectJournalTableComponent', () => {
   });
 
   it('should render action column with edit and delete buttons', () => {
-    const actionsColumn = component.columnDefs.find(col => col.headerName === 'Actions');
+    const actionsColumn = component.columnDefs.find(
+      (col) => col.headerName === 'Actions'
+    );
     expect(actionsColumn).toBeDefined();
     expect(actionsColumn?.cellRenderer).toBeDefined();
   });
 
   it('should handle modal open/close correctly', () => {
     expect(component.showModal).toBe(false);
-    
+
     component.showModal = true;
     expect(component.showModal).toBe(true);
-    
+
     component.closeModal();
     expect(component.showModal).toBe(false);
   });

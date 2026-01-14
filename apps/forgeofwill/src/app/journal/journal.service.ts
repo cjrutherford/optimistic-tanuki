@@ -1,14 +1,18 @@
-import { CreateProjectJournal, ProjectJournal, QueryProjectJournal } from '@optimistic-tanuki/ui-models';
+import {
+  CreateProjectJournal,
+  ProjectJournal,
+  QueryProjectJournal,
+} from '@optimistic-tanuki/ui-models';
 
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class JournalService {
   private baseUrl = '/api/project-planning/journal';
-  constructor(private readonly http: HttpClient) { }
+  constructor(private readonly http: HttpClient) {}
 
   createJournalEntry(data: CreateProjectJournal) {
     return this.http.post<ProjectJournal>(`${this.baseUrl}`, data);

@@ -95,14 +95,18 @@ export class FileValidationService {
     const extension = this.getFileExtension(filename);
     if (!config.allowedExtensions.includes(extension.toLowerCase())) {
       errors.push(
-        `File extension ${extension} not allowed. Allowed extensions: ${config.allowedExtensions.join(', ')}`
+        `File extension ${extension} not allowed. Allowed extensions: ${config.allowedExtensions.join(
+          ', '
+        )}`
       );
     }
 
     // Validate MIME type
     if (!config.allowedMimeTypes.includes(mimeType.toLowerCase())) {
       errors.push(
-        `MIME type ${mimeType} not allowed. Allowed types: ${config.allowedMimeTypes.join(', ')}`
+        `MIME type ${mimeType} not allowed. Allowed types: ${config.allowedMimeTypes.join(
+          ', '
+        )}`
       );
     }
 
@@ -147,7 +151,11 @@ export class FileValidationService {
     }
 
     // Check for path traversal attempts
-    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    if (
+      filename.includes('..') ||
+      filename.includes('/') ||
+      filename.includes('\\')
+    ) {
       errors.push('Filename contains path traversal characters');
     }
 
@@ -197,9 +205,7 @@ export class FileValidationService {
   /**
    * Get max file size for a file type
    */
-  getMaxFileSize(
-    fileType: 'image' | 'document' | 'video' | 'audio'
-  ): number {
+  getMaxFileSize(fileType: 'image' | 'document' | 'video' | 'audio'): number {
     return this.fileTypeConfigs[fileType]?.maxSizeBytes || 0;
   }
 }

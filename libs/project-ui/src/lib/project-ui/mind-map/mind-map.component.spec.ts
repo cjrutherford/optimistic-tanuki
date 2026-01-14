@@ -39,7 +39,7 @@ describe('MindMapComponent', () => {
     component.projectId = 'project-1';
     component.ngOnInit();
 
-    const taskNodes = component.nodes().filter(n => n.type === 'task');
+    const taskNodes = component.nodes().filter((n) => n.type === 'task');
     expect(taskNodes.length).toBe(1);
   });
 
@@ -61,7 +61,7 @@ describe('MindMapComponent', () => {
     component.projectId = 'project-1';
     component.ngOnInit();
 
-    const riskNodes = component.nodes().filter(n => n.type === 'risk');
+    const riskNodes = component.nodes().filter((n) => n.type === 'risk');
     expect(riskNodes.length).toBe(1);
   });
 });

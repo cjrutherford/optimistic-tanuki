@@ -1,4 +1,10 @@
-import { Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  forwardRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
@@ -27,23 +33,28 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
     '[style.--local-transition-duration]': 'transitionDuration',
   },
 })
-export class TextInputComponent extends Themeable implements ControlValueAccessor {
+export class TextInputComponent
+  extends Themeable
+  implements ControlValueAccessor
+{
   @Input() type: 'text' | 'password' | 'obscured' | 'date' = 'text';
-  @Input() label = '';  
+  @Input() label = '';
   @Input() placeholder = '';
   @Input() labelPosition: 'top' | 'left' | 'right' | 'bottom' = 'top';
   @Output() valueChange = new EventEmitter<string>();
 
   value = '';
-   
-  onChange?:(value: string) => void = (value: string) => { /*console.log(value);*/ };
+
+  onChange?: (value: string) => void = (value: string) => {
+    /*console.log(value);*/
+  };
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  onTouched?:(value: string) => void = () => {};
+  onTouched?: (value: string) => void = () => {};
 
   onInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.value = input.value;
-    if( this.onChange === undefined) return;
+    if (this.onChange === undefined) return;
     this.onChange(this.value);
     this.valueChange.emit(this.value);
   }
@@ -56,7 +67,7 @@ export class TextInputComponent extends Themeable implements ControlValueAccesso
     this.borderColor = colors.complementary;
     this.complement = colors.complementary;
     this.transitionDuration = '0.15s'; // Use standardized duration
-    
+
     // Use numbered shades instead of hardcoded shade access
     if (this.theme === 'dark') {
       this.borderColor = colors.complementaryShades[6][1]; // Darker shade

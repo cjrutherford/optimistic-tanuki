@@ -100,11 +100,11 @@ describe('PostController', () => {
         },
       ],
     })
-    .overrideGuard(AuthGuard)
-    .useValue({ canActivate: () => true })
-    .overrideGuard(PermissionsGuard)
-    .useValue({ canActivate: () => true })
-    .compile();
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<PostController>(PostController);
   });
@@ -116,9 +116,9 @@ describe('PostController', () => {
   describe('getPublishedPosts', () => {
     it('should return published posts', async () => {
       mockBlogService.send.mockReturnValue(of([mockPublishedPost]));
-      
+
       const result = await controller.getPublishedPosts();
-      
+
       expect(mockBlogService.send).toHaveBeenCalledWith(
         { cmd: BlogPostCommands.FIND_PUBLISHED },
         {}
@@ -127,18 +127,22 @@ describe('PostController', () => {
     });
 
     it('should throw HttpException on error', async () => {
-      mockBlogService.send.mockReturnValue(throwError(() => new Error('Service error')));
-      
-      await expect(controller.getPublishedPosts()).rejects.toThrow(HttpException);
+      mockBlogService.send.mockReturnValue(
+        throwError(() => new Error('Service error'))
+      );
+
+      await expect(controller.getPublishedPosts()).rejects.toThrow(
+        HttpException
+      );
     });
   });
 
   describe('getDraftsByAuthor', () => {
     it('should return drafts for the specified author', async () => {
       mockBlogService.send.mockReturnValue(of([mockPost]));
-      
+
       const result = await controller.getDraftsByAuthor('profile-1');
-      
+
       expect(mockBlogService.send).toHaveBeenCalledWith(
         { cmd: BlogPostCommands.FIND_DRAFTS_BY_AUTHOR },
         'profile-1'
@@ -147,18 +151,22 @@ describe('PostController', () => {
     });
 
     it('should throw HttpException on error', async () => {
-      mockBlogService.send.mockReturnValue(throwError(() => new Error('Service error')));
-      
-      await expect(controller.getDraftsByAuthor('profile-1')).rejects.toThrow(HttpException);
+      mockBlogService.send.mockReturnValue(
+        throwError(() => new Error('Service error'))
+      );
+
+      await expect(controller.getDraftsByAuthor('profile-1')).rejects.toThrow(
+        HttpException
+      );
     });
   });
 
   describe('publishPost', () => {
     it('should publish a draft post', async () => {
       mockBlogService.send.mockReturnValue(of(mockPublishedPost));
-      
+
       const result = await controller.publishPost('post-1', mockUser);
-      
+
       expect(mockBlogService.send).toHaveBeenCalledWith(
         { cmd: BlogPostCommands.PUBLISH },
         { id: 'post-1', requestingAuthorId: 'profile-1' }
@@ -168,27 +176,43 @@ describe('PostController', () => {
 
     it('should throw HttpException when profileId is missing', async () => {
       const userWithoutProfile = { ...mockUser, profileId: '' };
-      
-      await expect(controller.publishPost('post-1', userWithoutProfile)).rejects.toThrow(HttpException);
+
+      await expect(
+        controller.publishPost('post-1', userWithoutProfile)
+      ).rejects.toThrow(HttpException);
     });
 
     it('should throw HttpException on error', async () => {
-      mockBlogService.send.mockReturnValue(throwError(() => new Error('Service error')));
-      
-      await expect(controller.publishPost('post-1', mockUser)).rejects.toThrow(HttpException);
+      mockBlogService.send.mockReturnValue(
+        throwError(() => new Error('Service error'))
+      );
+
+      await expect(controller.publishPost('post-1', mockUser)).rejects.toThrow(
+        HttpException
+      );
     });
   });
 
   describe('updatePost', () => {
     it('should update a post with requestingAuthorId', async () => {
       const updateData = { id: 'post-1', title: 'Updated Title' };
-      mockBlogService.send.mockReturnValue(of({ ...mockPost, title: 'Updated Title' }));
-      
-      const result = await controller.updatePost('post-1', updateData, mockUser);
-      
+      mockBlogService.send.mockReturnValue(
+        of({ ...mockPost, title: 'Updated Title' })
+      );
+
+      const result = await controller.updatePost(
+        'post-1',
+        updateData,
+        mockUser
+      );
+
       expect(mockBlogService.send).toHaveBeenCalledWith(
         { cmd: BlogPostCommands.UPDATE },
-        { id: 'post-1', updatePostDto: updateData, requestingAuthorId: 'profile-1' }
+        {
+          id: 'post-1',
+          updatePostDto: updateData,
+          requestingAuthorId: 'profile-1',
+        }
       );
       expect(result.title).toBe('Updated Title');
     });
@@ -196,8 +220,10 @@ describe('PostController', () => {
     it('should throw HttpException when profileId is missing', async () => {
       const userWithoutProfile = { ...mockUser, profileId: '' };
       const updateData = { id: 'post-1', title: 'Updated Title' };
-      
-      await expect(controller.updatePost('post-1', updateData, userWithoutProfile)).rejects.toThrow(HttpException);
+
+      await expect(
+        controller.updatePost('post-1', updateData, userWithoutProfile)
+      ).rejects.toThrow(HttpException);
     });
   });
 });

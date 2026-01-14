@@ -16,10 +16,14 @@ import { CommonModule } from '@angular/common';
     '[style.--border-color]': 'borderColor',
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
-  }
+  },
 })
 export class AccordionComponent {
-  @Input() sections: { heading: string, content?: string, subItems?: { heading: string, content?: string }[] }[] = [];
+  @Input() sections: {
+    heading: string;
+    content?: string;
+    subItems?: { heading: string; content?: string }[];
+  }[] = [];
   @Input() variant: 'default' | 'glass' | 'gradient' = 'default';
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
   @Input() background = 'var(--background, #222)';
@@ -27,7 +31,8 @@ export class AccordionComponent {
   @Input() accent = 'var(--accent, #b1baec)';
   @Input() complement = 'var(--complement, #919ee4)';
   @Input() borderColor = 'var(--border-color, #b1baec)';
-  @Input() borderGradient = 'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
+  @Input() borderGradient =
+    'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
   @Input() transitionDuration = '0.3s';
   expandedIndex = 0;
   theme = 'dark';

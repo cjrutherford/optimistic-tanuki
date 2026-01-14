@@ -21,8 +21,20 @@ describe('MessageListComponent', () => {
 
   it('should return contact by senderId', () => {
     const mockContacts = [
-      { id: '1', name: 'John', avatarUrl: '', lastMessage: '', lastMessageTime: '' },
-      { id: '2', name: 'Jane', avatarUrl: '', lastMessage: '', lastMessageTime: '' },
+      {
+        id: '1',
+        name: 'John',
+        avatarUrl: '',
+        lastMessage: '',
+        lastMessageTime: '',
+      },
+      {
+        id: '2',
+        name: 'Jane',
+        avatarUrl: '',
+        lastMessage: '',
+        lastMessageTime: '',
+      },
     ];
     component.contacts = mockContacts;
     expect(component.getContact('1')).toEqual(mockContacts[0]);

@@ -59,7 +59,9 @@ describe('ImageUploadComponent', () => {
   });
 
   it('should read file and emit imageUpload event', (done) => {
-    const mockFile = new File(['test content'], 'test.png', { type: 'image/png' });
+    const mockFile = new File(['test content'], 'test.png', {
+      type: 'image/png',
+    });
     const emitSpy = jest.spyOn(component.imageUpload, 'emit');
 
     // Mock FileReader
@@ -68,7 +70,9 @@ describe('ImageUploadComponent', () => {
       onloadend: jest.fn(),
       readAsDataURL: jest.fn(),
     };
-    jest.spyOn(window, 'FileReader').mockImplementation(() => mockFileReader as any);
+    jest
+      .spyOn(window, 'FileReader')
+      .mockImplementation(() => mockFileReader as any);
 
     // Call the private method
     (component as any).readFile(mockFile);

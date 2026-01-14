@@ -9,17 +9,20 @@ This document describes the standardized approach to Model Context Protocol (MCP
 ### Components
 
 1. **MCP Types** (`libs/models/src/lib/libs/mcp-types.ts`)
+
    - Canonical TypeScript interfaces for all MCP operations
    - Zod schemas for runtime validation
    - Error codes and error handling types
 
 2. **MCP Validator** (`apps/ai-orchestrator/src/app/mcp-validator.ts`)
+
    - Validates tool calls before execution
    - Validates tool results after execution
    - Validates MCP messages and execution context
    - Provides helper methods for creating standardized results
 
 3. **MCP Tool Executor** (`apps/ai-orchestrator/src/app/mcp-tool-executor.ts`)
+
    - Executes tool calls with full validation pipeline
    - Normalizes arguments based on context
    - Handles errors consistently
@@ -85,16 +88,18 @@ All tool executions return a standardized `ToolResult`:
 
 ```typescript
 interface ToolResult {
-  toolCallId: string;      // ID of the tool call
-  toolName: string;        // Name of the tool
-  success: boolean;        // Whether execution succeeded
-  result?: any;            // Result data (if successful)
-  error?: {                // Error information (if failed)
+  toolCallId: string; // ID of the tool call
+  toolName: string; // Name of the tool
+  success: boolean; // Whether execution succeeded
+  result?: any; // Result data (if successful)
+  error?: {
+    // Error information (if failed)
     code: string;
     message: string;
     details?: any;
   };
-  metadata?: {             // Execution metadata
+  metadata?: {
+    // Execution metadata
     executionTime?: number;
     timestamp?: Date;
   };
@@ -175,6 +180,7 @@ The MCPToolExecutor automatically normalizes arguments based on context and tool
 ### Tool-Specific Normalization
 
 #### create_project
+
 - Maps `title` → `name`
 - Maps `createdBy` → `userId`
 - Sets default `status` to 'PLANNING'
@@ -182,17 +188,21 @@ The MCPToolExecutor automatically normalizes arguments based on context and tool
 - Converts `members` string to array
 
 #### create_task
+
 - Sets default `status` to 'TODO'
 - Sets default `priority` to 'MEDIUM'
 - Ensures `createdBy` is set
 
 #### create_risk
+
 - Sets default `status` to 'IDENTIFIED'
 
 #### create_change
+
 - Sets default `changeStatus` to 'PROPOSED'
 
 #### create_journal_entry
+
 - Ensures both `profileId` and `userId` are set
 
 ## Error Codes
@@ -221,14 +231,14 @@ const toolCall = {
   type: 'function',
   function: {
     name: 'create_project',
-    arguments: JSON.stringify({ name: 'My Project' })
-  }
+    arguments: JSON.stringify({ name: 'My Project' }),
+  },
 };
 
 const context = {
   userId: 'user-123',
   profileId: 'profile-456',
-  conversationId: 'conv-789'
+  conversationId: 'conv-789',
 };
 
 const result = await executor.executeToolCall(toolCall, context);
@@ -287,16 +297,18 @@ if (!validation.success) {
 ### From Direct ToolsService Calls
 
 **Before:**
+
 ```typescript
 const response = await this.toolsService.callTool('create_project', args);
 ```
 
 **After:**
+
 ```typescript
 const context: ToolExecutionContext = {
   userId: profile.id,
   profileId: profile.id,
-  conversationId: conversation.id
+  conversationId: conversation.id,
 };
 
 const toolCall = {
@@ -304,8 +316,8 @@ const toolCall = {
   type: 'function',
   function: {
     name: 'create_project',
-    arguments: JSON.stringify(args)
-  }
+    arguments: JSON.stringify(args),
+  },
 };
 
 const result = await this.mcpExecutor.executeToolCall(toolCall, context);
@@ -316,6 +328,7 @@ const result = await this.mcpExecutor.executeToolCall(toolCall, context);
 The executor handles all normalization automatically. Remove manual argument manipulation:
 
 **Before:**
+
 ```typescript
 if (!args.userId) {
   args.userId = profileId;
@@ -327,6 +340,7 @@ if (args.title) {
 ```
 
 **After:**
+
 ```typescript
 // Normalization happens automatically in executeToolCall
 ```
@@ -347,6 +361,7 @@ Track these metrics from `ToolResult.metadata`:
 - **timestamp**: When the tool was executed
 
 Use these for:
+
 - Identifying slow tools
 - Detecting performance regressions
 - Optimizing tool implementations

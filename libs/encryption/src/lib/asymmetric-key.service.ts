@@ -35,9 +35,9 @@ export default class AsymmetricService {
           (err, pub, priv) => {
             if (err) reject(err);
             resolve({ public: pub, private: priv });
-          },
+          }
         );
-      },
+      }
     );
   }
 
@@ -55,7 +55,7 @@ export default class AsymmetricService {
         passphrase: secret ? secret : undefined,
         padding: CryptoConstants.RSA_PKCS1_PADDING,
       },
-      new Uint8Array(Buffer.from(value)),
+      new Uint8Array(Buffer.from(value))
     );
   }
 
@@ -73,7 +73,7 @@ export default class AsymmetricService {
         passphrase: secret ? secret : undefined,
         padding: CryptoConstants.RSA_PKCS1_PADDING,
       },
-      new Uint8Array(Buffer.from(cyText)),
+      new Uint8Array(Buffer.from(cyText))
     ); //
   }
 }

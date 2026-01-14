@@ -1,22 +1,32 @@
 <div class="shopping-cart">
   <h2>Shopping Cart</h2>
-  
+
   <div class="cart-items" *ngIf="items.length > 0">
     <div class="cart-item" *ngFor="let item of items">
-      <img [src]="item.imageUrl || '/assets/placeholder.png'" [alt]="item.name" class="item-image" />
+      <img
+        [src]="item.imageUrl || '/assets/placeholder.png'"
+        [alt]="item.name"
+        class="item-image"
+      />
       <div class="item-details">
         <h3>{{ item.name }}</h3>
         <p class="item-price">\${{ item.price.toFixed(2) }}</p>
       </div>
       <div class="item-quantity">
-        <button (click)="onQuantityChange(item.productId, item.quantity - 1)">-</button>
+        <button (click)="onQuantityChange(item.productId, item.quantity - 1)">
+          -
+        </button>
         <span>{{ item.quantity }}</span>
-        <button (click)="onQuantityChange(item.productId, item.quantity + 1)">+</button>
+        <button (click)="onQuantityChange(item.productId, item.quantity + 1)">
+          +
+        </button>
       </div>
       <div class="item-total">
         \${{ (item.price * item.quantity).toFixed(2) }}
       </div>
-      <button class="remove-btn" (click)="onRemoveItem(item.productId)">×</button>
+      <button class="remove-btn" (click)="onRemoveItem(item.productId)">
+        ×
+      </button>
     </div>
   </div>
 
@@ -29,6 +39,8 @@
       <span>Total:</span>
       <span class="total-amount">\${{ total.toFixed(2) }}</span>
     </div>
-    <button class="checkout-btn" (click)="onCheckout()">Proceed to Checkout</button>
+    <button class="checkout-btn" (click)="onCheckout()">
+      Proceed to Checkout
+    </button>
   </div>
 </div>

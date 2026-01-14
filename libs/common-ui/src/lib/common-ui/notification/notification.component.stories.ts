@@ -31,28 +31,43 @@ export const WithNotifications: Story = {
         id: 1,
         message: 'Info notification',
         severity: 'info',
-        actions: [{ label: 'Action 1', callback: () => console.log('Action 1 clicked') }],
+        actions: [
+          {
+            label: 'Action 1',
+            callback: () => console.log('Action 1 clicked'),
+          },
+        ],
         read: false,
       },
       {
         id: 2,
         message: 'Warning notification',
         severity: 'warning',
-        actions: [{ label: 'Action 2', callback: () => console.log('Action 2 clicked') }],
+        actions: [
+          {
+            label: 'Action 2',
+            callback: () => console.log('Action 2 clicked'),
+          },
+        ],
         read: false,
       },
       {
         id: 3,
         message: 'Error notification',
         severity: 'error',
-        actions: [{ label: 'Action 3', callback: () => console.log('Action 3 clicked') }],
+        actions: [
+          {
+            label: 'Action 3',
+            callback: () => console.log('Action 3 clicked'),
+          },
+        ],
         read: false,
       },
     ],
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     await expect(canvas.getByText(/info notification/gi)).toBeTruthy();
     await expect(canvas.getByText(/warning notification/gi)).toBeTruthy();
     await expect(canvas.getByText(/error notification/gi)).toBeTruthy();

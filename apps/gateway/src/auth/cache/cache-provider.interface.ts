@@ -56,10 +56,10 @@ export interface CacheConfig {
   provider: 'memory' | 'file' | 'redis';
   ttl?: number; // Time to live in milliseconds
   maxSize?: number; // Max cache size (for memory/file providers)
-  
+
   // File-specific config
   cacheDir?: string;
-  
+
   // Redis-specific config
   redisHost?: string;
   redisPort?: number;

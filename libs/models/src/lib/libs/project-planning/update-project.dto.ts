@@ -10,7 +10,6 @@ export class UpdateProjectDto extends PartialType(CreateProjectDto) {
 }
 
 export class QueryProjectDto extends PartialType(CreateProjectDto) {
-
   @ApiPropertyOptional({ description: 'Updated by user ID' })
   @IsOptional()
   @IsUUID()

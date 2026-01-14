@@ -1,4 +1,12 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges, signal, computed } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+  signal,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RoleDto } from '@optimistic-tanuki/ui-models';
 import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
@@ -17,16 +25,18 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
       />
     </div>
   `,
-  styles: [`
-    .ag-roles-table-container {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      width: 100%;
-      height: 100%;
-      padding: 16px;
-    }
-  `]
+  styles: [
+    `
+      .ag-roles-table-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        width: 100%;
+        height: 100%;
+        padding: 16px;
+      }
+    `,
+  ],
 })
 export class AgRolesTableComponent implements OnInit, OnChanges {
   @Input() roles: RoleDto[] = [];

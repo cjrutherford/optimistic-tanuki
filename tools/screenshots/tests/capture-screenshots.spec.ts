@@ -50,7 +50,7 @@ async function captureScreenshot(
       appDir,
       `${route.name}-${viewport.name}.png`
     );
-    
+
     await page.screenshot({
       path: screenshotPath,
       fullPage: true,

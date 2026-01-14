@@ -14,7 +14,10 @@ describe('KeyGenerator', () => {
 
   it('should generate keys', () => {
     const generateKeyPairSync = jest.spyOn(crypto, 'generateKeyPairSync');
-    generateKeyPairSync.mockReturnValue({ publicKey: 'publicKey' as any, privateKey: 'privateKey' as any });
+    generateKeyPairSync.mockReturnValue({
+      publicKey: 'publicKey' as any,
+      privateKey: 'privateKey' as any,
+    });
 
     const writeFileSync = jest.spyOn(fs, 'writeFileSync');
 
@@ -32,7 +35,10 @@ describe('KeyGenerator', () => {
       },
     });
 
-    expect(writeFileSync).toHaveBeenCalledWith('/path/to/private/key', 'privateKey');
+    expect(writeFileSync).toHaveBeenCalledWith(
+      '/path/to/private/key',
+      'privateKey'
+    );
     expect(result).toEqual({ priv: '/path/to/private/key', pub: 'publicKey' });
   });
 

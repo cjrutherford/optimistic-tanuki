@@ -76,12 +76,12 @@ export class SocialController {
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: PostCommands.CREATE }, postDto)
     );
-    
+
     // Broadcast post created event via WebSocket
     if (this.socialGateway && result) {
       this.socialGateway.broadcastPostCreated(result);
     }
-    
+
     return result;
   }
 
@@ -113,12 +113,12 @@ export class SocialController {
         voteDto
       )
     );
-    
+
     // Broadcast vote updated event via WebSocket
     if (this.socialGateway && result) {
       this.socialGateway.broadcastVoteUpdated(result);
     }
-    
+
     return result;
   }
 
@@ -145,12 +145,12 @@ export class SocialController {
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: CommentCommands.CREATE }, finalComment)
     );
-    
+
     // Broadcast comment created event via WebSocket
     if (this.socialGateway && result) {
       this.socialGateway.broadcastCommentCreated(result);
     }
-    
+
     return result;
   }
 
@@ -307,12 +307,12 @@ export class SocialController {
         { id, data: updatePostDto }
       )
     );
-    
+
     // Broadcast post updated event via WebSocket
     if (this.socialGateway && result) {
       this.socialGateway.broadcastPostUpdated(result);
     }
-    
+
     return result;
   }
 
@@ -335,12 +335,12 @@ export class SocialController {
         { id, data: updateCommentDto }
       )
     );
-    
+
     // Broadcast comment updated event via WebSocket
     if (this.socialGateway && result) {
       this.socialGateway.broadcastCommentUpdated(result);
     }
-    
+
     return result;
   }
 
@@ -377,20 +377,21 @@ export class SocialController {
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: PostCommands.DELETE }, { id })
     );
-    
+
     // Broadcast post deleted event via WebSocket
     if (this.socialGateway) {
       this.socialGateway.broadcastPostDeleted(id);
     }
-    
+
     return result;
   }
 
   @UseGuards(AuthGuard)
   @ApiTags('comment')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Delete a comment by ID',
-    description: 'Deletes a comment. Optional postId query parameter can be provided to avoid an additional API call for WebSocket broadcasting.'
+    description:
+      'Deletes a comment. Optional postId query parameter can be provided to avoid an additional API call for WebSocket broadcasting.',
   })
   @ApiResponse({
     status: 200,
@@ -411,20 +412,23 @@ export class SocialController {
         commentPostId = comment?.postId;
       } catch (error) {
         // Comment not found or error, continue with deletion
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        this.l.error(`Error fetching comment for WebSocket broadcast: ${errorMessage}`);
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        this.l.error(
+          `Error fetching comment for WebSocket broadcast: ${errorMessage}`
+        );
       }
     }
-    
+
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: CommentCommands.DELETE }, { id })
     );
-    
+
     // Broadcast comment deleted event via WebSocket
     if (this.socialGateway && commentPostId) {
       this.socialGateway.broadcastCommentDeleted(id, commentPostId);
     }
-    
+
     return result;
   }
 

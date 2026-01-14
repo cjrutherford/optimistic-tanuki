@@ -10,7 +10,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
   styleUrl: './vote.component.scss',
 })
 export class VoteComponent {
-  voteState: 1 | 0 | -1 = 0;;
+  voteState: 1 | 0 | -1 = 0;
 
   upvote() {
     this.voteState = 1;

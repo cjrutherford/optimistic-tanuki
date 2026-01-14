@@ -1,6 +1,11 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-import { ButtonComponent, CardComponent, HeadingComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ButtonComponent,
+  CardComponent,
+  HeadingComponent,
+  ModalComponent,
+} from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 @Component({
@@ -10,8 +15,8 @@ import { TextInputComponent } from '@optimistic-tanuki/form-ui';
     ButtonComponent,
     TextInputComponent,
     CardComponent,
-    HeadingComponent
-],
+    HeadingComponent,
+  ],
   templateUrl: './newsletter-signup.component.html',
   styleUrl: './newsletter-signup.component.scss',
 })

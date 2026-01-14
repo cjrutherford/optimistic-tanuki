@@ -18,14 +18,14 @@ export const Primary: Story = {
         id: '1',
         content: 'This is the first comment.',
         postId: '1',
-        profileId: ''
+        profileId: '',
       },
       {
         userId: 'user3',
         id: '4',
         content: 'This is the second comment.',
         postId: '1',
-        profileId: ''
+        profileId: '',
       },
     ],
   },

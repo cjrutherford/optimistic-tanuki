@@ -30,7 +30,10 @@ export const SubmitToken: Story = {
     await userEvent.type(input, '123456');
     const submitButton = canvas.getByRole('button', { name: /Submit/i });
     await userEvent.click(submitButton);
-    await expect(console.log).toHaveBeenCalledWith('MFA Token Submitted:', '123456');
+    await expect(console.log).toHaveBeenCalledWith(
+      'MFA Token Submitted:',
+      '123456'
+    );
   },
 };
 

@@ -13,13 +13,16 @@ async function bootstrap() {
   const configApp = await NestFactory.create(AppModule);
   const configService = configApp.get(ConfigService);
   const port = configService.get<number>('listenPort') || 3008;
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
-    transport: Transport.TCP,
-    options: {
-      host: "0.0.0.0",
-      port: port,
-    },
-  });
+  const app = await NestFactory.createMicroservice<MicroserviceOptions>(
+    AppModule,
+    {
+      transport: Transport.TCP,
+      options: {
+        host: '0.0.0.0',
+        port: port,
+      },
+    }
+  );
   await app.listen();
   Logger.log(`🚀 Microservice is running on: tcp://localhost:${port}`);
 }

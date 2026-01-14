@@ -41,7 +41,7 @@ app.use(
 app.use((req, res, next) => {
   console.log('Request URL:', req.url);
   next();
-})
+});
 
 app.use(
   '/api',

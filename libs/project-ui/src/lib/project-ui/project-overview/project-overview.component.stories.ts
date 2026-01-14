@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/angular';
 import { ProjectOverviewComponent } from './project-overview.component';
 import { within, expect } from 'storybook/internal/test';
 
-
 const meta: Meta<ProjectOverviewComponent> = {
   component: ProjectOverviewComponent,
   title: 'ProjectOverviewComponent',

@@ -4,7 +4,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from '@optimistic-tanuki/database';
-import { StorageModule, FileValidationService, VirusScanService } from '@optimistic-tanuki/storage';
+import {
+  StorageModule,
+  FileValidationService,
+  VirusScanService,
+} from '@optimistic-tanuki/storage';
 import loadDatabase from './loadDatabase';
 import { loadConfig } from './config';
 import AssetEntity from '../entities/asset.entity';
@@ -15,11 +19,11 @@ import { ConfigModule } from '@nestjs/config';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [loadConfig] }),
     LoggerModule,
-    DatabaseModule.register({name: 'assets', factory: loadDatabase}),
+    DatabaseModule.register({ name: 'assets', factory: loadDatabase }),
     StorageModule.register({
       enabledAdapters: ['local'],
       localStoragePath: './storage',
-    })
+    }),
   ],
   controllers: [AppController],
   providers: [
@@ -30,7 +34,7 @@ import { ConfigModule } from '@nestjs/config';
       provide: getRepositoryToken(AssetEntity),
       useFactory: (ds: DataSource) => ds.getRepository(AssetEntity),
       inject: ['ASSETS_CONNECTION'],
-    }
+    },
   ],
 })
 export class AppModule {}

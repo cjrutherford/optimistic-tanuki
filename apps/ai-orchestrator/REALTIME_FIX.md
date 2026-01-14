@@ -69,11 +69,13 @@ firstValueFrom(
 ## Benefits
 
 ### 1. True Real-Time Updates
+
 - Clients see messages within ~500ms of posting
 - No waiting for entire AI processing to complete
 - Immediate feedback on tool execution
 
 ### 2. Better User Experience
+
 ```
 Before:
 User: "Create project"
@@ -91,11 +93,13 @@ User: "Create project"
 ```
 
 ### 3. Non-Blocking Architecture
+
 - AI orchestration runs asynchronously
 - Gateway continues serving other requests
 - Polling isolated to conversation participants
 
 ### 4. Error Handling
+
 - Polling stops on error
 - Final emit ensures message delivery
 - No infinite polling loops
@@ -103,6 +107,7 @@ User: "Create project"
 ## Configuration
 
 ### Polling Interval
+
 Currently set to **500ms** - can be adjusted based on needs:
 
 ```typescript
@@ -112,6 +117,7 @@ const pollInterval = setInterval(async () => {
 ```
 
 **Considerations:**
+
 - **Lower (100-300ms)**: More responsive, higher database load
 - **Current (500ms)**: Balanced responsiveness and load
 - **Higher (1000-2000ms)**: Lower load, less responsive
@@ -119,6 +125,7 @@ const pollInterval = setInterval(async () => {
 ### Database Load
 
 Each poll makes one `GET_CONVERSATIONS` call per participant:
+
 - For 2 participants: 2 queries/500ms = ~4 queries/second
 - For 10 participants: 10 queries/500ms = ~20 queries/second
 
@@ -127,6 +134,7 @@ Most AI operations complete in 5-15 seconds, resulting in 10-30 polls per conver
 ## Alternative Approaches Considered
 
 ### 1. Event-Based (Future Enhancement)
+
 ```typescript
 // Chat collector emits event when message posted
 this.eventEmitter.emit('message.posted', { conversationId, message });
@@ -141,6 +149,7 @@ this.eventEmitter.on('message.posted', (data) => {
 **Cons:** Requires event-emitter integration, more complex architecture
 
 ### 2. WebSocket from Chat Collector
+
 ```typescript
 // Chat collector maintains WebSocket connections
 // Pushes messages directly to gateway
@@ -150,6 +159,7 @@ this.eventEmitter.on('message.posted', (data) => {
 **Cons:** Architectural complexity, service coupling
 
 ### 3. Redis Pub/Sub
+
 ```typescript
 // Chat collector publishes to Redis
 // Gateway subscribes to conversation channels
@@ -159,22 +169,26 @@ this.eventEmitter.on('message.posted', (data) => {
 **Cons:** Additional dependency, infrastructure requirement
 
 ### 4. Current Polling Approach ✅
+
 **Pros:** Simple, no new dependencies, works immediately
 **Cons:** Database queries during polling
 
 ## Performance Impact
 
 ### Database Queries
+
 - Additional queries: ~10-30 per conversation (5-15 second AI processing)
 - Query type: `GET_CONVERSATIONS` (indexed lookup)
 - Impact: Minimal with proper indexing
 
 ### Network
+
 - Polling traffic: Minimal (small JSON responses)
 - WebSocket emissions: Same as before
 - Overall: Negligible impact
 
 ### Memory
+
 - Poll interval: ~100 bytes per conversation
 - Cleanup on completion: Automatic
 - Impact: Negligible
@@ -182,6 +196,7 @@ this.eventEmitter.on('message.posted', (data) => {
 ## Monitoring
 
 ### Logs
+
 ```
 Starting AI orchestration with polling...
 Polling for conversation updates...
@@ -190,6 +205,7 @@ Polling stopped, final emit completed
 ```
 
 ### Metrics to Track
+
 1. **Polling iterations** per conversation
 2. **Time to first message** delivery
 3. **Total AI processing time**
@@ -198,27 +214,29 @@ Polling stopped, final emit completed
 ## Testing
 
 ### Manual Test
+
 1. Send message requiring tool execution
 2. Observe client updates in real-time:
    - Intermediate message appears immediately
-   - Tool notification appears immediately  
+   - Tool notification appears immediately
    - Final response appears immediately
 3. Verify polling stops after completion
 
 ### Automated Test
+
 ```typescript
 it('should emit messages in real-time during AI processing', async () => {
   const emittedMessages = [];
-  
+
   client.on('conversations', (convs) => {
     emittedMessages.push(convs);
   });
-  
+
   await sendMessage({ content: 'Create a project' });
-  
+
   // Wait for polling cycles
   await delay(2000);
-  
+
   // Should have received multiple updates
   expect(emittedMessages.length).toBeGreaterThan(1);
 });
@@ -227,16 +245,19 @@ it('should emit messages in real-time during AI processing', async () => {
 ## Troubleshooting
 
 ### Messages Still Delayed
+
 - Check polling interval (might be too high)
 - Verify chat collector is saving messages immediately
 - Check database query performance
 
 ### Too Many Database Queries
+
 - Increase polling interval (e.g., 1000ms)
 - Implement caching in chat collector
 - Consider event-based approach
 
 ### Polling Doesn't Stop
+
 - Check error handling in AI orchestration
 - Verify `clearInterval` is called in all paths
 - Check for unhandled promise rejections

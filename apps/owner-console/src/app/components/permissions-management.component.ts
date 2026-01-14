@@ -1,10 +1,26 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CardComponent, HeadingComponent, ModalComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
-import { MessageComponent, MessageService } from '@optimistic-tanuki/message-ui';
-import { TextInputComponent, TextAreaComponent } from '@optimistic-tanuki/form-ui';
-import { PermissionDto, CreatePermissionDto, UpdatePermissionDto, AppScopeDto } from '@optimistic-tanuki/ui-models';
+import {
+  CardComponent,
+  HeadingComponent,
+  ModalComponent,
+  ButtonComponent,
+} from '@optimistic-tanuki/common-ui';
+import {
+  MessageComponent,
+  MessageService,
+} from '@optimistic-tanuki/message-ui';
+import {
+  TextInputComponent,
+  TextAreaComponent,
+} from '@optimistic-tanuki/form-ui';
+import {
+  PermissionDto,
+  CreatePermissionDto,
+  UpdatePermissionDto,
+  AppScopeDto,
+} from '@optimistic-tanuki/ui-models';
 import { PermissionsService } from '../services/permissions.service';
 import { AppScopesService } from '../services/app-scopes.service';
 import { AgPermissionsTableComponent } from './ag-permissions-table.component';
@@ -26,7 +42,7 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
   ],
   template: `
     <lib-message></lib-message>
-    
+
     <otui-card>
       <otui-heading level="2">Permissions Management</otui-heading>
 
@@ -50,8 +66,10 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
       <div class="form-container">
         <div class="form-section">
           <h3>Permission Details</h3>
-          <p class="section-description">Define the permission name, description, and scope.</p>
-          
+          <p class="section-description">
+            Define the permission name, description, and scope.
+          </p>
+
           <div class="form-field">
             <lib-text-input
               label="Permission Name *"
@@ -96,12 +114,21 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
           <h3>Preview</h3>
           <div class="preview-content">
             <p><strong>Name:</strong> {{ formData.name || 'Not set' }}</p>
-            <p><strong>Description:</strong> {{ formData.description || 'Not set' }}</p>
-            <p><strong>Resource:</strong> {{ formData.resource || 'Not set' }}</p>
+            <p>
+              <strong>Description:</strong>
+              {{ formData.description || 'Not set' }}
+            </p>
+            <p>
+              <strong>Resource:</strong> {{ formData.resource || 'Not set' }}
+            </p>
             <p><strong>Action:</strong> {{ formData.action || 'Not set' }}</p>
-            <p><strong>Target ID:</strong> {{ formData.targetId || 'None (applies globally)' }}</p>
+            <p>
+              <strong>Target ID:</strong>
+              {{ formData.targetId || 'None (applies globally)' }}
+            </p>
             <p *ngIf="isEditMode && currentPermission" class="info-text">
-              <strong>Current App Scope:</strong> {{ currentPermission.appScope?.name || 'None' }}
+              <strong>Current App Scope:</strong>
+              {{ currentPermission.appScope?.name || 'None' }}
             </p>
           </div>
         </div>
@@ -110,8 +137,8 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
           <otui-button variant="secondary" (action)="closeFormModal()">
             Cancel
           </otui-button>
-          <otui-button 
-            variant="primary" 
+          <otui-button
+            variant="primary"
             (action)="confirmFormSubmit()"
             [disabled]="!isFormValid()"
           >
@@ -131,31 +158,46 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
     >
       <div class="confirm-container">
         <p>{{ confirmModalMessage }}</p>
-        
-        <div *ngIf="confirmAction === 'create' || confirmAction === 'update'" class="change-details">
-          <h4>Changes to be {{ confirmAction === 'create' ? 'applied' : 'saved' }}:</h4>
+
+        <div
+          *ngIf="confirmAction === 'create' || confirmAction === 'update'"
+          class="change-details"
+        >
+          <h4>
+            Changes to be
+            {{ confirmAction === 'create' ? 'applied' : 'saved' }}:
+          </h4>
           <ul>
             <li><strong>Name:</strong> {{ formData.name }}</li>
             <li><strong>Description:</strong> {{ formData.description }}</li>
             <li><strong>Resource:</strong> {{ formData.resource }}</li>
             <li><strong>Action:</strong> {{ formData.action }}</li>
-            <li><strong>Target ID:</strong> {{ formData.targetId || 'None' }}</li>
+            <li>
+              <strong>Target ID:</strong> {{ formData.targetId || 'None' }}
+            </li>
           </ul>
           <p class="warning-text" *ngIf="confirmAction === 'update'">
-            ⚠️ Updating this permission may affect roles and users that have been granted this permission.
+            ⚠️ Updating this permission may affect roles and users that have
+            been granted this permission.
           </p>
         </div>
 
-        <div *ngIf="confirmAction === 'delete' && currentPermission" class="change-details">
+        <div
+          *ngIf="confirmAction === 'delete' && currentPermission"
+          class="change-details"
+        >
           <h4>Permission to be deleted:</h4>
           <ul>
             <li><strong>Name:</strong> {{ currentPermission.name }}</li>
-            <li><strong>Description:</strong> {{ currentPermission.description }}</li>
+            <li>
+              <strong>Description:</strong> {{ currentPermission.description }}
+            </li>
             <li><strong>Resource:</strong> {{ currentPermission.resource }}</li>
             <li><strong>Action:</strong> {{ currentPermission.action }}</li>
           </ul>
           <p class="danger-text">
-            ⚠️ <strong>This action cannot be undone!</strong> All roles with this permission will lose it.
+            ⚠️ <strong>This action cannot be undone!</strong> All roles with
+            this permission will lose it.
           </p>
         </div>
 
@@ -163,7 +205,7 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
           <otui-button variant="secondary" (action)="closeConfirmModal()">
             Cancel
           </otui-button>
-          <otui-button 
+          <otui-button
             [variant]="confirmAction === 'delete' ? 'danger' : 'primary'"
             (action)="executeConfirmedAction()"
           >
@@ -333,25 +375,28 @@ export class PermissionsManagementComponent implements OnInit {
   loadPermissions(): void {
     this.loading = true;
     this.messageService.clearMessages();
-    
+
     this.permissionsService.getPermissions().subscribe({
       next: (permissions) => {
         this.permissions = permissions;
         this.loading = false;
-        
+
         if (permissions.length === 0) {
           this.messageService.addMessage({
             content: 'No permissions found in the system.',
-            type: 'info'
+            type: 'info',
           });
         }
       },
       error: (err) => {
         this.loading = false;
-        const errorMessage = err.error?.message || err.message || 'Failed to load permissions. Please try again.';
+        const errorMessage =
+          err.error?.message ||
+          err.message ||
+          'Failed to load permissions. Please try again.';
         this.messageService.addMessage({
           content: errorMessage,
-          type: 'error'
+          type: 'error',
         });
       },
     });
@@ -413,17 +458,19 @@ export class PermissionsManagementComponent implements OnInit {
     if (!this.isFormValid()) {
       this.messageService.addMessage({
         content: 'Please fill in all required fields.',
-        type: 'error'
+        type: 'error',
       });
       return;
     }
 
     this.confirmAction = this.isEditMode ? 'update' : 'create';
-    this.confirmModalTitle = this.isEditMode ? 'Confirm Permission Update' : 'Confirm Permission Creation';
+    this.confirmModalTitle = this.isEditMode
+      ? 'Confirm Permission Update'
+      : 'Confirm Permission Creation';
     this.confirmModalMessage = this.isEditMode
       ? 'Are you sure you want to update this permission?'
       : 'Are you sure you want to create this permission?';
-    
+
     this.showConfirmModal = true;
   }
 
@@ -431,7 +478,8 @@ export class PermissionsManagementComponent implements OnInit {
     this.currentPermission = permission;
     this.confirmAction = 'delete';
     this.confirmModalTitle = 'Confirm Permission Deletion';
-    this.confirmModalMessage = 'Are you sure you want to delete this permission?';
+    this.confirmModalMessage =
+      'Are you sure you want to delete this permission?';
     this.showConfirmModal = true;
   }
 
@@ -462,17 +510,18 @@ export class PermissionsManagementComponent implements OnInit {
       next: () => {
         this.messageService.addMessage({
           content: 'Permission created successfully!',
-          type: 'success'
+          type: 'success',
         });
         this.closeConfirmModal();
         this.closeFormModal();
         this.loadPermissions();
       },
       error: (err) => {
-        const errorMessage = err.error?.message || err.message || 'Failed to create permission.';
+        const errorMessage =
+          err.error?.message || err.message || 'Failed to create permission.';
         this.messageService.addMessage({
           content: errorMessage,
-          type: 'error'
+          type: 'error',
         });
       },
     });
@@ -489,45 +538,51 @@ export class PermissionsManagementComponent implements OnInit {
       targetId: this.formData.targetId || undefined,
     };
 
-    this.permissionsService.updatePermission(this.formData.id, updateDto).subscribe({
-      next: () => {
-        this.messageService.addMessage({
-          content: 'Permission updated successfully!',
-          type: 'success'
-        });
-        this.closeConfirmModal();
-        this.closeFormModal();
-        this.loadPermissions();
-      },
-      error: (err) => {
-        const errorMessage = err.error?.message || err.message || 'Failed to update permission.';
-        this.messageService.addMessage({
-          content: errorMessage,
-          type: 'error'
-        });
-      },
-    });
+    this.permissionsService
+      .updatePermission(this.formData.id, updateDto)
+      .subscribe({
+        next: () => {
+          this.messageService.addMessage({
+            content: 'Permission updated successfully!',
+            type: 'success',
+          });
+          this.closeConfirmModal();
+          this.closeFormModal();
+          this.loadPermissions();
+        },
+        error: (err) => {
+          const errorMessage =
+            err.error?.message || err.message || 'Failed to update permission.';
+          this.messageService.addMessage({
+            content: errorMessage,
+            type: 'error',
+          });
+        },
+      });
   }
 
   deletePermission(): void {
     if (!this.currentPermission) return;
 
-    this.permissionsService.deletePermission(this.currentPermission.id).subscribe({
-      next: () => {
-        this.messageService.addMessage({
-          content: 'Permission deleted successfully!',
-          type: 'success'
-        });
-        this.closeConfirmModal();
-        this.loadPermissions();
-      },
-      error: (err) => {
-        const errorMessage = err.error?.message || err.message || 'Failed to delete permission.';
-        this.messageService.addMessage({
-          content: errorMessage,
-          type: 'error'
-        });
-      },
-    });
+    this.permissionsService
+      .deletePermission(this.currentPermission.id)
+      .subscribe({
+        next: () => {
+          this.messageService.addMessage({
+            content: 'Permission deleted successfully!',
+            type: 'success',
+          });
+          this.closeConfirmModal();
+          this.loadPermissions();
+        },
+        error: (err) => {
+          const errorMessage =
+            err.error?.message || err.message || 'Failed to delete permission.';
+          this.messageService.addMessage({
+            content: errorMessage,
+            type: 'error',
+          });
+        },
+      });
   }
 }

@@ -18,12 +18,14 @@ async function bootstrap() {
   try {
     await client.connect();
     console.log('Connected. Sending health-check command...');
-    
+
     // Send the message. The pattern must match what's in the controller.
     // In controller: @MessagePattern({ cmd: 'health-check' })
     // So pattern is { cmd: 'health-check' }
-    const result = await firstValueFrom(client.send({ cmd: 'health-check' }, {}));
-    
+    const result = await firstValueFrom(
+      client.send({ cmd: 'health-check' }, {})
+    );
+
     console.log('Received response:', result);
 
     if (result && result.status === 'healthy') {

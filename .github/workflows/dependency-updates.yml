@@ -29,7 +29,7 @@ jobs:
       - name: Check for outdated dependencies
         run: |
           npm outdated > outdated.txt || true
-          
+
           echo "## 📦 Dependency Status" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
@@ -39,16 +39,16 @@ jobs:
       - name: Run npm audit
         run: |
           npm audit --json > audit.json || true
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           CRITICAL=$(jq '.metadata.vulnerabilities.critical' audit.json)
           HIGH=$(jq '.metadata.vulnerabilities.high' audit.json)
           MODERATE=$(jq '.metadata.vulnerabilities.moderate' audit.json)
           LOW=$(jq '.metadata.vulnerabilities.low' audit.json)
-          
+
           echo "- Critical: $CRITICAL" >> $GITHUB_STEP_SUMMARY
           echo "- High: $HIGH" >> $GITHUB_STEP_SUMMARY
           echo "- Moderate: $MODERATE" >> $GITHUB_STEP_SUMMARY

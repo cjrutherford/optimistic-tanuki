@@ -26,15 +26,21 @@ const createRiskSchema = z.object({
   impact: z
     .nativeEnum(RiskImpact)
     .optional()
-    .describe('The impact level of the risk. MUST be one of: LOW, MEDIUM, HIGH. Default: LOW'),
+    .describe(
+      'The impact level of the risk. MUST be one of: LOW, MEDIUM, HIGH. Default: LOW'
+    ),
   likelihood: z
     .nativeEnum(RiskLikelihood)
     .optional()
-    .describe('The likelihood of the risk. MUST be one of: UNLIKELY, POSSIBLE, LIKELY, IMMINENT, ALMOST_CERTAIN, CERTAIN, NOT_APPLICABLE, UNKNOWN. Default: UNLIKELY'),
+    .describe(
+      'The likelihood of the risk. MUST be one of: UNLIKELY, POSSIBLE, LIKELY, IMMINENT, ALMOST_CERTAIN, CERTAIN, NOT_APPLICABLE, UNKNOWN. Default: UNLIKELY'
+    ),
   status: z
     .nativeEnum(RiskStatus)
     .optional()
-    .describe('The status of the risk. MUST be one of: OPEN, IN_PROGRESS, CLOSED. Default: OPEN'),
+    .describe(
+      'The status of the risk. MUST be one of: OPEN, IN_PROGRESS, CLOSED. Default: OPEN'
+    ),
 });
 
 const updateRiskSchema = z.object({
@@ -136,7 +142,9 @@ export class RiskMcpService {
         likelihood: likelihood || RiskLikelihood.UNLIKELY,
         status: status || RiskStatus.OPEN,
       };
-      this.logger.log(`RiskMcpService sending riskData: ${JSON.stringify(riskData)}`);
+      this.logger.log(
+        `RiskMcpService sending riskData: ${JSON.stringify(riskData)}`
+      );
 
       const risk = await firstValueFrom(
         this.projectPlanningService.send({ cmd: RiskCommands.CREATE }, riskData)

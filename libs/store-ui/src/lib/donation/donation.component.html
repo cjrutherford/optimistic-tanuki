@@ -1,12 +1,13 @@
 <div class="donation-form">
   <h2>Make a Donation</h2>
-  
+
   <div class="preset-amounts">
     <button
       *ngFor="let preset of presetAmounts"
       class="preset-btn"
       [class.active]="amount === preset && !customAmount"
-      (click)="selectAmount(preset)">
+      (click)="selectAmount(preset)"
+    >
       \${{ preset }}
     </button>
   </div>
@@ -22,7 +23,8 @@
         (blur)="useCustomAmount()"
         min="1"
         step="1"
-        placeholder="Enter amount" />
+        placeholder="Enter amount"
+      />
     </div>
   </div>
 
@@ -32,14 +34,12 @@
       id="message"
       [(ngModel)]="message"
       rows="3"
-      placeholder="Leave a message with your donation..."></textarea>
+      placeholder="Leave a message with your donation..."
+    ></textarea>
   </div>
 
   <div class="anonymous-checkbox">
-    <input
-      type="checkbox"
-      id="anonymous"
-      [(ngModel)]="anonymous" />
+    <input type="checkbox" id="anonymous" [(ngModel)]="anonymous" />
     <label for="anonymous">Make this donation anonymous</label>
   </div>
 

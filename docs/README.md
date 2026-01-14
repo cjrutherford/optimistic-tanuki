@@ -7,14 +7,18 @@ Welcome to the Optimistic Tanuki documentation! This guide will help you navigat
 **New to the documentation?** See our [Documentation Organization Guide](./ORGANIZATION.md) to understand how docs are structured and how to find what you need.
 
 ### 🚀 Getting Started
+
 - [MVP Overview](./getting-started/mvp-overview.md) - Minimum Viable Product plan and roadmap
 
 ### 💻 Development
+
 - [Debugging Guide](./development/debugging.md) - Docker-based development with debugging and hot-reload
 - [API Configuration](./development/api-configuration.md) - Setting up API base URLs and environment configuration
 
 ### 🏗️ Architecture
+
 Core system architecture and design documentation:
+
 - **[Architecture Overview](./architecture/README.md)** - High-level system architecture and design
 - [Permissions System](./architecture/permissions.md) - RBAC implementation and usage
 - [Permissions Cache](./architecture/permissions-cache.md) - Caching configuration for permissions
@@ -26,7 +30,9 @@ Core system architecture and design documentation:
 - [Security Audit](./architecture/security-audit.md) - Security audit findings and recommendations
 
 ### 📖 Guides
+
 Step-by-step guides for specific tasks:
+
 - [Theme Designer Guide](./guides/theme-designer.md) - Using the theme designer component
 - [Theme Migration Guide](./guides/theme-migration.md) - Migrating to the new theme system
 - [MCP Tools Guide](./guides/mcp-tools.md) - Model Context Protocol tools usage
@@ -34,7 +40,9 @@ Step-by-step guides for specific tasks:
 - [Agents Guide](./guides/agents.md) - Working with AI agents in the platform
 
 ### 🧪 Testing
+
 Testing guides and best practices:
+
 - [E2E Testing Guide](./testing/e2e-testing.md) - End-to-end testing with Playwright
 - [Test Portability Guide](./testing/test-portability.md) - Running tests in different environments
 - [Blog Features Testing](./testing/blog-features.md) - Testing blog-specific features
@@ -44,7 +52,9 @@ Testing guides and best practices:
 - [Screenshot Capture Guide](./testing/screenshot-capture.md) - Capturing screenshots in tests
 
 ### 📡 API Documentation
+
 API documentation for services:
+
 - [Applications API Reference](./api/README.md) - Consolidated API documentation for all applications
 
 ## 🗂️ Application-Specific Documentation
@@ -52,6 +62,7 @@ API documentation for services:
 Each application has its own README with specific details:
 
 ### Services
+
 - [AI Orchestrator](../apps/ai-orchestrator/README.md) - AI task orchestration service
   - [LangChain Integration](../apps/ai-orchestrator/LANGCHAIN_INTEGRATION.md)
   - [LangGraph Agent Integration](../apps/ai-orchestrator/LANGGRAPH_AGENT_INTEGRATION.md)
@@ -75,6 +86,7 @@ Each application has its own README with specific details:
 - [Telos Docs Service](../apps/telos-docs-service/README.md) - Documentation service
 
 ### Frontend Applications
+
 - [Client Interface](../apps/client-interface/README.md) - Main web application
 - [Forge of Will](../apps/forgeofwill/README.md) - Project management frontend
 - [Christopher Rutherford Net](../apps/christopherrutherford-net/README.md) - Personal website
@@ -84,6 +96,7 @@ Each application has its own README with specific details:
 Shared libraries used across applications:
 
 ### UI Libraries
+
 - [AG Grid UI](../libs/ag-grid-ui/README.md) - AG Grid integration
 - [Auth UI](../libs/auth-ui/README.md) - Authentication UI components
 - [Blogging UI](../libs/blogging-ui/README.md) - Blog UI components
@@ -103,6 +116,7 @@ Shared libraries used across applications:
   - [Host Binding Migration](../libs/theme-ui/HOST_BINDING_MIGRATION.md)
 
 ### Core Libraries
+
 - [Constants](../libs/constants/README.md) - Shared constants and tokens
 - [Database](../libs/database/README.md) - Database connection and TypeORM setup
 - [Encryption](../libs/encryption/README.md) - Cryptographic operations
@@ -125,6 +139,7 @@ Shared libraries used across applications:
 ## 📝 Documentation Standards
 
 When adding new documentation:
+
 1. Place it in the appropriate category folder
 2. Update this index with a link to your new document
 3. Use clear, descriptive titles
@@ -134,6 +149,7 @@ When adding new documentation:
 ## 🤝 Need Help?
 
 If you can't find what you're looking for:
+
 1. Check the application-specific README files
 2. Review the architecture documentation
 3. Consult the testing guides for test-related questions

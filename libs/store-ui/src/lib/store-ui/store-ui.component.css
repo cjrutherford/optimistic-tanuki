@@ -1,10 +1,10 @@
 :host {
-	display: block;
-	background: var(--background, #ffffff);
-	color: var(--foreground, #212121);
+  display: block;
+  background: var(--background, #ffffff);
+  color: var(--foreground, #212121);
 }
 
 .store-ui-wrapper {
-	color: inherit;
-	background: inherit;
+  color: inherit;
+  background: inherit;
 }

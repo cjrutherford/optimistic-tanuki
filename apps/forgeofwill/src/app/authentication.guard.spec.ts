@@ -11,7 +11,7 @@ describe('AuthenticationGuard', () => {
   let authStateService: AuthStateService;
 
   const authStateServiceMock = {
-    isAuthenticated$: jest.fn()
+    isAuthenticated$: jest.fn(),
   };
 
   beforeEach(() => {
@@ -19,8 +19,8 @@ describe('AuthenticationGuard', () => {
       imports: [RouterTestingModule.withRoutes([])],
       providers: [
         AuthenticationGuard,
-        { provide: AuthStateService, useValue: authStateServiceMock }
-      ]
+        { provide: AuthStateService, useValue: authStateServiceMock },
+      ],
     });
     guard = TestBed.inject(AuthenticationGuard);
     router = TestBed.inject(Router);
@@ -35,7 +35,7 @@ describe('AuthenticationGuard', () => {
     authStateServiceMock.isAuthenticated$.mockReturnValue(of(true));
     const navigateSpy = jest.spyOn(router, 'navigate');
 
-    guard.canActivate().subscribe(result => {
+    guard.canActivate().subscribe((result) => {
       expect(result).toBe(true);
       expect(navigateSpy).not.toHaveBeenCalled();
       done();
@@ -46,7 +46,7 @@ describe('AuthenticationGuard', () => {
     authStateServiceMock.isAuthenticated$.mockReturnValue(of(false));
     const navigateSpy = jest.spyOn(router, 'navigate');
 
-    guard.canActivate().subscribe(result => {
+    guard.canActivate().subscribe((result) => {
       expect(result).toBe(false);
       expect(navigateSpy).toHaveBeenCalledWith(['/login']);
       done();

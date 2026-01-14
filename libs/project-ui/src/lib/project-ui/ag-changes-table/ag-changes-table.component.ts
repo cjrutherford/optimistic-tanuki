@@ -1,4 +1,14 @@
-import { Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, signal, computed } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  Input,
+  Output,
+  EventEmitter,
+  signal,
+  computed,
+} from '@angular/core';
 import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
@@ -8,10 +18,7 @@ import {
   createStatusColumn,
   CellClickedEvent,
 } from '@optimistic-tanuki/ag-grid-ui';
-import {
-  ButtonComponent,
-  ModalComponent,
-} from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import { Change, CreateChange } from '@optimistic-tanuki/ui-models';
 import { ChangeFormComponent } from '../change-form/change-form.component';
 
@@ -21,7 +28,12 @@ import { ChangeFormComponent } from '../change-form/change-form.component';
  */
 @Component({
   selector: 'lib-ag-changes-table',
-  imports: [AgGridUiComponent, ButtonComponent, ModalComponent, ChangeFormComponent],
+  imports: [
+    AgGridUiComponent,
+    ButtonComponent,
+    ModalComponent,
+    ChangeFormComponent,
+  ],
   templateUrl: './ag-changes-table.component.html',
   styleUrls: ['./ag-changes-table.component.scss'],
 })
@@ -37,10 +49,10 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
   showModal = signal(false);
   showEditModal = signal(false);
   selectedChange = signal<Change | null>(null);
-  
+
   // Internal signal for grid data
   private changesSignal = signal<Change[]>([]);
-  
+
   // Computed signal for grid data
   gridData = computed(() => this.changesSignal());
 
@@ -118,13 +130,20 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.changesSignal.set(this.changes || []);
-    console.log('ag-changes-table initialized with', this.changes?.length || 0, 'changes');
+    console.log(
+      'ag-changes-table initialized with',
+      this.changes?.length || 0,
+      'changes'
+    );
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['changes']) {
       this.changesSignal.set(this.changes || []);
-      console.log('ag-changes-table changes updated:', this.changes?.length || 0);
+      console.log(
+        'ag-changes-table changes updated:',
+        this.changes?.length || 0
+      );
     }
   }
 
@@ -194,7 +213,7 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
       requestor = '',
       approver = '',
       resolution = 'PENDING',
-      projectId = ''
+      projectId = '',
     } = change;
     const newChange: CreateChange = {
       changeType,
@@ -204,7 +223,7 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
       requestor,
       approver,
       resolution,
-      projectId
+      projectId,
     };
     this.createChange.emit(newChange);
     this.closeModal();

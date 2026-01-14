@@ -48,8 +48,8 @@ export {
 } from './lib/libs/permissions';
 
 export {
-    ProductCommands,
-    SubscriptionCommands,
-    DonationCommands,
-    OrderCommands
+  ProductCommands,
+  SubscriptionCommands,
+  DonationCommands,
+  OrderCommands,
 } from './lib/libs/store';

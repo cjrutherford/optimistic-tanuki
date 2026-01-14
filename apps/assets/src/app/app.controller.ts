@@ -13,7 +13,7 @@ export class AppController {
   async createAsset(data: CreateAssetDto) {
     try {
       const value = await this.appService.createAsset(data);
-      console.log("🚀 ~ AppController ~ createAsset ~ value:", value);
+      console.log('🚀 ~ AppController ~ createAsset ~ value:', value);
       return value;
     } catch (error) {
       console.trace(error);
@@ -43,7 +43,7 @@ export class AppController {
   async readAsset(data: AssetHandle) {
     try {
       const asset = await this.appService.readAsset(data);
-      console.log("🚀 ~ AppController ~ readAsset ~ asset:", asset.length);
+      console.log('🚀 ~ AppController ~ readAsset ~ asset:', asset.length);
       return asset;
     } catch (error) {
       throw new RpcException(error);

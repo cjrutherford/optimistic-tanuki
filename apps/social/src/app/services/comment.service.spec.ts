@@ -23,7 +23,10 @@ describe('CommentService', () => {
     postRepo = {
       findOne: jest.fn(),
     };
-    service = new CommentService(commentRepo as Repository<Comment>, postRepo as Repository<Post>);
+    service = new CommentService(
+      commentRepo as Repository<Comment>,
+      postRepo as Repository<Post>
+    );
   });
 
   it('should be defined', () => {
@@ -32,7 +35,12 @@ describe('CommentService', () => {
 
   describe('create', () => {
     it('should create and save a comment if post exists', async () => {
-      const dto: CreateCommentDto = { content: 'test', userId: 'u1', postId: 'p1', profileId: 'pr1' };
+      const dto: CreateCommentDto = {
+        content: 'test',
+        userId: 'u1',
+        postId: 'p1',
+        profileId: 'pr1',
+      };
       const post = { id: 'p1' } as Post;
       const created: Comment = {
         id: 'c1',
@@ -51,20 +59,32 @@ describe('CommentService', () => {
       commentRepo.create.mockReturnValue(created);
       commentRepo.save.mockResolvedValue(created);
       const result = await service.create(dto);
-      expect(postRepo.findOne).toHaveBeenCalledWith({ where: { id: dto.postId } });
+      expect(postRepo.findOne).toHaveBeenCalledWith({
+        where: { id: dto.postId },
+      });
       expect(commentRepo.create).toHaveBeenCalledWith({ ...dto, post });
       expect(commentRepo.save).toHaveBeenCalledWith(created);
       expect(result).toBe(created);
     });
 
     it('should throw RpcException if post does not exist', async () => {
-      const dto: CreateCommentDto = { content: 'test', userId: 'u1', postId: 'p1', profileId: 'pr1' };
+      const dto: CreateCommentDto = {
+        content: 'test',
+        userId: 'u1',
+        postId: 'p1',
+        profileId: 'pr1',
+      };
       postRepo.findOne.mockResolvedValue(undefined);
       await expect(service.create(dto)).rejects.toThrow(RpcException);
     });
 
     it('should throw RpcException on repo error', async () => {
-      const dto: CreateCommentDto = { content: 'test', userId: 'u1', postId: 'p1', profileId: 'pr1' };
+      const dto: CreateCommentDto = {
+        content: 'test',
+        userId: 'u1',
+        postId: 'p1',
+        profileId: 'pr1',
+      };
       postRepo.findOne.mockRejectedValue(new Error('fail'));
       await expect(service.create(dto)).rejects.toThrow(RpcException);
     });

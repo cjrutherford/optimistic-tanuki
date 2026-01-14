@@ -1,6 +1,10 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-import { ButtonComponent, CardComponent, GridComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ButtonComponent,
+  CardComponent,
+  GridComponent,
+} from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'lib-attachment',
@@ -11,10 +15,10 @@ import { ButtonComponent, CardComponent, GridComponent } from '@optimistic-tanuk
 })
 export class AttachmentComponent {
   @Input() attachments: File[] = [];
-  @Output() attachmentsChange = new EventEmitter<{ 
-    all: File[], 
-    added: File[], 
-    removed: File[] 
+  @Output() attachmentsChange = new EventEmitter<{
+    all: File[];
+    added: File[];
+    removed: File[];
   }>();
 
   private addedAttachments: File[] = [];
@@ -27,7 +31,9 @@ export class AttachmentComponent {
   }
 
   removeAttachment(attachment: File) {
-    const index = this.attachments.findIndex(att => att.name === attachment.name && att.type === attachment.type);
+    const index = this.attachments.findIndex(
+      (att) => att.name === attachment.name && att.type === attachment.type
+    );
     if (index > -1) {
       this.attachments.splice(index, 1);
       this.removedAttachments.push(attachment);
@@ -39,7 +45,7 @@ export class AttachmentComponent {
     this.attachmentsChange.emit({
       all: this.attachments,
       added: this.addedAttachments,
-      removed: this.removedAttachments
+      removed: this.removedAttachments,
     });
   }
 }

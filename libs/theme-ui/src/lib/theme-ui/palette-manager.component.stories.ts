@@ -8,7 +8,8 @@ const meta: Meta<PaletteManagerComponent> = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Advanced component for creating, editing, and managing custom color palettes. This component allows users to create their own palettes and save them for future use, in addition to viewing all predefined palettes.',
+        component:
+          'Advanced component for creating, editing, and managing custom color palettes. This component allows users to create their own palettes and save them for future use, in addition to viewing all predefined palettes.',
       },
     },
   },
@@ -22,7 +23,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'The default palette manager view showing the create button and existing palettes. You can create new palettes, edit existing ones, or delete custom palettes.',
+        story:
+          'The default palette manager view showing the create button and existing palettes. You can create new palettes, edit existing ones, or delete custom palettes.',
       },
     },
   },
@@ -32,7 +34,8 @@ export const WithCustomPalettes: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates the palette manager with some custom palettes already created. This shows how the component looks when users have saved their own color schemes.',
+        story:
+          'Demonstrates the palette manager with some custom palettes already created. This shows how the component looks when users have saved their own color schemes.',
       },
     },
   },
@@ -46,7 +49,7 @@ export const WithCustomPalettes: Story = {
         complementary: '#0066ff',
         tertiary: '#ffcc00',
         background: { light: '#ffffff', dark: '#1a1a2e' },
-        foreground: { light: '#212121', dark: '#ffffff' }
+        foreground: { light: '#212121', dark: '#ffffff' },
       },
       {
         name: 'Sunset Vibes',
@@ -55,10 +58,10 @@ export const WithCustomPalettes: Story = {
         complementary: '#26c6da',
         tertiary: '#ff9800',
         background: { light: '#fff3e0', dark: '#1e1e1e' },
-        foreground: { light: '#2c2c2c', dark: '#f5f5f5' }
-      }
+        foreground: { light: '#2c2c2c', dark: '#f5f5f5' },
+      },
     ];
-    
+
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('customPalettes', JSON.stringify(mockPalettes));
     }
@@ -69,7 +72,8 @@ export const CreatingNewPalette: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Shows the palette creation form where users can define all aspects of a new palette including name, description, colors, and theme-specific backgrounds and foregrounds.',
+        story:
+          'Shows the palette creation form where users can define all aspects of a new palette including name, description, colors, and theme-specific backgrounds and foregrounds.',
       },
     },
   },
@@ -79,7 +83,8 @@ export const EditingPalette: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates editing an existing custom palette. Users can modify any aspect of their saved palettes.',
+        story:
+          'Demonstrates editing an existing custom palette. Users can modify any aspect of their saved palettes.',
       },
     },
   },

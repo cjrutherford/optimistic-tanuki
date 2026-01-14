@@ -68,7 +68,9 @@ mat-card.post-item {
   margin-bottom: 10px;
 }
 
-.galleries, .friends, .posts {
+.galleries,
+.friends,
+.posts {
   @extend .background-gradient-dark, .border-default, .shadow-default;
   width: 100%;
   padding: 0.5rem;
@@ -80,7 +82,9 @@ mat-card.post-item {
   border-radius: 8px;
 }
 
-.galleries h2, .friends h2, .posts h2 {
+.galleries h2,
+.friends h2,
+.posts h2 {
   color: var(--foreground-color);
 }
 
@@ -97,7 +101,9 @@ mat-list-item {
   padding: 1rem;
 }
 
-.galleries .photo-gallery, .friends mat-list, .posts mat-list {
+.galleries .photo-gallery,
+.friends mat-list,
+.posts mat-list {
   @extend .background-default, .border-default, .shadow-default;
   opacity: 0.8;
   color: var(--foreground-color);

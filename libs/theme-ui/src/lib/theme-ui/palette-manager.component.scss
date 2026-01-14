@@ -88,7 +88,7 @@
     color: var(--foreground, #212121);
   }
 
-  input[type="text"],
+  input[type='text'],
   textarea {
     padding: var(--spacing-sm, 8px);
     border: 1px solid var(--complement, #c0af4b);
@@ -126,7 +126,7 @@
   gap: var(--spacing-xs, 4px);
   align-items: center;
 
-  input[type="color"] {
+  input[type='color'] {
     width: 50px;
     height: 40px;
     border: 1px solid var(--complement, #c0af4b);
@@ -144,7 +144,7 @@
     }
   }
 
-  input[type="text"] {
+  input[type='text'] {
     flex: 1;
   }
 
@@ -157,7 +157,7 @@
 .color-pair {
   display: flex;
   gap: var(--spacing-md, 16px);
-  
+
   .color-input-group {
     flex: 1;
     flex-direction: column;

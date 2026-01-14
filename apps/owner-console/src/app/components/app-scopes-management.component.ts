@@ -1,10 +1,27 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CardComponent, HeadingComponent, ModalComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
-import { MessageComponent, MessageService } from '@optimistic-tanuki/message-ui';
-import { TextInputComponent, TextAreaComponent, CheckboxComponent } from '@optimistic-tanuki/form-ui';
-import { AppScopeDto, CreateAppScopeDto, UpdateAppScopeDto, PermissionDto } from '@optimistic-tanuki/ui-models';
+import {
+  CardComponent,
+  HeadingComponent,
+  ModalComponent,
+  ButtonComponent,
+} from '@optimistic-tanuki/common-ui';
+import {
+  MessageComponent,
+  MessageService,
+} from '@optimistic-tanuki/message-ui';
+import {
+  TextInputComponent,
+  TextAreaComponent,
+  CheckboxComponent,
+} from '@optimistic-tanuki/form-ui';
+import {
+  AppScopeDto,
+  CreateAppScopeDto,
+  UpdateAppScopeDto,
+  PermissionDto,
+} from '@optimistic-tanuki/ui-models';
 import { AppScopesService } from '../services/app-scopes.service';
 import { PermissionsService } from '../services/permissions.service';
 import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
@@ -27,7 +44,7 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
   ],
   template: `
     <lib-message></lib-message>
-    
+
     <otui-card>
       <otui-heading level="2">App Scopes Management</otui-heading>
 
@@ -52,8 +69,10 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
       <div class="form-container">
         <div class="form-section">
           <h3>App Scope Details</h3>
-          <p class="section-description">Define the application scope name, description, and status.</p>
-          
+          <p class="section-description">
+            Define the application scope name, description, and status.
+          </p>
+
           <div class="form-field">
             <lib-text-input
               label="App Scope Name *"
@@ -82,17 +101,28 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
           <h3>Preview</h3>
           <div class="preview-content">
             <p><strong>Name:</strong> {{ formData.name || 'Not set' }}</p>
-            <p><strong>Description:</strong> {{ formData.description || 'Not set' }}</p>
-            <p><strong>Status:</strong> 
-              <span [class.active-badge]="formData.active" [class.inactive-badge]="!formData.active">
+            <p>
+              <strong>Description:</strong>
+              {{ formData.description || 'Not set' }}
+            </p>
+            <p>
+              <strong>Status:</strong>
+              <span
+                [class.active-badge]="formData.active"
+                [class.inactive-badge]="!formData.active"
+              >
                 {{ formData.active ? 'Active' : 'Inactive' }}
               </span>
             </p>
             <div *ngIf="isEditMode && currentAppScope" class="related-info">
               <p class="info-text"><strong>Related Permissions:</strong></p>
-              <p *ngIf="relatedPermissions.length === 0" class="muted-text">No permissions associated with this app scope.</p>
+              <p *ngIf="relatedPermissions.length === 0" class="muted-text">
+                No permissions associated with this app scope.
+              </p>
               <ul *ngIf="relatedPermissions.length > 0">
-                <li *ngFor="let perm of relatedPermissions">{{ perm.name }} ({{ perm.resource }}.{{ perm.action }})</li>
+                <li *ngFor="let perm of relatedPermissions">
+                  {{ perm.name }} ({{ perm.resource }}.{{ perm.action }})
+                </li>
               </ul>
             </div>
           </div>
@@ -102,8 +132,8 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
           <otui-button variant="secondary" (action)="closeFormModal()">
             Cancel
           </otui-button>
-          <otui-button 
-            variant="primary" 
+          <otui-button
+            variant="primary"
             (action)="confirmFormSubmit()"
             [disabled]="!isFormValid()"
           >
@@ -123,35 +153,64 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
     >
       <div class="confirm-container">
         <p>{{ confirmModalMessage }}</p>
-        
-        <div *ngIf="confirmAction === 'create' || confirmAction === 'update'" class="change-details">
-          <h4>Changes to be {{ confirmAction === 'create' ? 'applied' : 'saved' }}:</h4>
+
+        <div
+          *ngIf="confirmAction === 'create' || confirmAction === 'update'"
+          class="change-details"
+        >
+          <h4>
+            Changes to be
+            {{ confirmAction === 'create' ? 'applied' : 'saved' }}:
+          </h4>
           <ul>
             <li><strong>Name:</strong> {{ formData.name }}</li>
             <li><strong>Description:</strong> {{ formData.description }}</li>
-            <li><strong>Status:</strong> {{ formData.active ? 'Active' : 'Inactive' }}</li>
+            <li>
+              <strong>Status:</strong>
+              {{ formData.active ? 'Active' : 'Inactive' }}
+            </li>
           </ul>
           <p class="warning-text" *ngIf="confirmAction === 'update'">
-            ⚠️ Updating this app scope may affect {{ relatedPermissions.length }} permission(s) and associated roles.
+            ⚠️ Updating this app scope may affect
+            {{ relatedPermissions.length }} permission(s) and associated roles.
           </p>
-          <div *ngIf="confirmAction === 'update' && !formData.active && currentAppScope?.active" class="warning-box">
+          <div
+            *ngIf="
+              confirmAction === 'update' &&
+              !formData.active &&
+              currentAppScope?.active
+            "
+            class="warning-box"
+          >
             <p class="danger-text">
-              <strong>⚠️ Warning:</strong> Deactivating this app scope will affect:
+              <strong>⚠️ Warning:</strong> Deactivating this app scope will
+              affect:
             </p>
             <ul>
-              <li>{{ relatedPermissions.length }} permission(s) associated with this scope</li>
+              <li>
+                {{ relatedPermissions.length }} permission(s) associated with
+                this scope
+              </li>
               <li>All roles that use these permissions</li>
               <li>All users with these roles</li>
             </ul>
           </div>
         </div>
 
-        <div *ngIf="confirmAction === 'delete' && currentAppScope" class="change-details">
+        <div
+          *ngIf="confirmAction === 'delete' && currentAppScope"
+          class="change-details"
+        >
           <h4>App Scope to be deleted:</h4>
           <ul>
             <li><strong>Name:</strong> {{ currentAppScope.name }}</li>
-            <li><strong>Description:</strong> {{ currentAppScope.description }}</li>
-            <li><strong>Status:</strong> {{ currentAppScope.active ? 'Active' : 'Inactive' }}</li>
+            <li>
+              <strong>Description:</strong> {{ currentAppScope.description }}
+            </li>
+            <li>
+              <strong>Status:</strong>
+              {{ currentAppScope.active ? 'Active' : 'Inactive' }}
+            </li>
           </ul>
           <div class="danger-box">
             <p class="danger-text">
@@ -159,7 +218,10 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
             </p>
             <p>Deleting this app scope will affect:</p>
             <ul>
-              <li>{{ relatedPermissions.length }} permission(s) will lose their app scope association</li>
+              <li>
+                {{ relatedPermissions.length }} permission(s) will lose their
+                app scope association
+              </li>
               <li>All roles using these permissions</li>
               <li>All users with these roles</li>
             </ul>
@@ -170,7 +232,7 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
           <otui-button variant="secondary" (action)="closeConfirmModal()">
             Cancel
           </otui-button>
-          <otui-button 
+          <otui-button
             [variant]="confirmAction === 'delete' ? 'danger' : 'primary'"
             (action)="executeConfirmedAction()"
           >
@@ -401,26 +463,29 @@ export class AppScopesManagementComponent implements OnInit {
   loadAppScopes(): void {
     this.loading = true;
     this.messageService.clearMessages();
-    
+
     this.appScopesService.getAppScopes().subscribe({
       next: (appScopes) => {
         this.appScopes = appScopes;
         this.loading = false;
         this.updatePermissionCounts();
-        
+
         if (appScopes.length === 0) {
           this.messageService.addMessage({
             content: 'No app scopes found in the system.',
-            type: 'info'
+            type: 'info',
           });
         }
       },
       error: (err) => {
         this.loading = false;
-        const errorMessage = err.error?.message || err.message || 'Failed to load app scopes. Please try again.';
+        const errorMessage =
+          err.error?.message ||
+          err.message ||
+          'Failed to load app scopes. Please try again.';
         this.messageService.addMessage({
           content: errorMessage,
-          type: 'error'
+          type: 'error',
         });
       },
     });
@@ -440,14 +505,14 @@ export class AppScopesManagementComponent implements OnInit {
 
   updatePermissionCounts(): void {
     this.permissionCountsMap.clear();
-    this.appScopes.forEach(scope => {
+    this.appScopes.forEach((scope) => {
       const count = this.getRelatedPermissionsForScope(scope).length;
       this.permissionCountsMap.set(scope.id, count);
     });
   }
 
   getRelatedPermissionsForScope(scope: AppScopeDto): PermissionDto[] {
-    return this.permissions.filter(p => p.appScope?.id === scope.id);
+    return this.permissions.filter((p) => p.appScope?.id === scope.id);
   }
 
   // Modal controls
@@ -481,27 +546,26 @@ export class AppScopesManagementComponent implements OnInit {
   }
 
   isFormValid(): boolean {
-    return !!(
-      this.formData.name?.trim() &&
-      this.formData.description?.trim()
-    );
+    return !!(this.formData.name?.trim() && this.formData.description?.trim());
   }
 
   confirmFormSubmit(): void {
     if (!this.isFormValid()) {
       this.messageService.addMessage({
         content: 'Please fill in all required fields.',
-        type: 'error'
+        type: 'error',
       });
       return;
     }
 
     this.confirmAction = this.isEditMode ? 'update' : 'create';
-    this.confirmModalTitle = this.isEditMode ? 'Confirm App Scope Update' : 'Confirm App Scope Creation';
+    this.confirmModalTitle = this.isEditMode
+      ? 'Confirm App Scope Update'
+      : 'Confirm App Scope Creation';
     this.confirmModalMessage = this.isEditMode
       ? 'Are you sure you want to update this app scope?'
       : 'Are you sure you want to create this app scope?';
-    
+
     this.showConfirmModal = true;
   }
 
@@ -510,7 +574,8 @@ export class AppScopesManagementComponent implements OnInit {
     this.relatedPermissions = this.getRelatedPermissionsForScope(appScope);
     this.confirmAction = 'delete';
     this.confirmModalTitle = 'Confirm App Scope Deletion';
-    this.confirmModalMessage = 'Are you sure you want to delete this app scope?';
+    this.confirmModalMessage =
+      'Are you sure you want to delete this app scope?';
     this.showConfirmModal = true;
   }
 
@@ -539,17 +604,18 @@ export class AppScopesManagementComponent implements OnInit {
       next: () => {
         this.messageService.addMessage({
           content: 'App scope created successfully!',
-          type: 'success'
+          type: 'success',
         });
         this.closeConfirmModal();
         this.closeFormModal();
         this.loadAppScopes();
       },
       error: (err) => {
-        const errorMessage = err.error?.message || err.message || 'Failed to create app scope.';
+        const errorMessage =
+          err.error?.message || err.message || 'Failed to create app scope.';
         this.messageService.addMessage({
           content: errorMessage,
-          type: 'error'
+          type: 'error',
         });
       },
     });
@@ -564,26 +630,29 @@ export class AppScopesManagementComponent implements OnInit {
       active: this.formData.active,
     };
 
-    this.appScopesService.updateAppScope(this.formData.id, updateDto).subscribe({
-      next: () => {
-        this.messageService.addMessage({
-          content: 'App scope updated successfully!',
-          type: 'success'
-        });
-        this.closeConfirmModal();
-        this.closeFormModal();
-        this.loadAppScopes();
-        this.loadPermissions(); // Reload to get updated relationships
-        this.updatePermissionCounts();
-      },
-      error: (err) => {
-        const errorMessage = err.error?.message || err.message || 'Failed to update app scope.';
-        this.messageService.addMessage({
-          content: errorMessage,
-          type: 'error'
-        });
-      },
-    });
+    this.appScopesService
+      .updateAppScope(this.formData.id, updateDto)
+      .subscribe({
+        next: () => {
+          this.messageService.addMessage({
+            content: 'App scope updated successfully!',
+            type: 'success',
+          });
+          this.closeConfirmModal();
+          this.closeFormModal();
+          this.loadAppScopes();
+          this.loadPermissions(); // Reload to get updated relationships
+          this.updatePermissionCounts();
+        },
+        error: (err) => {
+          const errorMessage =
+            err.error?.message || err.message || 'Failed to update app scope.';
+          this.messageService.addMessage({
+            content: errorMessage,
+            type: 'error',
+          });
+        },
+      });
   }
 
   deleteAppScope(): void {
@@ -593,7 +662,7 @@ export class AppScopesManagementComponent implements OnInit {
       next: () => {
         this.messageService.addMessage({
           content: 'App scope deleted successfully!',
-          type: 'success'
+          type: 'success',
         });
         this.closeConfirmModal();
         this.loadAppScopes();
@@ -601,10 +670,11 @@ export class AppScopesManagementComponent implements OnInit {
         this.updatePermissionCounts();
       },
       error: (err) => {
-        const errorMessage = err.error?.message || err.message || 'Failed to delete app scope.';
+        const errorMessage =
+          err.error?.message || err.message || 'Failed to delete app scope.';
         this.messageService.addMessage({
           content: errorMessage,
-          type: 'error'
+          type: 'error',
         });
       },
     });

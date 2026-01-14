@@ -122,6 +122,7 @@ Services that return lists support pagination with query parameters:
 - `limit`: Items per page (default: 10)
 
 Response format:
+
 ```json
 {
   "items": [...],

@@ -16,10 +16,7 @@ export class CatalogComponent implements OnInit {
   loading = false;
   error: string | null = null;
 
-  constructor(
-    private router: Router,
-    private storeService: StoreService
-  ) {}
+  constructor(private router: Router, private storeService: StoreService) {}
 
   ngOnInit(): void {
     this.loadProducts();

@@ -9,7 +9,14 @@ import { ContactComponent } from './contact/contact.component';
 
 @Component({
   selector: 'app-landing',
-  imports: [HeroComponent, TitleBarComponent, AboutComponent, ProjectGridComponent, ServicesGridComponent, ContactComponent],
+  imports: [
+    HeroComponent,
+    TitleBarComponent,
+    AboutComponent,
+    ProjectGridComponent,
+    ServicesGridComponent,
+    ContactComponent,
+  ],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })

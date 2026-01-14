@@ -1,22 +1,36 @@
-import { CreateTaskDto, QueryTaskDto, UpdateTaskDto } from '@optimistic-tanuki/models';
+import {
+  CreateTaskDto,
+  QueryTaskDto,
+  UpdateTaskDto,
+} from '@optimistic-tanuki/models';
 
 import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Task } from '../entities/task.entity';
-import { Between, FindOptionsWhere, IsNull, Like, Not, Repository } from 'typeorm';
+import {
+  Between,
+  FindOptionsWhere,
+  IsNull,
+  Like,
+  Not,
+  Repository,
+} from 'typeorm';
 import { Project } from '../entities/project.entity';
 
 @Injectable()
 export class TaskService {
-
   constructor(
-    @Inject(getRepositoryToken(Task)) private readonly taskRepository: Repository<Task>,
-    @Inject(getRepositoryToken(Project)) private readonly projectRepository: Repository<Project>,
+    @Inject(getRepositoryToken(Task))
+    private readonly taskRepository: Repository<Task>,
+    @Inject(getRepositoryToken(Project))
+    private readonly projectRepository: Repository<Project>
   ) {}
 
   async create(createTaskDto: CreateTaskDto) {
     console.log('Creating task with DTO:', createTaskDto);
-    const project = await this.projectRepository.findOne({ where: { id: createTaskDto.projectId } });
+    const project = await this.projectRepository.findOne({
+      where: { id: createTaskDto.projectId },
+    });
     if (!project) {
       throw new Error('Project not found');
     }
@@ -41,7 +55,7 @@ export class TaskService {
       where.description = Like(`%${query.description}%`);
     }
 
-    if(query.projectId) {
+    if (query.projectId) {
       where.project = {
         id: query.projectId,
       };

@@ -75,9 +75,9 @@ export class AuthenticationController {
         )
       );
       this.logger.debug(
-        `loginUser found ${profiles?.length || 0} profile(s) for userId=${
-          userId
-        }`
+        `loginUser found ${
+          profiles?.length || 0
+        } profile(s) for userId=${userId}`
       );
 
       const effectiveAppScope =

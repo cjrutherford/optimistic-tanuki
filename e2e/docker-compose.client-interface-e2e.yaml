@@ -141,4 +141,3 @@ services:
         condition: service_started
       assets:
         condition: service_started
-

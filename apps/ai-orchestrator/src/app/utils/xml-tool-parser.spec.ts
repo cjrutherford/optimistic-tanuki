@@ -148,7 +148,8 @@ describe('XML Tool Call Parser', () => {
 
   describe('containsXmlToolCall', () => {
     it('should detect XML tool call in content', () => {
-      const content = 'Here is some text <tool_call><name>test</name></tool_call> and more text';
+      const content =
+        'Here is some text <tool_call><name>test</name></tool_call> and more text';
       expect(containsXmlToolCall(content)).toBe(true);
     });
 

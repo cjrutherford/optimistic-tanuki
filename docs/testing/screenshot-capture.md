@@ -12,6 +12,7 @@ cd tools/screenshots
 ```
 
 Replace `client-interface` with any of:
+
 - `client-interface` (port 4200)
 - `forgeofwill` (port 4201)
 - `christopherrutherford-net` (port 4202)
@@ -25,6 +26,7 @@ cd tools/screenshots
 ```
 
 This will:
+
 1. Start each Angular application
 2. Capture screenshots of all routes
 3. Generate a features breakdown report

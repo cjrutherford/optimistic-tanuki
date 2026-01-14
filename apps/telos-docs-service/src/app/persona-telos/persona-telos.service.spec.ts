@@ -25,11 +25,19 @@ describe('PersonaTelosService', () => {
     }).compile();
 
     service = module.get<PersonaTelosService>(PersonaTelosService);
-    personaRepository = module.get<Repository<PersonaTelos>>(getRepositoryToken(PersonaTelos));
+    personaRepository = module.get<Repository<PersonaTelos>>(
+      getRepositoryToken(PersonaTelos)
+    );
 
     // Mock repository methods
-    jest.spyOn(personaRepository, 'create').mockImplementation((entity) => Object.assign(new PersonaTelos(), entity));
-    jest.spyOn(personaRepository, 'save').mockImplementation(async (entity) => entity as PersonaTelos);
+    jest
+      .spyOn(personaRepository, 'create')
+      .mockImplementation((entity) =>
+        Object.assign(new PersonaTelos(), entity)
+      );
+    jest
+      .spyOn(personaRepository, 'save')
+      .mockImplementation(async (entity) => entity as PersonaTelos);
     jest.spyOn(personaRepository, 'find').mockResolvedValue([]);
     jest.spyOn(personaRepository, 'findOne').mockResolvedValue(null);
     jest.spyOn(personaRepository, 'update').mockResolvedValue(undefined);
@@ -42,20 +50,38 @@ describe('PersonaTelosService', () => {
 
   describe('create', () => {
     it('should create and save a persona', async () => {
-      const createDto = { name: 'Test Persona', description: 'Test Desc', goals: [], skills: [], interests: [], limitations: [], strengths: [], objectives: [], coreObjective: 'Test Obj', exampleResponses: [], promptTemplate: 'Test Template' };
+      const createDto = {
+        name: 'Test Persona',
+        description: 'Test Desc',
+        goals: [],
+        skills: [],
+        interests: [],
+        limitations: [],
+        strengths: [],
+        objectives: [],
+        coreObjective: 'Test Obj',
+        exampleResponses: [],
+        promptTemplate: 'Test Template',
+      };
       const expectedPersona = { id: '1', ...createDto };
-      jest.spyOn(personaRepository, 'save').mockResolvedValue(expectedPersona as PersonaTelos);
+      jest
+        .spyOn(personaRepository, 'save')
+        .mockResolvedValue(expectedPersona as PersonaTelos);
 
       const result = await service.create(createDto);
       expect(personaRepository.create).toHaveBeenCalledWith(createDto);
-      expect(personaRepository.save).toHaveBeenCalledWith(expect.any(PersonaTelos));
+      expect(personaRepository.save).toHaveBeenCalledWith(
+        expect.any(PersonaTelos)
+      );
       expect(result).toEqual(expectedPersona);
     });
   });
 
   describe('findAll', () => {
     it('should return all personas', async () => {
-      const expectedPersonas = [{ id: '1', name: 'Test Persona' }] as PersonaTelos[];
+      const expectedPersonas = [
+        { id: '1', name: 'Test Persona' },
+      ] as PersonaTelos[];
       jest.spyOn(personaRepository, 'find').mockResolvedValue(expectedPersonas);
 
       const result = await service.findAll({});
@@ -64,29 +90,41 @@ describe('PersonaTelosService', () => {
     });
 
     it('should filter by name', async () => {
-      const expectedPersonas = [{ id: '1', name: 'Test Persona' }] as PersonaTelos[];
+      const expectedPersonas = [
+        { id: '1', name: 'Test Persona' },
+      ] as PersonaTelos[];
       jest.spyOn(personaRepository, 'find').mockResolvedValue(expectedPersonas);
 
       const result = await service.findAll({ name: 'Test Persona' });
-      expect(personaRepository.find).toHaveBeenCalledWith({ where: { name: 'Test Persona' } });
+      expect(personaRepository.find).toHaveBeenCalledWith({
+        where: { name: 'Test Persona' },
+      });
       expect(result).toEqual(expectedPersonas);
     });
 
     it('should filter by id', async () => {
-      const expectedPersonas = [{ id: '1', name: 'Test Persona' }] as PersonaTelos[];
+      const expectedPersonas = [
+        { id: '1', name: 'Test Persona' },
+      ] as PersonaTelos[];
       jest.spyOn(personaRepository, 'find').mockResolvedValue(expectedPersonas);
 
       const result = await service.findAll({ id: '1' });
-      expect(personaRepository.find).toHaveBeenCalledWith({ where: { id: expect.anything() } });
+      expect(personaRepository.find).toHaveBeenCalledWith({
+        where: { id: expect.anything() },
+      });
       expect(result).toEqual(expectedPersonas);
     });
 
     it('should filter by coreObjective using Like', async () => {
-      const expectedPersonas = [{ id: '1', name: 'Test Persona' }] as PersonaTelos[];
+      const expectedPersonas = [
+        { id: '1', name: 'Test Persona' },
+      ] as PersonaTelos[];
       jest.spyOn(personaRepository, 'find').mockResolvedValue(expectedPersonas);
 
       const result = await service.findAll({ coreObjective: 'Test Obj' });
-      expect(personaRepository.find).toHaveBeenCalledWith({ where: { coreObjective: expect.anything() } });
+      expect(personaRepository.find).toHaveBeenCalledWith({
+        where: { coreObjective: expect.anything() },
+      });
       expect(result).toEqual(expectedPersonas);
     });
   });
@@ -94,10 +132,14 @@ describe('PersonaTelosService', () => {
   describe('findOne', () => {
     it('should return a persona by id', async () => {
       const expectedPersona = { id: '1', name: 'Test Persona' } as PersonaTelos;
-      jest.spyOn(personaRepository, 'findOne').mockResolvedValue(expectedPersona);
+      jest
+        .spyOn(personaRepository, 'findOne')
+        .mockResolvedValue(expectedPersona);
 
       const result = await service.findOne('1');
-      expect(personaRepository.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
+      expect(personaRepository.findOne).toHaveBeenCalledWith({
+        where: { id: '1' },
+      });
       expect(result).toEqual(expectedPersona);
     });
   });
@@ -106,12 +148,19 @@ describe('PersonaTelosService', () => {
     it('should update a persona and return it', async () => {
       const updateDto = { name: 'Updated Persona' };
       const existingPersona = { id: '1', name: 'Test Persona' } as PersonaTelos;
-      const updatedPersona = { ...existingPersona, ...updateDto } as PersonaTelos;
-      jest.spyOn(personaRepository, 'findOne').mockResolvedValue(updatedPersona);
+      const updatedPersona = {
+        ...existingPersona,
+        ...updateDto,
+      } as PersonaTelos;
+      jest
+        .spyOn(personaRepository, 'findOne')
+        .mockResolvedValue(updatedPersona);
 
       const result = await service.update('1', updateDto);
       expect(personaRepository.update).toHaveBeenCalledWith('1', updateDto);
-      expect(personaRepository.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
+      expect(personaRepository.findOne).toHaveBeenCalledWith({
+        where: { id: '1' },
+      });
       expect(result).toEqual(updatedPersona);
     });
   });

@@ -15,7 +15,10 @@ describe('MCPValidator', () => {
         type: 'function',
         function: {
           name: 'create_project',
-          arguments: JSON.stringify({ name: 'Test Project', userId: 'user-123' }),
+          arguments: JSON.stringify({
+            name: 'Test Project',
+            userId: 'user-123',
+          }),
         },
       };
 
@@ -243,7 +246,10 @@ describe('MCPValidator', () => {
 
       expect(result.success).toBe(true);
       expect(result.data?.success).toBe(true);
-      expect(result.data?.result).toEqual({ id: 'proj-1', name: 'Test Project' });
+      expect(result.data?.result).toEqual({
+        id: 'proj-1',
+        name: 'Test Project',
+      });
     });
 
     it('should validate a failed tool result with error', () => {
@@ -524,7 +530,12 @@ describe('MCPValidator', () => {
   describe('createErrorResult', () => {
     it('should create error result from regular Error', () => {
       const error = new Error('Something went wrong');
-      const result = validator.createErrorResult('call_123', 'create_project', error, 100);
+      const result = validator.createErrorResult(
+        'call_123',
+        'create_project',
+        error,
+        100
+      );
 
       expect(result.success).toBe(false);
       expect(result.toolCallId).toBe('call_123');
@@ -539,7 +550,12 @@ describe('MCPValidator', () => {
   describe('createSuccessResult', () => {
     it('should create success result', () => {
       const data = { id: 'proj-1', name: 'Test Project' };
-      const result = validator.createSuccessResult('call_123', 'create_project', data, 150);
+      const result = validator.createSuccessResult(
+        'call_123',
+        'create_project',
+        data,
+        150
+      );
 
       expect(result.success).toBe(true);
       expect(result.toolCallId).toBe('call_123');
@@ -552,7 +568,11 @@ describe('MCPValidator', () => {
 
     it('should create success result without execution time', () => {
       const data = { success: true };
-      const result = validator.createSuccessResult('call_123', 'list_projects', data);
+      const result = validator.createSuccessResult(
+        'call_123',
+        'list_projects',
+        data
+      );
 
       expect(result.success).toBe(true);
       expect(result.metadata?.executionTime).toBeUndefined();

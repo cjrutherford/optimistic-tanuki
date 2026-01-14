@@ -6,10 +6,13 @@ import { join } from 'path';
 const execAsync = promisify(exec);
 
 async function globalTeardown(config: FullConfig) {
-  const composeFile = join(__dirname, '../../e2e/docker-compose.client-interface-e2e.yaml');
+  const composeFile = join(
+    __dirname,
+    '../../e2e/docker-compose.client-interface-e2e.yaml'
+  );
   console.log(`
 [Playwright Global Teardown] Stopping docker-compose: ${composeFile}`);
-  
+
   try {
     await execAsync(`docker compose -f ${composeFile} down -v`);
     console.log('Cleanup complete.');

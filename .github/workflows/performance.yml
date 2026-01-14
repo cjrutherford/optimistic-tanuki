@@ -49,7 +49,7 @@ jobs:
           # Build and start the app
           docker compose build ${{ matrix.app }}
           docker compose up -d ${{ matrix.app }}
-          
+
           # Wait for app to be ready
           sleep 30
 
@@ -94,7 +94,7 @@ jobs:
       - name: Start full stack
         run: |
           docker compose up -d
-          
+
           # Wait for services to be ready
           echo "Waiting for services..."
           sleep 60
@@ -157,7 +157,7 @@ jobs:
         run: |
           echo "## 📊 Load Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ -f "load-test-results.json" ]; then
             echo "Load test completed. See artifacts for detailed results." >> $GITHUB_STEP_SUMMARY
           else

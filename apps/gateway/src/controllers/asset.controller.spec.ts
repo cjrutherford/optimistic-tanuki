@@ -16,16 +16,28 @@ describe('AssetController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        { provide: ServiceTokens.AUTHENTICATION_SERVICE, useValue: { send: jest.fn().mockResolvedValue(of({})) } },
-        { provide: ServiceTokens.ASSETS_SERVICE, useValue: { send: jest.fn().mockResolvedValue(of({})) } },
-        { provide: ServiceTokens.PERMISSIONS_SERVICE, useValue: { send: jest.fn().mockResolvedValue(of({})) } },
+        {
+          provide: ServiceTokens.AUTHENTICATION_SERVICE,
+          useValue: { send: jest.fn().mockResolvedValue(of({})) },
+        },
+        {
+          provide: ServiceTokens.ASSETS_SERVICE,
+          useValue: { send: jest.fn().mockResolvedValue(of({})) },
+        },
+        {
+          provide: ServiceTokens.PERMISSIONS_SERVICE,
+          useValue: { send: jest.fn().mockResolvedValue(of({})) },
+        },
         { provide: JwtService, useValue: { verify: jest.fn() } },
         Logger,
         Reflector,
         {
           provide: 'ICacheProvider', // Use a string token for the interface
           useFactory: () => {
-            const cache = new Map<string, { value: boolean, timestamp: number }>();
+            const cache = new Map<
+              string,
+              { value: boolean; timestamp: number }
+            >();
             return {
               get: jest.fn(async (key: string) => {
                 const entry = cache.get(key);
@@ -53,11 +65,11 @@ describe('AssetController', () => {
       ],
       controllers: [AssetController],
     })
-    .overrideGuard(AuthGuard)
-    .useValue({ canActivate: () => of(true) })
-    .overrideGuard(PermissionsGuard)
-    .useValue({ canActivate: () => of(true) })
-    .compile();
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => of(true) })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => of(true) })
+      .compile();
 
     controller = module.get<AssetController>(AssetController);
   });

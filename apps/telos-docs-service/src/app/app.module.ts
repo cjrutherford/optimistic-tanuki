@@ -41,20 +41,22 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
     ProfileTelosService,
     {
       provide: getRepositoryToken(ProfileTelos),
-      useFactory: (dataSource: DataSource) => dataSource.getRepository(ProfileTelos),
-      inject: ['TELOS_DOCS_CONNECTION']
+      useFactory: (dataSource: DataSource) =>
+        dataSource.getRepository(ProfileTelos),
+      inject: ['TELOS_DOCS_CONNECTION'],
     },
     {
       provide: getRepositoryToken(PersonaTelos),
-      useFactory: (dataSource: DataSource) => dataSource.getRepository(PersonaTelos),
-      inject: ['TELOS_DOCS_CONNECTION']
+      useFactory: (dataSource: DataSource) =>
+        dataSource.getRepository(PersonaTelos),
+      inject: ['TELOS_DOCS_CONNECTION'],
     },
     {
       provide: getRepositoryToken(ProjectTelos),
-      useFactory: (dataSource: DataSource) => dataSource.getRepository(ProjectTelos),
-      inject: ['TELOS_DOCS_CONNECTION']
-    }
+      useFactory: (dataSource: DataSource) =>
+        dataSource.getRepository(ProjectTelos),
+      inject: ['TELOS_DOCS_CONNECTION'],
+    },
   ],
 })
 export class AppModule {}
-

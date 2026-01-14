@@ -1,35 +1,35 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { Blog } from "./blog.entity";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Blog } from './blog.entity';
 
 @Entity()
 export class Event {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    name: string;
-    
-    @Column()
-    description: string; // this will be HTML text-only content.
+  @Column()
+  name: string;
 
-    @Column()
-    location: string;
+  @Column()
+  description: string; // this will be HTML text-only content.
 
-    @Column('timestamptz')
-    startTime: Date;
+  @Column()
+  location: string;
 
-    @Column('timestamptz')
-    endTime: Date;
+  @Column('timestamptz')
+  startTime: Date;
 
-    @Column()
-    organizerId: string;
+  @Column('timestamptz')
+  endTime: Date;
 
-    @Column({ default: () => 'CURRENT_TIMESTAMP' })
-    createdAt: Date;
+  @Column()
+  organizerId: string;
 
-    @Column({ default: () => 'CURRENT_TIMESTAMP' })
-    updatedAt: Date;
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
 
-    @ManyToOne(() => Blog, blog => blog.events)
-    blog: Blog;
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
+
+  @ManyToOne(() => Blog, (blog) => blog.events)
+  blog: Blog;
 }

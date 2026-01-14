@@ -5,35 +5,41 @@ This document ensures that all E2E tests in this workspace are portable and can 
 ## Test Portability Checklist
 
 ### ✅ Environment Independence
+
 - [x] Tests use relative paths, not absolute paths
 - [x] Tests use environment variables for configuration
 - [x] No hardcoded localhost references (uses configurable base URLs)
 - [x] Docker containers for microservices use isolated networks
 
 ### ✅ Browser Compatibility
+
 - [x] Playwright tests support Chromium, Firefox, and WebKit
 - [x] Browser installation automated via `npx playwright install`
 - [x] Configs allow running specific browsers or all browsers
 
 ### ✅ Dependency Management
+
 - [x] All dependencies listed in package.json
 - [x] Package-lock.json committed for reproducible builds
 - [x] No global dependencies required
 - [x] Docker images use specific versions, not `latest`
 
 ### ✅ Database Independence
+
 - [x] Microservice tests use isolated test databases
 - [x] Test data generated dynamically (timestamps, unique IDs)
 - [x] No test pollution between test runs
 - [x] Automatic cleanup after tests
 
 ### ✅ Network Isolation
+
 - [x] TCP microservices use configurable ports
 - [x] Default ports documented and configurable
 - [x] Tests can run in parallel without port conflicts
 - [x] Docker compose files create isolated networks
 
 ### ✅ CI/CD Ready
+
 - [x] GitHub Actions workflow configured
 - [x] Tests run in CI environment without modifications
 - [x] Artifacts uploaded for debugging
@@ -42,6 +48,7 @@ This document ensures that all E2E tests in this workspace are portable and can 
 ## System Requirements
 
 ### Minimum Requirements
+
 - **Node.js**: v18.0.0 or higher
 - **npm**: v8.0.0 or higher
 - **Docker**: v20.0.0 or higher (for microservice tests)
@@ -49,11 +56,13 @@ This document ensures that all E2E tests in this workspace are portable and can 
 - **Disk Space**: 5GB for dependencies and browsers
 
 ### Operating Systems Supported
+
 - ✅ **Linux**: Ubuntu 20.04+, Debian 10+, RHEL 8+
 - ✅ **macOS**: 11.0+ (Big Sur and later)
 - ✅ **Windows**: 10+ (via WSL2 recommended)
 
 ### Browser Requirements (Playwright)
+
 - **Chromium**: ~300MB
 - **Firefox**: ~100MB
 - **WebKit**: ~100MB
@@ -63,6 +72,7 @@ Total: ~500MB for all browsers
 ## Running Tests in Different Environments
 
 ### Local Development
+
 ```bash
 # First time setup
 npm install
@@ -76,6 +86,7 @@ nx e2e authentication-e2e
 ```
 
 ### Docker Environment
+
 ```bash
 # Build and run in containers
 docker-compose -f docker-compose.yaml up -d
@@ -85,12 +96,15 @@ nx run-many --target=e2e --all
 ```
 
 ### CI/CD (GitHub Actions)
+
 Tests automatically run on:
+
 - Pull requests to main/develop
 - Pushes to main/develop
 - Manual workflow dispatch
 
 ### WSL2 (Windows)
+
 ```bash
 # Install WSL2 and Ubuntu
 wsl --install
@@ -106,16 +120,17 @@ npx playwright install --with-deps
 
 All services use configurable ports with sensible defaults:
 
-| Service | Default Port | Environment Variable |
-|---------|--------------|---------------------|
-| Gateway | 3000 | `PORT` |
-| Authentication | 3001 | `AUTHENTICATION_PORT` |
-| Profile | 3002 | `PROFILE_PORT` |
-| Social | 3003 | `SOCIAL_PORT` |
-| Assets | 3005 | `ASSETS_PORT` |
-| Blogging | 3011 | `BLOGGING_PORT` |
+| Service        | Default Port | Environment Variable  |
+| -------------- | ------------ | --------------------- |
+| Gateway        | 3000         | `PORT`                |
+| Authentication | 3001         | `AUTHENTICATION_PORT` |
+| Profile        | 3002         | `PROFILE_PORT`        |
+| Social         | 3003         | `SOCIAL_PORT`         |
+| Assets         | 3005         | `ASSETS_PORT`         |
+| Blogging       | 3011         | `BLOGGING_PORT`       |
 
 ### Changing Ports
+
 ```bash
 # Set custom port for a service
 export AUTHENTICATION_PORT=4001
@@ -127,12 +142,15 @@ nx e2e authentication-e2e
 ## Test Data Management
 
 ### Dynamic Test Data
+
 All tests generate unique test data using:
+
 - Timestamps: `test-${Date.now()}`
 - UUIDs: Generated per test run
 - Unique identifiers: No hardcoded test data
 
 ### Test Isolation
+
 - Each test creates its own data
 - Tests clean up after themselves
 - No shared state between tests
@@ -141,6 +159,7 @@ All tests generate unique test data using:
 ## Troubleshooting Portability Issues
 
 ### Issue: Port Already in Use
+
 ```bash
 # Check what's using the port
 lsof -i :3001
@@ -153,6 +172,7 @@ export AUTHENTICATION_PORT=4001
 ```
 
 ### Issue: Docker Not Available
+
 ```bash
 # Check Docker status
 docker --version
@@ -166,6 +186,7 @@ colima start
 ```
 
 ### Issue: Playwright Browser Installation Fails
+
 ```bash
 # Install with system dependencies
 npx playwright install --with-deps
@@ -178,6 +199,7 @@ ls ~/.cache/ms-playwright/
 ```
 
 ### Issue: Tests Timeout
+
 ```bash
 # Increase timeout in jest.config.ts
 testTimeout: 60000  // 60 seconds
@@ -187,6 +209,7 @@ timeout: 60000
 ```
 
 ### Issue: Database Connection Errors
+
 ```bash
 # Check if database is running
 docker ps | grep postgres

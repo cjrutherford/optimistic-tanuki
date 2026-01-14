@@ -46,7 +46,9 @@ describe('AttachmentComponent', () => {
 
   it('should not remove an attachment if it does not exist', () => {
     const testFile = new File([''], 'test.txt', { type: 'text/plain' });
-    const nonExistentFile = new File([''], 'nonexistent.txt', { type: 'text/plain' });
+    const nonExistentFile = new File([''], 'nonexistent.txt', {
+      type: 'text/plain',
+    });
     component.attachments = [testFile];
     jest.spyOn(component.attachmentsChange, 'emit');
     component.removeAttachment(nonExistentFile);

@@ -1,6 +1,10 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ThemeHostBindingsDirective, Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import {
+  ThemeHostBindingsDirective,
+  Themeable,
+  ThemeColors,
+} from '@optimistic-tanuki/theme-lib';
 
 export interface CartItem {
   productId: string;
@@ -20,12 +24,18 @@ export interface CartItem {
 })
 export class ShoppingCartComponent extends Themeable {
   @Input() items: CartItem[] = [];
-  @Output() updateQuantity = new EventEmitter<{ productId: string; quantity: number }>();
+  @Output() updateQuantity = new EventEmitter<{
+    productId: string;
+    quantity: number;
+  }>();
   @Output() removeItem = new EventEmitter<string>();
   @Output() checkout = new EventEmitter<void>();
 
   get total(): number {
-    return this.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return this.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
   }
 
   onQuantityChange(productId: string, quantity: number): void {

@@ -41,11 +41,13 @@ describe('AuthorProfileComponent', () => {
     expect(compiled.textContent).toContain('Jane Doe');
     expect(compiled.textContent).toContain('Jane is a passionate writer.');
     const profilePhoto = fixture.debugElement.query(
-      d => d.name === 'lib-profile-photo'
+      (d) => d.name === 'lib-profile-photo'
     );
     expect(profilePhoto).toBeTruthy();
     if (profilePhoto) {
-      expect(profilePhoto.componentInstance.src).toBe('https://example.com/jane.jpg');
+      expect(profilePhoto.componentInstance.src).toBe(
+        'https://example.com/jane.jpg'
+      );
     }
   });
 });

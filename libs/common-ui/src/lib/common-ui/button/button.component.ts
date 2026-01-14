@@ -20,11 +20,19 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
     '[style.--success]': 'success',
     '[style.--warning]': 'warning',
     '[style.--danger]': 'danger',
-  }
+  },
 })
 export class ButtonComponent extends Themeable {
   @Input() disabled = false;
-  @Input() variant: 'primary' | 'secondary' | 'outlined' | 'text' | 'warning' | 'danger' | 'success' | 'rounded' = 'primary';
+  @Input() variant:
+    | 'primary'
+    | 'secondary'
+    | 'outlined'
+    | 'text'
+    | 'warning'
+    | 'danger'
+    | 'success'
+    | 'rounded' = 'primary';
   @Input() type: 'button' | 'submit' | 'reset' = 'button';
   @Output() action = new EventEmitter<void>();
 

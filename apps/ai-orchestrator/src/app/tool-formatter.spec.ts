@@ -114,7 +114,7 @@ describe('Tool Formatter', () => {
       const result = transformMcpToolToOpenAI(mcpTool, 'user-123');
 
       expect(result.function.parameters.properties.userId.description).toBe(
-        'The ID of the user creating the project. ALWAYS use the current user\'s profile ID: user-123'
+        "The ID of the user creating the project. ALWAYS use the current user's profile ID: user-123"
       );
     });
 
@@ -136,7 +136,7 @@ describe('Tool Formatter', () => {
       const result = transformMcpToolToOpenAI(mcpTool, 'user-456');
 
       expect(result.function.parameters.properties.members.description).toBe(
-        'Array of member IDs to add to the project. ALWAYS include the current user\'s profile ID: [user-456]'
+        "Array of member IDs to add to the project. ALWAYS include the current user's profile ID: [user-456]"
       );
     });
 
@@ -161,8 +161,12 @@ describe('Tool Formatter', () => {
 
       const result = transformMcpToolToOpenAI(mcpTool, 'user-789');
 
-      expect(result.function.parameters.properties.userId.description).toContain('user-789');
-      expect(result.function.parameters.properties.members.description).toContain('[user-789]');
+      expect(
+        result.function.parameters.properties.userId.description
+      ).toContain('user-789');
+      expect(
+        result.function.parameters.properties.members.description
+      ).toContain('[user-789]');
     });
 
     it('should enhance projectId parameter with list_projects instruction', () => {
@@ -182,8 +186,12 @@ describe('Tool Formatter', () => {
 
       const result = transformMcpToolToOpenAI(mcpTool, 'user-123');
 
-      expect(result.function.parameters.properties.projectId.description).toContain('list_projects');
-      expect(result.function.parameters.properties.projectId.description).toContain('user-123');
+      expect(
+        result.function.parameters.properties.projectId.description
+      ).toContain('list_projects');
+      expect(
+        result.function.parameters.properties.projectId.description
+      ).toContain('user-123');
     });
 
     it('should enhance createdBy parameter with user profile ID', () => {
@@ -203,8 +211,12 @@ describe('Tool Formatter', () => {
 
       const result = transformMcpToolToOpenAI(mcpTool, 'user-456');
 
-      expect(result.function.parameters.properties.createdBy.description).toContain('ALWAYS');
-      expect(result.function.parameters.properties.createdBy.description).toContain('user-456');
+      expect(
+        result.function.parameters.properties.createdBy.description
+      ).toContain('ALWAYS');
+      expect(
+        result.function.parameters.properties.createdBy.description
+      ).toContain('user-456');
     });
 
     it('should enhance tool description for project-dependent tools', () => {
@@ -267,11 +279,11 @@ describe('Tool Formatter', () => {
           description: 'First tool',
           inputSchema: {
             type: 'object',
-            properties: { 
-              userId: { 
+            properties: {
+              userId: {
                 type: 'string',
-                description: 'User ID'
-              } 
+                description: 'User ID',
+              },
             },
           },
         },
@@ -280,11 +292,11 @@ describe('Tool Formatter', () => {
           description: 'Second tool',
           inputSchema: {
             type: 'object',
-            properties: { 
-              members: { 
+            properties: {
+              members: {
                 type: 'array',
-                description: 'Members'
-              } 
+                description: 'Members',
+              },
             },
           },
         },
@@ -292,8 +304,12 @@ describe('Tool Formatter', () => {
 
       const result = transformMcpToolsToOpenAI(mcpTools, 'user-999');
 
-      expect(result[0].function.parameters.properties.userId.description).toContain('user-999');
-      expect(result[1].function.parameters.properties.members.description).toContain('[user-999]');
+      expect(
+        result[0].function.parameters.properties.userId.description
+      ).toContain('user-999');
+      expect(
+        result[1].function.parameters.properties.members.description
+      ).toContain('[user-999]');
     });
   });
 });

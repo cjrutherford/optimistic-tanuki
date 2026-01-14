@@ -42,12 +42,15 @@ This document tracks the MVP (Minimum Viable Product) implementation status for 
 ### Phase 1: Security & Permissions ✅ COMPLETE
 
 ### 1. Permissions audit — DEFINE policy then IMPLEMENT — 2–3 days (adjusted) ✅ COMPLETE
+
 Goal:
+
 - Produce a permissions matrix, enforce at gateway and validate at microservice boundaries.
 - Reuse existing gateway and permissions-service primitives where possible.
 
 Audit tasks (deliverables: permissions documentation and test matrix) ✅  
 _Note: See [Permissions System](../architecture/permissions.md) for current implementation_
+
 - Inventory enforcement points across gateway and services (start from gateway controllers and guards). ✅
   - Gateway controllers to inspect: `apps/gateway/src/controllers/*` (e.g. project-planning, social, blogging, asset, permissions). ✅
 - Confirm and extend existing enforcement primitives: ✅
@@ -59,20 +62,24 @@ _Note: See [Permissions System](../architecture/permissions.md) for current impl
 - Implement gateway guard + PermissionsProxyService pattern and tests; ensure microservices validate incoming calls. ✅
 
 Verification:
+
 - Unit tests for `PermissionsProxyService` and `AuthGuard` (extend existing specs). ✅
 - Integration tests simulating role tokens with explicit cases across gateway ↔ permissions service and a target microservice. ✅
 
 Checklist (deliverables):
+
 - Permissions documentation (see [Permissions System](../architecture/permissions.md)) ✅
 - Unit tests: extend `auth.guard.spec.ts`, `permissions-proxy.service.spec.ts` (already present) and add `permissions.guard.spec.ts` ✅
 - Integration tests: gateway ↔ project-planning role scenarios ✅
 - Logged examples of permission denials (structured logs) ✅
 
 #### Files now covered by permissions guards ✅
+
 - `blogging/contact.controller.ts` ✅
 - `blogging/event.controller.ts` ✅
 
 Files to inspect / extend:
+
 - [apps/gateway/src/auth/permissions-proxy.service.ts](apps/gateway/src/auth/permissions-proxy.service.ts) — [`PermissionsProxyService`](apps/gateway/src/auth/permissions-proxy.service.ts)
 - [apps/gateway/src/auth/auth.guard.ts](apps/gateway/src/auth/auth.guard.ts) — [`AuthGuard`](apps/gateway/src/auth/auth.guard.ts)
 - [apps/gateway/src/guards/permissions.guard.ts](apps/gateway/src/guards/permissions.guard.ts) — [`PermissionsGuard`](apps/gateway/src/guards/permissions.guard.ts)
@@ -82,18 +89,20 @@ Files to inspect / extend:
 - [apps/permissions/src/app/app-scopes.service.ts](apps/permissions/src/app/app-scopes.service.ts) — app-scopes support
 
 Notes on reuse:
+
 - Many gateway tests already exist: extend them rather than rewrite. See `apps/gateway/src/auth/permissions-proxy.service.spec.ts` and `apps/gateway/src/auth/auth.guard.spec.ts`.
 - The permissions app already contains migrations, seed and controllers for permissions/roles; plan integration tests to call it as the authority.
-
 
 ### Phase 2: Core Services ✅ COMPLETE
 
 #### 2.1 Social Features ✅ COMPLETE
+
 **Status**: Fully operational with real-time updates
 
 **Implemented Features**:
+
 - ✅ Posts CRUD operations via Social service
-- ✅ Comments on posts  
+- ✅ Comments on posts
 - ✅ Voting system (upvote/downvote)
 - ✅ Follow/unfollow relationships
 - ✅ Attachments and links
@@ -103,6 +112,7 @@ Notes on reuse:
 - ✅ Input sanitization
 
 **Components**:
+
 - Service: `apps/social/`
 - Gateway: `apps/gateway/src/controllers/social.controller.ts`
 - WebSocket: `apps/gateway/src/app/social-gateway/`
@@ -113,9 +123,11 @@ Notes on reuse:
 See: [WebSocket Implementation](../architecture/websocket-implementation.md)
 
 #### 2.2 Project Management ✅ COMPLETE
+
 **Status**: Full project planning suite operational
 
 **Implemented Features**:
+
 - ✅ Projects CRUD operations
 - ✅ Tasks with status tracking
 - ✅ Risk management
@@ -126,6 +138,7 @@ See: [WebSocket Implementation](../architecture/websocket-implementation.md)
 - ✅ Permissions enforcement via gateway
 
 **Components**:
+
 - Service: `apps/project-planning/`
 - Controllers: Projects, Tasks, Risks, Journals, Timers, Changes
 - Gateway: `apps/gateway/src/controllers/project-planning/`
@@ -134,9 +147,11 @@ See: [WebSocket Implementation](../architecture/websocket-implementation.md)
 **Testing**: E2E tests in `apps/project-planning-e2e/`
 
 #### 2.3 Assets Management ✅ COMPLETE
+
 **Status**: Operational file storage and retrieval
 
 **Implemented Features**:
+
 - ✅ File upload with validation
 - ✅ Storage management
 - ✅ File retrieval by ID
@@ -144,20 +159,24 @@ See: [WebSocket Implementation](../architecture/websocket-implementation.md)
 - ✅ Integration with social and blog services
 
 **Components**:
+
 - Service: `apps/assets/`
 - Gateway: `apps/gateway/src/controllers/asset.controller.ts`
 - Protected endpoints with AuthGuard and PermissionsGuard
 
 #### 2.4 Profile Management ✅ COMPLETE
+
 **Status**: User profiles with blog roles
 
 **Implemented Features**:
+
 - ✅ Profile CRUD operations
 - ✅ Blog role management (NONE, POSTER, OWNER)
 - ✅ User timeline tracking
 - ✅ Profile queries and search
 
 **Components**:
+
 - Service: `apps/profile/`
 - Controllers: Profiles, Timelines
 - Migration: Blog role column added
@@ -166,9 +185,11 @@ See: [WebSocket Implementation](../architecture/websocket-implementation.md)
 ### Phase 3: AI & Advanced Features ✅ COMPLETE
 
 #### 3.1 AI Orchestrator ✅ COMPLETE
+
 **Status**: Production-ready AI integration with LangChain/LangGraph
 
 **Implemented Features**:
+
 - ✅ LangChain integration for LLM interactions
 - ✅ LangGraph agent workflows
 - ✅ Rate limiting (10 requests per profile per 60 seconds)
@@ -181,12 +202,14 @@ See: [WebSocket Implementation](../architecture/websocket-implementation.md)
 - ✅ Quota enforcement
 
 **Components**:
+
 - Service: `apps/ai-orchestrator/`
 - Services: LangChain, LangGraph, Tools, Context Storage
 - Rate limiting: `RateLimitGuard` with profile/user/conversation tracking
 - Documentation: See `apps/ai-orchestrator/` for technical docs
 
-**Testing**: 
+**Testing**:
+
 - Prompt engineering tests
 - Rate limit guard tests
 - Context storage tests
@@ -194,23 +217,28 @@ See: [WebSocket Implementation](../architecture/websocket-implementation.md)
 See: [AI Orchestrator README](../../apps/ai-orchestrator/README.md)
 
 #### 3.2 Chat Collector ✅ COMPLETE
+
 **Status**: Message persistence for AI conversations
 
 **Implemented Features**:
+
 - ✅ Chat message storage
 - ✅ Conversation history retrieval
 - ✅ Integration with AI orchestrator
 
 **Components**:
+
 - Service: `apps/chat-collector/`
 - E2E tests: `apps/chat-collector-e2e/`
 
 ### Phase 4: Content & Publishing ✅ COMPLETE
 
 #### 4.1 Blogging Platform ✅ COMPLETE
+
 **Status**: Full-featured blogging with SEO and spam protection
 
 **Implemented Features**:
+
 - ✅ Blog posts CRUD with authoring permissions
 - ✅ Events management
 - ✅ Contact forms with spam protection
@@ -222,36 +250,43 @@ See: [AI Orchestrator README](../../apps/ai-orchestrator/README.md)
 - ✅ Blog role permissions (NONE, POSTER, OWNER)
 
 **Components**:
+
 - Service: `apps/blogging/`
 - Controllers: Blog, Post, Event, Contact
 - Services: Blog, Post, Event, Contact, RSS, Sitemap, SEO, Spam Protection, Sanitization
 - Gateway integration with permission guards
 
 **Testing**:
+
 - RSS service tests
 - Spam protection tests
 - Post service tests
 - E2E tests: `apps/blogging-e2e/`
 
 #### 4.2 Documentation Service ✅ COMPLETE
+
 **Status**: Telos documentation generation
 
 **Implemented Features**:
+
 - ✅ Profile documentation (telos)
 - ✅ Persona documentation
 - ✅ Project documentation
 - ✅ Seed data for personas
 
 **Components**:
+
 - Service: `apps/telos-docs-service/`
 - Controllers: ProfileTelos, PersonaTelos, ProjectTelos
 
 ### Phase 5: Infrastructure & DevOps ✅ COMPLETE
 
 #### 5.1 Security Hardening ✅ COMPLETE
+
 **Status**: Comprehensive security measures implemented
 
 **Implemented Features**:
+
 - ✅ DTO validation with class-validator across services
 - ✅ Input sanitization (server and client)
 - ✅ Rate limiting at AI orchestrator
@@ -262,6 +297,7 @@ See: [AI Orchestrator README](../../apps/ai-orchestrator/README.md)
 - ✅ Request size limits
 
 **Components**:
+
 - Gateway guards: `AuthGuard`, `PermissionsGuard`, `BlogPermissionGuard`
 - Validation: DTOs in `libs/models/`
 - Sanitization: Services in blogging and social apps
@@ -269,9 +305,11 @@ See: [AI Orchestrator README](../../apps/ai-orchestrator/README.md)
 See: [Security Audit](../architecture/security-audit.md), [Permissions System](../architecture/permissions.md)
 
 #### 5.2 Testing & CI/CD ✅ COMPLETE
+
 **Status**: Comprehensive testing and automation
 
 **Implemented Features**:
+
 - ✅ Unit tests: 186+ test files across apps
 - ✅ E2E tests for all major services (19 E2E projects)
 - ✅ GitHub Actions workflows:
@@ -290,6 +328,7 @@ See: [Security Audit](../architecture/security-audit.md), [Permissions System](.
 - ✅ Code coverage reporting
 
 **Testing Coverage**:
+
 - Authentication E2E
 - Gateway E2E
 - Profile E2E
@@ -304,24 +343,29 @@ See: [Security Audit](../architecture/security-audit.md), [Permissions System](.
 See: [CI/CD Pipeline](../architecture/cicd-pipeline.md), [E2E Testing](../testing/e2e-testing.md)
 
 #### 5.3 Observability ✅ COMPLETE
+
 **Status**: Structured logging and monitoring
 
 **Implemented Features**:
+
 - ✅ Structured logging across services
 - ✅ Permission denial logging
 - ✅ Error tracking
 - ✅ Request/response logging in gateway
 
 **Components**:
+
 - Logger library: `libs/logger/`
 - Integration in all services
 
 ### Phase 6: Additional Features 🚧 IN PROGRESS
 
 #### 6.1 E-Commerce (Store) 🚧 IN PROGRESS
+
 **Status**: Core infrastructure in place
 
 **Implemented**:
+
 - ✅ Products service and controller
 - ✅ Orders management
 - ✅ Subscriptions
@@ -329,52 +373,64 @@ See: [CI/CD Pipeline](../architecture/cicd-pipeline.md), [E2E Testing](../testin
 - ✅ Store seed data
 
 **In Progress**:
+
 - ⏳ Payment integration
 - ⏳ Inventory management
 - ⏳ Store client UI completion
 
 **Components**:
+
 - Service: `apps/store/`
 - Client: `apps/store-client/`
 - Seed: `apps/store/src/seed-store.ts`
 
 #### 6.2 Digital Homestead 🚧 IN PROGRESS
+
 **Status**: Application scaffolded
 
 **In Progress**:
+
 - ⏳ Homestead management features
 - ⏳ UI implementation
 - ⏳ Service integration
 
 **Components**:
+
 - Service: `apps/digital-homestead/`
 - Client: Angular app with proxy configuration
 
 #### 6.3 Owner Console 🚧 IN PROGRESS
+
 **Status**: Administrative interface in development
 
 **Planned**:
+
 - ⏳ User management interface
 - ⏳ System monitoring
 - ⏳ Configuration management
 
 **Components**:
+
 - Client: `apps/owner-console/`
 
 #### 6.4 Portfolio Site (Christopher Rutherford Net) 🚧 IN PROGRESS
+
 **Status**: SSR-enabled portfolio in development
 
 **Implemented**:
+
 - ✅ SSR configuration
 - ✅ Build scripts
 - ✅ Basic structure
 
 **In Progress**:
+
 - ⏳ Content integration
 - ⏳ Design implementation
 - ⏳ SEO optimization
 
 **Components**:
+
 - Client: `apps/christopherrutherford-net/` (Angular Universal)
 
 ---
@@ -382,6 +438,7 @@ See: [CI/CD Pipeline](../architecture/cicd-pipeline.md), [E2E Testing](../testin
 ## Technology Stack
 
 ### Backend Services
+
 - **Framework**: NestJS
 - **Language**: TypeScript
 - **Transport**: TCP (microservices), HTTP (gateway)
@@ -393,6 +450,7 @@ See: [CI/CD Pipeline](../architecture/cicd-pipeline.md), [E2E Testing](../testin
 - **AI**: LangChain, LangGraph
 
 ### Frontend Applications
+
 - **Framework**: Angular 17+
 - **Language**: TypeScript
 - **Styling**: SCSS with CSS variables
@@ -403,6 +461,7 @@ See: [CI/CD Pipeline](../architecture/cicd-pipeline.md), [E2E Testing](../testin
 - **UI Components**: Custom libraries in `libs/`
 
 ### DevOps & Infrastructure
+
 - **Monorepo**: Nx
 - **Containers**: Docker, Docker Compose
 - **CI/CD**: GitHub Actions
@@ -411,6 +470,7 @@ See: [CI/CD Pipeline](../architecture/cicd-pipeline.md), [E2E Testing](../testin
 - **Security**: njsscan, dependency scanning
 
 ### Shared Libraries (35+ libraries)
+
 - **UI**: common-ui, theme-ui, form-ui, navigation-ui, social-ui, profile-ui, project-ui, blogging-ui, etc.
 - **Core**: database, encryption, logger, models, ui-models, constants
 - **Business**: permission-lib, theme-lib, storage, prompt-generation
@@ -420,6 +480,7 @@ See: [CI/CD Pipeline](../architecture/cicd-pipeline.md), [E2E Testing](../testin
 ## Quick Start
 
 ### Development Environment
+
 ```bash
 # Install dependencies
 pnpm install
@@ -436,12 +497,14 @@ npm run watch:build
 ```
 
 ### Access Points
+
 - Client Interface: http://localhost:4200
 - Forge of Will: http://localhost:4201
 - API Gateway: http://localhost:3333
 - Social WebSocket: ws://localhost:3301
 
 ### Testing
+
 ```bash
 # Run all tests
 nx run-many --target=test --all
@@ -459,6 +522,7 @@ nx e2e social-e2e
 ## Next Steps & Roadmap
 
 ### Short-term (Current Sprint)
+
 1. ✅ Complete documentation consolidation
 2. 🚧 Finish store payment integration
 3. 🚧 Complete digital homestead features
@@ -466,6 +530,7 @@ nx e2e social-e2e
 5. 🚧 Portfolio site content and design
 
 ### Medium-term (Next Quarter)
+
 1. Enhanced AI features and context management
 2. Mobile responsive improvements
 3. Performance optimization
@@ -473,6 +538,7 @@ nx e2e social-e2e
 5. Multi-tenancy support
 
 ### Long-term (Future Releases)
+
 1. Mobile applications (iOS/Android)
 2. Offline-first capabilities
 3. Advanced collaboration features
@@ -484,19 +550,23 @@ nx e2e social-e2e
 ## Architecture Highlights
 
 ### Microservices Pattern
+
 Each service is independent with clear boundaries:
+
 - Own database tables/schema
 - Independent deployment
 - TCP message patterns for inter-service communication
 - Gateway provides HTTP API to clients
 
 ### Real-time Architecture
+
 - WebSocket gateway for live updates
 - Subscription-based event broadcasting
 - Efficient client-side state management
 - Exponential backoff reconnection
 
 ### Security Model
+
 - JWT authentication at gateway
 - RBAC with app-scoped permissions
 - Permission enforcement at multiple layers
@@ -504,6 +574,7 @@ Each service is independent with clear boundaries:
 - Rate limiting for sensitive operations
 
 ### AI Integration
+
 - Centralized AI orchestrator
 - Context-aware conversations
 - Tool calling for system integration
@@ -515,19 +586,23 @@ Each service is independent with clear boundaries:
 ## Documentation
 
 ### Getting Started
+
 - [Installation Guide](./README.md)
 - [Architecture Overview](../architecture/README.md)
 - [API Documentation](../api/README.md)
 
 ### Development
+
 - [Debugging Guide](../development/debugging.md)
 - [API Configuration](../development/api-configuration.md)
 
 ### Testing
+
 - [E2E Testing Guide](../testing/e2e-testing.md)
 - [Test Coverage](../testing/coverage.md)
 
 ### Architecture
+
 - [Permissions System](../architecture/permissions.md)
 - [Theme System](../architecture/theme-system.md)
 - [WebSocket Implementation](../architecture/websocket-implementation.md)
@@ -542,6 +617,7 @@ Each service is independent with clear boundaries:
 **Overall MVP Status**: Core platform complete with 11 production services, comprehensive testing, and CI/CD automation.
 
 **Key Achievements**:
+
 - ✅ Complete microservices architecture with 11 backend services
 - ✅ 4 frontend applications (2 production-ready, 2 in development)
 - ✅ Full RBAC implementation with permissions service
@@ -561,6 +637,7 @@ Each service is independent with clear boundaries:
 ## Quick Reference Commands
 
 ### Development
+
 ```bash
 # Install dependencies
 pnpm install
@@ -577,6 +654,7 @@ npm run watch:build
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 nx run-many --target=test --all
@@ -590,6 +668,7 @@ nx e2e social-e2e
 ```
 
 ### Build
+
 ```bash
 # Build all services
 npm run build
@@ -603,4 +682,4 @@ nx build authentication
 
 ---
 
-*Last updated: January 2026*
+_Last updated: January 2026_

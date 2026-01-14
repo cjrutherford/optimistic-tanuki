@@ -1,28 +1,41 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component } from '@angular/core';
 
-import { ReactiveFormsModule, FormGroup, FormBuilder, Validators } from '@angular/forms';
+import {
+  ReactiveFormsModule,
+  FormGroup,
+  FormBuilder,
+  Validators,
+} from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { Router } from '@angular/router';
-import { RegisterRequest, RegisterSubmitType } from '@optimistic-tanuki/ui-models';
+import {
+  RegisterRequest,
+  RegisterSubmitType,
+} from '@optimistic-tanuki/ui-models';
 import { AuthenticationService } from '../authentication.service';
 import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, MatInputModule, MatButtonModule, MatCardModule, RegisterBlockComponent],
-  providers: [AuthenticationService], 
+  imports: [
+    ReactiveFormsModule,
+    MatInputModule,
+    MatButtonModule,
+    MatCardModule,
+    RegisterBlockComponent,
+  ],
+  providers: [AuthenticationService],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
 export class RegisterComponent {
-
   constructor(
-    private readonly authenticationService: AuthenticationService, 
-    private readonly router: Router,
+    private readonly authenticationService: AuthenticationService,
+    private readonly router: Router
   ) {}
 
   // Custom validator to check if password and confirmPassword match
@@ -32,8 +45,7 @@ export class RegisterComponent {
     return password === confirmPassword ? null : { mismatch: true };
   }
 
-  onSubmit($event: RegisterSubmitType) { 
-     
+  onSubmit($event: RegisterSubmitType) {
     const formValue = $event as any;
     console.log('Form submitted:', formValue);
     const registerRequest: RegisterRequest = {
@@ -46,7 +58,6 @@ export class RegisterComponent {
     };
 
     this.authenticationService.register(registerRequest).subscribe({
-       
       next: (response) => {
         console.log(response);
         this.router.navigate(['/login']);
@@ -54,7 +65,7 @@ export class RegisterComponent {
       error: (error) => {
         console.error(error);
         // Handle registration errors (e.g., display error message to user)
-      }
+      },
     });
   }
 }

@@ -15,7 +15,7 @@ interface CacheEntry {
 export class MemoryCacheProvider implements ICacheProvider {
   private readonly cache = new Map<string, CacheEntry>();
   private readonly logger = new Logger(MemoryCacheProvider.name);
-  
+
   private readonly cacheTTL: number;
   private readonly maxCacheSize: number;
   private hits = 0;
@@ -24,7 +24,9 @@ export class MemoryCacheProvider implements ICacheProvider {
   constructor(ttl = 5 * 60 * 1000, maxSize = 10000) {
     this.cacheTTL = ttl;
     this.maxCacheSize = maxSize;
-    this.logger.log(`MemoryCacheProvider initialized with TTL=${ttl}ms, maxSize=${maxSize}`);
+    this.logger.log(
+      `MemoryCacheProvider initialized with TTL=${ttl}ms, maxSize=${maxSize}`
+    );
   }
 
   async get(key: string): Promise<boolean | null> {
@@ -77,15 +79,17 @@ export class MemoryCacheProvider implements ICacheProvider {
   async deletePattern(pattern: string): Promise<void> {
     let count = 0;
     const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-    
+
     for (const key of this.cache.keys()) {
       if (regex.test(key)) {
         this.cache.delete(key);
         count++;
       }
     }
-    
-    this.logger.log(`Deleted ${count} cache entries matching pattern: ${pattern}`);
+
+    this.logger.log(
+      `Deleted ${count} cache entries matching pattern: ${pattern}`
+    );
   }
 
   async clear(): Promise<void> {

@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BlogPageComponent } from './blog-page.component';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import {
+  provideHttpClientTesting,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 
 describe('BlogPageComponent', () => {
@@ -32,25 +35,25 @@ describe('BlogPageComponent', () => {
   it('should create', () => {
     // Handle any HTTP requests made during component initialization
     const req = httpMock.match(() => true);
-    req.forEach(r => r.flush([]));
+    req.forEach((r) => r.flush([]));
     expect(component).toBeTruthy();
   });
 
   it('should default to view mode', () => {
     const req = httpMock.match(() => true);
-    req.forEach(r => r.flush([]));
+    req.forEach((r) => r.flush([]));
     expect(component.mode()).toBe('view');
   });
 
   it('should initialize with empty posts', () => {
     const req = httpMock.match(() => true);
-    req.forEach(r => r.flush([]));
+    req.forEach((r) => r.flush([]));
     expect(component.posts().length).toBe(0);
   });
 
   it('should have canEdit as false when not authenticated', () => {
     const req = httpMock.match(() => true);
-    req.forEach(r => r.flush([]));
+    req.forEach((r) => r.flush([]));
     expect(component.canEdit()).toBe(false);
   });
 });

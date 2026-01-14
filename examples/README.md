@@ -18,16 +18,19 @@ These files can be opened directly in a browser to visualize component behavior.
 Reference implementations and examples extracted from CodePen prototypes:
 
 #### Blogging Components
+
 - **Blogging-components.md** - Documentation for blogging UI components
 - **blogging-elements.md** - Additional blogging element specifications
 
 #### Angular Component Examples
+
 - **Generic Carousel: Angular Implementation.md** - Carousel component implementation
 - **Glass Effects: Angular Implementation.md** - Glass morphism effects
 - **Gradient Border & Glow Effects: Angula.md** - Gradient and glow styling
 - **Player Component: Angular Implementati.md** - Media player component
 
 #### Interactive Examples (HTML)
+
 - **electric-border.html** - Electric border effect demonstration
 - **gradient-border.html** - Gradient border implementation
 - **gradient-glow-cards.html** - Card components with gradient glows

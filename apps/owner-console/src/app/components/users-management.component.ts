@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
-import { MessageComponent, MessageService } from '@optimistic-tanuki/message-ui';
+import {
+  MessageComponent,
+  MessageService,
+} from '@optimistic-tanuki/message-ui';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { UsersService } from '../services/users.service';
 import { RolesService } from '../services/roles.service';
@@ -19,7 +22,7 @@ import { AgUsersTableComponent } from './ag-users-table.component';
   ],
   template: `
     <lib-message></lib-message>
-    
+
     <otui-card>
       <otui-heading level="2">Users Management</otui-heading>
 
@@ -61,20 +64,23 @@ export class UsersManagementComponent implements OnInit {
       next: (users) => {
         this.users = users;
         this.loading = false;
-        
+
         if (users.length === 0) {
           this.messageService.addMessage({
             content: 'No users found in the system.',
-            type: 'info'
+            type: 'info',
           });
         }
       },
       error: (err) => {
         this.loading = false;
-        const errorMessage = err.error?.message || err.message || 'Failed to load users. Please try again.';
+        const errorMessage =
+          err.error?.message ||
+          err.message ||
+          'Failed to load users. Please try again.';
         this.messageService.addMessage({
           content: errorMessage,
-          type: 'error'
+          type: 'error',
         });
       },
     });
@@ -85,7 +91,7 @@ export class UsersManagementComponent implements OnInit {
     // TODO: Implement role management dialog
     this.messageService.addMessage({
       content: `Role management for ${user.profileName} is not yet implemented.`,
-      type: 'info'
+      type: 'info',
     });
   }
 }

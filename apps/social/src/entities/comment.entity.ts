@@ -1,5 +1,12 @@
 /* istanbul ignore file */
-import { Column, Entity, Like, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Like,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 import { FindManyOptions } from 'typeorm';
 import { FindOptionsWhere } from 'typeorm';
@@ -9,66 +16,74 @@ import { Vote } from './vote.entity';
 
 @Entity()
 export class Comment {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    content: string;
+  @Column()
+  content: string;
 
-    @Column()
-    userId: string; // Changed from relation to user ID string
+  @Column()
+  userId: string; // Changed from relation to user ID string
 
-    @Column()
-    profileId: string;
+  @Column()
+  profileId: string;
 
-    @ManyToOne(() => Post, post => post.comments, { onDelete: 'CASCADE' })
-    post: Post;
+  @ManyToOne(() => Post, (post) => post.comments, { onDelete: 'CASCADE' })
+  post: Post;
 
-    @OneToMany( type => Comment, comment => comment.parent)
-    replies: Comment[];
+  @OneToMany((type) => Comment, (comment) => comment.parent)
+  replies: Comment[];
 
-    @ManyToOne( type => Comment, comment => comment.replies, { onDelete: 'CASCADE' })
-    parent: Comment;
+  @ManyToOne((type) => Comment, (comment) => comment.replies, {
+    onDelete: 'CASCADE',
+  })
+  parent: Comment;
 
-    @OneToMany(() => Vote, vote => vote.comment)
-    votes: Vote[];
-    
-    
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-    createdAt: Date;
+  @OneToMany(() => Vote, (vote) => vote.comment)
+  votes: Vote[];
 
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
-    updatedAt: Date;
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt: Date;
 }
 
-export function transformSearchCommentDtoToFindOptions(dto: SearchCommentDto): FindManyOptions<Comment> {
-    const findOptions: FindManyOptions<Comment> = {
-        where: {} as FindOptionsWhere<Comment>,
-        relations: [],
-    };
-    const tempRelations: string[] = []; 
+export function transformSearchCommentDtoToFindOptions(
+  dto: SearchCommentDto
+): FindManyOptions<Comment> {
+  const findOptions: FindManyOptions<Comment> = {
+    where: {} as FindOptionsWhere<Comment>,
+    relations: [],
+  };
+  const tempRelations: string[] = [];
 
-    if (dto.content) {
-        findOptions.where['content'] = dto.content;
-    }
+  if (dto.content) {
+    findOptions.where['content'] = dto.content;
+  }
 
-    if (dto.userId) {
-        findOptions.where['userId'] = dto.userId;
-    }
+  if (dto.userId) {
+    findOptions.where['userId'] = dto.userId;
+  }
 
-    if (dto.postId) {
-        findOptions.where['post'] = { id: dto.postId } as FindOptionsWhere<Post>;
-        tempRelations.push('post');
-    }
-    if(dto.content) {
-        findOptions.where['content'] = Like(`%${dto.content}%`);
-    }
+  if (dto.postId) {
+    findOptions.where['post'] = { id: dto.postId } as FindOptionsWhere<Post>;
+    tempRelations.push('post');
+  }
+  if (dto.content) {
+    findOptions.where['content'] = Like(`%${dto.content}%`);
+  }
 
-    if(dto.parentId) {
-        findOptions.where['parent'] = { id: dto.parentId } as FindOptionsWhere<Comment>;
-        tempRelations.push('parent');
-    }
+  if (dto.parentId) {
+    findOptions.where['parent'] = {
+      id: dto.parentId,
+    } as FindOptionsWhere<Comment>;
+    tempRelations.push('parent');
+  }
 
-    return findOptions;
+  return findOptions;
 }
-

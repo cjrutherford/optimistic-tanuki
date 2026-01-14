@@ -3,7 +3,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PermissionsService } from './permissions.service';
 import { Permission } from '../permissions/entities/permission.entity';
-import { CreatePermissionDto, UpdatePermissionDto } from '@optimistic-tanuki/models';
+import {
+  CreatePermissionDto,
+  UpdatePermissionDto,
+} from '@optimistic-tanuki/models';
 
 const mockPermissionsRepository = () => ({
   create: jest.fn(),
@@ -30,7 +33,9 @@ describe('PermissionsService', () => {
     }).compile();
 
     service = module.get<PermissionsService>(PermissionsService);
-    repository = module.get<Repository<Permission>>(getRepositoryToken(Permission));
+    repository = module.get<Repository<Permission>>(
+      getRepositoryToken(Permission)
+    );
   });
 
   it('should be defined', () => {
@@ -39,7 +44,12 @@ describe('PermissionsService', () => {
 
   describe('createPermission', () => {
     it('should create and save a new permission', async () => {
-      const createPermissionDto: CreatePermissionDto = { name: 'test:read', description: 'Test Read', resource: 'test', action: 'read' };
+      const createPermissionDto: CreatePermissionDto = {
+        name: 'test:read',
+        description: 'Test Read',
+        resource: 'test',
+        action: 'read',
+      };
       const permission = new Permission();
 
       jest.spyOn(repository, 'create').mockReturnValue(permission);
@@ -61,7 +71,10 @@ describe('PermissionsService', () => {
 
       const result = await service.getPermission('1');
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: '1' }, relations: ['roles', 'appScope'] });
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { id: '1' },
+        relations: ['roles', 'appScope'],
+      });
       expect(result).toEqual(permission);
     });
   });
@@ -80,7 +93,10 @@ describe('PermissionsService', () => {
 
   describe('updatePermission', () => {
     it('should update a permission and return it', async () => {
-      const updatePermissionDto: UpdatePermissionDto = { id: '1', name: 'updated' };
+      const updatePermissionDto: UpdatePermissionDto = {
+        id: '1',
+        name: 'updated',
+      };
       const permission = new Permission();
       permission.id = '1';
 

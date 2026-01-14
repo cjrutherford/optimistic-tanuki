@@ -1,11 +1,16 @@
 <div [ngClass]="layout">
   @for (option of options; track option) {
-    <div class="radio-container">
-      <label>
-        <input type="radio" [value]="option.value" [(ngModel)]="selected" (change)="onSelect(option.value)">
-        <span class="radio-mark"></span>
-        {{ option.label }}
-      </label>
-    </div>
+  <div class="radio-container">
+    <label>
+      <input
+        type="radio"
+        [value]="option.value"
+        [(ngModel)]="selected"
+        (change)="onSelect(option.value)"
+      />
+      <span class="radio-mark"></span>
+      {{ option.label }}
+    </label>
+  </div>
   }
 </div>

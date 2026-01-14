@@ -46,7 +46,9 @@ export const DEFAULT_DESIGN_TOKENS: DesignTokens = {
 };
 
 // Generate CSS custom properties from design tokens
-export function generateDesignTokenCSSVariables(tokens: DesignTokens): Record<string, string> {
+export function generateDesignTokenCSSVariables(
+  tokens: DesignTokens
+): Record<string, string> {
   const variables: Record<string, string> = {};
 
   // Spacing

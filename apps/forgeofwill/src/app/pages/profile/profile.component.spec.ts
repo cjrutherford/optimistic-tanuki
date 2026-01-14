@@ -1,8 +1,17 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import { ProfileComponent } from './profile.component';
 import { ProfileService } from '../../profile/profile.service';
 import { of } from 'rxjs';
-import { CreateProfileDto, ProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
+import {
+  CreateProfileDto,
+  ProfileDto,
+  UpdateProfileDto,
+} from '@optimistic-tanuki/ui-models';
 
 describe('ProfileComponent', () => {
   let component: ProfileComponent;
@@ -34,9 +43,7 @@ describe('ProfileComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [ProfileComponent],
-      providers: [
-        { provide: ProfileService, useValue: profileServiceMock },
-      ],
+      providers: [{ provide: ProfileService, useValue: profileServiceMock }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ProfileComponent);
@@ -52,8 +59,12 @@ describe('ProfileComponent', () => {
   describe('ngOnInit', () => {
     it('should load profiles and set selected profile', fakeAsync(() => {
       jest.spyOn(profileService, 'getAllProfiles').mockResolvedValue(undefined);
-      jest.spyOn(profileService, 'currentUserProfiles').mockReturnValue([mockProfile]);
-      jest.spyOn(profileService, 'currentUserProfiles').mockReturnValue([mockProfile]);
+      jest
+        .spyOn(profileService, 'currentUserProfiles')
+        .mockReturnValue([mockProfile]);
+      jest
+        .spyOn(profileService, 'currentUserProfiles')
+        .mockReturnValue([mockProfile]);
 
       component.ngOnInit();
       tick();
@@ -78,7 +89,11 @@ describe('ProfileComponent', () => {
 
   describe('selectProfile', () => {
     it('should select a profile', () => {
-      const newProfile: ProfileDto = { ...mockProfile, id: '2', profileName: 'New Profile' };
+      const newProfile: ProfileDto = {
+        ...mockProfile,
+        id: '2',
+        profileName: 'New Profile',
+      };
       component.selectProfile(newProfile);
       expect(component.selectedProfile()).toEqual(newProfile);
       expect(profileService.selectProfile).toHaveBeenCalledWith(newProfile);
@@ -87,31 +102,47 @@ describe('ProfileComponent', () => {
 
   describe('createProfile', () => {
     it('should create a profile and reload profiles', fakeAsync(() => {
-      const createDto: CreateProfileDto = { name: 'New Profile', userId: 'user1' } as CreateProfileDto;
+      const createDto: CreateProfileDto = {
+        name: 'New Profile',
+        userId: 'user1',
+      } as CreateProfileDto;
       jest.spyOn(profileService, 'createProfile').mockResolvedValue(undefined);
       jest.spyOn(profileService, 'getAllProfiles').mockResolvedValue(undefined);
-      jest.spyOn(profileService, 'currentUserProfiles').mockReturnValue([mockProfile, { ...mockProfile, id: '2' }]);
+      jest
+        .spyOn(profileService, 'currentUserProfiles')
+        .mockReturnValue([mockProfile, { ...mockProfile, id: '2' }]);
 
       component.createProfile(createDto);
       tick();
 
       expect(profileService.createProfile).toHaveBeenCalledWith(createDto);
       expect(profileService.getAllProfiles).toHaveBeenCalled();
-      expect(component.availableProfiles()).toEqual([mockProfile, { ...mockProfile, id: '2' }]);
+      expect(component.availableProfiles()).toEqual([
+        mockProfile,
+        { ...mockProfile, id: '2' },
+      ]);
     }));
   });
 
   describe('updateProfile', () => {
     it('should update a profile and reload profiles', fakeAsync(() => {
-      const updateDto: UpdateProfileDto = { id: '1', profileName: 'Updated Profile' } as UpdateProfileDto;
+      const updateDto: UpdateProfileDto = {
+        id: '1',
+        profileName: 'Updated Profile',
+      } as UpdateProfileDto;
       jest.spyOn(profileService, 'updateProfile').mockResolvedValue(undefined);
       jest.spyOn(profileService, 'getAllProfiles').mockResolvedValue(undefined);
-      jest.spyOn(profileService, 'currentUserProfiles').mockReturnValue([mockProfile]); // Explicitly set for this test
+      jest
+        .spyOn(profileService, 'currentUserProfiles')
+        .mockReturnValue([mockProfile]); // Explicitly set for this test
 
       component.updateProfile(updateDto);
       tick();
 
-      expect(profileService.updateProfile).toHaveBeenCalledWith(updateDto.id, updateDto);
+      expect(profileService.updateProfile).toHaveBeenCalledWith(
+        updateDto.id,
+        updateDto
+      );
       expect(profileService.getAllProfiles).toHaveBeenCalled();
       expect(component.availableProfiles()).toEqual([mockProfile]);
     }));

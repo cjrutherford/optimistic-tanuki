@@ -78,7 +78,7 @@ describe('AgGridUiComponent', () => {
     component.rowData = mockRowData;
     component.columnDefs = mockColumnDefs;
     fixture.detectChanges();
-    
+
     const compiled = fixture.nativeElement;
     const agGrid = compiled.querySelector('ag-grid-angular');
     expect(agGrid).toBeTruthy();
@@ -104,14 +104,14 @@ describe('AgGridUiComponent', () => {
 
   it('should have grid API available after onGridReady', () => {
     const mockParams = {
-      api: { 
+      api: {
         sizeColumnsToFit: () => {},
         hideOverlay: () => {},
         getDisplayedRowCount: () => 0,
         setGridOption: () => {},
       },
     } as any;
-    
+
     component.onGridReady(mockParams);
     expect(component.gridApi).toBeDefined();
   });
@@ -142,7 +142,7 @@ describe('AgGridUiComponent', () => {
 
     component.theme = 'light';
     component.applyTheme(mockColors);
-    
+
     expect(component.background).toBe('#ffffff');
     expect(component.foreground).toBe('#000000');
     expect(component.accent).toBe('#ff0000');

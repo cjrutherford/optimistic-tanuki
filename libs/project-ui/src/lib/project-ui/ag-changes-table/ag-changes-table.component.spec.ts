@@ -43,10 +43,7 @@ describe('AgChangesTableComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AgChangesTableComponent],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting()
-      ]
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AgChangesTableComponent);
@@ -65,13 +62,13 @@ describe('AgChangesTableComponent', () => {
   it('should accept changes input and render grid', (done) => {
     component.changes = mockChanges;
     fixture.detectChanges();
-    
+
     setTimeout(() => {
       expect(component.changes.length).toBe(2);
-      
+
       const agGrid = compiled.querySelector('otui-ag-grid');
       expect(agGrid).toBeTruthy();
-      
+
       done();
     }, 500);
   });
@@ -79,12 +76,20 @@ describe('AgChangesTableComponent', () => {
   it('should have column definitions configured with all required columns', () => {
     expect(component.columnDefs).toBeDefined();
     expect(component.columnDefs.length).toBeGreaterThan(0);
-    
-    const descriptionColumn = component.columnDefs.find(col => col.field === 'changeDescription');
-    const typeColumn = component.columnDefs.find(col => col.field === 'changeType');
-    const statusColumn = component.columnDefs.find(col => col.field === 'changeStatus');
-    const resolutionColumn = component.columnDefs.find(col => col.field === 'resolution');
-    
+
+    const descriptionColumn = component.columnDefs.find(
+      (col) => col.field === 'changeDescription'
+    );
+    const typeColumn = component.columnDefs.find(
+      (col) => col.field === 'changeType'
+    );
+    const statusColumn = component.columnDefs.find(
+      (col) => col.field === 'changeStatus'
+    );
+    const resolutionColumn = component.columnDefs.find(
+      (col) => col.field === 'resolution'
+    );
+
     expect(descriptionColumn).toBeDefined();
     expect(typeColumn).toBeDefined();
     expect(statusColumn).toBeDefined();
@@ -111,7 +116,7 @@ describe('AgChangesTableComponent', () => {
 
   it('should emit editChange event with correct data', (done) => {
     component.selectedChange = mockChanges[0];
-    
+
     component.editChange.subscribe((change) => {
       expect(change.id).toBe('1');
       expect(change.changeDescription).toContain('Updated');
@@ -133,18 +138,18 @@ describe('AgChangesTableComponent', () => {
   it('should update grid when changes input changes', (done) => {
     component.changes = [];
     fixture.detectChanges();
-    
+
     component.changes = mockChanges;
     component.ngOnChanges({
       changes: {
         currentValue: mockChanges,
         previousValue: [],
         firstChange: false,
-        isFirstChange: () => false
-      }
+        isFirstChange: () => false,
+      },
     });
     fixture.detectChanges();
-    
+
     setTimeout(() => {
       expect(component.changes.length).toBe(2);
       done();
@@ -157,17 +162,19 @@ describe('AgChangesTableComponent', () => {
   });
 
   it('should render action column with edit and delete buttons', () => {
-    const actionsColumn = component.columnDefs.find(col => col.headerName === 'Actions');
+    const actionsColumn = component.columnDefs.find(
+      (col) => col.headerName === 'Actions'
+    );
     expect(actionsColumn).toBeDefined();
     expect(actionsColumn?.cellRenderer).toBeDefined();
   });
 
   it('should handle modal open/close correctly', () => {
     expect(component.showModal).toBe(false);
-    
+
     component.showModal = true;
     expect(component.showModal).toBe(true);
-    
+
     component.closeModal();
     expect(component.showModal).toBe(false);
   });

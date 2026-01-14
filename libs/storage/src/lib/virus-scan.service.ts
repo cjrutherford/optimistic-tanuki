@@ -9,27 +9,27 @@ export interface VirusScanResult {
 
 /**
  * Virus Scan Service Stub
- * 
+ *
  * This is a stub implementation that always returns "clean" for now.
  * In a production environment, this should be replaced with actual virus scanning
  * integration such as ClamAV, VirusTotal, or a cloud-based scanning service.
- * 
+ *
  * Future Integration Options:
  * 1. ClamAV - Open source antivirus engine
  *    - Install clamd daemon
  *    - Use node-clam or clamav.js library
  *    - Example: https://github.com/kylefarris/clamscan
- * 
+ *
  * 2. VirusTotal API - Cloud-based multi-engine scanner
  *    - Sign up for API key at virustotal.com
  *    - Use @virustotal/vt-js library
  *    - Rate limits apply (4 requests/minute for free tier)
- * 
+ *
  * 3. AWS S3 Object Lambda + Antivirus
  *    - Use AWS Marketplace antivirus solutions
  *    - Scan on upload via Lambda trigger
  *    - Examples: Trend Micro, Sophos, etc.
- * 
+ *
  * Implementation Notes:
  * - Should be async to allow for actual scanning
  * - Should handle scan timeouts gracefully
@@ -44,7 +44,7 @@ export class VirusScanService {
 
   /**
    * Scan a file for viruses
-   * 
+   *
    * @param fileBuffer - The file content as a Buffer
    * @param filename - The filename (for logging/metadata)
    * @returns VirusScanResult with scan status and details

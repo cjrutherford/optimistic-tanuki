@@ -9,7 +9,9 @@ export class ImageUploadService {
    * Extract all base64 images from HTML content
    * Returns an array of { original, dataUrl }
    */
-  extractBase64Images(htmlContent: string): Array<{ original: string; dataUrl: string }> {
+  extractBase64Images(
+    htmlContent: string
+  ): Array<{ original: string; dataUrl: string }> {
     const images: Array<{ original: string; dataUrl: string }> = [];
     const imgRegex = /<img[^>]+src="(data:image\/[^;]+;base64,[^"]+)"[^>]*>/g;
     let match;
@@ -17,7 +19,7 @@ export class ImageUploadService {
     while ((match = imgRegex.exec(htmlContent)) !== null) {
       images.push({
         original: match[0], // Full img tag
-        dataUrl: match[1],  // Data URL
+        dataUrl: match[1], // Data URL
       });
     }
 

@@ -3,11 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import { DataSource, DataSourceOptions } from 'typeorm';
 export { FindOptionsBuilder } from './findOptionsBuilder';
 
-@Module({
-})
+@Module({})
 export class DatabaseModule implements DynamicModule {
   module!: Type<DatabaseModule>;
-  static register(...opts: { name: string, factory: (config: ConfigService) => DataSourceOptions}[]): DynamicModule {
+  static register(
+    ...opts: {
+      name: string;
+      factory: (config: ConfigService) => DataSourceOptions;
+    }[]
+  ): DynamicModule {
     const connections = [];
     const repositories: Provider[] = [];
 
@@ -32,10 +36,7 @@ export class DatabaseModule implements DynamicModule {
       global: true,
       imports: [],
       providers: [...connections, ...repositories],
-      exports: [
-        ...connections,
-        ...repositories,
-      ],
+      exports: [...connections, ...repositories],
     };
   }
 }

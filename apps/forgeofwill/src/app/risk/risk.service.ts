@@ -5,14 +5,14 @@ import { Injectable } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class RiskService {
   private baseUrl = '/api/project-planning/risk';
   constructor(
     private readonly http: HttpClient,
-    private readonly profileService: ProfileService,
-  ) { }
+    private readonly profileService: ProfileService
+  ) {}
 
   getRisks() {
     return this.http.get<Risk[]>(`${this.baseUrl}/`);
@@ -43,5 +43,4 @@ export class RiskService {
   deleteRisk(id: string) {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
-
 }

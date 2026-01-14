@@ -22,10 +22,11 @@
     (close)="showEditModal.set(false)"
   ></lib-change-form>
 </otui-modal>
-}
-
-@if (showModal()) {
+} @if (showModal()) {
 <otui-modal (closeModal)="closeModal()" [heading]="'Add Change'">
-  <lib-change-form (submitted)="onCreateFormSubmit($event)" (close)="closeModal()"></lib-change-form>
+  <lib-change-form
+    (submitted)="onCreateFormSubmit($event)"
+    (close)="closeModal()"
+  ></lib-change-form>
 </otui-modal>
 }

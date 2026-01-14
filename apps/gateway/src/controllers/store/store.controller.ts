@@ -89,7 +89,10 @@ export class StoreController {
   @Post('donations')
   async createDonation(@Body() createDonationDto: CreateDonationDto) {
     return await firstValueFrom(
-      this.storeService.send(DonationCommands.CREATE_DONATION, createDonationDto)
+      this.storeService.send(
+        DonationCommands.CREATE_DONATION,
+        createDonationDto
+      )
     );
   }
 
@@ -162,9 +165,14 @@ export class StoreController {
 
   @UseGuards(AuthGuard)
   @Post('subscriptions')
-  async createSubscription(@Body() createSubscriptionDto: CreateSubscriptionDto) {
+  async createSubscription(
+    @Body() createSubscriptionDto: CreateSubscriptionDto
+  ) {
     return await firstValueFrom(
-      this.storeService.send(SubscriptionCommands.CREATE_SUBSCRIPTION, createSubscriptionDto)
+      this.storeService.send(
+        SubscriptionCommands.CREATE_SUBSCRIPTION,
+        createSubscriptionDto
+      )
     );
   }
 
@@ -172,7 +180,10 @@ export class StoreController {
   @Get('subscriptions/user/:userId')
   async findUserSubscriptions(@Param('userId') userId: string) {
     return await firstValueFrom(
-      this.storeService.send(SubscriptionCommands.FIND_USER_SUBSCRIPTIONS, userId)
+      this.storeService.send(
+        SubscriptionCommands.FIND_USER_SUBSCRIPTIONS,
+        userId
+      )
     );
   }
 

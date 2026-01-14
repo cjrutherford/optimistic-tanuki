@@ -1,8 +1,12 @@
-<div class="product-list" [style.grid-template-columns]="'repeat(' + columns + ', 1fr)'">
+<div
+  class="product-list"
+  [style.grid-template-columns]="'repeat(' + columns + ', 1fr)'"
+>
   <store-product-card
     *ngFor="let product of products"
     [product]="product"
-    (addToCart)="onAddToCart($event)">
+    (addToCart)="onAddToCart($event)"
+  >
   </store-product-card>
 </div>
 

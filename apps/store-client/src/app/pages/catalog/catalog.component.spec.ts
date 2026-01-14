@@ -23,7 +23,9 @@ describe('CatalogComponent', () => {
   ];
 
   beforeEach(async () => {
-    const storeServiceSpy = jasmine.createSpyObj('StoreService', ['getProducts']);
+    const storeServiceSpy = jasmine.createSpyObj('StoreService', [
+      'getProducts',
+    ]);
 
     await TestBed.configureTestingModule({
       imports: [CatalogComponent],
@@ -60,11 +62,15 @@ describe('CatalogComponent', () => {
   });
 
   it('should handle error when loading products fails', () => {
-    storeService.getProducts.and.returnValue(throwError(() => new Error('Test error')));
+    storeService.getProducts.and.returnValue(
+      throwError(() => new Error('Test error'))
+    );
 
     fixture.detectChanges();
 
-    expect(component.error).toBe('Failed to load products. Please try again later.');
+    expect(component.error).toBe(
+      'Failed to load products. Please try again later.'
+    );
     expect(component.loading).toBe(false);
   });
 

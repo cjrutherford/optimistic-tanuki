@@ -1,18 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui';
+import {
+  AppBarComponent,
+  NavSidebarComponent,
+  NavItem,
+} from '@optimistic-tanuki/navigation-ui';
 import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    AppBarComponent,
-    NavSidebarComponent,
-  ],
+  imports: [CommonModule, RouterModule, AppBarComponent, NavSidebarComponent],
   template: `
     <div class="dashboard-container">
       <otui-app-bar
@@ -86,11 +85,14 @@ export class DashboardComponent implements OnInit {
         label: 'Permissions',
         action: () => this.router.navigate(['/dashboard/permissions']),
         variant: 'text',
-        isActive: this.router.url.includes('/permissions') && !this.router.url.includes('/permissions-inspector'),
+        isActive:
+          this.router.url.includes('/permissions') &&
+          !this.router.url.includes('/permissions-inspector'),
       },
       {
         label: 'Permissions Inspector',
-        action: () => this.router.navigate(['/dashboard/permissions-inspector']),
+        action: () =>
+          this.router.navigate(['/dashboard/permissions-inspector']),
         variant: 'text',
         isActive: this.router.url.includes('/permissions-inspector'),
       },

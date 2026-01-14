@@ -1,11 +1,11 @@
 <otui-card>
   <div class="flex-row">
-      <form [formGroup]="projectForm" class="flex-column">
+    <form [formGroup]="projectForm" class="flex-column">
       <lib-select
         [options]="projectOptions()"
         formControlName="project"
       ></lib-select>
-      </form>
+    </form>
     <otui-button variant="primary" (click)="onCreateClick()"
       >Create</otui-button
     >

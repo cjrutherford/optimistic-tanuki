@@ -1,10 +1,10 @@
 @if(messageService.messages().length > 0) {
-  <otui-card class="message-container">
-      @for (message of messageService.messages(); track message) {
-        <otui-tile class="message" [ngClass]="message.type">
-          <span>{{ message.content }}</span>
-          <otui-button (click)="dismissMessage($index)">❌</otui-button>
-        </otui-tile>
-      }
-  </otui-card> 
+<otui-card class="message-container">
+  @for (message of messageService.messages(); track message) {
+  <otui-tile class="message" [ngClass]="message.type">
+    <span>{{ message.content }}</span>
+    <otui-button (click)="dismissMessage($index)">❌</otui-button>
+  </otui-tile>
+  }
+</otui-card>
 }

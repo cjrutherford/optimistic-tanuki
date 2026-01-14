@@ -8,15 +8,19 @@ import { of } from 'rxjs';
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent, RouterModule.forRoot([]), HttpClientTestingModule],
+      imports: [
+        AppComponent,
+        RouterModule.forRoot([]),
+        HttpClientTestingModule,
+      ],
       providers: [
         {
           provide: ContactService,
           useValue: {
-            postContact: jest.fn(() => of({}))
-          }
-        }
-      ]
+            postContact: jest.fn(() => of({})),
+          },
+        },
+      ],
     }).compileComponents();
   });
 

@@ -46,31 +46,37 @@ docs/
 ## Documentation Categories
 
 ### Getting Started
+
 Entry point for new developers. Contains installation instructions, quick start guides, and project overview.
 
 **Target Audience**: New contributors, developers setting up for the first time
 
 ### Development
+
 Guides for development workflow, debugging, and configuration.
 
 **Target Audience**: Active developers working on the codebase
 
 ### Architecture
+
 System design documentation explaining how the platform works.
 
 **Target Audience**: Developers who need to understand system internals, architects
 
 ### Guides
+
 Step-by-step instructions for specific tasks or features.
 
 **Target Audience**: Developers implementing specific features or using specific tools
 
 ### Testing
+
 Everything related to writing and running tests.
 
 **Target Audience**: Developers writing tests, QA engineers
 
 ### API
+
 API reference documentation for all services.
 
 **Target Audience**: Frontend developers, API consumers, integration developers
@@ -83,6 +89,7 @@ In addition to the central docs, each application and library has its own README
 - **Libraries**: `libs/<lib-name>/README.md`
 
 Some have additional technical documentation in their directories:
+
 - AI Orchestrator: LangChain integration, multi-response handling, etc.
 - Permissions: Deployment and usage guides
 - Profile: Blog permissions
@@ -92,6 +99,7 @@ Some have additional technical documentation in their directories:
 ## Examples and Reference Material
 
 The `examples/` directory contains:
+
 - Demo HTML files
 - CodePen component references
 - Implementation examples
@@ -101,22 +109,29 @@ These are **not** documentation but reference material used during development.
 ## Documentation Principles
 
 ### 1. Single Source of Truth
+
 Each topic should have one authoritative document. Cross-reference rather than duplicate.
 
 ### 2. Keep Documentation Current
+
 Update documentation when making code changes. Outdated docs are worse than no docs.
 
 ### 3. Use Clear Categories
+
 Place documentation in the most appropriate category. When in doubt:
+
 - If it's about "how to do X", it's a guide
 - If it's about "how X works", it's architecture
 - If it's about API endpoints, it's API docs
 
 ### 4. Link Liberally
+
 Create connections between related documents using markdown links.
 
 ### 5. No Status Reports
+
 The docs directory is for documentation, not status reports or session summaries. These should be:
+
 - In issue comments
 - In PR descriptions
 - In project management tools
@@ -140,6 +155,7 @@ These files served their purpose during development but are not useful as ongoin
 When adding new documentation:
 
 1. **Choose the right category**
+
    - New user info → `getting-started/`
    - Development workflow → `development/`
    - System design → `architecture/`
@@ -148,6 +164,7 @@ When adding new documentation:
    - API info → `api/`
 
 2. **Create the file**
+
    ```bash
    # Use kebab-case for filenames
    touch docs/guides/my-new-guide.md
@@ -165,16 +182,20 @@ When adding new documentation:
 ## Maintenance
 
 ### Quarterly Review
+
 Every quarter, review documentation for:
+
 - Accuracy (does it match current code?)
 - Completeness (are new features documented?)
 - Clarity (can new developers understand it?)
 - Organization (is it in the right place?)
 
 ### When Refactoring
+
 If you refactor code, update related documentation.
 
 ### Deprecation
+
 When removing features, remove related documentation.
 
 ## Finding Documentation
@@ -190,8 +211,9 @@ When removing features, remove related documentation.
 ## Questions?
 
 If you can't find what you need:
+
 1. Check the category READMEs
-2. Search in docs/ and apps/*/README.md
+2. Search in docs/ and apps/\*/README.md
 3. Ask in GitHub issues
 4. Contribute documentation for the topic!
 

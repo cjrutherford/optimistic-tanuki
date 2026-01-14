@@ -1,9 +1,37 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
-import { ButtonComponent, CardComponent, ModalComponent, ThemeColors, TileComponent } from '@optimistic-tanuki/common-ui'; // Removed GridComponent
-import { CreateProfileDto, ProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ImageUploadComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
-
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  inject,
+  signal,
+} from '@angular/core';
+import {
+  ButtonComponent,
+  CardComponent,
+  ModalComponent,
+  ThemeColors,
+  TileComponent,
+} from '@optimistic-tanuki/common-ui'; // Removed GridComponent
+import {
+  CreateProfileDto,
+  ProfileDto,
+  UpdateProfileDto,
+} from '@optimistic-tanuki/ui-models';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import {
+  ImageUploadComponent,
+  TextInputComponent,
+} from '@optimistic-tanuki/form-ui';
 
 import { MatListModule } from '@angular/material/list';
 import { ProfilePhotoComponent } from './profile-photo/profile-photo.component';
@@ -20,18 +48,21 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     ModalComponent,
     ImageUploadComponent,
     ProfilePhotoComponent,
-    MatListModule
-],
+    MatListModule,
+  ],
   templateUrl: './profile-selector.component.html',
   styleUrl: './profile-selector.component.scss',
 })
 export class ProfileSelectorComponent implements OnInit, AfterViewInit {
   @Input() profiles: ProfileDto[] = [];
   @Input() currentSelectedProfile: ProfileDto | null = null;
-  @Output() selectedProfile: EventEmitter<ProfileDto> = new EventEmitter<ProfileDto>();
-  @Output() profileCreated: EventEmitter<CreateProfileDto> = new EventEmitter<CreateProfileDto>();
-  @Output() profileUpdated: EventEmitter<UpdateProfileDto> = new EventEmitter<UpdateProfileDto>();
-  
+  @Output() selectedProfile: EventEmitter<ProfileDto> =
+    new EventEmitter<ProfileDto>();
+  @Output() profileCreated: EventEmitter<CreateProfileDto> =
+    new EventEmitter<CreateProfileDto>();
+  @Output() profileUpdated: EventEmitter<UpdateProfileDto> =
+    new EventEmitter<UpdateProfileDto>();
+
   internalSelectedProfile = signal<ProfileDto | null>(null);
   editingProfile: ProfileDto | null = null;
 
@@ -40,7 +71,7 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
   showProfileModal = false; // Control for the new modal component
 
   // Injected ThemeService if needed for direct theme manipulation, otherwise remove if not used.
-  private themeService = inject(ThemeService); 
+  private themeService = inject(ThemeService);
 
   // Theme properties that might be needed for direct styling if not using host bindings from a base class
   background?: string;
@@ -59,10 +90,10 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
     this.profileForm = this.fb.group({
       profileName: this.fb.control('', Validators.required),
       // Ensure all form controls used in the template are defined here
-      description: this.fb.control(''), 
+      description: this.fb.control(''),
       profilePic: this.fb.control(''),
       coverPic: this.fb.control(''),
-      bio: this.fb.control('')
+      bio: this.fb.control(''),
     });
   }
   ngAfterViewInit(): void {
@@ -76,14 +107,16 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
       this.internalSelectedProfile.set(this.currentSelectedProfile);
     }
     // Subscribe to theme changes if direct styling is needed
-    this.themeService.themeColors$.subscribe((colors: ThemeColors | undefined) => {
-      if (colors) {
-        this.background = colors.background;
-        this.foreground = colors.foreground;
-        this.accent = colors.accent;
-        // Potentially map other colors if needed for the component's template or direct style bindings
+    this.themeService.themeColors$.subscribe(
+      (colors: ThemeColors | undefined) => {
+        if (colors) {
+          this.background = colors.background;
+          this.foreground = colors.foreground;
+          this.accent = colors.accent;
+          // Potentially map other colors if needed for the component's template or direct style bindings
+        }
       }
-    });
+    );
   }
 
   selectProfile(profile: ProfileDto): void {
@@ -136,7 +169,7 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
           location: '',
           occupation: '',
           interests: '',
-          skills: ''
+          skills: '',
         };
         this.profileCreated.emit(newProfile);
       }

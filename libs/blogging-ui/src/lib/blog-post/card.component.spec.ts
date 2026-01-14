@@ -22,7 +22,9 @@ describe('BlogPostCardComponent', () => {
   it('should have default input values', () => {
     expect(component.title).toBe('A Blog Post Title');
     expect(component.bannerImage).toBe('https://picsum.photos/600/200');
-    expect(component.excerpt).toBe('This is a short excerpt from the blog post to give readers an idea of the content.');
+    expect(component.excerpt).toBe(
+      'This is a short excerpt from the blog post to give readers an idea of the content.'
+    );
     expect(component.authorName).toBe('Author Name');
     expect(component.publishDate).toBe('January 1, 2024');
     expect(component.readMoreLink).toBe('#');

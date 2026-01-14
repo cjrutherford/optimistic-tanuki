@@ -3,7 +3,11 @@
 @use 'sass:list' as list;
 
 // Gradient mixins
-@mixin gradient-background($type: 'linear', $direction: 'to bottom', $colors...) {
+@mixin gradient-background(
+  $type: 'linear',
+  $direction: 'to bottom',
+  $colors...
+) {
   @if $type == 'linear' {
     background: linear-gradient(#{$direction}, $colors);
   } @else if $type == 'radial' {
@@ -13,17 +17,34 @@
   }
 }
 
-@mixin gradient-border($type: 'linear', $direction: 'to right', $width: 2px, $colors...) {
+@mixin gradient-border(
+  $type: 'linear',
+  $direction: 'to right',
+  $width: 2px,
+  $colors...
+) {
   border: $width solid transparent;
   background: var(--background, #fff);
   background-clip: padding-box, border-box;
   background-origin: padding-box, border-box;
   @if $type == 'linear' {
-    background-image: linear-gradient(var(--background, #fff), var(--background, #fff)), linear-gradient(#{$direction}, $colors);
+    background-image: linear-gradient(
+        var(--background, #fff),
+        var(--background, #fff)
+      ),
+      linear-gradient(#{$direction}, $colors);
   } @else if $type == 'radial' {
-    background-image: linear-gradient(var(--background, #fff), var(--background, #fff)), radial-gradient(#{$direction}, $colors);
+    background-image: linear-gradient(
+        var(--background, #fff),
+        var(--background, #fff)
+      ),
+      radial-gradient(#{$direction}, $colors);
   } @else if $type == 'conic' {
-    background-image: linear-gradient(var(--background, #fff), var(--background, #fff)), conic-gradient(from #{$direction}, $colors);
+    background-image: linear-gradient(
+        var(--background, #fff),
+        var(--background, #fff)
+      ),
+      conic-gradient(from #{$direction}, $colors);
   }
 }
 
@@ -49,9 +70,15 @@
   box-shadow: 0 0 $blur $spread $color;
 }
 
-@mixin box-shadow-multi-glow($color1, $color2, $blur1: 20px, $spread1: 8px, $blur2: 20px, $spread2: 8px) {
-  box-shadow: 
-    6px 12px $blur1 $spread1 $color1,
+@mixin box-shadow-multi-glow(
+  $color1,
+  $color2,
+  $blur1: 20px,
+  $spread1: 8px,
+  $blur2: 20px,
+  $spread2: 8px
+) {
+  box-shadow: 6px 12px $blur1 $spread1 $color1,
     -6px -12px $blur2 $spread2 $color2;
 }
 
@@ -60,14 +87,15 @@
 }
 
 @mixin box-shadow-layered($color1, $color2, $color3) {
-  box-shadow: 
-    0 0 24px 8px $color1,
-    0 0 48px 16px $color2,
-    0 0 96px 32px $color3;
+  box-shadow: 0 0 24px 8px $color1, 0 0 48px 16px $color2, 0 0 96px 32px $color3;
 }
 
 // Border mixins
-@mixin border-base($width: 1px, $style: solid, $color: var(--border-color, #ccc)) {
+@mixin border-base(
+  $width: 1px,
+  $style: solid,
+  $color: var(--border-color, #ccc)
+) {
   border: $width $style $color;
 }
 
@@ -76,7 +104,11 @@
 }
 
 // Transition mixins
-@mixin transition-base($properties: all, $duration: 0.3s, $timing: ease-in-out) {
+@mixin transition-base(
+  $properties: all,
+  $duration: 0.3s,
+  $timing: ease-in-out
+) {
   transition: $properties $duration $timing;
 }
 
@@ -179,7 +211,13 @@
 }
 
 // Pulse animation mixin
-@mixin pulse-animation($duration: 16s, $colors: (var(--accent), var(--complement))) {
+@mixin pulse-animation(
+  $duration: 16s,
+  $colors: (
+    var(--accent),
+    var(--complement),
+  )
+) {
   // Expose the two pulse colors as CSS custom properties so the root-level
   // keyframes can reference them without needing Sass variables.
   --pulse-color-1: #{list.nth($colors, 1)};
@@ -191,13 +229,16 @@
 @at-root {
   @keyframes pulse-halo {
     0% {
-      box-shadow: 6px 12px 20px 8px var(--pulse-color-1), -6px -12px 20px 8px var(--pulse-color-2);
+      box-shadow: 6px 12px 20px 8px var(--pulse-color-1),
+        -6px -12px 20px 8px var(--pulse-color-2);
     }
     50% {
-      box-shadow: 10px 20px 28px 16px var(--pulse-color-2), -10px -20px 28px 16px var(--pulse-color-1);
+      box-shadow: 10px 20px 28px 16px var(--pulse-color-2),
+        -10px -20px 28px 16px var(--pulse-color-1);
     }
     100% {
-      box-shadow: 6px 12px 20px 8px var(--pulse-color-1), -6px -12px 20px 8px var(--pulse-color-2);
+      box-shadow: 6px 12px 20px 8px var(--pulse-color-1),
+        -6px -12px 20px 8px var(--pulse-color-2);
     }
   }
 }
@@ -206,7 +247,7 @@
 @mixin electric-border-effect($color: var(--complement)) {
   position: relative;
   overflow: hidden;
-  
+
   .glow-layer-1 {
     position: absolute;
     inset: 0;
@@ -215,7 +256,7 @@
     pointer-events: none;
     z-index: 1;
   }
-  
+
   .glow-layer-2 {
     position: absolute;
     inset: 0;
@@ -224,7 +265,7 @@
     pointer-events: none;
     z-index: 2;
   }
-  
+
   .overlay-1,
   .overlay-2 {
     position: absolute;
@@ -235,17 +276,29 @@
     pointer-events: none;
     z-index: 3;
   }
-  
+
   .overlay-1 {
     opacity: 1;
-    background: linear-gradient(-30deg, white, transparent 30%, transparent 70%, white);
+    background: linear-gradient(
+      -30deg,
+      white,
+      transparent 30%,
+      transparent 70%,
+      white
+    );
   }
-  
+
   .overlay-2 {
     opacity: 0.5;
-    background: linear-gradient(-30deg, white, transparent 30%, transparent 70%, white);
+    background: linear-gradient(
+      -30deg,
+      white,
+      transparent 30%,
+      transparent 70%,
+      white
+    );
   }
-  
+
   .background-glow {
     position: absolute;
     inset: 0;
@@ -258,8 +311,20 @@
 }
 
 // Responsive typography mixin
-@mixin responsive-font($min-size: 1rem, $max-size: 2rem, $min-vw: 320px, $max-vw: 1200px) {
-  font-size: clamp($min-size, calc($min-size + ($max-size - $min-size) * ((100vw - $min-vw) / ($max-vw - $min-vw))), $max-size);
+@mixin responsive-font(
+  $min-size: 1rem,
+  $max-size: 2rem,
+  $min-vw: 320px,
+  $max-vw: 1200px
+) {
+  font-size: clamp(
+    $min-size,
+    calc(
+      $min-size + ($max-size - $min-size) *
+        ((100vw - $min-vw) / ($max-vw - $min-vw))
+    ),
+    $max-size
+  );
 }
 
 // Grid layout mixin
@@ -267,7 +332,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax($min-width, 1fr));
   gap: $gap;
-  
+
   @media (min-width: 768px) {
     grid-template-columns: repeat($columns, 1fr);
   }

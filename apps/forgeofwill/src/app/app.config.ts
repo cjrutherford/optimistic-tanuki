@@ -65,7 +65,9 @@ export const appConfig: ApplicationConfig = {
       provide: SOCKET_AUTH_ERROR_HANDLER,
       useFactory: (router: Router, authStateService: AuthStateService) => {
         return () => {
-          console.warn('WebSocket authentication failed - logging out and redirecting to login');
+          console.warn(
+            'WebSocket authentication failed - logging out and redirecting to login'
+          );
           authStateService.logout();
           router.navigate(['/login']);
         };

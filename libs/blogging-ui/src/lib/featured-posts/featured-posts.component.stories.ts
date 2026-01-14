@@ -1,4 +1,9 @@
-import { componentWrapperDecorator, moduleMetadata, type Meta, type StoryObj } from '@storybook/angular';
+import {
+  componentWrapperDecorator,
+  moduleMetadata,
+  type Meta,
+  type StoryObj,
+} from '@storybook/angular';
 import { FeaturedPostsComponent } from './featured-posts.component';
 import { within } from '@storybook/test';
 import { expect } from '@storybook/jest';
@@ -11,8 +16,11 @@ const meta: Meta<FeaturedPostsComponent> = {
     moduleMetadata({
       imports: [BrowserAnimationsModule],
     }),
-    componentWrapperDecorator((story) => `<div style="margin: 3em; width: 2400px; height: 600px;">${story}</div>`),
-  ]
+    componentWrapperDecorator(
+      (story) =>
+        `<div style="margin: 3em; width: 2400px; height: 600px;">${story}</div>`
+    ),
+  ],
 };
 export default meta;
 type Story = StoryObj<FeaturedPostsComponent>;

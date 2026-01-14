@@ -15,8 +15,14 @@ jest.mock('jwt-decode', () => ({
 describe('AuthStateService', () => {
   let service: AuthStateService;
   let authServiceMock: { login: jest.Mock };
-  const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoiVGVzdCBVc2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-  const mockDecodedToken: UserData = { userId: '123', name: 'Test User', email: 'test@example.com', profileId: 'profile123' };
+  const mockToken =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoiVGVzdCBVc2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+  const mockDecodedToken: UserData = {
+    userId: '123',
+    name: 'Test User',
+    email: 'test@example.com',
+    profileId: 'profile123',
+  };
   const tokenKey = 'fow-client-authToken';
   const profilesKey = 'fow-client-profiles';
 
@@ -43,7 +49,9 @@ describe('AuthStateService', () => {
         removeItem: (key: string) => delete store[key],
         clear: () => (store = {}),
       };
-      Object.defineProperty(window, 'localStorage', { value: mockLocalStorage });
+      Object.defineProperty(window, 'localStorage', {
+        value: mockLocalStorage,
+      });
 
       (jwtDecode as jest.Mock).mockReturnValue(mockDecodedToken);
     });
@@ -59,11 +67,15 @@ describe('AuthStateService', () => {
     });
 
     it('should initialize with token from localStorage', () => {
-        localStorage.setItem(tokenKey, mockToken);
-        service = TestBed.inject(AuthStateService);
-        expect(service.getToken()).toBe(mockToken);
-        service.isAuthenticated$().subscribe(isAuth => expect(isAuth).toBe(true));
-        service.decodedToken$().subscribe(decoded => expect(decoded).toEqual(mockDecodedToken));
+      localStorage.setItem(tokenKey, mockToken);
+      service = TestBed.inject(AuthStateService);
+      expect(service.getToken()).toBe(mockToken);
+      service
+        .isAuthenticated$()
+        .subscribe((isAuth) => expect(isAuth).toBe(true));
+      service
+        .decodedToken$()
+        .subscribe((decoded) => expect(decoded).toEqual(mockDecodedToken));
     });
 
     it('should set token, update subjects, and call localStorage on setToken', () => {
@@ -72,8 +84,12 @@ describe('AuthStateService', () => {
       service.setToken(mockToken);
 
       expect(service.getToken()).toBe(mockToken);
-      service.isAuthenticated$().subscribe(isAuth => expect(isAuth).toBe(true));
-      service.decodedToken$().subscribe(decoded => expect(decoded).toEqual(mockDecodedToken));
+      service
+        .isAuthenticated$()
+        .subscribe((isAuth) => expect(isAuth).toBe(true));
+      service
+        .decodedToken$()
+        .subscribe((decoded) => expect(decoded).toEqual(mockDecodedToken));
       expect(setItemSpy).toHaveBeenCalledWith(tokenKey, mockToken);
     });
 
@@ -89,51 +105,60 @@ describe('AuthStateService', () => {
     });
 
     it('should clear token and update subjects on logout', () => {
-        localStorage.setItem(tokenKey, mockToken);
-        service = TestBed.inject(AuthStateService);
-        const removeItemSpy = jest.spyOn(localStorage, 'removeItem');
+      localStorage.setItem(tokenKey, mockToken);
+      service = TestBed.inject(AuthStateService);
+      const removeItemSpy = jest.spyOn(localStorage, 'removeItem');
 
-        service.logout();
+      service.logout();
 
-        expect(service.getToken()).toBeNull();
-        service.isAuthenticated$().subscribe(isAuth => expect(isAuth).toBe(false));
-        service.decodedToken$().subscribe(decoded => expect(decoded).toBeNull());
-        expect(removeItemSpy).toHaveBeenCalledWith(tokenKey);
+      expect(service.getToken()).toBeNull();
+      service
+        .isAuthenticated$()
+        .subscribe((isAuth) => expect(isAuth).toBe(false));
+      service
+        .decodedToken$()
+        .subscribe((decoded) => expect(decoded).toBeNull());
+      expect(removeItemSpy).toHaveBeenCalledWith(tokenKey);
     });
-
   });
 
   describe('when not in a browser environment', () => {
     beforeEach(() => {
-        TestBed.configureTestingModule({
-            imports: [HttpClientTestingModule],
-            providers: [
-              AuthStateService,
-              { provide: AuthenticationService, useValue: authServiceMock },
-              { provide: PLATFORM_ID, useValue: 'server' },
-            ],
-          });
-      
-          service = TestBed.inject(AuthStateService);
+      TestBed.configureTestingModule({
+        imports: [HttpClientTestingModule],
+        providers: [
+          AuthStateService,
+          { provide: AuthenticationService, useValue: authServiceMock },
+          { provide: PLATFORM_ID, useValue: 'server' },
+        ],
+      });
+
+      service = TestBed.inject(AuthStateService);
     });
 
     it('should initialize with default values', () => {
-        expect(service.getToken()).toBeNull();
-        service.isAuthenticated$().subscribe(isAuth => expect(isAuth).toBe(false));
-        service.decodedToken$().subscribe(decoded => expect(decoded).toBeNull());
+      expect(service.getToken()).toBeNull();
+      service
+        .isAuthenticated$()
+        .subscribe((isAuth) => expect(isAuth).toBe(false));
+      service
+        .decodedToken$()
+        .subscribe((decoded) => expect(decoded).toBeNull());
     });
 
     it('should not set token', () => {
-        service.setToken(mockToken);
-        expect(service.getToken()).toBeNull();
+      service.setToken(mockToken);
+      expect(service.getToken()).toBeNull();
     });
 
     it('should reject login promise', async () => {
-        await expect(service.login({ email: 'test@example.com', password: 'password' })).rejects.toEqual('Login is not available on this platform.');
+      await expect(
+        service.login({ email: 'test@example.com', password: 'password' })
+      ).rejects.toEqual('Login is not available on this platform.');
     });
 
     it('logout should not throw error', () => {
-        expect(() => service.logout()).not.toThrow();
+      expect(() => service.logout()).not.toThrow();
     });
   });
 });

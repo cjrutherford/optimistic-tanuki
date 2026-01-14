@@ -1,13 +1,17 @@
-export { ButtonComponent } from './button/button.component'
-export { GridComponent } from './grid/grid.component'
-export { TableComponent, type TableCell, type TableRowAction } from './table/table.component'
-export { CardComponent } from './card/card.component'
-export { TileComponent } from './tile/tile.component'
-export { PaginationComponent } from './pagination.component'
-export { AccordionComponent } from './accordion/accordion.component'
-export { ListComponent } from './list/list.component'
-export { HeadingComponent } from './heading/heading.component'
-export { ModalComponent } from './modal/modal.component'
-export { GlassContainerComponent } from './glass-container.component'
-export { HeroSectionComponent } from './hero-section/hero-section.component'
-export { ContentSectionComponent } from './content-section/content-section.component'
+export { ButtonComponent } from './button/button.component';
+export { GridComponent } from './grid/grid.component';
+export {
+  TableComponent,
+  type TableCell,
+  type TableRowAction,
+} from './table/table.component';
+export { CardComponent } from './card/card.component';
+export { TileComponent } from './tile/tile.component';
+export { PaginationComponent } from './pagination.component';
+export { AccordionComponent } from './accordion/accordion.component';
+export { ListComponent } from './list/list.component';
+export { HeadingComponent } from './heading/heading.component';
+export { ModalComponent } from './modal/modal.component';
+export { GlassContainerComponent } from './glass-container.component';
+export { HeroSectionComponent } from './hero-section/hero-section.component';
+export { ContentSectionComponent } from './content-section/content-section.component';

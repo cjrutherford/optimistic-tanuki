@@ -1,4 +1,8 @@
-import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { PersonaTelosCommands } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 
@@ -55,7 +59,10 @@ describe('Telos Docs Microservice E2E', () => {
 
     it('should find personas', async () => {
       const result = await firstValueFrom(
-        telosClient.send({ cmd: PersonaTelosCommands.FIND }, { name: testPersona.name })
+        telosClient.send(
+          { cmd: PersonaTelosCommands.FIND },
+          { name: testPersona.name }
+        )
       );
 
       expect(result).toBeDefined();
@@ -66,7 +73,10 @@ describe('Telos Docs Microservice E2E', () => {
 
     it('should find one persona by id', async () => {
       const result = await firstValueFrom(
-        telosClient.send({ cmd: PersonaTelosCommands.FIND_ONE }, { id: createdPersonaId })
+        telosClient.send(
+          { cmd: PersonaTelosCommands.FIND_ONE },
+          { id: createdPersonaId }
+        )
       );
 
       expect(result).toBeDefined();
@@ -89,13 +99,19 @@ describe('Telos Docs Microservice E2E', () => {
 
     it('should delete a persona', async () => {
       await firstValueFrom(
-        telosClient.send({ cmd: PersonaTelosCommands.DELETE }, createdPersonaId),
+        telosClient.send(
+          { cmd: PersonaTelosCommands.DELETE },
+          createdPersonaId
+        ),
         { defaultValue: null }
       );
 
       // Verify deletion
       const result = await firstValueFrom(
-        telosClient.send({ cmd: PersonaTelosCommands.FIND_ONE }, { id: createdPersonaId })
+        telosClient.send(
+          { cmd: PersonaTelosCommands.FIND_ONE },
+          { id: createdPersonaId }
+        )
       );
       expect(result).toBeNull();
     });

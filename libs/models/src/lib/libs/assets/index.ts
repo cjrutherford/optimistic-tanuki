@@ -1,1 +1,7 @@
-export { AssetType, StorageStrategy, AssetHandle, CreateAssetDto, AssetDto } from './asset.dto';
+export {
+  AssetType,
+  StorageStrategy,
+  AssetHandle,
+  CreateAssetDto,
+  AssetDto,
+} from './asset.dto';

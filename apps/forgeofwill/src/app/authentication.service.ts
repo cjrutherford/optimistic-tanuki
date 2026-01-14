@@ -1,17 +1,23 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { LoginRequest, RegisterRequest, UserDto } from '@optimistic-tanuki/ui-models';
+import {
+  LoginRequest,
+  RegisterRequest,
+  UserDto,
+} from '@optimistic-tanuki/ui-models';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthenticationService {
-  isAuthenticated: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  userData: BehaviorSubject<UserDto | null> = new BehaviorSubject<UserDto | null>(null);
+  isAuthenticated: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(
+    false
+  );
+  userData: BehaviorSubject<UserDto | null> =
+    new BehaviorSubject<UserDto | null>(null);
 
-  constructor(private readonly http: HttpClient) { }
+  constructor(private readonly http: HttpClient) {}
 
   isAuthenticated$() {
     return this.isAuthenticated.asObservable();
@@ -19,10 +25,15 @@ export class AuthenticationService {
 
   register(data: RegisterRequest) {
     return this.http.post('/api/authentication/register', data);
-  } 
+  }
 
   login(data: LoginRequest) {
-    return firstValueFrom(this.http.post<{data: { newToken: string}}>('/api/authentication/login', data));
+    return firstValueFrom(
+      this.http.post<{ data: { newToken: string } }>(
+        '/api/authentication/login',
+        data
+      )
+    );
   }
 
   setToken(token: string) {

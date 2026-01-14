@@ -22,7 +22,9 @@ describe('CommentListComponent', () => {
   });
 
   it('should set comments input', () => {
-    const testComments: CommentDto[] = [{ id: '1', content: 'Test Comment' } as CommentDto];
+    const testComments: CommentDto[] = [
+      { id: '1', content: 'Test Comment' } as CommentDto,
+    ];
     component.comments = testComments;
     fixture.detectChanges();
     expect(component.comments).toEqual(testComments);

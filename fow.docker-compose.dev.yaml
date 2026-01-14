@@ -58,7 +58,7 @@ services:
       - ./dist/apps/forgeofwill:/app/dist/apps/forgeofwill # Mount the built dist for SSR
       - /usr/src/app/node_modules # Keep node_modules from the image
     ports:
-      - "8080:4000" # Match the new exposed port
+      - '8080:4000' # Match the new exposed port
       - '9241:9241'
     # The command from the Dockerfile is `node dist/apps/forgeofwill/server/main.js`
     # For development, you might want to use nodemon or similar for the SSR server.
@@ -84,11 +84,19 @@ services:
     volumes:
       - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command: ['dumb-init', 'nodemon', '--exec', 'node --inspect=0.0.0.0:9000', '-L', 'dist/apps/gateway/main.js']
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9000',
+        '-L',
+        'dist/apps/gateway/main.js',
+      ]
     ports:
-      - "3300:3300"
-      - "3000:3000" # Expose the main port
-      - "9000:9000" # Expose the debugging port
+      - '3300:3300'
+      - '3000:3000' # Expose the main port
+      - '9000:9000' # Expose the debugging port
     environment:
       - NODE_ENV=development
     depends_on:
@@ -220,7 +228,7 @@ services:
   #   depends_on: # Added
   #     postgres:
   #       condition: service_healthy
-  
+
   assets:
     container_name: ot_assets
     build:
@@ -246,7 +254,6 @@ services:
     depends_on: # Added
       postgres:
         condition: service_healthy
-
 
   ai-orchestration:
     container_name: ot_ai_orchestration
@@ -274,7 +281,7 @@ services:
       postgres:
         condition: service_healthy
 
-  prompt-proxy: 
+  prompt-proxy:
     container_name: ot_prompt_proxy
     build:
       context: .

@@ -1,7 +1,6 @@
 import { Profile } from './profile.entity';
 
 describe('Profile Entity', () => {
-
   it('should create a Profile instance with all properties', () => {
     const now = new Date();
     const profile = new Profile();
@@ -15,9 +14,12 @@ describe('Profile Entity', () => {
     profile.occupation = 'Developer';
     profile.interests = 'coding';
     profile.skills = 'TypeScript';
-    profile.timeLineEvents = [{ id: 't1' } as unknown as import('../../timelines/entities/timeline.entity').Timeline];
+    profile.timeLineEvents = [
+      {
+        id: 't1',
+      } as unknown as import('../../timelines/entities/timeline.entity').Timeline,
+    ];
     profile.created_at = now;
-    
 
     expect(profile.id).toBe('1');
     expect(profile.userId).toBe('user1');
@@ -31,7 +33,6 @@ describe('Profile Entity', () => {
     expect(profile.skills).toBe('TypeScript');
     expect(profile.timeLineEvents).toEqual([{ id: 't1' }]);
     expect(profile.created_at).toBe(now);
-    
   });
 
   it('should have undefined for all properties by default except created_at', () => {
@@ -47,7 +48,7 @@ describe('Profile Entity', () => {
     expect(profile.interests).toBeUndefined();
     expect(profile.skills).toBeUndefined();
     expect(profile.timeLineEvents).toBeUndefined();
-    
+
     // created_at is undefined until set by DB
     expect(profile.created_at).toBeUndefined();
   });
@@ -65,7 +66,7 @@ describe('Profile Entity', () => {
     profile.interests = undefined;
     profile.skills = null as unknown as string;
     profile.timeLineEvents = undefined;
-    
+
     profile.created_at = null as unknown as Date;
     expect(profile.id).toBeUndefined();
     expect(profile.userId).toBeNull();
@@ -78,7 +79,7 @@ describe('Profile Entity', () => {
     expect(profile.interests).toBeUndefined();
     expect(profile.skills).toBeNull();
     expect(profile.timeLineEvents).toBeUndefined();
-    
+
     expect(profile.created_at).toBeNull();
   });
 

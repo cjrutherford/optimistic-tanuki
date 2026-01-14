@@ -6,7 +6,11 @@ import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { RoleAssignment } from '../role-assignments/entities/role-assignment.entity';
 import { AppScope } from '../app-scopes/entities/app-scope.entity';
-import { CreateRoleDto, UpdateRoleDto, AssignRoleDto } from '@optimistic-tanuki/models';
+import {
+  CreateRoleDto,
+  UpdateRoleDto,
+  AssignRoleDto,
+} from '@optimistic-tanuki/models';
 import { Logger } from '@nestjs/common';
 
 const mockRepo = () => ({
@@ -43,7 +47,15 @@ describe('RolesService', () => {
         { provide: getRepositoryToken(Permission), useFactory: mockRepo },
         { provide: getRepositoryToken(RoleAssignment), useFactory: mockRepo },
         { provide: getRepositoryToken(AppScope), useFactory: mockRepo },
-        { provide: Logger, useValue: { log: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn() } },
+        {
+          provide: Logger,
+          useValue: {
+            log: jest.fn(),
+            debug: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -58,7 +70,7 @@ describe('RolesService', () => {
     appScopesRepository = module.get<Repository<AppScope>>(
       getRepositoryToken(AppScope)
     );
-    
+
     getMany = jest.fn();
     andWhere = jest.fn().mockReturnThis();
     where = jest.fn().mockReturnThis();
@@ -81,10 +93,16 @@ describe('RolesService', () => {
   describe('createRole', () => {
     it('should create a role', async () => {
       const createAppScope = new AppScope();
-      const createRoleDto: CreateRoleDto = { name: 'admin', description: 'Admin role', appScopeId: '1' };
+      const createRoleDto: CreateRoleDto = {
+        name: 'admin',
+        description: 'Admin role',
+        appScopeId: '1',
+      };
       const role = new Role();
 
-      jest.spyOn(appScopesRepository, 'findOne').mockResolvedValue(createAppScope);
+      jest
+        .spyOn(appScopesRepository, 'findOne')
+        .mockResolvedValue(createAppScope);
       jest.spyOn(rolesRepository, 'create').mockReturnValue(role);
       jest.spyOn(rolesRepository, 'save').mockResolvedValue(role);
 
@@ -122,7 +140,11 @@ describe('RolesService', () => {
     });
 
     it('should update a role with appScopeId', async () => {
-      const updateRoleDto: UpdateRoleDto = { id: '1', name: 'new name', appScopeId: '1' };
+      const updateRoleDto: UpdateRoleDto = {
+        id: '1',
+        name: 'new name',
+        appScopeId: '1',
+      };
       const role = new Role();
       const appScope = new AppScope();
       jest.spyOn(appScopesRepository, 'findOne').mockResolvedValue(appScope);
@@ -147,21 +169,25 @@ describe('RolesService', () => {
       role.permissions = [];
       const permission = new Permission();
       jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(role);
-      jest.spyOn(permissionsRepository, 'findOne').mockResolvedValue(permission);
+      jest
+        .spyOn(permissionsRepository, 'findOne')
+        .mockResolvedValue(permission);
       jest.spyOn(rolesRepository, 'save').mockResolvedValue(role);
 
       const result = await service.addPermissionToRole('1', '1');
       expect(result.permissions).toContain(permission);
     });
-    
+
     it('should not add a permission to a role if it already exists', async () => {
       const role = new Role();
       const permission = new Permission();
-      permission.id = '1'
+      permission.id = '1';
       role.permissions = [permission];
-      
+
       jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(role);
-      jest.spyOn(permissionsRepository, 'findOne').mockResolvedValue(permission);
+      jest
+        .spyOn(permissionsRepository, 'findOne')
+        .mockResolvedValue(permission);
       jest.spyOn(rolesRepository, 'save').mockResolvedValue(role);
 
       const result = await service.addPermissionToRole('1', '1');
@@ -185,15 +211,23 @@ describe('RolesService', () => {
 
   describe('assignRole', () => {
     it('should assign a role to a user', async () => {
-      const assignRoleDto: AssignRoleDto = { roleId: '1', profileId: '1', appScopeId: '1' };
+      const assignRoleDto: AssignRoleDto = {
+        roleId: '1',
+        profileId: '1',
+        appScopeId: '1',
+      };
       const role = new Role();
       const appScope = new AppScope();
       const assignment = new RoleAssignment();
 
       jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(role);
       jest.spyOn(appScopesRepository, 'findOne').mockResolvedValue(appScope);
-      jest.spyOn(roleAssignmentsRepository, 'create').mockReturnValue(assignment);
-      jest.spyOn(roleAssignmentsRepository, 'save').mockResolvedValue(assignment);
+      jest
+        .spyOn(roleAssignmentsRepository, 'create')
+        .mockReturnValue(assignment);
+      jest
+        .spyOn(roleAssignmentsRepository, 'save')
+        .mockResolvedValue(assignment);
 
       const result = await service.assignRole(assignRoleDto);
       expect(result).toEqual(assignment);
@@ -202,7 +236,9 @@ describe('RolesService', () => {
 
   describe('unassignRole', () => {
     it('should unassign a role from a user', async () => {
-      jest.spyOn(roleAssignmentsRepository, 'delete').mockResolvedValue(undefined);
+      jest
+        .spyOn(roleAssignmentsRepository, 'delete')
+        .mockResolvedValue(undefined);
       await service.unassignRole('1');
       expect(roleAssignmentsRepository.delete).toHaveBeenCalledWith('1');
     });
@@ -237,7 +273,7 @@ describe('RolesService', () => {
       role.permissions = [permission];
       const assignment = new RoleAssignment();
       assignment.role = role;
-      
+
       jest.spyOn(service, 'getUserRoles').mockResolvedValue([assignment]);
 
       const result = await service.checkPermission('1', 'test:read', '1');
@@ -251,13 +287,13 @@ describe('RolesService', () => {
       role.permissions = [permission];
       const assignment = new RoleAssignment();
       assignment.role = role;
-      
+
       jest.spyOn(service, 'getUserRoles').mockResolvedValue([assignment]);
 
       const result = await service.checkPermission('1', 'read', '1');
       expect(result).toBe(true);
     });
-    
+
     it('should return true if user has permission by targetId', async () => {
       const permission = new Permission();
       permission.name = 'test:read';
@@ -266,10 +302,15 @@ describe('RolesService', () => {
       role.permissions = [permission];
       const assignment = new RoleAssignment();
       assignment.role = role;
-      
+
       jest.spyOn(service, 'getUserRoles').mockResolvedValue([assignment]);
 
-      const result = await service.checkPermission('1', 'test:read', '1', 'target');
+      const result = await service.checkPermission(
+        '1',
+        'test:read',
+        '1',
+        'target'
+      );
       expect(result).toBe(true);
     });
 

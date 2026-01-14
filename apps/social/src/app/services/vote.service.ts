@@ -25,7 +25,10 @@ export class VoteService {
   }
 
   async findOne(id: string, options?: FindOneOptions<Vote>): Promise<Vote> {
-    return await this.voteRepo.findOne({ where: { id: id as any }, ...options });
+    return await this.voteRepo.findOne({
+      where: { id: id as any },
+      ...options,
+    });
   }
 
   async update(id: string, updateVoteDto: UpdateVoteDto): Promise<void> {

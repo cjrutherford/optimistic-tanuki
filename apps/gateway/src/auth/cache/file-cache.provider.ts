@@ -46,7 +46,9 @@ export class FileCacheProvider implements ICacheProvider {
       }
       await this.buildIndex();
     } catch (error) {
-      this.logger.error(`Failed to initialize cache directory: ${error.message}`);
+      this.logger.error(
+        `Failed to initialize cache directory: ${error.message}`
+      );
     }
   }
 
@@ -61,7 +63,9 @@ export class FileCacheProvider implements ICacheProvider {
           this.cacheIndex.set(key, file);
         }
       }
-      this.logger.debug(`Built cache index with ${this.cacheIndex.size} entries`);
+      this.logger.debug(
+        `Built cache index with ${this.cacheIndex.size} entries`
+      );
     } catch (error) {
       this.logger.error(`Failed to build cache index: ${error.message}`);
     }
@@ -76,7 +80,7 @@ export class FileCacheProvider implements ICacheProvider {
   async get(key: string): Promise<boolean | null> {
     try {
       const filePath = this.getFilePath(key);
-      
+
       if (!existsSync(filePath)) {
         this.misses++;
         this.logger.debug(`Cache miss for key: ${key}`);
@@ -91,7 +95,9 @@ export class FileCacheProvider implements ICacheProvider {
 
       if (age > this.cacheTTL) {
         this.misses++;
-        this.logger.debug(`Cache entry expired for key: ${key} (age: ${age}ms)`);
+        this.logger.debug(
+          `Cache entry expired for key: ${key} (age: ${age}ms)`
+        );
         await this.delete(key);
         return null;
       }
@@ -120,7 +126,7 @@ export class FileCacheProvider implements ICacheProvider {
 
       const filePath = this.getFilePath(key);
       await fs.writeFile(filePath, JSON.stringify(entry), 'utf8');
-      
+
       const filename = path.basename(filePath);
       this.cacheIndex.set(key, filename);
 
@@ -151,7 +157,7 @@ export class FileCacheProvider implements ICacheProvider {
       if (oldestFile) {
         const filePath = path.join(this.cacheDir, oldestFile);
         await fs.unlink(filePath);
-        
+
         // Remove from index
         for (const [key, filename] of this.cacheIndex.entries()) {
           if (filename === oldestFile) {
@@ -159,7 +165,7 @@ export class FileCacheProvider implements ICacheProvider {
             break;
           }
         }
-        
+
         this.logger.debug(`Cache full, evicted oldest entry: ${oldestFile}`);
       }
     } catch (error) {
@@ -177,7 +183,9 @@ export class FileCacheProvider implements ICacheProvider {
         this.logger.debug(`Deleted cache entry: ${key}`);
       }
     } catch (error) {
-      this.logger.error(`Error deleting cache for key ${key}: ${error.message}`);
+      this.logger.error(
+        `Error deleting cache for key ${key}: ${error.message}`
+      );
     }
   }
 
@@ -192,7 +200,9 @@ export class FileCacheProvider implements ICacheProvider {
       }
     }
 
-    this.logger.log(`Deleted ${count} cache entries matching pattern: ${pattern}`);
+    this.logger.log(
+      `Deleted ${count} cache entries matching pattern: ${pattern}`
+    );
   }
 
   async clear(): Promise<void> {
@@ -235,7 +245,7 @@ export class FileCacheProvider implements ICacheProvider {
     try {
       for (const key of Array.from(this.cacheIndex.keys())) {
         const filePath = this.getFilePath(key);
-        
+
         if (existsSync(filePath)) {
           const content = await fs.readFile(filePath, 'utf8');
           const entry: CacheEntry = JSON.parse(content);

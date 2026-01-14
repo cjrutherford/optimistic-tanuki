@@ -8,20 +8,23 @@ import { FindManyOptions, FindOneOptions } from 'typeorm';
 
 @Controller('timelines')
 export class TimelinesController {
-    constructor(private readonly timeLineService: TimelineService) {}
+  constructor(private readonly timeLineService: TimelineService) {}
 
-    @MessagePattern({ cmd: TimelineCommands.Create })
-    async create(@Payload() createTimeline: CreateTimelineDto) {
-        return await this.timeLineService.create(createTimeline);
-    }
+  @MessagePattern({ cmd: TimelineCommands.Create })
+  async create(@Payload() createTimeline: CreateTimelineDto) {
+    return await this.timeLineService.create(createTimeline);
+  }
 
-    @MessagePattern({ cmd: TimelineCommands.GetAll })
-    async findAll(@Payload() query?: FindManyOptions<Timeline>) {
-        return await this.timeLineService.findAll(query);
-    }
+  @MessagePattern({ cmd: TimelineCommands.GetAll })
+  async findAll(@Payload() query?: FindManyOptions<Timeline>) {
+    return await this.timeLineService.findAll(query);
+  }
 
-    @MessagePattern({ cmd: TimelineCommands.Get })
-    async findOne(@Payload('id') id: string, @Payload('query') query?: FindOneOptions<Timeline>) {
-        return await this.timeLineService.findOne(id, query);
-    }
+  @MessagePattern({ cmd: TimelineCommands.Get })
+  async findOne(
+    @Payload('id') id: string,
+    @Payload('query') query?: FindOneOptions<Timeline>
+  ) {
+    return await this.timeLineService.findOne(id, query);
+  }
 }

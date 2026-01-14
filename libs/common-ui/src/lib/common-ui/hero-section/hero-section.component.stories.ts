@@ -35,7 +35,8 @@ export const WithBackgroundImage: Story = {
   args: {
     minHeight: '80vh',
     centerContent: true,
-    backgroundImage: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200',
+    backgroundImage:
+      'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200',
     overlayOpacity: 0.5,
   },
   render: (args) => ({
@@ -77,7 +78,8 @@ export const LightOverlay: Story = {
   args: {
     minHeight: '70vh',
     centerContent: true,
-    backgroundImage: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200',
+    backgroundImage:
+      'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200',
     overlayOpacity: 0.2,
     overlayColor: '#ffffff',
   },

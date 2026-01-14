@@ -54,9 +54,24 @@ describe('ComponentSelectorComponent', () => {
 
     it('should extract unique categories from components', () => {
       const testComponents: InjectableComponent[] = [
-        { id: 'test-1', name: 'Test 1', component: TestComponent, category: 'Category A' },
-        { id: 'test-2', name: 'Test 2', component: TestComponent, category: 'Category B' },
-        { id: 'test-3', name: 'Test 3', component: TestComponent, category: 'Category A' },
+        {
+          id: 'test-1',
+          name: 'Test 1',
+          component: TestComponent,
+          category: 'Category A',
+        },
+        {
+          id: 'test-2',
+          name: 'Test 2',
+          component: TestComponent,
+          category: 'Category B',
+        },
+        {
+          id: 'test-3',
+          name: 'Test 3',
+          component: TestComponent,
+          category: 'Category A',
+        },
       ];
 
       component.components = testComponents;
@@ -71,7 +86,12 @@ describe('ComponentSelectorComponent', () => {
     it('should always include "All" category', () => {
       const testComponents: InjectableComponent[] = [
         { id: 'test-1', name: 'Test 1', component: TestComponent },
-        { id: 'test-2', name: 'Test 2', component: TestComponent, category: 'Category A' },
+        {
+          id: 'test-2',
+          name: 'Test 2',
+          component: TestComponent,
+          category: 'Category A',
+        },
       ];
 
       component.components = testComponents;
@@ -84,9 +104,24 @@ describe('ComponentSelectorComponent', () => {
   describe('Category Selection', () => {
     beforeEach(() => {
       const testComponents: InjectableComponent[] = [
-        { id: 'test-1', name: 'Test 1', component: TestComponent, category: 'Category A' },
-        { id: 'test-2', name: 'Test 2', component: TestComponent, category: 'Category B' },
-        { id: 'test-3', name: 'Test 3', component: TestComponent, category: 'Category A' },
+        {
+          id: 'test-1',
+          name: 'Test 1',
+          component: TestComponent,
+          category: 'Category A',
+        },
+        {
+          id: 'test-2',
+          name: 'Test 2',
+          component: TestComponent,
+          category: 'Category B',
+        },
+        {
+          id: 'test-3',
+          name: 'Test 3',
+          component: TestComponent,
+          category: 'Category A',
+        },
       ];
 
       component.components = testComponents;
@@ -103,7 +138,7 @@ describe('ComponentSelectorComponent', () => {
       const filtered = component.filteredComponents;
 
       expect(filtered.length).toBe(2);
-      expect(filtered.every(c => c.category === 'Category A')).toBe(true);
+      expect(filtered.every((c) => c.category === 'Category A')).toBe(true);
     });
 
     it('should show all components when "All" category selected', () => {
@@ -160,10 +195,10 @@ describe('ComponentSelectorComponent', () => {
   describe('Visibility', () => {
     it('should toggle visibility', () => {
       expect(component.isVisible).toBe(false);
-      
+
       component.isVisible = true;
       fixture.detectChanges();
-      
+
       expect(component.isVisible).toBe(true);
     });
   });
@@ -179,7 +214,12 @@ describe('ComponentSelectorComponent', () => {
 
     it('should handle category selection to "All"', () => {
       const testComponents: InjectableComponent[] = [
-        { id: 'test-1', name: 'Test 1', component: TestComponent, category: 'Category A' },
+        {
+          id: 'test-1',
+          name: 'Test 1',
+          component: TestComponent,
+          category: 'Category A',
+        },
       ];
 
       component.components = testComponents;

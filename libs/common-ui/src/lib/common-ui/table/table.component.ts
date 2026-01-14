@@ -33,7 +33,7 @@ export interface TableCell {
     '[style.--border-color]': 'borderColor',
     '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
-  }
+  },
 })
 export class TableComponent extends Themeable implements OnInit {
   @Input() cells: TableCell[] = [];
@@ -45,7 +45,7 @@ export class TableComponent extends Themeable implements OnInit {
 
   backgroundGradient = 'linear-gradient(to right, #5969c3, #59c360)';
 
-  cellTemplates: (TemplateRef<HTMLElement> | null)[] = []; 
+  cellTemplates: (TemplateRef<HTMLElement> | null)[] = [];
   showActions = false;
   rowExpanded = false;
 
@@ -57,7 +57,7 @@ export class TableComponent extends Themeable implements OnInit {
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;
-    if(this.theme === 'dark') {
+    if (this.theme === 'dark') {
       this.borderGradient = colors.accentGradients['dark'];
       this.borderColor = colors.complementaryShades[2][1];
     } else {
@@ -70,7 +70,7 @@ export class TableComponent extends Themeable implements OnInit {
 
   private initializeTable() {
     this.cellTemplates = [];
-    this.cells.forEach(cell => {
+    this.cells.forEach((cell) => {
       if (cell.isBadge) {
         cell.heading = undefined;
       }
@@ -87,7 +87,7 @@ export class TableComponent extends Themeable implements OnInit {
   }
 
   get hasOverflowableCells(): boolean {
-    return this.cells.some(cell => cell.isOverflowable);
+    return this.cells.some((cell) => cell.isOverflowable);
   }
 
   toggleRowExpansion() {

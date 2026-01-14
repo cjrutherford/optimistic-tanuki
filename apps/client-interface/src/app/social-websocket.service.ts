@@ -101,13 +101,17 @@ export class SocialWebSocketService implements OnDestroy {
     this.socket.on('connect_error', (error) => {
       console.error('Connection error:', error);
       this.connectionError$.next('Connection error ' + error.message);
-      
+
       // Check if this is an authentication error
-      if (error.message.includes('unauthorized') || 
-          error.message.includes('jwt') || 
-          error.message.includes('token') ||
-          error.message.includes('Unauthorized')) {
-        console.error('Social WebSocket authentication failed - redirecting to login');
+      if (
+        error.message.includes('unauthorized') ||
+        error.message.includes('jwt') ||
+        error.message.includes('token') ||
+        error.message.includes('Unauthorized')
+      ) {
+        console.error(
+          'Social WebSocket authentication failed - redirecting to login'
+        );
         this.authStateService.logout();
         this.router.navigate(['/login']);
       } else {
@@ -128,27 +132,31 @@ export class SocialWebSocketService implements OnDestroy {
 
     this.socket.on('error', (error) => {
       console.error('Socket error:', error);
-      
+
       // Handle authorization errors from the server
       if (typeof error === 'object' && error !== null) {
         const errorObj = error as any;
-        if (errorObj.type === 'UnauthorizedException' || 
-            errorObj.message?.includes('Unauthorized') ||
-            errorObj.statusCode === 401) {
-          console.error('Social WebSocket authorization error - redirecting to login');
+        if (
+          errorObj.type === 'UnauthorizedException' ||
+          errorObj.message?.includes('Unauthorized') ||
+          errorObj.statusCode === 401
+        ) {
+          console.error(
+            'Social WebSocket authorization error - redirecting to login'
+          );
           this.authStateService.logout();
           this.router.navigate(['/login']);
           return;
         }
       }
-      
+
       this.reconnectWithBackoff(); // Handle unexpected errors with backoff
     });
     // Post events
     this.socket.on('post_created', (post: PostDto) => {
       console.log('Post created:', post);
       const currentPosts = this.posts$.value;
-      if (!currentPosts.some(p => p.id === post.id)) {
+      if (!currentPosts.some((p) => p.id === post.id)) {
         this.posts$.next([post, ...currentPosts]);
       }
     });

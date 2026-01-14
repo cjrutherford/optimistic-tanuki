@@ -1,7 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { RoleDto, CreateRoleDto, UpdateRoleDto, AssignRoleDto, UserRoleDto } from '@optimistic-tanuki/ui-models';
+import {
+  RoleDto,
+  CreateRoleDto,
+  UpdateRoleDto,
+  AssignRoleDto,
+  UserRoleDto,
+} from '@optimistic-tanuki/ui-models';
 
 @Injectable({
   providedIn: 'root',
@@ -32,11 +38,19 @@ export class RolesService {
   }
 
   addPermissionToRole(roleId: string, permissionId: string): Observable<any> {
-    return this.http.post(`${this.API_URL}/role/${roleId}/permission/${permissionId}`, {});
+    return this.http.post(
+      `${this.API_URL}/role/${roleId}/permission/${permissionId}`,
+      {}
+    );
   }
 
-  removePermissionFromRole(roleId: string, permissionId: string): Observable<any> {
-    return this.http.delete(`${this.API_URL}/role/${roleId}/permission/${permissionId}`);
+  removePermissionFromRole(
+    roleId: string,
+    permissionId: string
+  ): Observable<any> {
+    return this.http.delete(
+      `${this.API_URL}/role/${roleId}/permission/${permissionId}`
+    );
   }
 
   assignRole(assignment: AssignRoleDto): Observable<any> {
@@ -48,6 +62,8 @@ export class RolesService {
   }
 
   getUserRoles(profileId: string): Observable<UserRoleDto[]> {
-    return this.http.get<UserRoleDto[]>(`${this.API_URL}/user-roles/${profileId}`);
+    return this.http.get<UserRoleDto[]>(
+      `${this.API_URL}/user-roles/${profileId}`
+    );
   }
 }

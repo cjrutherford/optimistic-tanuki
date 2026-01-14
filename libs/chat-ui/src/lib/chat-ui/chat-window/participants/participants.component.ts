@@ -2,7 +2,6 @@ import { Component, Input } from '@angular/core';
 
 import { ChatContact } from '../../chat-ui.component';
 
-
 @Component({
   selector: 'lib-participants',
   imports: [],
@@ -18,14 +17,18 @@ export class ParticipantsComponent {
    */
   @Input() participants: ChatContact[] = [
     {
-      id: '1', name: 'Alice', avatarUrl: 'https://placehold.co/60x60',
+      id: '1',
+      name: 'Alice',
+      avatarUrl: 'https://placehold.co/60x60',
       lastMessage: '',
-      lastMessageTime: ''
+      lastMessageTime: '',
     },
     {
-      id: '2', name: 'Bob', avatarUrl: 'https://placehold.co/60x60',
+      id: '2',
+      name: 'Bob',
+      avatarUrl: 'https://placehold.co/60x60',
       lastMessage: '',
-      lastMessageTime: ''
-    }
+      lastMessageTime: '',
+    },
   ];
 }

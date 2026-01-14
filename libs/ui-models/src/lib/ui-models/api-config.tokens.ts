@@ -3,11 +3,11 @@ import { InjectionToken } from '@angular/core';
 /**
  * Injection token for the API base URL.
  * Each Angular application must provide a value for this token in their app.config.ts or AppModule.
- * 
+ *
  * @example
  * // In app.config.ts:
  * import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
- * 
+ *
  * export const appConfig: ApplicationConfig = {
  *   providers: [
  *     {
@@ -17,10 +17,10 @@ import { InjectionToken } from '@angular/core';
  *     // ... other providers
  *   ]
  * };
- * 
+ *
  * // In a service:
  * import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
- * 
+ *
  * @Injectable({ providedIn: 'root' })
  * export class MyService {
  *   constructor(

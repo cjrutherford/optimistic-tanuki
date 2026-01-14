@@ -7,11 +7,14 @@ This document describes the theme system implementation for the client-interface
 ### 1. Client-Interface Theme Integration
 
 #### Updated Files:
+
 - `apps/client-interface/src/app/app.component.ts`
 - `apps/client-interface/src/styles.scss`
 
 #### Changes:
-1. **app.component.ts**: 
+
+1. **app.component.ts**:
+
    - Integrated `ThemeService` from `@optimistic-tanuki/theme-lib`
    - Initialized theme on component startup
    - Subscribed to theme changes to update component properties
@@ -28,21 +31,21 @@ This document describes the theme system implementation for the client-interface
 A new component was created to allow users to create, edit, and manage custom color palettes.
 
 #### File Location:
+
 - `libs/theme-ui/src/lib/theme-ui/palette-manager.component.ts`
 - `libs/theme-ui/src/lib/theme-ui/palette-manager.component.scss`
 - `libs/theme-ui/src/lib/theme-ui/palette-manager.component.stories.ts`
 
 #### Features:
+
 - **Create New Palettes**: Users can create custom palettes with:
   - Name and description
   - Accent, complementary, and tertiary colors
   - Background and foreground colors for light and dark modes
-  
 - **Edit Existing Palettes**: Modify any custom palette
-  
 - **Delete Palettes**: Remove custom palettes (with confirmation)
-  
 - **View Predefined Palettes**: Browse all 8 built-in palettes:
+
   - Optimistic Blue
   - Electric Sunset
   - Forest Dream
@@ -59,10 +62,13 @@ A new component was created to allow users to create, edit, and manage custom co
 ### 3. Theme Service Enhancements
 
 #### Updated File:
+
 - `libs/theme-lib/src/lib/theme-lib/theme.service.ts`
 
 #### Changes:
-1. **Custom Palette Support**: 
+
+1. **Custom Palette Support**:
+
    - `setPalette()` now checks both predefined and custom palettes
    - New `loadCustomPalettes()` private method to load user-created palettes from localStorage
 
@@ -74,9 +80,11 @@ A new component was created to allow users to create, edit, and manage custom co
 ### 4. Export Updates
 
 #### Updated File:
+
 - `libs/theme-ui/src/index.ts`
 
 #### Changes:
+
 - Exported `PaletteManagerComponent` for use in other applications
 
 ## Usage
@@ -120,7 +128,7 @@ All theme variables are available globally:
   background-color: var(--background);
   color: var(--foreground);
   border: 1px solid var(--accent);
-  
+
   &:hover {
     background-color: var(--accent);
     color: var(--background);
@@ -137,7 +145,7 @@ All theme variables are available globally:
 // Using color shades
 .my-button {
   background-color: var(--accent-5); // Base color
-  
+
   &:hover {
     background-color: var(--accent-3); // Lighter shade
   }
@@ -147,6 +155,7 @@ All theme variables are available globally:
 ## Available CSS Variables
 
 ### Colors
+
 - `--background` / `--background-color` (legacy)
 - `--foreground` / `--foreground-color` (legacy)
 - `--accent` / `--accent-color` (legacy)
@@ -157,6 +166,7 @@ All theme variables are available globally:
 - `--warning`
 
 ### Color Shades (0-9, lighter to darker)
+
 - `--accent-0` through `--accent-9`
 - `--complement-0` through `--complement-9`
 - `--tertiary-0` through `--tertiary-9`
@@ -165,14 +175,16 @@ All theme variables are available globally:
 - `--warning-0` through `--warning-9`
 
 ### Gradients
+
 - `--accent-gradient-light`
 - `--accent-gradient-dark`
 - `--accent-gradient-fastCycle`
-(Similar gradients available for complement, tertiary, success, danger, warning)
+  (Similar gradients available for complement, tertiary, success, danger, warning)
 
 ### Design Tokens
 
 #### Spacing
+
 - `--spacing-xs` (4px)
 - `--spacing-sm` (8px)
 - `--spacing-md` (16px)
@@ -181,6 +193,7 @@ All theme variables are available globally:
 - `--spacing-xxl` (48px)
 
 #### Shadows
+
 - `--shadow-none`
 - `--shadow-sm`
 - `--shadow-md`
@@ -188,6 +201,7 @@ All theme variables are available globally:
 - `--shadow-xl`
 
 #### Border Radius
+
 - `--border-radius-none`
 - `--border-radius-sm` (2px)
 - `--border-radius-md` (4px)
@@ -196,6 +210,7 @@ All theme variables are available globally:
 - `--border-radius-full` (50%)
 
 #### Typography
+
 - `--font-size-xs` (0.75rem)
 - `--font-size-sm` (0.875rem)
 - `--font-size-base` (1rem)
@@ -206,6 +221,7 @@ All theme variables are available globally:
 ## Testing
 
 All changes have been tested and verified:
+
 - ✅ Client-interface builds successfully
 - ✅ Theme-lib tests pass
 - ✅ Theme-ui tests pass
@@ -216,6 +232,7 @@ All changes have been tested and verified:
 ## Examples
 
 The following projects demonstrate the theme system in action:
+
 - **forgeofwill**: Uses theme system with custom background patterns
 - **digital-homestead**: Uses theme system with predefined palettes
 - **christopherrutherford-net**: Uses theme system with custom styling
@@ -224,6 +241,7 @@ The following projects demonstrate the theme system in action:
 ## Next Steps
 
 For developers working with the theme system:
+
 1. Use the standardized CSS variables (`--background`, not `--background-color`)
 2. Leverage design tokens for consistent spacing, shadows, and typography
 3. Use the palette selector or manager components for theme customization

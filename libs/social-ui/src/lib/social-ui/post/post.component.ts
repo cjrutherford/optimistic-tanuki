@@ -1,9 +1,4 @@
-import {
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-} from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ButtonComponent,
@@ -53,9 +48,8 @@ export class PostComponent {
     name: 'unknown',
     avatar: 'https://placehold.co/300x300',
   };
-  @Input() availableProfiles: {[key: string]: PostProfileStub} = {};
+  @Input() availableProfiles: { [key: string]: PostProfileStub } = {};
   theme: 'light' | 'dark' = 'light';
-  
 
   @Input() content!: PostDto;
   @Input() comments: CommentDto[] = [];
@@ -65,10 +59,10 @@ export class PostComponent {
   @Input() canFollow = false;
   @Input() isFollowing = false;
   @Output() newCommentAdded: EventEmitter<CreateCommentDto> =
-  new EventEmitter<CreateCommentDto>();
+    new EventEmitter<CreateCommentDto>();
   @Output() postDeleted = new EventEmitter<void>();
   @Output() followToggle = new EventEmitter<void>();
-  
+
   downloadAttachment(attachment: AttachmentDto) {
     // Logic to download the attachment
     console.log('Downloading attachment:', attachment);

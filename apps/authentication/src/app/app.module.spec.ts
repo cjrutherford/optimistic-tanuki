@@ -8,16 +8,17 @@ describe('AppModule', () => {
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).overrideProvider('AUTHENTICATION_CONNECTION')
-    .useValue({
-      getRepository: jest.fn(() => ({
-        findOne: jest.fn(),
-        save: jest.fn(),
-        update: jest.fn(),
-        insert: jest.fn(),
-      })),
     })
-    .compile();
+      .overrideProvider('AUTHENTICATION_CONNECTION')
+      .useValue({
+        getRepository: jest.fn(() => ({
+          findOne: jest.fn(),
+          save: jest.fn(),
+          update: jest.fn(),
+          insert: jest.fn(),
+        })),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();

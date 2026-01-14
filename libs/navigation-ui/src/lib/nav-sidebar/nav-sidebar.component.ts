@@ -1,11 +1,23 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButtonComponent, CardComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ButtonComponent,
+  CardComponent,
+  ModalComponent,
+} from '@optimistic-tanuki/common-ui';
 
 export interface NavItem {
   label: string;
   action: () => void;
-  variant?: 'primary' | 'secondary' | 'outlined' | 'text' | 'warning' | 'danger' | 'success' | 'rounded';
+  variant?:
+    | 'primary'
+    | 'secondary'
+    | 'outlined'
+    | 'text'
+    | 'warning'
+    | 'danger'
+    | 'success'
+    | 'rounded';
   isActive?: boolean;
 }
 
@@ -31,7 +43,17 @@ export class NavSidebarComponent {
     this.close.emit(); // Close sidebar after navigation
   }
 
-  getVariant(item: NavItem): 'primary' | 'secondary' | 'outlined' | 'text' | 'warning' | 'danger' | 'success' | 'rounded' {
+  getVariant(
+    item: NavItem
+  ):
+    | 'primary'
+    | 'secondary'
+    | 'outlined'
+    | 'text'
+    | 'warning'
+    | 'danger'
+    | 'success'
+    | 'rounded' {
     if (item.isActive) {
       return 'primary';
     }

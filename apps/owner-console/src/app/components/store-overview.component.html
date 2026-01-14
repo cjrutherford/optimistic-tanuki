@@ -32,11 +32,13 @@
       </thead>
       <tbody>
         <tr *ngFor="let donation of donations.slice(0, 10)">
-          <td>{{ donation.createdAt | date:'short' }}</td>
+          <td>{{ donation.createdAt | date : 'short' }}</td>
           <td>{{ donation.currency }} \${{ donation.amount.toFixed(2) }}</td>
           <td>
             <span *ngIf="donation.anonymous">Anonymous</span>
-            <span *ngIf="!donation.anonymous && donation.message">{{ donation.message }}</span>
+            <span *ngIf="!donation.anonymous && donation.message">{{
+              donation.message
+            }}</span>
             <span *ngIf="!donation.anonymous && !donation.message">-</span>
           </td>
           <td>
@@ -73,17 +75,21 @@
           <td>{{ subscription.userId.substring(0, 8) }}...</td>
           <td>{{ subscription.product?.name || subscription.productId }}</td>
           <td>{{ subscription.interval }}</td>
-          <td>{{ subscription.nextBillingDate | date:'short' }}</td>
+          <td>{{ subscription.nextBillingDate | date : 'short' }}</td>
           <td>
-            <span class="status" [ngClass]="getStatusClass(subscription.status)">
+            <span
+              class="status"
+              [ngClass]="getStatusClass(subscription.status)"
+            >
               {{ subscription.status }}
             </span>
           </td>
           <td>
-            <button 
-              class="btn btn-sm btn-cancel" 
+            <button
+              class="btn btn-sm btn-cancel"
               (click)="cancelSubscription(subscription)"
-              [disabled]="loading || subscription.status !== 'active'">
+              [disabled]="loading || subscription.status !== 'active'"
+            >
               Cancel
             </button>
           </td>

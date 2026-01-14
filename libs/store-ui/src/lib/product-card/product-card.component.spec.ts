@@ -32,9 +32,15 @@ describe('ProductCardComponent', () => {
 
   it('should display product information', () => {
     const compiled = fixture.nativeElement;
-    expect(compiled.querySelector('.product-name').textContent).toContain('Test Product');
-    expect(compiled.querySelector('.product-description').textContent).toContain('Test Description');
-    expect(compiled.querySelector('.product-price').textContent).toContain('99.99');
+    expect(compiled.querySelector('.product-name').textContent).toContain(
+      'Test Product'
+    );
+    expect(
+      compiled.querySelector('.product-description').textContent
+    ).toContain('Test Description');
+    expect(compiled.querySelector('.product-price').textContent).toContain(
+      '99.99'
+    );
   });
 
   it('should emit addToCart event when button is clicked', () => {

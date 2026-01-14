@@ -22,20 +22,23 @@ This guide provides detailed instructions for developing, debugging, and hot-rel
 ### Initial Setup
 
 1. Install dependencies:
+
    ```bash
    pnpm install
    ```
 
 2. Build all applications:
+
    ```bash
    npm run build:dev
    ```
 
 3. Start the development stack:
+
    ```bash
    # For the main stack
    docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
-   
+
    # OR for the Forge of Will stack
    docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml up -d
    ```
@@ -128,6 +131,7 @@ npm run docker:dev:watch
 ```
 
 This runs:
+
 1. `npm run build:dev` - Initial build
 2. `docker compose up` - Starts the dev stack
 3. `npm run watch:build` - Enables hot reload
@@ -153,24 +157,24 @@ When you make changes to:
 
 All services expose Node.js inspector ports for debugging. Ports are mapped consistently across both development stacks.
 
-| Service | Container | Inspector Port | VS Code Config |
-|---------|-----------|----------------|----------------|
-| Gateway | ot_gateway | 9000 | Attach to Gateway (Docker) |
-| Authentication | ot_authentication | 9229 | Attach to Authentication (Docker) |
-| Project-Planning | ot_project_planning | 9231 | Attach to Project-Planning (Docker) |
-| Social | ot_social | 9232 | Attach to Social (Docker) |
-| Chat-Collector | ot_chat_collector | 9233 | Attach to Chat-Collector (Docker) |
-| Profile | ot_profile | 9234 | Attach to Profile (Docker) |
-| Blogging | ot_blogging | 9235 | Attach to Blogging (Docker) |
-| AI-Orchestration | ot_ai_orchestration | 9236 | Attach to AI-Orchestration (Docker) |
-| Prompt-Proxy | ot_prompt_proxy | 9237 | Attach to Prompt-Proxy (Docker) |
-| Telos-Docs-Service | ot_telos_docs_service | 9238 | Attach to Telos-Docs-Service (Docker) |
-| Permissions | ot_permissions | 9239 | Attach to Permissions (Docker) |
-| Client Interface (OT) | ot_client_interface | 9240 | Attach to Client Interface (OT) (Docker) |
-| ForgeOfWill | fow_client_interface | 9241 | Attach to ForgeOfWill Client Interface (Docker) |
-| Digital Homestead | dh_client_interface | 9242 | Attach to Digital Homestead Client Interface (Docker) |
-| CRDN | crdn_client_interface | 9243 | Attach to CRDN Client Interface (Docker) |
-| Assets | ot_assets | 9244 | Attach to Assets (Docker) |
+| Service               | Container             | Inspector Port | VS Code Config                                        |
+| --------------------- | --------------------- | -------------- | ----------------------------------------------------- |
+| Gateway               | ot_gateway            | 9000           | Attach to Gateway (Docker)                            |
+| Authentication        | ot_authentication     | 9229           | Attach to Authentication (Docker)                     |
+| Project-Planning      | ot_project_planning   | 9231           | Attach to Project-Planning (Docker)                   |
+| Social                | ot_social             | 9232           | Attach to Social (Docker)                             |
+| Chat-Collector        | ot_chat_collector     | 9233           | Attach to Chat-Collector (Docker)                     |
+| Profile               | ot_profile            | 9234           | Attach to Profile (Docker)                            |
+| Blogging              | ot_blogging           | 9235           | Attach to Blogging (Docker)                           |
+| AI-Orchestration      | ot_ai_orchestration   | 9236           | Attach to AI-Orchestration (Docker)                   |
+| Prompt-Proxy          | ot_prompt_proxy       | 9237           | Attach to Prompt-Proxy (Docker)                       |
+| Telos-Docs-Service    | ot_telos_docs_service | 9238           | Attach to Telos-Docs-Service (Docker)                 |
+| Permissions           | ot_permissions        | 9239           | Attach to Permissions (Docker)                        |
+| Client Interface (OT) | ot_client_interface   | 9240           | Attach to Client Interface (OT) (Docker)              |
+| ForgeOfWill           | fow_client_interface  | 9241           | Attach to ForgeOfWill Client Interface (Docker)       |
+| Digital Homestead     | dh_client_interface   | 9242           | Attach to Digital Homestead Client Interface (Docker) |
+| CRDN                  | crdn_client_interface | 9243           | Attach to CRDN Client Interface (Docker)              |
+| Assets                | ot_assets             | 9244           | Attach to Assets (Docker)                             |
 
 ### Verifying Inspector Ports
 
@@ -185,6 +189,7 @@ docker compose logs gateway | grep "Debugger listening"
 ```
 
 You should see output like:
+
 ```
 Debugger listening on ws://0.0.0.0:9000/...
 ```
@@ -196,6 +201,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 **Problem**: Breakpoints are not hitting or show as unverified (hollow circles)
 
 **Solutions**:
+
 1. Verify source maps are enabled in `tsconfig.app.json`
 2. Check that the debug configuration's `outFiles` pattern matches your build output
 3. Ensure `localRoot` and `remoteRoot` mappings are correct in `launch.json`
@@ -207,6 +213,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 **Problem**: Code changes don't trigger rebuilds or restarts
 
 **Solutions**:
+
 1. Verify `npm run watch:build` is running
 2. Check that the changed file is included in the Nx project
 3. Look for build errors in the watch output
@@ -221,6 +228,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 **Problem**: VS Code shows "Cannot connect to runtime process"
 
 **Solutions**:
+
 1. Verify the container is running: `docker compose ps`
 2. Check the inspector port is exposed: `docker compose port <service-name> <port>`
 3. Verify no port conflicts: `lsof -i :<port>` (Linux/Mac) or `netstat -ano | findstr :<port>` (Windows)
@@ -232,6 +240,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 **Problem**: Service fails to start after making changes
 
 **Solutions**:
+
 1. Check the watch build output for TypeScript errors
 2. Verify all imports are correct and libraries are built
 3. Clear the build cache: `rm -rf dist/ && npm run build:dev`
@@ -242,6 +251,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 **Problem**: Service restarts in a loop
 
 **Solutions**:
+
 1. Check container logs: `docker compose logs <service-name>`
 2. Look for runtime errors or missing dependencies
 3. Verify environment variables are set correctly
@@ -257,6 +267,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 3. **Check logs frequently**: Use `docker compose logs -f <service-name>` to monitor service output
 
 4. **Rebuild when needed**: After major dependency changes or Git branch switches, do a clean build:
+
    ```bash
    rm -rf dist/ node_modules/.cache
    npm run build:dev

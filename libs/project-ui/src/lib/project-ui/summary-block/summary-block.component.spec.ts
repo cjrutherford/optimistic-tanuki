@@ -39,7 +39,9 @@ describe('SummaryBlockComponent', () => {
 
   it('should emit onClick event when clicked', () => {
     jest.spyOn(component.onClick, 'emit');
-    const clickHandleElement = fixture.debugElement.query(By.css('.click-handle'));
+    const clickHandleElement = fixture.debugElement.query(
+      By.css('.click-handle')
+    );
     clickHandleElement.triggerEventHandler('click', null);
     expect(component.onClick.emit).toHaveBeenCalled();
   });

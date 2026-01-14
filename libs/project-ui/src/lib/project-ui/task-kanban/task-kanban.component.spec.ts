@@ -53,7 +53,7 @@ describe('TaskKanbanComponent', () => {
       },
     });
 
-    const todoColumn = component.columns().find(c => c.status === 'TODO');
+    const todoColumn = component.columns().find((c) => c.status === 'TODO');
     expect(todoColumn?.tasks.length).toBe(1);
   });
 });

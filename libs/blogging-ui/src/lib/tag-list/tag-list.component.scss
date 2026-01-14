@@ -2,14 +2,14 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  
+
   .tag {
     background-color: rgba(255, 255, 255, 0.1);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-size: 0.875rem;
     color: var(--text-secondary, #ccc);
-    
+
     &:hover {
       background-color: rgba(255, 255, 255, 0.2);
       cursor: pointer;

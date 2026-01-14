@@ -1,7 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Observable, Subject, Subscription, filter, takeUntil } from 'rxjs';
 
-
 import { FormsModule } from '@angular/forms';
 import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 
@@ -21,7 +20,7 @@ import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
     '[style.--transition-duration]': 'transitionDuration',
     '[class.dark]': 'theme === "dark"',
     '[class.light]': 'theme === "light"',
-  }
+  },
 })
 export class ThemeToggleComponent implements OnInit, OnDestroy {
   theme: 'light' | 'dark';
@@ -44,10 +43,9 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
     this.themeService.themeColors$
       .pipe(
         filter(
-          (value) =>
-            !!(value?.background && value?.foreground && value?.accent),
+          (value) => !!(value?.background && value?.foreground && value?.accent)
         ),
-        takeUntil(this.destroy$),
+        takeUntil(this.destroy$)
       )
       .subscribe({
         next: (colors: ThemeColors | undefined) => {

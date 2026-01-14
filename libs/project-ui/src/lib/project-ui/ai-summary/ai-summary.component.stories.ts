@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/angular';
 import { AiSummaryComponent } from './ai-summary.component';
 import { within, expect } from 'storybook/internal/test';
 
-
 const meta: Meta<AiSummaryComponent> = {
   component: AiSummaryComponent,
   title: 'AiSummaryComponent',

@@ -1,15 +1,29 @@
 import { TimelineEventType } from './timeline-event-type';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsUUID, IsBoolean, IsEnum, IsDateString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsBoolean,
+  IsEnum,
+  IsDateString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateTimelineDto {
-  @ApiProperty({ description: 'Name of the timeline', example: 'Q1 2026 Roadmap' })
+  @ApiProperty({
+    description: 'Name of the timeline',
+    example: 'Q1 2026 Roadmap',
+  })
   @IsString()
   @MinLength(3)
   @MaxLength(200)
   name: string;
 
-  @ApiProperty({ description: 'Description of the timeline', example: 'Key deliverables for first quarter' })
+  @ApiProperty({
+    description: 'Description of the timeline',
+    example: 'Key deliverables for first quarter',
+  })
   @IsString()
   @MinLength(10)
   @MaxLength(5000)

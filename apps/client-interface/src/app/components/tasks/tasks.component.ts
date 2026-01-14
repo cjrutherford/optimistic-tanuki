@@ -1,6 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 
-import { NoteDto, NoteStatus, TaskDto, TaskStatus, TimerDto, TimerStatus } from '@optimistic-tanuki/ui-models';
+import {
+  NoteDto,
+  NoteStatus,
+  TaskDto,
+  TaskStatus,
+  TimerDto,
+  TimerStatus,
+} from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-tasks',
@@ -44,8 +51,8 @@ export class TasksComponent implements OnInit {
         updatedAt: new Date(),
         deletedAt: new Date(),
         status: TaskStatus.Draft,
-        timers: ["2"],
-        notes: ["2"],
+        timers: ['2'],
+        notes: ['2'],
       },
       {
         id: '3',
@@ -55,8 +62,8 @@ export class TasksComponent implements OnInit {
         updatedAt: new Date(),
         deletedAt: new Date(),
         status: TaskStatus.Draft,
-        timers: ["3"],
-        notes: ["3"],
+        timers: ['3'],
+        notes: ['3'],
       },
     ];
 
@@ -144,16 +151,18 @@ export class TasksComponent implements OnInit {
 
   selectTask(task: TaskDto) {
     this.selectedTask = task;
-    this.filteredTimers = this.timers.filter(timer => timer.taskId === task.id);
-    this.filteredNotes = this.notes.filter(note => note.taskId === task.id);
+    this.filteredTimers = this.timers.filter(
+      (timer) => timer.taskId === task.id
+    );
+    this.filteredNotes = this.notes.filter((note) => note.taskId === task.id);
     this.selectedTabIndex = 0; // Reset to the first tab
   }
 
   getFilteredTimers(taskId: string) {
-    return this.timers.filter(timer => timer.taskId === taskId);
+    return this.timers.filter((timer) => timer.taskId === taskId);
   }
 
   getFilteredNotes(taskId: string) {
-    return this.notes.filter(note => note.taskId === taskId);
+    return this.notes.filter((note) => note.taskId === taskId);
   }
 }

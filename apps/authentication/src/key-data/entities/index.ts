@@ -1,1 +1,1 @@
-export { KeyDatum } from './key-datum.entity'
+export { KeyDatum } from './key-datum.entity';

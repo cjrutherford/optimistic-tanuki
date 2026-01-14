@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateSubscriptionDto, UpdateSubscriptionDto } from '@optimistic-tanuki/models';
+import {
+  CreateSubscriptionDto,
+  UpdateSubscriptionDto,
+} from '@optimistic-tanuki/models';
 import { SubscriptionEntity } from './entities/subscription.entity';
 
 @Injectable()
@@ -11,7 +14,9 @@ export class SubscriptionsService {
     private readonly subscriptionRepository: Repository<SubscriptionEntity>
   ) {}
 
-  async create(createSubscriptionDto: CreateSubscriptionDto): Promise<SubscriptionEntity> {
+  async create(
+    createSubscriptionDto: CreateSubscriptionDto
+  ): Promise<SubscriptionEntity> {
     const subscription = this.subscriptionRepository.create({
       ...createSubscriptionDto,
       status: 'active',
@@ -42,7 +47,10 @@ export class SubscriptionsService {
     });
   }
 
-  async update(id: string, updateSubscriptionDto: UpdateSubscriptionDto): Promise<SubscriptionEntity> {
+  async update(
+    id: string,
+    updateSubscriptionDto: UpdateSubscriptionDto
+  ): Promise<SubscriptionEntity> {
     await this.subscriptionRepository.update(id, updateSubscriptionDto);
     return this.findOne(id);
   }

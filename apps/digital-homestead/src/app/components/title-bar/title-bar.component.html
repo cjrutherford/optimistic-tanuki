@@ -5,12 +5,14 @@
   [showThemeToggle]="false"
   [useTile]="true"
   menuIcon="☰"
-  (menuToggle)="toggleMenu()">
+  (menuToggle)="toggleMenu()"
+>
 </otui-app-bar>
 
 <otui-nav-sidebar
   [isOpen]="menuOpen()"
   [navItems]="navItems"
   heading="Navigation"
-  (close)="menuOpen.set(false)">
+  (close)="menuOpen.set(false)"
+>
 </otui-nav-sidebar>

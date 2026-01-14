@@ -69,12 +69,10 @@ describe('AppService', () => {
         {
           provide: KeyService,
           useValue: {
-            generateUserKeys: jest
-              .fn()
-              .mockResolvedValue({
-                pubKey: 'mockPubKey',
-                privLocation: 'mockPrivLocation',
-              }),
+            generateUserKeys: jest.fn().mockResolvedValue({
+              pubKey: 'mockPubKey',
+              privLocation: 'mockPrivLocation',
+            }),
           },
         },
         {
@@ -101,12 +99,10 @@ describe('AppService', () => {
           useValue: {
             sign: jest.fn().mockReturnValue('mockToken'),
             verify: jest.fn().mockReturnValue({}),
-            verifyAsync: jest
-              .fn()
-              .mockResolvedValue({
-                userId: 'someUserId',
-                email: 'test@example.com',
-              }),
+            verifyAsync: jest.fn().mockResolvedValue({
+              userId: 'someUserId',
+              email: 'test@example.com',
+            }),
           },
         },
       ],
@@ -336,19 +332,15 @@ describe('AppService', () => {
       jest
         .spyOn(saltedHashService, 'createNewHash')
         .mockReturnValue({ hash: 'newHashedPassword', salt: 'newSalt' });
-      jest
-        .spyOn(userRepo, 'insert')
-        .mockResolvedValue({
-          identifiers: [{ id: 'newUserId' }],
-          generatedMaps: [],
-          raw: [],
-        });
-      jest
-        .spyOn(keyService, 'generateUserKeys')
-        .mockResolvedValue({
-          pubKey: 'newPubKey',
-          privLocation: 'newPrivLocation',
-        });
+      jest.spyOn(userRepo, 'insert').mockResolvedValue({
+        identifiers: [{ id: 'newUserId' }],
+        generatedMaps: [],
+        raw: [],
+      });
+      jest.spyOn(keyService, 'generateUserKeys').mockResolvedValue({
+        pubKey: 'newPubKey',
+        privLocation: 'newPrivLocation',
+      });
       jest.spyOn(keyRepo, 'save').mockResolvedValue({} as KeyDatum);
       jest.spyOn(userRepo, 'save').mockResolvedValue(undefined);
 
@@ -499,13 +491,11 @@ describe('AppService', () => {
       jest
         .spyOn(saltedHashService, 'createNewHash')
         .mockReturnValue({ hash: 'newHashedPassword', salt: 'newSalt' });
-      jest
-        .spyOn(userRepo, 'insert')
-        .mockResolvedValue({
-          identifiers: [{ id: 'newUserId' }],
-          generatedMaps: [],
-          raw: [],
-        });
+      jest.spyOn(userRepo, 'insert').mockResolvedValue({
+        identifiers: [{ id: 'newUserId' }],
+        generatedMaps: [],
+        raw: [],
+      });
       jest
         .spyOn(userRepo, 'findOne')
         .mockResolvedValueOnce(null as unknown as UserEntity); // Second findOne for newUser lookup
@@ -811,12 +801,10 @@ describe('AppService', () => {
 
     it('should throw RpcException if token is revoked', async () => {
       jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue(mockDecoded);
-      jest
-        .spyOn(tokenRepo, 'findOne')
-        .mockResolvedValue({
-          ...mockStoredToken,
-          revoked: true,
-        } as TokenEntity);
+      jest.spyOn(tokenRepo, 'findOne').mockResolvedValue({
+        ...mockStoredToken,
+        revoked: true,
+      } as TokenEntity);
       await expect(service.validateToken(mockToken)).rejects.toThrow(
         RpcException
       );

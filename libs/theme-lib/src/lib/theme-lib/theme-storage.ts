@@ -14,27 +14,29 @@ export function loadTheme(platformId: object): SavedTheme {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
     const savedAccentColor = localStorage.getItem('accentColor');
     const savedComplementColor = localStorage.getItem('complementColor');
-    const savedPaletteMode = localStorage.getItem('paletteMode') as 'custom' | 'predefined';
+    const savedPaletteMode = localStorage.getItem('paletteMode') as
+      | 'custom'
+      | 'predefined';
     const savedPaletteName = localStorage.getItem('paletteName');
-    
+
     // User is initialized if accentColor exists in localStorage
     const isInitialized = savedAccentColor !== null;
-    
-    return { 
-      theme: savedTheme || 'light', 
-      accentColor: savedAccentColor || '#3f51b5', 
+
+    return {
+      theme: savedTheme || 'light',
+      accentColor: savedAccentColor || '#3f51b5',
       complementColor: savedComplementColor || '#c0af4b',
       paletteMode: savedPaletteMode || 'custom',
       paletteName: savedPaletteName || undefined,
-      isInitialized
+      isInitialized,
     };
   }
-  return { 
-    theme: 'light', 
-    accentColor: '#3f51b5', 
+  return {
+    theme: 'light',
+    accentColor: '#3f51b5',
     complementColor: '#c0af4b',
     paletteMode: 'custom',
-    isInitialized: false
+    isInitialized: false,
   }; // Default values for server-side
 }
 

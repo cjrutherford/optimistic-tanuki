@@ -45,7 +45,10 @@ describe('GridComponent', () => {
   });
 
   it('should call setGridDimensions on ngOnChanges', () => {
-    const setGridDimensionsSpy = jest.spyOn(component as any, 'setGridDimensions');
+    const setGridDimensionsSpy = jest.spyOn(
+      component as any,
+      'setGridDimensions'
+    );
     component.ngOnChanges({} as SimpleChanges);
     expect(setGridDimensionsSpy).toHaveBeenCalled();
   });

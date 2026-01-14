@@ -36,25 +36,29 @@ describe('AsymmetricService', () => {
     it('should generate a key pair successfully', async () => {
       const mockPublicKey = '-----BEGIN PUBLIC KEY-----';
       const mockPrivateKey = '-----BEGIN PRIVATE KEY-----';
-      mockedGenerateKeyPair.mockImplementationOnce((type, options, callback) => {
-        callback(null, mockPublicKey, mockPrivateKey);
-      });
+      mockedGenerateKeyPair.mockImplementationOnce(
+        (type, options, callback) => {
+          callback(null, mockPublicKey, mockPrivateKey);
+        }
+      );
 
       const keys = await service.generateKeyPair();
       expect(keys).toEqual({ public: mockPublicKey, private: mockPrivateKey });
       expect(mockedGenerateKeyPair).toHaveBeenCalledWith(
         'rsa',
         expect.any(Object),
-        expect.any(Function),
+        expect.any(Function)
       );
     });
 
     it('should generate a key pair with a secret', async () => {
       const mockPublicKey = '-----BEGIN PUBLIC KEY-----';
       const mockPrivateKey = '-----BEGIN PRIVATE KEY-----';
-      mockedGenerateKeyPair.mockImplementationOnce((type, options, callback) => {
-        callback(null, mockPublicKey, mockPrivateKey);
-      });
+      mockedGenerateKeyPair.mockImplementationOnce(
+        (type, options, callback) => {
+          callback(null, mockPublicKey, mockPrivateKey);
+        }
+      );
 
       const secret = 'mysecret';
       const keys = await service.generateKeyPair(secret);
@@ -66,15 +70,17 @@ describe('AsymmetricService', () => {
             passphrase: secret,
           }),
         }),
-        expect.any(Function),
+        expect.any(Function)
       );
     });
 
     it('should reject if key generation fails', async () => {
       const mockError = new Error('Key generation failed');
-      mockedGenerateKeyPair.mockImplementationOnce((type, options, callback) => {
-        callback(mockError, null as any, null as any); // Pass null for keys in error case
-      });
+      mockedGenerateKeyPair.mockImplementationOnce(
+        (type, options, callback) => {
+          callback(mockError, null as any, null as any); // Pass null for keys in error case
+        }
+      );
 
       await expect(service.generateKeyPair()).rejects.toThrow(mockError);
     });
@@ -90,8 +96,11 @@ describe('AsymmetricService', () => {
       const result = service.encrypt(privKey, value);
       expect(result).toEqual(encryptedData);
       expect(mockedPrivateEncrypt).toHaveBeenCalledWith(
-        expect.objectContaining({ key: privKey, padding: crypto.constants.RSA_PKCS1_PADDING }),
-        new Uint8Array(Buffer.from(value)),
+        expect.objectContaining({
+          key: privKey,
+          padding: crypto.constants.RSA_PKCS1_PADDING,
+        }),
+        new Uint8Array(Buffer.from(value))
       );
     });
 
@@ -105,8 +114,12 @@ describe('AsymmetricService', () => {
       const result = service.encrypt(privKey, value, secret);
       expect(result).toEqual(encryptedData);
       expect(mockedPrivateEncrypt).toHaveBeenCalledWith(
-        expect.objectContaining({ key: privKey, passphrase: secret, padding: crypto.constants.RSA_PKCS1_PADDING }),
-        new Uint8Array(Buffer.from(value)),
+        expect.objectContaining({
+          key: privKey,
+          passphrase: secret,
+          padding: crypto.constants.RSA_PKCS1_PADDING,
+        }),
+        new Uint8Array(Buffer.from(value))
       );
     });
   });
@@ -121,8 +134,11 @@ describe('AsymmetricService', () => {
       const result = service.decrypt(pubKey, cyText);
       expect(result).toEqual(decryptedData);
       expect(mockedPublicDecrypt).toHaveBeenCalledWith(
-        expect.objectContaining({ key: pubKey, padding: crypto.constants.RSA_PKCS1_PADDING }),
-        new Uint8Array(Buffer.from(cyText)),
+        expect.objectContaining({
+          key: pubKey,
+          padding: crypto.constants.RSA_PKCS1_PADDING,
+        }),
+        new Uint8Array(Buffer.from(cyText))
       );
     });
 
@@ -136,8 +152,12 @@ describe('AsymmetricService', () => {
       const result = service.decrypt(pubKey, cyText, secret);
       expect(result).toEqual(decryptedData);
       expect(mockedPublicDecrypt).toHaveBeenCalledWith(
-        expect.objectContaining({ key: pubKey, passphrase: secret, padding: crypto.constants.RSA_PKCS1_PADDING }),
-        new Uint8Array(Buffer.from(cyText)),
+        expect.objectContaining({
+          key: pubKey,
+          passphrase: secret,
+          padding: crypto.constants.RSA_PKCS1_PADDING,
+        }),
+        new Uint8Array(Buffer.from(cyText))
       );
     });
   });

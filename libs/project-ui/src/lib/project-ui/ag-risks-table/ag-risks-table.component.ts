@@ -1,4 +1,14 @@
-import { Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, signal, computed } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  Input,
+  Output,
+  EventEmitter,
+  signal,
+  computed,
+} from '@angular/core';
 import { ICellRendererParams } from 'ag-grid-community';
 import {
   AgGridUiComponent,
@@ -8,10 +18,7 @@ import {
   createStatusColumn,
   CellClickedEvent,
 } from '@optimistic-tanuki/ag-grid-ui';
-import {
-  ButtonComponent,
-  ModalComponent,
-} from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import { CreateRisk, Risk } from '@optimistic-tanuki/ui-models';
 import { RiskFormComponent } from '../risk-form/risk-form.component';
 
@@ -21,7 +28,12 @@ import { RiskFormComponent } from '../risk-form/risk-form.component';
  */
 @Component({
   selector: 'lib-ag-risks-table',
-  imports: [AgGridUiComponent, ButtonComponent, ModalComponent, RiskFormComponent],
+  imports: [
+    AgGridUiComponent,
+    ButtonComponent,
+    ModalComponent,
+    RiskFormComponent,
+  ],
   templateUrl: './ag-risks-table.component.html',
   styleUrls: ['./ag-risks-table.component.scss'],
 })
@@ -37,10 +49,10 @@ export class AgRisksTableComponent implements OnInit, OnChanges {
   showModal = signal(false);
   showEditModal = signal(false);
   selectedRisk = signal<Risk | null>(null);
-  
+
   // Internal signal for grid data
   private risksSignal = signal<Risk[]>([]);
-  
+
   // Computed signal for grid data
   gridData = computed(() => this.risksSignal());
 
@@ -118,7 +130,11 @@ export class AgRisksTableComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.risksSignal.set(this.risks || []);
-    console.log('ag-risks-table initialized with', this.risks?.length || 0, 'risks');
+    console.log(
+      'ag-risks-table initialized with',
+      this.risks?.length || 0,
+      'risks'
+    );
   }
 
   ngOnChanges(changes: SimpleChanges): void {

@@ -1,4 +1,9 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import { LoginComponent } from './login.component';
 import { AuthenticationService } from '../../authentication.service';
 import { AuthStateService } from '../../auth-state.service';
@@ -25,7 +30,11 @@ describe('LoginComponent', () => {
   let messageService: MessageService;
 
   const mockLoginResponse = { data: { newToken: 'mock-token' } };
-  const mockProfile: ProfileDto = { id: '1', userId: 'user1', profileName: 'Test Profile' } as ProfileDto;
+  const mockProfile: ProfileDto = {
+    id: '1',
+    userId: 'user1',
+    profileName: 'Test Profile',
+  } as ProfileDto;
 
   beforeEach(async () => {
     const authServiceMock = {
@@ -58,24 +67,31 @@ describe('LoginComponent', () => {
     component = fixture.componentInstance;
     authService = TestBed.inject(AuthenticationService);
     authState = TestBed.inject(AuthStateService);
-    profileService = TestBed.inject(ProfileService) as unknown as MockProfileService;
+    profileService = TestBed.inject(
+      ProfileService
+    ) as unknown as MockProfileService;
     router = TestBed.inject(Router);
     messageService = TestBed.inject(MessageService);
     fixture.detectChanges();
   });
 
   describe('onLoginSubmit', () => {
-    const loginData: LoginType = { email: 'test@example.com', password: 'password' };
+    const loginData: LoginType = {
+      email: 'test@example.com',
+      password: 'password',
+    };
 
     it('should handle successful login with existing profiles', async () => {
       profileService.currentUserProfiles.set([mockProfile]);
       await component.onLoginSubmit(loginData);
-      
+
       // Wait for promises to resolve
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(authService.login).toHaveBeenCalledWith(loginData);
-      expect(authState.setToken).toHaveBeenCalledWith(mockLoginResponse.data.newToken);
+      expect(authState.setToken).toHaveBeenCalledWith(
+        mockLoginResponse.data.newToken
+      );
       expect(profileService.getAllProfiles).toHaveBeenCalled();
       expect(profileService.selectProfile).toHaveBeenCalledWith(mockProfile);
       expect(router.navigate).toHaveBeenCalledWith(['/']);
@@ -89,18 +105,21 @@ describe('LoginComponent', () => {
       profileService.currentUserProfiles.set([]);
 
       await component.onLoginSubmit(loginData);
-      
+
       // Wait for promises to resolve
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(authService.login).toHaveBeenCalledWith(loginData);
-      expect(authState.setToken).toHaveBeenCalledWith(mockLoginResponse.data.newToken);
+      expect(authState.setToken).toHaveBeenCalledWith(
+        mockLoginResponse.data.newToken
+      );
       expect(profileService.getAllProfiles).toHaveBeenCalled();
       expect(profileService.selectProfile).not.toHaveBeenCalled();
       expect(router.navigate).toHaveBeenCalledWith(['/profile'], {
         state: {
           showProfileModal: true,
-          profileMessage: 'No profiles found. Please create a profile to continue.',
+          profileMessage:
+            'No profiles found. Please create a profile to continue.',
         },
       });
       expect(messageService.addMessage).toHaveBeenCalledWith({
@@ -110,12 +129,14 @@ describe('LoginComponent', () => {
     });
 
     it('should handle login failure', async () => {
-      jest.spyOn(authService, 'login').mockRejectedValue(new Error('Invalid credentials'));
+      jest
+        .spyOn(authService, 'login')
+        .mockRejectedValue(new Error('Invalid credentials'));
 
       await component.onLoginSubmit(loginData);
-      
+
       // Wait for promises to resolve
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(authService.login).toHaveBeenCalledWith(loginData);
       expect(authState.setToken).not.toHaveBeenCalled();

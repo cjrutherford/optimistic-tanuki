@@ -18,7 +18,7 @@ module.exports = {
       additionalEntryPoints: [
         './src/app/seed-persona.ts',
         './src/app/benchmark-personas-and-models.ts',
-      ]
+      ],
     }),
   ],
 };

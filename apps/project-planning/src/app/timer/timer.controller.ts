@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TimerService } from './timer.service';
-import { CreateTimerDto, UpdateTimerDto } from '@optimistic-tanuki/models'; 
+import { CreateTimerDto, UpdateTimerDto } from '@optimistic-tanuki/models';
 import { TimerCommands } from '@optimistic-tanuki/constants';
 
 @Controller()

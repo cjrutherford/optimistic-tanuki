@@ -1,7 +1,11 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ProjectService } from './project.service';
-import { CreateProjectDto, QueryProjectDto, UpdateProjectDto } from '@optimistic-tanuki/models'; 
+import {
+  CreateProjectDto,
+  QueryProjectDto,
+  UpdateProjectDto,
+} from '@optimistic-tanuki/models';
 import { ProjectCommands } from '@optimistic-tanuki/constants';
 
 @Controller()
@@ -25,7 +29,10 @@ export class ProjectController {
 
   @MessagePattern({ cmd: ProjectCommands.UPDATE })
   async update(@Payload() updateProjectDto: UpdateProjectDto) {
-    return await this.projectService.update(updateProjectDto.id, updateProjectDto);
+    return await this.projectService.update(
+      updateProjectDto.id,
+      updateProjectDto
+    );
   }
 
   @MessagePattern({ cmd: ProjectCommands.REMOVE })

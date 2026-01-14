@@ -36,6 +36,6 @@ select {
 
   &:focus {
     border-color: var(--border-color, #007bff);
-    box-shadow: 0 0 0 2px var(--complement, rgba(0,123,255,0.25));
+    box-shadow: 0 0 0 2px var(--complement, rgba(0, 123, 255, 0.25));
   }
 }

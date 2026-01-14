@@ -4,11 +4,15 @@ import { Risk } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent } from '@optimistic-tanuki/form-ui';
 
-
-
 @Component({
   selector: 'lib-risk-form',
-  imports: [ReactiveFormsModule, ButtonComponent, CardComponent, TextAreaComponent, SelectComponent],
+  imports: [
+    ReactiveFormsModule,
+    ButtonComponent,
+    CardComponent,
+    TextAreaComponent,
+    SelectComponent,
+  ],
   templateUrl: './risk-form.component.html',
   styleUrl: './risk-form.component.scss',
 })

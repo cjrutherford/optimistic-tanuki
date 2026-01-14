@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { PromptCommands } from '@optimistic-tanuki/constants';
-import { GeneratePrompt } from '@optimistic-tanuki/models'
+import { GeneratePrompt } from '@optimistic-tanuki/models';
 
 @Controller()
 export class AppController {

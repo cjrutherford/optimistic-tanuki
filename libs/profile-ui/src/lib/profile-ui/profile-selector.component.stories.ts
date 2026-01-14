@@ -17,11 +17,11 @@ export default meta;
 type Story = StoryObj<ProfileSelectorComponent>;
 
 const sampleProfiles: ProfileDto[] = [
-  { 
-    id: '1', 
+  {
+    id: '1',
     userId: 'u1',
-    profileName: 'Alice Wonderland', 
-    profilePic: 'https://placehold.co/100x100/AEC6CF/000000?text=AW', 
+    profileName: 'Alice Wonderland',
+    profilePic: 'https://placehold.co/100x100/AEC6CF/000000?text=AW',
     coverPic: 'https://placehold.co/600x200/AEC6CF/000000?text=Cover+AW',
     bio: 'Curiouser and curiouser.',
     location: 'Wonderland',
@@ -30,11 +30,11 @@ const sampleProfiles: ProfileDto[] = [
     skills: ['Curiosity', 'Bravery'].join(','),
     created_at: new Date(),
   },
-  { 
-    id: '2', 
+  {
+    id: '2',
     userId: 'u2',
-    profileName: 'Bob The Builder', 
-    profilePic: 'https://placehold.co/100x100/FFB347/000000?text=BB', 
+    profileName: 'Bob The Builder',
+    profilePic: 'https://placehold.co/100x100/FFB347/000000?text=BB',
     coverPic: 'https://placehold.co/600x200/FFB347/000000?text=Cover+BB',
     bio: 'Can we fix it? Yes, we can!',
     location: 'Sunflower Valley',
@@ -43,11 +43,11 @@ const sampleProfiles: ProfileDto[] = [
     skills: ['Construction', 'Problem Solving'].join(','),
     created_at: new Date(),
   },
-  { 
-    id: '3', 
+  {
+    id: '3',
     userId: 'u3',
-    profileName: 'Charlie Brown', 
-    profilePic: 'https://placehold.co/100x100/FDFD96/000000?text=CB', 
+    profileName: 'Charlie Brown',
+    profilePic: 'https://placehold.co/100x100/FDFD96/000000?text=CB',
     coverPic: 'https://placehold.co/600x200/FDFD96/000000?text=Cover+CB',
     bio: 'Good grief. I love my dog Snoopy.',
     location: 'Peanuts Town',
@@ -56,11 +56,11 @@ const sampleProfiles: ProfileDto[] = [
     skills: ['Perseverance', 'Friendship'].join(','),
     created_at: new Date(),
   },
-  { 
-    id: '4', 
+  {
+    id: '4',
     userId: 'u4',
-    profileName: 'Diana Prince', 
-    profilePic: 'https://placehold.co/100x100/FF6961/FFFFFF?text=DP', 
+    profileName: 'Diana Prince',
+    profilePic: 'https://placehold.co/100x100/FF6961/FFFFFF?text=DP',
     coverPic: 'https://placehold.co/600x200/FF6961/FFFFFF?text=Cover+DP',
     bio: 'Wonder Woman from Themyscira.',
     location: 'Themyscira',
@@ -89,12 +89,14 @@ export const WithProfileSelected: Story = {
     // If direct manipulation is needed for testing, it can be done via component instance.
     // For this story, we assume the component handles the input correctly.
     // We wait for potential async updates in the component.
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
-    const bobTile = canvas.getByText(/Bob The Builder/i).closest('.real-profile');
+    const bobTile = canvas
+      .getByText(/Bob The Builder/i)
+      .closest('.real-profile');
     expect(bobTile).not.toBeNull();
     if (bobTile) {
-        expect(bobTile).toHaveClass('active');
+      expect(bobTile).toHaveClass('active');
     }
     // Check for the "Selected" button text within Bob's tile
     const selectedButton = within(bobTile as HTMLElement).getByText('Selected');

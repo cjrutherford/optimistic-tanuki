@@ -1,4 +1,8 @@
-import { CreateProjectJournalDto, QueryProjectJournalDto, UpdateProjectJournalDto } from '@optimistic-tanuki/models';
+import {
+  CreateProjectJournalDto,
+  QueryProjectJournalDto,
+  UpdateProjectJournalDto,
+} from '@optimistic-tanuki/models';
 
 import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -9,13 +13,19 @@ import { Project } from '../entities/project.entity';
 @Injectable()
 export class ProjectJournalService {
   constructor(
-    @Inject(getRepositoryToken(ProjectJournal)) private readonly projectJournalRepository: Repository<ProjectJournal>,
-    @Inject(getRepositoryToken(Project)) private readonly projectRepository: Repository<Project>,
+    @Inject(getRepositoryToken(ProjectJournal))
+    private readonly projectJournalRepository: Repository<ProjectJournal>,
+    @Inject(getRepositoryToken(Project))
+    private readonly projectRepository: Repository<Project>
   ) {}
   async create(createProjectJournalDto: CreateProjectJournalDto) {
-    const project = await this.projectRepository.findOne({ where: { id: createProjectJournalDto.projectId } });
+    const project = await this.projectRepository.findOne({
+      where: { id: createProjectJournalDto.projectId },
+    });
     if (!project) {
-      throw new Error(`Project with id ${createProjectJournalDto.projectId} not found`);
+      throw new Error(
+        `Project with id ${createProjectJournalDto.projectId} not found`
+      );
     }
     const projectJournal = this.projectJournalRepository.create({
       ...createProjectJournalDto,
@@ -34,12 +44,12 @@ export class ProjectJournalService {
       }
     }
 
-    for ( const key of ['createdAt', 'updatedAt']) {
+    for (const key of ['createdAt', 'updatedAt']) {
       if (query[key]) {
-        where[key] = Between(...query[key] as [Date, Date]);
+        where[key] = Between(...(query[key] as [Date, Date]));
       }
     }
-    for ( const key of ['content', 'analysis']) {
+    for (const key of ['content', 'analysis']) {
       if (query[key]) {
         where[key] = Like(`%${query[key]}%`);
       }
@@ -58,6 +68,8 @@ export class ProjectJournalService {
   }
 
   async remove(id: string) {
-    return await this.projectJournalRepository.update(id, { deletedAt: new Date() });
+    return await this.projectJournalRepository.update(id, {
+      deletedAt: new Date(),
+    });
   }
 }

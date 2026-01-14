@@ -36,7 +36,8 @@ describe('LocalStorageAdapter', () => {
       providers: [
         {
           provide: LocalStorageAdapter,
-          useFactory: (logger: Logger) => new LocalStorageAdapter(logger, basePath),
+          useFactory: (logger: Logger) =>
+            new LocalStorageAdapter(logger, basePath),
           inject: [Logger],
         },
         {

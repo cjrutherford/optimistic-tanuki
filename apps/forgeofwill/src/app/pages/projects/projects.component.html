@@ -43,25 +43,37 @@
             <div class="view-buttons">
               <otui-button
                 (click)="setTaskViewMode('list')"
-                [style]="taskViewMode() === 'list' ? 'background: var(--accent);' : 'background: var(--background-secondary);'"
+                [style]="
+                  taskViewMode() === 'list'
+                    ? 'background: var(--accent);'
+                    : 'background: var(--background-secondary);'
+                "
               >
                 List View
               </otui-button>
               <otui-button
                 (click)="setTaskViewMode('calendar')"
-                [style]="taskViewMode() === 'calendar' ? 'background: var(--accent);' : 'background: var(--background-secondary);'"
+                [style]="
+                  taskViewMode() === 'calendar'
+                    ? 'background: var(--accent);'
+                    : 'background: var(--background-secondary);'
+                "
               >
                 Calendar View
               </otui-button>
               <otui-button
                 (click)="setTaskViewMode('kanban')"
-                [style]="taskViewMode() === 'kanban' ? 'background: var(--accent);' : 'background: var(--background-secondary);'"
+                [style]="
+                  taskViewMode() === 'kanban'
+                    ? 'background: var(--accent);'
+                    : 'background: var(--background-secondary);'
+                "
               >
                 Kanban View
               </otui-button>
             </div>
           </div>
-          
+
           <!-- Task Views -->
           @if (taskViewMode() === 'list') {
           <lib-ag-tasks-table
@@ -87,8 +99,7 @@
             [tasks]="selectedProject()!.tasks"
             style="width: 100%; height: 100%"
           ></lib-task-kanban>
-          }
-          } @else if (shownDetails() === 'risks') {
+          } } @else if (shownDetails() === 'risks') {
           <lib-ag-risks-table
             (createRisk)="onCreateRisk($event)"
             (editRisk)="onEditRisk($event)"
@@ -110,7 +121,7 @@
             [risks]="selectedProject()!.risks"
             [changes]="selectedProject()!.changes"
             [projectId]="selectedProject()!.id"
-            style="width: 100%; height: 600px; display: block;"
+            style="width: 100%; height: 600px; display: block"
           ></lib-mind-map>
           }
           <otui-button (click)="hideDetails()" class="close-button"

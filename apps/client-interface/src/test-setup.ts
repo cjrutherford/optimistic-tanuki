@@ -6,18 +6,18 @@ setupZoneTestEnv({
 });
 
 jest.mock('quill', () => {
-    return class QuillMock {
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      static register() {}
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      constructor() {}
-      getSelection() {
-        return { index: 0 };
-      }
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      insertEmbed() {}
-      clipboard = {
-        dangerouslyPasteHTML: jest.fn(),
-      };
+  return class QuillMock {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    static register() {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    constructor() {}
+    getSelection() {
+      return { index: 0 };
+    }
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    insertEmbed() {}
+    clipboard = {
+      dangerouslyPasteHTML: jest.fn(),
     };
-  });
+  };
+});

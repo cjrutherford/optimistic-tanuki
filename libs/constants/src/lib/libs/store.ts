@@ -30,4 +30,9 @@ const OrderCommands = {
   UPDATE_ORDER: { cmd: 'updateOrder' },
 };
 
-export { ProductCommands, SubscriptionCommands, DonationCommands, OrderCommands };
+export {
+  ProductCommands,
+  SubscriptionCommands,
+  DonationCommands,
+  OrderCommands,
+};

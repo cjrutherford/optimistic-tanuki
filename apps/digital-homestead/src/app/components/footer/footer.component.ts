@@ -18,23 +18,22 @@ import { Subject } from 'rxjs';
     '[style.--local-border-color]': 'borderColor',
     '[style.--local-border-gradient]': 'borderGradient',
     '[style.--local-transition-duration]': 'transitionDuration',
-  }
+  },
 })
-export class FooterComponent extends Themeable{
-  
+export class FooterComponent extends Themeable {
   override applyTheme(colors: ThemeColors): void {
     // Use standardized color assignments
     this.background = `linear-gradient(30deg, ${colors.accent}, ${colors.background})`;
     this.accent = colors.accent;
     this.borderColor = colors.complementary;
-    
-    // Use standardized gradient names  
-    if(this.theme === 'dark') {
+
+    // Use standardized gradient names
+    if (this.theme === 'dark') {
       this.borderGradient = colors.complementaryGradients['dark'];
     } else {
       this.borderGradient = colors.complementaryGradients['light'];
     }
-    
+
     this.foreground = colors.foreground;
     this.complement = colors.complementary;
     this.transitionDuration = '0.15s'; // Use standardized duration

@@ -1,64 +1,55 @@
 <div class="table-row" [ngStyle]="tableStyles">
-  @for (cell of cells; track cell; let i = $index) {
-    @if (cell.isBadge) {
-      <div class="table-cell badge-cell" [ngStyle]="cell.customStyles">
-        @if (isTemplateRef(cell.value)) {
-          <ng-container [ngTemplateOutlet]="cellTemplates[i]"></ng-container>
-        } @else {
-          {{ cell.value }}
-        }
-      </div>
-    }
-    @else if (!cell.isSpacer) {
-    <div class="table-cell" [ngStyle]="cell.customStyles">
-      @if (isTemplateRef(cell.value)) {
-        <ng-container [ngTemplateOutlet]="cellTemplates[i]"></ng-container>
-      } @else {
-        @if (cell.heading) {
-          <div class="table-head">
-            {{ cell.heading }}
-          </div>
-        }
-        <div class="table-value"
-            [ngClass]="{
-              'overflowable': cell.isOverflowable && !rowExpanded,
-              'row-expanded': rowExpanded && cell.isOverflowable
-            }"
-          >
-          {{ cell.value }}
-        </div>
-      }
-    </div>
-  }
-  @else {
-  <div class="table-spacer"></div>
-}
-}
-@if (rowActions) {
-  <div class="table-cell actions-cell flex-row-actions">
-    @if (showActionsSplit) {
-      @for (action of rowActions; track action) {
-        <otui-button (click)="executeAction(action)">
-          {{ action.title }}
-        </otui-button>
-      }
+  @for (cell of cells; track cell; let i = $index) { @if (cell.isBadge) {
+  <div class="table-cell badge-cell" [ngStyle]="cell.customStyles">
+    @if (isTemplateRef(cell.value)) {
+    <ng-container [ngTemplateOutlet]="cellTemplates[i]"></ng-container>
     } @else {
-      <otui-button (click)="toggleActions()">Actions</otui-button>
-      @if (showActions) {
-        <div class="actions-list popover">
-          @for (action of rowActions; track action) {
-            <otui-button (click)="executeAction(action)">
-              {{ action.title }}
-            </otui-button>
-          }
-        </div>
-      }
+    {{ cell.value }}
     }
   </div>
-}
-@if (hasOverflowableCells) {
+  } @else if (!cell.isSpacer) {
+  <div class="table-cell" [ngStyle]="cell.customStyles">
+    @if (isTemplateRef(cell.value)) {
+    <ng-container [ngTemplateOutlet]="cellTemplates[i]"></ng-container>
+    } @else { @if (cell.heading) {
+    <div class="table-head">
+      {{ cell.heading }}
+    </div>
+    }
+    <div
+      class="table-value"
+      [ngClass]="{
+        overflowable: cell.isOverflowable && !rowExpanded,
+        'row-expanded': rowExpanded && cell.isOverflowable
+      }"
+    >
+      {{ cell.value }}
+    </div>
+    }
+  </div>
+  } @else {
+  <div class="table-spacer"></div>
+  } } @if (rowActions) {
+  <div class="table-cell actions-cell flex-row-actions">
+    @if (showActionsSplit) { @for (action of rowActions; track action) {
+    <otui-button (click)="executeAction(action)">
+      {{ action.title }}
+    </otui-button>
+    } } @else {
+    <otui-button (click)="toggleActions()">Actions</otui-button>
+    @if (showActions) {
+    <div class="actions-list popover">
+      @for (action of rowActions; track action) {
+      <otui-button (click)="executeAction(action)">
+        {{ action.title }}
+      </otui-button>
+      }
+    </div>
+    } }
+  </div>
+  } @if (hasOverflowableCells) {
   <otui-button class="expand-btn" type="button" (click)="toggleRowExpansion()">
     {{ rowExpanded ? '⬆️' : '⬇️' }}
   </otui-button>
-}
+  }
 </div>

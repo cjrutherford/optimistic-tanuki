@@ -1,7 +1,11 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ProjectJournalService } from './project-journal.service';
-import { CreateProjectJournalDto, QueryProjectJournalDto, UpdateProjectJournalDto } from '@optimistic-tanuki/models';
+import {
+  CreateProjectJournalDto,
+  QueryProjectJournalDto,
+  UpdateProjectJournalDto,
+} from '@optimistic-tanuki/models';
 import { ProjectJournalCommands } from '@optimistic-tanuki/constants';
 
 @Controller()

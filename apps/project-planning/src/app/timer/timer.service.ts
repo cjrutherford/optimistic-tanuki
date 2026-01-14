@@ -8,15 +8,17 @@ import { Task } from '../entities/task.entity';
 
 @Injectable()
 export class TimerService {
-
-
   constructor(
-    @Inject(getRepositoryToken(Timer)) private readonly timerRepository: Repository<Timer>,
-    @Inject(getRepositoryToken(Task)) private readonly taskRepository: Repository<Task>,
+    @Inject(getRepositoryToken(Timer))
+    private readonly timerRepository: Repository<Timer>,
+    @Inject(getRepositoryToken(Task))
+    private readonly taskRepository: Repository<Task>
   ) {}
 
   async create(createTimerDto: CreateTimerDto) {
-    const task = await this.taskRepository.findOne({where: {id: createTimerDto.taskId}});
+    const task = await this.taskRepository.findOne({
+      where: { id: createTimerDto.taskId },
+    });
     const timer = this.timerRepository.create({ ...createTimerDto, task });
     return await this.timerRepository.save(timer);
   }
@@ -26,12 +28,12 @@ export class TimerService {
   }
 
   async findOne(id: string) {
-    return await this.timerRepository.findOne({where: { id }});
+    return await this.timerRepository.findOne({ where: { id } });
   }
 
   async update(id: string, updateTimerDto: UpdateTimerDto) {
     await this.timerRepository.update(id, updateTimerDto);
-    return await this.timerRepository.findOne({where: { id }});
+    return await this.timerRepository.findOne({ where: { id } });
   }
 
   async remove(id: string) {

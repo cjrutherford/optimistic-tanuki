@@ -96,9 +96,9 @@ await this.langGraphService.executeConversation(
 ```typescript
 interface ConversationContext {
   profileId: string;
-  summary: string;               // Conversation summary
-  recentTopics: string[];        // Last 10 topics discussed
-  activeProjects: string[];      // Current project IDs
+  summary: string; // Conversation summary
+  recentTopics: string[]; // Last 10 topics discussed
+  activeProjects: string[]; // Current project IDs
   messageCount: number;
   lastUpdated: Date;
   metadata?: Record<string, unknown>;
@@ -106,6 +106,7 @@ interface ConversationContext {
 ```
 
 **Flow:**
+
 1. Load context from Redis on conversation start
 2. Context passed to LangGraph state
 3. LangGraph updates context during execution
@@ -118,6 +119,7 @@ interface ConversationContext {
 **LangGraphService** manages conversation flow through StateGraph:
 
 **Nodes:**
+
 - `loadContext`: Load existing context from Redis
 - `processMessage`: Execute LLM (via Agent or direct)
 - `extractTopics`: Identify topics from conversation
@@ -125,6 +127,7 @@ interface ConversationContext {
 - `saveContext`: Persist context to Redis
 
 **State:**
+
 ```typescript
 {
   messages: BaseMessage[];
@@ -144,6 +147,7 @@ interface ConversationContext {
 **LangChainAgentService** provides intelligent tool calling:
 
 **Features:**
+
 - **Automatic tool selection**: Agent decides which tools to call
 - **Multi-step workflows**: Handles complex tasks (e.g., query_projects → create_task)
 - **Parameter enrichment**: Auto-injects userId/profileId
@@ -151,6 +155,7 @@ interface ConversationContext {
 - **Intermediate steps**: Full execution trace for debugging
 
 **Example:**
+
 ```
 User: "Create a task to review homepage"
   ↓
@@ -175,21 +180,18 @@ Final output: "I've created the task..."
 All messages are posted to **Chat Collector** (Forge of Will integration):
 
 ```typescript
-await firstValueFrom(
-  this.chatCollectorService.send(
-    { cmd: ChatCommands.POST_MESSAGE },
-    chatMessage
-  )
-);
+await firstValueFrom(this.chatCollectorService.send({ cmd: ChatCommands.POST_MESSAGE }, chatMessage));
 ```
 
 **Message Types:**
+
 1. `system` - Tool call notifications (`🔧 Calling tool: X`)
 2. `system` - Tool results (`✅ Tool result: ...`)
 3. `chat` - Final AI response
 4. `system` - Error messages (`⚠️ Error: ...`)
 
 **Recipients:**
+
 - All messages include `recipientId` (user profile ID)
 - All messages include `conversationId`
 - All messages timestamped and attributed to persona
@@ -208,7 +210,7 @@ providers: [
   MCPToolExecutor,
   ToolsService,
   // ... other services
-]
+];
 ```
 
 ### Environment Variables
@@ -229,12 +231,14 @@ OLLAMA_PORT=11434
 ### When to Use Agent
 
 **Use `useAgent=true` when:**
+
 - User request requires multiple tools
 - Complex workflows (e.g., create task → assign to project)
 - Tool discovery needed
 - Multi-step reasoning beneficial
 
 **Example tasks:**
+
 - "Create a project and add 3 tasks"
 - "Show my projects and create a task for the first one"
 - "List available actions and create a risk assessment"
@@ -242,12 +246,14 @@ OLLAMA_PORT=11434
 ### When to Use Direct LangChain
 
 **Use `useAgent=false` when:**
+
 - Simple question/answer
 - No tool calling expected
 - Single tool call at most
 - Performance is critical (agent adds ~100-300ms overhead)
 
 **Example tasks:**
+
 - "Hello, how are you?"
 - "What is TELOS?"
 - "Summarize this conversation"
@@ -266,7 +272,7 @@ try {
     content: `⚠️ Error processing conversation: ${executionError.message}`,
     type: 'system',
   };
-  
+
   await this.chatCollectorService.send(
     { cmd: ChatCommands.POST_MESSAGE },
     errorMessage
@@ -277,6 +283,7 @@ try {
 ### Redis Connection Failures
 
 Context storage gracefully handles Redis failures:
+
 - Operations logged, not thrown
 - Conversation continues without context persistence
 - Context lost on Redis reconnect (acceptable for 7-day TTL)
@@ -284,6 +291,7 @@ Context storage gracefully handles Redis failures:
 ### Agent Failures
 
 If agent fails:
+
 1. Error logged with full stack trace
 2. Error message sent to user
 3. Conversation can continue with next message
@@ -321,22 +329,22 @@ describe('AppService Integration', () => {
       conversation: mockConversation,
       aiPersonas: [mockPersona],
     });
-    
+
     expect(result.length).toBeGreaterThan(0);
     expect(result[0].content).toBeDefined();
   });
-  
+
   it('should handle tool calls via Agent', async () => {
     // Agent auto-initializes
     const result = await service.updateConversation({
       conversation: mockConversationWithToolIntent,
       aiPersonas: [mockPersona],
     });
-    
+
     // Should have tool call notification
-    expect(result.some(m => m.content.includes('🔧'))).toBe(true);
+    expect(result.some((m) => m.content.includes('🔧'))).toBe(true);
     // Should have tool result
-    expect(result.some(m => m.content.includes('✅'))).toBe(true);
+    expect(result.some((m) => m.content.includes('✅'))).toBe(true);
   });
 });
 ```
@@ -346,17 +354,20 @@ describe('AppService Integration', () => {
 ### From Old Implementation
 
 **No changes required for:**
+
 - Chat gateway integration
 - Message format
 - API contracts
 - Forge of Will flow
 
 **Removed code:**
+
 - `extractToolCallFromText()` - 170+ lines of parsing
 - Manual tool execution in stream loop
 - Custom XML/JSON/markdown parsers
 
 **Behavior changes:**
+
 - Tool calls now via Agent (more reliable)
 - Context persisted to Redis (new feature)
 - Multi-step workflows automatic (new feature)
@@ -365,6 +376,7 @@ describe('AppService Integration', () => {
 ### Backward Compatibility
 
 ✅ **Fully backward compatible:**
+
 - Same RPC endpoints
 - Same message format
 - Same error handling
@@ -375,11 +387,13 @@ describe('AppService Integration', () => {
 ### High Priority
 
 1. **Streaming Agent Execution**
+
    - Stream tool calls and results in real-time
    - Requires AgentExecutor streaming support
    - Estimated effort: Medium (1-2 weeks)
 
 2. **Context Window Management**
+
    - Automatic summarization for long conversations
    - Token counting and pruning
    - Estimated effort: Small (3-5 days)
@@ -393,6 +407,7 @@ describe('AppService Integration', () => {
 ### Medium Priority
 
 4. **Conversation Branching**
+
    - Support multiple conversation branches
    - Time-travel through conversation history
    - Estimated effort: Large (3-4 weeks)
@@ -425,7 +440,8 @@ describe('AppService Integration', () => {
 
 **Cause:** Redis not running or wrong connection details
 
-**Fix:** 
+**Fix:**
+
 1. Check Redis is running: `redis-cli ping`
 2. Verify `REDIS_HOST` and `REDIS_PORT` env vars
 3. Check network connectivity
@@ -437,6 +453,7 @@ describe('AppService Integration', () => {
 **Cause:** MCP service slow or unavailable
 
 **Fix:**
+
 1. Check MCP service logs
 2. Verify gateway connectivity
 3. Increase timeout in MCPToolExecutor
@@ -448,6 +465,7 @@ describe('AppService Integration', () => {
 **Cause:** Agent stuck in loop or complex multi-step task
 
 **Fix:**
+
 1. Review agent logs for iteration details
 2. Simplify user request
 3. Increase `maxIterations` if legitimate complex task

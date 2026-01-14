@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { AppScopesController } from './app-scopes.controller';
 import { AppScopesService } from '../app/app-scopes.service';
-import { CreateAppScopeDto, UpdateAppScopeDto } from '@optimistic-tanuki/models';
+import {
+  CreateAppScopeDto,
+  UpdateAppScopeDto,
+} from '@optimistic-tanuki/models';
 import { AppScope } from './entities/app-scope.entity';
 
 describe('AppScopesController', () => {
@@ -43,7 +46,10 @@ describe('AppScopesController', () => {
 
   describe('createAppScope', () => {
     it('should call service.createAppScope with the correct data', async () => {
-      const createAppScopeDto: CreateAppScopeDto = { name: 'test', description: 'Test Scope' };
+      const createAppScopeDto: CreateAppScopeDto = {
+        name: 'test',
+        description: 'Test Scope',
+      };
       await controller.createAppScope(createAppScopeDto);
       expect(service.createAppScope).toHaveBeenCalledWith(createAppScopeDto);
     });
@@ -64,7 +70,7 @@ describe('AppScopesController', () => {
       expect(service.getAppScopeByName).toHaveBeenCalledWith(name);
     });
   });
-  
+
   describe('getAllAppScopes', () => {
     it('should call service.getAllAppScopes with the correct query', async () => {
       const query = { where: { name: 'test' } };
@@ -77,7 +83,10 @@ describe('AppScopesController', () => {
     it('should call service.updateAppScope with the correct data', async () => {
       const updateAppScopeDto: UpdateAppScopeDto = { id: '1', name: 'updated' };
       await controller.updateAppScope(updateAppScopeDto);
-      expect(service.updateAppScope).toHaveBeenCalledWith('1', updateAppScopeDto);
+      expect(service.updateAppScope).toHaveBeenCalledWith(
+        '1',
+        updateAppScopeDto
+      );
     });
   });
 

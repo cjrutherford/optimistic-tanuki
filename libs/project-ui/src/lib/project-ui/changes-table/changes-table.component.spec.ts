@@ -42,7 +42,7 @@ describe('ChangesTableComponent', () => {
         resolution: 'PENDING',
         projectId: 'project-4',
         updatedBy: 'admin',
-        updatedAt: new Date('2024-07-01')
+        updatedAt: new Date('2024-07-01'),
       },
     ];
     component.changes = newChanges;
@@ -51,11 +51,13 @@ describe('ChangesTableComponent', () => {
         currentValue: newChanges,
         previousValue: [],
         firstChange: true,
-        isFirstChange: () => true
-      }
+        isFirstChange: () => true,
+      },
     });
     expect(component.cells().length).toEqual(newChanges.length);
-    expect(component.cells()[0][0].value).toEqual(newChanges[0].changeDescription);
+    expect(component.cells()[0][0].value).toEqual(
+      newChanges[0].changeDescription
+    );
   });
 
   it('should set showModal to true when setShowModal is called', () => {
@@ -77,14 +79,14 @@ describe('ChangesTableComponent', () => {
       changeType: 'ADDITION',
       requestor: 'Test',
       approver: 'Test',
-      projectId: 'test-project'
+      projectId: 'test-project',
     };
     component.onCreateFormSubmit(newChange);
-    expect(component.createChange.emit).toHaveBeenCalledWith(expect.objectContaining(newChange));
+    expect(component.createChange.emit).toHaveBeenCalledWith(
+      expect.objectContaining(newChange)
+    );
     expect(component.closeModal).toHaveBeenCalled();
   });
-
-
 
   it('should set selectedChange and showEditModal to true on edit row action', () => {
     const initialChange = component.changes[0];
@@ -114,17 +116,21 @@ describe('ChangesTableComponent', () => {
       resolution: 'PENDING',
       projectId: 'project-1',
       updatedBy: 'admin',
-      updatedAt: new Date('2024-01-01')
+      updatedAt: new Date('2024-01-01'),
     };
     component.selectedChange.set(existingChange);
     const updatedDescription = 'Updated Description';
-    const updatedChange: Partial<Change> = { changeDescription: updatedDescription };
-    component.onEditFormSubmit(updatedChange);
-    expect(component.editChange.emit).toHaveBeenCalledWith(expect.objectContaining({
-      ...existingChange,
+    const updatedChange: Partial<Change> = {
       changeDescription: updatedDescription,
-      updatedAt: expect.any(Date),
-    }));
+    };
+    component.onEditFormSubmit(updatedChange);
+    expect(component.editChange.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...existingChange,
+        changeDescription: updatedDescription,
+        updatedAt: expect.any(Date),
+      })
+    );
     expect(component.showEditModal.set).toHaveBeenCalledWith(false);
   });
 
@@ -155,6 +161,9 @@ describe('ChangesTableComponent', () => {
   it('should log "Request More Info action for row" when request more info action is triggered', () => {
     const consoleSpy = jest.spyOn(console, 'log');
     component.rowActions[5].action(0); // Index 5 is Request More Info action
-    expect(consoleSpy).toHaveBeenCalledWith('Request More Info action for row:', 0);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Request More Info action for row:',
+      0
+    );
   });
 });

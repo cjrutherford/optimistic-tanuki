@@ -45,12 +45,12 @@ describe('MemoryCacheProvider', () => {
   describe('expiration', () => {
     it('should return null for expired entries', async () => {
       await provider.set('test-key', true);
-      
+
       // Manually expire the entry
       const cache = (provider as any).cache;
       const entry = cache.get('test-key');
       entry.timestamp = Date.now() - 10000; // 10 seconds ago
-      
+
       const result = await provider.get('test-key');
       expect(result).toBeNull();
     });
@@ -58,14 +58,14 @@ describe('MemoryCacheProvider', () => {
     it('should cleanup expired entries', async () => {
       await provider.set('key1', true);
       await provider.set('key2', false);
-      
+
       // Expire first entry
       const cache = (provider as any).cache;
       const entry1 = cache.get('key1');
       entry1.timestamp = Date.now() - 10000;
-      
+
       await provider.cleanup();
-      
+
       expect(await provider.get('key1')).toBeNull();
       expect(await provider.get('key2')).toBe(false);
     });
@@ -88,9 +88,9 @@ describe('MemoryCacheProvider', () => {
       await provider.set('user:123:perm1', true);
       await provider.set('user:123:perm2', false);
       await provider.set('user:456:perm1', true);
-      
+
       await provider.deletePattern('user:123:.*');
-      
+
       expect(await provider.get('user:123:perm1')).toBeNull();
       expect(await provider.get('user:123:perm2')).toBeNull();
       expect(await provider.get('user:456:perm1')).toBe(true);
@@ -98,7 +98,7 @@ describe('MemoryCacheProvider', () => {
 
     it('should clear all entries', async () => {
       await provider.clear();
-      
+
       expect(await provider.get('key1')).toBeNull();
       expect(await provider.get('key2')).toBeNull();
       expect(await provider.get('key3')).toBeNull();
@@ -108,18 +108,18 @@ describe('MemoryCacheProvider', () => {
   describe('LRU eviction', () => {
     it('should evict oldest entry when cache is full', async () => {
       const maxSize = (provider as any).maxCacheSize;
-      
+
       // Fill cache to max
       for (let i = 0; i < maxSize; i++) {
         await provider.set(`key${i}`, true);
       }
-      
+
       // Verify first entry exists
       expect(await provider.get('key0')).toBe(true);
-      
+
       // Add one more to trigger eviction
       await provider.set('keyNew', true);
-      
+
       // First entry should be evicted
       expect(await provider.get('key0')).toBeNull();
       expect(await provider.get('keyNew')).toBe(true);
@@ -130,9 +130,9 @@ describe('MemoryCacheProvider', () => {
     it('should return cache statistics', async () => {
       await provider.set('key1', true);
       await provider.set('key2', false);
-      
+
       const stats = await provider.getStats();
-      
+
       expect(stats.provider).toBe('memory');
       expect(stats.size).toBe(2);
       expect(stats.maxSize).toBeDefined();

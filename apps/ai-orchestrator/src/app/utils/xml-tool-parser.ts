@@ -1,6 +1,6 @@
 /**
  * XML Tool Call Parser
- * 
+ *
  * Parses XML-formatted tool calls from LLM responses.
  * Supports formats like:
  * <tool_call>
@@ -22,10 +22,8 @@ export interface ParsedXmlToolCall {
 export function parseXmlToolCall(xmlString: string): ParsedXmlToolCall | null {
   try {
     // Basic XML parsing without external dependencies
-    const toolCallMatch = xmlString.match(
-      /<tool_call>([\s\S]*?)<\/tool_call>/
-    );
-    
+    const toolCallMatch = xmlString.match(/<tool_call>([\s\S]*?)<\/tool_call>/);
+
     if (!toolCallMatch) {
       return null;
     }
@@ -43,20 +41,20 @@ export function parseXmlToolCall(xmlString: string): ParsedXmlToolCall | null {
     const argsMatch = toolCallContent.match(
       /<arguments>([\s\S]*?)<\/arguments>/
     );
-    
+
     const args: Record<string, any> = {};
-    
+
     if (argsMatch) {
       const argsContent = argsMatch[1];
-      
+
       // Parse individual argument tags
       const argPattern = /<(\w+)>([\s\S]*?)<\/\1>/g;
       let match;
-      
+
       while ((match = argPattern.exec(argsContent)) !== null) {
         const argName = match[1];
         const argValue = match[2].trim();
-        
+
         // Try to parse as JSON if it looks like an object or array
         if (
           (argValue.startsWith('{') && argValue.endsWith('}')) ||
@@ -93,9 +91,7 @@ export function containsXmlToolCall(content: string): boolean {
 /**
  * Extract all XML tool calls from content
  */
-export function extractAllXmlToolCalls(
-  content: string
-): ParsedXmlToolCall[] {
+export function extractAllXmlToolCalls(content: string): ParsedXmlToolCall[] {
   const toolCalls: ParsedXmlToolCall[] = [];
   const pattern = /<tool_call>[\s\S]*?<\/tool_call>/g;
   const matches = content.match(pattern);

@@ -199,7 +199,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { Post, Comment, Vote } from '@optimistic-tanuki/models';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SocialWebSocketService implements OnDestroy {
   private socket: Socket;
@@ -237,7 +237,7 @@ export class SocialWebSocketService implements OnDestroy {
     this.socket.on('disconnect', (reason) => {
       console.log('Disconnected:', reason);
       this.connected$.next(false);
-      
+
       if (reason === 'io server disconnect') {
         // Manual reconnection with exponential backoff
         this.reconnectWithBackoff();
@@ -251,7 +251,7 @@ export class SocialWebSocketService implements OnDestroy {
 
     this.socket.on('post_updated', (post: Post) => {
       const currentPosts = this.posts$.value;
-      const index = currentPosts.findIndex(p => p.id === post.id);
+      const index = currentPosts.findIndex((p) => p.id === post.id);
       if (index !== -1) {
         currentPosts[index] = post;
         this.posts$.next([...currentPosts]);
@@ -260,7 +260,7 @@ export class SocialWebSocketService implements OnDestroy {
 
     this.socket.on('post_deleted', (data: { postId: string }) => {
       const currentPosts = this.posts$.value;
-      this.posts$.next(currentPosts.filter(p => p.id !== data.postId));
+      this.posts$.next(currentPosts.filter((p) => p.id !== data.postId));
     });
 
     // Add more event listeners as needed
@@ -331,9 +331,9 @@ The client should implement exponential backoff for reconnection attempts to pre
 ```typescript
 const reconnectionConfig = {
   reconnection: true,
-  reconnectionDelay: 1000,        // Initial delay: 1 second
-  reconnectionDelayMax: 5000,     // Max delay: 5 seconds
-  reconnectionAttempts: 5,        // Max attempts before giving up
+  reconnectionDelay: 1000, // Initial delay: 1 second
+  reconnectionDelayMax: 5000, // Max delay: 5 seconds
+  reconnectionAttempts: 5, // Max attempts before giving up
 };
 ```
 
@@ -390,21 +390,25 @@ socket.on('connect_error', (error) => {
 ## Best Practices
 
 1. **Connection Management**
+
    - Initialize connection when user logs in
    - Disconnect when user logs out or navigates away
    - Implement exponential backoff for reconnection
 
 2. **Subscription Management**
+
    - Subscribe to events when component mounts
    - Unsubscribe when component unmounts
    - Keep track of active subscriptions
 
 3. **Performance**
+
    - Don't subscribe to more than necessary
    - Unsubscribe from posts when no longer viewing them
    - Use pagination for feed requests
 
 4. **Error Handling**
+
    - Handle connection errors gracefully
    - Show user-friendly messages
    - Implement retry logic with backoff
@@ -443,7 +447,7 @@ describe('SocialWebSocketService', () => {
   });
 
   it('should emit connection status', (done) => {
-    service.getConnectionStatus().subscribe(status => {
+    service.getConnectionStatus().subscribe((status) => {
       expect(typeof status).toBe('boolean');
       done();
     });

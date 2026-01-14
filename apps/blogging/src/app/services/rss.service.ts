@@ -52,7 +52,9 @@ export class RssService {
             name: post.authorId,
           },
         ],
-        date: post.publishedAt ? new Date(post.publishedAt) : new Date(post.createdAt),
+        date: post.publishedAt
+          ? new Date(post.publishedAt)
+          : new Date(post.createdAt),
       });
     });
 
@@ -65,6 +67,8 @@ export class RssService {
   private extractDescription(content: string): string {
     // Strip HTML tags and get first 200 characters
     const stripped = content.replace(/<[^>]*>/g, '').trim();
-    return stripped.length > 200 ? stripped.substring(0, 197) + '...' : stripped;
+    return stripped.length > 200
+      ? stripped.substring(0, 197) + '...'
+      : stripped;
   }
 }

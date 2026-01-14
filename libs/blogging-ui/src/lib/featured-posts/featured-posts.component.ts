@@ -10,7 +10,7 @@ export type PostDefinition = {
   authorName: string;
   publishDate: string;
   readMoreLink: string;
-}
+};
 
 @Component({
   selector: 'lib-featured-posts',
@@ -21,16 +21,19 @@ export type PostDefinition = {
     trigger('carouselAnimation', [
       transition(':enter', [
         style({ opacity: 0, transform: 'translateX(100%)' }),
-        animate('0.5s ease', style({ opacity: 1, transform: 'translateX(0)' }))
+        animate('0.5s ease', style({ opacity: 1, transform: 'translateX(0)' })),
       ]),
       transition(':leave', [
-        animate('0.5s ease', style({ opacity: 0, transform: 'translateX(-100%)' }))
-      ])
-    ])
+        animate(
+          '0.5s ease',
+          style({ opacity: 0, transform: 'translateX(-100%)' })
+        ),
+      ]),
+    ]),
   ],
   host: {
-    '[style.--visible-items]': 'visibleItems'
-  }
+    '[style.--visible-items]': 'visibleItems',
+  },
 })
 export class FeaturedPostsComponent {
   @Input() featuredPosts: PostDefinition[] = [
@@ -40,7 +43,7 @@ export class FeaturedPostsComponent {
       excerpt: 'A deep dive into the principles and benefits of microservices.',
       authorName: 'Jane Doe',
       publishDate: '2024-05-10',
-      readMoreLink: '/blog/microservices-architecture'
+      readMoreLink: '/blog/microservices-architecture',
     },
     {
       title: 'Nx Workspace Best Practices',
@@ -48,7 +51,7 @@ export class FeaturedPostsComponent {
       excerpt: 'Tips and tricks for managing large Nx monorepos efficiently.',
       authorName: 'John Smith',
       publishDate: '2024-05-15',
-      readMoreLink: '/blog/nx-workspace-best-practices'
+      readMoreLink: '/blog/nx-workspace-best-practices',
     },
     {
       title: 'Optimizing Angular Applications',
@@ -56,7 +59,7 @@ export class FeaturedPostsComponent {
       excerpt: 'Performance strategies for scalable Angular apps.',
       authorName: 'Emily Chen',
       publishDate: '2024-05-20',
-      readMoreLink: '/blog/angular-optimization'
+      readMoreLink: '/blog/angular-optimization',
     },
     {
       title: 'Docker Compose for Local Development',
@@ -64,7 +67,7 @@ export class FeaturedPostsComponent {
       excerpt: 'How to use Docker Compose to streamline your dev workflow.',
       authorName: 'Carlos Ruiz',
       publishDate: '2024-05-22',
-      readMoreLink: '/blog/docker-compose-local-dev'
+      readMoreLink: '/blog/docker-compose-local-dev',
     },
     {
       title: 'Getting Started with PostgreSQL',
@@ -72,7 +75,7 @@ export class FeaturedPostsComponent {
       excerpt: 'A beginner’s guide to setting up and using PostgreSQL.',
       authorName: 'Priya Patel',
       publishDate: '2024-05-25',
-      readMoreLink: '/blog/getting-started-postgresql'
+      readMoreLink: '/blog/getting-started-postgresql',
     },
     {
       title: 'Authentication Strategies in Modern Web Apps',
@@ -80,7 +83,7 @@ export class FeaturedPostsComponent {
       excerpt: 'Exploring secure authentication patterns for web applications.',
       authorName: 'Alex Kim',
       publishDate: '2024-05-28',
-      readMoreLink: '/blog/authentication-strategies'
+      readMoreLink: '/blog/authentication-strategies',
     },
     {
       title: 'Building Reusable UI Components',
@@ -88,7 +91,7 @@ export class FeaturedPostsComponent {
       excerpt: 'How to create and share UI components across projects.',
       authorName: 'Sara Lee',
       publishDate: '2024-06-01',
-      readMoreLink: '/blog/reusable-ui-components'
+      readMoreLink: '/blog/reusable-ui-components',
     },
     {
       title: 'Continuous Integration with Nx Cloud',
@@ -96,31 +99,38 @@ export class FeaturedPostsComponent {
       excerpt: 'Leveraging Nx Cloud for faster and more reliable CI pipelines.',
       authorName: 'Mohammed Al-Farsi',
       publishDate: '2024-06-03',
-      readMoreLink: '/blog/nx-cloud-ci'
+      readMoreLink: '/blog/nx-cloud-ci',
     },
     {
       title: 'Monorepo vs Polyrepo: Pros and Cons',
       bannerImage: 'https://picsum.photos/id/109/800/400',
-      excerpt: 'Comparing monorepo and polyrepo approaches for code organization.',
+      excerpt:
+        'Comparing monorepo and polyrepo approaches for code organization.',
       authorName: 'Linda Nguyen',
       publishDate: '2024-06-05',
-      readMoreLink: '/blog/monorepo-vs-polyrepo'
+      readMoreLink: '/blog/monorepo-vs-polyrepo',
     },
     {
       title: 'Live Reloading in Dockerized Environments',
       bannerImage: 'https://picsum.photos/id/110/800/400',
-      excerpt: 'Techniques for enabling live reload in Docker development setups.',
+      excerpt:
+        'Techniques for enabling live reload in Docker development setups.',
       authorName: 'Tom Becker',
       publishDate: '2024-06-07',
-      readMoreLink: '/blog/live-reload-docker'
-    }
+      readMoreLink: '/blog/live-reload-docker',
+    },
   ];
   @Input() visibleItems = 3;
 
   currentIndex = signal(0);
 
   get visiblePosts(): Signal<PostDefinition[]> {
-    return signal(this.featuredPosts.slice(this.currentIndex(), this.currentIndex() + this.visibleItems));
+    return signal(
+      this.featuredPosts.slice(
+        this.currentIndex(),
+        this.currentIndex() + this.visibleItems
+      )
+    );
   }
 
   next(): void {

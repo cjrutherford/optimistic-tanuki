@@ -1,4 +1,14 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, signal, computed } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+  signal,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppScopeDto } from '@optimistic-tanuki/ui-models';
 import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
@@ -10,7 +20,9 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
   template: `
     <div class="ag-app-scopes-table-container">
       <div class="action-group">
-        <button class="create-button" (click)="create.emit()">➕ Create App Scope</button>
+        <button class="create-button" (click)="create.emit()">
+          ➕ Create App Scope
+        </button>
       </div>
       <otui-ag-grid
         [rowData]="gridData()"
@@ -20,37 +32,39 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
       />
     </div>
   `,
-  styles: [`
-    .ag-app-scopes-table-container {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      width: 100%;
-      height: 100%;
-      padding: 16px;
-    }
+  styles: [
+    `
+      .ag-app-scopes-table-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        width: 100%;
+        height: 100%;
+        padding: 16px;
+      }
 
-    .action-group {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
+      .action-group {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
 
-    .create-button {
-      padding: 8px 16px;
-      background: var(--accent, #3f51b5);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
+      .create-button {
+        padding: 8px 16px;
+        background: var(--accent, #3f51b5);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.2s;
+      }
 
-    .create-button:hover {
-      background: var(--accent-darken-10, #303f9f);
-    }
-  `]
+      .create-button:hover {
+        background: var(--accent-darken-10, #303f9f);
+      }
+    `,
+  ],
 })
 export class AgAppScopesTableComponent implements OnInit, OnChanges {
   @Input() appScopes: AppScopeDto[] = [];

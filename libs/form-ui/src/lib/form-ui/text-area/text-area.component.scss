@@ -17,7 +17,8 @@ textarea.text-area {
   background: var(--background);
   color: var(--foreground);
   font-size: 14px;
-  box-shadow: 0 0 5px 2px var(--accent-shade-darken), 2px 2px 5px 4px inset rgba(0,0,0,0.6);
+  box-shadow: 0 0 5px 2px var(--accent-shade-darken),
+    2px 2px 5px 4px inset rgba(0, 0, 0, 0.6);
   resize: vertical;
 }
 

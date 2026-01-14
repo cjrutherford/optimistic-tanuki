@@ -5,7 +5,7 @@
 The theme system has been completely streamlined to provide a consistent, maintainable approach to styling across the entire workspace. This system includes:
 
 - **Predefined Color Palettes**: 8 carefully crafted color schemes
-- **Standardized CSS Variables**: Consistent naming convention for all theme variables  
+- **Standardized CSS Variables**: Consistent naming convention for all theme variables
 - **Design Tokens**: Standardized spacing, shadows, typography, and other design elements
 - **Utility Classes**: Ready-to-use CSS classes for common patterns
 
@@ -29,6 +29,7 @@ Choose from 8 beautiful predefined palettes:
 All theme variables now follow a consistent naming convention:
 
 #### Color Variables
+
 ```css
 /* Primary Colors */
 --accent: #3f51b5          /* Primary accent color */
@@ -59,6 +60,7 @@ All theme variables now follow a consistent naming convention:
 ```
 
 #### Design Token Variables
+
 ```css
 /* Spacing */
 --spacing-xs: 4px
@@ -104,23 +106,33 @@ All theme variables now follow a consistent naming convention:
 The system includes comprehensive utility classes:
 
 #### Spacing Utilities
+
 ```css
 .p-xs, .p-sm, .p-md, .p-lg, .p-xl, .p-xxl    /* Padding */
-.m-xs, .m-sm, .m-md, .m-lg, .m-xl, .m-xxl    /* Margin */
+.m-xs, .m-sm, .m-md, .m-lg, .m-xl, .m-xxl; /* Margin */
 ```
 
 #### Color Utilities
+
 ```css
 .bg-accent, .bg-complement, .bg-tertiary       /* Background colors */
 .text-accent, .text-complement, .text-tertiary /* Text colors */
-.border-accent, .border-complement             /* Border colors */
+.border-accent, .border-complement; /* Border colors */
 ```
 
 #### Component Base Classes
+
 ```css
 .button-base    /* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
 .card-base      /* Base card styles */
-.input-base     /* Base input styles */
+.input-base; /* Base input styles */
 ```
 
 ## Usage
@@ -169,7 +181,7 @@ Use the standardized variables in your component styles:
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-md);
   box-shadow: var(--shadow-md);
-  
+
   &:hover {
     background-color: var(--accent);
     color: var(--background);
@@ -178,9 +190,9 @@ Use the standardized variables in your component styles:
 }
 
 .my-button {
-  @extend .button-base;  /* Use utility base class */
+  @extend .button-base; /* Use utility base class */
   background-color: var(--accent);
-  
+
   &:disabled {
     background-color: var(--accent-7);
   }
@@ -191,22 +203,22 @@ Use the standardized variables in your component styles:
 
 ### From Old Variable Names
 
-| Old | New |
-|-----|-----|
-| `--accent-color` | `--accent` |
-| `--foreground-color` | `--foreground` |
-| `--complementary-color` | `--complement` |
-| `--accent-shade-darken-30` | `--accent-3` |
-| `--accent-shade-lighten-70` | `--accent-7` |
+| Old                         | New            |
+| --------------------------- | -------------- |
+| `--accent-color`            | `--accent`     |
+| `--foreground-color`        | `--foreground` |
+| `--complementary-color`     | `--complement` |
+| `--accent-shade-darken-30`  | `--accent-3`   |
+| `--accent-shade-lighten-70` | `--accent-7`   |
 
 ### Replacing Hardcoded Values
 
-| Hardcoded | Design Token |
-|-----------|--------------|
-| `margin: 16px` | `margin: var(--spacing-md)` |
-| `border-radius: 8px` | `border-radius: var(--border-radius-lg)` |
-| `box-shadow: 0 4px 6px rgba(0,0,0,0.1)` | `box-shadow: var(--shadow-md)` |
-| `font-size: 1.125rem` | `font-size: var(--font-size-lg)` |
+| Hardcoded                               | Design Token                             |
+| --------------------------------------- | ---------------------------------------- |
+| `margin: 16px`                          | `margin: var(--spacing-md)`              |
+| `border-radius: 8px`                    | `border-radius: var(--border-radius-lg)` |
+| `box-shadow: 0 4px 6px rgba(0,0,0,0.1)` | `box-shadow: var(--shadow-md)`           |
+| `font-size: 1.125rem`                   | `font-size: var(--font-size-lg)`         |
 
 ## API Reference
 
@@ -222,6 +234,7 @@ Use the standardized variables in your component styles:
 ### Available Palettes
 
 Access predefined palettes via:
+
 ```typescript
 import { PREDEFINED_PALETTES, getPaletteByName } from '@optimistic-tanuki/theme-lib';
 ```
@@ -229,6 +242,7 @@ import { PREDEFINED_PALETTES, getPaletteByName } from '@optimistic-tanuki/theme-
 ### Design Tokens
 
 Access design tokens via:
+
 ```typescript
 import { DEFAULT_DESIGN_TOKENS } from '@optimistic-tanuki/theme-lib';
 ```

@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { StoreService, Product, Order, DonationRequest } from './store.service';
 
 describe('StoreService', () => {
@@ -77,9 +80,7 @@ describe('StoreService', () => {
     it('should create an order', () => {
       const mockOrder: Order = {
         userId: 'user123',
-        items: [
-          { productId: '1', quantity: 2, price: 99.99 },
-        ],
+        items: [{ productId: '1', quantity: 2, price: 99.99 }],
         total: 199.98,
         currency: 'USD',
       };

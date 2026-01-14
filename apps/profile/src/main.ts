@@ -18,10 +18,12 @@ async function bootstrap() {
     options: {
       host: '0.0.0.0',
       port: config.get('listenPort') || 3002,
-    }
+    },
   });
   app.listen().then(() => {
-    Logger.log('Microservice is listening On Port: ' + config.get('listenPort') || 3002);
+    Logger.log(
+      'Microservice is listening On Port: ' + config.get('listenPort') || 3002
+    );
   });
 }
 

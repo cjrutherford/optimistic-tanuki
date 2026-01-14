@@ -14,7 +14,10 @@ describe('PermissionsCacheService', () => {
         {
           provide: 'ICacheProvider',
           useFactory: () => {
-            const cache = new Map<string, { value: boolean, timestamp: number }>();
+            const cache = new Map<
+              string,
+              { value: boolean; timestamp: number }
+            >();
             return {
               get: jest.fn(async (key: string) => {
                 const entry = cache.get(key);
@@ -99,10 +102,26 @@ describe('PermissionsCacheService', () => {
     });
 
     it('should handle targetId in cache key', async () => {
-      await service.set('profile1', 'permission1', 'appScope1', true, 'target1');
-      const result1 = await service.get('profile1', 'permission1', 'appScope1', 'target1');
-      const result2 = await service.get('profile1', 'permission1', 'appScope1', 'target2');
-      
+      await service.set(
+        'profile1',
+        'permission1',
+        'appScope1',
+        true,
+        'target1'
+      );
+      const result1 = await service.get(
+        'profile1',
+        'permission1',
+        'appScope1',
+        'target1'
+      );
+      const result2 = await service.get(
+        'profile1',
+        'permission1',
+        'appScope1',
+        'target2'
+      );
+
       expect(result1).toBe(true);
       expect(result2).toBeNull();
     });
@@ -110,25 +129,37 @@ describe('PermissionsCacheService', () => {
     it('should differentiate between different profiles', async () => {
       await service.set('profile1', 'permission1', 'appScope1', true);
       await service.set('profile2', 'permission1', 'appScope1', false);
-      
-      expect(await service.get('profile1', 'permission1', 'appScope1')).toBe(true);
-      expect(await service.get('profile2', 'permission1', 'appScope1')).toBe(false);
+
+      expect(await service.get('profile1', 'permission1', 'appScope1')).toBe(
+        true
+      );
+      expect(await service.get('profile2', 'permission1', 'appScope1')).toBe(
+        false
+      );
     });
 
     it('should differentiate between different permissions', async () => {
       await service.set('profile1', 'permission1', 'appScope1', true);
       await service.set('profile1', 'permission2', 'appScope1', false);
-      
-      expect(await service.get('profile1', 'permission1', 'appScope1')).toBe(true);
-      expect(await service.get('profile1', 'permission2', 'appScope1')).toBe(false);
+
+      expect(await service.get('profile1', 'permission1', 'appScope1')).toBe(
+        true
+      );
+      expect(await service.get('profile1', 'permission2', 'appScope1')).toBe(
+        false
+      );
     });
 
     it('should differentiate between different app scopes', async () => {
       await service.set('profile1', 'permission1', 'appScope1', true);
       await service.set('profile1', 'permission1', 'appScope2', false);
-      
-      expect(await service.get('profile1', 'permission1', 'appScope1')).toBe(true);
-      expect(await service.get('profile1', 'permission1', 'appScope2')).toBe(false);
+
+      expect(await service.get('profile1', 'permission1', 'appScope1')).toBe(
+        true
+      );
+      expect(await service.get('profile1', 'permission1', 'appScope2')).toBe(
+        false
+      );
     });
   });
 
@@ -142,29 +173,53 @@ describe('PermissionsCacheService', () => {
 
     it('should invalidate all cache entries for a profile', async () => {
       await service.invalidateProfile('profile1');
-      
-      expect(await service.get('profile1', 'permission1', 'appScope1')).toBeNull();
-      expect(await service.get('profile1', 'permission2', 'appScope1')).toBeNull();
-      expect(await service.get('profile1', 'permission1', 'appScope2')).toBeNull();
-      expect(await service.get('profile2', 'permission1', 'appScope1')).toBe(true);
+
+      expect(
+        await service.get('profile1', 'permission1', 'appScope1')
+      ).toBeNull();
+      expect(
+        await service.get('profile1', 'permission2', 'appScope1')
+      ).toBeNull();
+      expect(
+        await service.get('profile1', 'permission1', 'appScope2')
+      ).toBeNull();
+      expect(await service.get('profile2', 'permission1', 'appScope1')).toBe(
+        true
+      );
     });
 
     it('should invalidate all cache entries for an app scope', async () => {
       await service.invalidateAppScope('appScope1');
-      
-      expect(await service.get('profile1', 'permission1', 'appScope1')).toBeNull();
-      expect(await service.get('profile1', 'permission2', 'appScope1')).toBeNull();
-      expect(await service.get('profile2', 'permission1', 'appScope1')).toBeNull();
-      expect(await service.get('profile1', 'permission1', 'appScope2')).toBe(true);
+
+      expect(
+        await service.get('profile1', 'permission1', 'appScope1')
+      ).toBeNull();
+      expect(
+        await service.get('profile1', 'permission2', 'appScope1')
+      ).toBeNull();
+      expect(
+        await service.get('profile2', 'permission1', 'appScope1')
+      ).toBeNull();
+      expect(await service.get('profile1', 'permission1', 'appScope2')).toBe(
+        true
+      );
     });
 
     it('should clear all cache entries', async () => {
       await service.clear();
-      
-      expect(await service.get('profile1', 'permission1', 'appScope1')).toBeNull();
-      expect(await service.get('profile1', 'permission2', 'appScope1')).toBeNull();
-      expect(await service.get('profile2', 'permission1', 'appScope1')).toBeNull();
-      expect(await service.get('profile1', 'permission1', 'appScope2')).toBeNull();
+
+      expect(
+        await service.get('profile1', 'permission1', 'appScope1')
+      ).toBeNull();
+      expect(
+        await service.get('profile1', 'permission2', 'appScope1')
+      ).toBeNull();
+      expect(
+        await service.get('profile2', 'permission1', 'appScope1')
+      ).toBeNull();
+      expect(
+        await service.get('profile1', 'permission1', 'appScope2')
+      ).toBeNull();
     });
   });
 
@@ -172,9 +227,9 @@ describe('PermissionsCacheService', () => {
     it('should return cache statistics', async () => {
       await service.set('profile1', 'permission1', 'appScope1', true);
       await service.set('profile2', 'permission2', 'appScope2', false);
-      
+
       const stats = await service.getStats();
-      
+
       expect(stats.size).toBe(2);
       expect(stats.maxSize).toBeDefined();
       expect(stats.ttlMs).toBeDefined();

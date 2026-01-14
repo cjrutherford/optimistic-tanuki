@@ -45,20 +45,23 @@ export class ThemeService {
         try {
           this.predefinedPalettes = await loadPredefinedPalettes();
         } catch (e) {
-          console.warn('Failed to load predefined palettes from gateway, using fallback:', e);
+          console.warn(
+            'Failed to load predefined palettes from gateway, using fallback:',
+            e
+          );
           this.predefinedPalettes = PREDEFINED_PALETTES;
         }
-        
+
         // Update available palettes list
         const customPalettes = this.loadCustomPalettes();
         const allPalettes = [...this.predefinedPalettes, ...customPalettes];
         this.availablePalettes.next(allPalettes);
 
         const storedTheme = loadTheme(this.platformId);
-        
+
         // Check if this is a first-time user using the isInitialized flag from loadTheme
         const isFirstTime = !storedTheme.isInitialized;
-        
+
         if (isFirstTime && this.predefinedPalettes.length > 0) {
           // Default to the first predefined palette from the gateway
           this.selectedPalette = this.predefinedPalettes[0];
@@ -189,7 +192,10 @@ export class ThemeService {
     try {
       this.predefinedPalettes = await loadPredefinedPalettes();
     } catch (e) {
-      console.warn('Failed to update predefined palettes from gateway, using fallback:', e);
+      console.warn(
+        'Failed to update predefined palettes from gateway, using fallback:',
+        e
+      );
       this.predefinedPalettes = PREDEFINED_PALETTES;
     }
     const customPalettes = this.loadCustomPalettes();

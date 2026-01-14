@@ -13,14 +13,14 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
 @Module({
   imports: [
     LoggerModule,
-    ConfigModule.forRoot({ 
+    ConfigModule.forRoot({
       load: [loadConfig],
       isGlobal: true,
     }),
     DatabaseModule.register({
       name: 'chat_collector',
       factory: loadDatabase,
-    })
+    }),
   ],
   controllers: [AppController],
   providers: [
@@ -29,11 +29,12 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
       provide: getRepositoryToken(Message),
       useFactory: (ds: DataSource) => ds.getRepository(Message),
       inject: ['CHAT_COLLECTOR_CONNECTION'],
-    },{
+    },
+    {
       provide: getRepositoryToken(Conversation),
       useFactory: (ds: DataSource) => ds.getRepository(Conversation),
       inject: ['CHAT_COLLECTOR_CONNECTION'],
-    }
+    },
   ],
 })
 export class AppModule {}

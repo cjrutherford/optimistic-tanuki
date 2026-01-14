@@ -41,9 +41,7 @@
       "options": {
         "buildTarget": "store:build",
         "runBuildTargetDependencies": false,
-        "externalDependencies": [
-          "pg"
-        ]
+        "externalDependencies": ["pg"]
       },
       "configurations": {
         "development": {

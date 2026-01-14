@@ -13,19 +13,24 @@ type Story = StoryObj<MessageComponent>;
 
 export const Primary: Story = {
   args: {
-    messages: [{
-      content: 'Message works!',
-      type: 'info',
-    },{
-      content: 'Message works!',
-      type: 'warning',
-    },{
-      content: 'Message works!',
-      type: 'error',
-    },{
-      content: 'Message works!',
-      type: 'success',
-    }],
+    messages: [
+      {
+        content: 'Message works!',
+        type: 'info',
+      },
+      {
+        content: 'Message works!',
+        type: 'warning',
+      },
+      {
+        content: 'Message works!',
+        type: 'error',
+      },
+      {
+        content: 'Message works!',
+        type: 'success',
+      },
+    ],
   },
 };
 

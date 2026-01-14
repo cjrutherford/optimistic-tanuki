@@ -29,7 +29,7 @@ export class PostService {
   async create(createPostDto: CreateBlogPostDto): Promise<BlogPostDto> {
     // Validate and sanitize input
     this.validatePostContent(createPostDto.content);
-    
+
     const sanitizedContent = this.sanitizationService.sanitizeHtml(
       createPostDto.content
     );
@@ -145,20 +145,20 @@ export class PostService {
 
     // Sanitize input if content or title is being updated
     const updateData: Partial<Post> = {};
-    
+
     if (updatePostDto.title !== undefined) {
       updateData.title = this.sanitizationService.sanitizePlainText(
         updatePostDto.title
       );
     }
-    
+
     if (updatePostDto.content !== undefined) {
       this.validatePostContent(updatePostDto.content);
       updateData.content = this.sanitizationService.sanitizeHtml(
         updatePostDto.content
       );
     }
-    
+
     if (updatePostDto.isDraft !== undefined) {
       updateData.isDraft = updatePostDto.isDraft;
     }

@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { inject } from '@angular/core';
 
 export const authenticationInterceptor: HttpInterceptorFn = (req, next) => {
-   const authStateService = inject(AuthStateService);
+  const authStateService = inject(AuthStateService);
   const router = inject(Router);
   const token = authStateService.getToken();
 
@@ -14,7 +14,7 @@ export const authenticationInterceptor: HttpInterceptorFn = (req, next) => {
     setHeaders: {
       Authorization: `Bearer ${token}`,
       'x-ot-appscope': 'forgeofwill',
-    }
+    },
   });
 
   return next(clonedRequest).pipe(

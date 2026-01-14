@@ -1,13 +1,24 @@
-import { Component, Input, Output, EventEmitter, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  AfterViewInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../button/button.component';
 
-export type NotificationVariant = 'info' | 'warning' | 'error' | 'success' | 'neutral';
+export type NotificationVariant =
+  | 'info'
+  | 'warning'
+  | 'error'
+  | 'success'
+  | 'neutral';
 export interface Notification {
   id: number;
   message: string;
   variant?: NotificationVariant;
-  actions?: { label: string, callback: () => void }[];
+  actions?: { label: string; callback: () => void }[];
   read?: boolean;
   icon?: string;
   autoDismiss?: number; // ms
@@ -32,7 +43,9 @@ export class NotificationComponent implements AfterViewInit {
   menuVisible = false;
 
   get unreadCount(): number {
-    return this.notifications ? this.notifications.filter(n => !n.read).length : 0;
+    return this.notifications
+      ? this.notifications.filter((n) => !n.read).length
+      : 0;
   }
 
   toggleMenu() {
@@ -40,12 +53,12 @@ export class NotificationComponent implements AfterViewInit {
   }
 
   clearNotification(id: number) {
-    this.notifications = this.notifications.filter(n => n.id !== id);
+    this.notifications = this.notifications.filter((n) => n.id !== id);
     this.notificationCleared.emit(id);
   }
 
   markAsRead(id: number) {
-    const notification = this.notifications.find(n => n.id === id);
+    const notification = this.notifications.find((n) => n.id === id);
     if (notification) {
       notification.read = true;
       this.notificationRead.emit(id);
@@ -54,9 +67,12 @@ export class NotificationComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     // Auto-dismiss notifications if set
-    this.notifications.forEach(n => {
+    this.notifications.forEach((n) => {
       if (n.autoDismiss || this.autoDismissDefault) {
-        setTimeout(() => this.clearNotification(n.id), n.autoDismiss || this.autoDismissDefault);
+        setTimeout(
+          () => this.clearNotification(n.id),
+          n.autoDismiss || this.autoDismissDefault
+        );
       }
     });
   }

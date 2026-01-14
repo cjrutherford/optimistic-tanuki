@@ -11,25 +11,28 @@ This document describes the LangGraph state management and LangChain Agent integ
 **Purpose**: Persistent storage of conversation context using Redis
 
 **Key Features**:
+
 - ✅ Redis-based key-value storage (profileId → context)
 - ✅ Automatic context persistence with 7-day TTL
 - ✅ CRUD operations for conversation context
 - ✅ Statistics and monitoring capabilities
 
 **Context Structure**:
+
 ```typescript
 interface ConversationContext {
-  profileId: string;           // User identifier
-  summary: string;             // Conversation summary
-  recentTopics: string[];      // Last 10 topics discussed
-  activeProjects: string[];    // Projects being worked on
-  lastUpdated: Date;           // Last modification time
-  messageCount: number;        // Total messages in conversation
+  profileId: string; // User identifier
+  summary: string; // Conversation summary
+  recentTopics: string[]; // Last 10 topics discussed
+  activeProjects: string[]; // Projects being worked on
+  lastUpdated: Date; // Last modification time
+  messageCount: number; // Total messages in conversation
   metadata?: Record<string, unknown>; // Additional custom data
 }
 ```
 
 **Usage Example**:
+
 ```typescript
 // Store context
 await contextStorage.storeContext('user-123', {
@@ -55,6 +58,7 @@ await contextStorage.updateContext('user-123', {
 **Purpose**: State management for conversations using LangGraph
 
 **Key Features**:
+
 - ✅ StateGraph-based conversation flow
 - ✅ Automatic context loading and saving
 - ✅ Topic extraction from messages
@@ -62,6 +66,7 @@ await contextStorage.updateContext('user-123', {
 - ✅ State persistence to Redis
 
 **State Structure**:
+
 ```typescript
 ConversationState = {
   messages: BaseMessage[];        // Conversation messages
@@ -78,8 +83,9 @@ ConversationState = {
 ```
 
 **Graph Flow**:
+
 ```
-START 
+START
   ↓
 loadContext (from Redis)
   ↓
@@ -95,6 +101,7 @@ END
 ```
 
 **Usage Example**:
+
 ```typescript
 // Execute conversation graph
 const result = await langgraphService.executeConversation(
@@ -119,6 +126,7 @@ console.log(result.activeProjects);
 **Purpose**: Automated tool selection and multi-step reasoning using LangChain agents
 
 **Key Features**:
+
 - ✅ AgentExecutor for automatic tool calling
 - ✅ Tool discovery via `list_tools`
 - ✅ Multi-step reasoning (query → create workflows)
@@ -127,17 +135,19 @@ console.log(result.activeProjects);
 - ✅ Max iteration safety (prevents infinite loops)
 
 **Agent Configuration**:
+
 ```typescript
 AgentExecutor({
   agent: toolCallingAgent,
   tools: [...mcpTools, list_tools],
-  verbose: true,              // Enable logging
-  maxIterations: 10,          // Prevent infinite loops
+  verbose: true, // Enable logging
+  maxIterations: 10, // Prevent infinite loops
   returnIntermediateSteps: true, // Track tool calls
-})
+});
 ```
 
 **Tool Calling Flow**:
+
 ```
 User: "Create a task for my project"
   ↓
@@ -157,16 +167,13 @@ Agent responds: "Created task successfully!"
 ```
 
 **Usage Example**:
+
 ```typescript
 // Initialize agent
 await agentService.initializeAgent('user-123', 'conv-456');
 
 // Execute with automatic tool calling
-const result = await agentService.executeAgent(
-  'Create a task to review the homepage',
-  chatHistory,
-  'user-123'
-);
+const result = await agentService.executeAgent('Create a task to review the homepage', chatHistory, 'user-123');
 
 // Access results
 console.log(result.output); // "Created task successfully!"
@@ -181,6 +188,7 @@ console.log(result.intermediateSteps); // Detailed execution trace
 ### Redis Configuration
 
 Required environment variables:
+
 ```bash
 REDIS_HOST=localhost        # Redis server host
 REDIS_PORT=6379            # Redis server port
@@ -190,13 +198,14 @@ REDIS_PASSWORD=            # Optional password
 ### Module Registration
 
 All services are registered in `app.module.ts`:
+
 ```typescript
 providers: [
-  ContextStorageService,   // Redis-based context storage
-  LangGraphService,        // State graph management
-  LangChainAgentService,   // Agent-based tool execution
+  ContextStorageService, // Redis-based context storage
+  LangGraphService, // State graph management
+  LangChainAgentService, // Agent-based tool execution
   // ... other services
-]
+];
 ```
 
 ---
@@ -243,6 +252,7 @@ providers: [
 ## 🧪 Testing
 
 ### Context Storage Tests (`context-storage.service.spec.ts`)
+
 - ✅ Store and retrieve context
 - ✅ Update existing context
 - ✅ Delete context
@@ -250,6 +260,7 @@ providers: [
 - ✅ Handle Redis connection failures
 
 ### Future Tests Needed
+
 - [ ] LangGraph state transitions
 - [ ] Agent multi-step reasoning
 - [ ] Tool call sequencing
@@ -260,22 +271,27 @@ providers: [
 ## 🚀 Benefits Realized
 
 ### 1. Persistent Context
+
 **Before**: Context lost between sessions  
 **After**: 7-day context retention in Redis
 
 ### 2. Structured State Management
+
 **Before**: Ad-hoc state handling  
 **After**: LangGraph-managed state with clear transitions
 
 ### 3. Intelligent Tool Calling
+
 **Before**: Manual tool selection  
 **After**: Agent automatically determines tool sequence
 
 ### 4. Multi-Step Workflows
+
 **Before**: Single tool calls only  
 **After**: Automatic chaining (query → create → update)
 
 ### 5. Scalability
+
 **Before**: In-memory context (single instance)  
 **After**: Redis-backed (multi-instance ready)
 
@@ -286,29 +302,25 @@ providers: [
 ### Basic Workflow
 
 1. **Initialize Agent** (once per conversation):
+
 ```typescript
 await agentService.initializeAgent(userId, conversationId);
 ```
 
 2. **Execute Conversation**:
+
 ```typescript
-const stateResult = await langgraphService.executeConversation(
-  profileId,
-  messages,
-  existingSummary
-);
+const stateResult = await langgraphService.executeConversation(profileId, messages, existingSummary);
 ```
 
 3. **Run Agent** (for complex tasks):
+
 ```typescript
-const agentResult = await agentService.executeAgent(
-  userMessage,
-  chatHistory,
-  userId
-);
+const agentResult = await agentService.executeAgent(userMessage, chatHistory, userId);
 ```
 
 4. **Retrieve Context** (anytime):
+
 ```typescript
 const context = await contextStorage.getContext(profileId);
 ```
@@ -320,11 +332,13 @@ const context = await contextStorage.getContext(profileId);
 ### Agent vs Direct LLM
 
 **Use Agent When**:
+
 - Task requires multiple tools
 - Need automatic tool sequencing
 - Want intelligent decision-making
 
 **Use Direct LLM When**:
+
 - Simple Q&A
 - No tool calls needed
 - Maximum control over execution
@@ -380,6 +394,7 @@ When extending these services:
 ## 📧 Support
 
 For questions or issues:
+
 1. Check `REMAINING_WORK.md` for known limitations
 2. Review test files for usage examples
 3. Enable verbose logging for debugging

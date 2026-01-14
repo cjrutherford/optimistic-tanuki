@@ -6,17 +6,27 @@
   border: 1px solid var(--border-color, #b1baec);
   transition: box-shadow 0.3s, background 0.3s;
   &.glass {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
     box-shadow: 0 4px 24px var(--accent, #b1baec);
   }
   &.gradient {
-    background: linear-gradient(120deg, var(--accent, #b1baec), var(--complement, #919ee4));
+    background: linear-gradient(
+      120deg,
+      var(--accent, #b1baec),
+      var(--complement, #919ee4)
+    );
     color: var(--foreground, #fff);
   }
-  &.sm { font-size: 0.9rem; }
-  &.md { font-size: 1rem; }
-  &.lg { font-size: 1.2rem; }
+  &.sm {
+    font-size: 0.9rem;
+  }
+  &.md {
+    font-size: 1rem;
+  }
+  &.lg {
+    font-size: 1.2rem;
+  }
 }
 h3 {
   cursor: pointer;

@@ -76,7 +76,11 @@
 .recommendation-text {
   margin: 0 0 20px;
   padding: 12px 16px;
-  background: linear-gradient(135deg, var(--accent, #667eea) 0%, var(--complement, #764ba2) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent, #667eea) 0%,
+    var(--complement, #764ba2) 100%
+  );
   color: white;
   border-radius: 8px;
   font-size: 0.95rem;
@@ -114,7 +118,11 @@
 
   &.default-persona {
     border-color: var(--accent, #667eea);
-    background: linear-gradient(135deg, rgba(var(--accent-rgb, 102, 126, 234), 0.05), rgba(var(--complement-rgb, 118, 75, 162), 0.05));
+    background: linear-gradient(
+      135deg,
+      rgba(var(--accent-rgb, 102, 126, 234), 0.05),
+      rgba(var(--complement-rgb, 118, 75, 162), 0.05)
+    );
   }
 }
 
@@ -139,7 +147,11 @@
 .default-badge {
   display: inline-block;
   padding: 2px 8px;
-  background: linear-gradient(135deg, var(--accent, #667eea), var(--complement, #764ba2));
+  background: linear-gradient(
+    135deg,
+    var(--accent, #667eea),
+    var(--complement, #764ba2)
+  );
   color: white;
   border-radius: 12px;
   font-size: 0.75rem;
@@ -215,7 +227,11 @@
 
 .retry-button {
   padding: 10px 24px;
-  background: linear-gradient(135deg, var(--accent, #667eea), var(--complement, #764ba2));
+  background: linear-gradient(
+    135deg,
+    var(--accent, #667eea),
+    var(--complement, #764ba2)
+  );
   color: white;
   border: none;
   border-radius: 6px;

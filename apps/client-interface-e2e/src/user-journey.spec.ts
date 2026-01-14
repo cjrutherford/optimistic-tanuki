@@ -13,12 +13,12 @@ test.describe('User Journey', () => {
 
   test('should register, login, and update profile', async ({ page }) => {
     console.log('Starting User Journey Test');
-    
-    page.on('console', msg => {
+
+    page.on('console', (msg) => {
       console.log(`BROWSER [${msg.type()}]: ${msg.text()}`);
     });
 
-    page.on('pageerror', error => {
+    page.on('pageerror', (error) => {
       console.log(`BROWSER ERROR: ${error.message}`);
     });
 
@@ -28,14 +28,27 @@ test.describe('User Journey', () => {
     await expect(page).toHaveURL(/\/register/);
 
     console.log('Filling registration form');
-    await page.locator('lib-text-input[formControlName="firstName"] input').fill(testUser.firstName);
-    await page.locator('lib-text-input[formControlName="lastName"] input').fill(testUser.lastName);
-    await page.locator('lib-text-input[formControlName="email"] input').fill(testUser.email);
-    await page.locator('lib-text-input[formControlName="password"] input').fill(testUser.password);
-    await page.locator('lib-text-input[formControlName="confirmation"] input').fill(testUser.password);
+    await page
+      .locator('lib-text-input[formControlName="firstName"] input')
+      .fill(testUser.firstName);
+    await page
+      .locator('lib-text-input[formControlName="lastName"] input')
+      .fill(testUser.lastName);
+    await page
+      .locator('lib-text-input[formControlName="email"] input')
+      .fill(testUser.email);
+    await page
+      .locator('lib-text-input[formControlName="password"] input')
+      .fill(testUser.password);
+    await page
+      .locator('lib-text-input[formControlName="confirmation"] input')
+      .fill(testUser.password);
 
     console.log('Submitting registration');
-    await page.click('otui-button[type="submit"], otui-button:has-text("Register")', { force: true });
+    await page.click(
+      'otui-button[type="submit"], otui-button:has-text("Register")',
+      { force: true }
+    );
 
     // Expect redirect to login
     console.log('Waiting for redirect to /login');
@@ -43,20 +56,27 @@ test.describe('User Journey', () => {
 
     // 2. Login
     console.log('Filling login form');
-    await page.locator('lib-text-input[formControlName="email"] input').fill(testUser.email);
-    await page.locator('lib-text-input[formControlName="password"] input').fill(testUser.password);
-    
+    await page
+      .locator('lib-text-input[formControlName="email"] input')
+      .fill(testUser.email);
+    await page
+      .locator('lib-text-input[formControlName="password"] input')
+      .fill(testUser.password);
+
     console.log('Submitting login');
-    await page.click('otui-button[type="submit"], otui-button:has-text("Login")', { force: true });
+    await page.click(
+      'otui-button[type="submit"], otui-button:has-text("Login")',
+      { force: true }
+    );
 
     // 3. Land on Feed
     console.log('Waiting for redirect to /feed');
     await page.waitForURL(/\/feed/, { timeout: 15000 });
-    
+
     // 4. Update Profile
     console.log('Navigating to /settings');
     await page.goto('/settings');
-    
+
     console.log('Clicking banner to edit profile');
     await page.waitForSelector('.profile-section', { state: 'visible' });
     await page.click('.profile-section', { force: true });
@@ -66,14 +86,22 @@ test.describe('User Journey', () => {
     await expect(modalContent).toBeVisible({ timeout: 10000 });
 
     console.log('Updating bio');
-    await page.locator('lib-text-input[formControlName="bio"] input').fill(testUser.updatedBio);
+    await page
+      .locator('lib-text-input[formControlName="bio"] input')
+      .fill(testUser.updatedBio);
 
     console.log('Uploading profile picture');
     // Select the first file input which corresponds to the Profile Picture upload
-    await page.locator('lib-image-upload input[type="file"]').first().setInputFiles('apps/client-interface-e2e/src/test-image.png');
-    
+    await page
+      .locator('lib-image-upload input[type="file"]')
+      .first()
+      .setInputFiles('apps/client-interface-e2e/src/test-image.png');
+
     console.log('Submitting profile update');
-    await page.click('otui-modal otui-button[variant="success"], otui-modal otui-button:has-text("Submit")', { force: true });
+    await page.click(
+      'otui-modal otui-button[variant="success"], otui-modal otui-button:has-text("Submit")',
+      { force: true }
+    );
 
     // In SettingsComponent, it doesn't redirect to /feed, it just closes modal.
     console.log('Waiting for modal to close');
@@ -83,7 +111,9 @@ test.describe('User Journey', () => {
     console.log('Verifying update in settings');
     await page.click('.profile-section', { force: true });
     await page.waitForSelector('otui-modal .modal', { state: 'visible' });
-    await expect(page.locator('lib-text-input[formControlName="bio"] input')).toHaveValue(testUser.updatedBio);
+    await expect(
+      page.locator('lib-text-input[formControlName="bio"] input')
+    ).toHaveValue(testUser.updatedBio);
     console.log('User Journey Test Completed Successfully');
   });
 });

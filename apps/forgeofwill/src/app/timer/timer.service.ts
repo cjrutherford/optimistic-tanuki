@@ -4,11 +4,11 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TimerService {
   private baseUrl = '/api/project-planning/timers';
-  constructor(private readonly http: HttpClient) { }
+  constructor(private readonly http: HttpClient) {}
 
   createTimer(data: CreateTimer) {
     return this.http.post<Timer>(`${this.baseUrl}`, data);

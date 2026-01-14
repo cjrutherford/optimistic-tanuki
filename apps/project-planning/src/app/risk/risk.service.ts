@@ -39,7 +39,10 @@ export class RiskService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    console.log('RiskService.create creating entity with:', JSON.stringify(riskData));
+    console.log(
+      'RiskService.create creating entity with:',
+      JSON.stringify(riskData)
+    );
     const risk = this.riskRepository.create(riskData);
     return await this.riskRepository.save(risk);
   }
