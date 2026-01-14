@@ -163,8 +163,8 @@ Examples:
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         return {
-          type: parsed.type || WorkflowType.CONVERSATIONAL,
-          confidence: parsed.confidence || 0.7,
+          type: parsed.type ?? WorkflowType.CONVERSATIONAL,
+          confidence: parsed.confidence ?? 0.7,
           reasoning: parsed.reasoning,
           requiresToolCalling: parsed.requiresToolCalling ?? false,
           requiresConversation: parsed.requiresConversation ?? true,
@@ -304,12 +304,10 @@ Examples:
    * DeepSeek and similar models often output thinking tokens in <think> tags
    */
   filterThinkingTokens(response: string): string {
-    // Remove <think>...</think> blocks
-    let filtered = response.replace(/<think>[\s\S]*?<\/think>/gi, '');
-
-    // Remove standalone thinking markers
-    filtered = filtered.replace(/\[THINKING\][\s\S]*?\[\/THINKING\]/gi, '');
-    filtered = filtered.replace(/\*\*Thinking:?\*\*[\s\S]*?\n\n/gi, '');
+    // Combined regex pattern for all thinking token types
+    const thinkingPattern = /<think>[\s\S]*?<\/think>|\[THINKING\][\s\S]*?\[\/THINKING\]|\*\*Thinking:?\*\*[\s\S]*?\n\n/gi;
+    
+    let filtered = response.replace(thinkingPattern, '');
 
     // Clean up extra whitespace
     filtered = filtered.trim().replace(/\n{3,}/g, '\n\n');

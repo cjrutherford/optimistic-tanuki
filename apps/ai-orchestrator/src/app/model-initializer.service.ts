@@ -15,6 +15,10 @@ export class ModelInitializerService implements OnModuleInit {
   private readonly logger = new Logger(ModelInitializerService.name);
   private ollamaBaseUrl: string;
   private modelConfigs: ModelConfigs | null = null;
+  
+  // Configuration constants
+  private readonly MODEL_PULL_TIMEOUT_MS = 300000; // 5 minutes
+  private readonly MODEL_CHECK_TIMEOUT_MS = 10000; // 10 seconds
 
   constructor(
     private readonly config: ConfigService,
@@ -83,7 +87,7 @@ export class ModelInitializerService implements OnModuleInit {
           { name: modelName },
           {
             headers: { 'Content-Type': 'application/json' },
-            timeout: 300000, // 5 minute timeout for large models
+            timeout: this.MODEL_PULL_TIMEOUT_MS,
           }
         )
       );
@@ -111,7 +115,7 @@ export class ModelInitializerService implements OnModuleInit {
     try {
       const response = await firstValueFrom(
         this.http.get(`${this.ollamaBaseUrl}/api/tags`, {
-          timeout: 10000,
+          timeout: this.MODEL_CHECK_TIMEOUT_MS,
         })
       );
 
