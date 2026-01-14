@@ -300,6 +300,49 @@ Examples:
   }
 
   /**
+   * Extract thinking tokens from model response
+   * Returns both the thinking content and the filtered response
+   */
+  extractThinkingTokens(response: string): {
+    thinking: string[];
+    filtered: string;
+  } {
+    const thinking: string[] = [];
+
+    // Extract <think> blocks
+    const thinkMatches = response.match(/<think>([\s\S]*?)<\/think>/gi);
+    if (thinkMatches) {
+      thinkMatches.forEach((match) => {
+        const content = match.replace(/<\/?think>/gi, '').trim();
+        if (content) thinking.push(content);
+      });
+    }
+
+    // Extract [THINKING] blocks
+    const thinkingMatches = response.match(/\[THINKING\]([\s\S]*?)\[\/THINKING\]/gi);
+    if (thinkingMatches) {
+      thinkingMatches.forEach((match) => {
+        const content = match.replace(/\[\/?(THINKING)\]/gi, '').trim();
+        if (content) thinking.push(content);
+      });
+    }
+
+    // Extract **Thinking:** blocks
+    const thinkingHeaderMatches = response.match(/\*\*Thinking:?\*\*([\s\S]*?)\n\n/gi);
+    if (thinkingHeaderMatches) {
+      thinkingHeaderMatches.forEach((match) => {
+        const content = match.replace(/\*\*Thinking:?\*\*/gi, '').trim();
+        if (content) thinking.push(content);
+      });
+    }
+
+    // Filter out thinking tokens
+    const filtered = this.filterThinkingTokens(response);
+
+    return { thinking, filtered };
+  }
+
+  /**
    * Filter thinking tokens from model response
    * DeepSeek and similar models often output thinking tokens in <think> tags
    */

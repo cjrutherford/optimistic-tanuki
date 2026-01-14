@@ -1,7 +1,7 @@
 /**
  * LangChain Service for AI Orchestration
  *
- * Replaces custom prompt engineering with LangChain.js
+ * Uses centralized prompt templates and emits thinking tokens
  */
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -12,7 +12,6 @@ import {
   SystemMessage,
   BaseMessage,
 } from '@langchain/core/messages';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import {
@@ -24,12 +23,13 @@ import {
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ToolsService } from './tools.service';
 import { ConfigService } from '@nestjs/config';
-import {
-  generateCoreSystemPrompt,
-  generateToolingGuidance,
-} from './utils/prompt-engineering';
 import { ModelInitializerService } from './model-initializer.service';
 import { WorkflowControlService } from './workflow-control.service';
+import { PromptTemplateService } from './prompt-template.service';
+import {
+  StreamingEvent,
+  StreamingEventType,
+} from './streaming-events';
 
 @Injectable()
 export class LangChainService {
@@ -42,7 +42,8 @@ export class LangChainService {
     private readonly mcpExecutor: MCPToolExecutor,
     private readonly config: ConfigService,
     private readonly modelInitializer: ModelInitializerService,
-    private readonly workflowControl: WorkflowControlService
+    private readonly workflowControl: WorkflowControlService,
+    private readonly promptTemplate: PromptTemplateService
   ) {
     this.initializeModels();
   }
@@ -499,7 +500,8 @@ Always verify parameter names match tool schemas before calling!`;
     conversationHistory: ChatMessage[],
     userMessage: string,
     conversationSummary: string,
-    conversationId: string
+    conversationId: string,
+    onStreamEvent?: (event: StreamingEvent) => void | Promise<void>
   ): Promise<{
     response: string;
     intermediateSteps: any[];
@@ -511,12 +513,14 @@ Always verify parameter names match tool schemas before calling!`;
       userMessage
     );
 
-    const promptTemplate = this.createSystemPromptTemplate();
+    // Use centralized prompt template service
+    const promptTemplate = this.promptTemplate.createSystemPromptTemplate();
+    const personaTelos = this.promptTemplate.formatPersonaTelos(persona);
+    const userProfile = this.promptTemplate.formatUserProfile(profile);
+    
     const systemMessages = await promptTemplate.formatMessages({
-      personaName: persona.name,
-      personaDescription: persona.description,
-      userId: profile.id,
-      userName: profile.profileName,
+      ...personaTelos,
+      ...userProfile,
       conversationSummary: conversationSummary,
       projectContext: projectContext || '',
     });
@@ -558,6 +562,23 @@ Always verify parameter names match tool schemas before calling!`;
     this.logger.log(`Executing conversation ${toolsMessage}`);
 
     const response = await llmWithTools.invoke(messages);
+
+    // Extract and emit thinking tokens before filtering
+    const responseText = response.content as string;
+    const { thinking, filtered } = this.workflowControl.extractThinkingTokens(responseText);
+    
+    if (thinking.length > 0 && onStreamEvent) {
+      for (const thinkingText of thinking) {
+        await onStreamEvent({
+          type: StreamingEventType.THINKING,
+          content: {
+            text: thinkingText,
+            raw: responseText,
+          },
+          timestamp: new Date(),
+        });
+      }
+    }
 
     // Check if response contains tool calls
     const toolCallsToExecute: any[] = (response as any).tool_calls || [];
