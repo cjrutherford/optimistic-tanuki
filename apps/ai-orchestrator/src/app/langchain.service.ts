@@ -546,9 +546,9 @@ Always verify parameter names match tool schemas before calling!`;
       : selectedLLM;
 
     const toolsMessage = workflow.requiresToolCalling 
-      ? `${tools.length} tools bound to` 
-      : '';
-    this.logger.log(`Executing conversation with ${toolsMessage} LLM`);
+      ? `with ${tools.length} tools bound to LLM` 
+      : 'with LLM (no tools)';
+    this.logger.log(`Executing conversation ${toolsMessage}`);
 
     const response = await llmWithTools.invoke(messages);
 
@@ -697,9 +697,10 @@ Always verify parameter names match tool schemas before calling!`;
       ? selectedLLM.bindTools(tools)
       : selectedLLM;
 
-    this.logger.log(
-      `Streaming conversation with ${workflow.requiresToolCalling ? tools.length + ' tools bound to' : ''} LLM`
-    );
+    const toolsMessage = workflow.requiresToolCalling
+      ? `with ${tools.length} tools bound to LLM`
+      : 'with LLM (no tools)';
+    this.logger.log(`Streaming conversation ${toolsMessage}`);
 
     const stream = await llmWithTools.stream(messages);
     let fullResponse = '';
