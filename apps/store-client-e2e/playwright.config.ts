@@ -16,19 +16,22 @@ const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
  */
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
+  globalSetup: require.resolve('./global-setup'),
+  globalTeardown: require.resolve('./global-teardown'),
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     baseURL,
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
+  reporter: [['html', { open: 'never' }]],
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npx nx run store-client:serve',
-    url: 'http://localhost:4200',
-    reuseExistingServer: true,
-    cwd: workspaceRoot,
-  },
+  // webServer: {
+  //   command: 'npx nx run store-client:serve',
+  //   url: 'http://localhost:4200',
+  //   reuseExistingServer: true,
+  //   cwd: workspaceRoot,
+  // },
   projects: [
     {
       name: 'chromium',

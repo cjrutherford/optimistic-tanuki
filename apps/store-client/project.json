@@ -54,7 +54,10 @@
     },
     "serve": {
       "continuous": true,
-      "executor": "@angular/build:dev-server",
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "proxyConfig": "apps/store-client/proxy.conf.json"
+      },
       "configurations": {
         "production": {
           "buildTarget": "store-client:build:production"

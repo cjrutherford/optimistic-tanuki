@@ -21,7 +21,8 @@ export default (configService: ConfigService): PostgresConnectionOptions => {
         username,
         password,
         database,
-        entities: [ProfileTelos, ProjectTelos, PersonaTelos]
+        entities: [ProfileTelos, ProjectTelos, PersonaTelos],
+        synchronize: true
     };
 
     return options;

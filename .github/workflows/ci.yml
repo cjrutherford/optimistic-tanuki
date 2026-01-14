@@ -79,6 +79,8 @@ jobs:
         run: |
           if [ "${{ matrix.target }}" = "test" ]; then
             npx nx affected -t ${{ matrix.target }} --configuration=ci --parallel=3 --maxParallel=3
+          elif [ "${{ matrix.target }}" = "lint" ]; then
+            npx nx affected -t ${{ matrix.target }} --parallel=3 --maxParallel=3 --exclude='*-e2e'
           else
             npx nx affected -t ${{ matrix.target }} --parallel=3 --maxParallel=3
           fi

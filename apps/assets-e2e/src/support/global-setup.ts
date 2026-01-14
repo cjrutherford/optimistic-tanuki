@@ -1,16 +1,38 @@
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { join } from 'path';
 import { waitForPortOpen } from '@nx/node/utils';
 
-/* eslint-disable */
-var __TEARDOWN_MESSAGE__: string;
+const execAsync = promisify(exec);
 
-module.exports = async function () {
-  // Start services that that the app needs to run (e.g. database, docker-compose, etc.).
-  console.log('\nSetting up...\n');
+export default async function () {
+  const projectName = 'assets-e2e';
+  const port = 3005;
+  const composeFile = join(__dirname, '../../../../e2e/docker-compose.assets-e2e.yaml');
+  
+  console.log(`
+Setting up E2E environment for ${projectName}...`);
 
-  const host = process.env.HOST ?? 'localhost';
-  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-  await waitForPortOpen(port, { host });
+  try {
+    console.log(`Cleaning up any existing environment for ${projectName}...`);
+    await execAsync(`docker compose -p ${projectName} -f ${composeFile} down -v --remove-orphans`);
+  } catch (e) {
+    // ignore
+  }
 
-  // Hint: Use `globalThis` to pass variables to global teardown.
-  globalThis.__TEARDOWN_MESSAGE__ = '\nTearing down...\n';
+  console.log(`Starting docker-compose using ${composeFile}...`);
+  await execAsync(`docker compose -p ${projectName} -f ${composeFile} up -d --build`);
+
+  console.log(`Waiting for port ${port}...`);
+  await waitForPortOpen(port, { retries: 60, retryDelay: 2000 });
+  
+  await new Promise(resolve => setTimeout(resolve, 10000));
+
+  console.log('Setup complete.');
+  globalThis.__TEARDOWN_MESSAGE__ = `
+Tearing down ${projectName} environment...
+`;
+  globalThis.__COMPOSE_FILE__ = composeFile;
+  globalThis.__PROJECT_NAME__ = projectName;
+  globalThis.socketConnectionOptions = { host: 'localhost', port };
 };

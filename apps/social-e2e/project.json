@@ -11,7 +11,7 @@
         "jestConfig": "apps/social-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["social:build", "social:serve"]
+      "dependsOn": ["social:build"]
     }
   }
 }

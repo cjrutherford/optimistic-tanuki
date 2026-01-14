@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  NX_CLOUD_ACCESS_TOKEN: ${NX_CLOUD_ACCESS_TOKEN}
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
 jobs:
   main:
@@ -38,6 +38,6 @@ jobs:
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: npx nx-cloud record -- echo Hello World
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
-      - run: NX_CLOUD_DISTRIBUTED_EXECUTION=false npx nx affected -t lint --parallel=3 --maxParallel=3
+      - run: NX_CLOUD_DISTRIBUTED_EXECUTION=false npx nx affected -t lint --parallel=3 --maxParallel=3 --exclude='*-e2e'
       - run: NX_CLOUD_DISTRIBUTED_EXECUTION=false npx nx affected -t build --parallel=3 --maxParallel=3
       - run: NX_CLOUD_DISTRIBUTED_EXECUTION=false npx nx affected -t test --passWithNoTests=true

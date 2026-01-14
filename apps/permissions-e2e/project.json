@@ -11,7 +11,7 @@
         "jestConfig": "apps/permissions-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["permissions:build", "permissions:serve"]
+      "dependsOn": ["permissions:build"]
     }
   }
 }

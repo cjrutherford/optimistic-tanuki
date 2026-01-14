@@ -2,7 +2,6 @@ name: E2E Tests
 
 on:
   pull_request:
-    branches: [ main, develop ]
   push:
     branches: [ main, develop ]
   workflow_dispatch:
@@ -50,6 +49,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build applications
+        run: |
+          # Build all applications needed for microservices
+          npx nx run-many -t build --projects=authentication,profile,social,assets,blogging,gateway,permissions,project-planning,chat-collector,prompt-proxy,telos-docs-service,ai-orchestrator --parallel=3
+        env:
+          CI: true
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -59,7 +65,7 @@ jobs:
           COMPOSE_FILE="e2e/docker-compose.${{ matrix.service }}.yaml"
           if [ -f "$COMPOSE_FILE" ]; then
             echo "Using independent compose file: $COMPOSE_FILE"
-            docker-compose -f $COMPOSE_FILE up -d
+            docker compose -f $COMPOSE_FILE up -d
             # Wait for services to be ready
             sleep 30
           fi
@@ -76,7 +82,7 @@ jobs:
         run: |
           COMPOSE_FILE="e2e/docker-compose.${{ matrix.service }}.yaml"
           if [ -f "$COMPOSE_FILE" ]; then
-            docker-compose -f $COMPOSE_FILE down -v
+            docker compose -f $COMPOSE_FILE down -v
           fi
 
       - name: Upload test results
@@ -102,6 +108,7 @@ jobs:
           - digital-homestead-e2e
           - christopherrutherford-net-e2e
           - owner-console-e2e
+          - store-client-e2e
       fail-fast: false
     
     steps:
@@ -119,6 +126,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build applications
+        run: |
+          # Build all applications and backend services needed for UI e2e tests
+          npx nx run-many -t build --projects=authentication,profile,social,assets,blogging,gateway,permissions,client-interface,forgeofwill,digital-homestead,christopherrutherford-net,owner-console,store-client,project-planning --parallel=3
+        env:
+          CI: true
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start E2E environment for ${{ matrix.app }}
+        run: |
+          # Check if independent docker-compose exists for this service
+          COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
+          if [ -f "$COMPOSE_FILE" ]; then
+            echo "Using independent compose file: $COMPOSE_FILE"
+            docker compose -f $COMPOSE_FILE up -d --build
+            # Wait for services to be ready
+            sleep 45
+          fi
+        env:
+          CI: true
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
@@ -126,6 +156,14 @@ jobs:
         run: npx nx e2e ${{ matrix.app }}
         env:
           CI: true
+
+      - name: Stop E2E environment
+        if: always()
+        run: |
+          COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
+          if [ -f "$COMPOSE_FILE" ]; then
+            docker compose -f $COMPOSE_FILE down -v
+          fi
 
       - name: Upload Playwright report
         if: always()
@@ -166,13 +204,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build all applications
+        run: |
+          # Build all applications for full stack browser tests
+          npx nx run-many -t build --all --parallel=3
+        env:
+          CI: true
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build and start full environment with docker-compose
         run: |
           # Use the main docker-compose.yaml for full stack browser tests
-          docker-compose up -d --build
+          docker compose up -d --build
           
           # Wait for all services to be healthy
           echo "Waiting for services to be ready..."
@@ -204,8 +249,8 @@ jobs:
         if: failure()
         run: |
           mkdir -p docker-logs
-          docker-compose logs > docker-logs/all-services.log
-          docker-compose ps > docker-logs/services-status.txt
+          docker compose logs > docker-logs/all-services.log
+          docker compose ps > docker-logs/services-status.txt
 
       - name: Upload docker logs
         if: failure()
@@ -217,7 +262,7 @@ jobs:
 
       - name: Stop full environment
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
 
       - name: Upload Full Stack E2E report
         if: always()
@@ -256,6 +301,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build applications
+        run: |
+          # Build all applications and backend services needed for cross-browser e2e tests
+          npx nx run-many -t build --projects=authentication,profile,social,assets,blogging,gateway,permissions,digital-homestead,owner-console,project-planning --parallel=3
+        env:
+          CI: true
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -264,7 +316,7 @@ jobs:
           COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
           if [ -f "$COMPOSE_FILE" ]; then
             echo "Using compose file: $COMPOSE_FILE"
-            docker-compose -f $COMPOSE_FILE up -d --build
+            docker compose -f $COMPOSE_FILE up -d --build
             echo "Waiting for services..."
             sleep 45
           fi
@@ -285,7 +337,7 @@ jobs:
         run: |
           COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
           if [ -f "$COMPOSE_FILE" ]; then
-            docker-compose -f $COMPOSE_FILE down -v
+            docker compose -f $COMPOSE_FILE down -v
           fi
 
       - name: Upload browser E2E report

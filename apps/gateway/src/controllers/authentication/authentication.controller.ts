@@ -228,18 +228,19 @@ export class AuthenticationController {
         await this.roleInit.processNow(roleInitOptions);
       } else {
         // Standard registration flow
+        const effectiveScope = appScope || 'global';
         const profilePermissionsBuilder = new RoleInitBuilder()
-          .setScopeName(appScope)
+          .setScopeName(effectiveScope)
           .setProfile(createdProfile.id)
-          .addDefaultProfileOwner(createdProfile.id, appScope)
+          .addDefaultProfileOwner(createdProfile.id, effectiveScope)
           .addAppScopeDefaults()
           .addAssetOwnerPermissions();
         this.logger.log(
-          `Initializing standard permissions for userId=${newProfile.userId} scope=${appScope}`
+          `Initializing standard permissions for userId=${newProfile.userId} scope=${effectiveScope}`
         );
         const roleInitOptions = profilePermissionsBuilder.build();
         this.logger.debug(
-          `registerUser initializing standard permissions for profile=${createdProfile.id} scope=${appScope}`
+          `registerUser initializing standard permissions for profile=${createdProfile.id} scope=${effectiveScope}`
         );
         await this.roleInit.processNow(roleInitOptions);
       }

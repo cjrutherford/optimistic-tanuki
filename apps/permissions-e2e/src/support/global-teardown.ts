@@ -1,10 +1,21 @@
-import { killPort } from '@nx/node/utils';
-/* eslint-disable */
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 module.exports = async function () {
-  // Put clean up logic here (e.g. stopping services, docker-compose, etc.).
-  // Hint: `globalThis` is shared between setup and teardown.
-  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-  await killPort(port);
   console.log(globalThis.__TEARDOWN_MESSAGE__);
+  
+  const composeFile = globalThis.__COMPOSE_FILE__;
+  const projectName = globalThis.__PROJECT_NAME__;
+  
+  if (composeFile && projectName) {
+    try {
+        console.log(`Stopping E2E environment for ${projectName}...`);
+        await execAsync(`docker compose -p ${projectName} -f ${composeFile} down -v`);
+        console.log('Cleanup complete.');
+    } catch (e) {
+        console.error('Error during teardown:', e);
+    }
+  }
 };

@@ -50,5 +50,26 @@ export const loadConfig = (): Config => {
     const configPath = path.resolve(__dirname, './assets/config.yaml');
     const fileContents = fs.readFileSync(configPath, 'utf8');
     const config = yaml.load(fileContents) as Config;
+
+    // Support environment variable overrides
+    if (process.env.LISTEN_PORT) {
+        config.listenPort = parseInt(process.env.LISTEN_PORT, 10);
+    }
+
+    const serviceKeys = Object.keys(config.services) as Array<keyof Config['services']>;
+    serviceKeys.forEach(key => {
+        const envHostKey = `${key.toUpperCase()}_HOST`;
+        const envPortKey = `${key.toUpperCase()}_PORT`;
+
+        if (process.env[envHostKey]) {
+            config.services[key].host = process.env[envHostKey] as string;
+        }
+
+        if (process.env[envPortKey]) {
+            const port = parseInt(process.env[envPortKey] as string, 10);
+            config.services[key].port = port;
+        }
+    });
+
     return config;
 };

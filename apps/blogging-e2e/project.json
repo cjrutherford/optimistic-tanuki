@@ -11,7 +11,7 @@
         "jestConfig": "apps/blogging-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["blogging:build", "blogging:serve"]
+      "dependsOn": ["blogging:build"]
     }
   }
 }

@@ -41,7 +41,7 @@ describe('Assets Microservice E2E', () => {
   describe('Create Asset', () => {
     it('should create a new asset', async () => {
       const testAsset = {
-        name: `test-file-${Date.now()}`,
+        name: `test-file-${Date.now()}.txt`,
         fileExtension: 'txt',
         type: 'document',
         content: `data:text/plain;base64,${Buffer.from(
@@ -62,7 +62,7 @@ describe('Assets Microservice E2E', () => {
 
     it('should create an asset with image mime type', async () => {
       const testAsset = {
-        name: `test-image-${Date.now()}`,
+        name: `test-image-${Date.now()}.png`,
         fileExtension: 'png',
         type: 'image',
         content: `data:image/png;base64,${Buffer.from(

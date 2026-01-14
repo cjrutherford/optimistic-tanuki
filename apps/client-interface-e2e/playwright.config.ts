@@ -16,6 +16,8 @@ const baseURL = process.env['BASE_URL'] || 'http://localhost:8080';
  */
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
+  globalSetup: require.resolve('./global-setup'),
+  globalTeardown: require.resolve('./global-teardown'),
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   reporter: [['html', { open: 'never' }]],
   use: {

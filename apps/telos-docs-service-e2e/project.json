@@ -11,7 +11,7 @@
         "jestConfig": "apps/telos-docs-service-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["telos-docs-service:build", "telos-docs-service:serve"]
+      "dependsOn": ["telos-docs-service:build"]
     }
   }
 }

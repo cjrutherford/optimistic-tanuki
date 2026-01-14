@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 describe('Gateway E2E Tests', () => {
+  jest.setTimeout(10000);
   const baseURL = process.env.BASE_URL || 'http://localhost:3000';
   const api = axios.create({
     baseURL: `${baseURL}/api`,

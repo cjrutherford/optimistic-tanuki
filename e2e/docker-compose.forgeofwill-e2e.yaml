@@ -1,0 +1,167 @@
+# Docker Compose for Forge of Will UI E2E Tests
+# Setup for testing forgeofwill with required backend services
+services:
+  db:
+    image: postgres:latest
+    restart: always
+    container_name: e2e_db_fow
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-setup:
+    image: node:lts-alpine
+    container_name: e2e_db_setup_fow
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    restart: 'no'
+
+  authentication:
+    container_name: e2e_authentication_fow
+    build:
+      context: ..
+      dockerfile: ./apps/authentication/Dockerfile
+    ports:
+      - '3001:3001'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+      JWT_SECRET: e2e-test-jwt-secret
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  profile:
+    container_name: e2e_profile_fow
+    build:
+      context: ..
+      dockerfile: ./apps/profile/Dockerfile
+    ports:
+      - '3002:3002'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  social:
+    container_name: e2e_social_fow
+    build:
+      context: ..
+      dockerfile: ./apps/social/Dockerfile
+    ports:
+      - '3003:3003'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  project-planning:
+    container_name: e2e_project_planning_fow
+    build:
+      context: ..
+      dockerfile: ./apps/project-planning/Dockerfile
+    ports:
+      - '3006:3006'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  chat-collector:
+    container_name: e2e_chat_collector_fow
+    build:
+      context: ..
+      dockerfile: ./apps/chat-collector/Dockerfile
+    ports:
+      - '3007:3007'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  gateway:
+    container_name: e2e_gateway_fow
+    build:
+      context: ..
+      dockerfile: ./apps/gateway/Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+      JWT_SECRET: e2e-test-jwt-secret
+      AUTHENTICATION_HOST: authentication
+      AUTHENTICATION_PORT: 3001
+      PROFILE_HOST: profile
+      PROFILE_PORT: 3002
+      SOCIAL_HOST: social
+      SOCIAL_PORT: 3003
+      PROJECT_PLANNING_HOST: project-planning
+      PROJECT_PLANNING_PORT: 3006
+      CHAT_COLLECTOR_HOST: chat-collector
+      CHAT_COLLECTOR_PORT: 3007
+    depends_on:
+      db:
+        condition: service_healthy
+      authentication:
+        condition: service_started
+      profile:
+        condition: service_started
+      social:
+        condition: service_started
+      project-planning:
+        condition: service_started
+      chat-collector:
+        condition: service_started
+

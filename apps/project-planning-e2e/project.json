@@ -11,7 +11,7 @@
         "jestConfig": "apps/project-planning-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["project-planning:build", "project-planning:serve"]
+      "dependsOn": ["project-planning:build"]
     }
   }
 }
