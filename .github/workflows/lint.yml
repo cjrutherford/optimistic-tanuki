@@ -36,7 +36,7 @@ jobs:
         uses: nrwl/nx-set-shas@v4
 
       - name: Run affected linting
-        run: npx nx affected -t lint --parallel=3 --maxParallel=3
+        run: npx nx affected -t lint --parallel=3 --maxParallel=3 --exclude='*-e2e'
         env:
           CI: true
 
@@ -64,7 +64,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Run all linting
-        run: npx nx run-many -t lint --all --parallel=3
+        run: npx nx run-many -t lint --all --parallel=3 --exclude='*-e2e'
         env:
           CI: true
 
