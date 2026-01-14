@@ -11,7 +11,7 @@
         "jestConfig": "apps/prompt-proxy-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["prompt-proxy:build", "prompt-proxy:serve"]
+      "dependsOn": ["prompt-proxy:build"]
     }
   }
 }

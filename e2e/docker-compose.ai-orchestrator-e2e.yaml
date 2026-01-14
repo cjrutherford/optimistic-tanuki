@@ -32,7 +32,7 @@ services:
     container_name: ot_db_setup_e2e
     working_dir: /workspace
     volumes:
-      - ./:/workspace:cached
+      - ..:/workspace:cached
     environment:
       POSTGRES_HOST: db
       POSTGRES_USER: postgres
@@ -46,11 +46,14 @@ services:
 
   gateway:
     image: optimistic-tanuki-gateway
+    build:
+      context: ..
+      dockerfile: ./apps/gateway/Dockerfile
     container_name: ot_gateway_e2e
     ports:
       - '3000:3000'
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/optimistic_tanuki_e2e
+      - DATABASE_URL=db://db:postgres@db:5432/optimistic_tanuki_e2e
     depends_on:
       - db
     healthcheck:
@@ -64,7 +67,7 @@ services:
     container_name: ot_mcp_server_e2e
     # no host port mapping; accessible to other containers via Docker network
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/optimistic_tanuki_e2e
+      - DATABASE_URL=db://db:postgres@db:5432/optimistic_tanuki_e2e
     depends_on:
       - db
       - telos-docs-service
@@ -83,6 +86,9 @@ services:
 
   chat-collector:
     image: optimistic-tanuki-chat-collector
+    build:
+      context: ..
+      dockerfile: ./apps/chat-collector/Dockerfile
     container_name: ot_chat_collector_e2e
     networks:
       default:
@@ -91,9 +97,9 @@ services:
     ports:
       - '3007:3007'
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/optimistic_tanuki_e2e
+      - DATABASE_URL=db://db:postgres@db:5432/optimistic_tanuki_e2e
     volumes:
-      - ./scripts/tcp-health-check.js:/usr/src/app/tcp-health-check.js
+      - ../scripts/tcp-health-check.js:/usr/src/app/tcp-health-check.js
     depends_on:
       db-setup:
         condition: service_completed_successfully
@@ -107,6 +113,9 @@ services:
 
   telos-docs-service:
     image: optimistic-tanuki-telos-docs-service
+    build:
+      context: ..
+      dockerfile: ./apps/telos-docs-service/Dockerfile
     container_name: ot_telos_docs_service_e2e
     networks:
       default:
@@ -115,9 +124,9 @@ services:
     ports:
       - '3008:3008'
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/optimistic_tanuki_e2e
+      - DATABASE_URL=db://db:postgres@db:5432/optimistic_tanuki_e2e
     volumes:
-      - ./scripts/tcp-health-check.js:/usr/src/app/tcp-health-check.js
+      - ../scripts/tcp-health-check.js:/usr/src/app/tcp-health-check.js
     depends_on:
       db-setup:
         condition: service_completed_successfully
@@ -131,6 +140,9 @@ services:
 
   profile:
     image: optimistic-tanuki-profile
+    build:
+      context: ..
+      dockerfile: ./apps/profile/Dockerfile
     container_name: ot_profile_e2e
     networks:
       default:
@@ -139,9 +151,9 @@ services:
     ports:
       - '3002:3002'
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/optimistic_tanuki_e2e
+      - DATABASE_URL=db://db:postgres@db:5432/optimistic_tanuki_e2e
     volumes:
-      - ./scripts/tcp-health-check.js:/usr/src/app/tcp-health-check.js
+      - ../scripts/tcp-health-check.js:/usr/src/app/tcp-health-check.js
     depends_on:
       db-setup:
         condition: service_completed_successfully
@@ -155,6 +167,9 @@ services:
 
   project-planning:
     image: optimistic-tanuki-project-planning
+    build:
+      context: ..
+      dockerfile: ./apps/project-planning/Dockerfile
     container_name: ot_project_planning_e2e
     networks:
       default:
@@ -163,9 +178,9 @@ services:
     ports:
       - '3006:3006'
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/optimistic_tanuki_e2e
+      - DATABASE_URL=db://db:postgres@db:5432/optimistic_tanuki_e2e
     volumes:
-      - ./scripts/tcp-health-check.js:/usr/src/app/tcp-health-check.js
+      - ../scripts/tcp-health-check.js:/usr/src/app/tcp-health-check.js
     depends_on:
       db-setup:
         condition: service_completed_successfully
@@ -179,6 +194,9 @@ services:
 
   ai-orchestration:
     image: optimistic-tanuki-ai-orchestration
+    build:
+      context: ..
+      dockerfile: ./apps/ai-orchestrator/Dockerfile
     container_name: ot_ai_orchestration_e2e
     networks:
       default:
@@ -192,7 +210,7 @@ services:
       - REDIS_PORT=6379
       - TELEOS_DOCS_URL=http://telos-docs-service:3008
     volumes:
-      - ./scripts/tcp-health-check.js:/usr/src/app/tcp-health-check.js
+      - ../scripts/tcp-health-check.js:/usr/src/app/tcp-health-check.js
     depends_on:
       - mcp-server
       - redis

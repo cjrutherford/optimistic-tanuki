@@ -11,7 +11,7 @@
         "jestConfig": "apps/chat-collector-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["chat-collector:build", "chat-collector:serve"]
+      "dependsOn": ["chat-collector:build"]
     }
   }
 }

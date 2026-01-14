@@ -1,7 +1,7 @@
 # Docker Compose for Project Planning E2E Tests
 # Minimal setup for testing project-planning microservice
 services:
-  postgres:
+  db:
     image: postgres:latest
     restart: always
     container_name: e2e_db_project_planning
@@ -9,8 +9,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
-    ports:
-      - '5432:5432'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
       interval: 5s
@@ -24,11 +22,11 @@ services:
     volumes:
       - ..:/workspace
     environment:
-      POSTGRES_HOST: postgres
+      POSTGRES_HOST: db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
     command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
     restart: 'no'
@@ -41,13 +39,13 @@ services:
     ports:
       - '3006:3006'
     environment:
-      DATABASE_HOST: postgres
+      DATABASE_HOST: db
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully

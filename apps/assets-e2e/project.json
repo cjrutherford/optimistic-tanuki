@@ -11,7 +11,7 @@
         "jestConfig": "apps/assets-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["assets:build", "assets:serve"]
+      "dependsOn": ["assets:build"]
     }
   }
 }
