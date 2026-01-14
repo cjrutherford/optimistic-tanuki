@@ -163,158 +163,6 @@ export class LangChainService {
     return '';
   }
 
-  private createSystemPromptTemplate(): ChatPromptTemplate {
-    return ChatPromptTemplate.fromMessages([
-      [
-        'system',
-        `You are an AI assistant named {personaName}. {personaDescription}
-
-You are helping the user with their requests. The user is NOT you - you are the assistant.
-
-# USER INFORMATION (the person you are helping)
-- User ID: {userId}
-- User Name: {userName}
-
-# CONVERSATION SUMMARY
-{conversationSummary}
-
-{projectContext}
-
-# TOOL DISCOVERY
-You have access to tools through the MCP (Model Context Protocol) system. To discover what tools are available, call the 'list_tools' tool. This will show you all available tools with their exact parameter names and descriptions.
-
-**IMPORTANT**: The available tools may change over time. Always use 'list_tools' when you're uncertain about:
-- What tools are available
-- What parameters a tool requires
-- The exact parameter names to use
-
-# AVAILABLE RESOURCES
-You can access contextual information using MCP resources:
-- project://{{projectId}}/context - Get full project context including tasks, risks, changes, and journal entries
-
-# DATA RELATIONSHIPS & CRITICAL PARAMETER MAPPINGS
-
-## User Identity Parameters
-- **userId** or **createdBy**: ALWAYS use '{userId}' (the current user's profile ID)
-- **profileId**: SAME as userId - use '{userId}'
-- **owner**: SAME as userId - use '{userId}'
-
-## Project Management Entities
-1. **Project**: Container identified by UUID (e.g., "a1b2c3d4-e5f6-...")
-   - To GET project ID: Use list_projects or query_projects FIRST
-   - Parameters: name, description, userId, status, startDate, members
-   - Status values: PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED
-
-2. **Task**: Work item belonging to a Project
-   - REQUIRED: title, createdBy (use '{userId}'), projectId (from list/query)
-   - OPTIONAL: description, status, priority
-   - Status values: TODO, IN_PROGRESS, DONE, ARCHIVED
-   - Priority values: LOW, MEDIUM_LOW, MEDIUM, MEDIUM_HIGH, HIGH
-
-3. **Risk**: Risk assessment belonging to a Project
-   - REQUIRED: projectId, title, likelihood, impact, createdBy
-   - Parameters match risk_mcp service schemas
-
-4. **Change**: Change request belonging to a Project
-   - REQUIRED: projectId, title, description, createdBy
-   - Parameters match change_mcp service schemas
-
-## ID Resolution Workflow (CRITICAL)
-NEVER fabricate or guess IDs. ALWAYS follow this pattern:
-
-1. **Need projectId?**
-   - Step 1: Call list_projects with userId: '{userId}'
-   - Step 2: Extract the 'id' field from returned project
-   - Step 3: Use that exact ID in subsequent calls
-
-2. **Need taskId/riskId/changeId?**
-   - Step 1: Call list_tasks/list_risks/list_changes with projectId
-   - Step 2: Extract the 'id' field from returned items
-   - Step 3: Use that exact ID in subsequent calls
-
-# STRICT OPERATIONAL GUIDELINES
-1. **TOOL DISCOVERY FIRST**: If uncertain about available actions, call 'list_tools' to see what you can do.
-2. **NO ID HALLUCINATION**: You must NEVER invent IDs. If you need an ID (projectId, taskId, etc.), you MUST first query or list the items to find the correct ID. **If you don't have an ID, call a tool to find it.**
-3. **TOOL FIRST APPROACH**: If a user request requires data or action, call the appropriate tool immediately. Do not ask for permission.
-4. **ONE TOOL AT A TIME**: Execute one tool call, wait for the result, then decide the next step.
-5. **JSON ONLY OUTPUT**: When calling a tool, output ONLY the JSON object. No markdown, no explanations.
-6. **USER ID BINDING**: Always use the provided User ID ({userId}) for 'userId', 'createdBy', 'owner', etc.
-7. **EXACT PARAMETER NAMES**: Use the EXACT parameter names from the tool schema. The schemas are provided by 'list_tools' or bound to this conversation. Do NOT guess or assume parameter names.
-8. **CONTEXT-AWARE IDs**: Check conversation summary and project context for previously mentioned IDs before querying.
-
-# TOOL CALLING FORMAT
-When calling a tool, output a single JSON object with this structure:
-{{"name": "tool_name", "arguments": {{"param1": "value1", "param2": "value2"}}}}
-
-Do NOT wrap in markdown code blocks. Do NOT add explanations before or after.
-
-# EXAMPLE WORKFLOWS WITH PROJECT MANAGEMENT TOOLS
-
-Note: In these examples, "User" is the person making the request, and you (the assistant) perform the actions and provide responses.
-
-## Example 1: Create Project (Simple)
-**User says**: "Create a new project called 'Website Redesign' for planning our site update"
-**You (assistant) call tool**: {{"name": "create_project", "arguments": {{"name": "Website Redesign", "description": "Planning our site update", "userId": "{userId}", "status": "PLANNING"}}}}
-**You (assistant) respond**: "I've created the 'Website Redesign' project. It's now in PLANNING status."
-
-## Example 2: Create Task (Requires Project ID Resolution)
-**User says**: "Add a task 'Update homepage' to the Website Redesign project"
-**You (assistant) - Step 1**: {{"name": "query_projects", "arguments": {{"name": "Website Redesign", "userId": "{userId}"}}}}
-**[Returns]: {{"success": true, "projects": [{{"id": "a1b2c3d4-e5f6-...", "name": "Website Redesign", ...}}]}}
-**You (assistant) - Step 2**: {{"name": "create_task", "arguments": {{"title": "Update homepage", "projectId": "a1b2c3d4-e5f6-...", "createdBy": "{userId}", "status": "TODO", "priority": "MEDIUM"}}}}
-**You (assistant) respond**: "I've added the task 'Update homepage' to your Website Redesign project."
-
-## Example 3: List and Update Task
-**User says**: "Mark the homepage update task as in progress"
-**You (assistant) - Step 1**: {{"name": "query_projects", "arguments": {{"name": "Website Redesign", "userId": "{userId}"}}}}
-**[Returns]: {{"projects": [{{"id": "a1b2c3d4-...", ...}}]}}
-**You (assistant) - Step 2**: {{"name": "list_tasks", "arguments": {{"projectId": "a1b2c3d4-..."}}}}
-**[Returns]: {{"tasks": [{{"id": "task-xyz", "title": "Update homepage", ...}}]}}
-**You (assistant) - Step 3**: {{"name": "update_task", "arguments": {{"id": "task-xyz", "status": "IN_PROGRESS"}}}}
-**You (assistant) respond**: "The 'Update homepage' task is now marked as in progress."
-
-## Example 4: Query Specific Project Details
-**User says**: "What tasks do I have in the Website project?"
-**You (assistant) - Step 1**: {{"name": "query_projects", "arguments": {{"name": "Website", "userId": "{userId}"}}}}
-**[Returns]: {{"projects": [{{"id": "proj-123", ...}}]}}
-**You (assistant) - Step 2**: {{"name": "list_tasks", "arguments": {{"projectId": "proj-123"}}}}
-**You (assistant) respond**: "In your Website project, you have: [list tasks from result]"
-
-## Example 5: Using Context-Aware IDs
-**Context**: Previous message mentioned "project proj-abc123"
-**User says**: "Add a task to review the design"
-**[You (assistant) check context for proj-abc123]**
-**You (assistant) call tool**: {{"name": "create_task", "arguments": {{"title": "Review the design", "projectId": "proj-abc123", "createdBy": "{userId}", "status": "TODO"}}}}
-**You (assistant) respond**: "I've added 'Review the design' to your project."
-
-## Example 6: Create Risk
-**User says**: "Add a risk about potential delays to the Website project"
-**You (assistant) - Step 1**: {{"name": "query_projects", "arguments": {{"name": "Website", "userId": "{userId}"}}}}
-**[Returns projectId]**
-**You (assistant) - Step 2**: {{"name": "create_risk", "arguments": {{"projectId": "proj-xyz", "title": "Potential delays", "description": "Risk of timeline slippage", "likelihood": "MEDIUM", "impact": "HIGH", "createdBy": "{userId}"}}}}
-
-# PARAMETER CONSISTENCY CHECKLIST
-Before calling any project management tool, verify:
-- ✓ userId/createdBy = '{userId}'
-- ✓ projectId = Actual UUID from list/query (never invented)
-- ✓ taskId/riskId = Actual UUID from list (never invented)
-- ✓ status/priority = Valid enum value from tool schema
-- ✓ All REQUIRED parameters present
-- ✓ Parameter names match EXACTLY (not camelCase variations)
-
-# RESPONSE RULES
-- You are the AI assistant. The user is the person you're helping. Always respond from the assistant's perspective.
-- Use "I" when referring to actions you take (e.g., "I've created...", "I'll check...")
-- Use "you" or "your" when referring to the user (e.g., "your project", "you requested")
-- After tool execution completes, provide a clear natural language response.
-- If a tool fails, explain what went wrong and suggest next steps.
-- If you're uncertain about parameters, call 'list_tools' to verify.
-- Include relevant details from tool results in your response (project names, task counts, IDs when helpful).
-`,
-      ],
-    ]);
-  }
-
   private async createTools(
     userId: string,
     conversationId: string
@@ -592,6 +440,18 @@ Always verify parameter names match tool schemas before calling!`;
       for (const toolCall of toolCallsToExecute) {
         this.logger.log(`Executing tool: ${toolCall.name}`);
 
+        // Emit tool start event
+        if (onStreamEvent) {
+          await onStreamEvent({
+            type: StreamingEventType.TOOL_START,
+            content: {
+              tool: toolCall.name,
+              input: toolCall.args,
+            },
+            timestamp: new Date(),
+          });
+        }
+
         try {
           // Convert to OpenAI format for MCP executor
           const openAIToolCall = {
@@ -624,14 +484,40 @@ Always verify parameter names match tool schemas before calling!`;
             output: result.result || result,
           });
 
+          // Emit tool end event
+          if (onStreamEvent) {
+            await onStreamEvent({
+              type: StreamingEventType.TOOL_END,
+              content: {
+                tool: toolCall.name,
+                output: result.result || result,
+                success: true,
+              },
+              timestamp: new Date(),
+            });
+          }
+
           this.logger.log(`Tool ${toolCall.name} executed successfully`);
         } catch (error) {
           this.logger.error(`Tool ${toolCall.name} execution failed:`, error);
+          
           toolCalls.push({
             tool: toolCall.name,
             input: toolCall.args,
             output: { error: error.message },
           });
+
+          // Emit error event
+          if (onStreamEvent) {
+            await onStreamEvent({
+              type: StreamingEventType.ERROR,
+              content: {
+                message: `Tool ${toolCall.name} failed: ${error.message}`,
+                details: error,
+              },
+              timestamp: new Date(),
+            });
+          }
         }
       }
 
@@ -648,10 +534,24 @@ Always verify parameter names match tool schemas before calling!`;
         const finalMessages = [...messages, response, ...toolResultMessages];
         const finalResponse = await llmWithTools.invoke(finalMessages);
 
-        // Filter thinking tokens from final response
-        const cleanedResponse = this.workflowControl.filterThinkingTokens(
-          finalResponse.content as string
-        );
+        // Extract thinking tokens from final response
+        const finalResponseText = finalResponse.content as string;
+        const { thinking: finalThinking, filtered: cleanedResponse } =
+          this.workflowControl.extractThinkingTokens(finalResponseText);
+
+        // Emit final thinking tokens if any
+        if (finalThinking.length > 0 && onStreamEvent) {
+          for (const thinkingText of finalThinking) {
+            await onStreamEvent({
+              type: StreamingEventType.THINKING,
+              content: {
+                text: thinkingText,
+                raw: finalResponseText,
+              },
+              timestamp: new Date(),
+            });
+          }
+        }
 
         return {
           response: cleanedResponse,
@@ -661,14 +561,9 @@ Always verify parameter names match tool schemas before calling!`;
       }
     }
 
-    // No tool calls, just return the response
-    // Filter thinking tokens from response
-    const cleanedResponse = this.workflowControl.filterThinkingTokens(
-      response.content as string
-    );
-
+    // No tool calls, just return the response with filtered thinking tokens
     return {
-      response: cleanedResponse,
+      response: filtered,
       intermediateSteps: [],
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
@@ -681,19 +576,21 @@ Always verify parameter names match tool schemas before calling!`;
     userMessage: string,
     conversationSummary: string,
     conversationId: string
-  ): AsyncGenerator<{ type: string; content: string }> {
+  ): AsyncGenerator<StreamingEvent> {
     // Enrich with project context if available
     const projectContext = await this.enrichWithProjectContext(
       conversationHistory,
       userMessage
     );
 
-    const promptTemplate = this.createSystemPromptTemplate();
+    // Use centralized prompt template service
+    const promptTemplate = this.promptTemplate.createSystemPromptTemplate();
+    const personaTelos = this.promptTemplate.formatPersonaTelos(persona);
+    const userProfile = this.promptTemplate.formatUserProfile(profile);
+    
     const systemMessages = await promptTemplate.formatMessages({
-      personaName: persona.name,
-      personaDescription: persona.description,
-      userId: profile.id,
-      userName: profile.profileName,
+      ...personaTelos,
+      ...userProfile,
       conversationSummary: conversationSummary,
       projectContext: projectContext || '',
     });
@@ -733,7 +630,7 @@ Always verify parameter names match tool schemas before calling!`;
     const stream = await llmWithTools.stream(messages);
     let fullResponse = '';
 
-    // Stream chunks in real-time instead of accumulating
+    // Stream chunks in real-time
     for await (const chunk of stream) {
       if (chunk.content) {
         const contentStr =
@@ -743,13 +640,37 @@ Always verify parameter names match tool schemas before calling!`;
         fullResponse += contentStr;
 
         // Yield each chunk immediately for real-time updates
-        yield { type: 'chunk', content: contentStr };
+        yield {
+          type: StreamingEventType.CHUNK,
+          content: contentStr,
+          timestamp: new Date(),
+        };
+      }
+    }
+
+    // Extract and emit thinking tokens before final response
+    const { thinking, filtered } = this.workflowControl.extractThinkingTokens(fullResponse);
+    
+    if (thinking.length > 0) {
+      for (const thinkingText of thinking) {
+        yield {
+          type: StreamingEventType.THINKING,
+          content: {
+            text: thinkingText,
+            raw: fullResponse,
+          },
+          timestamp: new Date(),
+        };
       }
     }
 
     // Final yield with complete response (filtered for thinking tokens)
-    const cleanedResponse =
-      this.workflowControl.filterThinkingTokens(fullResponse);
-    yield { type: 'final_response', content: cleanedResponse };
+    yield {
+      type: StreamingEventType.FINAL_RESPONSE,
+      content: {
+        text: filtered,
+      },
+      timestamp: new Date(),
+    };
   }
 }
