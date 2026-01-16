@@ -15,6 +15,8 @@ import {
   SubscriptionCommands,
   DonationCommands,
   OrderCommands,
+  AppointmentCommands,
+  AvailabilityCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import {
@@ -24,6 +26,12 @@ import {
   CreateDonationDto,
   CreateOrderDto,
   UpdateOrderDto,
+  CreateAppointmentDto,
+  UpdateAppointmentDto,
+  ApproveAppointmentDto,
+  DenyAppointmentDto,
+  CreateAvailabilityDto,
+  UpdateAvailabilityDto,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
@@ -193,6 +201,178 @@ export class StoreController {
   async cancelSubscription(@Param('id') id: string) {
     return await firstValueFrom(
       this.storeService.send(SubscriptionCommands.CANCEL_SUBSCRIPTION, id)
+    );
+  }
+
+  // Appointment endpoints
+  @UseGuards(AuthGuard)
+  @Post('appointments')
+  async createAppointment(
+    @Body() createAppointmentDto: CreateAppointmentDto
+  ) {
+    return await firstValueFrom(
+      this.storeService.send(
+        AppointmentCommands.CREATE_APPOINTMENT,
+        createAppointmentDto
+      )
+    );
+  }
+
+  @RequirePermissions('store.appointment.view')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('appointments')
+  async findAllAppointments() {
+    return await firstValueFrom(
+      this.storeService.send(AppointmentCommands.FIND_ALL_APPOINTMENTS, {})
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('appointments/user/:userId')
+  async findUserAppointments(@Param('userId') userId: string) {
+    return await firstValueFrom(
+      this.storeService.send(AppointmentCommands.FIND_USER_APPOINTMENTS, userId)
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('appointments/:id')
+  async findOneAppointment(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.storeService.send(AppointmentCommands.FIND_ONE_APPOINTMENT, id)
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Put('appointments/:id')
+  async updateAppointment(
+    @Param('id') id: string,
+    @Body() updateAppointmentDto: UpdateAppointmentDto
+  ) {
+    return await firstValueFrom(
+      this.storeService.send(AppointmentCommands.UPDATE_APPOINTMENT, {
+        id,
+        updateAppointmentDto,
+      })
+    );
+  }
+
+  @RequirePermissions('store.appointment.approve')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('appointments/:id/approve')
+  async approveAppointment(
+    @Param('id') id: string,
+    @Body() approveAppointmentDto: ApproveAppointmentDto
+  ) {
+    return await firstValueFrom(
+      this.storeService.send(AppointmentCommands.APPROVE_APPOINTMENT, {
+        id,
+        approveAppointmentDto,
+      })
+    );
+  }
+
+  @RequirePermissions('store.appointment.deny')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('appointments/:id/deny')
+  async denyAppointment(
+    @Param('id') id: string,
+    @Body() denyAppointmentDto: DenyAppointmentDto
+  ) {
+    return await firstValueFrom(
+      this.storeService.send(AppointmentCommands.DENY_APPOINTMENT, {
+        id,
+        denyAppointmentDto,
+      })
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Put('appointments/:id/cancel')
+  async cancelAppointment(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.storeService.send(AppointmentCommands.CANCEL_APPOINTMENT, id)
+    );
+  }
+
+  @RequirePermissions('store.appointment.complete')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('appointments/:id/complete')
+  async completeAppointment(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.storeService.send(AppointmentCommands.COMPLETE_APPOINTMENT, id)
+    );
+  }
+
+  @RequirePermissions('store.appointment.invoice')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Post('appointments/:id/invoice')
+  async generateInvoice(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.storeService.send(AppointmentCommands.GENERATE_INVOICE, id)
+    );
+  }
+
+  // Availability endpoints
+  @RequirePermissions('store.availability.create')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Post('availabilities')
+  async createAvailability(
+    @Body() createAvailabilityDto: CreateAvailabilityDto
+  ) {
+    return await firstValueFrom(
+      this.storeService.send(
+        AvailabilityCommands.CREATE_AVAILABILITY,
+        createAvailabilityDto
+      )
+    );
+  }
+
+  @Get('availabilities')
+  async findAllAvailabilities() {
+    return await firstValueFrom(
+      this.storeService.send(AvailabilityCommands.FIND_ALL_AVAILABILITIES, {})
+    );
+  }
+
+  @Get('availabilities/owner/:ownerId')
+  async findOwnerAvailabilities(@Param('ownerId') ownerId: string) {
+    return await firstValueFrom(
+      this.storeService.send(
+        AvailabilityCommands.FIND_OWNER_AVAILABILITIES,
+        ownerId
+      )
+    );
+  }
+
+  @Get('availabilities/:id')
+  async findOneAvailability(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.storeService.send(AvailabilityCommands.FIND_ONE_AVAILABILITY, id)
+    );
+  }
+
+  @RequirePermissions('store.availability.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('availabilities/:id')
+  async updateAvailability(
+    @Param('id') id: string,
+    @Body() updateAvailabilityDto: UpdateAvailabilityDto
+  ) {
+    return await firstValueFrom(
+      this.storeService.send(AvailabilityCommands.UPDATE_AVAILABILITY, {
+        id,
+        updateAvailabilityDto,
+      })
+    );
+  }
+
+  @RequirePermissions('store.availability.delete')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Delete('availabilities/:id')
+  async removeAvailability(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.storeService.send(AvailabilityCommands.REMOVE_AVAILABILITY, id)
     );
   }
 }

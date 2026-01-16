@@ -53,3 +53,8 @@ export {
   DonationCommands,
   OrderCommands,
 } from './lib/libs/store';
+
+export {
+  AppointmentCommands,
+  AvailabilityCommands,
+} from './lib/libs/appointments';
