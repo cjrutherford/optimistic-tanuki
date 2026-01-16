@@ -71,6 +71,12 @@ export class AppointmentsService {
     // Calculate duration in hours
     const startTime = new Date(appointment.startTime);
     const endTime = new Date(appointment.endTime);
+    
+    // Validate that endTime is after startTime
+    if (endTime <= startTime) {
+      throw new Error('End time must be after start time');
+    }
+    
     const durationMs = endTime.getTime() - startTime.getTime();
     const durationHours = durationMs / (1000 * 60 * 60);
 
@@ -143,8 +149,10 @@ export class AppointmentsService {
       throw new Error('Cannot generate invoice for free consultations');
     }
 
-    // Generate invoice number
-    const invoiceNumber = `INV-${Date.now()}-${appointment.id.substring(0, 8)}`;
+    // Generate invoice number with timestamp and random component for uniqueness
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const invoiceNumber = `INV-${timestamp}-${random}`;
 
     const invoice = this.invoiceRepository.create({
       appointmentId: appointment.id,

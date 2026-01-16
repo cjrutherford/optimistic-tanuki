@@ -69,9 +69,10 @@ export class AvailabilityManagementComponent implements OnInit {
   }
 
   openCreateModal(): void {
-    // Get current user ID - in a real app, this would come from an auth service
+    // TODO: Get current user ID from auth service
+    // For now using a placeholder that needs to be replaced with actual user ID
     this.createForm = {
-      ownerId: 'current-user-id', // TODO: Replace with actual user ID
+      ownerId: 'OWNER_ID_FROM_AUTH_SERVICE', // Replace with actual user ID from auth service
       dayOfWeek: 1,
       startTime: '09:00:00',
       endTime: '17:00:00',
