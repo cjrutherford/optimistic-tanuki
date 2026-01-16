@@ -1,0 +1,200 @@
+<div class="appointment-management">
+  <h2>Appointment Management</h2>
+
+  <div *ngIf="error" class="error-message">{{ error }}</div>
+
+  <div class="filters">
+    <label>
+      Filter by Status:
+      <select [(ngModel)]="statusFilter" (change)="onStatusFilterChange()">
+        <option value="all">All</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="denied">Denied</option>
+        <option value="cancelled">Cancelled</option>
+        <option value="completed">Completed</option>
+      </select>
+    </label>
+    <button (click)="loadAppointments()" [disabled]="loading">
+      Refresh
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading appointments...</div>
+
+  <div class="appointments-grid" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>User ID</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Duration</th>
+          <th>Status</th>
+          <th>Free Consultation</th>
+          <th>Total Cost</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let appointment of filteredAppointments">
+          <td>{{ appointment.title }}</td>
+          <td>{{ appointment.userId }}</td>
+          <td>{{ formatDate(appointment.startTime) }}</td>
+          <td>{{ formatDate(appointment.endTime) }}</td>
+          <td>{{ calculateDuration(appointment) }}</td>
+          <td>
+            <span [class]="getStatusClass(appointment.status)">
+              {{ appointment.status }}
+            </span>
+          </td>
+          <td>{{ appointment.isFreeConsultation ? 'Yes' : 'No' }}</td>
+          <td>
+            {{
+              appointment.totalCost
+                ? '$' + appointment.totalCost.toFixed(2)
+                : '-'
+            }}
+          </td>
+          <td>
+            <button
+              *ngIf="appointment.status === 'pending'"
+              (click)="openApproveModal(appointment)"
+              class="btn-approve"
+            >
+              Approve
+            </button>
+            <button
+              *ngIf="appointment.status === 'pending'"
+              (click)="openDenyModal(appointment)"
+              class="btn-deny"
+            >
+              Deny
+            </button>
+            <button
+              *ngIf="appointment.status === 'approved'"
+              (click)="completeAppointment(appointment)"
+              class="btn-complete"
+            >
+              Complete
+            </button>
+            <button
+              *ngIf="
+                appointment.status === 'pending' ||
+                appointment.status === 'approved'
+              "
+              (click)="cancelAppointment(appointment)"
+              class="btn-cancel"
+            >
+              Cancel
+            </button>
+            <button
+              *ngIf="
+                appointment.status === 'completed' &&
+                !appointment.isFreeConsultation
+              "
+              (click)="generateInvoice(appointment)"
+              class="btn-invoice"
+            >
+              Generate Invoice
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Approve Modal -->
+  <div class="modal" *ngIf="showApproveModal">
+    <div class="modal-content">
+      <h3>Approve Appointment</h3>
+      <p>
+        <strong>Title:</strong> {{ selectedAppointment?.title }}<br />
+        <strong>User:</strong> {{ selectedAppointment?.userId }}<br />
+        <strong>Free Consultation:</strong>
+        {{ selectedAppointment?.isFreeConsultation ? 'Yes' : 'No' }}
+      </p>
+      <form>
+        <div class="form-group">
+          <label for="hourlyRate">Hourly Rate (USD):</label>
+          <input
+            type="number"
+            id="hourlyRate"
+            [(ngModel)]="approveForm.hourlyRate"
+            name="hourlyRate"
+            step="0.01"
+            min="0"
+            [disabled]="selectedAppointment?.isFreeConsultation"
+          />
+        </div>
+        <div class="form-group">
+          <label for="approveNotes">Notes:</label>
+          <textarea
+            id="approveNotes"
+            [(ngModel)]="approveForm.notes"
+            name="approveNotes"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" (click)="approveAppointment()" class="btn-primary">
+            Approve
+          </button>
+          <button type="button" (click)="closeApproveModal()" class="btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Deny Modal -->
+  <div class="modal" *ngIf="showDenyModal">
+    <div class="modal-content">
+      <h3>Deny Appointment</h3>
+      <p>
+        <strong>Title:</strong> {{ selectedAppointment?.title }}<br />
+        <strong>User:</strong> {{ selectedAppointment?.userId }}
+      </p>
+      <form>
+        <div class="form-group">
+          <label for="denialReason">Denial Reason:</label>
+          <textarea
+            id="denialReason"
+            [(ngModel)]="denyForm.denialReason"
+            name="denialReason"
+            rows="4"
+            required
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" (click)="denyAppointment()" class="btn-danger">
+            Deny
+          </button>
+          <button type="button" (click)="closeDenyModal()" class="btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Invoice Modal -->
+  <div class="modal" *ngIf="showInvoiceModal">
+    <div class="modal-content">
+      <h3>Invoice Generated</h3>
+      <div *ngIf="generatedInvoice">
+        <p><strong>Invoice Number:</strong> {{ generatedInvoice.invoiceNumber }}</p>
+        <p><strong>Amount:</strong> ${{ generatedInvoice.amount.toFixed(2) }}</p>
+        <p><strong>Currency:</strong> {{ generatedInvoice.currency }}</p>
+        <p><strong>Status:</strong> {{ generatedInvoice.status }}</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" (click)="closeInvoiceModal()" class="btn-primary">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

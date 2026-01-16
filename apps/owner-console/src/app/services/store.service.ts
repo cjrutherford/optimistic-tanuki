@@ -5,6 +5,15 @@ import {
   CreateProductDto,
   UpdateProductDto,
   UpdateOrderDto,
+  CreateAppointmentDto,
+  UpdateAppointmentDto,
+  ApproveAppointmentDto,
+  DenyAppointmentDto,
+  CreateAvailabilityDto,
+  UpdateAvailabilityDto,
+  Appointment,
+  Availability,
+  Invoice,
 } from '@optimistic-tanuki/ui-models';
 
 export interface Product {
@@ -132,5 +141,118 @@ export class StoreService {
       `${this.API_URL}/subscriptions/${id}/cancel`,
       {}
     );
+  }
+
+  // Appointment management
+  getAppointments(): Observable<Appointment[]> {
+    return this.http.get<Appointment[]>(`${this.API_URL}/appointments`);
+  }
+
+  getUserAppointments(userId: string): Observable<Appointment[]> {
+    return this.http.get<Appointment[]>(
+      `${this.API_URL}/appointments/user/${userId}`
+    );
+  }
+
+  getAppointment(id: string): Observable<Appointment> {
+    return this.http.get<Appointment>(`${this.API_URL}/appointments/${id}`);
+  }
+
+  createAppointment(
+    appointment: CreateAppointmentDto
+  ): Observable<Appointment> {
+    return this.http.post<Appointment>(
+      `${this.API_URL}/appointments`,
+      appointment
+    );
+  }
+
+  updateAppointment(
+    id: string,
+    appointment: UpdateAppointmentDto
+  ): Observable<Appointment> {
+    return this.http.put<Appointment>(
+      `${this.API_URL}/appointments/${id}`,
+      appointment
+    );
+  }
+
+  approveAppointment(
+    id: string,
+    approveDto: ApproveAppointmentDto
+  ): Observable<Appointment> {
+    return this.http.put<Appointment>(
+      `${this.API_URL}/appointments/${id}/approve`,
+      approveDto
+    );
+  }
+
+  denyAppointment(
+    id: string,
+    denyDto: DenyAppointmentDto
+  ): Observable<Appointment> {
+    return this.http.put<Appointment>(
+      `${this.API_URL}/appointments/${id}/deny`,
+      denyDto
+    );
+  }
+
+  cancelAppointment(id: string): Observable<Appointment> {
+    return this.http.put<Appointment>(
+      `${this.API_URL}/appointments/${id}/cancel`,
+      {}
+    );
+  }
+
+  completeAppointment(id: string): Observable<Appointment> {
+    return this.http.put<Appointment>(
+      `${this.API_URL}/appointments/${id}/complete`,
+      {}
+    );
+  }
+
+  generateInvoice(appointmentId: string): Observable<Invoice> {
+    return this.http.post<Invoice>(
+      `${this.API_URL}/appointments/${appointmentId}/invoice`,
+      {}
+    );
+  }
+
+  // Availability management
+  getAvailabilities(): Observable<Availability[]> {
+    return this.http.get<Availability[]>(`${this.API_URL}/availabilities`);
+  }
+
+  getOwnerAvailabilities(ownerId: string): Observable<Availability[]> {
+    return this.http.get<Availability[]>(
+      `${this.API_URL}/availabilities/owner/${ownerId}`
+    );
+  }
+
+  getAvailability(id: string): Observable<Availability> {
+    return this.http.get<Availability>(`${this.API_URL}/availabilities/${id}`);
+  }
+
+  createAvailability(
+    availability: CreateAvailabilityDto
+  ): Observable<Availability> {
+    return this.http.post<Availability>(
+      `${this.API_URL}/availabilities`,
+      availability
+    );
+  }
+
+  updateAvailability(
+    id: string,
+    availability: UpdateAvailabilityDto
+  ): Observable<Availability> {
+    return this.http.put<Availability>(
+      `${this.API_URL}/availabilities/${id}`,
+      availability
+    );
+  }
+
+  deleteAvailability(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/availabilities/${id}`);
   }
 }

@@ -1,0 +1,212 @@
+<div class="availability-management">
+  <h2>Availability Management</h2>
+
+  <div *ngIf="error" class="error-message">{{ error }}</div>
+
+  <div class="actions">
+    <button (click)="openCreateModal()" class="btn-create">
+      Add Availability Slot
+    </button>
+    <button (click)="loadAvailabilities()" [disabled]="loading">
+      Refresh
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading availabilities...</div>
+
+  <div class="availabilities-grid" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>Day of Week</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Hourly Rate</th>
+          <th>Service Type</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let availability of availabilities">
+          <td>{{ getDayLabel(availability.dayOfWeek) }}</td>
+          <td>{{ formatTime(availability.startTime) }}</td>
+          <td>{{ formatTime(availability.endTime) }}</td>
+          <td>${{ availability.hourlyRate.toFixed(2) }}/hr</td>
+          <td>{{ availability.serviceType || '-' }}</td>
+          <td>
+            <span [class]="availability.isActive ? 'active' : 'inactive'">
+              {{ availability.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <button (click)="openEditModal(availability)" class="btn-edit">
+              Edit
+            </button>
+            <button (click)="deleteAvailability(availability)" class="btn-delete">
+              Delete
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Create Modal -->
+  <div class="modal" *ngIf="showCreateModal">
+    <div class="modal-content">
+      <h3>Add Availability Slot</h3>
+      <form>
+        <div class="form-group">
+          <label for="dayOfWeek">Day of Week:</label>
+          <select
+            id="dayOfWeek"
+            [(ngModel)]="createForm.dayOfWeek"
+            name="dayOfWeek"
+            required
+          >
+            <option *ngFor="let day of daysOfWeek" [value]="day.value">
+              {{ day.label }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="startTime">Start Time:</label>
+          <input
+            type="time"
+            id="startTime"
+            [(ngModel)]="createForm.startTime"
+            name="startTime"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="endTime">End Time:</label>
+          <input
+            type="time"
+            id="endTime"
+            [(ngModel)]="createForm.endTime"
+            name="endTime"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="hourlyRate">Hourly Rate (USD):</label>
+          <input
+            type="number"
+            id="hourlyRate"
+            [(ngModel)]="createForm.hourlyRate"
+            name="hourlyRate"
+            step="0.01"
+            min="0"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="serviceType">Service Type:</label>
+          <input
+            type="text"
+            id="serviceType"
+            [(ngModel)]="createForm.serviceType"
+            name="serviceType"
+          />
+        </div>
+        <div class="form-group checkbox">
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="createForm.isActive"
+              name="isActive"
+            />
+            Active
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" (click)="createAvailability()" class="btn-primary">
+            Create
+          </button>
+          <button type="button" (click)="closeCreateModal()" class="btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal" *ngIf="showEditModal">
+    <div class="modal-content">
+      <h3>Edit Availability Slot</h3>
+      <form>
+        <div class="form-group">
+          <label for="editDayOfWeek">Day of Week:</label>
+          <select
+            id="editDayOfWeek"
+            [(ngModel)]="editForm.dayOfWeek"
+            name="editDayOfWeek"
+          >
+            <option *ngFor="let day of daysOfWeek" [value]="day.value">
+              {{ day.label }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editStartTime">Start Time:</label>
+          <input
+            type="time"
+            id="editStartTime"
+            [(ngModel)]="editForm.startTime"
+            name="editStartTime"
+          />
+        </div>
+        <div class="form-group">
+          <label for="editEndTime">End Time:</label>
+          <input
+            type="time"
+            id="editEndTime"
+            [(ngModel)]="editForm.endTime"
+            name="editEndTime"
+          />
+        </div>
+        <div class="form-group">
+          <label for="editHourlyRate">Hourly Rate (USD):</label>
+          <input
+            type="number"
+            id="editHourlyRate"
+            [(ngModel)]="editForm.hourlyRate"
+            name="editHourlyRate"
+            step="0.01"
+            min="0"
+          />
+        </div>
+        <div class="form-group">
+          <label for="editServiceType">Service Type:</label>
+          <input
+            type="text"
+            id="editServiceType"
+            [(ngModel)]="editForm.serviceType"
+            name="editServiceType"
+          />
+        </div>
+        <div class="form-group checkbox">
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="editForm.isActive"
+              name="editIsActive"
+            />
+            Active
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" (click)="updateAvailability()" class="btn-primary">
+            Update
+          </button>
+          <button type="button" (click)="closeEditModal()" class="btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
