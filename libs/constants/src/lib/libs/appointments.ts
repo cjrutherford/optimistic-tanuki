@@ -20,4 +20,14 @@ const AvailabilityCommands = {
   REMOVE_AVAILABILITY: { cmd: 'removeAvailability' },
 };
 
-export { AppointmentCommands, AvailabilityCommands };
+const ResourceCommands = {
+  CREATE_RESOURCE: { cmd: 'createResource' },
+  FIND_ALL_RESOURCES: { cmd: 'findAllResources' },
+  FIND_RESOURCES_BY_TYPE: { cmd: 'findResourcesByType' },
+  FIND_ONE_RESOURCE: { cmd: 'findOneResource' },
+  UPDATE_RESOURCE: { cmd: 'updateResource' },
+  REMOVE_RESOURCE: { cmd: 'removeResource' },
+  CHECK_RESOURCE_AVAILABILITY: { cmd: 'checkResourceAvailability' },
+};
+
+export { AppointmentCommands, AvailabilityCommands, ResourceCommands };

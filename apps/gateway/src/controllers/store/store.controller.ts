@@ -17,6 +17,7 @@ import {
   OrderCommands,
   AppointmentCommands,
   AvailabilityCommands,
+  ResourceCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import {
@@ -32,6 +33,8 @@ import {
   DenyAppointmentDto,
   CreateAvailabilityDto,
   UpdateAvailabilityDto,
+  CreateResourceDto,
+  UpdateResourceDto,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
@@ -373,6 +376,74 @@ export class StoreController {
   async removeAvailability(@Param('id') id: string) {
     return await firstValueFrom(
       this.storeService.send(AvailabilityCommands.REMOVE_AVAILABILITY, id)
+    );
+  }
+
+  // Resource endpoints
+  @RequirePermissions('store.resource.create')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Post('resources')
+  async createResource(@Body() createResourceDto: CreateResourceDto) {
+    return await firstValueFrom(
+      this.storeService.send(ResourceCommands.CREATE_RESOURCE, createResourceDto)
+    );
+  }
+
+  @Get('resources')
+  async findAllResources() {
+    return await firstValueFrom(
+      this.storeService.send(ResourceCommands.FIND_ALL_RESOURCES, {})
+    );
+  }
+
+  @Get('resources/type/:type')
+  async findResourcesByType(@Param('type') type: string) {
+    return await firstValueFrom(
+      this.storeService.send(ResourceCommands.FIND_RESOURCES_BY_TYPE, type)
+    );
+  }
+
+  @Get('resources/:id')
+  async findOneResource(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.storeService.send(ResourceCommands.FIND_ONE_RESOURCE, id)
+    );
+  }
+
+  @RequirePermissions('store.resource.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('resources/:id')
+  async updateResource(
+    @Param('id') id: string,
+    @Body() updateResourceDto: UpdateResourceDto
+  ) {
+    return await firstValueFrom(
+      this.storeService.send(ResourceCommands.UPDATE_RESOURCE, {
+        id,
+        updateResourceDto,
+      })
+    );
+  }
+
+  @RequirePermissions('store.resource.delete')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Delete('resources/:id')
+  async removeResource(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.storeService.send(ResourceCommands.REMOVE_RESOURCE, id)
+    );
+  }
+
+  @Post('resources/:id/check-availability')
+  async checkResourceAvailability(
+    @Param('id') resourceId: string,
+    @Body() data: { startTime: Date; endTime: Date }
+  ) {
+    return await firstValueFrom(
+      this.storeService.send(ResourceCommands.CHECK_RESOURCE_AVAILABILITY, {
+        resourceId,
+        ...data,
+      })
     );
   }
 }

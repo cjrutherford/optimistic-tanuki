@@ -47,3 +47,4 @@ export * from './store';
 export * from './appointment';
 export * from './availability';
 export * from './invoice';
+export * from './resource';

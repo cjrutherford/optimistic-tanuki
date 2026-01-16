@@ -3,6 +3,8 @@ export interface Appointment {
   userId: string;
   productId?: string;
   product?: any;
+  resourceId?: string;
+  resource?: any;
   title: string;
   description?: string;
   startTime: Date;
@@ -20,6 +22,7 @@ export interface Appointment {
 export interface CreateAppointmentDto {
   userId: string;
   productId?: string;
+  resourceId?: string;
   title: string;
   description?: string;
   startTime: Date;

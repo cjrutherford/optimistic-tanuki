@@ -1,6 +1,8 @@
 export interface Availability {
   id: string;
-  ownerId: string;
+  ownerId?: string;
+  resourceId?: string;
+  resource?: any;
   dayOfWeek: number; // 0-6 (Sunday-Saturday)
   startTime: string; // HH:MM:SS format
   endTime: string; // HH:MM:SS format
@@ -12,7 +14,8 @@ export interface Availability {
 }
 
 export interface CreateAvailabilityDto {
-  ownerId: string;
+  ownerId?: string;
+  resourceId?: string;
   dayOfWeek: number;
   startTime: string;
   endTime: string;

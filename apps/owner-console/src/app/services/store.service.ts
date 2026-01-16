@@ -14,6 +14,9 @@ import {
   Appointment,
   Availability,
   Invoice,
+  Resource,
+  CreateResourceDto,
+  UpdateResourceDto,
 } from '@optimistic-tanuki/ui-models';
 
 export interface Product {
@@ -254,5 +257,47 @@ export class StoreService {
 
   deleteAvailability(id: string): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/availabilities/${id}`);
+  }
+
+  // Resource management
+  getResources(): Observable<Resource[]> {
+    return this.http.get<Resource[]>(`${this.API_URL}/resources`);
+  }
+
+  getResourcesByType(type: string): Observable<Resource[]> {
+    return this.http.get<Resource[]>(`${this.API_URL}/resources/type/${type}`);
+  }
+
+  getResource(id: string): Observable<Resource> {
+    return this.http.get<Resource>(`${this.API_URL}/resources/${id}`);
+  }
+
+  createResource(resource: CreateResourceDto): Observable<Resource> {
+    return this.http.post<Resource>(`${this.API_URL}/resources`, resource);
+  }
+
+  updateResource(
+    id: string,
+    resource: UpdateResourceDto
+  ): Observable<Resource> {
+    return this.http.put<Resource>(
+      `${this.API_URL}/resources/${id}`,
+      resource
+    );
+  }
+
+  deleteResource(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/resources/${id}`);
+  }
+
+  checkResourceAvailability(
+    resourceId: string,
+    startTime: Date,
+    endTime: Date
+  ): Observable<boolean> {
+    return this.http.post<boolean>(
+      `${this.API_URL}/resources/${resourceId}/check-availability`,
+      { startTime, endTime }
+    );
   }
 }

@@ -12,9 +12,15 @@ import {
 } from 'class-validator';
 
 export class CreateAvailabilityDto {
-  @ApiProperty({ description: 'Owner user ID' })
+  @ApiPropertyOptional({ description: 'Owner user ID' })
   @IsUUID()
-  ownerId: string;
+  @IsOptional()
+  ownerId?: string;
+
+  @ApiPropertyOptional({ description: 'Resource ID' })
+  @IsUUID()
+  @IsOptional()
+  resourceId?: string;
 
   @ApiProperty({ description: 'Day of week (0-6, Sunday-Saturday)' })
   @IsNumber()

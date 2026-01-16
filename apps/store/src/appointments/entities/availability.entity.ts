@@ -4,15 +4,25 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { ResourceEntity } from './resource.entity';
 
 @Entity('availabilities')
 export class AvailabilityEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   ownerId: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  resourceId: string;
+
+  @ManyToOne(() => ResourceEntity, { nullable: true })
+  @JoinColumn({ name: 'resourceId' })
+  resource?: ResourceEntity;
 
   @Column({ type: 'int' })
   dayOfWeek: number; // 0-6 (Sunday-Saturday)

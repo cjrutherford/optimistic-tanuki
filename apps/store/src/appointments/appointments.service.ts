@@ -34,7 +34,7 @@ export class AppointmentsService {
 
   async findAll(): Promise<AppointmentEntity[]> {
     return this.appointmentRepository.find({
-      relations: ['product'],
+      relations: ['product', 'resource'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -42,7 +42,7 @@ export class AppointmentsService {
   async findUserAppointments(userId: string): Promise<AppointmentEntity[]> {
     return this.appointmentRepository.find({
       where: { userId },
-      relations: ['product'],
+      relations: ['product', 'resource'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -50,7 +50,7 @@ export class AppointmentsService {
   async findOne(id: string): Promise<AppointmentEntity> {
     return this.appointmentRepository.findOne({
       where: { id },
-      relations: ['product'],
+      relations: ['product', 'resource'],
     });
   }
 

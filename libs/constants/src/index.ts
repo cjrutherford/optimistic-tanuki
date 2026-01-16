@@ -57,4 +57,5 @@ export {
 export {
   AppointmentCommands,
   AvailabilityCommands,
+  ResourceCommands,
 } from './lib/libs/appointments';

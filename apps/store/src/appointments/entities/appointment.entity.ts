@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ProductEntity } from '../../products/entities/product.entity';
+import { ResourceEntity } from './resource.entity';
 
 @Entity('appointments')
 export class AppointmentEntity {
@@ -23,6 +24,13 @@ export class AppointmentEntity {
   @ManyToOne(() => ProductEntity, { nullable: true })
   @JoinColumn({ name: 'productId' })
   product?: ProductEntity;
+
+  @Column({ type: 'uuid', nullable: true })
+  resourceId: string;
+
+  @ManyToOne(() => ResourceEntity, { nullable: true })
+  @JoinColumn({ name: 'resourceId' })
+  resource?: ResourceEntity;
 
   @Column({ type: 'varchar', length: 255 })
   title: string;

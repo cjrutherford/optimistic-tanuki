@@ -21,6 +21,11 @@ export class CreateAppointmentDto {
   @IsOptional()
   productId?: string;
 
+  @ApiPropertyOptional({ description: 'Resource ID to book' })
+  @IsUUID()
+  @IsOptional()
+  resourceId?: string;
+
   @ApiProperty({ description: 'Appointment title' })
   @IsString()
   @MinLength(1)
