@@ -125,7 +125,7 @@
             name="hourlyRate"
             step="0.01"
             min="0"
-            [disabled]="selectedAppointment?.isFreeConsultation"
+            [disabled]="selectedAppointment?.isFreeConsultation || false"
           />
         </div>
         <div class="form-group">
