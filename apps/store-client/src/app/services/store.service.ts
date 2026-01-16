@@ -45,6 +45,48 @@ export interface DonationRequest {
   currency?: string;
 }
 
+export interface Resource {
+  id: string;
+  name: string;
+  type: string;
+  description?: string;
+  location?: string;
+  capacity?: number;
+  amenities?: string[];
+  hourlyRate?: number;
+  isActive: boolean;
+  imageUrl?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface Appointment {
+  id?: string;
+  userId: string;
+  resourceId?: string;
+  resource?: Resource;
+  title: string;
+  description?: string;
+  startTime: Date;
+  endTime: Date;
+  status?: string;
+  isFreeConsultation?: boolean;
+  hourlyRate?: number;
+  totalCost?: number;
+  notes?: string;
+}
+
+export interface CreateAppointmentRequest {
+  userId: string;
+  resourceId: string;
+  title: string;
+  description?: string;
+  startTime: Date;
+  endTime: Date;
+  isFreeConsultation?: boolean;
+  notes?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -77,5 +119,46 @@ export class StoreService {
       ...donation,
       currency: donation.currency || 'USD',
     });
+  }
+
+  // Resource operations
+  getResources(): Observable<Resource[]> {
+    return this.http.get<Resource[]>(`${this.API_URL}/resources`);
+  }
+
+  getResource(id: string): Observable<Resource> {
+    return this.http.get<Resource>(`${this.API_URL}/resources/${id}`);
+  }
+
+  getResourcesByType(type: string): Observable<Resource[]> {
+    return this.http.get<Resource[]>(`${this.API_URL}/resources/type/${type}`);
+  }
+
+  checkResourceAvailability(
+    resourceId: string,
+    startTime: Date,
+    endTime: Date
+  ): Observable<boolean> {
+    return this.http.post<boolean>(
+      `${this.API_URL}/resources/${resourceId}/check-availability`,
+      { startTime, endTime }
+    );
+  }
+
+  // Appointment operations
+  createAppointment(appointment: CreateAppointmentRequest): Observable<Appointment> {
+    return this.http.post<Appointment>(`${this.API_URL}/appointments`, appointment);
+  }
+
+  getUserAppointments(userId: string): Observable<Appointment[]> {
+    return this.http.get<Appointment[]>(`${this.API_URL}/appointments/user/${userId}`);
+  }
+
+  getAppointment(id: string): Observable<Appointment> {
+    return this.http.get<Appointment>(`${this.API_URL}/appointments/${id}`);
+  }
+
+  cancelAppointment(id: string): Observable<Appointment> {
+    return this.http.put<Appointment>(`${this.API_URL}/appointments/${id}/cancel`, {});
   }
 }
