@@ -4,6 +4,8 @@
  * to maintain separation between Angular and NestJS code.
  */
 
+import { PostThemeConfig } from './post-theme-config';
+
 export interface BlogPostDto {
   id: string;
   title: string;
@@ -14,6 +16,7 @@ export interface BlogPostDto {
   createdAt: Date;
   updatedAt: Date;
   links?: { url: string }[];
+  themeConfig?: PostThemeConfig;
 }
 
 export interface CreateBlogPostDto {
@@ -21,6 +24,7 @@ export interface CreateBlogPostDto {
   content: string;
   authorId: string;
   isDraft?: boolean;
+  themeConfig?: PostThemeConfig;
 }
 
 export interface UpdateBlogPostDto {
@@ -29,6 +33,7 @@ export interface UpdateBlogPostDto {
   content?: string;
   authorId?: string;
   isDraft?: boolean;
+  themeConfig?: PostThemeConfig;
 }
 
 export interface BlogPostQueryDto {

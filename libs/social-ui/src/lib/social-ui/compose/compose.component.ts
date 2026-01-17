@@ -66,12 +66,15 @@ import {
 } from './interfaces/component-injection.interface';
 import { ImageUploadService } from './services/image-upload.service';
 
+import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
+
 export interface PostData {
   title: string;
   content: string;
   links: { url: string }[];
   attachments: CreateAttachmentDto[];
   injectedComponents?: InjectedComponentInstance[];
+  themeConfig?: PostThemeConfig;
 }
 
 export interface ImageUploadCallback {
@@ -147,6 +150,11 @@ export class ComposeComponent
   isPropertyEditorVisible = false;
   selectedComponentInstance: InjectedComponentInstance | null = null;
   selectedComponentProperties: PropertyDefinition[] = [];
+  
+  // Post theme configuration properties
+  isThemeConfigVisible = false;
+  postTheme: 'light' | 'dark' = 'light';
+  postAccentColor = '#3f51b5';
 
   private componentInjectionService = inject(ComponentInjectionService);
   private dialog = inject(MatDialog);
@@ -635,12 +643,33 @@ export class ComposeComponent
       links: this.links,
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(),
+      themeConfig: {
+        theme: this.postTheme,
+        accentColor: this.postAccentColor,
+      },
     });
 
     this.title = '';
     this.content = '';
     this.links = [];
     this.attachments = [];
+    // Reset theme to defaults
+    this.postTheme = DEFAULT_POST_THEME.theme;
+    this.postAccentColor = DEFAULT_POST_THEME.accentColor;
+  }
+
+  toggleThemeConfig(): void {
+    this.isThemeConfigVisible = !this.isThemeConfigVisible;
+  }
+
+  updatePostTheme(theme: 'light' | 'dark'): void {
+    this.postTheme = theme;
+    // Don't update global theme - this is post-specific
+  }
+
+  updatePostAccentColor(color: string): void {
+    this.postAccentColor = color;
+    // Don't update global theme - this is post-specific
   }
 
   override applyTheme(colors: ThemeColors): void {

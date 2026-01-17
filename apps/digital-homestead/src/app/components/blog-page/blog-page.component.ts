@@ -23,6 +23,7 @@ import {
   UpdateBlogPostDto,
 } from '@optimistic-tanuki/ui-models';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
+import { PostThemeConfig } from '@optimistic-tanuki/ui-models';
 
 /**
  * Editor data matching the PostData interface from BlogComposeComponent
@@ -32,6 +33,7 @@ interface PostData {
   content: string;
   links: { url: string }[];
   attachments: File[];
+  themeConfig?: PostThemeConfig;
 }
 
 /**
@@ -200,6 +202,7 @@ export class BlogPageComponent {
           content: post.content,
           links: [],
           attachments: [],
+          themeConfig: post.themeConfig,
         });
         this.loading.set(false);
       },
@@ -246,6 +249,7 @@ export class BlogPageComponent {
       content: post.content,
       links: post.links || [],
       attachments: [],
+      themeConfig: post.themeConfig,
     });
   }
 
@@ -280,6 +284,7 @@ export class BlogPageComponent {
         content: this.editorData().content,
         authorId,
         isDraft: action === 'draft',
+        themeConfig: this.editorData().themeConfig,
       };
       this.blogService.updatePost(selectedPost.id, updateData).subscribe({
         next: (post) => {
@@ -298,6 +303,7 @@ export class BlogPageComponent {
         content: this.editorData().content,
         authorId,
         isDraft: action === 'draft',
+        themeConfig: this.editorData().themeConfig,
       };
       this.blogService.createPost(createData).subscribe({
         next: (post) => {
@@ -412,6 +418,7 @@ export class BlogPageComponent {
         content: postData.content,
         authorId: authorId,
         isDraft: isDraft,
+        themeConfig: postData.themeConfig,
       };
       // Update existing post
       this.blogService.updatePost(postId, postPayload).subscribe({
@@ -434,6 +441,7 @@ export class BlogPageComponent {
         content: postData.content,
         authorId: authorId,
         isDraft: isDraft,
+        themeConfig: postData.themeConfig,
       };
       // Create new post
       this.blogService.createPost(postPayload).subscribe({

@@ -43,4 +43,5 @@ export { FollowDto, FollowEventDto } from './follow';
 export { CreateAttachmentDto } from './create-attachment.dto';
 export { API_BASE_URL } from './api-config.tokens';
 export { PersonaTelosDto } from './telos';
+export { PostThemeConfig, DEFAULT_POST_THEME } from './post-theme-config';
 export * from './store';
