@@ -6,23 +6,27 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
   const logger = new Logger('AppConfigurator');
+  const configApp = await NestFactory.createApplicationContext(AppModule);
+  const config = configApp.get(ConfigService);
+  
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
     {
-      transport: Transport.REDIS,
+      transport: Transport.TCP,
       options: {
-        host: process.env.REDIS_HOST || 'redis',
-        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        host: '0.0.0.0',
+        port: config.get('port') || 3010,
       },
     }
   );
 
   await app.listen();
-  logger.log('🚀 App Configurator Microservice is running');
+  logger.log(`🚀 App Configurator Microservice is listening on port ${config.get('port') || 3010}`);
 }
 
 bootstrap();

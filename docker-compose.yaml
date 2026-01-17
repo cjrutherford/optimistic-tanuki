@@ -314,6 +314,40 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+  
+  app-configurator:
+    container_name: ot_app_configurator
+    build:
+      context: .
+      dockerfile: ./apps/app-configurator/Dockerfile
+    ports:
+      - '3014:3010'
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=ot_app_configurator
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+  
+  configurable-client:
+    container_name: ot_configurable_client
+    build:
+      context: .
+      dockerfile: ./apps/configurable-client/Dockerfile
+    ports:
+      - '8090:4000'
+    depends_on:
+      - gateway
+      - app-configurator
 
 volumes:
   postgres_data:

@@ -53,3 +53,5 @@ export {
   DonationCommands,
   OrderCommands,
 } from './lib/libs/store';
+
+export { AppConfigCommands } from './lib/libs/app-config';
