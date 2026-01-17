@@ -1,0 +1,13 @@
+@if (loading) {
+  <div class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading application...</p>
+  </div>
+} @else if (error) {
+  <div class="error-container">
+    <h1>Error</h1>
+    <p>{{ error }}</p>
+  </div>
+} @else {
+  <router-outlet></router-outlet>
+}

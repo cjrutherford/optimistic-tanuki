@@ -19,6 +19,9 @@
     "baseUrl": ".",
     "paths": {
       "@optimistic-tanuki/ag-grid-ui": ["libs/ag-grid-ui/src/index.ts"],
+      "@optimistic-tanuki/app-config-models": [
+        "libs/app-config-models/src/index.ts"
+      ],
       "@optimistic-tanuki/auth-ui": ["libs/auth-ui/src/index.ts"],
       "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],

@@ -1,0 +1,17 @@
+{
+  "name": "app-configurator-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "implicitDependencies": ["app-configurator"],
+  "projectType": "application",
+  "targets": {
+    "e2e": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
+      "options": {
+        "jestConfig": "apps/app-configurator-e2e/jest.config.ts",
+        "passWithNoTests": true
+      },
+      "dependsOn": ["app-configurator:build", "app-configurator:serve"]
+    }
+  }
+}
