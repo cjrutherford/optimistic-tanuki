@@ -2,10 +2,10 @@ import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ConfigurationsService } from '../app/configurations.service';
 import {
-  AppConfiguration,
   CreateAppConfigDto,
   UpdateAppConfigDto,
 } from '@optimistic-tanuki/app-config-models';
+import { AppConfigurationEntity } from './entities/app-configuration.entity';
 
 export const AppConfigCommands = {
   Create: 'app-config.create',
@@ -27,13 +27,13 @@ export class ConfigurationsController {
   @MessagePattern({ cmd: AppConfigCommands.Create })
   async createConfiguration(
     @Payload() createDto: CreateAppConfigDto
-  ): Promise<AppConfiguration> {
+  ): Promise<AppConfigurationEntity> {
     this.logger.log(`Creating app configuration: ${createDto.name}`);
     return await this.configurationsService.createConfiguration(createDto);
   }
 
   @MessagePattern({ cmd: AppConfigCommands.Get })
-  async getConfiguration(@Payload() id: string): Promise<AppConfiguration> {
+  async getConfiguration(@Payload() id: string): Promise<AppConfigurationEntity> {
     this.logger.log(`Getting app configuration: ${id}`);
     return await this.configurationsService.getConfiguration(id);
   }
@@ -41,7 +41,7 @@ export class ConfigurationsController {
   @MessagePattern({ cmd: AppConfigCommands.GetByDomain })
   async getConfigurationByDomain(
     @Payload('domain') domain: string
-  ): Promise<AppConfiguration> {
+  ): Promise<AppConfigurationEntity> {
     this.logger.log(`Getting app configuration by domain: ${domain}`);
     return await this.configurationsService.getConfigurationByDomain(domain);
   }
@@ -49,13 +49,13 @@ export class ConfigurationsController {
   @MessagePattern({ cmd: AppConfigCommands.GetByName })
   async getConfigurationByName(
     @Payload('name') name: string
-  ): Promise<AppConfiguration> {
+  ): Promise<AppConfigurationEntity> {
     this.logger.log(`Getting app configuration by name: ${name}`);
     return await this.configurationsService.getConfigurationByName(name);
   }
 
   @MessagePattern({ cmd: AppConfigCommands.GetAll })
-  async getAllConfigurations(@Payload() query?: any): Promise<AppConfiguration[]> {
+  async getAllConfigurations(@Payload() query?: any): Promise<AppConfigurationEntity[]> {
     this.logger.log('Getting all app configurations');
     return await this.configurationsService.getAllConfigurations(query || {});
   }
@@ -63,7 +63,7 @@ export class ConfigurationsController {
   @MessagePattern({ cmd: AppConfigCommands.Update })
   async updateConfiguration(
     @Payload() data: UpdateAppConfigDto & { id: string }
-  ): Promise<AppConfiguration> {
+  ): Promise<AppConfigurationEntity> {
     this.logger.log(`Updating app configuration: ${data.id}`);
     return await this.configurationsService.updateConfiguration(data.id, data);
   }

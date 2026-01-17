@@ -23,6 +23,7 @@
         ],
         "styles": ["apps/configurable-client/src/styles.scss"],
         "server": "apps/configurable-client/src/main.server.ts",
+        "prerender": false,
         "ssr": {
           "entry": "apps/configurable-client/src/server.ts"
         },

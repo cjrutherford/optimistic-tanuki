@@ -1,5 +1,5 @@
 import { DataSourceOptions } from 'typeorm';
-import { AppConfigurationEntity } from './configurations/entities/app-configuration.entity';
+import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
 
 export default (): DataSourceOptions => {
   const config: DataSourceOptions = {
