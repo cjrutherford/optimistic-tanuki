@@ -2,12 +2,14 @@
   <otui-card>
     <form (ngSubmit)="onSubmit()">
       <h2>Leave a Comment</h2>
-      <quill-editor
+      @if(editor) {
+      <tiptap-editor
+        [editor]="editor"
         [(ngModel)]="comment"
         [ngModelOptions]="{ standalone: true }"
-        [modules]="modules"
-        placeholder="Leave a comment"
-      ></quill-editor>
+        class="tiptap-editor-styles"
+      ></tiptap-editor>
+      }
       <otui-button variant="success" type="submit">Submit</otui-button>
       <otui-button variant="warning" type="button" (click)="onCancel()"
         >Cancel</otui-button
