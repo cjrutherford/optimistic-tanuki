@@ -45,3 +45,7 @@ export { API_BASE_URL } from './api-config.tokens';
 export { PersonaTelosDto } from './telos';
 export { PostThemeConfig, DEFAULT_POST_THEME } from './post-theme-config';
 export * from './store';
+export * from './appointment';
+export * from './availability';
+export * from './invoice';
+export * from './resource';

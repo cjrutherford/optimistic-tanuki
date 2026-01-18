@@ -10,6 +10,10 @@ import { SubscriptionEntity } from '../subscriptions/entities/subscription.entit
 import { DonationEntity } from '../donations/entities/donation.entity';
 import { OrderEntity } from '../orders/entities/order.entity';
 import { OrderItemEntity } from '../orders/entities/order-item.entity';
+import { AppointmentEntity } from '../appointments/entities/appointment.entity';
+import { AvailabilityEntity } from '../appointments/entities/availability.entity';
+import { InvoiceEntity } from '../appointments/entities/invoice.entity';
+import { ResourceEntity } from '../appointments/entities/resource.entity';
 import { ProductsController } from '../products/products.controller';
 import { ProductsService } from '../products/products.service';
 import { SubscriptionsController } from '../subscriptions/subscriptions.controller';
@@ -18,6 +22,12 @@ import { DonationsController } from '../donations/donations.controller';
 import { DonationsService } from '../donations/donations.service';
 import { OrdersController } from '../orders/orders.controller';
 import { OrdersService } from '../orders/orders.service';
+import { AppointmentsController } from '../appointments/appointments.controller';
+import { AppointmentsService } from '../appointments/appointments.service';
+import { AvailabilitiesController } from '../appointments/availabilities.controller';
+import { AvailabilitiesService } from '../appointments/availabilities.service';
+import { ResourcesController } from '../appointments/resources.controller';
+import { ResourcesService } from '../appointments/resources.service';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import loadDatabase from './loadDatabase';
@@ -40,6 +50,9 @@ import loadDatabase from './loadDatabase';
     SubscriptionsController,
     DonationsController,
     OrdersController,
+    AppointmentsController,
+    AvailabilitiesController,
+    ResourcesController,
   ],
   providers: [
     AppService,
@@ -47,6 +60,9 @@ import loadDatabase from './loadDatabase';
     SubscriptionsService,
     DonationsService,
     OrdersService,
+    AppointmentsService,
+    AvailabilitiesService,
+    ResourcesService,
     {
       provide: getRepositoryToken(ProductEntity),
       useFactory: (ds: DataSource) => ds.getRepository(ProductEntity),
@@ -70,6 +86,26 @@ import loadDatabase from './loadDatabase';
     {
       provide: getRepositoryToken(OrderItemEntity),
       useFactory: (ds: DataSource) => ds.getRepository(OrderItemEntity),
+      inject: ['STORE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AppointmentEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(AppointmentEntity),
+      inject: ['STORE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AvailabilityEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(AvailabilityEntity),
+      inject: ['STORE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(InvoiceEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(InvoiceEntity),
+      inject: ['STORE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(ResourceEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(ResourceEntity),
       inject: ['STORE_CONNECTION'],
     },
   ],
