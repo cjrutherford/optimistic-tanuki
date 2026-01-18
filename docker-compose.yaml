@@ -330,6 +330,7 @@ services:
       - DB_NAME=ot_app_configurator
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - PORT=3010
     depends_on:
       postgres:
         condition: service_healthy
@@ -337,6 +338,25 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+  
+  app-configurator-seed:
+    container_name: ot_app_configurator_seed
+    build:
+      context: .
+      dockerfile: ./apps/app-configurator/Dockerfile
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=ot_app_configurator
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      app-configurator:
+        condition: service_started
+    command: sh -c "sleep 5 && node seed-data/seed-script.js"
+    restart: 'no'
   
   configurable-client:
     container_name: ot_configurable_client
@@ -348,6 +368,7 @@ services:
     depends_on:
       - gateway
       - app-configurator
+      - app-configurator-seed
 
 volumes:
   postgres_data:
