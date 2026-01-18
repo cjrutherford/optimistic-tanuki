@@ -8,6 +8,7 @@ import {
   inject,
   AfterViewInit,
   OnDestroy,
+  Input,
 } from '@angular/core';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -22,11 +23,22 @@ import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import DOMPurify from 'dompurify';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import { RichTextToolbarComponent } from '../compose/components/rich-text-toolbar.component';
+
+export interface ImageUploadCallback {
+  (dataUrl: string, fileName: string): Promise<string>;
+}
 
 @Component({
   selector: 'lib-comment',
   standalone: true,
-  imports: [FormsModule, CardComponent, ButtonComponent, TiptapEditorDirective],
+  imports: [
+    FormsModule,
+    CardComponent,
+    ButtonComponent,
+    TiptapEditorDirective,
+    RichTextToolbarComponent,
+  ],
   providers: [],
   templateUrl: './comment.component.html',
   styleUrl: './comment.component.scss',
@@ -43,6 +55,7 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 })
 export class CommentComponent extends Themeable implements OnInit, AfterViewInit, OnDestroy {
   @Output() commentAdded: EventEmitter<string> = new EventEmitter<string>();
+  @Input() imageUploadCallback?: ImageUploadCallback;
   @ViewChild('commentDialog') commentDialog!: TemplateRef<HTMLElement>;
   comment = '';
   accentShade!: string;
@@ -90,6 +103,56 @@ export class CommentComponent extends Themeable implements OnInit, AfterViewInit
 
   private sanitize(input: string): string {
     return DOMPurify.sanitize(input);
+  }
+
+  onToolbarComponentsClick(): void {
+    // Components not available in comments for now
+    console.log('Component insertion not available in comments');
+  }
+
+  onToolbarImageUploadClick(): void {
+    const fileInput = document.getElementById('commentImageInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  async onFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) {
+      return;
+    }
+
+    const file = input.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async () => {
+      const base64Src = reader.result as string;
+      
+      if (this.imageUploadCallback && base64Src) {
+        try {
+          // Upload to asset service and get public URL
+          const fileName = file.name || `image_${Date.now()}`;
+          const assetUrl = await this.imageUploadCallback(base64Src, fileName);
+          
+          // Insert the image with the asset URL
+          if (this.editor) {
+            this.editor.chain().focus().setImage({ src: assetUrl }).run();
+          }
+        } catch (error) {
+          console.error('Failed to upload image:', error);
+          // Fallback to base64 if upload fails
+          if (this.editor) {
+            this.editor.chain().focus().setImage({ src: base64Src }).run();
+          }
+        }
+      } else if (base64Src && this.editor) {
+        // No upload callback, use base64
+        this.editor.chain().focus().setImage({ src: base64Src }).run();
+      }
+    };
+
+    reader.readAsDataURL(file);
   }
 
   override applyTheme(colors: ThemeColors) {
