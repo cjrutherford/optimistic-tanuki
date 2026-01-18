@@ -17,6 +17,7 @@ import {
 } from '../../models';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { LinkType } from '../link/link.component';
+import { ImageUploadCallback } from '..';
 
 export declare type PostProfileStub = {
   id: string;
@@ -58,6 +59,7 @@ export class PostComponent {
   @Input() canDelete = false;
   @Input() canFollow = false;
   @Input() isFollowing = false;
+  @Input() imageUploadCallback?: ImageUploadCallback;
   @Output() newCommentAdded: EventEmitter<CreateCommentDto> =
     new EventEmitter<CreateCommentDto>();
   @Output() postDeleted = new EventEmitter<void>();

@@ -85,12 +85,15 @@ import { RichTextToolbarComponent } from './components/rich-text-toolbar.compone
 // Angular Component Node Extension
 import { BlogComposeComponentNode } from './extensions/blog-compose-component.extension';
 
+import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
+
 interface PostData {
   title: string;
   content: string;
   links: { url: string }[];
   attachments: File[];
   injectedComponents?: InjectedComponentInstance[];
+  themeConfig?: PostThemeConfig;
 }
 
 @Component({
@@ -239,8 +242,8 @@ export class BlogComposeComponent
 
   // Theme configuration properties
   isThemeConfigVisible = false;
-  currentTheme: 'light' | 'dark' = 'light';
-  currentAccentColor = '#3f51b5';
+  postTheme: 'light' | 'dark' = 'light';
+  postAccentColor = '#3f51b5';
 
   // Property editing properties
   isPropertyEditorVisible = false;
@@ -718,14 +721,14 @@ export class BlogComposeComponent
     this.isThemeConfigVisible = !this.isThemeConfigVisible;
   }
 
-  updateTheme(theme: 'light' | 'dark'): void {
-    this.currentTheme = theme;
-    this.themeService.setTheme(theme);
+  updatePostTheme(theme: 'light' | 'dark'): void {
+    this.postTheme = theme;
+    // Don't update global theme - this is post-specific
   }
 
-  updateAccentColor(color: string): void {
-    this.currentAccentColor = color;
-    this.themeService.setAccentColor(color);
+  updatePostAccentColor(color: string): void {
+    this.postAccentColor = color;
+    // Don't update global theme - this is post-specific
   }
 
   // UI event handlers
@@ -991,6 +994,10 @@ export class BlogComposeComponent
       links: this.links,
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(),
+      themeConfig: {
+        theme: this.postTheme,
+        accentColor: this.postAccentColor,
+      },
     });
   }
 
@@ -1008,6 +1015,15 @@ export class BlogComposeComponent
       this._content = value.content || '';
       this.links = value.links || [];
       this.attachments = value.attachments || [];
+      
+      // Load post theme configuration
+      if (value.themeConfig) {
+        this.postTheme = value.themeConfig.theme || DEFAULT_POST_THEME.theme;
+        this.postAccentColor = value.themeConfig.accentColor || DEFAULT_POST_THEME.accentColor;
+      } else {
+        this.postTheme = DEFAULT_POST_THEME.theme;
+        this.postAccentColor = DEFAULT_POST_THEME.accentColor;
+      }
 
       // Update editor content if editor is available, otherwise queue it
       if (this.editor) {

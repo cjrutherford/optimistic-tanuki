@@ -15,7 +15,7 @@
       (keyup.enter)="toggleThemeConfig()"
       tabindex="0"
     >
-      <span>Theme Configuration</span>
+      <span>Post Theme Configuration</span>
       <span class="material-icons">{{
         isThemeConfigVisible ? 'expand_less' : 'expand_more'
       }}</span>
@@ -26,13 +26,13 @@
         <span class="label">Theme Mode</span>
         <div class="theme-toggles">
           <otui-button
-            [variant]="currentTheme === 'light' ? 'primary' : 'outlined'"
-            (action)="updateTheme('light')"
+            [variant]="postTheme === 'light' ? 'primary' : 'outlined'"
+            (action)="updatePostTheme('light')"
             >Light</otui-button
           >
           <otui-button
-            [variant]="currentTheme === 'dark' ? 'primary' : 'outlined'"
-            (action)="updateTheme('dark')"
+            [variant]="postTheme === 'dark' ? 'primary' : 'outlined'"
+            (action)="updatePostTheme('dark')"
             >Dark</otui-button
           >
         </div>
@@ -42,8 +42,8 @@
         <input
           id="accentColorPicker"
           type="color"
-          [ngModel]="currentAccentColor"
-          (ngModelChange)="updateAccentColor($event)"
+          [ngModel]="postAccentColor"
+          (ngModelChange)="updatePostAccentColor($event)"
           [ngModelOptions]="{ standalone: true }"
         />
       </div>

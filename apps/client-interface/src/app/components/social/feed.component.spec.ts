@@ -19,20 +19,6 @@ import { CommonModule } from '@angular/common';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { ComposeComponent as SocialComposeComponent } from '@optimistic-tanuki/social-ui';
 
-jest.mock('quill', () => ({
-  Quill: jest.fn().mockImplementation(() => ({
-    register: jest.fn(),
-    on: jest.fn(),
-    off: jest.fn(),
-    setContents: jest.fn(),
-    getContents: jest.fn(),
-  })),
-  register: jest.fn(),
-}));
-jest.mock('quill-magic-url', () => ({}), { virtual: true });
-jest.mock('quill-image-compress', () => ({}), { virtual: true });
-jest.mock('quill-cursors', () => ({}), { virtual: true });
-jest.mock('quill-placeholder-module', () => ({}), { virtual: true });
 describe('FeedComponent', () => {
   let component: FeedComponent & Partial<OnDestroy>;
   let fixture: ComponentFixture<FeedComponent>;
