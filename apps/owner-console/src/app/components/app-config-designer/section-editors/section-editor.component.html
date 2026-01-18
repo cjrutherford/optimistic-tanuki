@@ -10,332 +10,330 @@
   <div class="editor-content">
     <!-- Hero Section Editor -->
     @if (editedSection.type === 'hero') {
-      <div class="form-group">
-        <label for="heroTitle">Title *</label>
-        <lib-text-input
-          id="heroTitle"
-          [(ngModel)]="asHero().title"
-          placeholder="Welcome to Our Platform"
-          type="text"
-        ></lib-text-input>
-      </div>
+    <div class="form-group">
+      <label for="heroTitle">Title *</label>
+      <lib-text-input
+        id="heroTitle"
+        [(ngModel)]="asHero().title"
+        placeholder="Welcome to Our Platform"
+        type="text"
+      ></lib-text-input>
+    </div>
 
-      <div class="form-group">
-        <label for="heroSubtitle">Subtitle</label>
-        <lib-text-input
-          id="heroSubtitle"
-          [(ngModel)]="asHero().subtitle"
-          placeholder="Optional subtitle"
-          type="text"
-        ></lib-text-input>
-      </div>
+    <div class="form-group">
+      <label for="heroSubtitle">Subtitle</label>
+      <lib-text-input
+        id="heroSubtitle"
+        [(ngModel)]="asHero().subtitle"
+        placeholder="Optional subtitle"
+        type="text"
+      ></lib-text-input>
+    </div>
 
-      <div class="form-group">
-        <label for="heroBackgroundImage">Background Image URL</label>
-        <lib-text-input
-          id="heroBackgroundImage"
-          [(ngModel)]="asHero().backgroundImage"
-          placeholder="https://example.com/image.jpg"
-          type="text"
-        ></lib-text-input>
-      </div>
+    <div class="form-group">
+      <label for="heroBackgroundImage">Background Image URL</label>
+      <lib-text-input
+        id="heroBackgroundImage"
+        [(ngModel)]="asHero().backgroundImage"
+        placeholder="https://example.com/image.jpg"
+        type="text"
+      ></lib-text-input>
+    </div>
 
-      <div class="form-group">
-        <label for="heroCtaText">Call-to-Action Text</label>
-        <lib-text-input
-          id="heroCtaText"
-          [(ngModel)]="asHero().ctaText"
-          placeholder="Get Started"
-          type="text"
-        ></lib-text-input>
-      </div>
+    <div class="form-group">
+      <label for="heroCtaText">Call-to-Action Text</label>
+      <lib-text-input
+        id="heroCtaText"
+        [(ngModel)]="asHero().ctaText"
+        placeholder="Get Started"
+        type="text"
+      ></lib-text-input>
+    </div>
 
-      <div class="form-group">
-        <label for="heroCtaLink">Call-to-Action Link</label>
-        <lib-text-input
-          id="heroCtaLink"
-          [(ngModel)]="asHero().ctaLink"
-          placeholder="/signup"
-          type="text"
-        ></lib-text-input>
-      </div>
+    <div class="form-group">
+      <label for="heroCtaLink">Call-to-Action Link</label>
+      <lib-text-input
+        id="heroCtaLink"
+        [(ngModel)]="asHero().ctaLink"
+        placeholder="/signup"
+        type="text"
+      ></lib-text-input>
+    </div>
     }
 
     <!-- Features Section Editor -->
     @if (editedSection.type === 'features') {
-      <div class="form-group">
-        <label for="featuresTitle">Section Title *</label>
-        <lib-text-input
-          id="featuresTitle"
-          [(ngModel)]="asFeatures().title"
-          placeholder="Our Features"
-          type="text"
-        ></lib-text-input>
+    <div class="form-group">
+      <label for="featuresTitle">Section Title *</label>
+      <lib-text-input
+        id="featuresTitle"
+        [(ngModel)]="asFeatures().title"
+        placeholder="Our Features"
+        type="text"
+      ></lib-text-input>
+    </div>
+
+    <div class="form-group">
+      <div class="array-field-header">
+        <label>Features</label>
+        <otui-button variant="secondary" (action)="addFeature()">
+          <mat-icon>add</mat-icon> Add Feature
+        </otui-button>
       </div>
 
-      <div class="form-group">
-        <div class="array-field-header">
-          <label>Features</label>
-          <otui-button variant="secondary" (action)="addFeature()">
-            <mat-icon>add</mat-icon> Add Feature
-          </otui-button>
+      @for (feature of asFeatures().features; track $index; let i = $index) {
+      <div class="array-item">
+        <div class="array-item-header">
+          <span>Feature {{ i + 1 }}</span>
+          <button class="icon-btn danger" (click)="removeFeature(i)">
+            <mat-icon>delete</mat-icon>
+          </button>
         </div>
 
-        @for (feature of asFeatures().features; track $index; let i = $index) {
-          <div class="array-item">
-            <div class="array-item-header">
-              <span>Feature {{ i + 1 }}</span>
-              <button class="icon-btn danger" (click)="removeFeature(i)">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </div>
+        <div class="form-group-inline">
+          <label>Icon</label>
+          <lib-text-input
+            [(ngModel)]="feature.icon"
+            placeholder="star"
+            type="text"
+          ></lib-text-input>
+        </div>
 
-            <div class="form-group-inline">
-              <label>Icon</label>
-              <lib-text-input
-                [(ngModel)]="feature.icon"
-                placeholder="star"
-                type="text"
-              ></lib-text-input>
-            </div>
+        <div class="form-group-inline">
+          <label>Title</label>
+          <lib-text-input
+            [(ngModel)]="feature.title"
+            placeholder="Feature Title"
+            type="text"
+          ></lib-text-input>
+        </div>
 
-            <div class="form-group-inline">
-              <label>Title</label>
-              <lib-text-input
-                [(ngModel)]="feature.title"
-                placeholder="Feature Title"
-                type="text"
-              ></lib-text-input>
-            </div>
-
-            <div class="form-group-inline">
-              <label>Description</label>
-              <lib-text-area
-                [(ngModel)]="feature.description"
-                placeholder="Feature description"
-              ></lib-text-area>
-            </div>
-          </div>
-        }
+        <div class="form-group-inline">
+          <label>Description</label>
+          <lib-text-area
+            [(ngModel)]="feature.description"
+            placeholder="Feature description"
+          ></lib-text-area>
+        </div>
       </div>
+      }
+    </div>
     }
 
     <!-- Content Section Editor -->
     @if (editedSection.type === 'content') {
-      <div class="form-group">
-        <label for="contentTitle">Title</label>
-        <lib-text-input
-          id="contentTitle"
-          [(ngModel)]="asContent().title"
-          placeholder="Section Title"
-          type="text"
-        ></lib-text-input>
-      </div>
+    <div class="form-group">
+      <label for="contentTitle">Title</label>
+      <lib-text-input
+        id="contentTitle"
+        [(ngModel)]="asContent().title"
+        placeholder="Section Title"
+        type="text"
+      ></lib-text-input>
+    </div>
 
-      <div class="form-group">
-        <label for="contentContent">Content *</label>
-        <lib-text-area
-          id="contentContent"
-          [(ngModel)]="asContent().content"
-          placeholder="Enter HTML content here..."
-        ></lib-text-area>
-      </div>
+    <div class="form-group">
+      <label for="contentContent">Content *</label>
+      <lib-text-area
+        id="contentContent"
+        [(ngModel)]="asContent().content"
+        placeholder="Enter HTML content here..."
+      ></lib-text-area>
+    </div>
 
-      <div class="form-group">
-        <label for="contentImageUrl">Image URL</label>
-        <lib-text-input
-          id="contentImageUrl"
-          [(ngModel)]="asContent().imageUrl"
-          placeholder="https://example.com/image.jpg"
-          type="text"
-        ></lib-text-input>
-      </div>
+    <div class="form-group">
+      <label for="contentImageUrl">Image URL</label>
+      <lib-text-input
+        id="contentImageUrl"
+        [(ngModel)]="asContent().imageUrl"
+        placeholder="https://example.com/image.jpg"
+        type="text"
+      ></lib-text-input>
+    </div>
 
-      <div class="form-group">
-        <label for="contentImagePosition">Image Position</label>
-        <select
-          id="contentImagePosition"
-          [(ngModel)]="asContent().imagePosition"
-          class="select-input"
-        >
-          <option value="left">Left</option>
-          <option value="right">Right</option>
-          <option value="top">Top</option>
-          <option value="bottom">Bottom</option>
-        </select>
-      </div>
+    <div class="form-group">
+      <label for="contentImagePosition">Image Position</label>
+      <select
+        id="contentImagePosition"
+        [(ngModel)]="asContent().imagePosition"
+        class="select-input"
+      >
+        <option value="left">Left</option>
+        <option value="right">Right</option>
+        <option value="top">Top</option>
+        <option value="bottom">Bottom</option>
+      </select>
+    </div>
     }
 
     <!-- Grid Section Editor -->
     @if (editedSection.type === 'grid') {
-      <div class="form-group">
-        <label for="gridTitle">Section Title</label>
-        <lib-text-input
-          id="gridTitle"
-          [(ngModel)]="asGrid().title"
-          placeholder="Grid Section"
-          type="text"
-        ></lib-text-input>
+    <div class="form-group">
+      <label for="gridTitle">Section Title</label>
+      <lib-text-input
+        id="gridTitle"
+        [(ngModel)]="asGrid().title"
+        placeholder="Grid Section"
+        type="text"
+      ></lib-text-input>
+    </div>
+
+    <div class="form-group">
+      <label for="gridColumns">Columns</label>
+      <lib-text-input
+        id="gridColumns"
+        [(ngModel)]="asGrid().columns"
+        placeholder="3"
+        type="text"
+      ></lib-text-input>
+    </div>
+
+    <div class="form-group">
+      <div class="array-field-header">
+        <otui-button variant="secondary" (action)="addGridItem()">
+          <mat-icon>add</mat-icon> Add Item
+        </otui-button>
       </div>
 
-      <div class="form-group">
-        <label for="gridColumns">Columns</label>
-        <lib-text-input
-          id="gridColumns"
-          [(ngModel)]="asGrid().columns"
-          placeholder="3"
-          type="number"
-        ></lib-text-input>
-      </div>
-
-      <div class="form-group">
-        <div class="array-field-header">
-          <label>Grid Items</label>
-          <otui-button variant="secondary" (action)="addGridItem()">
-            <mat-icon>add</mat-icon> Add Item
-          </otui-button>
+      @for (item of asGrid().items; track $index; let i = $index) {
+      <div class="array-item">
+        <div class="array-item-header">
+          <span>Item {{ i + 1 }}</span>
+          <button class="icon-btn danger" (click)="removeGridItem(i)">
+            <mat-icon>delete</mat-icon>
+          </button>
         </div>
 
-        @for (item of asGrid().items; track $index; let i = $index) {
-          <div class="array-item">
-            <div class="array-item-header">
-              <span>Item {{ i + 1 }}</span>
-              <button class="icon-btn danger" (click)="removeGridItem(i)">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </div>
+        <div class="form-group-inline">
+          <label>Title</label>
+          <lib-text-input
+            [(ngModel)]="item.title"
+            placeholder="Item Title"
+            type="text"
+          ></lib-text-input>
+        </div>
 
-            <div class="form-group-inline">
-              <label>Title</label>
-              <lib-text-input
-                [(ngModel)]="item.title"
-                placeholder="Item Title"
-                type="text"
-              ></lib-text-input>
-            </div>
+        <div class="form-group-inline">
+          <label>Description</label>
+          <lib-text-area
+            [(ngModel)]="item.description"
+            placeholder="Item description"
+          ></lib-text-area>
+        </div>
 
-            <div class="form-group-inline">
-              <label>Description</label>
-              <lib-text-area
-                [(ngModel)]="item.description"
-                placeholder="Item description"
-              ></lib-text-area>
-            </div>
+        <div class="form-group-inline">
+          <label>Image URL</label>
+          <lib-text-input
+            [(ngModel)]="item.imageUrl"
+            placeholder="https://example.com/image.jpg"
+            type="text"
+          ></lib-text-input>
+        </div>
 
-            <div class="form-group-inline">
-              <label>Image URL</label>
-              <lib-text-input
-                [(ngModel)]="item.imageUrl"
-                placeholder="https://example.com/image.jpg"
-                type="text"
-              ></lib-text-input>
-            </div>
-
-            <div class="form-group-inline">
-              <label>Link</label>
-              <lib-text-input
-                [(ngModel)]="item.link"
-                placeholder="/link"
-                type="text"
-              ></lib-text-input>
-            </div>
-          </div>
-        }
+        <div class="form-group-inline">
+          <label>Link</label>
+          <lib-text-input
+            [(ngModel)]="item.link"
+            placeholder="/link"
+            type="text"
+          ></lib-text-input>
+        </div>
       </div>
+      }
+    </div>
     }
 
     <!-- CTA Section Editor -->
     @if (editedSection.type === 'cta') {
-      <div class="form-group">
-        <label for="ctaTitle">Title *</label>
-        <lib-text-input
-          id="ctaTitle"
-          [(ngModel)]="asCTA().title"
-          placeholder="Ready to Get Started?"
-          type="text"
-        ></lib-text-input>
-      </div>
+    <div class="form-group">
+      <label for="ctaTitle">Title *</label>
+      <lib-text-input
+        id="ctaTitle"
+        [(ngModel)]="asCTA().title"
+        placeholder="Ready to Get Started?"
+        type="text"
+      ></lib-text-input>
+    </div>
 
-      <div class="form-group">
-        <label for="ctaDescription">Description</label>
-        <lib-text-area
-          id="ctaDescription"
-          [(ngModel)]="asCTA().description"
-          placeholder="Additional description text"
-        ></lib-text-area>
-      </div>
+    <div class="form-group">
+      <label for="ctaDescription">Description</label>
+      <lib-text-area
+        id="ctaDescription"
+        [(ngModel)]="asCTA().description"
+        placeholder="Additional description text"
+      ></lib-text-area>
+    </div>
 
-      <div class="form-group">
-        <label for="ctaButtonText">Button Text *</label>
-        <lib-text-input
-          id="ctaButtonText"
-          [(ngModel)]="asCTA().buttonText"
-          placeholder="Get Started"
-          type="text"
-        ></lib-text-input>
-      </div>
+    <div class="form-group">
+      <label for="ctaButtonText">Button Text *</label>
+      <lib-text-input
+        id="ctaButtonText"
+        [(ngModel)]="asCTA().buttonText"
+        placeholder="Get Started"
+        type="text"
+      ></lib-text-input>
+    </div>
 
-      <div class="form-group">
-        <label for="ctaButtonLink">Button Link *</label>
-        <lib-text-input
-          id="ctaButtonLink"
-          [(ngModel)]="asCTA().buttonLink"
-          placeholder="/signup"
-          type="text"
-        ></lib-text-input>
-      </div>
+    <div class="form-group">
+      <label for="ctaButtonLink">Button Link *</label>
+      <lib-text-input
+        id="ctaButtonLink"
+        [(ngModel)]="asCTA().buttonLink"
+        placeholder="/signup"
+        type="text"
+      ></lib-text-input>
+    </div>
     }
 
     <!-- Footer Section Editor -->
     @if (editedSection.type === 'footer') {
-      <div class="form-group">
-        <label for="footerContent">Footer Content</label>
-        <lib-text-area
-          id="footerContent"
-          [(ngModel)]="asFooter().content"
-          placeholder="Footer content (HTML supported)"
-        ></lib-text-area>
+    <div class="form-group">
+      <label for="footerContent">Footer Content</label>
+      <lib-text-area
+        id="footerContent"
+        [(ngModel)]="asFooter().content"
+        placeholder="Footer content (HTML supported)"
+      ></lib-text-area>
+    </div>
+
+    <div class="form-group">
+      <div class="array-field-header">
+        <label>Footer Links</label>
+        <otui-button variant="secondary" (action)="addFooterLink()">
+          <mat-icon>add</mat-icon> Add Link
+        </otui-button>
       </div>
 
-      <div class="form-group">
-        <div class="array-field-header">
-          <label>Footer Links</label>
-          <otui-button variant="secondary" (action)="addFooterLink()">
-            <mat-icon>add</mat-icon> Add Link
-          </otui-button>
+      @if (asFooter().links) { @for (link of asFooter().links; track $index; let
+      i = $index) {
+      <div class="array-item">
+        <div class="array-item-header">
+          <span>Link {{ i + 1 }}</span>
+          <button class="icon-btn danger" (click)="removeFooterLink(i)">
+            <mat-icon>delete</mat-icon>
+          </button>
         </div>
 
-        @if (asFooter().links) {
-          @for (link of asFooter().links; track $index; let i = $index) {
-            <div class="array-item">
-              <div class="array-item-header">
-                <span>Link {{ i + 1 }}</span>
-                <button class="icon-btn danger" (click)="removeFooterLink(i)">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
+        <div class="form-group-inline">
+          <label>Text</label>
+          <lib-text-input
+            [(ngModel)]="link.text"
+            placeholder="Link Text"
+            type="text"
+          ></lib-text-input>
+        </div>
 
-              <div class="form-group-inline">
-                <label>Text</label>
-                <lib-text-input
-                  [(ngModel)]="link.text"
-                  placeholder="Link Text"
-                  type="text"
-                ></lib-text-input>
-              </div>
-
-              <div class="form-group-inline">
-                <label>URL</label>
-                <lib-text-input
-                  [(ngModel)]="link.url"
-                  placeholder="https://example.com"
-                  type="text"
-                ></lib-text-input>
-              </div>
-            </div>
-          }
-        }
+        <div class="form-group-inline">
+          <label>URL</label>
+          <lib-text-input
+            [(ngModel)]="link.url"
+            placeholder="https://example.com"
+            type="text"
+          ></lib-text-input>
+        </div>
       </div>
+      } }
+    </div>
     }
   </div>
 

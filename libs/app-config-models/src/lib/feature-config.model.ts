@@ -24,8 +24,8 @@ export interface TasksFeatureConfig {
  */
 export interface BloggingFeatureConfig {
   enabled: boolean;
-  allowComments?: boolean;
-  moderateComments?: boolean;
+  allowComments: boolean;
+  moderateComments: boolean;
 }
 
 /**
@@ -33,9 +33,9 @@ export interface BloggingFeatureConfig {
  */
 export interface ProjectPlanningFeatureConfig {
   enabled: boolean;
-  showGantt?: boolean;
-  showKanban?: boolean;
-  allowRisks?: boolean;
+  showGantt: boolean;
+  showKanban: boolean;
+  allowRisks: boolean;
 }
 
 /**

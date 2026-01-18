@@ -2,7 +2,9 @@
   <div class="designer-header">
     <h1>Application Configuration Designer</h1>
     <div class="header-actions">
-      <otui-button variant="secondary" (action)="onCancel()">Cancel</otui-button>
+      <otui-button variant="secondary" (action)="onCancel()"
+        >Cancel</otui-button
+      >
       <otui-button (action)="onSave()">Save Configuration</otui-button>
     </div>
   </div>
@@ -12,7 +14,7 @@
     <mat-tab label="General">
       <div class="tab-content">
         <h2>General Information</h2>
-        
+
         <div class="form-group">
           <label for="configName">Configuration Name *</label>
           <lib-text-input
@@ -61,58 +63,62 @@
           </otui-button>
         </div>
 
-        @if (config.landingPage?.sections && config.landingPage.sections.length > 0) {
-          <div
-            cdkDropList
-            (cdkDropListDropped)="onSectionDrop($event)"
-            class="sections-list"
-          >
-            @for (section of config.landingPage.sections; track section.id; let i = $index) {
-              <div class="section-item" cdkDrag>
-                <div class="section-drag-handle" cdkDragHandle>
-                  <mat-icon>drag_indicator</mat-icon>
-                </div>
-                
-                <div class="section-icon">
-                  <mat-icon>{{ getSectionIcon(section.type) }}</mat-icon>
-                </div>
+        @if (config.landingPage?.sections && config.landingPage.sections.length
+        > 0) {
+        <div
+          cdkDropList
+          (cdkDropListDropped)="onSectionDrop($event)"
+          class="sections-list"
+        >
+          @for (section of config.landingPage.sections; track section.id; let i
+          = $index) {
+          <div class="section-item" cdkDrag>
+            <div class="section-drag-handle" cdkDragHandle>
+              <mat-icon>drag_indicator</mat-icon>
+            </div>
 
-                <div class="section-info">
-                  <h4>{{ getSectionTitle(section) }}</h4>
-                  <span class="section-type">{{ section.type }}</span>
-                </div>
+            <div class="section-icon">
+              <mat-icon>{{ getSectionIcon(section.type) }}</mat-icon>
+            </div>
 
-                <div class="section-actions">
-                  <button
-                    class="icon-btn"
-                    (click)="toggleSectionVisibility(section)"
-                    [title]="section.visible ? 'Hide' : 'Show'"
-                  >
-                    <mat-icon>{{ section.visible ? 'visibility' : 'visibility_off' }}</mat-icon>
-                  </button>
-                  <button
-                    class="icon-btn"
-                    (click)="editSection(section, i)"
-                    title="Edit"
-                  >
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button
-                    class="icon-btn danger"
-                    (click)="deleteSection(i)"
-                    title="Delete"
-                  >
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </div>
-              </div>
-            }
+            <div class="section-info">
+              <h4>{{ getSectionTitle(section) }}</h4>
+              <span class="section-type">{{ section.type }}</span>
+            </div>
+
+            <div class="section-actions">
+              <button
+                class="icon-btn"
+                (click)="toggleSectionVisibility(section)"
+                [title]="section.visible ? 'Hide' : 'Show'"
+              >
+                <mat-icon>{{
+                  section.visible ? 'visibility' : 'visibility_off'
+                }}</mat-icon>
+              </button>
+              <button
+                class="icon-btn"
+                (click)="editSection(section, i)"
+                title="Edit"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                class="icon-btn danger"
+                (click)="deleteSection(i)"
+                title="Delete"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
           </div>
+          }
+        </div>
         } @else {
-          <div class="empty-state">
-            <mat-icon>web</mat-icon>
-            <p>No sections added yet. Click "Add Section" to get started.</p>
-          </div>
+        <div class="empty-state">
+          <mat-icon>web</mat-icon>
+          <p>No sections added yet. Click "Add Section" to get started.</p>
+        </div>
         }
       </div>
     </mat-tab>
@@ -121,7 +127,7 @@
     <mat-tab label="Features">
       <div class="tab-content">
         <h2>Feature Configuration</h2>
-        
+
         <div class="features-grid">
           <!-- Social Features -->
           <otui-card class="feature-card">
@@ -131,28 +137,28 @@
             </div>
             <div class="feature-content">
               <lib-checkbox
-                [(ngModel)]="config.features.social.enabled"
+                [(ngModel)]="config.features.social!.enabled"
                 label="Enable Social Features"
               ></lib-checkbox>
-              @if (config.features?.social?.enabled) {
-                <div class="feature-options">
-                  <lib-checkbox
-                    [(ngModel)]="config.features.social.showPosts"
-                    label="Show Posts"
-                  ></lib-checkbox>
-                  <lib-checkbox
-                    [(ngModel)]="config.features.social.showFollowing"
-                    label="Show Following"
-                  ></lib-checkbox>
-                  <lib-checkbox
-                    [(ngModel)]="config.features.social.showComments"
-                    label="Show Comments"
-                  ></lib-checkbox>
-                  <lib-checkbox
-                    [(ngModel)]="config.features.social.allowAttachments"
-                    label="Allow Attachments"
-                  ></lib-checkbox>
-                </div>
+              @if (config.features.social?.enabled) {
+              <div class="feature-options">
+                <lib-checkbox
+                  [(ngModel)]="config.features.social!.showPosts"
+                  label="Show Posts"
+                ></lib-checkbox>
+                <lib-checkbox
+                  [(ngModel)]="config.features.social!.showFollowing"
+                  label="Show Following"
+                ></lib-checkbox>
+                <lib-checkbox
+                  [(ngModel)]="config.features.social!.showComments"
+                  label="Show Comments"
+                ></lib-checkbox>
+                <lib-checkbox
+                  [(ngModel)]="config.features.social!.allowAttachments"
+                  label="Allow Attachments"
+                ></lib-checkbox>
+              </div>
               }
             </div>
           </otui-card>
@@ -165,24 +171,24 @@
             </div>
             <div class="feature-content">
               <lib-checkbox
-                [(ngModel)]="config.features.tasks.enabled"
+                [(ngModel)]="config.features.tasks!.enabled"
                 label="Enable Tasks"
               ></lib-checkbox>
-              @if (config.features?.tasks?.enabled) {
-                <div class="feature-options">
-                  <lib-checkbox
-                    [(ngModel)]="config.features.tasks.showCalendar"
-                    label="Show Calendar"
-                  ></lib-checkbox>
-                  <lib-checkbox
-                    [(ngModel)]="config.features.tasks.allowRecurring"
-                    label="Allow Recurring Tasks"
-                  ></lib-checkbox>
-                  <lib-checkbox
-                    [(ngModel)]="config.features.tasks.enableTimers"
-                    label="Enable Timers"
-                  ></lib-checkbox>
-                </div>
+              @if (config.features.tasks?.enabled) {
+              <div class="feature-options">
+                <lib-checkbox
+                  [(ngModel)]="config.features.tasks!.showCalendar"
+                  label="Show Calendar"
+                ></lib-checkbox>
+                <lib-checkbox
+                  [(ngModel)]="config.features.tasks!.allowRecurring"
+                  label="Allow Recurring Tasks"
+                ></lib-checkbox>
+                <lib-checkbox
+                  [(ngModel)]="config.features.tasks!.enableTimers"
+                  label="Enable Timers"
+                ></lib-checkbox>
+              </div>
               }
             </div>
           </otui-card>
@@ -195,20 +201,20 @@
             </div>
             <div class="feature-content">
               <lib-checkbox
-                [(ngModel)]="config.features.blogging.enabled"
+                [(ngModel)]="config.features.blogging!.enabled"
                 label="Enable Blogging"
               ></lib-checkbox>
-              @if (config.features?.blogging?.enabled) {
-                <div class="feature-options">
-                  <lib-checkbox
-                    [(ngModel)]="config.features.blogging.allowComments"
-                    label="Allow Comments"
-                  ></lib-checkbox>
-                  <lib-checkbox
-                    [(ngModel)]="config.features.blogging.moderateComments"
-                    label="Moderate Comments"
-                  ></lib-checkbox>
-                </div>
+              @if (config.features.blogging?.enabled) {
+              <div class="feature-options">
+                <lib-checkbox
+                  [(ngModel)]="config.features.blogging!.allowComments"
+                  label="Allow Comments"
+                ></lib-checkbox>
+                <lib-checkbox
+                  [(ngModel)]="config.features.blogging!.moderateComments"
+                  label="Moderate Comments"
+                ></lib-checkbox>
+              </div>
               }
             </div>
           </otui-card>
@@ -221,24 +227,24 @@
             </div>
             <div class="feature-content">
               <lib-checkbox
-                [(ngModel)]="config.features.projectPlanning.enabled"
+                [(ngModel)]="config.features.projectPlanning!.enabled"
                 label="Enable Project Planning"
               ></lib-checkbox>
-              @if (config.features?.projectPlanning?.enabled) {
-                <div class="feature-options">
-                  <lib-checkbox
-                    [(ngModel)]="config.features.projectPlanning.showGantt"
-                    label="Show Gantt Chart"
-                  ></lib-checkbox>
-                  <lib-checkbox
-                    [(ngModel)]="config.features.projectPlanning.showKanban"
-                    label="Show Kanban Board"
-                  ></lib-checkbox>
-                  <lib-checkbox
-                    [(ngModel)]="config.features.projectPlanning.allowRisks"
-                    label="Allow Risk Management"
-                  ></lib-checkbox>
-                </div>
+              @if (config.features.projectPlanning?.enabled) {
+              <div class="feature-options">
+                <lib-checkbox
+                  [(ngModel)]="config.features.projectPlanning!.showGantt"
+                  label="Show Gantt Chart"
+                ></lib-checkbox>
+                <lib-checkbox
+                  [(ngModel)]="config.features.projectPlanning!.showKanban"
+                  label="Show Kanban Board"
+                ></lib-checkbox>
+                <lib-checkbox
+                  [(ngModel)]="config.features.projectPlanning!.allowRisks"
+                  label="Allow Risk Management"
+                ></lib-checkbox>
+              </div>
               }
             </div>
           </otui-card>
@@ -250,7 +256,7 @@
     <mat-tab label="Theme">
       <div class="tab-content">
         <h2>Theme Customization</h2>
-        
+
         <div class="theme-grid">
           <div class="form-group">
             <label for="primaryColor">Primary Color</label>
@@ -346,17 +352,17 @@
 
 <!-- Section Selector Modal -->
 @if (isSectionSelectorVisible) {
-  <app-section-selector
-    (sectionTypeSelected)="onSectionTypeSelected($event)"
-    (closed)="hideSectionSelector()"
-  ></app-section-selector>
+<app-section-selector
+  (sectionTypeSelected)="onSectionTypeSelected($event)"
+  (closed)="hideSectionSelector()"
+></app-section-selector>
 }
 
 <!-- Section Editor Modal -->
 @if (isSectionEditorVisible && selectedSection) {
-  <app-section-editor
-    [section]="selectedSection"
-    (sectionSaved)="onSectionEditorSave($event)"
-    (closed)="hideSectionEditor()"
-  ></app-section-editor>
+<app-section-editor
+  [section]="selectedSection"
+  (sectionSaved)="onSectionEditorSave($event)"
+  (closed)="hideSectionEditor()"
+></app-section-editor>
 }

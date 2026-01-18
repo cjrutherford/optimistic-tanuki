@@ -3,9 +3,17 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
-import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import {
+  CdkDragDrop,
+  DragDropModule,
+  moveItemInArray,
+} from '@angular/cdk/drag-drop';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { TextInputComponent, TextAreaComponent, CheckboxComponent } from '@optimistic-tanuki/form-ui';
+import {
+  TextInputComponent,
+  TextAreaComponent,
+  CheckboxComponent,
+} from '@optimistic-tanuki/form-ui';
 import {
   AppConfiguration,
   Section,
@@ -25,7 +33,7 @@ import { SectionEditorComponent } from './section-editors/section-editor.compone
 
 /**
  * App Configuration Designer Component
- * 
+ *
  * Visual designer interface for creating and editing application configurations.
  * Features drag-and-drop section management, theme customization, and feature toggles.
  */
@@ -47,14 +55,14 @@ import { SectionEditorComponent } from './section-editors/section-editor.compone
     SectionEditorComponent,
   ],
   templateUrl: './app-config-designer.component.html',
-  styleUrls: ['./app-config-designer.component.scss']
+  styleUrls: ['./app-config-designer.component.scss'],
 })
 export class AppConfigDesignerComponent implements OnInit {
   @Input() configId?: string;
   @Output() saved = new EventEmitter<AppConfiguration>();
   @Output() cancelled = new EventEmitter<void>();
 
-  config: Partial<AppConfiguration> = {
+  config: Omit<AppConfiguration, 'id'> = {
     name: '',
     description: '',
     domain: '',
@@ -66,8 +74,17 @@ export class AppConfigDesignerComponent implements OnInit {
     features: {
       social: { enabled: false },
       tasks: { enabled: false },
-      blogging: { enabled: false },
-      projectPlanning: { enabled: false },
+      blogging: {
+        enabled: false,
+        allowComments: false,
+        moderateComments: false,
+      },
+      projectPlanning: {
+        enabled: false,
+        showGantt: false,
+        showKanban: false,
+        allowRisks: false,
+      },
     },
     theme: {
       primaryColor: '#3f51b5',
@@ -92,6 +109,18 @@ export class AppConfigDesignerComponent implements OnInit {
     if (this.configId) {
       this.loadConfiguration(this.configId);
     }
+  }
+
+  get customCss(): string {
+    return this.config.theme?.customCss || '';
+  }
+
+  get customFonts(): string {
+    return this.config.theme?.fontFamily || '';
+  }
+
+  get customText(): string {
+    return this.config.theme?.textColor || '';
   }
 
   loadConfiguration(id: string): void {
@@ -227,10 +256,7 @@ export class AppConfigDesignerComponent implements OnInit {
   }
 
   onSectionEditorSave(updatedSection: Section): void {
-    if (
-      this.config.landingPage?.sections &&
-      this.selectedSectionIndex >= 0
-    ) {
+    if (this.config.landingPage?.sections && this.selectedSectionIndex >= 0) {
       this.config.landingPage.sections[this.selectedSectionIndex] =
         updatedSection;
     }
@@ -294,17 +320,15 @@ export class AppConfigDesignerComponent implements OnInit {
           },
         });
     } else {
-      this.appConfigService
-        .createConfiguration(this.config as any)
-        .subscribe({
-          next: (created) => {
-            this.saved.emit(created);
-          },
-          error: (err) => {
-            console.error('Failed to create configuration:', err);
-            alert('Failed to save configuration');
-          },
-        });
+      this.appConfigService.createConfiguration(this.config as any).subscribe({
+        next: (created) => {
+          this.saved.emit(created);
+        },
+        error: (err) => {
+          console.error('Failed to create configuration:', err);
+          alert('Failed to save configuration');
+        },
+      });
     }
   }
 
