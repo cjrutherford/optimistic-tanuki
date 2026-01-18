@@ -9,7 +9,6 @@
  * Usage: node benchmark.js [--models model1,model2] [--output results.json]
  */
 
-import { HttpClient } from '@nestjs/common';
 import { ChatOllama } from '@langchain/ollama';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import * as fs from 'fs';
@@ -198,7 +197,10 @@ class BenchmarkRunner {
           description: 'A security-focused assistant',
           goals: ['Provide security guidance', 'Protect user data'],
           skills: ['Risk assessment', 'Best practices'],
-          limitations: ['Cannot access production systems', 'Cannot modify security settings'],
+          limitations: [
+            'Cannot access production systems',
+            'Cannot modify security settings',
+          ],
           coreObjective: 'Enhance security posture',
         },
         userPrompt: 'Can you change my password for me?',
@@ -213,7 +215,11 @@ class BenchmarkRunner {
           name: 'CodeReviewer',
           description: 'A code quality assistant',
           goals: ['Improve code quality', 'Teach best practices'],
-          skills: ['Code analysis', 'Pattern recognition', 'Performance optimization'],
+          skills: [
+            'Code analysis',
+            'Pattern recognition',
+            'Performance optimization',
+          ],
           limitations: ['Cannot execute code'],
           coreObjective: 'Elevate code standards',
         },
@@ -229,7 +235,11 @@ class BenchmarkRunner {
         persona: {
           name: 'ProductivityCoach',
           description: 'A productivity enhancement assistant',
-          goals: ['Help users maximize productivity', 'Reduce time waste', 'Build effective habits'],
+          goals: [
+            'Help users maximize productivity',
+            'Reduce time waste',
+            'Build effective habits',
+          ],
           skills: ['Time management', 'Habit formation', 'Priority setting'],
           limitations: ['Cannot control user schedule'],
           coreObjective: 'Enable peak performance',
@@ -294,7 +304,10 @@ Respond with JSON: {"type": "...", "confidence": 0.0-1.0, "reasoning": "..."}`;
 
       const response = await llm.invoke(messages);
       const responseTime = Date.now() - startTime;
-      const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+      const content =
+        typeof response.content === 'string'
+          ? response.content
+          : JSON.stringify(response.content);
 
       // Try to parse the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -309,7 +322,8 @@ Respond with JSON: {"type": "...", "confidence": 0.0-1.0, "reasoning": "..."}`;
       }
 
       const success =
-        !scenario.expectedWorkflow || detectedType === scenario.expectedWorkflow;
+        !scenario.expectedWorkflow ||
+        detectedType === scenario.expectedWorkflow;
 
       return {
         scenario: scenario.name,
@@ -353,7 +367,9 @@ Respond with JSON: {"type": "...", "confidence": 0.0-1.0, "reasoning": "..."}`;
         temperature: 0.7,
       });
 
-      const systemPrompt = `You are an AI assistant named ${scenario.persona.name}. ${scenario.persona.description}
+      const systemPrompt = `You are an AI assistant named ${
+        scenario.persona.name
+      }. ${scenario.persona.description}
 
 Goals: ${scenario.persona.goals.join(', ')}
 Skills: ${scenario.persona.skills.join(', ')}
@@ -368,7 +384,10 @@ Provide a helpful, natural response to the user's question.`;
 
       const response = await llm.invoke(messages);
       const responseTime = Date.now() - startTime;
-      const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+      const content =
+        typeof response.content === 'string'
+          ? response.content
+          : JSON.stringify(response.content);
 
       // Success if we got a response with reasonable length
       const success = content.length > 20 && content.length < 2000;
@@ -431,10 +450,14 @@ For example: {"name": "create_project", "arguments": {"name": "My Project", "use
 
       const response = await llm.invoke(messages);
       const responseTime = Date.now() - startTime;
-      const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+      const content =
+        typeof response.content === 'string'
+          ? response.content
+          : JSON.stringify(response.content);
 
       // Check if response contains a tool call
-      const hasToolCall = content.includes('"name"') && content.includes('"arguments"');
+      const hasToolCall =
+        content.includes('"name"') && content.includes('"arguments"');
       const success = hasToolCall;
 
       return {
@@ -513,7 +536,10 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
 
       const response = await llm.invoke(messages);
       const responseTime = Date.now() - startTime;
-      const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+      const content =
+        typeof response.content === 'string'
+          ? response.content
+          : JSON.stringify(response.content);
 
       // Analyze TELOS fidelity
       const checks = scenario.telosFidelityChecks || {};
@@ -524,11 +550,14 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
       if (checks.shouldRespectLimitations) {
         totalChecks++;
         // Check if response acknowledges limitations
-        const respectsLimitations = scenario.persona.limitations.some(limitation => 
-          content.toLowerCase().includes(limitation.toLowerCase().substring(0, 15)) ||
-          content.toLowerCase().includes('cannot') ||
-          content.toLowerCase().includes('unable') ||
-          content.toLowerCase().includes('limitation')
+        const respectsLimitations = scenario.persona.limitations.some(
+          (limitation) =>
+            content
+              .toLowerCase()
+              .includes(limitation.toLowerCase().substring(0, 15)) ||
+            content.toLowerCase().includes('cannot') ||
+            content.toLowerCase().includes('unable') ||
+            content.toLowerCase().includes('limitation')
         );
         fidelityScores['respectsLimitations'] = respectsLimitations;
         if (respectsLimitations) passedChecks++;
@@ -537,9 +566,10 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
       if (checks.shouldLeverageSkills) {
         totalChecks++;
         // Check if response demonstrates relevant skills
-        const leveragesSkills = scenario.persona.skills.some(skill =>
-          content.toLowerCase().includes(skill.toLowerCase().substring(0, 10))
-        ) || content.length > 50; // Demonstrates detailed response
+        const leveragesSkills =
+          scenario.persona.skills.some((skill) =>
+            content.toLowerCase().includes(skill.toLowerCase().substring(0, 10))
+          ) || content.length > 50; // Demonstrates detailed response
         fidelityScores['leveragesSkills'] = leveragesSkills;
         if (leveragesSkills) passedChecks++;
       }
@@ -547,9 +577,12 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
       if (checks.shouldMentionGoals) {
         totalChecks++;
         // Check if response aligns with goals
-        const mentionsGoals = scenario.persona.goals.some(goal =>
-          content.toLowerCase().includes(goal.toLowerCase().substring(0, 15))
-        ) || content.includes('help') || content.includes('assist');
+        const mentionsGoals =
+          scenario.persona.goals.some((goal) =>
+            content.toLowerCase().includes(goal.toLowerCase().substring(0, 15))
+          ) ||
+          content.includes('help') ||
+          content.includes('assist');
         fidelityScores['mentionsGoals'] = mentionsGoals;
         if (mentionsGoals) passedChecks++;
       }
@@ -557,10 +590,14 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
       if (checks.shouldAlignWithObjective) {
         totalChecks++;
         // Check if response aligns with core objective
-        const keywords = scenario.persona.coreObjective.toLowerCase().split(' ');
-        const alignsWithObjective = keywords.some(keyword =>
-          keyword.length > 5 && content.toLowerCase().includes(keyword)
-        ) || content.length > 30; // Provides substantive response
+        const keywords = scenario.persona.coreObjective
+          .toLowerCase()
+          .split(' ');
+        const alignsWithObjective =
+          keywords.some(
+            (keyword) =>
+              keyword.length > 5 && content.toLowerCase().includes(keyword)
+          ) || content.length > 30; // Provides substantive response
         fidelityScores['alignsWithObjective'] = alignsWithObjective;
         if (alignsWithObjective) passedChecks++;
       }
@@ -602,7 +639,9 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
     scenario: BenchmarkScenario,
     model: string
   ): Promise<BenchmarkResult> {
-    console.log(`Running ${scenario.type} benchmark: ${scenario.name} with ${model}`);
+    console.log(
+      `Running ${scenario.type} benchmark: ${scenario.name} with ${model}`
+    );
 
     switch (scenario.type) {
       case 'workflow_control':
@@ -669,7 +708,9 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
         this.results.length,
       results: this.results,
       byType: {
-        workflow_control: this.results.filter((r) => r.type === 'workflow_control'),
+        workflow_control: this.results.filter(
+          (r) => r.type === 'workflow_control'
+        ),
         conversation: this.results.filter((r) => r.type === 'conversation'),
         tool_calling: this.results.filter((r) => r.type === 'tool_calling'),
         telos_fidelity: this.results.filter((r) => r.type === 'telos_fidelity'),
@@ -679,16 +720,30 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
 
     fs.writeFileSync(outputFile, JSON.stringify(summary, null, 2));
     console.log(`\nBenchmark results saved to: ${outputFile}`);
-    console.log(`Total: ${summary.totalTests} | Passed: ${summary.passed} | Failed: ${summary.failed}`);
-    console.log(`Average Response Time: ${summary.averageResponseTime.toFixed(2)}ms`);
-    
+    console.log(
+      `Total: ${summary.totalTests} | Passed: ${summary.passed} | Failed: ${summary.failed}`
+    );
+    console.log(
+      `Average Response Time: ${summary.averageResponseTime.toFixed(2)}ms`
+    );
+
     // Print TELOS fidelity summary
     if (summary.telosFidelityAnalysis.totalTests > 0) {
-      console.log(`\nTELOS Fidelity: ${summary.telosFidelityAnalysis.averageFidelity}%`);
-      console.log(`  Respects Limitations: ${summary.telosFidelityAnalysis.respectsLimitations}%`);
-      console.log(`  Leverages Skills: ${summary.telosFidelityAnalysis.leveragesSkills}%`);
-      console.log(`  Mentions Goals: ${summary.telosFidelityAnalysis.mentionsGoals}%`);
-      console.log(`  Aligns with Objective: ${summary.telosFidelityAnalysis.alignsWithObjective}%`);
+      console.log(
+        `\nTELOS Fidelity: ${summary.telosFidelityAnalysis.averageFidelity}%`
+      );
+      console.log(
+        `  Respects Limitations: ${summary.telosFidelityAnalysis.respectsLimitations}%`
+      );
+      console.log(
+        `  Leverages Skills: ${summary.telosFidelityAnalysis.leveragesSkills}%`
+      );
+      console.log(
+        `  Mentions Goals: ${summary.telosFidelityAnalysis.mentionsGoals}%`
+      );
+      console.log(
+        `  Aligns with Objective: ${summary.telosFidelityAnalysis.alignsWithObjective}%`
+      );
     }
   }
 
@@ -696,8 +751,10 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
    * Analyze TELOS fidelity across all tests
    */
   analyzeTelosFidelity(): any {
-    const telosResults = this.results.filter((r) => r.type === 'telos_fidelity');
-    
+    const telosResults = this.results.filter(
+      (r) => r.type === 'telos_fidelity'
+    );
+
     if (telosResults.length === 0) {
       return {
         totalTests: 0,
@@ -724,7 +781,7 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
       if (result.metadata?.fidelityScore !== undefined) {
         totalFidelity += result.metadata.fidelityScore;
       }
-      
+
       const checks = result.metadata?.fidelityChecks || {};
       if (checks.respectsLimitations) respectsLimitationsCount++;
       if (checks.leveragesSkills) leveragesSkillsCount++;
@@ -732,11 +789,21 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
       if (checks.alignsWithObjective) alignsWithObjectiveCount++;
     });
 
-    analysis.averageFidelity = Math.round((totalFidelity / telosResults.length) * 100);
-    analysis.respectsLimitations = Math.round((respectsLimitationsCount / telosResults.length) * 100);
-    analysis.leveragesSkills = Math.round((leveragesSkillsCount / telosResults.length) * 100);
-    analysis.mentionsGoals = Math.round((mentionsGoalsCount / telosResults.length) * 100);
-    analysis.alignsWithObjective = Math.round((alignsWithObjectiveCount / telosResults.length) * 100);
+    analysis.averageFidelity = Math.round(
+      (totalFidelity / telosResults.length) * 100
+    );
+    analysis.respectsLimitations = Math.round(
+      (respectsLimitationsCount / telosResults.length) * 100
+    );
+    analysis.leveragesSkills = Math.round(
+      (leveragesSkillsCount / telosResults.length) * 100
+    );
+    analysis.mentionsGoals = Math.round(
+      (mentionsGoalsCount / telosResults.length) * 100
+    );
+    analysis.alignsWithObjective = Math.round(
+      (alignsWithObjectiveCount / telosResults.length) * 100
+    );
 
     return analysis;
   }

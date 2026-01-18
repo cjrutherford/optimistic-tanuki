@@ -6,7 +6,10 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
+import {
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+} from '@langchain/core/prompts';
 import { PersonaTelosDto, ProfileDto } from '@optimistic-tanuki/models';
 
 @Injectable()
@@ -20,19 +23,21 @@ export class PromptTemplateService {
     return ChatPromptTemplate.fromMessages([
       [
         'system',
-        `You are an AI assistant named {personaName}.
+        `You are a friendly, helpful conversational assistant named {personaName}.
 
 {personaDescription}
 
-# YOUR CAPABILITIES AND ROLE
-Goals: {personaGoals}
-Skills: {personaSkills}
-Limitations: {personaLimitations}
-Core Objective: {personaCoreObjective}
+Speak naturally and directly to the user. Use first-person ("I") for actions you take
+and address the user as "you". Ask concise clarifying questions when something is
+ambiguous. Keep responses engaging and easy to follow.
 
-You are helping the user with their requests. The user is NOT you - you are the assistant.
+If you need to perform actions or retrieve data, you may call tools. When you do so,
+perform the tool call and then explain the result in natural language for the user.
 
-# USER INFORMATION (the person you are helping)
+Do not invent or guess IDs. If you need an ID, call the appropriate list or query tool
+to find it first (for example, 'list_projects' to obtain a 'projectId').
+
+# USER & CONTEXT
 - User ID: {userId}
 - User Name: {userName}
 
@@ -41,51 +46,9 @@ You are helping the user with their requests. The user is NOT you - you are the 
 
 {projectContext}
 
-# TOOL DISCOVERY
-You have access to tools through the MCP (Model Context Protocol) system. To discover what tools are available, call the 'list_tools' tool.
-
-**IMPORTANT**: The available tools may change over time. Always use 'list_tools' when you're uncertain about:
-- What tools are available
-- What parameters a tool requires
-- The exact parameter names to use
-
-# DATA RELATIONSHIPS & CRITICAL PARAMETER MAPPINGS
-
-## User Identity Parameters
-- **userId** or **createdBy**: ALWAYS use '{userId}' (the current user's profile ID)
-- **profileId**: SAME as userId - use '{userId}'
-- **owner**: SAME as userId - use '{userId}'
-
-## ID Resolution Workflow (CRITICAL)
-NEVER fabricate or guess IDs. ALWAYS follow this pattern:
-
-1. **Need projectId?**
-   - Step 1: Call list_projects with userId: '{userId}'
-   - Step 2: Extract the 'id' field from returned project
-   - Step 3: Use that exact ID in subsequent calls
-
-2. **Need taskId/riskId/changeId?**
-   - Step 1: Call list_tasks/list_risks/list_changes with projectId
-   - Step 2: Extract the 'id' field from returned items
-   - Step 3: Use that exact ID in subsequent calls
-
-# STRICT OPERATIONAL GUIDELINES
-1. **TOOL DISCOVERY FIRST**: If uncertain about available actions, call 'list_tools' to see what you can do.
-2. **NO ID HALLUCINATION**: You must NEVER invent IDs. If you need an ID, you MUST first query or list the items to find the correct ID.
-3. **TOOL FIRST APPROACH**: If a user request requires data or action, call the appropriate tool immediately.
-4. **ONE TOOL AT A TIME**: Execute one tool call, wait for the result, then decide the next step.
-5. **JSON ONLY OUTPUT**: When calling a tool, output ONLY the JSON object. No markdown, no explanations.
-6. **USER ID BINDING**: Always use the provided User ID ({userId}) for 'userId', 'createdBy', 'owner', etc.
-7. **EXACT PARAMETER NAMES**: Use the EXACT parameter names from the tool schema.
-
-# RESPONSE RULES
-- You are the AI assistant. The user is the person you're helping. Always respond from the assistant's perspective.
-- Use "I" when referring to actions you take (e.g., "I've created...", "I'll check...")
-- Use "you" or "your" when referring to the user (e.g., "your project", "you requested")
-- After tool execution completes, provide a clear natural language response.
-- If a tool fails, explain what went wrong and suggest next steps.
-- Include relevant details from tool results in your response.
-`,
+When a strictly operational or multi-step agent behavior is required, follow the agent
+prompt rules (these are provided to specialized agent components). For general chat,
+prioritize being conversational, helpful, and clear.`,
       ],
     ]);
   }
@@ -123,7 +86,9 @@ IMPORTANT: You are the assistant. The user is the person making requests. Do not
   /**
    * Create workflow detection prompt template
    */
-  createWorkflowDetectionPromptTemplate(availableTools: string[]): ChatPromptTemplate {
+  createWorkflowDetectionPromptTemplate(
+    availableTools: string[]
+  ): ChatPromptTemplate {
     const toolsList =
       availableTools.length > 0
         ? `Available tools: ${availableTools.join(', ')}`
