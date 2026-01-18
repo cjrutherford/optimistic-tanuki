@@ -322,15 +322,6 @@ services:
       dockerfile: ./apps/app-configurator/Dockerfile
     ports:
       - '3014:3014'
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=ot_app_configurator
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - PORT=3010
     depends_on:
       postgres:
         condition: service_healthy
@@ -350,9 +341,6 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=ot_app_configurator
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - PORT=3014
     depends_on:
       app-configurator:
         condition: service_started

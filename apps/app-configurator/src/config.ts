@@ -1,18 +1,45 @@
-export default () => {
-  const value = {
-    port: parseInt(process.env.PORT || '3014', 10),
+import * as yaml from 'js-yaml';
+import * as fs from 'fs';
+import * as path from 'path';
+
+export declare type AppConfiguratorConfigType = {
+  listenPort: number;
+  database: {
+    host: string;
+    port: number;
+    username: string;
+    password: string;
+    database: string;
+  };
+  redis: {
+    host: string;
+    port: number;
+  };
+};
+
+const loadConfig = (): AppConfiguratorConfigType => {
+  const configPath = path.resolve(__dirname, './assets/config.yaml');
+  const configFile = fs.readFileSync(configPath, 'utf8');
+  const configData = yaml.load(configFile) as AppConfiguratorConfigType;
+  
+  // Allow environment variable overrides
+  const config: AppConfiguratorConfigType = {
+    listenPort: parseInt(process.env.PORT || String(configData.listenPort), 10),
     database: {
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432', 10),
-      username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
-      database: process.env.DB_NAME || 'app_configurator',
+      host: process.env.DB_HOST || configData.database.host,
+      port: parseInt(process.env.DB_PORT || String(configData.database.port), 10),
+      username: process.env.DB_USER || configData.database.username,
+      password: process.env.DB_PASSWORD || configData.database.password,
+      database: process.env.DB_NAME || configData.database.database,
     },
     redis: {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      host: process.env.REDIS_HOST || configData.redis.host,
+      port: parseInt(process.env.REDIS_PORT || String(configData.redis.port), 10),
     },
   };
-  console.log('Config Loaded:', value);
-  return value;
+  
+  console.log('🚀 ~ loadConfig ~ config:', config);
+  return config;
 };
+
+export default loadConfig;

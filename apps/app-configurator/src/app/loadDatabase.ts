@@ -1,14 +1,17 @@
 import { DataSourceOptions } from 'typeorm';
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
+import loadConfig from '../config';
 
 export default (): DataSourceOptions => {
+  const appConfig = loadConfig();
+  
   const config: DataSourceOptions = {
     type: 'postgres',
-    host: process.env.DB_HOST || 'db',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'app_configurator',
+    host: appConfig.database.host,
+    port: appConfig.database.port,
+    username: appConfig.database.username,
+    password: appConfig.database.password,
+    database: appConfig.database.database,
     entities: [AppConfigurationEntity],
     synchronize: process.env.NODE_ENV !== 'production',
     logging: process.env.NODE_ENV === 'development',
