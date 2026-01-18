@@ -37,7 +37,10 @@ export const appRoutes: Route[] = [
       { path: 'store/orders', component: OrderManagementComponent },
       { path: 'app-config', component: AppConfigListComponent },
       { path: 'app-config/designer', component: AppConfigDesignerComponent },
-      { path: 'app-config/designer/:id', component: AppConfigDesignerComponent },
+      {
+        path: 'app-config/designer/:id',
+        component: AppConfigDesignerComponent,
+      },
       { path: '', redirectTo: 'users', pathMatch: 'full' },
     ],
   },
