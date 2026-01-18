@@ -7,7 +7,7 @@ import {
   TileComponent,
 } from '@optimistic-tanuki/common-ui';
 import { VoteComponent } from '../vote/vote.component';
-import { CommentComponent } from '../comment/comment.component';
+import { CommentComponent, ImageUploadCallback } from '../comment/comment.component';
 import { CommentListComponent } from '../comment/comment-list/comment-list.component';
 import {
   CommentDto,
@@ -58,6 +58,7 @@ export class PostComponent {
   @Input() canDelete = false;
   @Input() canFollow = false;
   @Input() isFollowing = false;
+  @Input() imageUploadCallback?: ImageUploadCallback;
   @Output() newCommentAdded: EventEmitter<CreateCommentDto> =
     new EventEmitter<CreateCommentDto>();
   @Output() postDeleted = new EventEmitter<void>();
