@@ -1,78 +1,316 @@
-import { Component } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatIconModule } from '@angular/material/icon';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { TextInputComponent, TextAreaComponent, CheckboxComponent } from '@optimistic-tanuki/form-ui';
+import {
+  AppConfiguration,
+  Section,
+  SectionType,
+  HeroSection,
+  FeaturesSection,
+  ContentSection,
+  GridSection,
+  CTASection,
+  FooterSection,
+  FeaturesConfig,
+  ThemeConfig,
+} from '@optimistic-tanuki/app-config-models';
+import { AppConfigService } from '../../services/app-config.service';
+import { SectionSelectorComponent } from './section-editors/section-selector.component';
+import { SectionEditorComponent } from './section-editors/section-editor.component';
 
 /**
- * App Configuration Designer Component (Phase 2 - Stub)
+ * App Configuration Designer Component
  * 
- * This component will provide a visual designer interface for creating and editing
- * application configurations. Features include:
- * - App metadata configuration (name, domain, description)
- * - Landing page designer with drag-and-drop section management
- * - Route configuration with feature selection
- * - Theme customization (colors, fonts, CSS)
- * - Feature toggles for Social, Tasks, Blogging, Project Planning
- * 
- * TODO: Implement full designer functionality
+ * Visual designer interface for creating and editing application configurations.
+ * Features drag-and-drop section management, theme customization, and feature toggles.
  */
 @Component({
   selector: 'app-config-designer',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="app-config-designer">
-      <h1>Application Configuration Designer</h1>
-      <p class="stub-notice">
-        <strong>Phase 2: Coming Soon</strong><br>
-        This is a placeholder for the application configuration designer interface.
-      </p>
-      
-      <div class="planned-features">
-        <h2>Planned Features:</h2>
-        <ul>
-          <li>✨ Visual landing page designer with drag-and-drop sections</li>
-          <li>🎨 Theme customization (colors, fonts, custom CSS)</li>
-          <li>🛣️ Dynamic route configuration</li>
-          <li>🔧 Feature toggles (Social, Tasks, Blogging, Project Planning)</li>
-          <li>📱 Live preview of configurations</li>
-          <li>💾 Save and publish configurations</li>
-          <li>🌐 Multi-tenant app management</li>
-        </ul>
-      </div>
-    </div>
-  `,
-  styles: [`
-    .app-config-designer {
-      padding: 2rem;
-    }
-    
-    .stub-notice {
-      background: #fff3cd;
-      border: 1px solid #ffc107;
-      padding: 1rem;
-      border-radius: 4px;
-      margin: 1rem 0;
-    }
-    
-    .planned-features {
-      margin-top: 2rem;
-    }
-    
-    .planned-features h2 {
-      color: #333;
-      margin-bottom: 1rem;
-    }
-    
-    .planned-features ul {
-      list-style: none;
-      padding: 0;
-    }
-    
-    .planned-features li {
-      padding: 0.5rem 0;
-      font-size: 1.1rem;
-    }
-  `]
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatTabsModule,
+    MatIconModule,
+    DragDropModule,
+    ButtonComponent,
+    CardComponent,
+    TextInputComponent,
+    TextAreaComponent,
+    CheckboxComponent,
+    SectionSelectorComponent,
+    SectionEditorComponent,
+  ],
+  templateUrl: './app-config-designer.component.html',
+  styleUrls: ['./app-config-designer.component.scss']
 })
-export class AppConfigDesignerComponent {
-  // Stub component - full implementation in Phase 2
+export class AppConfigDesignerComponent implements OnInit {
+  @Input() configId?: string;
+  @Output() saved = new EventEmitter<AppConfiguration>();
+  @Output() cancelled = new EventEmitter<void>();
+
+  config: Partial<AppConfiguration> = {
+    name: '',
+    description: '',
+    domain: '',
+    landingPage: {
+      sections: [],
+      layout: 'single-column',
+    },
+    routes: [],
+    features: {
+      social: { enabled: false },
+      tasks: { enabled: false },
+      blogging: { enabled: false },
+      projectPlanning: { enabled: false },
+    },
+    theme: {
+      primaryColor: '#3f51b5',
+      secondaryColor: '#ff4081',
+      backgroundColor: '#ffffff',
+      textColor: '#000000',
+      fontFamily: 'Roboto, sans-serif',
+      customCss: '',
+    },
+    active: true,
+  };
+
+  selectedTab = 0;
+  isSectionSelectorVisible = false;
+  isSectionEditorVisible = false;
+  selectedSection: Section | null = null;
+  selectedSectionIndex = -1;
+
+  constructor(private appConfigService: AppConfigService) {}
+
+  ngOnInit(): void {
+    if (this.configId) {
+      this.loadConfiguration(this.configId);
+    }
+  }
+
+  loadConfiguration(id: string): void {
+    this.appConfigService.getConfiguration(id).subscribe({
+      next: (config) => {
+        this.config = config;
+      },
+      error: (err) => {
+        console.error('Failed to load configuration:', err);
+      },
+    });
+  }
+
+  // Section Management
+  onSectionDrop(event: CdkDragDrop<Section[]>): void {
+    if (this.config.landingPage?.sections) {
+      moveItemInArray(
+        this.config.landingPage.sections,
+        event.previousIndex,
+        event.currentIndex
+      );
+      this.updateSectionOrders();
+    }
+  }
+
+  updateSectionOrders(): void {
+    if (this.config.landingPage?.sections) {
+      this.config.landingPage.sections.forEach((section, index) => {
+        section.order = index;
+      });
+    }
+  }
+
+  showSectionSelector(): void {
+    this.isSectionSelectorVisible = true;
+  }
+
+  hideSectionSelector(): void {
+    this.isSectionSelectorVisible = false;
+  }
+
+  onSectionTypeSelected(sectionType: SectionType): void {
+    const newSection = this.createDefaultSection(sectionType);
+    if (this.config.landingPage?.sections) {
+      this.config.landingPage.sections.push(newSection);
+      this.updateSectionOrders();
+    }
+    this.hideSectionSelector();
+  }
+
+  createDefaultSection(type: SectionType): Section {
+    const baseSection = {
+      id: `${type}-${Date.now()}`,
+      type,
+      order: this.config.landingPage?.sections?.length || 0,
+      visible: true,
+    };
+
+    switch (type) {
+      case 'hero':
+        return {
+          ...baseSection,
+          type: 'hero',
+          title: 'Welcome',
+          subtitle: '',
+          backgroundImage: '',
+          ctaText: '',
+          ctaLink: '',
+        } as HeroSection;
+      case 'features':
+        return {
+          ...baseSection,
+          type: 'features',
+          title: 'Features',
+          features: [],
+        } as FeaturesSection;
+      case 'content':
+        return {
+          ...baseSection,
+          type: 'content',
+          title: '',
+          content: '',
+          imageUrl: '',
+          imagePosition: 'left',
+        } as ContentSection;
+      case 'grid':
+        return {
+          ...baseSection,
+          type: 'grid',
+          title: '',
+          columns: 3,
+          items: [],
+        } as GridSection;
+      case 'cta':
+        return {
+          ...baseSection,
+          type: 'cta',
+          title: 'Call to Action',
+          description: '',
+          buttonText: 'Get Started',
+          buttonLink: '#',
+        } as CTASection;
+      case 'footer':
+        return {
+          ...baseSection,
+          type: 'footer',
+          content: '',
+          links: [],
+        } as FooterSection;
+      default:
+        throw new Error(`Unknown section type: ${type}`);
+    }
+  }
+
+  editSection(section: Section, index: number): void {
+    this.selectedSection = { ...section };
+    this.selectedSectionIndex = index;
+    this.isSectionEditorVisible = true;
+  }
+
+  deleteSection(index: number): void {
+    if (
+      this.config.landingPage?.sections &&
+      confirm('Are you sure you want to delete this section?')
+    ) {
+      this.config.landingPage.sections.splice(index, 1);
+      this.updateSectionOrders();
+    }
+  }
+
+  toggleSectionVisibility(section: Section): void {
+    section.visible = !section.visible;
+  }
+
+  onSectionEditorSave(updatedSection: Section): void {
+    if (
+      this.config.landingPage?.sections &&
+      this.selectedSectionIndex >= 0
+    ) {
+      this.config.landingPage.sections[this.selectedSectionIndex] =
+        updatedSection;
+    }
+    this.hideSectionEditor();
+  }
+
+  hideSectionEditor(): void {
+    this.isSectionEditorVisible = false;
+    this.selectedSection = null;
+    this.selectedSectionIndex = -1;
+  }
+
+  getSectionIcon(type: SectionType): string {
+    const icons: Record<SectionType, string> = {
+      hero: 'landscape',
+      features: 'stars',
+      content: 'article',
+      grid: 'grid_view',
+      cta: 'campaign',
+      footer: 'footer',
+    };
+    return icons[type] || 'extension';
+  }
+
+  getSectionTitle(section: Section): string {
+    switch (section.type) {
+      case 'hero':
+        return (section as HeroSection).title || 'Hero Section';
+      case 'features':
+        return (section as FeaturesSection).title || 'Features Section';
+      case 'content':
+        return (section as ContentSection).title || 'Content Section';
+      case 'grid':
+        return (section as GridSection).title || 'Grid Section';
+      case 'cta':
+        return (section as CTASection).title || 'CTA Section';
+      case 'footer':
+        return 'Footer Section';
+      default:
+        return 'Section';
+    }
+  }
+
+  // Save/Cancel Actions
+  onSave(): void {
+    if (!this.config.name) {
+      alert('Please provide a name for the configuration');
+      return;
+    }
+
+    if (this.configId) {
+      this.appConfigService
+        .updateConfiguration(this.configId, this.config)
+        .subscribe({
+          next: (updated) => {
+            this.saved.emit(updated);
+          },
+          error: (err) => {
+            console.error('Failed to update configuration:', err);
+            alert('Failed to save configuration');
+          },
+        });
+    } else {
+      this.appConfigService
+        .createConfiguration(this.config as any)
+        .subscribe({
+          next: (created) => {
+            this.saved.emit(created);
+          },
+          error: (err) => {
+            console.error('Failed to create configuration:', err);
+            alert('Failed to save configuration');
+          },
+        });
+    }
+  }
+
+  onCancel(): void {
+    if (confirm('Are you sure you want to discard changes?')) {
+      this.cancelled.emit();
+    }
+  }
 }
