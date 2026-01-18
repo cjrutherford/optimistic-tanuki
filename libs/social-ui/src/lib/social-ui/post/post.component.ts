@@ -7,7 +7,7 @@ import {
   TileComponent,
 } from '@optimistic-tanuki/common-ui';
 import { VoteComponent } from '../vote/vote.component';
-import { CommentComponent, ImageUploadCallback } from '../comment/comment.component';
+import { CommentComponent } from '../comment/comment.component';
 import { CommentListComponent } from '../comment/comment-list/comment-list.component';
 import {
   CommentDto,
@@ -17,6 +17,7 @@ import {
 } from '../../models';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { LinkType } from '../link/link.component';
+import { ImageUploadCallback } from '..';
 
 export declare type PostProfileStub = {
   id: string;

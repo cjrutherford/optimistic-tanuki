@@ -24,10 +24,7 @@ import Superscript from '@tiptap/extension-superscript';
 import DOMPurify from 'dompurify';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { RichTextToolbarComponent } from '../compose/components/rich-text-toolbar.component';
-
-export interface ImageUploadCallback {
-  (dataUrl: string, fileName: string): Promise<string>;
-}
+import { ImageUploadCallback } from '..';
 
 @Component({
   selector: 'lib-comment',
@@ -53,7 +50,10 @@ export interface ImageUploadCallback {
     '[style.--accent-shade]': 'accentShade',
   },
 })
-export class CommentComponent extends Themeable implements OnInit, AfterViewInit, OnDestroy {
+export class CommentComponent
+  extends Themeable
+  implements OnInit, AfterViewInit, OnDestroy
+{
   @Output() commentAdded: EventEmitter<string> = new EventEmitter<string>();
   @Input() imageUploadCallback?: ImageUploadCallback;
   @ViewChild('commentDialog') commentDialog!: TemplateRef<HTMLElement>;
@@ -111,7 +111,9 @@ export class CommentComponent extends Themeable implements OnInit, AfterViewInit
   }
 
   onToolbarImageUploadClick(): void {
-    const fileInput = document.getElementById('commentImageInput') as HTMLInputElement;
+    const fileInput = document.getElementById(
+      'commentImageInput'
+    ) as HTMLInputElement;
     if (fileInput) {
       fileInput.click();
     }
@@ -128,13 +130,13 @@ export class CommentComponent extends Themeable implements OnInit, AfterViewInit
 
     reader.onload = async () => {
       const base64Src = reader.result as string;
-      
+
       if (this.imageUploadCallback && base64Src) {
         try {
           // Upload to asset service and get public URL
           const fileName = file.name || `image_${Date.now()}`;
           const assetUrl = await this.imageUploadCallback(base64Src, fileName);
-          
+
           // Insert the image with the asset URL
           if (this.editor) {
             this.editor.chain().focus().setImage({ src: assetUrl }).run();
