@@ -40,17 +40,9 @@ export class ThemeService {
   constructor(@Inject(PLATFORM_ID) private platformId: object) {
     if (isPlatformBrowser(this.platformId)) {
       // Initialize available palettes including custom ones
-      const init = async () => {
-        // Load predefined palettes from gateway first
-        try {
-          this.predefinedPalettes = await loadPredefinedPalettes();
-        } catch (e) {
-          console.warn(
-            'Failed to load predefined palettes from gateway, using fallback:',
-            e
-          );
-          this.predefinedPalettes = PREDEFINED_PALETTES;
-        }
+      const init = () => {
+        // Use local fallbacks initially for immediate rendering
+        // Background update will happen via updateAvailablePalettes()
 
         // Update available palettes list
         const customPalettes = this.loadCustomPalettes();
@@ -101,14 +93,22 @@ export class ThemeService {
         this.theme.next(this._theme);
         this.themeColors.next(this.generateThemeColors());
         this.applyThemeColors();
+
+        // Trigger background update of palettes
+        void this.updateAvailablePalettes();
       };
 
-      if ('requestIdleCallback' in window) {
-        (window as any).requestIdleCallback(init);
-      } else {
-        // Call init synchronously to make behavior predictable in unit tests
-        // and avoid relying on timers during initialization.
+      // Call init synchronously to ensure immediate theme application
+      try {
         init();
+      } catch (e) {
+        console.error('ThemeService initialization failed:', e);
+        // Fallback to defaults if init fails
+        this._theme = 'light';
+        this.accentColor = '#3f51b5';
+        this.complementColor = '#c0af4b';
+        this.theme.next(this._theme);
+        this.themeColors.next(this.generateThemeColors());
       }
     } else {
       // Initialize default values for SSR

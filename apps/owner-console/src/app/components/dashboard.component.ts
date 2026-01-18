@@ -127,6 +127,12 @@ export class DashboardComponent implements OnInit {
         isActive: this.router.url.includes('/store/orders'),
       },
       {
+        label: 'App Config',
+        action: () => this.router.navigate(['/dashboard/app-config']),
+        variant: 'text',
+        isActive: this.router.url.includes('/app-config'),
+      },
+      {
         label: 'Logout',
         action: () => this.logout(),
         variant: 'danger',
