@@ -40,14 +40,14 @@ export class AppConfigController {
     );
   }
 
-  @ApiOperation({ summary: 'Get app configuration by ID' })
-  @ApiResponse({ status: 200, description: 'Configuration found' })
-  @ApiResponse({ status: 404, description: 'Configuration not found' })
-  @Get(':id')
-  async getConfiguration(@Param('id') id: string) {
-    this.logger.log(`Getting app configuration: ${id}`);
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get all app configurations' })
+  @ApiResponse({ status: 200, description: 'Configurations retrieved' })
+  @Get()
+  async getAllConfigurations() {
+    this.logger.log('Getting all app configurations');
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.Get }, id)
+      this.client.send({ cmd: AppConfigCommands.GetAll }, {})
     );
   }
 
@@ -73,14 +73,14 @@ export class AppConfigController {
     );
   }
 
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Get all app configurations' })
-  @ApiResponse({ status: 200, description: 'Configurations retrieved' })
-  @Get()
-  async getAllConfigurations() {
-    this.logger.log('Getting all app configurations');
+  @ApiOperation({ summary: 'Get app configuration by ID' })
+  @ApiResponse({ status: 200, description: 'Configuration found' })
+  @ApiResponse({ status: 404, description: 'Configuration not found' })
+  @Get(':id')
+  async getConfiguration(@Param('id') id: string) {
+    this.logger.log(`Getting app configuration: ${id}`);
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.GetAll }, {})
+      this.client.send({ cmd: AppConfigCommands.Get }, id)
     );
   }
 

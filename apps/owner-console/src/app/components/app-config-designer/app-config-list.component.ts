@@ -277,15 +277,17 @@ export class AppConfigListComponent implements OnInit {
     this.loading = true;
     this.error = null;
     
+    console.log('[AppConfigList] Loading configurations from /api/app-config');
     this.appConfigService.getConfigurations().subscribe({
       next: (configs) => {
+        console.log('[AppConfigList] Loaded configurations:', configs);
         this.configurations = configs;
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load configurations';
+        this.error = `Failed to load configurations: ${err.message || err.statusText || 'Unknown error'}`;
         this.loading = false;
-        console.error('Error loading configurations:', err);
+        console.error('[AppConfigList] Error loading configurations:', err);
       },
     });
   }

@@ -1,8 +1,9 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   CdkDragDrop,
   DragDropModule,
@@ -56,6 +57,7 @@ import { SectionEditorComponent } from './section-editors/section-editor.compone
   ],
   templateUrl: './app-config-designer.component.html',
   styleUrls: ['./app-config-designer.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Default, // Using Default for FormsModule compatibility
 })
 export class AppConfigDesignerComponent implements OnInit {
   @Input() configId?: string;
@@ -103,12 +105,24 @@ export class AppConfigDesignerComponent implements OnInit {
   selectedSection: Section | null = null;
   selectedSectionIndex = -1;
 
-  constructor(private appConfigService: AppConfigService) {}
+  constructor(
+    private appConfigService: AppConfigService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    if (this.configId) {
-      this.loadConfiguration(this.configId);
-    }
+    // Check for route parameter first
+    this.route.params.subscribe(params => {
+      const id = params['id'];
+      if (id) {
+        this.configId = id;
+        this.loadConfiguration(id);
+      } else if (this.configId) {
+        // Fallback to input property
+        this.loadConfiguration(this.configId);
+      }
+    });
   }
 
   get customCss(): string {
@@ -124,12 +138,15 @@ export class AppConfigDesignerComponent implements OnInit {
   }
 
   loadConfiguration(id: string): void {
+    console.log('[AppConfigDesigner] Loading configuration:', id);
     this.appConfigService.getConfiguration(id).subscribe({
       next: (config) => {
+        console.log('[AppConfigDesigner] Loaded configuration:', config);
         this.config = config;
       },
       error: (err) => {
-        console.error('Failed to load configuration:', err);
+        console.error('[AppConfigDesigner] Failed to load configuration:', err);
+        alert(`Failed to load configuration: ${err.message || err.statusText || 'Unknown error'}`);
       },
     });
   }
@@ -307,26 +324,36 @@ export class AppConfigDesignerComponent implements OnInit {
       return;
     }
 
+    console.log('[AppConfigDesigner] Saving configuration:', this.config);
+
     if (this.configId) {
+      console.log('[AppConfigDesigner] Updating existing configuration:', this.configId);
       this.appConfigService
         .updateConfiguration(this.configId, this.config)
         .subscribe({
           next: (updated) => {
+            console.log('[AppConfigDesigner] Configuration updated:', updated);
+            alert('Configuration saved successfully!');
             this.saved.emit(updated);
+            this.router.navigate(['/dashboard/app-config']);
           },
           error: (err) => {
-            console.error('Failed to update configuration:', err);
-            alert('Failed to save configuration');
+            console.error('[AppConfigDesigner] Failed to update configuration:', err);
+            alert(`Failed to save configuration: ${err.message || err.statusText || 'Unknown error'}`);
           },
         });
     } else {
+      console.log('[AppConfigDesigner] Creating new configuration');
       this.appConfigService.createConfiguration(this.config as any).subscribe({
         next: (created) => {
+          console.log('[AppConfigDesigner] Configuration created:', created);
+          alert('Configuration created successfully!');
           this.saved.emit(created);
+          this.router.navigate(['/dashboard/app-config']);
         },
         error: (err) => {
-          console.error('Failed to create configuration:', err);
-          alert('Failed to save configuration');
+          console.error('[AppConfigDesigner] Failed to create configuration:', err);
+          alert(`Failed to save configuration: ${err.message || err.statusText || 'Unknown error'}`);
         },
       });
     }
@@ -335,6 +362,7 @@ export class AppConfigDesignerComponent implements OnInit {
   onCancel(): void {
     if (confirm('Are you sure you want to discard changes?')) {
       this.cancelled.emit();
+      this.router.navigate(['/dashboard/app-config']);
     }
   }
 }

@@ -37,8 +37,7 @@ export const appRoutes: Route[] = [
       { path: 'store/orders', component: OrderManagementComponent },
       { path: 'app-config', component: AppConfigListComponent },
       { path: 'app-config/designer', component: AppConfigDesignerComponent },
-      // Parametric designer route removed to avoid static prerender requirement.
-      // Navigation to a specific designer can be handled client-side from the list view.
+      { path: 'app-config/designer/:id', component: AppConfigDesignerComponent },
       { path: '', redirectTo: 'users', pathMatch: 'full' },
     ],
   },
