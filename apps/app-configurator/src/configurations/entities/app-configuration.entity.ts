@@ -11,7 +11,7 @@ export class AppConfigurationEntity {
   @Column({ nullable: true })
   description: string;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ nullable: true })
   domain: string;
 
   @Column({ type: 'jsonb' })

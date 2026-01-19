@@ -153,9 +153,9 @@ export class AppResolverComponent implements OnInit {
         this.loadByName(appNameQuery);
       } else {
         // Default fallback
-        console.log('[AppResolver] No app specified, using default: Demo Application');
+        console.log('[AppResolver] No app specified, using default: demo-app');
         this.loadingMessage = 'Loading default application';
-        this.loadByName('Demo Application');
+        this.loadByName('demo-app');
       }
     });
   }
@@ -198,7 +198,7 @@ export class AppResolverComponent implements OnInit {
           } else {
             console.log('[AppResolver] Falling back to default application');
             this.loadingMessage = 'Domain not found, loading default application';
-            this.loadByName('Demo Application');
+            this.loadByName('demo-app');
           }
         });
       },

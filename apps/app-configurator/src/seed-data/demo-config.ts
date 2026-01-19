@@ -1,7 +1,7 @@
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
 
 export const demoAppConfig: Partial<AppConfigurationEntity> = {
-  name: 'Demo Application',
+  name: 'demo-app',
   description: 'A demonstration application showcasing all features',
   active: true,
   landingPage: {

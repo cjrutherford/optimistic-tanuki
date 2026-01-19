@@ -50,18 +50,24 @@ export class ConfigurationsService {
   }
 
   async getConfigurationByName(name: string): Promise<AppConfigurationEntity> {
+    this.logger.log(`[Service] Querying configuration by name: "${name}"`);
     const config = await this.configRepository.findOne({ where: { name } });
     if (!config) {
+      this.logger.warn(`[Service] Configuration with name "${name}" not found`);
       throw new NotFoundException(`Configuration with name ${name} not found`);
     }
+    this.logger.log(`[Service] Found configuration: ${config.name} (id: ${config.id})`);
     return config;
   }
 
   async getAllConfigurations(query: any = {}): Promise<AppConfigurationEntity[]> {
-    return await this.configRepository.find({
+    this.logger.log(`[Service] Querying all configurations with filter:`, query);
+    const configs = await this.configRepository.find({
       where: query,
       order: { createdAt: 'DESC' },
     });
+    this.logger.log(`[Service] Found ${configs.length} configurations`);
+    return configs;
   }
 
   async updateConfiguration(
