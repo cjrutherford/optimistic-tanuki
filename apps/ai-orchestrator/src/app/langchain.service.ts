@@ -25,7 +25,7 @@ import { ToolsService } from './tools.service';
 import { ConfigService } from '@nestjs/config';
 import { ModelInitializerService } from './model-initializer.service';
 import { WorkflowControlService } from './workflow-control.service';
-import { PromptTemplateService } from './prompt-template.service';
+import { SystemPromptBuilder } from './system-prompt-builder.service';
 import {
   StreamingEvent,
   StreamingEventType,
@@ -43,7 +43,7 @@ export class LangChainService {
     private readonly config: ConfigService,
     private readonly modelInitializer: ModelInitializerService,
     private readonly workflowControl: WorkflowControlService,
-    private readonly promptTemplate: PromptTemplateService
+    private readonly systemPromptBuilder: SystemPromptBuilder
   ) {
     this.initializeModels();
   }
@@ -361,17 +361,22 @@ Always verify parameter names match tool schemas before calling!`;
       userMessage
     );
 
-    // Use centralized prompt template service
-    const promptTemplate = this.promptTemplate.createSystemPromptTemplate();
-    const personaTelos = this.promptTemplate.formatPersonaTelos(persona);
-    const userProfile = this.promptTemplate.formatUserProfile(profile);
+    // Use SystemPromptBuilder for TELOS-driven system prompts
+    const { template, variables } = await this.systemPromptBuilder.buildSystemPrompt(
+      {
+        personaId: persona.id,
+        profileId: profile.id,
+        conversationSummary: conversationSummary,
+        projectContext: projectContext || '',
+      },
+      {
+        includeTools: true,
+        includeExamples: false,
+        includeProjectContext: !!projectContext,
+      }
+    );
     
-    const systemMessages = await promptTemplate.formatMessages({
-      ...personaTelos,
-      ...userProfile,
-      conversationSummary: conversationSummary,
-      projectContext: projectContext || '',
-    });
+    const systemMessages = await template.formatMessages(variables);
 
     const tools = await this.createTools(profile.id, conversationId);
     const chatHistory = this.convertChatHistory(conversationHistory);
@@ -583,17 +588,22 @@ Always verify parameter names match tool schemas before calling!`;
       userMessage
     );
 
-    // Use centralized prompt template service
-    const promptTemplate = this.promptTemplate.createSystemPromptTemplate();
-    const personaTelos = this.promptTemplate.formatPersonaTelos(persona);
-    const userProfile = this.promptTemplate.formatUserProfile(profile);
+    // Use SystemPromptBuilder for TELOS-driven system prompts
+    const { template, variables } = await this.systemPromptBuilder.buildSystemPrompt(
+      {
+        personaId: persona.id,
+        profileId: profile.id,
+        conversationSummary: conversationSummary,
+        projectContext: projectContext || '',
+      },
+      {
+        includeTools: true,
+        includeExamples: false,
+        includeProjectContext: !!projectContext,
+      }
+    );
     
-    const systemMessages = await promptTemplate.formatMessages({
-      ...personaTelos,
-      ...userProfile,
-      conversationSummary: conversationSummary,
-      projectContext: projectContext || '',
-    });
+    const systemMessages = await template.formatMessages(variables);
 
     const tools = await this.createTools(profile.id, conversationId);
     const chatHistory = this.convertChatHistory(conversationHistory);

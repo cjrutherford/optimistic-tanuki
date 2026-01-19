@@ -6,7 +6,6 @@ import {
   ProfileCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
-import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
 import { firstValueFrom } from 'rxjs';
 import {
   ChatConversation,
@@ -18,6 +17,7 @@ import { LangChainService } from './langchain.service';
 import { LangGraphService } from './langgraph.service';
 import { LangChainAgentService } from './langchain-agent.service';
 import { ContextStorageService } from './context-storage.service';
+import { SystemPromptBuilder } from './system-prompt-builder.service';
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 
 @Injectable()
@@ -35,7 +35,8 @@ export class AppService {
     private readonly langChainService: LangChainService,
     private readonly langGraphService: LangGraphService,
     private readonly langChainAgentService: LangChainAgentService,
-    private readonly contextStorage: ContextStorageService
+    private readonly contextStorage: ContextStorageService,
+    private readonly systemPromptBuilder: SystemPromptBuilder
   ) {}
 
   /**
@@ -214,11 +215,10 @@ export class AppService {
   }
 
   /**
-   * Summarize conversation for context by calling the prompt proxy
+   * Summarize conversation for context
    */
   private async summarizeConversation(
-    messages: ChatMessage[],
-    personaPrompt: string
+    messages: ChatMessage[]
   ): Promise<string> {
     // Lightweight internal summarizer so we don't depend on the external
     // prompt proxy. Keeps conversation summarization deterministic for
@@ -267,17 +267,9 @@ export class AppService {
           profile.id
         );
 
-        // Generate (or re-generate) a summary for the conversation using the persona prompt
-        const personaSystemPrompt = (
-          promptGeneration.generatePersonaSystemMessage as any
-        )(persona);
-        // No external prompt proxy seeding: use internal summarizer and
-        // LangGraph execution. This keeps the services decoupled from the
-        // prompt proxy RPC surface.
-
+        // Generate conversation summary without old prompt generation library
         const generatedSummary = await this.summarizeConversation(
-          conversation.messages,
-          personaSystemPrompt
+          conversation.messages
         );
 
         const conversationSummary =
