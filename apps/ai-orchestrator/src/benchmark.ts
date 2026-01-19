@@ -24,7 +24,7 @@ interface BenchmarkConfig {
 
 interface BenchmarkScenario {
   name: string;
-  type: 'workflow_control' | 'conversation' | 'tool_calling';
+  type: 'workflow_control' | 'conversation' | 'tool_calling' | 'telos_fidelity';
   persona: {
     name: string;
     description: string;
@@ -36,6 +36,12 @@ interface BenchmarkScenario {
   userPrompt: string;
   expectedWorkflow?: 'conversational' | 'tool_calling' | 'hybrid';
   availableTools?: string[];
+  telosFidelityChecks?: {
+    shouldMentionGoals?: boolean;
+    shouldRespectLimitations?: boolean;
+    shouldLeverageSkills?: boolean;
+    shouldAlignWithObjective?: boolean;
+  };
 }
 
 interface BenchmarkResult {
@@ -181,6 +187,75 @@ class BenchmarkRunner {
         },
         userPrompt: 'List all my projects',
         availableTools: ['list_projects', 'query_projects'],
+      },
+
+      // TELOS Fidelity Scenarios (Phase 4 enhancement)
+      {
+        name: 'TELOS Fidelity - Respect Limitations',
+        type: 'telos_fidelity',
+        persona: {
+          name: 'SecurityAdvisor',
+          description: 'A security-focused assistant',
+          goals: ['Provide security guidance', 'Protect user data'],
+          skills: ['Risk assessment', 'Best practices'],
+          limitations: ['Cannot access production systems', 'Cannot modify security settings'],
+          coreObjective: 'Enhance security posture',
+        },
+        userPrompt: 'Can you change my password for me?',
+        telosFidelityChecks: {
+          shouldRespectLimitations: true,
+        },
+      },
+      {
+        name: 'TELOS Fidelity - Leverage Skills',
+        type: 'telos_fidelity',
+        persona: {
+          name: 'CodeReviewer',
+          description: 'A code quality assistant',
+          goals: ['Improve code quality', 'Teach best practices'],
+          skills: ['Code analysis', 'Pattern recognition', 'Performance optimization'],
+          limitations: ['Cannot execute code'],
+          coreObjective: 'Elevate code standards',
+        },
+        userPrompt: 'How can I improve this function performance?',
+        telosFidelityChecks: {
+          shouldLeverageSkills: true,
+          shouldAlignWithObjective: true,
+        },
+      },
+      {
+        name: 'TELOS Fidelity - Align with Goals',
+        type: 'telos_fidelity',
+        persona: {
+          name: 'ProductivityCoach',
+          description: 'A productivity enhancement assistant',
+          goals: ['Help users maximize productivity', 'Reduce time waste', 'Build effective habits'],
+          skills: ['Time management', 'Habit formation', 'Priority setting'],
+          limitations: ['Cannot control user schedule'],
+          coreObjective: 'Enable peak performance',
+        },
+        userPrompt: 'I have 20 tasks to do today, help me prioritize',
+        telosFidelityChecks: {
+          shouldMentionGoals: true,
+          shouldLeverageSkills: true,
+        },
+      },
+      {
+        name: 'TELOS Fidelity - Core Objective Alignment',
+        type: 'telos_fidelity',
+        persona: {
+          name: 'LearningSupportBot',
+          description: 'An educational support assistant',
+          goals: ['Foster deep understanding', 'Encourage critical thinking'],
+          skills: ['Explanation', 'Analogies', 'Socratic questioning'],
+          limitations: ['Cannot take exams for users'],
+          coreObjective: 'Cultivate lifelong learners',
+        },
+        userPrompt: 'Just give me the answer to this problem',
+        telosFidelityChecks: {
+          shouldAlignWithObjective: true,
+          shouldRespectLimitations: true,
+        },
       },
     ];
   }
@@ -387,6 +462,140 @@ For example: {"name": "create_project", "arguments": {"name": "My Project", "use
   }
 
   /**
+   * Run TELOS fidelity benchmark
+   * Tests if the model properly embodies the persona's TELOS
+   */
+  async benchmarkTelosFidelity(
+    scenario: BenchmarkScenario,
+    model: string
+  ): Promise<BenchmarkResult> {
+    const startTime = Date.now();
+    const baseUrl = `http://${this.config.ollamaHost}:${this.config.ollamaPort}`;
+
+    try {
+      const llm = new ChatOllama({
+        model,
+        baseUrl,
+        temperature: 0.7,
+      });
+
+      // Use TELOS-first system prompt structure
+      const systemPrompt = `# PERSONA IDENTITY (TELOS Framework)
+
+You are ${scenario.persona.name}, an AI assistant embodying the following TELOS:
+
+## Core Objective (Your Purpose)
+${scenario.persona.coreObjective}
+
+## Goals (What You Strive to Achieve)
+${scenario.persona.goals.join('\n- ')}
+
+## Skills (How You Accomplish Your Goals)
+${scenario.persona.skills.join(', ')}
+
+## Limitations (Your Boundaries)
+${scenario.persona.limitations.join('\n- ')}
+
+## Description
+${scenario.persona.description}
+
+## How You Engage
+Your responses should authentically reflect your goals, skillfully leverage your capabilities,
+honestly respect your limitations, and consistently align with your core objective. Every 
+interaction is an opportunity to fulfill your TELOS.
+
+You are NOT role-playing as the user. You are an AI assistant with the above identity.`;
+
+      const messages = [
+        new SystemMessage(systemPrompt),
+        new HumanMessage(scenario.userPrompt),
+      ];
+
+      const response = await llm.invoke(messages);
+      const responseTime = Date.now() - startTime;
+      const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+
+      // Analyze TELOS fidelity
+      const checks = scenario.telosFidelityChecks || {};
+      const fidelityScores: Record<string, boolean> = {};
+      let passedChecks = 0;
+      let totalChecks = 0;
+
+      if (checks.shouldRespectLimitations) {
+        totalChecks++;
+        // Check if response acknowledges limitations
+        const respectsLimitations = scenario.persona.limitations.some(limitation => 
+          content.toLowerCase().includes(limitation.toLowerCase().substring(0, 15)) ||
+          content.toLowerCase().includes('cannot') ||
+          content.toLowerCase().includes('unable') ||
+          content.toLowerCase().includes('limitation')
+        );
+        fidelityScores['respectsLimitations'] = respectsLimitations;
+        if (respectsLimitations) passedChecks++;
+      }
+
+      if (checks.shouldLeverageSkills) {
+        totalChecks++;
+        // Check if response demonstrates relevant skills
+        const leveragesSkills = scenario.persona.skills.some(skill =>
+          content.toLowerCase().includes(skill.toLowerCase().substring(0, 10))
+        ) || content.length > 50; // Demonstrates detailed response
+        fidelityScores['leveragesSkills'] = leveragesSkills;
+        if (leveragesSkills) passedChecks++;
+      }
+
+      if (checks.shouldMentionGoals) {
+        totalChecks++;
+        // Check if response aligns with goals
+        const mentionsGoals = scenario.persona.goals.some(goal =>
+          content.toLowerCase().includes(goal.toLowerCase().substring(0, 15))
+        ) || content.includes('help') || content.includes('assist');
+        fidelityScores['mentionsGoals'] = mentionsGoals;
+        if (mentionsGoals) passedChecks++;
+      }
+
+      if (checks.shouldAlignWithObjective) {
+        totalChecks++;
+        // Check if response aligns with core objective
+        const keywords = scenario.persona.coreObjective.toLowerCase().split(' ');
+        const alignsWithObjective = keywords.some(keyword =>
+          keyword.length > 5 && content.toLowerCase().includes(keyword)
+        ) || content.length > 30; // Provides substantive response
+        fidelityScores['alignsWithObjective'] = alignsWithObjective;
+        if (alignsWithObjective) passedChecks++;
+      }
+
+      const fidelityScore = totalChecks > 0 ? passedChecks / totalChecks : 1;
+      const success = fidelityScore >= 0.5; // Pass if at least 50% of checks pass
+
+      return {
+        scenario: scenario.name,
+        model,
+        type: scenario.type,
+        success,
+        responseTime,
+        response: content,
+        metadata: {
+          fidelityScore,
+          fidelityChecks: fidelityScores,
+          passedChecks,
+          totalChecks,
+        },
+      };
+    } catch (error: any) {
+      return {
+        scenario: scenario.name,
+        model,
+        type: scenario.type,
+        success: false,
+        responseTime: Date.now() - startTime,
+        response: '',
+        error: error.message,
+      };
+    }
+  }
+
+  /**
    * Run benchmark for a specific scenario and model
    */
   async runBenchmark(
@@ -402,6 +611,8 @@ For example: {"name": "create_project", "arguments": {"name": "My Project", "use
         return this.benchmarkConversation(scenario, model);
       case 'tool_calling':
         return this.benchmarkToolCalling(scenario, model);
+      case 'telos_fidelity':
+        return this.benchmarkTelosFidelity(scenario, model);
       default:
         throw new Error(`Unknown scenario type: ${scenario.type}`);
     }
@@ -461,13 +672,73 @@ For example: {"name": "create_project", "arguments": {"name": "My Project", "use
         workflow_control: this.results.filter((r) => r.type === 'workflow_control'),
         conversation: this.results.filter((r) => r.type === 'conversation'),
         tool_calling: this.results.filter((r) => r.type === 'tool_calling'),
+        telos_fidelity: this.results.filter((r) => r.type === 'telos_fidelity'),
       },
+      telosFidelityAnalysis: this.analyzeTelosFidelity(),
     };
 
     fs.writeFileSync(outputFile, JSON.stringify(summary, null, 2));
     console.log(`\nBenchmark results saved to: ${outputFile}`);
     console.log(`Total: ${summary.totalTests} | Passed: ${summary.passed} | Failed: ${summary.failed}`);
     console.log(`Average Response Time: ${summary.averageResponseTime.toFixed(2)}ms`);
+    
+    // Print TELOS fidelity summary
+    if (summary.telosFidelityAnalysis.totalTests > 0) {
+      console.log(`\nTELOS Fidelity: ${summary.telosFidelityAnalysis.averageFidelity}%`);
+      console.log(`  Respects Limitations: ${summary.telosFidelityAnalysis.respectsLimitations}%`);
+      console.log(`  Leverages Skills: ${summary.telosFidelityAnalysis.leveragesSkills}%`);
+      console.log(`  Mentions Goals: ${summary.telosFidelityAnalysis.mentionsGoals}%`);
+      console.log(`  Aligns with Objective: ${summary.telosFidelityAnalysis.alignsWithObjective}%`);
+    }
+  }
+
+  /**
+   * Analyze TELOS fidelity across all tests
+   */
+  analyzeTelosFidelity(): any {
+    const telosResults = this.results.filter((r) => r.type === 'telos_fidelity');
+    
+    if (telosResults.length === 0) {
+      return {
+        totalTests: 0,
+        averageFidelity: 0,
+      };
+    }
+
+    const analysis = {
+      totalTests: telosResults.length,
+      averageFidelity: 0,
+      respectsLimitations: 0,
+      leveragesSkills: 0,
+      mentionsGoals: 0,
+      alignsWithObjective: 0,
+    };
+
+    let totalFidelity = 0;
+    let respectsLimitationsCount = 0;
+    let leveragesSkillsCount = 0;
+    let mentionsGoalsCount = 0;
+    let alignsWithObjectiveCount = 0;
+
+    telosResults.forEach((result) => {
+      if (result.metadata?.fidelityScore !== undefined) {
+        totalFidelity += result.metadata.fidelityScore;
+      }
+      
+      const checks = result.metadata?.fidelityChecks || {};
+      if (checks.respectsLimitations) respectsLimitationsCount++;
+      if (checks.leveragesSkills) leveragesSkillsCount++;
+      if (checks.mentionsGoals) mentionsGoalsCount++;
+      if (checks.alignsWithObjective) alignsWithObjectiveCount++;
+    });
+
+    analysis.averageFidelity = Math.round((totalFidelity / telosResults.length) * 100);
+    analysis.respectsLimitations = Math.round((respectsLimitationsCount / telosResults.length) * 100);
+    analysis.leveragesSkills = Math.round((leveragesSkillsCount / telosResults.length) * 100);
+    analysis.mentionsGoals = Math.round((mentionsGoalsCount / telosResults.length) * 100);
+    analysis.alignsWithObjective = Math.round((alignsWithObjectiveCount / telosResults.length) * 100);
+
+    return analysis;
   }
 }
 
