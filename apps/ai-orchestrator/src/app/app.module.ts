@@ -16,6 +16,7 @@ import { LangChainAgentService } from './langchain-agent.service';
 import { ModelInitializerService } from './model-initializer.service';
 import { WorkflowControlService } from './workflow-control.service';
 import { PromptTemplateService } from './prompt-template.service';
+import { SystemPromptBuilder } from './system-prompt-builder.service';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { RateLimitGuard } from './guards/rate-limit.guard';
@@ -42,6 +43,7 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     ModelInitializerService,
     WorkflowControlService,
     PromptTemplateService,
+    SystemPromptBuilder,
     LangChainService,
     ContextStorageService,
     LangGraphService,
