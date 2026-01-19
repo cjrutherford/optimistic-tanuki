@@ -23,6 +23,8 @@ import {
 import {
   PersonaTelosCommands,
   ProfileCommands,
+  ProfileTelosCommands,
+  ProjectTelosCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
@@ -40,6 +42,8 @@ export interface SystemPromptOptions {
   includeTools?: boolean;
   includeExamples?: boolean;
   includeProjectContext?: boolean;
+  includeProfileTelos?: boolean;
+  includeProjectTelos?: boolean;
 }
 
 @Injectable()
@@ -74,8 +78,25 @@ export class SystemPromptBuilder {
     const persona = await this.fetchPersonaTelos(context.personaId);
     const profile = await this.fetchProfile(context.profileId);
     
-    // Profile TELOS and Project TELOS are optional enhanced context
-    // For now, we work with what we have (PersonaTelosDto and ProfileDto)
+    // Optionally fetch Profile TELOS and Project TELOS (Phase 3 enhancement)
+    let profileTelos: ProfileTelosDto | undefined;
+    let projectTelos: ProjectTelosDto | undefined;
+    
+    if (options.includeProfileTelos) {
+      try {
+        profileTelos = await this.fetchProfileTelos(context.profileId);
+      } catch (error) {
+        this.logger.warn(`Profile TELOS not found for ${context.profileId}, continuing without it`);
+      }
+    }
+    
+    if (options.includeProjectTelos && context.projectId) {
+      try {
+        projectTelos = await this.fetchProjectTelos(context.projectId);
+      } catch (error) {
+        this.logger.warn(`Project TELOS not found for ${context.projectId}, continuing without it`);
+      }
+    }
     
     // Build TELOS-driven template
     const template = this.createTelosDrivenTemplate(options);
@@ -84,6 +105,8 @@ export class SystemPromptBuilder {
     const variables = this.buildTemplateVariables({
       persona,
       profile,
+      profileTelos,
+      projectTelos,
       conversationSummary: context.conversationSummary,
       projectContext: context.projectContext,
     });
@@ -129,8 +152,37 @@ interaction is an opportunity to fulfill your TELOS and serve the user effective
 You are NOT role-playing as the user. You are an AI assistant with the above identity,
 helping the user achieve THEIR goals.`);
 
-    // 2. USER CONTEXT
-    sections.push(`# USER CONTEXT (The Person You're Helping)
+    // 2. USER CONTEXT with optional Profile TELOS
+    if (options.includeProfileTelos) {
+      sections.push(`# USER CONTEXT (The Person You're Helping)
+
+User Profile:
+- Name: {userName}
+- ID: {userId}
+
+## User's TELOS (Their Purpose and Nature)
+Understanding your user's TELOS helps you serve them better:
+
+### User's Core Objective
+{userCoreObjective}
+
+### User's Goals
+{userGoals}
+
+### User's Skills & Strengths
+{userSkills}
+
+### User's Interests
+{userInterests}
+
+### User's Objectives
+{userObjectives}
+
+You are here to assist {userName} with their requests, helping them achieve their goals
+while respecting their interests and leveraging their strengths. Always respond from YOUR 
+perspective as the assistant (use "I" for your actions, "you" for the user's actions).`);
+    } else {
+      sections.push(`# USER CONTEXT (The Person You're Helping)
 
 User Profile:
 - Name: {userName}
@@ -138,16 +190,42 @@ User Profile:
 
 You are here to assist {userName} with their requests. Always respond from YOUR perspective
 as the assistant (use "I" for your actions, "you" for the user's actions).`);
+    }
 
-    // 3. CONVERSATION CONTEXT
+    // 3. PROJECT CONTEXT with optional Project TELOS
+    if (options.includeProjectTelos) {
+      sections.push(`# PROJECT CONTEXT (Current Work Focus)
+
+{projectSummary}
+
+## Project TELOS
+This project has its own TELOS that guides the work:
+
+### Project Core Objective
+{projectCoreObjective}
+
+### Project Goals
+{projectGoals}
+
+### Required Skills
+{projectSkills}
+
+### Project Interests & Focus Areas
+{projectInterests}
+
+### Project Objectives
+{projectObjectives}
+
+When working on this project, align your assistance with the project's TELOS while
+staying true to your own identity and the user's goals.`);
+    } else if (options.includeProjectContext !== false) {
+      sections.push(`{projectContext}`);
+    }
+
+    // 4. CONVERSATION CONTEXT
     sections.push(`# CONVERSATION CONTEXT
 
 {conversationSummary}`);
-
-    // 4. PROJECT CONTEXT (if applicable)
-    if (options.includeProjectContext !== false) {
-      sections.push(`{projectContext}`);
-    }
 
     // 5. TOOLS & CAPABILITIES (if applicable)
     if (options.includeTools !== false) {
@@ -241,10 +319,12 @@ These examples show how you embody your TELOS while helping users:
   private buildTemplateVariables(context: {
     persona: PersonaTelosDto;
     profile: ProfileDto;
+    profileTelos?: ProfileTelosDto;
+    projectTelos?: ProjectTelosDto;
     conversationSummary?: string;
     projectContext?: string;
   }): Record<string, any> {
-    return {
+    const variables: Record<string, any> = {
       // Persona TELOS
       personaName: context.persona.name,
       personaDescription: context.persona.description,
@@ -263,6 +343,28 @@ These examples show how you embody your TELOS while helping users:
       // Project context (optional)
       projectContext: context.projectContext || '',
     };
+
+    // Add Profile TELOS if available
+    if (context.profileTelos) {
+      variables.userCoreObjective = context.profileTelos.coreObjective || 'Achieve personal and professional goals';
+      variables.userGoals = this.formatList(context.profileTelos.goals) || 'No specific goals defined';
+      variables.userSkills = this.formatList(context.profileTelos.skills) || 'Developing skills';
+      variables.userInterests = this.formatList(context.profileTelos.interests) || 'Various interests';
+      variables.userObjectives = this.formatList(context.profileTelos.objectives) || 'Working toward objectives';
+      variables.userStrengths = this.formatList(context.profileTelos.strengths) || 'Building on strengths';
+    }
+
+    // Add Project TELOS if available
+    if (context.projectTelos) {
+      variables.projectSummary = context.projectTelos.overallProjectSummary || `Project: ${context.projectTelos.name}`;
+      variables.projectCoreObjective = context.projectTelos.coreObjective || 'Complete project successfully';
+      variables.projectGoals = this.formatList(context.projectTelos.goals) || 'Achieve project milestones';
+      variables.projectSkills = this.formatList(context.projectTelos.skills) || 'Required skills for project';
+      variables.projectInterests = this.formatList(context.projectTelos.interests) || 'Project focus areas';
+      variables.projectObjectives = this.formatList(context.projectTelos.objectives) || 'Project objectives';
+    }
+
+    return variables;
   }
 
   /**
@@ -344,6 +446,72 @@ These examples show how you embody your TELOS while helping users:
       return profile;
     } catch (error) {
       this.logger.error(`Failed to fetch profile: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch profile TELOS with caching
+   */
+  private async fetchProfileTelos(profileId: string): Promise<ProfileTelosDto> {
+    const cacheKey = `profileTelos:${profileId}`;
+    const cached = this.getCached<ProfileTelosDto>(cacheKey);
+    
+    if (cached) {
+      this.logger.debug(`Using cached profile TELOS for ${profileId}`);
+      return cached;
+    }
+
+    try {
+      const result = await firstValueFrom(
+        this.telosDocsService.send(
+          { cmd: ProfileTelosCommands.FIND_ONE },
+          { id: profileId }
+        )
+      );
+
+      if (!result) {
+        throw new Error(`Profile TELOS ${profileId} not found`);
+      }
+
+      this.setCached(cacheKey, result);
+      
+      return result as ProfileTelosDto;
+    } catch (error) {
+      this.logger.error(`Failed to fetch profile TELOS: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch project TELOS with caching
+   */
+  private async fetchProjectTelos(projectId: string): Promise<ProjectTelosDto> {
+    const cacheKey = `projectTelos:${projectId}`;
+    const cached = this.getCached<ProjectTelosDto>(cacheKey);
+    
+    if (cached) {
+      this.logger.debug(`Using cached project TELOS for ${projectId}`);
+      return cached;
+    }
+
+    try {
+      const result = await firstValueFrom(
+        this.telosDocsService.send(
+          { cmd: ProjectTelosCommands.FIND_ONE },
+          { id: projectId }
+        )
+      );
+
+      if (!result) {
+        throw new Error(`Project TELOS ${projectId} not found`);
+      }
+
+      this.setCached(cacheKey, result);
+      
+      return result as ProjectTelosDto;
+    } catch (error) {
+      this.logger.error(`Failed to fetch project TELOS: ${error.message}`);
       throw error;
     }
   }
