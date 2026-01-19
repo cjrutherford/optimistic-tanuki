@@ -40,18 +40,18 @@ export class ConfigurationsController {
 
   @MessagePattern({ cmd: AppConfigCommands.GetByDomain })
   async getConfigurationByDomain(
-    @Payload('domain') domain: string
+    @Payload() data: { domain: string }
   ): Promise<AppConfigurationEntity> {
-    this.logger.log(`Getting app configuration by domain: ${domain}`);
-    return await this.configurationsService.getConfigurationByDomain(domain);
+    this.logger.log(`Getting app configuration by domain: ${data.domain}`);
+    return await this.configurationsService.getConfigurationByDomain(data.domain);
   }
 
   @MessagePattern({ cmd: AppConfigCommands.GetByName })
   async getConfigurationByName(
-    @Payload('name') name: string
+    @Payload() data: { name: string }
   ): Promise<AppConfigurationEntity> {
-    this.logger.log(`Getting app configuration by name: ${name}`);
-    return await this.configurationsService.getConfigurationByName(name);
+    this.logger.log(`Getting app configuration by name: ${data.name}`);
+    return await this.configurationsService.getConfigurationByName(data.name);
   }
 
   @MessagePattern({ cmd: AppConfigCommands.GetAll })
