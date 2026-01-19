@@ -341,6 +341,7 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=ot_app_configurator
+      - PORT=3014
     depends_on:
       app-configurator:
         condition: service_started

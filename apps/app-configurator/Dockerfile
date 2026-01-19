@@ -11,7 +11,7 @@ FROM docker.io/node:lts-alpine AS runner
 WORKDIR /usr/src/app
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
-ENV PORT=3010
+ENV PORT=3014
 RUN npm i -g nodemon pg
 RUN npm i --save pg
 COPY --from=deps /usr/src/app/node_modules ./node_modules
@@ -20,5 +20,5 @@ RUN npm i --save typeorm
 COPY ./dist/apps/app-configurator .
 RUN chown -R node:node .
 USER node
-EXPOSE 3010
+EXPOSE 3014
 CMD ["dumb-init", "node", "main.js"]
