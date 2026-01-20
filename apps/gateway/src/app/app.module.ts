@@ -31,6 +31,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { StoreController } from '../controllers/store/store.controller';
 import { PermissionsProxyService } from '../auth/permissions-proxy.service';
+import { AppConfigController } from '../controllers/app-config/app-config.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -72,6 +73,7 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
     PermissionsController,
     PersonaController,
     StoreController,
+    AppConfigController,
   ],
   providers: [
     {
@@ -264,6 +266,22 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
       useFactory: (configService: ConfigService) => {
         const serviceConfig =
           configService.get<TcpServiceConfig>('services.store');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.APP_CONFIGURATOR_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.app_configurator'
+        );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

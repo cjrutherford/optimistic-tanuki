@@ -54,8 +54,10 @@ export {
   OrderCommands,
 } from './lib/libs/store';
 
+export { AppConfigCommands } from './lib/libs/app-config';
 export {
   AppointmentCommands,
   AvailabilityCommands,
   ResourceCommands,
 } from './lib/libs/appointments';
+

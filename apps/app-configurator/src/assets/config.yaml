@@ -1,0 +1,10 @@
+listenPort: 3014
+database:
+  host: db
+  port: 5432
+  username: postgres
+  password: postgres
+  database: ot_app_configurator
+redis:
+  host: redis
+  port: 6379

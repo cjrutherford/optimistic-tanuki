@@ -17,7 +17,8 @@ export type TcpServiceConfig = {
     | 'telos_docs_service'
     | 'ai_orchestration'
     | 'blogging'
-    | 'permissions';
+    | 'permissions'
+    | 'app_configurator';
   transport: Transport;
   options: TcpClientOptions;
   host: string;
@@ -54,6 +55,7 @@ export type Config = {
     ai_orchestration: TcpServiceConfig;
     blogging: TcpServiceConfig;
     permissions: TcpServiceConfig;
+    app_configurator: TcpServiceConfig;
   };
 };
 

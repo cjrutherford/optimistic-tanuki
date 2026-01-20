@@ -14,6 +14,8 @@ import { StoreOverviewComponent } from './components/store-overview.component';
 import { AppointmentManagementComponent } from './components/appointment-management.component';
 import { AvailabilityManagementComponent } from './components/availability-management.component';
 import { authGuard } from './guards/auth.guard';
+import { AppConfigListComponent } from './components/app-config-designer/app-config-list.component';
+import { AppConfigDesignerComponent } from './components/app-config-designer/app-config-designer.component';
 
 export const appRoutes: Route[] = [
   { path: 'login', component: LoginComponent },
@@ -35,6 +37,12 @@ export const appRoutes: Route[] = [
       { path: 'store/overview', component: StoreOverviewComponent },
       { path: 'store/products', component: ProductManagementComponent },
       { path: 'store/orders', component: OrderManagementComponent },
+      { path: 'app-config', component: AppConfigListComponent },
+      { path: 'app-config/designer', component: AppConfigDesignerComponent },
+      {
+        path: 'app-config/designer/:id',
+        component: AppConfigDesignerComponent,
+      },
       { path: 'store/appointments', component: AppointmentManagementComponent },
       { path: 'store/availability', component: AvailabilityManagementComponent },
       { path: '', redirectTo: 'users', pathMatch: 'full' },
