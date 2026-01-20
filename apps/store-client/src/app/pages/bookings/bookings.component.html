@@ -1,0 +1,199 @@
+<div class="bookings-page">
+  <div class="header">
+    <h1>Book Resources</h1>
+    <button class="btn-secondary" (click)="toggleMyBookings()">
+      {{ showMyBookings ? 'Browse Resources' : 'My Bookings' }}
+    </button>
+  </div>
+
+  <div *ngIf="error" class="error-message">{{ error }}</div>
+  <div *ngIf="successMessage" class="success-message">{{ successMessage }}</div>
+
+  <!-- My Bookings View -->
+  <div *ngIf="showMyBookings" class="my-bookings">
+    <h2>My Bookings</h2>
+    <div *ngIf="loading" class="loading">Loading your bookings...</div>
+    
+    <div *ngIf="!loading && userAppointments.length === 0" class="empty-state">
+      <p>You don't have any bookings yet.</p>
+      <button class="btn-primary" (click)="toggleMyBookings()">
+        Browse Resources
+      </button>
+    </div>
+
+    <div class="bookings-list" *ngIf="!loading && userAppointments.length > 0">
+      <div class="booking-card" *ngFor="let appointment of userAppointments">
+        <div class="booking-header">
+          <h3>{{ appointment.title }}</h3>
+          <span [class]="getStatusClass(appointment.status)">
+            {{ appointment.status }}
+          </span>
+        </div>
+        <div class="booking-details">
+          <p *ngIf="appointment.resource">
+            <strong>Resource:</strong> {{ appointment.resource.name }}
+          </p>
+          <p><strong>Start:</strong> {{ formatDate(appointment.startTime) }}</p>
+          <p><strong>End:</strong> {{ formatDate(appointment.endTime) }}</p>
+          <p><strong>Duration:</strong> {{ calculateDuration(appointment) }}</p>
+          <p *ngIf="appointment.totalCost">
+            <strong>Cost:</strong> ${{ appointment.totalCost.toFixed(2) }}
+          </p>
+          <p *ngIf="appointment.isFreeConsultation" class="free-tag">
+            Free Consultation
+          </p>
+          <p *ngIf="appointment.description">{{ appointment.description }}</p>
+        </div>
+        <div class="booking-actions" *ngIf="appointment.status === 'pending' || appointment.status === 'approved'">
+          <button class="btn-danger" (click)="cancelAppointment(appointment)">
+            Cancel Booking
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resources Browse View -->
+  <div *ngIf="!showMyBookings" class="resources-view">
+    <div class="filters">
+      <label>
+        Filter by Type:
+        <select [(ngModel)]="selectedType">
+          <option *ngFor="let type of resourceTypes" [value]="type">
+            {{ type | titlecase }}
+          </option>
+        </select>
+      </label>
+    </div>
+
+    <div *ngIf="loading" class="loading">Loading resources...</div>
+
+    <div class="resources-grid" *ngIf="!loading">
+      <div class="resource-card" *ngFor="let resource of filteredResources">
+        <div class="resource-image" *ngIf="resource.imageUrl">
+          <img [src]="resource.imageUrl" [alt]="resource.name" />
+        </div>
+        <div class="resource-image placeholder" *ngIf="!resource.imageUrl">
+          <span class="resource-type-icon">{{ resource.type[0].toUpperCase() }}</span>
+        </div>
+        <div class="resource-info">
+          <h3>{{ resource.name }}</h3>
+          <p class="resource-type">{{ resource.type | titlecase }}</p>
+          <p class="resource-description">{{ resource.description }}</p>
+          <div class="resource-details">
+            <p *ngIf="resource.location">
+              <strong>Location:</strong> {{ resource.location }}
+            </p>
+            <p *ngIf="resource.capacity">
+              <strong>Capacity:</strong> {{ resource.capacity }} people
+            </p>
+            <p *ngIf="resource.hourlyRate">
+              <strong>Rate:</strong> ${{ resource.hourlyRate }}/hour
+            </p>
+          </div>
+          <div class="amenities" *ngIf="resource.amenities && resource.amenities.length > 0">
+            <span class="amenity" *ngFor="let amenity of resource.amenities">
+              {{ amenity.replace('_', ' ') }}
+            </span>
+          </div>
+          <button class="btn-primary" (click)="openBookingModal(resource)" [disabled]="!resource.isActive">
+            {{ resource.isActive ? 'Book Now' : 'Unavailable' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Modal -->
+  <div class="modal" *ngIf="showBookingModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Book {{ selectedResource?.name }}</h2>
+        <button class="close-btn" (click)="closeBookingModal()">&times;</button>
+      </div>
+
+      <div *ngIf="error" class="error-message">{{ error }}</div>
+      <div *ngIf="successMessage" class="success-message">{{ successMessage }}</div>
+
+      <form (ngSubmit)="submitBooking()" *ngIf="!successMessage">
+        <div class="form-group">
+          <label for="title">Booking Title *</label>
+          <input
+            type="text"
+            id="title"
+            [(ngModel)]="bookingForm.title"
+            name="title"
+            required
+            placeholder="e.g., Team Meeting, Video Recording"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea
+            id="description"
+            [(ngModel)]="bookingForm.description"
+            name="description"
+            rows="3"
+            placeholder="Optional: Add details about your booking"
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="startTime">Start Time *</label>
+            <input
+              type="datetime-local"
+              id="startTime"
+              [(ngModel)]="bookingForm.startTime"
+              name="startTime"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="endTime">End Time *</label>
+            <input
+              type="datetime-local"
+              id="endTime"
+              [(ngModel)]="bookingForm.endTime"
+              name="endTime"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea
+            id="notes"
+            [(ngModel)]="bookingForm.notes"
+            name="notes"
+            rows="2"
+            placeholder="Any special requests or notes"
+          ></textarea>
+        </div>
+
+        <div class="resource-summary">
+          <h4>Booking Summary</h4>
+          <p><strong>Resource:</strong> {{ selectedResource?.name }}</p>
+          <p *ngIf="selectedResource?.location">
+            <strong>Location:</strong> {{ selectedResource?.location }}
+          </p>
+          <p *ngIf="selectedResource?.hourlyRate">
+            <strong>Hourly Rate:</strong> ${{ selectedResource?.hourlyRate }}
+          </p>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary" [disabled]="loading">
+            {{ loading ? 'Checking Availability...' : 'Submit Booking' }}
+          </button>
+          <button type="button" class="btn-secondary" (click)="closeBookingModal()" [disabled]="loading">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

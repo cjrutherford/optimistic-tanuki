@@ -123,7 +123,7 @@ test.describe('Client Interface Social Posting', () => {
     logger.debug('Clicked Leave a Comment. Waiting for dialog...');
 
     const commentEditor = page.locator(
-      '.cdk-overlay-container quill-editor .ql-editor'
+      '.cdk-overlay-container tiptap-editor .ProseMirror'
     );
     await expect(commentEditor).toBeVisible({ timeout: 10000 });
     await commentEditor.fill('Nice post!');

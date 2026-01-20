@@ -11,6 +11,8 @@ import { PermissionsInspectorComponent } from './components/permissions-inspecto
 import { ProductManagementComponent } from './components/product-management.component';
 import { OrderManagementComponent } from './components/order-management.component';
 import { StoreOverviewComponent } from './components/store-overview.component';
+import { AppointmentManagementComponent } from './components/appointment-management.component';
+import { AvailabilityManagementComponent } from './components/availability-management.component';
 import { authGuard } from './guards/auth.guard';
 import { AppConfigListComponent } from './components/app-config-designer/app-config-list.component';
 import { AppConfigDesignerComponent } from './components/app-config-designer/app-config-designer.component';
@@ -41,6 +43,8 @@ export const appRoutes: Route[] = [
         path: 'app-config/designer/:id',
         component: AppConfigDesignerComponent,
       },
+      { path: 'store/appointments', component: AppointmentManagementComponent },
+      { path: 'store/availability', component: AvailabilityManagementComponent },
       { path: '', redirectTo: 'users', pathMatch: 'full' },
     ],
   },

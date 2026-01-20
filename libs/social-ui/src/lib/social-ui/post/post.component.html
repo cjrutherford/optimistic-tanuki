@@ -55,7 +55,10 @@
       <otui-button variant="danger" (action)="onDelete()">Delete</otui-button>
       }
       <lib-vote></lib-vote>
-      <lib-comment (commentAdded)="onCommentAdd($event)"></lib-comment>
+      <lib-comment 
+        (commentAdded)="onCommentAdd($event)"
+        [imageUploadCallback]="imageUploadCallback"
+      ></lib-comment>
     </div>
   </div>
   <lib-comment-list

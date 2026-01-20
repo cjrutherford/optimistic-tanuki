@@ -1,3 +1,5 @@
+import { PostThemeConfig } from './post-theme-config';
+
 export interface PostDto {
   id: string;
   title: string;
@@ -6,6 +8,7 @@ export interface PostDto {
   updatedAt: Date;
   userId: string;
   profileId: string;
+  themeConfig?: PostThemeConfig;
 }
 
 export interface CreatePostDto {
@@ -13,9 +16,11 @@ export interface CreatePostDto {
   content: string;
   userId?: string;
   profileId?: string;
+  themeConfig?: PostThemeConfig;
 }
 
 export interface UpdatePostDto {
   title?: string;
   content?: string;
+  themeConfig?: PostThemeConfig;
 }

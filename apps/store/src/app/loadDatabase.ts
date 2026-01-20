@@ -5,6 +5,10 @@ import { SubscriptionEntity } from '../subscriptions/entities/subscription.entit
 import { DonationEntity } from '../donations/entities/donation.entity';
 import { OrderEntity } from '../orders/entities/order.entity';
 import { OrderItemEntity } from '../orders/entities/order-item.entity';
+import { AppointmentEntity } from '../appointments/entities/appointment.entity';
+import { AvailabilityEntity } from '../appointments/entities/availability.entity';
+import { InvoiceEntity } from '../appointments/entities/invoice.entity';
+import { ResourceEntity } from '../appointments/entities/resource.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -15,6 +19,10 @@ const loadDatabase = (config: ConfigService) => {
     DonationEntity,
     OrderEntity,
     OrderItemEntity,
+    AppointmentEntity,
+    AvailabilityEntity,
+    InvoiceEntity,
+    ResourceEntity,
   ];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`

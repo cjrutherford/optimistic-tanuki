@@ -130,7 +130,6 @@ describe('CommentComponent', () => {
           fastCycle: 'fast-warning-cycle',
         },
       } as ThemeColors),
-      setTheme: jest.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -146,8 +145,19 @@ describe('CommentComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => {
+    // Clean up the editor instance
+    if (component.editor) {
+      component.editor.destroy();
+    }
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should create editor instance after view init', () => {
+    expect(component.editor).toBeTruthy();
   });
 
   it('should open the comment dialog', () => {
@@ -158,15 +168,15 @@ describe('CommentComponent', () => {
 
   it('should emit comment and close dialog on onSubmit', () => {
     jest.spyOn(component.commentAdded, 'emit');
-    component.comment = 'Test comment';
+    component.comment = '<p>Test comment</p>';
     component.onSubmit();
-    expect(component.commentAdded.emit).toHaveBeenCalledWith('Test comment');
+    expect(component.commentAdded.emit).toHaveBeenCalledWith('<p>Test comment</p>');
     expect(component.comment).toBe('');
     expect(dialogMock.closeAll).toHaveBeenCalled();
   });
 
   it('should clear comment and close dialog on onCancel', () => {
-    component.comment = 'Test comment';
+    component.comment = '<p>Test comment</p>';
     component.onCancel();
     expect(component.comment).toBe('');
     expect(dialogMock.closeAll).toHaveBeenCalled();
