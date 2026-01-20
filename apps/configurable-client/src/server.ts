@@ -4,6 +4,7 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +26,14 @@ const angularApp = new AngularNodeAppEngine();
  * });
  * ```
  */
+
+app.use(
+  '/api',
+  createProxyMiddleware({
+    target: 'http://gateway:3000/api',
+    changeOrigin: true,
+  })
+);
 
 /**
  * Serve static files from /browser
