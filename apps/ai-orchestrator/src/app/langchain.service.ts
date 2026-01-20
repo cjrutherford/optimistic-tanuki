@@ -361,12 +361,13 @@ Always verify parameter names match tool schemas before calling!`;
       userMessage
     );
 
-    // Use SystemPromptBuilder for TELOS-driven system prompts
+    // Use SystemPromptBuilder for STATIC TELOS-driven system prompts
+    // CRITICAL: System prompt should NOT include conversation summary
+    // Conversation context is passed as full message history below
     const { template, variables } = await this.systemPromptBuilder.buildSystemPrompt(
       {
         personaId: persona.id,
         profileId: profile.id,
-        conversationSummary: conversationSummary,
         projectContext: projectContext || '',
       },
       {
@@ -381,6 +382,8 @@ Always verify parameter names match tool schemas before calling!`;
     const tools = await this.createTools(profile.id, conversationId);
     const chatHistory = this.convertChatHistory(conversationHistory);
 
+    // IMPORTANT: Full conversation history is passed as messages
+    // System prompt is STATIC (persona TELOS only)
     const messages: BaseMessage[] = [
       ...systemMessages,
       ...chatHistory,
@@ -392,7 +395,7 @@ Always verify parameter names match tool schemas before calling!`;
     const workflow = await this.workflowControl.detectWorkflow(
       userMessage,
       toolNames,
-      conversationSummary
+      '' // No longer pass conversation summary to workflow detection
     );
 
     this.logger.log(
@@ -574,12 +577,15 @@ Always verify parameter names match tool schemas before calling!`;
     };
   }
 
+  /**
+   * Stream conversation with LLM using configured conversational model
+   * Now with static TELOS-driven system prompts (conversation history passed as messages)
+   */
   async *streamConversation(
     persona: PersonaTelosDto,
     profile: ProfileDto,
     conversationHistory: ChatMessage[],
     userMessage: string,
-    conversationSummary: string,
     conversationId: string
   ): AsyncGenerator<StreamingEvent> {
     // Enrich with project context if available
@@ -588,12 +594,13 @@ Always verify parameter names match tool schemas before calling!`;
       userMessage
     );
 
-    // Use SystemPromptBuilder for TELOS-driven system prompts
+    // Use SystemPromptBuilder for STATIC TELOS-driven system prompts
+    // CRITICAL: System prompt should NOT include conversation summary
+    // Conversation context is passed as full message history below
     const { template, variables } = await this.systemPromptBuilder.buildSystemPrompt(
       {
         personaId: persona.id,
         profileId: profile.id,
-        conversationSummary: conversationSummary,
         projectContext: projectContext || '',
       },
       {
@@ -608,6 +615,8 @@ Always verify parameter names match tool schemas before calling!`;
     const tools = await this.createTools(profile.id, conversationId);
     const chatHistory = this.convertChatHistory(conversationHistory);
 
+    // IMPORTANT: Full conversation history is passed as messages
+    // System prompt is STATIC (persona TELOS only)
     const messages: BaseMessage[] = [
       ...systemMessages,
       ...chatHistory,
@@ -619,7 +628,7 @@ Always verify parameter names match tool schemas before calling!`;
     const workflow = await this.workflowControl.detectWorkflow(
       userMessage,
       toolNames,
-      conversationSummary
+      '' // No longer pass conversation summary to workflow detection
     );
 
     // Select appropriate model based on workflow

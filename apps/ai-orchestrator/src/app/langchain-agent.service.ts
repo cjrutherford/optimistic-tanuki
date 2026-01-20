@@ -396,12 +396,12 @@ Example:
 
   /**
    * Execute agent for multi-step reasoning
+   * Phase 1 fix: conversationSummary removed from system prompts
    */
   async executeAgent(
     input: string,
     chatHistory: BaseMessage[],
     userId: string,
-    conversationSummary?: string,
     conversationId?: string,
     onProgress?: (data: {
       type: 'tool_start' | 'tool_end' | 'log';

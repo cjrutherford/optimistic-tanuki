@@ -34,7 +34,6 @@ export interface TelosContext {
   profile: ProfileDto;
   profileTelos?: ProfileTelosDto;
   projectTelos?: ProjectTelosDto;
-  conversationSummary?: string;
   projectContext?: string;
 }
 
@@ -69,7 +68,6 @@ export class SystemPromptBuilder {
       personaId: string;
       profileId: string;
       projectId?: string;
-      conversationSummary?: string;
       projectContext?: string;
     },
     options: SystemPromptOptions = {}
@@ -107,7 +105,6 @@ export class SystemPromptBuilder {
       profile,
       profileTelos,
       projectTelos,
-      conversationSummary: context.conversationSummary,
       projectContext: context.projectContext,
     });
 
@@ -222,12 +219,7 @@ staying true to your own identity and the user's goals.`);
       sections.push(`{projectContext}`);
     }
 
-    // 4. CONVERSATION CONTEXT
-    sections.push(`# CONVERSATION CONTEXT
-
-{conversationSummary}`);
-
-    // 5. TOOLS & CAPABILITIES (if applicable)
+    // 4. TOOLS & CAPABILITIES (if applicable)
     if (options.includeTools !== false) {
       sections.push(`# TOOLS & CAPABILITIES
 
@@ -321,7 +313,6 @@ These examples show how you embody your TELOS while helping users:
     profile: ProfileDto;
     profileTelos?: ProfileTelosDto;
     projectTelos?: ProjectTelosDto;
-    conversationSummary?: string;
     projectContext?: string;
   }): Record<string, any> {
     const variables: Record<string, any> = {
@@ -336,9 +327,6 @@ These examples show how you embody your TELOS while helping users:
       // User context
       userId: context.profile.id,
       userName: context.profile.profileName || 'User',
-      
-      // Conversation context
-      conversationSummary: context.conversationSummary || 'Beginning of conversation',
       
       // Project context (optional)
       projectContext: context.projectContext || '',

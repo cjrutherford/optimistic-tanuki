@@ -226,20 +226,6 @@ describe('SystemPromptBuilder', () => {
       expect(result.variables.projectCoreObjective).toBeUndefined();
     });
 
-    it('should include conversation summary when provided', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of(mockPersonaTelos));
-      jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
-
-      const conversationSummary = 'User has been working on project setup and task creation.';
-
-      const result = await service.buildSystemPrompt({
-        personaId: 'persona-123',
-        profileId: 'profile-456',
-        conversationSummary,
-      });
-
-      expect(result.variables.conversationSummary).toBe(conversationSummary);
-    });
 
     it('should include project context when provided', async () => {
       jest.spyOn(telosDocsService, 'send').mockReturnValue(of(mockPersonaTelos));
@@ -342,18 +328,25 @@ describe('SystemPromptBuilder', () => {
       });
 
       expect(result.variables.userName).toBe('John Doe');
+      expect(result.variables.userName).toBe('John Doe');
     });
 
-    it('should handle undefined conversation summary', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of(mockPersonaTelos));
-      jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
+    it('should NOT include conversation summary (Phase 1 fix)', async () => {
+      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest.spyOn(profileService, 'send').mockReturnValue(of([mockProfile]));
 
       const result = await service.buildSystemPrompt({
         personaId: 'persona-123',
         profileId: 'profile-456',
       });
 
-      expect(result.variables.conversationSummary).toBe('No previous conversation.');
+      // Phase 1 fix: conversationSummary should NOT be in variables (system prompt is now static)
+      expect(result.variables.conversationSummary).toBeUndefined();
+      
+      // Verify template does NOT include conversation context section
+      const templateMessages = await result.template.formatMessages(result.variables);
+      const systemMessage = templateMessages[0].content as string;
+      expect(systemMessage).not.toContain('# CONVERSATION CONTEXT');
     });
   });
 });

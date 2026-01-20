@@ -312,12 +312,12 @@ export class LangGraphService {
 
   /**
    * Execute the conversation graph
+   * Phase 1 fix: conversationSummary removed from system prompts
    */
   async executeConversation(
     profileId: string,
     messages: BaseMessage[],
     chatHistory: ChatMessage[],
-    existingSummary: string,
     persona: PersonaTelosDto,
     profile: ProfileDto,
     conversationId: string,
@@ -332,7 +332,7 @@ export class LangGraphService {
       profileId,
       messages,
       chatHistory,
-      summary: existingSummary || '',
+      summary: '', // Summary still in state for UI/logging, but not passed to system prompt
       iteration: 0,
     };
 
@@ -353,12 +353,11 @@ export class LangGraphService {
         const userInput = this.normalizeContent(lastMessage?.content);
 
         // Execute agent
-        // Pass LangGraph-enriched summary and conversationId so agent has canonical context
+        // Phase 1 fix: No longer pass summary to agent
         const agentResult = await this.agent.executeAgent(
           userInput,
           messages.slice(0, -1), // Chat history without current message
           profileId,
-          result.summary,
           conversationId,
           onProgress
         );
@@ -373,12 +372,12 @@ export class LangGraphService {
         this.logger.log('Using direct LangChain execution');
 
         // Use the full chatHistory for context
+        // Phase 1 fix: No longer pass summary to executeConversation
         const conversationResult = await this.langchain.executeConversation(
           persona,
           profile,
           result.chatHistory.slice(0, -1), // Full chat history except last message
           this.normalizeContent(messages[messages.length - 1]?.content),
-          result.summary,
           conversationId
         );
 

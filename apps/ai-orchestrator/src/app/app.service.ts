@@ -171,11 +171,11 @@ export class AppService {
       // directly via LangGraph/LangChain messages to avoid runtime
       // dependencies on the prompt proxy service.
 
+      // Phase 1 fix: No longer pass conversationSummary to executeConversation
       const result = await this.langGraphService.executeConversation(
         profile.id,
         langChainMessages,
         [], // Empty chat history for new profile
-        conversationSummary,
         assistant,
         profile,
         '' // No conversation ID yet
@@ -293,11 +293,11 @@ export class AppService {
           // Use LangGraph with Agent for state-managed, multi-step execution
           this.l.log('Executing conversation through LangGraph with Agent...');
 
+          // Phase 1 fix: No longer pass conversationSummary to executeConversation
           const result = await this.langGraphService.executeConversation(
             profile.id,
             langChainMessages,
             conversation.messages, // Pass full chat history
-            conversationSummary,
             persona,
             profile,
             conversation.id,
