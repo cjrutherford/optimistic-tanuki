@@ -51,6 +51,10 @@ export class TextInputComponent
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   onTouched?: (value: string) => void = () => {};
 
+  constructor() {
+    super();
+  }
+
   onInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.value = input.value;
@@ -77,7 +81,7 @@ export class TextInputComponent
   }
 
   writeValue(value: string): void {
-    this.value = value;
+    this.value = value || '';
   }
 
   registerOnChange(fn: (value: string) => void): void {

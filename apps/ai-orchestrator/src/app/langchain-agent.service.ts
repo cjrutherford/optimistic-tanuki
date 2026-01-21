@@ -109,6 +109,11 @@ You have access to the following core tools (and more via 'list_tools'):
 - If a tool fails due to "Invalid parameters", check the enum values and required fields.
 - If a tool fails due to "Missing ID" or "Invalid UUID", YOU LIKELY USED A FAKE ID. Stop. Call a list/query tool to find the real ID.
 - if a tool fails due to ambiguity in connected id's please try to lookup the correct id using the appropriate list or query tool before retrying.
+
+# OUTPUT FORMAT
+For each function call, return a json object with function name and arguments within <function-call> and </function-call> XML tags.
+Example:
+<function-call>{"name": "create_project", "arguments": {"name": "My Project", "description": "Desc"}}</function-call>
 `;
   }
   /**
@@ -512,6 +517,125 @@ You have access to the following core tools (and more via 'list_tools'):
               input: toolCall.args || {},
               output: toolOutputMsg ? toolOutputMsg.content : '',
             });
+          }
+        }
+      }
+
+      // FALLBACK: Check for XML or raw JSON function calls if no native tool calls were found
+      // This handles models like DeepSeek-R1 that prefer text output over native tool calling
+      if (allToolCalls.length === 0 && typeof output === 'string') {
+        let functionCall = null;
+        let toolName = '';
+        let toolArgs = null;
+
+        // Strip <think> blocks first to avoid parsing reasoning artifacts
+        const cleanOutput = output
+          .replace(/<think>[\s\S]*?<\/think>/g, '')
+          .trim();
+
+        // Strategy 1: Look for <function-call> tags
+        if (cleanOutput.includes('<function-call>')) {
+          this.logger.warn(
+            'No native tool calls found, but <function-call> tag detected. Attempting XML parsing.'
+          );
+          try {
+            const regex = /<function-call>(.*?)<\/function-call>/s;
+            const match = cleanOutput.match(regex);
+            if (match && match[1]) {
+              const jsonStr = match[1].trim();
+              functionCall = JSON.parse(jsonStr);
+            }
+          } catch (e) {
+            this.logger.error(
+              `Failed to parse XML function call: ${e.message}`
+            );
+          }
+        }
+        // Strategy 2: Look for raw JSON { "name": "...", "arguments": ... }
+        // Often appears after </think> tag
+        else if (
+          (cleanOutput.includes('"name"') &&
+            cleanOutput.includes('"arguments"')) ||
+          (cleanOutput.includes("'name'") &&
+            cleanOutput.includes("'arguments'"))
+        ) {
+          this.logger.warn(
+            'No native tool calls found, checking for raw JSON pattern.'
+          );
+          try {
+            // Try to find the JSON object
+            const regex = /\{[\s\S]*"name"[\s\S]*:[\s\S]*"arguments"[\s\S]*\}/s;
+            const match = cleanOutput.match(regex);
+            if (match) {
+              functionCall = JSON.parse(match[0]);
+            }
+          } catch (e) {
+            this.logger.debug(
+              `Raw JSON parsing failed (this is expected for normal text): ${e.message}`
+            );
+          }
+        }
+
+        if (functionCall && functionCall.name && functionCall.arguments) {
+          toolName = functionCall.name;
+          let parsedArgs =
+            typeof functionCall.arguments === 'string'
+              ? JSON.parse(functionCall.arguments)
+              : functionCall.arguments;
+
+          // Filter out null values to avoid Zod validation errors (optional fields should be undefined, not null)
+          if (parsedArgs && typeof parsedArgs === 'object') {
+            parsedArgs = Object.fromEntries(
+              Object.entries(parsedArgs).filter(([_, v]) => v != null)
+            );
+          }
+          toolArgs = parsedArgs;
+
+          this.logger.log(
+            `Manually executing tool from fallback parsing: ${toolName}`,
+            toolArgs
+          );
+
+          const tool = this.tools.find((t) => t.name === toolName);
+          if (tool) {
+            try {
+              // Execute the tool manually
+              const result = await tool.call(toolArgs, {
+                configurable: {
+                  userId,
+                  conversationId,
+                },
+              });
+
+              this.logger.log(`Manual tool execution result:`, result);
+
+              // Add to toolCalls
+              allToolCalls.push({
+                tool: toolName,
+                input: toolArgs,
+                output: result,
+              });
+
+              // Report progress
+              if (onProgress) {
+                await onProgress({
+                  type: 'tool_start',
+                  content: { tool: toolName, input: toolArgs },
+                });
+                await onProgress({
+                  type: 'tool_end',
+                  content: { tool: toolName, output: result },
+                });
+              }
+            } catch (err) {
+              this.logger.error(
+                `Manual tool execution failed: ${err.message}`
+              );
+            }
+          } else {
+            this.logger.warn(
+              `Tool ${toolName} found in fallback but not available in agent tools.`
+            );
           }
         }
       }

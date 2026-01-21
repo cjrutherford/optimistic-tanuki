@@ -1,16 +1,18 @@
 import { waitForPortOpen } from '@nx/node/utils';
 
-/* eslint-disable */
-var __TEARDOWN_MESSAGE__: string;
-
-module.exports = async function () {
-  // Start services that that the app needs to run (e.g. database, docker-compose, etc.).
-  console.log('\nSetting up...\n');
-
+export default async function () {
   const host = process.env.HOST ?? 'localhost';
-  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-  await waitForPortOpen(port, { host });
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  // Hint: Use `globalThis` to pass variables to global teardown.
+  console.log("\nWaiting for : to be open...\n");
+
+  try {
+    await waitForPortOpen(port, { host, retries: 60, retryDelay: 2000 });
+    console.log("\n: is open!\n");
+  } catch (err) {
+    console.error("\nTimed out waiting for : to be open.\n");
+    throw err;
+  }
+
   globalThis.__TEARDOWN_MESSAGE__ = '\nTearing down...\n';
-};
+}

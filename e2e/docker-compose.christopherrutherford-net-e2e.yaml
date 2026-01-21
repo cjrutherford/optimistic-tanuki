@@ -118,3 +118,14 @@ services:
         condition: service_started
       blogging:
         condition: service_started
+
+  crdn-client-interface:
+    container_name: e2e_crdn_client_interface
+    build:
+      context: ..
+      dockerfile: ./apps/christopherrutherford-net/Dockerfile
+    ports:
+      - '8083:4000'
+    depends_on:
+      gateway:
+        condition: service_started

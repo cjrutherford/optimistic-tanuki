@@ -1,0 +1,186 @@
+# Docker Compose for Configurable Client E2E Tests
+services:
+  db:
+    image: postgres:latest
+    restart: always
+    container_name: e2e_db_cc
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:latest
+    container_name: e2e_redis_cc
+    ports:
+      - '6379:6379'
+    restart: always
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-setup:
+    image: node:lts-alpine
+    container_name: e2e_db_setup_cc
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      ADDITIONAL_DBS: ot_authentication,ot_profile,ot_app_configurator
+    depends_on:
+      db:
+        condition: service_healthy
+    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    restart: 'no'
+
+  authentication:
+    container_name: e2e_authentication_cc
+    build:
+      context: ..
+      dockerfile: ./apps/authentication/Dockerfile
+    ports:
+      - '3001:3001'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_authentication
+      JWT_SECRET: e2e-test-jwt-secret
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  profile:
+    container_name: e2e_profile_cc
+    build:
+      context: ..
+      dockerfile: ./apps/profile/Dockerfile
+    ports:
+      - '3002:3002'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_profile
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  app-configurator:
+    container_name: e2e_app_configurator_cc
+    build:
+      context: ..
+      dockerfile: ./apps/app-configurator/Dockerfile
+    ports:
+      - '3014:3014'
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ot_app_configurator
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 3014
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  app-configurator-seed:
+    container_name: e2e_app_configurator_seed_cc
+    build:
+      context: ..
+      dockerfile: ./apps/app-configurator/Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ot_app_configurator
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 3014
+    depends_on:
+      app-configurator:
+        condition: service_started
+    command: sh -c "sleep 5 && node seed-data/seed-script.js"
+    restart: 'no'
+
+  gateway:
+    container_name: e2e_gateway_cc
+    build:
+      context: ..
+      dockerfile: ./apps/gateway/Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+      JWT_SECRET: e2e-test-jwt-secret
+      AUTHENTICATION_HOST: authentication
+      AUTHENTICATION_PORT: 3001
+      PROFILE_HOST: profile
+      PROFILE_PORT: 3002
+      APP_CONFIGURATOR_HOST: app-configurator
+      APP_CONFIGURATOR_PORT: 3014
+    depends_on:
+      db:
+        condition: service_healthy
+      authentication:
+        condition: service_started
+      profile:
+        condition: service_started
+      app-configurator:
+        condition: service_started
+
+  configurable-client:
+    container_name: e2e_configurable_client_cc
+    build:
+      context: ..
+      dockerfile: ./apps/configurable-client/Dockerfile
+    ports:
+      - '8090:4000'
+    environment:
+      GATEWAY_URL: http://gateway:3000
+    depends_on:
+      gateway:
+        condition: service_started
+
+  playwright-runner:
+    image: mcr.microsoft.com/playwright:v1.56.1-jammy
+    container_name: e2e_runner_cc
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+      - /workspace/node_modules
+    environment:
+      BASE_URL: http://configurable-client:4000
+      CI: 'true'
+      NX_DAEMON: 'false'
+    depends_on:
+      configurable-client:
+        condition: service_started
+    command: /bin/bash -c "echo 'Ready to run tests'"

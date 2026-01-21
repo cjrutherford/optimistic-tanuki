@@ -2,16 +2,22 @@
   "name": "project-planning-e2e",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
-  "implicitDependencies": ["project-planning"],
+  "implicitDependencies": [
+    "project-planning"
+  ],
   "targets": {
     "e2e": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{e2eProjectRoot}"
+      ],
       "options": {
         "jestConfig": "apps/project-planning-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["project-planning:build"]
+      "dependsOn": [
+        "project-planning:build"
+      ]
     }
   }
 }

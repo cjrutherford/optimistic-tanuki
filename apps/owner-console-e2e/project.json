@@ -5,5 +5,42 @@
   "sourceRoot": "apps/owner-console-e2e/src",
   "implicitDependencies": ["owner-console"],
   "// targets": "to see all targets run: nx show project owner-console-e2e --web",
-  "targets": {}
+  "targets": {
+    "up": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f e2e/docker-compose.owner-console-e2e.yaml up -d --build"
+      }
+    },
+    "down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f e2e/docker-compose.owner-console-e2e.yaml down -v"
+      }
+    },
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "options": {},
+      "configurations": {
+        "ci": {
+          "env": {
+            "BASE_URL": "http://localhost:8084"
+          }
+        }
+      }
+    },
+    "e2e-docker": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx run owner-console-e2e:up",
+          "echo 'Stack started. Waiting for services...'",
+          "sleep 45",
+          "docker compose -f e2e/docker-compose.owner-console-e2e.yaml run --rm playwright-runner npx nx run owner-console-e2e:e2e --skip-nx-cache",
+          "nx run owner-console-e2e:down"
+        ],
+        "parallel": false
+      }
+    }
+  }
 }

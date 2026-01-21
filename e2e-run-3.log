@@ -1,0 +1,444 @@
+🧹 Cleaning up any existing containers...
+Found E2E projects:
+ai-orchestrator-e2e
+app-configurator-e2e
+assets-e2e
+authentication-e2e
+blogging-e2e
+chat-collector-e2e
+christopherrutherford-net-e2e
+client-interface-e2e
+configurable-client-e2e
+digital-homestead-e2e
+forgeofwill-e2e
+full-stack-e2e
+gateway-e2e
+owner-console-e2e
+permissions-e2e
+profile-e2e
+project-planning-e2e
+prompt-proxy-e2e
+social-e2e
+store-client-e2e
+telos-docs-service-e2e
+--------------------------------
+>>> Processing ai-orchestrator-e2e
+Set env: PORT=3010, HOST=localhost, BASE_URL=http://localhost:3010
+Starting environment for ai-orchestrator-e2e...
+#1 [internal] load local bake definitions
+#1 reading from stdin 3.15kB done
+#1 DONE 0.0s
+
+#2 [project-planning internal] load build definition from Dockerfile
+#2 transferring dockerfile: 906B done
+#2 DONE 0.1s
+
+#3 [project-planning internal] load metadata for docker.io/library/node:lts-alpine
+#3 DONE 0.0s
+
+#4 [telos-docs-service internal] load build definition from Dockerfile
+#4 transferring dockerfile: 896B done
+#4 DONE 0.1s
+
+#5 [profile internal] load build definition from Dockerfile
+#5 transferring dockerfile: 894B done
+#5 DONE 0.1s
+
+#6 [project-planning internal] load .dockerignore
+#6 ...
+
+#7 [chat-collector internal] load build definition from Dockerfile
+#7 transferring dockerfile: 896B done
+#7 DONE 0.1s
+
+#3 [chat-collector internal] load metadata for docker.io/library/node:lts-alpine
+#3 DONE 0.0s
+
+#6 [project-planning internal] load .dockerignore
+#6 transferring context: 1.39kB done
+#6 transferring context: 1.39kB done
+#6 DONE 0.1s
+
+#8 [ai-orchestration internal] load build definition from Dockerfile
+#8 transferring dockerfile: 1.04kB done
+#8 DONE 0.3s
+
+#9 [ai-orchestration deps 1/5] FROM docker.io/library/node:lts-alpine
+#9 DONE 0.0s
+
+#10 [gateway internal] load build definition from Dockerfile
+#10 transferring dockerfile: 913B done
+#10 DONE 0.3s
+
+#3 [ai-orchestration internal] load metadata for docker.io/library/node:lts-alpine
+#3 DONE 0.0s
+
+#11 [ai-orchestration internal] load build context
+#11 DONE 0.0s
+
+#12 [project-planning internal] load build context
+#12 transferring context: 692.56kB done
+#12 DONE 0.1s
+
+#13 [telos-docs-service internal] load build context
+#13 transferring context: 1.18MB 0.0s done
+#13 DONE 0.1s
+
+#14 [chat-collector internal] load build context
+#14 transferring context: 630.20kB done
+#14 DONE 0.1s
+
+#15 [profile internal] load build context
+#15 transferring context: 629.17kB done
+#15 DONE 0.1s
+
+#16 [gateway internal] load build context
+#16 transferring context: 1.52MB done
+#16 DONE 0.2s
+
+#11 [ai-orchestration internal] load build context
+#11 transferring context: 861.77kB done
+#11 DONE 0.1s
+
+#17 [telos-docs-service deps 4/5] COPY dist/apps/telos-docs-service/package*.json ./
+#17 CACHED
+
+#18 [telos-docs-service runner 5/8] COPY --from=deps /usr/src/app/node_modules ./node_modules
+#18 CACHED
+
+#19 [telos-docs-service runner 7/8] COPY dist/apps/telos-docs-service .
+#19 CACHED
+
+#20 [telos-docs-service deps 5/5] RUN npm install --omit=dev --legacy-peer-deps && npm i --save pg zod
+#20 CACHED
+
+#21 [telos-docs-service runner 4/8] RUN npm i -g nodemon pg zod
+#21 CACHED
+
+#22 [telos-docs-service runner 6/8] COPY --from=deps /usr/src/app/package.json ./package.json
+#22 CACHED
+
+#23 [telos-docs-service runner 8/8] RUN chown -R node:node .
+#23 CACHED
+
+#24 [gateway deps 4/5] COPY dist/apps/gateway/package*.json ./
+#24 CACHED
+
+#25 [gateway deps 5/5] RUN npm install --omit=dev --legacy-peer-deps && npm i --legacy-peer-deps @nestjs/passport @nestjs/throttler
+#25 CACHED
+
+#26 [gateway runner 5/8] COPY --from=deps /usr/src/app/package.json ./package.json
+#26 CACHED
+
+#27 [gateway runner 6/8] RUN npm i -g nodemon pg
+#27 CACHED
+
+#28 [gateway runner 4/8] COPY --from=deps /usr/src/app/node_modules ./node_modules
+#28 CACHED
+
+#29 [gateway runner 7/8] COPY ./dist/apps/gateway .
+#29 CACHED
+
+#30 [gateway runner 8/8] RUN chown -R node:node .
+#30 CACHED
+
+#31 [chat-collector runner 6/9] RUN npm i -g nodemon pg
+#31 CACHED
+
+#32 [chat-collector runner 8/9] RUN ls -lath
+#32 CACHED
+
+#33 [chat-collector runner 4/9] COPY --from=deps /usr/src/app/node_modules ./node_modules
+#33 CACHED
+
+#34 [chat-collector deps 4/5] COPY dist/apps/chat-collector/package*.json ./
+#34 CACHED
+
+#35 [chat-collector runner 5/9] COPY --from=deps /usr/src/app/package.json ./package.json
+#35 CACHED
+
+#36 [chat-collector runner 7/9] COPY ./dist/apps/chat-collector .
+#36 CACHED
+
+#37 [chat-collector deps 5/5] RUN npm install --omit=dev --legacy-peer-deps && npm i --save pg
+#37 CACHED
+
+#38 [profile runner  8/10] RUN npm i --save typeorm
+#38 CACHED
+
+#39 [profile runner  9/10] COPY ./dist/apps/profile .
+#39 CACHED
+
+#40 [profile deps 5/5] RUN npm install --omit=dev --legacy-peer-deps
+#40 CACHED
+
+#41 [profile runner  3/10] RUN apk add --no-cache dumb-init
+#41 CACHED
+
+#42 [profile runner  5/10] RUN npm i --save pg
+#42 CACHED
+
+#43 [profile runner  7/10] COPY --from=deps /usr/src/app/package.json ./package.json
+#43 CACHED
+
+#44 [profile runner  6/10] COPY --from=deps /usr/src/app/node_modules ./node_modules
+#44 CACHED
+
+#45 [profile runner  4/10] RUN npm i -g nodemon pg
+#45 CACHED
+
+#46 [profile runner  2/10] WORKDIR /usr/src/app
+#46 CACHED
+
+#47 [profile deps 4/5] COPY dist/apps/profile/package*.json ./
+#47 CACHED
+
+#48 [profile runner 10/10] RUN chown -R node:node .
+#48 CACHED
+
+#49 [chat-collector runner 9/9] RUN chown -R node:node .
+#49 CACHED
+
+#50 [project-planning runner 4/9] RUN npm i -g nodemon pg
+#50 CACHED
+
+#51 [project-planning runner 2/9] RUN apk add --no-cache dumb-init
+#51 CACHED
+
+#52 [project-planning deps 3/5] WORKDIR /usr/src/app
+#52 CACHED
+
+#53 [project-planning deps 5/5] RUN npm install --omit=dev --legacy-peer-deps && npm i --save pg
+#53 CACHED
+
+#54 [project-planning deps 4/5] COPY dist/apps/project-planning/package*.json ./
+#54 CACHED
+
+#55 [project-planning runner 3/9] WORKDIR /usr/src/app
+#55 CACHED
+
+#56 [project-planning runner 8/9] COPY ./dist/apps/project-planning .
+#56 CACHED
+
+#57 [project-planning runner 6/9] COPY --from=deps /usr/src/app/package.json ./package.json
+#57 CACHED
+
+#58 [project-planning runner 5/9] COPY --from=deps /usr/src/app/node_modules ./node_modules
+#58 CACHED
+
+#59 [project-planning deps 2/5] RUN apk add --no-cache libc6-compat
+#59 CACHED
+
+#60 [project-planning runner 7/9] RUN pwd && ls -lath
+#60 CACHED
+
+#61 [project-planning runner 9/9] RUN chown -R node:node .
+#61 CACHED
+
+#62 [telos-docs-service] exporting to image
+#62 exporting layers done
+#62 writing image sha256:57c2afeda5bf598711f6a0444c04ce4474c6f44694f47d61a6b3aa101481d4ed done
+#62 naming to docker.io/library/optimistic-tanuki-telos-docs-service 0.0s done
+#62 DONE 0.1s
+
+#63 [chat-collector] exporting to image
+#63 exporting layers done
+#63 writing image sha256:3d989ad9a810290537639cdd5fd7f9129a77c7ac0b9f8f964da35855b5eaffc6 done
+#63 naming to docker.io/library/optimistic-tanuki-chat-collector 0.0s done
+#63 DONE 0.1s
+
+#64 [gateway] exporting to image
+#64 exporting layers done
+#64 writing image sha256:657bbeb694d57788dfd91c5df63cded1787f5399e6950632393fcabd737cecb7 0.0s done
+#64 naming to docker.io/library/optimistic-tanuki-gateway 0.0s done
+#64 DONE 0.1s
+
+#65 [profile] exporting to image
+#65 exporting layers done
+#65 writing image sha256:cc90665555abfd7439b0be5c31da41c8b7ccd7c54e9819742ba44b606dd05c6e 0.0s done
+#65 naming to docker.io/library/optimistic-tanuki-profile 0.0s done
+#65 DONE 0.1s
+
+#66 [ai-orchestration runner 3/9] RUN npm i -g nodemon pg
+#66 CACHED
+
+#51 [ai-orchestration runner 2/9] RUN apk add --no-cache dumb-init
+#51 CACHED
+
+#67 [ai-orchestration deps 5/5] RUN npm install --omit=dev --legacy-peer-deps && npm i --save --legacy-peer-deps @nestjs/axios @modelcontextprotocol/sdk eventsource
+#67 CACHED
+
+#68 [ai-orchestration runner 8/9] RUN npm i --save --legacy-peer-deps @modelcontextprotocol/sdk eventsource @langchain/ollama
+#68 CACHED
+
+#69 [ai-orchestration runner 6/9] COPY --from=deps /usr/src/app/package.json ./package.json
+#69 CACHED
+
+#70 [ai-orchestration runner 7/9] COPY dist/apps/ai-orchestrator .
+#70 CACHED
+
+#71 [ai-orchestration runner 5/9] COPY --from=deps /usr/src/app/node_modules ./node_modules
+#71 CACHED
+
+#52 [ai-orchestration deps 3/5] WORKDIR /usr/src/app
+#52 CACHED
+
+#59 [ai-orchestration deps 2/5] RUN apk add --no-cache libc6-compat
+#59 CACHED
+
+#72 [ai-orchestration runner 4/9] WORKDIR /usr/src/app
+#72 CACHED
+
+#73 [ai-orchestration deps 4/5] COPY dist/apps/ai-orchestrator/package*.json ./
+#73 CACHED
+
+#74 [ai-orchestration runner 9/9] RUN chown -R node:node .
+#74 CACHED
+
+#75 [project-planning] exporting to image
+#75 exporting layers done
+#75 writing image sha256:adddaeb659d59f719fa6e106137981772bc63ed0bfcdf85b83994750f2ca3325 0.0s done
+#75 naming to docker.io/library/optimistic-tanuki-project-planning 0.0s done
+#75 DONE 0.1s
+
+#76 [ai-orchestration] exporting to image
+#76 exporting layers done
+#76 writing image sha256:985af1df92d57cafbbab51fbde79a9a32824a285c980ac40faf168009e6067e3 0.0s done
+#76 naming to docker.io/library/optimistic-tanuki-ai-orchestration done
+#76 DONE 0.1s
+
+#77 [telos-docs-service] resolving provenance for metadata file
+#77 DONE 0.0s
+
+#78 [gateway] resolving provenance for metadata file
+#78 DONE 0.0s
+
+#79 [ai-orchestration] resolving provenance for metadata file
+#79 DONE 0.0s
+
+#80 [project-planning] resolving provenance for metadata file
+#80 DONE 0.0s
+
+#81 [profile] resolving provenance for metadata file
+#81 DONE 0.0s
+
+#82 [chat-collector] resolving provenance for metadata file
+#82 DONE 0.0s
+Waiting for services to stabilize (30s)...
+Running tests for ai-orchestrator-e2e...
+
+ NX   Running target e2e for project ai-orchestrator-e2e and 1 task it depends on:
+
+
+
+> nx run ai-orchestrator:build
+
+> webpack-cli build node-env=production
+
+chunk (runtime: main) [1m[32mmain.js[39m[22m (main) 274 KiB (javascript) 937 bytes (runtime) [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/constants/src/index.ts[39m[22m [1m[32m15:0-123[39m[22m
+[1mexport 'AppScopeName' (reexported as 'AppScopeName') was [1m[31mnot found[39m[22m[1m in './lib/libs/permissions' (possible exports: [1m[32mALL_APP_SCOPES, AppScopeCommands, PermissionCommands, RoleCommands[39m[22m[1m)[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/authentication/index.ts[39m[22m [1m[32m6:0-45[39m[22m
+[1mexport 'UserContext' (reexported as 'UserContext') was [1m[31mnot found[39m[22m[1m in './user-context' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/blog.ts[39m[22m [1m[32m102:50-59[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/blog.ts[39m[22m [1m[32m102:79-88[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/blog.ts[39m[22m [1m[32m107:50-59[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/blog.ts[39m[22m [1m[32m107:79-88[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/contact.ts[39m[22m [1m[32m143:50-59[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/contact.ts[39m[22m [1m[32m143:79-88[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/contact.ts[39m[22m [1m[32m148:50-59[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/contact.ts[39m[22m [1m[32m148:79-88[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/event.ts[39m[22m [1m[32m175:50-59[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/event.ts[39m[22m [1m[32m175:79-88[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/event.ts[39m[22m [1m[32m180:50-59[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/event.ts[39m[22m [1m[32m180:79-88[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/event.ts[39m[22m [1m[32m191:50-59[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/event.ts[39m[22m [1m[32m191:79-88[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/event.ts[39m[22m [1m[32m196:50-59[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/event.ts[39m[22m [1m[32m196:79-88[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/post.ts[39m[22m [1m[32m142:50-59[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/post.ts[39m[22m [1m[32m142:79-88[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/post.ts[39m[22m [1m[32m147:50-59[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m../../libs/models/src/lib/libs/blog/post.ts[39m[22m [1m[32m147:79-88[39m[22m
+[1mexport 'DateRange' (imported as 'DateRange') was [1m[31mnot found[39m[22m[1m in '../util/date-range' [1m[31m(module has no exports)[39m[22m[1m[39m[22m
+
+webpack compiled with [1m[33m22 warnings[39m[22m (55daa8e38dc72528)
+
+> nx run ai-orchestrator-e2e:e2e
+
+Waiting for : to be open...
+: is open!
+  [2mconsole.log[22m
+    Connected to all services
+[2m[22m
+[2m      [2mat [22m[2m[0m[36msrc/ai-orchestrator/ai-orchestrator.spec.ts[39m[0m[2m:68:13[22m[2m[22m
+  [2m[33mconsole.warn[39m[22m
+[33m    No persona found with name "Alex Generalis"[39m
+[2m[22m
+[2m    [0m [90m 80 |[39m         console[33m.[39mlog([32m'Found persona:'[39m[33m,[39m personaId)[33m;[39m[22m
+[2m     [90m 81 |[39m       } [36melse[39m {[22m
+[2m    [31m[1m>[22m[2m[39m[90m 82 |[39m         console[33m.[39mwarn([32m'No persona found with name "Alex Generalis"'[39m)[33m;[39m[22m
+[2m     [90m    |[39m                 [31m[1m^[22m[2m[39m[22m
+[2m     [90m 83 |[39m       }[22m
+[2m     [90m 84 |[39m     } [36mcatch[39m (e) {[22m
+[2m     [90m 85 |[39m       console[33m.[39mwarn([32m'Failed to find persona'[39m[33m,[39m e)[33m;[39m[0m[22m
+[2m[22m
+[2m      [2mat [22m[2m[0m[36msrc/ai-orchestrator/ai-orchestrator.spec.ts[39m[0m[2m:82:17[22m[2m[22m
+[2m      [2mat fulfilled ([22m[2m../../node_modules/tslib/tslib.js[2m:167:62)[22m[2m[22m
+  [2mconsole.log[22m
+    Created profile: 95480cd1-8488-4461-93ea-698fd88ca979
+[2m[22m
+[2m      [2mat [22m[2m[0m[36msrc/ai-orchestrator/ai-orchestrator.spec.ts[39m[0m[2m:107:15[22m[2m[22m
+Tearing down...
+
+
+
+ NX   Running target e2e for project ai-orchestrator-e2e and 1 task it depends on failed
+
+Failed tasks:
+
+- ai-orchestrator-e2e:e2e
+
+Hint: run the command with --verbose for more details.
+

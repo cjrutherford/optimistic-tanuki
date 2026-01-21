@@ -32,6 +32,14 @@ app.use(
   createProxyMiddleware({
     target: 'http://gateway:3000/api',
     changeOrigin: true,
+    on: {
+      proxyReq: (proxyReq: any, req: any, res: any) => {
+        console.log(`[Proxy] Forwarding ${req.method} ${req.url} to gateway`);
+      },
+      error: (err: any, req: any, res: any) => {
+        console.error('[Proxy] Error:', err);
+      },
+    }
   })
 );
 

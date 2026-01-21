@@ -5,5 +5,42 @@
   "sourceRoot": "apps/digital-homestead-e2e/src",
   "implicitDependencies": ["digital-homestead"],
   "// targets": "to see all targets run: nx show project digital-homestead-e2e --web",
-  "targets": {}
+  "targets": {
+    "up": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f e2e/docker-compose.digital-homestead-e2e.yaml up -d --build"
+      }
+    },
+    "down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f e2e/docker-compose.digital-homestead-e2e.yaml down -v"
+      }
+    },
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "options": {},
+      "configurations": {
+        "ci": {
+          "env": {
+            "BASE_URL": "http://localhost:8082"
+          }
+        }
+      }
+    },
+    "e2e-docker": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx run digital-homestead-e2e:up",
+          "echo 'Stack started. Waiting for services...'",
+          "sleep 45",
+          "docker compose -f e2e/docker-compose.digital-homestead-e2e.yaml run --rm playwright-runner npx nx run digital-homestead-e2e:e2e --skip-nx-cache",
+          "nx run digital-homestead-e2e:down"
+        ],
+        "parallel": false
+      }
+    }
+  }
 }

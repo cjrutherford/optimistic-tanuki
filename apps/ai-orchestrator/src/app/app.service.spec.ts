@@ -19,7 +19,6 @@ import {
 } from '@optimistic-tanuki/models';
 import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
 import { ToolsService } from './tools.service';
-import { MCPToolExecutor } from './mcp-tool-executor';
 import { LangChainService } from './langchain.service';
 import { LangGraphService } from './langgraph.service';
 import { LangChainAgentService } from './langchain-agent.service';

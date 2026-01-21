@@ -38,5 +38,13 @@ export const loadConfig = () => {
   const configPath = path.resolve(__dirname, './assets/config.yaml');
   const configFile = fs.readFileSync(configPath, 'utf8');
   const configData = yaml.load(configFile) as OrchestratorConfigType;
+
+  if (process.env.OLLAMA_HOST) {
+    configData.ollama.host = process.env.OLLAMA_HOST;
+  }
+  if (process.env.OLLAMA_PORT) {
+    configData.ollama.port = parseInt(process.env.OLLAMA_PORT, 10);
+  }
+
   return configData;
 };

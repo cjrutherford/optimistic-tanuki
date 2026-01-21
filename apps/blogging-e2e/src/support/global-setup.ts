@@ -1,45 +1,18 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { join } from 'path';
 import { waitForPortOpen } from '@nx/node/utils';
 
-const execAsync = promisify(exec);
-
 export default async function () {
-  const projectName = 'blogging-e2e';
-  const port = 3011;
-  const composeFile = join(
-    __dirname,
-    '../../../../e2e/docker-compose.blogging-e2e.yaml'
-  );
+  const host = process.env.HOST ?? 'localhost';
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  console.log(`
-Setting up E2E environment for ${projectName}...`);
+  console.log("\nWaiting for : to be open...\n");
 
   try {
-    console.log(`Cleaning up any existing environment for ${projectName}...`);
-    await execAsync(
-      `docker compose -p ${projectName} -f ${composeFile} down -v --remove-orphans`
-    );
-  } catch (e) {
-    // ignore
+    await waitForPortOpen(port, { host, retries: 60, retryDelay: 2000 });
+    console.log("\n: is open!\n");
+  } catch (err) {
+    console.error("\nTimed out waiting for : to be open.\n");
+    throw err;
   }
 
-  console.log(`Starting docker-compose using ${composeFile}...`);
-  await execAsync(
-    `docker compose -p ${projectName} -f ${composeFile} up -d --build`
-  );
-
-  console.log(`Waiting for port ${port}...`);
-  await waitForPortOpen(port, { retries: 60, retryDelay: 2000 });
-
-  await new Promise((resolve) => setTimeout(resolve, 10000));
-
-  console.log('Setup complete.');
-  globalThis.__TEARDOWN_MESSAGE__ = `
-Tearing down ${projectName} environment...
-`;
-  globalThis.__COMPOSE_FILE__ = composeFile;
-  globalThis.__PROJECT_NAME__ = projectName;
-  globalThis.socketConnectionOptions = { host: 'localhost', port };
+  globalThis.__TEARDOWN_MESSAGE__ = '\nTearing down...\n';
 }

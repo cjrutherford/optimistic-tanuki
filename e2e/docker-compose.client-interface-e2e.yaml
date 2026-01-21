@@ -141,3 +141,31 @@ services:
         condition: service_started
       assets:
         condition: service_started
+
+  client-interface:
+    container_name: e2e_client_interface_ci
+    build:
+      context: ..
+      dockerfile: ./apps/client-interface/Dockerfile
+    ports:
+      - '8080:4000'
+    depends_on:
+      gateway:
+        condition: service_started
+
+  playwright-runner:
+    image: mcr.microsoft.com/playwright:v1.56.1-jammy
+    container_name: e2e_runner_ci
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+      - /workspace/node_modules
+    environment:
+      BASE_URL: http://client-interface:4000
+      CI: 'true'
+      NX_DAEMON: 'false'
+    command: /bin/bash -c "echo 'Ready to run tests'"
+    depends_on:
+      client-interface:
+        condition: service_started
+    ipc: host

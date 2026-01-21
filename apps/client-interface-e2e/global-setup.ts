@@ -6,6 +6,10 @@ import { join } from 'path';
 const execAsync = promisify(exec);
 
 async function globalSetup(config: FullConfig) {
+  if (process.env.CI) {
+    console.log('\n[Playwright Global Setup] Skipping docker-compose because CI environment detected');
+    return;
+  }
   const composeFile = join(
     __dirname,
     '../../e2e/docker-compose.client-interface-e2e.yaml'

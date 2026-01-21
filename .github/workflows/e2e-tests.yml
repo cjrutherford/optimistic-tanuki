@@ -32,6 +32,7 @@ jobs:
           - prompt-proxy-e2e
           - telos-docs-service-e2e
           - ai-orchestrator-e2e
+          - app-configurator-e2e
       fail-fast: false
 
     steps:
@@ -109,6 +110,7 @@ jobs:
           - christopherrutherford-net-e2e
           - owner-console-e2e
           - store-client-e2e
+          - configurable-client-e2e
       fail-fast: false
 
     steps:
@@ -153,7 +155,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run E2E tests for ${{ matrix.app }}
-        run: npx nx e2e ${{ matrix.app }}
+        run: npx nx e2e ${{ matrix.app }} --configuration=ci
         env:
           CI: true
 
