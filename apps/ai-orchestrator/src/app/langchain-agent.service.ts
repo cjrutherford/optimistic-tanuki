@@ -422,14 +422,6 @@ Example:
 
       // Build messages including LangGraph-provided context so agent sees the same state.
       const systemPrompt = this.createAgentPrompt();
-      const summaryMsg = conversationSummary
-        ? [
-            {
-              role: 'system',
-              content: `Conversation Summary: ${conversationSummary}`,
-            },
-          ]
-        : [];
       const convIdMsg = conversationId
         ? [{ role: 'system', content: `Conversation ID: ${conversationId}` }]
         : [];
@@ -437,7 +429,6 @@ Example:
       const inputs = {
         messages: [
           { role: 'system', content: systemPrompt } as any,
-          ...summaryMsg,
           ...convIdMsg,
           ...chatHistory,
           { role: 'user', content: input },
