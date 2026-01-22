@@ -348,5 +348,81 @@ describe('SystemPromptBuilder', () => {
       const systemMessage = templateMessages[0].content as string;
       expect(systemMessage).not.toContain('# CONVERSATION CONTEXT');
     });
+
+    it('should include first message instructions when isFirstMessage is true', async () => {
+      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest.spyOn(profileService, 'send').mockReturnValue(of([mockProfile]));
+
+      const result = await service.buildSystemPrompt(
+        {
+          personaId: 'persona-123',
+          profileId: 'profile-456',
+        },
+        {
+          isFirstMessage: true,
+        }
+      );
+
+      const templateMessages = await result.template.formatMessages(result.variables);
+      const systemMessage = templateMessages[0].content as string;
+      
+      // Should include first message instructions
+      expect(systemMessage).toContain('# RESPONSE GUIDELINES - INITIAL GREETING');
+      expect(systemMessage).toContain('CRITICAL: First Message Rules');
+      expect(systemMessage).toContain('BE CONVERSATIONAL ONLY');
+      expect(systemMessage).toContain('DO NOT call any tools');
+      expect(systemMessage).toContain('INTRODUCE YOURSELF');
+      expect(systemMessage).toContain('ENCOURAGE ENGAGEMENT');
+    });
+
+    it('should NOT include first message instructions when isFirstMessage is false', async () => {
+      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest.spyOn(profileService, 'send').mockReturnValue(of([mockProfile]));
+
+      const result = await service.buildSystemPrompt(
+        {
+          personaId: 'persona-123',
+          profileId: 'profile-456',
+        },
+        {
+          isFirstMessage: false,
+        }
+      );
+
+      const templateMessages = await result.template.formatMessages(result.variables);
+      const systemMessage = templateMessages[0].content as string;
+      
+      // Should NOT include first message instructions
+      expect(systemMessage).not.toContain('# RESPONSE GUIDELINES - INITIAL GREETING');
+      expect(systemMessage).not.toContain('CRITICAL: First Message Rules');
+      
+      // Should include normal response guidelines
+      expect(systemMessage).toContain('# RESPONSE GUIDELINES');
+      expect(systemMessage).toContain('## Persona Alignment');
+      expect(systemMessage).toContain('## Tool Execution');
+    });
+
+    it('should exclude tools section when isFirstMessage is true', async () => {
+      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest.spyOn(profileService, 'send').mockReturnValue(of([mockProfile]));
+
+      const result = await service.buildSystemPrompt(
+        {
+          personaId: 'persona-123',
+          profileId: 'profile-456',
+        },
+        {
+          isFirstMessage: true,
+          includeTools: true, // Even if requested, should be overridden
+        }
+      );
+
+      const templateMessages = await result.template.formatMessages(result.variables);
+      const systemMessage = templateMessages[0].content as string;
+      
+      // Should NOT include tools section on first message
+      expect(systemMessage).not.toContain('# TOOLS & CAPABILITIES');
+      expect(systemMessage).not.toContain('Tool Discovery');
+    });
   });
 });

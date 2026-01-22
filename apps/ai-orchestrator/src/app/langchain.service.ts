@@ -347,7 +347,6 @@ Always verify parameter names match tool schemas before calling!`;
     profile: ProfileDto,
     conversationHistory: ChatMessage[],
     userMessage: string,
-    conversationSummary: string,
     conversationId: string,
     onStreamEvent?: (event: StreamingEvent) => void | Promise<void>
   ): Promise<{
@@ -361,6 +360,11 @@ Always verify parameter names match tool schemas before calling!`;
       userMessage
     );
 
+    // Detect if this is the first message in the conversation
+    // First message = empty conversation history OR only system/assistant greetings
+    const isFirstMessage = conversationHistory.length === 0 || 
+      (conversationHistory.length === 1 && conversationHistory[0].role !== 'user');
+
     // Use SystemPromptBuilder for STATIC TELOS-driven system prompts
     // CRITICAL: System prompt should NOT include conversation summary
     // Conversation context is passed as full message history below
@@ -371,9 +375,10 @@ Always verify parameter names match tool schemas before calling!`;
         projectContext: projectContext || '',
       },
       {
-        includeTools: true,
+        includeTools: !isFirstMessage, // Don't include tools on first message
         includeExamples: false,
         includeProjectContext: !!projectContext,
+        isFirstMessage: isFirstMessage, // Special first message instructions
       }
     );
     
@@ -390,7 +395,38 @@ Always verify parameter names match tool schemas before calling!`;
       new HumanMessage(userMessage),
     ];
 
-    // Detect workflow type to determine which model to use
+    // For first message, ALWAYS use conversational model (no tool calling)
+    if (isFirstMessage) {
+      this.logger.log('First message detected - using conversational model only (no tools)');
+      
+      const response = await this.conversationalLLM.invoke(messages);
+      
+      // Extract and emit thinking tokens before filtering
+      const responseText = response.content as string;
+      const { thinking, filtered } = this.workflowControl.extractThinkingTokens(responseText);
+      
+      if (thinking.length > 0 && onStreamEvent) {
+        for (const thinkingText of thinking) {
+          await onStreamEvent({
+            type: StreamingEventType.THINKING,
+            content: {
+              text: thinkingText,
+              raw: responseText,
+            },
+            timestamp: new Date(),
+          });
+        }
+      }
+      
+      // Return conversational-only response (no tool calls)
+      return {
+        response: filtered,
+        intermediateSteps: [],
+        toolCalls: [],
+      };
+    }
+
+    // For subsequent messages, detect workflow type to determine which model to use
     const toolNames = tools.map((t) => t.name);
     const workflow = await this.workflowControl.detectWorkflow(
       userMessage,
@@ -594,6 +630,11 @@ Always verify parameter names match tool schemas before calling!`;
       userMessage
     );
 
+    // Detect if this is the first message in the conversation
+    // First message = empty conversation history OR only system/assistant greetings
+    const isFirstMessage = conversationHistory.length === 0 || 
+      (conversationHistory.length === 1 && conversationHistory[0].role !== 'user');
+
     // Use SystemPromptBuilder for STATIC TELOS-driven system prompts
     // CRITICAL: System prompt should NOT include conversation summary
     // Conversation context is passed as full message history below
@@ -604,9 +645,10 @@ Always verify parameter names match tool schemas before calling!`;
         projectContext: projectContext || '',
       },
       {
-        includeTools: true,
+        includeTools: !isFirstMessage, // Don't include tools on first message
         includeExamples: false,
         includeProjectContext: !!projectContext,
+        isFirstMessage: isFirstMessage, // Special first message instructions
       }
     );
     
@@ -623,7 +665,51 @@ Always verify parameter names match tool schemas before calling!`;
       new HumanMessage(userMessage),
     ];
 
-    // Detect workflow type to determine which model to use
+    // For first message, ALWAYS use conversational model (no tool calling)
+    if (isFirstMessage) {
+      this.logger.log('First message detected - streaming conversational response only (no tools)');
+      
+      const stream = await this.conversationalLLM.stream(messages);
+      let fullResponse = '';
+      
+      for await (const chunk of stream) {
+        const content = chunk.content as string;
+        fullResponse += content;
+        
+        yield {
+          type: StreamingEventType.CHUNK,
+          content: { text: content },
+          timestamp: new Date(),
+        };
+      }
+      
+      // Extract and emit thinking tokens from complete response
+      const { thinking, filtered } = this.workflowControl.extractThinkingTokens(fullResponse);
+      
+      if (thinking.length > 0) {
+        for (const thinkingText of thinking) {
+          yield {
+            type: StreamingEventType.THINKING,
+            content: {
+              text: thinkingText,
+              raw: fullResponse,
+            },
+            timestamp: new Date(),
+          };
+        }
+      }
+      
+      // Emit final response
+      yield {
+        type: StreamingEventType.FINAL_RESPONSE,
+        content: { text: filtered },
+        timestamp: new Date(),
+      };
+      
+      return;
+    }
+
+    // For subsequent messages, detect workflow type to determine which model to use
     const toolNames = tools.map((t) => t.name);
     const workflow = await this.workflowControl.detectWorkflow(
       userMessage,

@@ -43,6 +43,7 @@ export interface SystemPromptOptions {
   includeProjectContext?: boolean;
   includeProfileTelos?: boolean;
   includeProjectTelos?: boolean;
+  isFirstMessage?: boolean; // Special instructions for first message in conversation
 }
 
 @Injectable()
@@ -255,7 +256,36 @@ NEVER fabricate or guess IDs. ALWAYS follow this pattern:
     }
 
     // 6. RESPONSE GUIDELINES
-    sections.push(`# RESPONSE GUIDELINES
+    if (options.isFirstMessage) {
+      // Special instructions for the FIRST message in a conversation
+      sections.push(`# RESPONSE GUIDELINES - INITIAL GREETING
+
+## CRITICAL: First Message Rules
+This is your FIRST interaction with the user. Your response MUST:
+
+1. **BE CONVERSATIONAL ONLY** - DO NOT call any tools on the first message
+2. **INTRODUCE YOURSELF** - State your name and role based on your TELOS
+3. **EXPLAIN YOUR PURPOSE** - Briefly share your core objective and how you can help
+4. **ENCOURAGE ENGAGEMENT** - Ask the user about their goals, needs, or what brought them here
+5. **BE WARM AND WELCOMING** - Make the user feel comfortable sharing their thoughts
+
+## Example First Message Structure
+"Hello! I'm {personaName}. [Brief introduction based on core objective and goals].
+
+I'm here to [core objective]. I'd love to learn more about you and what you're hoping to achieve.
+
+What brings you here today? What are your main goals or projects you'd like to work on?"
+
+## What NOT to Do on First Message
+- DO NOT call any tools (list_projects, create_project, etc.)
+- DO NOT assume what the user wants
+- DO NOT jump straight into technical details
+- DO NOT overwhelm with information
+
+Focus on building rapport and understanding the user's needs first.`);
+    } else {
+      // Normal response guidelines for ongoing conversations
+      sections.push(`# RESPONSE GUIDELINES
 
 ## Persona Alignment
 - Stay true to your TELOS in every response
@@ -274,6 +304,7 @@ NEVER fabricate or guess IDs. ALWAYS follow this pattern:
 - After tool execution, provide clear natural language summary
 - If tool fails, explain what went wrong and suggest alternatives
 - Include relevant details from tool results in your response`);
+    }
 
     // 7. EXAMPLES (if requested)
     if (options.includeExamples) {
