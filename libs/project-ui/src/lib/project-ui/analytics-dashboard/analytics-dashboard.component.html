@@ -1,0 +1,74 @@
+<div class="analytics-dashboard">
+  <div class="analytics-grid">
+    <!-- Summary Card -->
+    <otui-card class="summary-card">
+      <h2>Project Summary</h2>
+      <div class="summary-stats">
+        <div class="stat">
+          <span class="stat-label">Total Time</span>
+          <span class="stat-value">{{ totalHours }}h {{ totalMinutes }}m</span>
+        </div>
+        <div class="stat" *ngIf="projectAnalytics">
+          <span class="stat-label">Tasks</span>
+          <span class="stat-value">{{ projectAnalytics.taskCount }}</span>
+        </div>
+        <div class="stat" *ngIf="tagAnalytics.length > 0">
+          <span class="stat-label">Tags Used</span>
+          <span class="stat-value">{{ tagAnalytics.length }}</span>
+        </div>
+      </div>
+    </otui-card>
+
+    <!-- Top Tasks by Time -->
+    <otui-card class="tasks-card" *ngIf="topTasks.length > 0">
+      <h2>Top Tasks by Time</h2>
+      <div class="tasks-list">
+        <div class="task-item" *ngFor="let task of topTasks">
+          <div class="task-header">
+            <span class="task-title">{{ task.taskTitle }}</span>
+            <span class="task-time">{{ formatTime(task.totalTimeSeconds) }}</span>
+          </div>
+          <div class="progress-bar">
+            <div
+              class="progress-fill"
+              [style.width.%]="getProgressPercentage(task.totalTimeSeconds)"
+            ></div>
+          </div>
+          <div class="task-meta">
+            <span class="entry-count">{{ task.entryCount }} entries</span>
+            <span class="tags" *ngIf="task.tags.length > 0">
+              {{ task.tags.join(', ') }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </otui-card>
+
+    <!-- Top Tags by Time -->
+    <otui-card class="tags-card" *ngIf="topTags.length > 0">
+      <h2>Top Tags by Time</h2>
+      <div class="tags-list">
+        <div class="tag-item" *ngFor="let tag of topTags">
+          <div class="tag-header">
+            <span class="tag-name">{{ tag.tagName }}</span>
+            <span class="tag-time">{{ formatTime(tag.totalTimeSeconds) }}</span>
+          </div>
+          <div class="progress-bar">
+            <div
+              class="progress-fill tag-fill"
+              [style.width.%]="getTagProgressPercentage(tag.totalTimeSeconds)"
+            ></div>
+          </div>
+          <div class="tag-meta">
+            <span class="task-count">{{ tag.taskCount }} tasks</span>
+          </div>
+        </div>
+      </div>
+    </otui-card>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!projectAnalytics && tagAnalytics.length === 0">
+    <p>No analytics data available. Start tracking time on tasks to see insights.</p>
+  </div>
+</div>

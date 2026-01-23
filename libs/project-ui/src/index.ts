@@ -22,3 +22,4 @@ export * from './lib/project-ui/task-kanban/task-kanban.component';
 export * from './lib/project-ui/mind-map/mind-map.component';
 export * from './lib/project-ui/tag-selector/tag-selector.component';
 export * from './lib/project-ui/time-tracker/time-tracker.component';
+export * from './lib/project-ui/analytics-dashboard/analytics-dashboard.component';

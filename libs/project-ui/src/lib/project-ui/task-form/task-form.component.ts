@@ -11,6 +11,7 @@ import {
   CreateProfileDto,
   ProfileDto,
   Task,
+  TaskTag,
   UpdateProfileDto,
 } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -19,6 +20,7 @@ import {
   TextAreaComponent,
   TextInputComponent,
 } from '@optimistic-tanuki/form-ui';
+import { TagSelectorComponent } from '../tag-selector/tag-selector.component';
 
 @Component({
   selector: 'lib-task-form',
@@ -29,14 +31,18 @@ import {
     TextAreaComponent,
     ButtonComponent,
     SelectComponent,
+    TagSelectorComponent,
   ],
   templateUrl: './task-form.component.html',
   styleUrl: './task-form.component.scss',
 })
 export class TaskFormComponent implements OnInit {
   @Input() task: Task | null = null;
+  @Input() availableTags: TaskTag[] = [];
   isEditing = signal<boolean>(false);
   @Output() formSubmit: EventEmitter<Task> = new EventEmitter<Task>();
+  
+  selectedTagIds: string[] = [];
   statusOptions = [
     { value: 'TODO', label: 'To Do' },
     { value: 'IN_PROGRESS', label: 'In Progress' },
@@ -69,6 +75,8 @@ export class TaskFormComponent implements OnInit {
         status: this.task.status,
         priority: this.task.priority,
       });
+      // Set selected tags
+      this.selectedTagIds = this.task.tags?.map(tag => tag.id) || [];
     } else {
       this.isEditing.set(false);
     }
@@ -82,9 +90,20 @@ export class TaskFormComponent implements OnInit {
     this.taskForm.patchValue({ [field]: event.target.value });
   }
 
+  onTagSelectionChange(tagIds: string[]) {
+    this.selectedTagIds = tagIds;
+    console.log('Selected tags:', tagIds);
+  }
+
   onSubmit() {
     if (this.taskForm.valid) {
       console.log('Form Submitted!', this.taskForm.value);
+      
+      // Get the selected tags objects
+      const selectedTags = this.availableTags.filter(tag => 
+        this.selectedTagIds.includes(tag.id)
+      );
+      
       const emittedValue: Task = {
         ...this.taskForm.value,
         id: this.task ? this.task.id : '',
@@ -92,9 +111,11 @@ export class TaskFormComponent implements OnInit {
         createdBy: this.task ? this.task.createdBy : '',
         createdAt: this.task ? this.task.createdAt : new Date(),
         updatedAt: new Date(),
+        tags: selectedTags,
       };
       this.formSubmit.emit(emittedValue);
       this.taskForm.reset();
+      this.selectedTagIds = [];
     }
   }
 }

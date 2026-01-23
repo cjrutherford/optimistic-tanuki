@@ -1,0 +1,130 @@
+.analytics-dashboard {
+  padding: 16px;
+
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .summary-card {
+    h2 {
+      margin: 0 0 16px 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary, #333);
+    }
+
+    .summary-stats {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+
+      .stat {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        .stat-label {
+          font-size: 0.875rem;
+          color: var(--text-secondary, #666);
+        }
+
+        .stat-value {
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: var(--primary, #3498db);
+        }
+      }
+    }
+  }
+
+  .tasks-card,
+  .tags-card {
+    h2 {
+      margin: 0 0 16px 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary, #333);
+    }
+  }
+
+  .tasks-list,
+  .tags-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .task-item,
+  .tag-item {
+    .task-header,
+    .tag-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+
+      .task-title,
+      .tag-name {
+        font-weight: 500;
+        color: var(--text-primary, #333);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .task-time,
+      .tag-time {
+        font-weight: 600;
+        color: var(--primary, #3498db);
+        margin-left: 12px;
+      }
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--surface-color, #f0f0f0);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+
+      .progress-fill {
+        height: 100%;
+        background: var(--primary, #3498db);
+        transition: width 0.3s ease;
+      }
+
+      .tag-fill {
+        background: var(--accent, #9b59b6);
+      }
+    }
+
+    .task-meta,
+    .tag-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-secondary, #666);
+
+      .entry-count,
+      .task-count {
+        font-weight: 500;
+      }
+
+      .tags {
+        color: var(--accent, #9b59b6);
+      }
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-secondary, #666);
+    font-size: 1rem;
+  }
+}

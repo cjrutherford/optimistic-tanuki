@@ -45,6 +45,8 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
   @Output() createTask = new EventEmitter<CreateTask>();
   @Output() editTask = new EventEmitter<Task>();
   @Output() deleteTask = new EventEmitter<string>();
+  @Output() startTimer = new EventEmitter<string>();
+  @Output() stopTimer = new EventEmitter<string>();
 
   // Internal state signals for reactive UI
   showModal = signal(false);
@@ -164,7 +166,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
       sortable: false,
       filter: false,
       resizable: false,
-      maxWidth: 200,
+      maxWidth: 280,
       pinned: 'right',
     },
   ];
@@ -207,6 +209,31 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
     container.style.gap = '8px';
     container.style.alignItems = 'center';
 
+    // Check if there's an active time entry
+    const task = params.data as Task;
+    const hasActiveTimer = task.timeEntries?.some(entry => !entry.endTime);
+
+    // Timer button (Start or Stop)
+    const timerBtn = document.createElement('button');
+    timerBtn.innerText = hasActiveTimer ? '⏸ Stop' : '▶ Start';
+    timerBtn.style.padding = '4px 12px';
+    timerBtn.style.cursor = 'pointer';
+    timerBtn.style.borderRadius = '4px';
+    timerBtn.style.border = hasActiveTimer ? '1px solid var(--danger)' : '1px solid var(--success)';
+    timerBtn.style.background = hasActiveTimer ? 'var(--danger)' : 'var(--success)';
+    timerBtn.style.color = 'white';
+    timerBtn.style.fontSize = '0.875rem';
+    timerBtn.onclick = () => {
+      if (hasActiveTimer) {
+        const activeEntry = task.timeEntries?.find(entry => !entry.endTime);
+        if (activeEntry) {
+          this.stopTimer.emit(activeEntry.id);
+        }
+      } else {
+        this.startTimer.emit(task.id);
+      }
+    };
+
     const editBtn = document.createElement('button');
     editBtn.innerText = 'Edit';
     editBtn.style.padding = '4px 12px';
@@ -227,6 +254,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
     deleteBtn.style.color = 'white';
     deleteBtn.onclick = () => this.onDelete(params.data);
 
+    container.appendChild(timerBtn);
     container.appendChild(editBtn);
     container.appendChild(deleteBtn);
 
