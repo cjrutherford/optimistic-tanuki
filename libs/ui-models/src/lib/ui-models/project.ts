@@ -60,6 +60,9 @@ export interface Task {
   updatedAt?: Date;
   deletedBy?: string;
   deletedAt?: Date;
+  tags?: TaskTag[]; // Tags associated with the task
+  timeEntries?: TaskTimeEntry[]; // Time tracking entries
+  totalTimeSeconds?: number; // Computed total time from timeEntries
 }
 
 export interface CreateTask {
@@ -69,6 +72,7 @@ export interface CreateTask {
   status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
   priority: 'LOW' | 'MEDIUM_LOW' | 'MEDIUM' | 'MEDIUM_HIGH' | 'HIGH';
   createdBy: string;
+  tagIds?: string[]; // Optional array of tag IDs to associate
 }
 
 export interface UpdateTask {
@@ -76,6 +80,7 @@ export interface UpdateTask {
   assignee?: string;
   dueDate?: Date;
   updatedBy?: string;
+  tagIds?: string[]; // Optional array of tag IDs to update
 }
 
 export interface QueryTask {
@@ -91,6 +96,109 @@ export interface QueryTask {
   createdBy?: string;
   updatedBy?: string;
   deleted?: boolean;
+  tagIds?: string[]; // Filter by tag IDs
+}
+
+// src/app/models/task-tag.model.ts
+export interface TaskTag {
+  id: string; // uuid
+  name: string;
+  color?: string;
+  description?: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedBy?: string;
+  updatedAt?: Date;
+  deletedBy?: string;
+  deletedAt?: Date;
+}
+
+export interface CreateTaskTag {
+  name: string;
+  color?: string;
+  description?: string;
+  createdBy: string;
+}
+
+export interface UpdateTaskTag {
+  id: string;
+  name?: string;
+  color?: string;
+  description?: string;
+  updatedBy?: string;
+}
+
+export interface QueryTaskTag {
+  name?: string;
+  deleted?: boolean;
+}
+
+// src/app/models/task-time-entry.model.ts
+export interface TaskTimeEntry {
+  id: string; // uuid
+  taskId: string;
+  startTime: Date;
+  endTime?: Date;
+  elapsedSeconds: number;
+  description?: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedBy?: string;
+  updatedAt?: Date;
+  deletedBy?: string;
+  deletedAt?: Date;
+}
+
+export interface CreateTaskTimeEntry {
+  taskId: string;
+  description?: string;
+  createdBy: string;
+}
+
+export interface UpdateTaskTimeEntry {
+  id: string;
+  endTime?: Date;
+  elapsedSeconds?: number;
+  description?: string;
+  updatedBy?: string;
+}
+
+export interface QueryTaskTimeEntry {
+  taskId?: string;
+  createdBy?: string;
+}
+
+// src/app/models/analytics.model.ts
+export interface TaskAnalytics {
+  taskId: string;
+  taskTitle: string;
+  totalTimeSeconds: number;
+  entryCount: number;
+  tags: string[];
+}
+
+export interface ProjectAnalytics {
+  projectId: string;
+  projectName: string;
+  totalTimeSeconds: number;
+  taskCount: number;
+  tasks: TaskAnalytics[];
+}
+
+export interface TagAnalytics {
+  tagId: string;
+  tagName: string;
+  totalTimeSeconds: number;
+  taskCount: number;
+}
+
+export interface QueryAnalytics {
+  projectId?: string;
+  taskIds?: string[];
+  tagIds?: string[];
+  startDate?: Date;
+  endDate?: Date;
+  userId?: string;
 }
 
 // src/app/models/timer.model.ts

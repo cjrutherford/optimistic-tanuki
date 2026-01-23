@@ -92,6 +92,57 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
       },
     },
     {
+      field: 'tags',
+      headerName: 'Tags',
+      flex: 1,
+      minWidth: 150,
+      filter: 'agTextColumnFilter',
+      cellRenderer: (params: ICellRendererParams) => {
+        const tags = params.value || [];
+        if (tags.length === 0) return '-';
+        
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.gap = '4px';
+        container.style.flexWrap = 'wrap';
+        container.style.alignItems = 'center';
+        
+        tags.forEach((tag: any) => {
+          const tagBadge = document.createElement('span');
+          tagBadge.innerText = tag.name;
+          tagBadge.style.padding = '2px 8px';
+          tagBadge.style.borderRadius = '12px';
+          tagBadge.style.fontSize = '0.75rem';
+          tagBadge.style.backgroundColor = tag.color || '#3498db';
+          tagBadge.style.color = 'white';
+          tagBadge.style.whiteSpace = 'nowrap';
+          container.appendChild(tagBadge);
+        });
+        
+        return container;
+      },
+    },
+    {
+      field: 'totalTimeSeconds',
+      headerName: 'Time Spent',
+      flex: 1,
+      minWidth: 120,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (params) => {
+        const seconds = params.value || 0;
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        
+        if (hours > 0) {
+          return `${hours}h ${minutes}m`;
+        } else if (minutes > 0) {
+          return `${minutes}m`;
+        } else {
+          return `${seconds}s`;
+        }
+      },
+    },
+    {
       field: 'assignee',
       headerName: 'Assignee',
       flex: 1,
