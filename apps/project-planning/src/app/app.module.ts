@@ -27,6 +27,9 @@ import { TaskTimeEntryService } from './task-time-entry/task-time-entry.service'
 import { TaskTag } from './entities/task-tag.entity';
 import { TaskTagController } from './task-tag/task-tag.controller';
 import { TaskTagService } from './task-tag/task-tag.service';
+import { TaskNote } from './entities/task-note.entity';
+import { TaskNoteController } from './task-note/task-note.controller';
+import { TaskNoteService } from './task-note/task-note.service';
 import { AnalyticsController } from './analytics/analytics.controller';
 import { AnalyticsService } from './analytics/analytics.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -54,6 +57,7 @@ import loadDatabase from './loadDatabase';
     TimerController,
     TaskTimeEntryController,
     TaskTagController,
+    TaskNoteController,
     AnalyticsController,
   ],
   providers: [
@@ -65,6 +69,7 @@ import loadDatabase from './loadDatabase';
     TimerService,
     TaskTimeEntryService,
     TaskTagService,
+    TaskNoteService,
     AnalyticsService,
     {
       provide: getRepositoryToken(Project),
@@ -107,6 +112,12 @@ import loadDatabase from './loadDatabase';
       provide: getRepositoryToken(TaskTag),
       useFactory: (connection: DataSource) =>
         connection.getRepository(TaskTag),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(TaskNote),
+      useFactory: (connection: DataSource) =>
+        connection.getRepository(TaskNote),
       inject: ['PROJECT_PLANNING_CONNECTION'],
     },
   ],

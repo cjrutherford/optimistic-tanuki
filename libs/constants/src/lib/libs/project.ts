@@ -71,6 +71,15 @@ export const TaskTagCommands = {
   FIND_ALL: 'taskTag.findAll',
 };
 
+export const TaskNoteCommands = {
+  CREATE: 'taskNote.create',
+  UPDATE: 'taskNote.update',
+  DELETE: 'taskNote.delete',
+  FIND_ONE: 'taskNote.findOne',
+  REMOVE: 'taskNote.remove',
+  FIND_ALL: 'taskNote.findAll',
+};
+
 export const AnalyticsCommands = {
   GET_TASK_ANALYTICS: 'analytics.getTaskAnalytics',
   GET_PROJECT_ANALYTICS: 'analytics.getProjectAnalytics',

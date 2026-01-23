@@ -62,6 +62,7 @@ export interface Task {
   deletedAt?: Date;
   tags?: TaskTag[]; // Tags associated with the task
   timeEntries?: TaskTimeEntry[]; // Time tracking entries
+  notes?: TaskNote[]; // Notes associated with the task
   totalTimeSeconds?: number; // Computed total time from timeEntries
 }
 
@@ -166,6 +167,43 @@ export interface UpdateTaskTimeEntry {
 export interface QueryTaskTimeEntry {
   taskId?: string;
   createdBy?: string;
+}
+
+// src/app/models/task-note.model.ts
+export interface TaskNote {
+  id: string; // uuid
+  taskId: string;
+  profileId: string;
+  content: string;
+  createdAt: Date;
+  analysis?: string;
+  updatedBy?: string;
+  updatedAt?: Date;
+  deletedBy?: string;
+  deletedAt?: Date;
+}
+
+export interface CreateTaskNote {
+  taskId: string;
+  profileId: string;
+  content: string;
+  analysis?: string;
+}
+
+export interface UpdateTaskNote {
+  id: string;
+  content?: string;
+  analysis?: string;
+  updatedBy?: string;
+}
+
+export interface QueryTaskNote {
+  taskId?: string;
+  profileId?: string;
+  updatedBy?: string;
+  createdAt?: [Date, Date];
+  updatedAt?: [Date, Date];
+  deleted?: boolean;
 }
 
 // src/app/models/analytics.model.ts

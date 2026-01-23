@@ -11,6 +11,7 @@ import {
 import { TaskPriority, TaskStatus } from '@optimistic-tanuki/models';
 
 import { Project } from './project.entity';
+import { TaskNote } from './task-note.entity';
 import { TaskTag } from './task-tag.entity';
 import { TaskTimeEntry } from './task-time-entry.entity';
 import { Timer } from './timer.entity'; // Assuming Timer is another entity in your project
@@ -46,6 +47,9 @@ export class Task {
 
   @OneToMany(() => TaskTimeEntry, (timeEntry) => timeEntry.task)
   timeEntries: TaskTimeEntry[];
+
+  @OneToMany(() => TaskNote, (note) => note.task)
+  notes: TaskNote[];
 
   @ManyToMany(() => TaskTag, (tag) => tag.tasks)
   @JoinTable({

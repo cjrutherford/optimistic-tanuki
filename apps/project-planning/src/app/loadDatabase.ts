@@ -8,6 +8,7 @@ import { Timer } from './entities/timer.entity';
 import { ProjectJournal } from './entities/project-journal.entity';
 import { TaskTimeEntry } from './entities/task-time-entry.entity';
 import { TaskTag } from './entities/task-tag.entity';
+import { TaskNote } from './entities/task-note.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -21,6 +22,7 @@ const loadDatabase = (config: ConfigService) => {
     ProjectJournal,
     TaskTimeEntry,
     TaskTag,
+    TaskNote,
   ];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`
