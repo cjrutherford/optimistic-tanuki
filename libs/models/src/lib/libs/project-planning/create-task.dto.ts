@@ -1,10 +1,12 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsUUID,
   IsEnum,
   MaxLength,
   MinLength,
+  IsArray,
+  IsOptional,
 } from 'class-validator';
 
 export enum TaskStatus {
@@ -58,4 +60,13 @@ export class CreateTaskDto {
   @IsString()
   @IsUUID()
   projectId: string;
+
+  @ApiPropertyOptional({
+    description: 'Array of tag IDs to associate with the task',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 }
