@@ -58,6 +58,9 @@ export class AnalyticsService {
         } else if (query.startDate) {
           // Start date only
           timeEntryWhere.startTime = Between(query.startDate, new Date());
+        } else if (query.endDate) {
+          // End date only - from beginning of time to end date
+          timeEntryWhere.startTime = Between(new Date(0), query.endDate);
         }
       }
 

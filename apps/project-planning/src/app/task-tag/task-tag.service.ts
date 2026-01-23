@@ -7,7 +7,7 @@ import {
 import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TaskTag } from '../entities/task-tag.entity';
-import { Repository, FindOptionsWhere, IsNull, Like, Not } from 'typeorm';
+import { Repository, FindOptionsWhere, IsNull, Like, Not, In } from 'typeorm';
 
 @Injectable()
 export class TaskTagService {
@@ -51,7 +51,7 @@ export class TaskTagService {
   }
 
   async findByIds(ids: string[]) {
-    return await this.taskTagRepository.findByIds(ids);
+    return await this.taskTagRepository.findBy({ id: In(ids) });
   }
 
   async update(id: string, updateDto: UpdateTaskTagDto) {

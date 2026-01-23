@@ -28,7 +28,7 @@ export class TimeTrackerComponent implements OnInit, OnDestroy {
 
   activeEntry: TaskTimeEntry | null = null;
   displayTime = '00:00:00';
-  private intervalId: any;
+  private intervalId: NodeJS.Timeout | null = null;
 
   ngOnInit() {
     // Find if there's an active time entry (no endTime)

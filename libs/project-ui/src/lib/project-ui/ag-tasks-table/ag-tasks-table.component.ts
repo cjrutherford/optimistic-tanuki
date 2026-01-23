@@ -19,7 +19,7 @@ import {
   CellClickedEvent,
 } from '@optimistic-tanuki/ag-grid-ui';
 import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
-import { CreateTask, Task } from '@optimistic-tanuki/ui-models';
+import { CreateTask, Task, TaskTag } from '@optimistic-tanuki/ui-models';
 import { TaskFormComponent } from '../task-form/task-form.component';
 
 /**
@@ -98,7 +98,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
       minWidth: 150,
       filter: 'agTextColumnFilter',
       cellRenderer: (params: ICellRendererParams) => {
-        const tags = params.value || [];
+        const tags: TaskTag[] = params.value || [];
         if (tags.length === 0) return '-';
         
         const container = document.createElement('div');
@@ -107,7 +107,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
         container.style.flexWrap = 'wrap';
         container.style.alignItems = 'center';
         
-        tags.forEach((tag: any) => {
+        tags.forEach((tag: TaskTag) => {
           const tagBadge = document.createElement('span');
           tagBadge.innerText = tag.name;
           tagBadge.style.padding = '2px 8px';
