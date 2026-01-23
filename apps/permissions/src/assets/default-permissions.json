@@ -959,6 +959,70 @@
       "appScope": "global"
     },
     {
+      "name": "project-planning.task-note.create",
+      "description": "Create task note",
+      "resource": "task-note",
+      "action": "create",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.task-note.read",
+      "description": "Read task note",
+      "resource": "task-note",
+      "action": "read",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.task-note.update",
+      "description": "Update task note",
+      "resource": "task-note",
+      "action": "update",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.task-note.delete",
+      "description": "Delete task note",
+      "resource": "task-note",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.task-note.create",
+      "description": "Create task note (global)",
+      "resource": "task-note",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.task-note.read",
+      "description": "Read task note (global)",
+      "resource": "task-note",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.task-note.update",
+      "description": "Update task note (global)",
+      "resource": "task-note",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.task-note.delete",
+      "description": "Delete task note (global)",
+      "resource": "task-note",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
       "name": "project-planning.change.create",
       "description": "Create change (global)",
       "resource": "change",
@@ -1490,6 +1554,46 @@
       "role": "forgeofwill_planner",
       "permission": "project-planning.timer.read",
       "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.task-note.create",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.task-note.read",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.task-note.update",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.task-note.delete",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task-note.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task-note.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task-note.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task-note.delete",
+      "permissionAppScope": "global"
     },
     {
       "role": "forgeofwill_profile_owner",
