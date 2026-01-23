@@ -18,6 +18,7 @@ import {
   RiskCommands,
   ServiceTokens,
   TaskCommands,
+  TaskNoteCommands,
   TimerCommands,
 } from '@optimistic-tanuki/constants';
 import {
@@ -26,17 +27,20 @@ import {
   CreateProjectJournalDto,
   CreateRiskDto,
   CreateTaskDto,
+  CreateTaskNoteDto,
   CreateTimerDto,
   QueryChangeDto,
   QueryProjectDto,
   QueryProjectJournalDto,
   QueryRiskDto,
   QueryTaskDto,
+  QueryTaskNoteDto,
   UpdateChangeDto,
   UpdateProjectDto,
   UpdateProjectJournalDto,
   UpdateRiskDto,
   UpdateTaskDto,
+  UpdateTaskNoteDto,
   UpdateTimerDto,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -497,6 +501,100 @@ export class ProjectPlanningController {
   async deleteTimer(@Param('id') id: string) {
     return await firstValueFrom(
       this.projectPlanningService.send({ cmd: TimerCommands.DELETE }, { id })
+    );
+  }
+
+  // Task Notes endpoints
+  @ApiOperation({ summary: 'Find task note by ID' })
+  @ApiResponse({ status: 200, description: 'Task note found' })
+  @RequirePermissions('project-planning.task-note.read')
+  @Get('task-notes/:id')
+  async findTaskNoteById(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.FIND_ONE },
+        id
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Find all task notes' })
+  @ApiResponse({ status: 200, description: 'Task notes retrieved' })
+  @RequirePermissions('project-planning.task-note.read')
+  @Get('task-notes')
+  async findAllTaskNotes() {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.FIND_ALL },
+        {}
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Query task notes' })
+  @ApiResponse({ status: 200, description: 'Task notes retrieved' })
+  @RequirePermissions('project-planning.task-note.read')
+  @Post('task-notes/query')
+  async queryTaskNotes(@Body() query: QueryTaskNoteDto) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.FIND_ALL },
+        query
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Create a task note' })
+  @ApiResponse({
+    status: 201,
+    description: 'Task note created successfully',
+  })
+  @RequirePermissions('project-planning.task-note.create')
+  @Post('task-notes')
+  async createTaskNote(
+    @User() user: UserDetails,
+    @Body() createTaskNoteDto: CreateTaskNoteDto
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.CREATE },
+        { ...createTaskNoteDto, profileId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Update a task note' })
+  @ApiResponse({
+    status: 200,
+    description: 'Task note updated successfully',
+  })
+  @RequirePermissions('project-planning.task-note.update')
+  @Patch('task-notes')
+  async updateTaskNote(
+    @User() user: UserDetails,
+    @Body() updateTaskNoteDto: UpdateTaskNoteDto
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.UPDATE },
+        { ...updateTaskNoteDto, updatedBy: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Delete a task note' })
+  @ApiResponse({
+    status: 200,
+    description: 'Task note deleted successfully',
+  })
+  @RequirePermissions('project-planning.task-note.delete')
+  @Delete('task-notes/:id')
+  async deleteTaskNote(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.REMOVE },
+        id
+      )
     );
   }
 }
