@@ -20,3 +20,5 @@ export * from './lib/project-ui/ag-project-journal-table/ag-project-journal-tabl
 export * from './lib/project-ui/task-calendar/task-calendar.component';
 export * from './lib/project-ui/task-kanban/task-kanban.component';
 export * from './lib/project-ui/mind-map/mind-map.component';
+export * from './lib/project-ui/tag-selector/tag-selector.component';
+export * from './lib/project-ui/time-tracker/time-tracker.component';
