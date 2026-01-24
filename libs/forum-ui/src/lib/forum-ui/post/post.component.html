@@ -1,4 +1,4 @@
-<lib-card>
+<otui-card>
   <div class="post-content">
     {{ post.content }}
     <span *ngIf="post.isEdited" class="edited-badge">(edited)</span>
@@ -8,7 +8,7 @@
     <span *ngIf="post.isEdited">Updated: {{ post.updatedAt | date:'short' }}</span>
   </div>
   <div class="post-actions" *ngIf="canEdit || canDelete">
-    <lib-button *ngIf="canEdit" (click)="onEdit()">Edit</lib-button>
-    <lib-button *ngIf="canDelete" (click)="onDelete()">Delete</lib-button>
+    <otui-button *ngIf="canEdit" (click)="onEdit()">Edit</otui-button>
+    <otui-button *ngIf="canDelete" (click)="onDelete()">Delete</otui-button>
   </div>
-</lib-card>
+</otui-card>

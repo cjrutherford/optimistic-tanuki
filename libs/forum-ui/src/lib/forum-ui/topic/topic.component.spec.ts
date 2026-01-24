@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TopicComponent } from './topic.component';
 import { TopicDto } from '../models';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 
 describe('TopicComponent', () => {
   let component: TopicComponent;
@@ -22,8 +22,7 @@ describe('TopicComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TopicComponent],
-      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      imports: [TopicComponent, CardComponent, ButtonComponent],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TopicComponent);

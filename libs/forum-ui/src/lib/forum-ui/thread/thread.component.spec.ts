@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ThreadComponent } from './thread.component';
 import { ThreadDto } from '../models';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 
 describe('ThreadComponent', () => {
   let component: ThreadComponent;
@@ -24,8 +24,7 @@ describe('ThreadComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ThreadComponent],
-      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      imports: [ThreadComponent, CardComponent, ButtonComponent],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ThreadComponent);

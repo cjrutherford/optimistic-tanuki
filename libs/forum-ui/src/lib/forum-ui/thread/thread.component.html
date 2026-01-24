@@ -1,4 +1,4 @@
-<lib-card>
+<otui-card>
   <div class="thread-header" (click)="onThreadClick()">
     <h4>{{ thread.title }}</h4>
     <span *ngIf="thread.isPinned" class="pinned-badge">📌</span>
@@ -10,7 +10,7 @@
     <span>Created: {{ thread.createdAt | date }}</span>
   </div>
   <div class="thread-actions" *ngIf="canEdit || canDelete">
-    <lib-button *ngIf="canEdit" (click)="onEdit()">Edit</lib-button>
-    <lib-button *ngIf="canDelete" (click)="onDelete()">Delete</lib-button>
+    <otui-button *ngIf="canEdit" (click)="onEdit()">Edit</otui-button>
+    <otui-button *ngIf="canDelete" (click)="onDelete()">Delete</otui-button>
   </div>
-</lib-card>
+</otui-card>

@@ -1,4 +1,4 @@
-<lib-card>
+<otui-card>
   <div class="topic-header" (click)="onTopicClick()">
     <h3>{{ topic.title }}</h3>
     <span *ngIf="topic.isPinned" class="pinned-badge">📌 Pinned</span>
@@ -10,7 +10,7 @@
     <span>Visibility: {{ topic.visibility }}</span>
   </div>
   <div class="topic-actions" *ngIf="canEdit || canDelete">
-    <lib-button *ngIf="canEdit" (click)="onEdit()">Edit</lib-button>
-    <lib-button *ngIf="canDelete" (click)="onDelete()">Delete</lib-button>
+    <otui-button *ngIf="canEdit" (click)="onEdit()">Edit</otui-button>
+    <otui-button *ngIf="canDelete" (click)="onDelete()">Delete</otui-button>
   </div>
-</lib-card>
+</otui-card>
