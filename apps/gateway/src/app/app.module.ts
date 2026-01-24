@@ -32,6 +32,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { StoreController } from '../controllers/store/store.controller';
 import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
+import { ForumController } from '../controllers/forum/forum.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -74,6 +75,7 @@ import { AppConfigController } from '../controllers/app-config/app-config.contro
     PersonaController,
     StoreController,
     AppConfigController,
+    ForumController,
   ],
   providers: [
     {
@@ -281,6 +283,22 @@ import { AppConfigController } from '../controllers/app-config/app-config.contro
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
           'services.app_configurator'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.FORUM_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.forum'
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
