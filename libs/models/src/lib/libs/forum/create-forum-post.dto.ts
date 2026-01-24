@@ -12,4 +12,11 @@ export class CreateForumPostDto {
 
   @ApiProperty({ description: 'The ID of the thread this post belongs to' })
   threadId: string;
+
+  @ApiProperty({
+    description: 'App scope for the post',
+    required: false,
+    example: 'forum',
+  })
+  appScope?: string;
 }

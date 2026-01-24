@@ -24,4 +24,11 @@ export class CreateThreadDto {
 
   @ApiProperty({ description: 'Whether the thread is locked', required: false })
   isLocked?: boolean;
+
+  @ApiProperty({
+    description: 'App scope for the thread',
+    required: false,
+    example: 'forum',
+  })
+  appScope?: string;
 }

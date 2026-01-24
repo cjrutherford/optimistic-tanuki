@@ -11,13 +11,18 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
 
   // Determine app scope based on API route to align with
   // permissions configuration (social endpoints use the
-  // "social" app scope, while general client-interface
-  // traffic uses the "client-interface" scope).
+  // "social" app scope, blogging uses "blogging", etc.).
   let appScope = 'client-interface';
   const url = req.url || '';
 
   if (url.includes('/api/social')) {
     appScope = 'social';
+  } else if (url.includes('/api/blog')) {
+    appScope = 'blogging';
+  } else if (url.includes('/api/project')) {
+    appScope = 'project-planning';
+  } else if (url.includes('/api/forum')) {
+    appScope = 'forum';
   }
 
   const clonedRequest = req.clone({

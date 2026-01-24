@@ -21,4 +21,11 @@ export class CreateTopicDto {
 
   @ApiProperty({ description: 'Whether the topic is locked', required: false })
   isLocked?: boolean;
+
+  @ApiProperty({
+    description: 'App scope for the topic',
+    required: false,
+    example: 'forum',
+  })
+  appScope?: string;
 }

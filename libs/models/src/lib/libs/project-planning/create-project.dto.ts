@@ -88,4 +88,13 @@ export class CreateProjectDto {
   @IsString()
   @MaxLength(50)
   status: string;
+
+  @ApiProperty({
+    description: 'App scope for the project',
+    required: false,
+    example: 'project-planning',
+  })
+  @IsOptional()
+  @IsString()
+  appScope?: string;
 }
