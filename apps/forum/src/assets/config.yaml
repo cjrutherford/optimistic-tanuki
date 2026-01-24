@@ -1,0 +1,7 @@
+listenPort: 3006
+database:
+  host: localhost
+  port: 5432
+  username: postgres
+  password: postgres
+  database: forum
