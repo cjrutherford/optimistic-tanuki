@@ -23,6 +23,9 @@ export class ForumPost {
   @Column()
   profileId: string;
 
+  @Column({ type: 'varchar', default: 'forum' })
+  appScope: string;
+
   @ManyToOne(() => Thread, (thread) => thread.posts)
   thread: Thread;
 

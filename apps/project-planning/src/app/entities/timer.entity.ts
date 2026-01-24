@@ -33,6 +33,9 @@ export class Timer {
   @Column({ default: 0 })
   elapsedTime: number; // Store elapsed time in seconds
 
+  @Column({ type: 'varchar', default: 'project-planning' })
+  appScope: string;
+
   @OneToOne((type) => Task, (task) => task.timer, { onDelete: 'CASCADE' })
   task: Task;
 

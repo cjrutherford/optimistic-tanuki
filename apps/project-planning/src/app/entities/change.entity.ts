@@ -30,6 +30,9 @@ export class Change {
   @Column()
   approver: string; // manual reference to the User Profile Entity from the [Profile Service] representing the approver of the change
 
+  @Column({ type: 'varchar', default: 'project-planning' })
+  appScope: string;
+
   @ManyToOne((type) => Project, (project) => project.changes)
   project: Project;
 

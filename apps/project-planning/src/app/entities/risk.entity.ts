@@ -39,6 +39,9 @@ export class Risk {
   })
   resolution: RiskResolution;
 
+  @Column({ type: 'varchar', default: 'project-planning' })
+  appScope: string;
+
   @Column()
   createdBy: string;
 

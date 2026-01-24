@@ -15,6 +15,9 @@ export class Post {
   @Column()
   authorId: string;
 
+  @Column({ type: 'varchar', default: 'blogging' })
+  appScope: string;
+
   @Column({ default: true })
   isDraft: boolean;
 

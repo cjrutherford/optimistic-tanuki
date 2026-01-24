@@ -28,6 +28,9 @@ export class Comment {
   @Column()
   profileId: string;
 
+  @Column({ type: 'varchar', default: 'social' })
+  appScope: string;
+
   @ManyToOne(() => Post, (post) => post.comments, { onDelete: 'CASCADE' })
   post: Post;
 

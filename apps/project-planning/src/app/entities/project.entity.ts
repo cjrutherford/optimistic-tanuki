@@ -22,6 +22,9 @@ export class Project {
   @Column()
   description: string;
 
+  @Column({ type: 'varchar', default: 'project-planning' })
+  appScope: string;
+
   @Column()
   startDate: Date;
 

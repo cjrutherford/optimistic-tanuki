@@ -35,6 +35,9 @@ export class Post {
   @Column()
   userId: string;
 
+  @Column({ type: 'varchar', default: 'social' })
+  appScope: string;
+
   @OneToMany(() => Vote, (vote) => vote.post)
   votes: Vote[];
 

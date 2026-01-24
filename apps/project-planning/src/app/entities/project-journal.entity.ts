@@ -10,6 +10,9 @@ export class ProjectJournal {
   @Column()
   profileId: string; //manual connection to the profile entity that wrote the journal entry
 
+  @Column({ type: 'varchar', default: 'project-planning' })
+  appScope: string;
+
   @ManyToOne(() => Project, (project) => project.journalEntries, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',

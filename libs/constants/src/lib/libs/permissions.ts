@@ -49,6 +49,7 @@ export const ALL_APP_SCOPES = [
   'owner-console',
   'store',
   'store-client',
+  'forum',
 ] as const;
 
 export type AppScopeName = (typeof ALL_APP_SCOPES)[number];

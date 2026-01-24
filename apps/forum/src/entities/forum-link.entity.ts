@@ -20,6 +20,9 @@ export class ForumLink {
   @Column({ nullable: true })
   description?: string;
 
+  @Column({ type: 'varchar', default: 'forum' })
+  appScope: string;
+
   @ManyToMany(() => ForumPost, (post) => post.links)
   posts: ForumPost[];
 

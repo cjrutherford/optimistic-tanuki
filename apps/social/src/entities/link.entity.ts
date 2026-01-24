@@ -17,6 +17,9 @@ export class Link {
   @Column()
   url: string;
 
+  @Column({ type: 'varchar', default: 'social' })
+  appScope: string;
+
   @ManyToMany(() => Post, (post) => post.links)
   posts: Post[];
 }

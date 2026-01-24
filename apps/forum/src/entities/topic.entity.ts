@@ -23,6 +23,9 @@ export class Topic {
   @Column()
   profileId: string;
 
+  @Column({ type: 'varchar', default: 'forum' })
+  appScope: string;
+
   @OneToMany(() => Thread, (thread) => thread.topic)
   threads: Thread[];
 
