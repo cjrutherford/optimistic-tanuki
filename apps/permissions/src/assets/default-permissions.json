@@ -1023,6 +1023,70 @@
       "appScope": "global"
     },
     {
+      "name": "project-planning.task-time-entry.create",
+      "description": "Create task time entry",
+      "resource": "task-time-entry",
+      "action": "create",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.task-time-entry.read",
+      "description": "Read task time entry",
+      "resource": "task-time-entry",
+      "action": "read",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.task-time-entry.update",
+      "description": "Update task time entry",
+      "resource": "task-time-entry",
+      "action": "update",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.task-time-entry.delete",
+      "description": "Delete task time entry",
+      "resource": "task-time-entry",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "project-planning"
+    },
+    {
+      "name": "project-planning.task-time-entry.create",
+      "description": "Create task time entry (global)",
+      "resource": "task-time-entry",
+      "action": "create",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.task-time-entry.read",
+      "description": "Read task time entry (global)",
+      "resource": "task-time-entry",
+      "action": "read",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.task-time-entry.update",
+      "description": "Update task time entry (global)",
+      "resource": "task-time-entry",
+      "action": "update",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
+      "name": "project-planning.task-time-entry.delete",
+      "description": "Delete task time entry (global)",
+      "resource": "task-time-entry",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "global"
+    },
+    {
       "name": "project-planning.change.create",
       "description": "Create change (global)",
       "resource": "change",
@@ -1593,6 +1657,46 @@
     {
       "role": "owner",
       "permission": "project-planning.task-note.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.task-time-entry.create",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.task-time-entry.read",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.task-time-entry.update",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.task-time-entry.delete",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task-time-entry.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task-time-entry.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task-time-entry.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "project-planning.task-time-entry.delete",
       "permissionAppScope": "global"
     },
     {

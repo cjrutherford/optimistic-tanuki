@@ -40,6 +40,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ProjectService } from '../../project/project.service';
 import { RiskService } from '../../risk/risk.service';
 import { TaskService } from '../../task/task.service';
+import { TaskTimeEntryService } from '../../task-time-entry/task-time-entry.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
@@ -75,6 +76,7 @@ export class ProjectsComponent implements OnInit {
     private readonly riskService: RiskService,
     private readonly changeService: ChangeService,
     private readonly journalService: JournalService,
+    private readonly taskTimeEntryService: TaskTimeEntryService,
     private readonly messageService: MessageService,
     private readonly themeService: ThemeService
   ) {}
@@ -624,6 +626,50 @@ export class ProjectsComponent implements OnInit {
           content:
             'Error deleting journal entry: ' +
             (error.message || 'Unknown error'),
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  onStartTimer(taskId: string) {
+    console.log('Start timer for task:', taskId);
+    this.taskTimeEntryService.startTimer(taskId).subscribe({
+      next: (timeEntry) => {
+        console.log('Timer started successfully:', timeEntry);
+        this.messageService.addMessage({
+          content: 'Timer started successfully',
+          type: 'success',
+        });
+        // Reload the project to get updated task with new time entry
+        this.loadProjects();
+      },
+      error: (error) => {
+        console.error('Error starting timer:', error);
+        this.messageService.addMessage({
+          content: 'Error starting timer: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  onStopTimer(timeEntryId: string) {
+    console.log('Stop timer for time entry:', timeEntryId);
+    this.taskTimeEntryService.stopTimer(timeEntryId).subscribe({
+      next: (timeEntry) => {
+        console.log('Timer stopped successfully:', timeEntry);
+        this.messageService.addMessage({
+          content: 'Timer stopped successfully',
+          type: 'success',
+        });
+        // Reload the project to get updated task with stopped time entry
+        this.loadProjects();
+      },
+      error: (error) => {
+        console.error('Error stopping timer:', error);
+        this.messageService.addMessage({
+          content: 'Error stopping timer: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
       },
