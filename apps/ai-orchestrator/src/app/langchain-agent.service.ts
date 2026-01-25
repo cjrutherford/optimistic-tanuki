@@ -17,6 +17,9 @@ import { ToolsService } from './tools.service';
 import { z } from 'zod';
 import { ModelInitializerService } from './model-initializer.service';
 import { WorkflowControlService } from './workflow-control.service';
+import { StreamingEventType } from './streaming-events';
+import { SystemPromptBuilder } from './system-prompt-builder.service';
+import { PersonaTelosDto, ProfileDto } from '@optimistic-tanuki/models';
 
 export interface AgentExecutionResult {
   output: string;
@@ -44,7 +47,8 @@ export class LangChainAgentService {
     private readonly mcpExecutor: MCPToolExecutor,
     private readonly config: ConfigService,
     private readonly modelInitializer: ModelInitializerService,
-    private readonly workflowControl: WorkflowControlService
+    private readonly workflowControl: WorkflowControlService,
+    private readonly systemPromptBuilder: SystemPromptBuilder
   ) {
     this.initializeAgentModel();
   }
@@ -78,6 +82,7 @@ export class LangChainAgentService {
   }
 
   /**
+<<<<<<< HEAD
    * Create agent prompt template
    */
   private createAgentPrompt(): string {
@@ -143,6 +148,8 @@ Example:
 `;
   }
   /**
+=======
+>>>>>>> 96ce766 (update to specific models for fit purpose)
    * Initialize the agent for a given user/conversation.
    * This prepares LangChain tools and compiles the agent graph.
    */
@@ -396,15 +403,16 @@ Example:
 
   /**
    * Execute agent for multi-step reasoning
-   * Phase 1 fix: conversationSummary removed from system prompts
+   * Uses SystemPromptBuilder for consistent TELOS-driven prompts
    */
   async executeAgent(
     input: string,
     chatHistory: BaseMessage[],
-    userId: string,
+    profile: ProfileDto,
+    persona: PersonaTelosDto,
     conversationId?: string,
     onProgress?: (data: {
-      type: 'tool_start' | 'tool_end' | 'log';
+      type: 'tool_start' | 'tool_end' | 'log' | 'thinking';
       content: any;
     }) => Promise<void> | void
   ): Promise<AgentExecutionResult> {
@@ -413,22 +421,40 @@ Example:
     }
 
     try {
-      this.logger.log(`Executing agent for user ${userId}`);
+      this.logger.log(`Executing agent for user ${profile.id}`);
       if (onProgress)
         await onProgress({
           type: 'log',
-          content: `Starting agent execution for user ${userId}`,
+          content: `Starting agent execution for user ${profile.id}`,
         });
 
-      // Build messages including LangGraph-provided context so agent sees the same state.
-      const systemPrompt = this.createAgentPrompt();
+      // Build system prompt using the centralized builder
+      // This ensures we get the "OPERATIONAL PROTOCOLS" and anti-regurgitation instructions
+      const { template, variables } = await this.systemPromptBuilder.buildSystemPrompt(
+        {
+          personaId: persona.id,
+          profileId: profile.id,
+          // We could extract projectId from chatHistory/input if we had that logic here,
+          // but for now we rely on the builder's defaults or basic profile context.
+        },
+        {
+          includeTools: true, // Agent always needs tools
+          includeExamples: false, // Keep it leaner for agent
+          // Agent mode specific flags could be added to builder if needed
+        }
+      );
+
+      const systemMessages = await template.formatMessages(variables);
+      // systemMessages is an array of BaseMessage (usually 1 SystemMessage)
+      const systemContent = systemMessages[0].content;
+
       const convIdMsg = conversationId
         ? [{ role: 'system', content: `Conversation ID: ${conversationId}` }]
         : [];
 
       const inputs = {
         messages: [
-          { role: 'system', content: systemPrompt } as any,
+          { role: 'system', content: systemContent } as any,
           ...convIdMsg,
           ...chatHistory,
           { role: 'user', content: input },
@@ -439,9 +465,10 @@ Example:
       const stream = await this.agent.stream(inputs, {
         streamMode: 'values',
         configurable: {
-          userId,
+          userId: profile.id,
           conversationId,
         },
+        recursionLimit: 15, // Prevent infinite loops
       });
 
       let finalState: any;
@@ -451,16 +478,34 @@ Example:
         output: unknown;
       }> = [];
 
+      this.logger.log('Starting agent stream loop...');
       for await (const chunk of stream) {
         this.logger.debug(
-          'Agent stream chunk:',
-          JSON.stringify(chunk, null, 2)
+          'Agent stream chunk received'
         );
         finalState = chunk;
         const messages = chunk.messages || [];
         const lastMessage = messages[messages.length - 1];
 
         if (lastMessage) {
+          // Check for thinking tokens in content
+          if (lastMessage.content && typeof lastMessage.content === 'string') {
+            const { thinking } = this.workflowControl.extractThinkingTokens(lastMessage.content);
+            if (thinking.length > 0 && onProgress) {
+              for (const thinkingText of thinking) {
+                // We might emit duplicates if the stream yields partial updates, 
+                // but 'values' mode usually yields per-node. 
+                // A simple deduplication or just emitting is fine for now as the UI handles it.
+                // For a more robust solution, we'd track emitted tokens.
+                // Assuming per-node yield, we typically get the full message once.
+                await onProgress({
+                  type: StreamingEventType.THINKING as any, // Cast to avoid type issues if onProgress signature isn't updated in this file yet
+                  content: { text: thinkingText, raw: lastMessage.content },
+                });
+              }
+            }
+          }
+
           // Check for tool calls
           if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
             for (const toolCall of lastMessage.tool_calls) {
@@ -664,6 +709,84 @@ Example:
       );
 >>>>>>> 55adcd5 (Add model configuration and workflow control services)
 
+      // FALLBACK: If no native tool calls, check for manual JSON tool call in the text
+      // This supports models that output JSON text instead of native tool calls (e.g. DeepSeek via prompt instructions)
+      if (allToolCalls.length === 0) {
+        const manualToolCall = this.parseJsonToolCall(cleanedOutput);
+        if (manualToolCall) {
+          this.logger.log(`Detected manual JSON tool call: ${manualToolCall.name}`);
+          
+          if (onProgress) {
+            await onProgress({
+              type: 'tool_start',
+              content: { tool: manualToolCall.name, input: manualToolCall.arguments },
+            });
+          }
+
+          try {
+            // Convert to OpenAI format for executor
+            const openAIToolCall = {
+              id: `manual_${Date.now()}`,
+              type: 'function' as const,
+              function: {
+                name: manualToolCall.name,
+                arguments: JSON.stringify(manualToolCall.arguments),
+              },
+            };
+
+            const context = {
+              userId: profile.id,
+              profileId: profile.id,
+              conversationId,
+              timestamp: new Date(),
+            };
+
+            const result = await this.mcpExecutor.executeToolCall(
+              openAIToolCall,
+              context
+            );
+
+            // Add to tool calls list
+            allToolCalls.push({
+              tool: manualToolCall.name,
+              input: manualToolCall.arguments,
+              output: result.result || result,
+            });
+
+            if (onProgress) {
+              await onProgress({
+                type: 'tool_end',
+                content: {
+                  tool: manualToolCall.name,
+                  output: result.result || result,
+                },
+              });
+            }
+
+            // Update output to reflect the action taken
+            // We could optionally feed this back to the model, but for now just returning the result 
+            // mimics the success path.
+            return {
+              output: `I've executed the ${manualToolCall.name} tool. Result: ${JSON.stringify(result.result)}`,
+              intermediateSteps: messages.map((msg: any) => ({
+                action: msg.tool_calls?.[0]?.name || 'response',
+                observation: msg.content || '',
+              })),
+              toolCalls: allToolCalls,
+            };
+
+          } catch (err) {
+            this.logger.error(`Manual tool execution failed: ${err.message}`);
+             if (onProgress) {
+              await onProgress({
+                type: 'log',
+                content: `Manual tool execution failed: ${err.message}`,
+              });
+            }
+          }
+        }
+      }
+
       return {
         output: cleanedOutput,
         intermediateSteps: messages.map((msg: any) => ({
@@ -680,6 +803,31 @@ Example:
           content: `Agent execution failed: ${error.message}`,
         });
       throw error;
+    }
+  }
+
+  /**
+   * Parse JSON tool call from text
+   * Looks for { "name": "...", "arguments": { ... } } structure
+   */
+  private parseJsonToolCall(text: string): { name: string; arguments: any } | null {
+    try {
+      // Find JSON object
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return null;
+
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      // Check if it has the expected structure
+      if (parsed.name && (parsed.arguments || parsed.parameters)) {
+        return {
+          name: parsed.name,
+          arguments: parsed.arguments || parsed.parameters || {},
+        };
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 

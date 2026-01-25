@@ -34,8 +34,12 @@ export class ModelInitializerService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    this.logger.log('Initializing AI models...');
-    await this.initializeModels();
+    this.logger.log('Initializing AI models (background)...');
+    // Don't await this, let it run in background to avoid blocking app startup
+    // especially if Ollama is unreachable or slow
+    this.initializeModels().catch(err => {
+      this.logger.error('Failed to initialize models in background', err);
+    });
   }
 
   /**

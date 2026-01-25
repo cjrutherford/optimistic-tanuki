@@ -290,12 +290,13 @@ Examples:
       };
     }
 
-    // Default to conversational
+    // Default to tool calling instead of conversational to ensure capabilities are available
+    // This fixes the issue where vague requests that might need tools were being treated as purely conversational
     return {
-      type: WorkflowType.CONVERSATIONAL,
+      type: WorkflowType.TOOL_CALLING,
       confidence: 0.6,
-      requiresToolCalling: false,
-      requiresConversation: true,
+      requiresToolCalling: true,
+      requiresConversation: false,
     };
   }
 
@@ -309,8 +310,8 @@ Examples:
   } {
     const thinking: string[] = [];
 
-    // Extract <think> blocks
-    const thinkMatches = response.match(/<think>([\s\S]*?)<\/think>/gi);
+    // Extract <think> blocks (including unclosed or malformed)
+    const thinkMatches = response.match(/<think>([\s\S]*?)(<\/think>|$)/gi);
     if (thinkMatches) {
       thinkMatches.forEach((match) => {
         const content = match.replace(/<\/?think>/gi, '').trim();
@@ -319,7 +320,7 @@ Examples:
     }
 
     // Extract [THINKING] blocks
-    const thinkingMatches = response.match(/\[THINKING\]([\s\S]*?)\[\/THINKING\]/gi);
+    const thinkingMatches = response.match(/\[THINKING\]([\s\S]*?)(\[\/THINKING\]|$)/gi);
     if (thinkingMatches) {
       thinkingMatches.forEach((match) => {
         const content = match.replace(/\[\/?(THINKING)\]/gi, '').trim();
@@ -328,7 +329,7 @@ Examples:
     }
 
     // Extract **Thinking:** blocks
-    const thinkingHeaderMatches = response.match(/\*\*Thinking:?\*\*([\s\S]*?)\n\n/gi);
+    const thinkingHeaderMatches = response.match(/\*\*Thinking:?\*\*([\s\S]*?)(\n\n|$)/gi);
     if (thinkingHeaderMatches) {
       thinkingHeaderMatches.forEach((match) => {
         const content = match.replace(/\*\*Thinking:?\*\*/gi, '').trim();
@@ -347,8 +348,8 @@ Examples:
    * DeepSeek and similar models often output thinking tokens in <think> tags
    */
   filterThinkingTokens(response: string): string {
-    // Combined regex pattern for all thinking token types
-    const thinkingPattern = /<think>[\s\S]*?<\/think>|\[THINKING\][\s\S]*?\[\/THINKING\]|\*\*Thinking:?\*\*[\s\S]*?\n\n/gi;
+    // Combined regex pattern for all thinking token types, handling potentially unclosed tags at end of string
+    const thinkingPattern = /<think>[\s\S]*?(<\/think>|$)|\[THINKING\][\s\S]*?(\[\/THINKING\]|$)|\*\*Thinking:?\*\*[\s\S]*?(\n\n|$)/gi;
     
     let filtered = response.replace(thinkingPattern, '');
 

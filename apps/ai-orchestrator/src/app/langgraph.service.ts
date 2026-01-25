@@ -357,7 +357,8 @@ export class LangGraphService {
         const agentResult = await this.agent.executeAgent(
           userInput,
           messages.slice(0, -1), // Chat history without current message
-          profileId,
+          profile,
+          persona,
           conversationId,
           onProgress
         );
@@ -378,7 +379,8 @@ export class LangGraphService {
           profile,
           result.chatHistory.slice(0, -1), // Full chat history except last message
           this.normalizeContent(messages[messages.length - 1]?.content),
-          conversationId
+          conversationId,
+          onProgress
         );
 
         llmResponse = conversationResult.response;

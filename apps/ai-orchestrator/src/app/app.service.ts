@@ -19,6 +19,7 @@ import { LangChainAgentService } from './langchain-agent.service';
 import { ContextStorageService } from './context-storage.service';
 import { SystemPromptBuilder } from './system-prompt-builder.service';
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
+import { StreamingEventType } from './streaming-events';
 
 @Injectable()
 export class AppService {
@@ -305,7 +306,25 @@ export class AppService {
             async (progress) => {
               this.l.debug('Received progress update:', progress);
               try {
-                if (progress.type === 'tool_start') {
+                if (progress.type === StreamingEventType.THINKING) {
+                  const thinkingMessage: Partial<ChatMessage> = {
+                    conversationId: conversation.id,
+                    senderId: persona.id,
+                    senderName: persona.name,
+                    recipientId: [profile.id],
+                    recipientName: [profile.profileName],
+                    content: `💭 Thinking: ${progress.content.text}`,
+                    timestamp: new Date(),
+                    type: 'system',
+                  };
+                  await firstValueFrom(
+                    this.chatCollectorService.send(
+                      { cmd: ChatCommands.POST_MESSAGE },
+                      thinkingMessage
+                    )
+                  );
+                  responses.push(thinkingMessage);
+                } else if (progress.type === StreamingEventType.TOOL_START) {
                   const toolCallMessage: Partial<ChatMessage> = {
                     conversationId: conversation.id,
                     senderId: persona.id,
@@ -323,7 +342,7 @@ export class AppService {
                     )
                   );
                   responses.push(toolCallMessage);
-                } else if (progress.type === 'tool_end') {
+                } else if (progress.type === StreamingEventType.TOOL_END) {
                   const toolResultMessage: Partial<ChatMessage> = {
                     conversationId: conversation.id,
                     senderId: persona.id,
