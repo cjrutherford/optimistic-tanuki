@@ -667,7 +667,6 @@ export class ProjectsComponent implements OnInit {
         // Fetch the updated task to get all time entries
         this.taskService.getTaskById(taskId).subscribe({
           next: (updatedTask) => {
-            console.log('Fetched updated task:', updatedTask);
             // Update the task in the current project without reloading everything
             this.selectedProject.update((project) => {
               if (!project) return project;
@@ -705,18 +704,18 @@ export class ProjectsComponent implements OnInit {
           content: 'Timer stopped successfully',
           type: 'success',
         });
-        // Fetch the updated task to get all time entries
-        if (timeEntry.task?.id) {
-          this.taskService.getTaskById(timeEntry.task.id).subscribe({
+        // Get the task ID from the time entry (use taskId if task relation not populated)
+        const taskIdToUpdate = timeEntry.task?.id || timeEntry.taskId;
+        if (taskIdToUpdate) {
+          this.taskService.getTaskById(taskIdToUpdate).subscribe({
             next: (updatedTask) => {
-              console.log('Fetched updated task after stopping timer:', updatedTask);
               // Update the task in the current project without reloading everything
               this.selectedProject.update((project) => {
                 if (!project) return project;
                 return {
                   ...project,
                   tasks: project.tasks.map((t) =>
-                    t.id === timeEntry.task?.id ? updatedTask : t
+                    t.id === taskIdToUpdate ? updatedTask : t
                   ),
                 };
               });

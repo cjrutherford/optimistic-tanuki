@@ -53,6 +53,11 @@ export class TaskTimeEntryService {
     return this.queryTaskTimeEntries({ taskId });
   }
 
+  /**
+   * Start a timer for a task
+   * Note: startTime is not provided - the backend automatically sets it to the current time
+   * This ensures consistency and prevents client-side time manipulation
+   */
   startTimer(taskId: string) {
     const currentProfile = this.profileService.getCurrentUserProfile();
     if (!currentProfile) {
