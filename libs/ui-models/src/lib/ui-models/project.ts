@@ -138,6 +138,7 @@ export interface QueryTaskTag {
 export interface TaskTimeEntry {
   id: string; // uuid
   taskId: string;
+  task?: { id: string }; // Populated when loaded with relations
   startTime: Date;
   endTime?: Date;
   elapsedSeconds: number;

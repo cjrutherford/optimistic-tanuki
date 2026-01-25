@@ -60,7 +60,6 @@ export class TaskTimeEntryService {
     }
     return this.createTaskTimeEntry({
       taskId,
-      startTime: new Date(),
       createdBy: currentProfile.id,
     });
   }

@@ -175,6 +175,29 @@ export class ProjectsComponent implements OnInit {
     });
   }
 
+  private loadProject(projectId: string) {
+    if (!projectId) return;
+    this.projectService.getProjectById(projectId).subscribe({
+      next: (project) => {
+        console.log('Project reloaded:', project);
+        // Update the selected project
+        this.selectedProject.set(project);
+        // Also update in the projects list
+        this.projects.update((projects) =>
+          projects.map((p) => (p.id === projectId ? project : p))
+        );
+      },
+      error: (error) => {
+        console.error('Error loading project:', error);
+        this.messageService.addMessage({
+          content:
+            'Error loading project: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
+      },
+    });
+  }
+
   onProjectSelected(projectId: string) {
     console.log('Selected project ID:', projectId);
     const project = this.projects().find((p) => p.id === projectId);
@@ -641,8 +664,27 @@ export class ProjectsComponent implements OnInit {
           content: 'Timer started successfully',
           type: 'success',
         });
-        // Reload the project to get updated task with new time entry
-        this.loadProjects();
+        // Fetch the updated task to get all time entries
+        this.taskService.getTaskById(taskId).subscribe({
+          next: (updatedTask) => {
+            console.log('Fetched updated task:', updatedTask);
+            // Update the task in the current project without reloading everything
+            this.selectedProject.update((project) => {
+              if (!project) return project;
+              return {
+                ...project,
+                tasks: project.tasks.map((t) =>
+                  t.id === taskId ? updatedTask : t
+                ),
+              };
+            });
+          },
+          error: (error) => {
+            console.error('Error fetching updated task:', error);
+            // Fallback to reloading the project
+            this.loadProject(this.selectedProject()?.id || '');
+          },
+        });
       },
       error: (error) => {
         console.error('Error starting timer:', error);
@@ -663,8 +705,29 @@ export class ProjectsComponent implements OnInit {
           content: 'Timer stopped successfully',
           type: 'success',
         });
-        // Reload the project to get updated task with stopped time entry
-        this.loadProjects();
+        // Fetch the updated task to get all time entries
+        if (timeEntry.task?.id) {
+          this.taskService.getTaskById(timeEntry.task.id).subscribe({
+            next: (updatedTask) => {
+              console.log('Fetched updated task after stopping timer:', updatedTask);
+              // Update the task in the current project without reloading everything
+              this.selectedProject.update((project) => {
+                if (!project) return project;
+                return {
+                  ...project,
+                  tasks: project.tasks.map((t) =>
+                    t.id === timeEntry.task?.id ? updatedTask : t
+                  ),
+                };
+              });
+            },
+            error: (error) => {
+              console.error('Error fetching updated task:', error);
+              // Fallback to reloading the project
+              this.loadProject(this.selectedProject()?.id || '');
+            },
+          });
+        }
       },
       error: (error) => {
         console.error('Error stopping timer:', error);

@@ -27,6 +27,29 @@ export class TaskTimeEntryService {
       throw new Error('Task not found');
     }
 
+    // Check for active time entries and stop them (only one active timer per task)
+    const activeEntries = await this.taskTimeEntryRepository.find({
+      where: {
+        task: { id: createDto.taskId },
+        endTime: IsNull(),
+        deletedAt: IsNull(),
+      },
+    });
+
+    // Stop all active timers for this task
+    for (const activeEntry of activeEntries) {
+      const endTime = new Date();
+      const elapsedSeconds = Math.floor(
+        (endTime.getTime() - activeEntry.startTime.getTime()) / 1000
+      );
+      await this.taskTimeEntryRepository.update(activeEntry.id, {
+        endTime,
+        elapsedSeconds,
+        updatedBy: createDto.createdBy,
+        updatedAt: new Date(),
+      });
+    }
+
     const timeEntry = this.taskTimeEntryRepository.create({
       task,
       description: createDto.description,
