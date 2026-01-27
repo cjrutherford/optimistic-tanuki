@@ -8,10 +8,16 @@ export class AddPostDraftFields1764861381331 implements MigrationInterface {
       `ALTER TABLE "post" ADD "isDraft" boolean NOT NULL DEFAULT true`
     );
     await queryRunner.query(`ALTER TABLE "post" ADD "publishedAt" TIMESTAMP`);
+    await queryRunner.query(
+      `ALTER TABLE "post" ADD COLUMN "appScope" varchar NOT NULL DEFAULT 'blogging'`
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "post" DROP COLUMN "publishedAt"`);
     await queryRunner.query(`ALTER TABLE "post" DROP COLUMN "isDraft"`);
+    await queryRunner.query(
+      `ALTER TABLE "post" DROP COLUMN "appScope"`
+    );
   }
 }

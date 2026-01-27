@@ -4,7 +4,7 @@
     <span *ngIf="thread.isPinned" class="pinned-badge">📌</span>
     <span *ngIf="thread.isLocked" class="locked-badge">🔒</span>
   </div>
-  <div class="thread-content">{{ thread.content }}</div>
+  <div class="thread-content">{{ thread.description }}</div>
   <div class="thread-meta">
     <span>👁️ {{ thread.viewCount }} views</span>
     <span>Created: {{ thread.createdAt | date }}</span>

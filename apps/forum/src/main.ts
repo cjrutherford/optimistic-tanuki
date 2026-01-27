@@ -6,15 +6,25 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
+import { ConfigService } from '@nestjs/config';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const globalPrefix = 'api';
-  app.setGlobalPrefix(globalPrefix);
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
+  const configApp = await NestFactory.createApplicationContext(AppModule);
+  const configService = configApp.get(ConfigService);
+  const port = configService.get<number>('port') || 3015;
+
+  const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
+    transport: Transport.TCP,
+    options: {
+      host: '0.0.0.0',
+      port,
+    },
+  });
+
+  await app.listen();
   Logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
+    `🚀 Forum microservice is listening on: tcp://0.0.0.0:${port}`
   );
 }
 

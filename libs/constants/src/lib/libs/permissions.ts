@@ -1,9 +1,11 @@
+
 export const PermissionCommands = {
   Create: 'Create:Permission',
   Update: 'Update:Permission',
   Delete: 'Delete:Permission',
   Get: 'Get:Permission',
   GetAll: 'GetAll:Permission',
+  Search: 'Search:Permission',
 };
 
 export const RoleCommands = {

@@ -1,7 +1,7 @@
 export interface ThreadDto {
   id: string;
   title: string;
-  content: string;
+  description: string;
   userId: string;
   profileId: string;
   topicId: string;
@@ -15,7 +15,9 @@ export interface ThreadDto {
 
 export interface CreateThreadDto {
   title: string;
-  content: string;
+  description: string;
+  userId: string;
   profileId: string;
   topicId: string;
+  visibility?: 'public' | 'private';
 }

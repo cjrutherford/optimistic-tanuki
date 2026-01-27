@@ -1,6 +1,6 @@
 export interface TopicDto {
   id: string;
-  title: string;
+  name: string;
   description: string;
   userId: string;
   profileId: string;
@@ -12,8 +12,9 @@ export interface TopicDto {
 }
 
 export interface CreateTopicDto {
-  title: string;
+  name: string;
   description: string;
+  userId: string;
   profileId: string;
   visibility?: 'public' | 'private';
 }

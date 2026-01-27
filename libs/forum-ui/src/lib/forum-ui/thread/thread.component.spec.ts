@@ -10,7 +10,7 @@ describe('ThreadComponent', () => {
   const mockThread: ThreadDto = {
     id: '1',
     title: 'Test Thread',
-    content: 'Test Content',
+    description: 'Test Content',
     userId: 'user1',
     profileId: 'profile1',
     topicId: 'topic1',

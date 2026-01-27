@@ -1,7 +1,7 @@
 listenPort: 3015
 database:
-  host: localhost
+  host: db
   port: 5432
   username: postgres
   password: postgres
-  database: forum
+  database: ot_forum

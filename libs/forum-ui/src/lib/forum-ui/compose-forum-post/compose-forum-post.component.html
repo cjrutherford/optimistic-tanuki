@@ -1,0 +1,124 @@
+<otui-card class="forum-compose-card">
+  <form (ngSubmit)="onSubmit()" class="forum-compose-form">
+    <h3>Create Forum Post</h3>
+    
+    <!-- Topic Selection -->
+    <div class="form-group">
+      <label for="topic">Topic</label>
+      <lib-select
+        id="topic"
+        [ngModel]="selectedTopicId"
+        (ngModelChange)="onTopicChange($event)"
+        [ngModelOptions]="{ standalone: true }"
+        placeholder="Select or create a topic"
+      >
+        <option value="">Select Topic</option>
+        <option *ngFor="let topic of availableTopics" [value]="topic.id">
+          {{ topic.name }}
+        </option>
+        <option value="new">+ Create New Topic</option>
+      </lib-select>
+      
+      @if (showNewTopicInput) {
+      <lib-text-input
+        [(ngModel)]="newTopicName"
+        [ngModelOptions]="{ standalone: true }"
+        placeholder="Enter new topic name"
+        class="new-item-input"
+      ></lib-text-input>
+      }
+    </div>
+
+    <!-- Thread Selection -->
+    <div class="form-group">
+      <label for="thread">Thread</label>
+      <lib-select
+        id="thread"
+        [ngModel]="selectedThreadId"
+        (ngModelChange)="onThreadChange($event)"
+        [ngModelOptions]="{ standalone: true }"
+        placeholder="Select or create a thread"
+        [disabled]="!selectedTopicId && !showNewTopicInput"
+      >
+        <option value="">Select Thread</option>
+        <option *ngFor="let thread of availableThreads" [value]="thread.id">
+          {{ thread.title }}
+        </option>
+        <option value="new">+ Create New Thread</option>
+      </lib-select>
+      
+      @if (showNewThreadInput) {
+      <lib-text-input
+        [(ngModel)]="newThreadTitle"
+        [ngModelOptions]="{ standalone: true }"
+        placeholder="Enter thread title"
+        class="new-item-input"
+      ></lib-text-input>
+      }
+    </div>
+
+    <!-- Tags -->
+    <div class="form-group">
+      <label for="tags">Tags</label>
+      <div class="tag-input-container">
+        <lib-text-input
+          [(ngModel)]="newTag"
+          [ngModelOptions]="{ standalone: true }"
+          placeholder="Add tag and press Enter"
+          (keyup.enter)="addTag()"
+        ></lib-text-input>
+        <otui-button type="button" variant="secondary" (action)="addTag()">
+          Add Tag
+        </otui-button>
+      </div>
+      
+      @if (tags.length > 0) {
+      <div class="tags-display">
+        @for (tag of tags; track tag; let i = $index) {
+        <span class="tag-chip">
+          {{ tag }}
+          <button type="button" (click)="removeTag(i)" class="tag-remove">×</button>
+        </span>
+        }
+      </div>
+      }
+    </div>
+
+    <!-- Content Editor -->
+    <div class="form-group editor-group">
+      <label for="content">Content</label>
+      @if (editor) {
+      <lib-rich-text-toolbar
+        [editor]="editor"
+        (componentsClicked)="onToolbarComponentsClick()"
+        (imageUploadClicked)="onToolbarImageUploadClick()"
+      ></lib-rich-text-toolbar>
+      }
+      
+      <input
+        type="file"
+        id="forumImageInput"
+        hidden
+        (change)="onFileSelected($event)"
+        accept="image/*"
+      />
+      
+      @if (editor) {
+      <div class="editor-container">
+        <tiptap-editor
+          [editor]="editor"
+          [(ngModel)]="content"
+          [ngModelOptions]="{ standalone: true }"
+          class="tiptap-editor-styles forum-editor"
+        ></tiptap-editor>
+      </div>
+      }
+    </div>
+
+    <div class="form-actions">
+      <otui-button type="submit" variant="primary" [disabled]="!content.trim()">
+        Post to Forum
+      </otui-button>
+    </div>
+  </form>
+</otui-card>

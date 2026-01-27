@@ -1,6 +1,6 @@
 <otui-card>
   <div class="topic-header" (click)="onTopicClick()">
-    <h3>{{ topic.title }}</h3>
+    <h3>{{ topic.name }}</h3>
     <span *ngIf="topic.isPinned" class="pinned-badge">📌 Pinned</span>
     <span *ngIf="topic.isLocked" class="locked-badge">🔒 Locked</span>
   </div>

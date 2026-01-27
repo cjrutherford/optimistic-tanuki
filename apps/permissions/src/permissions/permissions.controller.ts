@@ -9,7 +9,7 @@ import {
 
 @Controller('permissions')
 export class PermissionsController {
-  constructor(private readonly permissionsService: PermissionsService) {}
+  constructor(private readonly permissionsService: PermissionsService) { }
 
   @MessagePattern({ cmd: PermissionCommands.Create })
   async createPermission(@Payload() createPermissionDto: CreatePermissionDto) {
@@ -34,5 +34,10 @@ export class PermissionsController {
   @MessagePattern({ cmd: PermissionCommands.Delete })
   async deletePermission(@Payload() id: string) {
     return await this.permissionsService.deletePermission(id);
+  }
+
+  @MessagePattern({ cmd: PermissionCommands.Search })
+  async searchPermissions(@Payload('query') query: string, @Payload('profileId') profileId: string) {
+    return await this.permissionsService.searchPermissions(query, profileId);
   }
 }

@@ -144,6 +144,8 @@ services:
         condition: service_started
       project-planning:
         condition: service_started
+      forum:
+        condition: service_started
 
   profile:
     container_name: ot_profile
@@ -172,6 +174,18 @@ services:
       db-setup: # Ensures db-setup is completed before starting social
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
+  forum:
+    container_name: ot_forum
+    build:
+      context: .
+      dockerfile: ./apps/forum/Dockerfile
+    ports:
+      - 3015:3015
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
 
   # tasks:
   #   container_name: ot_tasks

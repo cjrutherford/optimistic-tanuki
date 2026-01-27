@@ -11,6 +11,7 @@ export interface ForumPostDto {
 
 export interface CreateForumPostDto {
   content: string;
+  userId: string;
   profileId: string;
   threadId: string;
 }

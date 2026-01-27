@@ -149,6 +149,11 @@ export class AppComponent implements OnInit {
           isActive: currentUrl === '/',
         },
         {
+          label: 'Forum',
+          action: () => this.navigateTo('/forum'),
+          isActive: currentUrl.startsWith('/forum'),
+        },
+        {
           label: 'My Profile',
           action: () => this.navigateTo('/profile'),
           isActive: currentUrl === '/profile',

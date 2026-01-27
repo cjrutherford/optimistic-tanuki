@@ -2084,17 +2084,7 @@
     },
     {
       "role": "forum_user",
-      "permission": "forum.topic.create",
-      "permissionAppScope": "forum"
-    },
-    {
-      "role": "forum_user",
       "permission": "forum.topic.read",
-      "permissionAppScope": "forum"
-    },
-    {
-      "role": "forum_user",
-      "permission": "forum.topic.update",
       "permissionAppScope": "forum"
     },
     {
@@ -2190,11 +2180,6 @@
     {
       "role": "forum_moderator",
       "permission": "forum.post.delete",
-      "permissionAppScope": "forum"
-    },
-    {
-      "role": "client_interface_user",
-      "permission": "forum.topic.create",
       "permissionAppScope": "forum"
     },
     {

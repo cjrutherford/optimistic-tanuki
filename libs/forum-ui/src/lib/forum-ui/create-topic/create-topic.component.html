@@ -1,0 +1,43 @@
+<otui-card>
+  <form (ngSubmit)="onSubmit()">
+    <h3>Create New Topic</h3>
+
+    <div class="form-group">
+      <label for="name">Name</label>
+      <lib-text-input
+        id="name"
+        [(ngModel)]="name"
+        name="name"
+        placeholder="Topic Name"
+        required
+      ></lib-text-input>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <lib-text-input
+        id="description"
+        [(ngModel)]="description"
+        name="description"
+        placeholder="Description"
+      ></lib-text-input>
+    </div>
+
+    <div class="form-group">
+      <label for="visibility">Visibility</label>
+      <lib-select
+        id="visibility"
+        [(ngModel)]="visibility"
+        name="visibility"
+      >
+        <option value="public">Public</option>
+        <option value="private">Private</option>
+      </lib-select>
+    </div>
+
+    <div class="actions">
+      <otui-button type="submit" [disabled]="!name">Create Topic</otui-button>
+      <otui-button type="button" variant="secondary" (click)="onCancel()">Cancel</otui-button>
+    </div>
+  </form>
+</otui-card>

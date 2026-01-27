@@ -36,7 +36,6 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
 
-@UseGuards(AuthGuard, PermissionsGuard)
 @ApiTags('forum')
 @Controller('forum')
 export class ForumController {
@@ -45,9 +44,10 @@ export class ForumController {
   constructor(
     @Inject(ServiceTokens.FORUM_SERVICE)
     private readonly forumClient: ClientProxy
-  ) {}
+  ) { }
 
   // Topic endpoints
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('topic')
   @ApiOperation({ summary: 'Create a new topic' })
   @ApiResponse({
@@ -94,6 +94,7 @@ export class ForumController {
     );
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('topic')
   @ApiOperation({ summary: 'Update a topic by ID' })
   @ApiResponse({
@@ -115,6 +116,7 @@ export class ForumController {
     );
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('topic')
   @ApiOperation({ summary: 'Delete a topic by ID' })
   @ApiResponse({
@@ -130,6 +132,7 @@ export class ForumController {
   }
 
   // Thread endpoints
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('thread')
   @ApiOperation({ summary: 'Create a new thread' })
   @ApiResponse({
@@ -176,6 +179,7 @@ export class ForumController {
     );
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('thread')
   @ApiOperation({ summary: 'Update a thread by ID' })
   @ApiResponse({
@@ -197,6 +201,7 @@ export class ForumController {
     );
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('thread')
   @ApiOperation({ summary: 'Delete a thread by ID' })
   @ApiResponse({
@@ -212,6 +217,7 @@ export class ForumController {
   }
 
   // Forum Post endpoints
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('forum-post')
   @ApiOperation({ summary: 'Create a new forum post' })
   @ApiResponse({
@@ -258,6 +264,7 @@ export class ForumController {
     );
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('forum-post')
   @ApiOperation({ summary: 'Update a post by ID' })
   @ApiResponse({
@@ -279,6 +286,7 @@ export class ForumController {
     );
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('forum-post')
   @ApiOperation({ summary: 'Delete a post by ID' })
   @ApiResponse({
