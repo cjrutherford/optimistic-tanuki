@@ -1,5 +1,5 @@
 
-import { Component, OnInit, signal, inject, Input } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 
@@ -39,13 +39,15 @@ import { CreateThreadComponent } from '../create-thread/create-thread.component'
   styleUrls: ['./forum-shell.component.scss'],
 })
 export class ForumShellComponent implements OnInit {
-  @Input() userValidPermissions: string[] = [];
-  @Input() userLoggedIn = false;
-  @Input() currentUserId = '';
   private readonly forumService = inject(ForumService);
   private readonly profileService = inject(ProfileService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  // Route resolved data
+  userValidPermissions: string[] = [];
+  userLoggedIn = false;
+  currentUserId = '';
 
   // Signals for reactive state
   topics = signal<TopicDto[]>([]);
@@ -69,7 +71,15 @@ export class ForumShellComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.checkAuthState();
+    // Read resolved data from route
+    this.route.data.subscribe(data => {
+      this.userValidPermissions = data['userValidPermissions'] || [];
+      this.userLoggedIn = data['userLoggedIn'] || false;
+      this.currentUserId = data['currentUserId'] || '';
+      
+      this.checkAuthState();
+    });
+
     this.loadUserProfile();
     this.loadTopics();
 
