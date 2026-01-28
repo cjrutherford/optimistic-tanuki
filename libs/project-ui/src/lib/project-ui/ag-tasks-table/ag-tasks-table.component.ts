@@ -225,6 +225,9 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  // Track if we had active timers in the previous check
+  private hadActiveTimers = false;
+
   /**
    * Refresh grid cells that display timer information
    */
@@ -236,11 +239,15 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
       task.timeEntries?.some(entry => !entry.endTime)
     );
     
-    // Only trigger update if there are active timers
-    if (hasActiveTimers) {
+    // Update if there are active timers OR if we just stopped a timer
+    // (transition from active to inactive needs one final refresh)
+    if (hasActiveTimers || this.hadActiveTimers) {
       // Force a signal update to trigger re-render
       this.tasksSignal.set([...tasks]);
     }
+    
+    // Track the current state for next iteration
+    this.hadActiveTimers = hasActiveTimers;
   }
 
   /**
