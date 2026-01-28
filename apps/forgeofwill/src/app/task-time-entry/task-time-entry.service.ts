@@ -14,11 +14,11 @@ import { ProfileService } from '../profile/profile.service';
 })
 export class TaskTimeEntryService {
   private baseUrl = '/api/project-planning/task-time-entries';
-  
+
   constructor(
     private readonly http: HttpClient,
     private readonly profileService: ProfileService
-  ) {}
+  ) { }
 
   createTaskTimeEntry(data: CreateTaskTimeEntry) {
     const currentProfile = this.profileService.getCurrentUserProfile();
