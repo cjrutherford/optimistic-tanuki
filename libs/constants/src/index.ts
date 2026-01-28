@@ -61,3 +61,10 @@ export {
   ResourceCommands,
 } from './lib/libs/appointments';
 
+export {
+  TopicCommands,
+  ThreadCommands,
+  ForumPostCommands,
+  ForumLinkCommands,
+} from './lib/libs/forum';
+

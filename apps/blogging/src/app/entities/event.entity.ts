@@ -24,6 +24,9 @@ export class Event {
   @Column()
   organizerId: string;
 
+  @Column({ type: 'varchar', default: 'blogging' })
+  appScope: string;
+
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 

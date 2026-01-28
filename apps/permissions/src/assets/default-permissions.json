@@ -64,6 +64,11 @@
       "name": "store",
       "description": "Store Application",
       "active": true
+    },
+    {
+      "name": "forum",
+      "description": "Forum discussion platform",
+      "active": true
     }
   ],
   "roles": [
@@ -171,6 +176,21 @@
       "name": "social_user",
       "description": "Social user (follow/post)",
       "appScope": "social"
+    },
+    {
+      "name": "forum_standard_user",
+      "description": "Standard user for forum",
+      "appScope": "forum"
+    },
+    {
+      "name": "forum_user",
+      "description": "Forum user (create topics, threads, posts)",
+      "appScope": "forum"
+    },
+    {
+      "name": "forum_moderator",
+      "description": "Forum moderator (can edit/delete any content)",
+      "appScope": "forum"
     },
     {
       "name": "project_planning_standard_user",
@@ -389,6 +409,102 @@
       "action": "create",
       "targetId": null,
       "appScope": "blogging"
+    },
+    {
+      "name": "forum.topic.create",
+      "description": "Create forum topic",
+      "resource": "topic",
+      "action": "create",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.topic.read",
+      "description": "Read forum topic",
+      "resource": "topic",
+      "action": "read",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.topic.update",
+      "description": "Update forum topic",
+      "resource": "topic",
+      "action": "update",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.topic.delete",
+      "description": "Delete forum topic",
+      "resource": "topic",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.thread.create",
+      "description": "Create forum thread",
+      "resource": "thread",
+      "action": "create",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.thread.read",
+      "description": "Read forum thread",
+      "resource": "thread",
+      "action": "read",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.thread.update",
+      "description": "Update forum thread",
+      "resource": "thread",
+      "action": "update",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.thread.delete",
+      "description": "Delete forum thread",
+      "resource": "thread",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.post.create",
+      "description": "Create forum post",
+      "resource": "post",
+      "action": "create",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.post.read",
+      "description": "Read forum post",
+      "resource": "post",
+      "action": "read",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.post.update",
+      "description": "Update forum post",
+      "resource": "post",
+      "action": "update",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.post.delete",
+      "description": "Delete forum post",
+      "resource": "post",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "forum"
     },
     {
       "name": "project-planning.project.create",
@@ -1950,6 +2066,165 @@
       "role": "owner",
       "permission": "social.post.delete",
       "permissionAppScope": "social"
+    },
+    {
+      "role": "forum_standard_user",
+      "permission": "forum.topic.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_standard_user",
+      "permission": "forum.thread.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_standard_user",
+      "permission": "forum.post.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_user",
+      "permission": "forum.topic.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_user",
+      "permission": "forum.thread.create",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_user",
+      "permission": "forum.thread.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_user",
+      "permission": "forum.thread.update",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_user",
+      "permission": "forum.post.create",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_user",
+      "permission": "forum.post.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_user",
+      "permission": "forum.post.update",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_user",
+      "permission": "forum.post.delete",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.topic.create",
+      "permissionAppScope": "forum"
+    },    {
+      "role": "forum_moderator",
+      "permission": "forum.topic.create",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.topic.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.topic.update",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.topic.delete",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.thread.create",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.thread.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.thread.update",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.thread.delete",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.post.create",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.post.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.post.update",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.post.delete",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "forum.topic.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "forum.thread.create",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "forum.thread.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "forum.post.create",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "client_interface_user",
+      "permission": "forum.post.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "owner",
+      "permission": "forum.topic.delete",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "owner",
+      "permission": "forum.thread.delete",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "owner",
+      "permission": "forum.post.delete",
+      "permissionAppScope": "forum"
     },
     {
       "role": "owner",

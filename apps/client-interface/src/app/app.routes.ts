@@ -1,6 +1,30 @@
-import { Route } from '@angular/router';
+import { ResolveFn, Route } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard'; // Import the AuthGuard
 import { ProfileGuard } from './guards/profile.guard';
+import { inject } from '@angular/core';
+import { UserPermissionsService } from './state/user-permissions.service';
+import { AuthStateService } from './state/auth-state.service';
+
+const forumPermissionResolver: ResolveFn<string[]> = async () => {
+  const permissionsService = inject(UserPermissionsService);
+  const permissions = await permissionsService.searchPermissions('forum.');
+  console.log('Forum permissionsResolver:', permissions);
+  return permissions;
+};
+
+const forumIsLoggedInResolver: ResolveFn<boolean> = () => {
+  const authState = inject(AuthStateService);
+  const isLoggedIn = authState.isAuthenticated;
+  console.log('Forum isLoggedInResolver:', isLoggedIn);
+  return isLoggedIn;
+};
+
+const forumUserIdResolver: ResolveFn<string> = () => {
+  const authState = inject(AuthStateService);
+  const profile = authState.getPersistedSelectedProfile();
+  console.log('Forum userIdResolver, profile:', profile);
+  return profile?.id || '';
+};
 
 export const appRoutes: Route[] = [
   {
@@ -34,6 +58,11 @@ export const appRoutes: Route[] = [
         (m) => m.TasksComponent
       ),
     canActivate: [AuthGuard, ProfileGuard], // Protect the tasks route
+  },
+  {
+    path: 'forum',
+    loadChildren: () => import('@optimistic-tanuki/forum-ui').then(m => m.provideForumRoutes(forumPermissionResolver, forumIsLoggedInResolver, forumUserIdResolver)),
+    canActivate: [AuthGuard, ProfileGuard], // Protect the forum route
   },
   {
     path: 'settings',

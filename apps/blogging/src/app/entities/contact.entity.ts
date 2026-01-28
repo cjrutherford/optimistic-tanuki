@@ -18,6 +18,9 @@ export class Contact {
   @Column({ nullable: true, default: null })
   phone?: string;
 
+  @Column({ type: 'varchar', default: 'blogging' })
+  appScope: string;
+
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 

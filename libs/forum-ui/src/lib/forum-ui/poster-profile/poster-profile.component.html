@@ -1,0 +1,37 @@
+<div class="poster-profile">
+    <div class="avatar-container">
+        <img *ngIf="poster.avatarUrl; else placeholder" [src]="poster.avatarUrl" [alt]="poster.displayName">
+        <ng-template #placeholder>
+            <div class="avatar-placeholder">
+                {{ getInitials(poster.displayName) }}
+            </div>
+        </ng-template>
+    </div>
+
+    <div class="profile-info">
+        <div class="name-row">
+            <span class="display-name">{{ poster.displayName }}</span>
+            <span class="username">@{{ poster.username }}</span>
+        </div>
+
+        <div>
+            <span class="role-badge" [ngClass]="poster.role">{{ poster.role }}</span>
+            <span class="joined-date">Joined {{ poster.joinedAt | date:'mediumDate' }}</span>
+        </div>
+    </div>
+
+    <div class="stats-container" *ngIf="stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ stats.postsCount }}</span>
+            <span class="stat-label">Posts</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ stats.topicsCount }}</span>
+            <span class="stat-label">Topics</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ stats.likesReceived }}</span>
+            <span class="stat-label">Likes</span>
+        </div>
+    </div>
+</div>

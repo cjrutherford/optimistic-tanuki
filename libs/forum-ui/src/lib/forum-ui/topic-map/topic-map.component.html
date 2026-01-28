@@ -1,0 +1,16 @@
+<div class="topic-map">
+    <div class="map-container">
+        <div *ngFor="let category of categories" class="category-card">
+            <div class="category-header" (click)="onCategoryClick(category)">
+                {{ category.name }}
+                <span class="count" *ngIf="category.count !== undefined">{{ category.count }}</span>
+            </div>
+            <ul class="subtopics" *ngIf="category.subtopics?.length">
+                <li *ngFor="let sub of category.subtopics" class="subtopic-item" (click)="onSubtopicClick(sub)">
+                    {{ sub.name }}
+                    <span class="count" *ngIf="sub.count !== undefined">{{ sub.count }}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

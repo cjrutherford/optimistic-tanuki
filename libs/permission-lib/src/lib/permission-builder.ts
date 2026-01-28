@@ -57,15 +57,15 @@ export const OWNER_PERMISSION_ACTIONS = [
 ] as const;
 
 const ALL_OWNER_ROLES: { [key: string]: string[] } = {
-  global: ['owner'],
-  'digital-homestead': ['digital_homesteader'],
-  'client-interface': ['client_profile_owner', 'client_asset_manager'],
-  forgeofwill: ['forgeofwill_planner'],
+  global: ['owner', 'forum_moderator'],
+  'digital-homestead': ['digital_homesteader', 'forum_moderator'],
+  'client-interface': ['client_profile_owner', 'client_asset_manager', 'forum_moderator'],
+  forgeofwill: ['forgeofwill_planner', 'forum_moderator'],
   blogging: ['blog_author'],
   assets: ['asset_owner'],
   social: ['social_user'],
-  'christopherrutherford-net': ['christopherrutherford_owner_user'],
-  'owner-console': ['owner_console_owner'],
+  'christopherrutherford-net': ['christopherrutherford_owner_user', 'forum_moderator'],
+  'owner-console': ['owner_console_owner', 'forum_moderator'],
   store: ['store_manager'],
 };
 
@@ -236,6 +236,7 @@ export class RoleInitBuilder {
         return this;
       case 'client-interface':
         this.assignRoleToProfile('client_interface_user');
+        this.assignRoleToProfile('forum_user')
         return this;
       case 'christopherrutherford-net':
         this.assignRoleToProfile('christopherrutherford_standard_user');
@@ -304,4 +305,3 @@ export class RoleInitBuilder {
     return JSON.parse(JSON.stringify(this.opts));
   }
 }
-// ...existing code...

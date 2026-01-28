@@ -32,6 +32,9 @@ export class Attachment {
   @Column({ type: 'enum', enum: AttachmentType, default: AttachmentType.IMAGE })
   type: AttachmentType;
 
+  @Column({ type: 'varchar', default: 'social' })
+  appScope: string;
+
   @ManyToOne(() => Post, (post) => post.attachments, { onDelete: 'CASCADE' })
   post: Post;
 }

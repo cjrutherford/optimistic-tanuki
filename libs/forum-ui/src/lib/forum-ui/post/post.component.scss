@@ -1,0 +1,24 @@
+.post-content {
+  margin-bottom: 0.5rem;
+  color: var(--on-surface);
+}
+
+.edited-badge {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--on-surface-variant);
+}
+
+.post-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  margin: 0.5rem 0;
+}
+
+.post-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

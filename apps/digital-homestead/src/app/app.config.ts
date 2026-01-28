@@ -23,8 +23,24 @@ import { AuthStateService } from './auth-state.service';
 @Injectable()
 class AppScopeInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<unknown>, next: HttpHandler) {
+    // Determine app scope based on API route to align with
+    // permissions configuration (social endpoints use the
+    // "social" app scope, blogging uses "blogging", etc.).
+    let appScope = 'digital-homestead';
+    const url = req.url || '';
+
+    if (url.includes('/api/social')) {
+      appScope = 'social';
+    } else if (url.includes('/api/blog')) {
+      appScope = 'blogging';
+    } else if (url.includes('/api/project')) {
+      appScope = 'project-planning';
+    } else if (url.includes('/api/forum')) {
+      appScope = 'forum';
+    }
+
     const cloned = req.clone({
-      setHeaders: { 'X-ot-appscope': 'digital-homestead' },
+      setHeaders: { 'X-ot-appscope': appScope },
     });
     return next.handle(cloned);
   }

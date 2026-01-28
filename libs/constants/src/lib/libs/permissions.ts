@@ -1,9 +1,11 @@
+
 export const PermissionCommands = {
   Create: 'Create:Permission',
   Update: 'Update:Permission',
   Delete: 'Delete:Permission',
   Get: 'Get:Permission',
   GetAll: 'GetAll:Permission',
+  Search: 'Search:Permission',
 };
 
 export const RoleCommands = {
@@ -49,6 +51,7 @@ export const ALL_APP_SCOPES = [
   'owner-console',
   'store',
   'store-client',
+  'forum',
 ] as const;
 
 export type AppScopeName = (typeof ALL_APP_SCOPES)[number];

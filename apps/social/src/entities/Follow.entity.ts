@@ -12,6 +12,9 @@ export default class FollowEntity {
   @Column()
   followeeId: string;
 
+  @Column({ type: 'varchar', default: 'social' })
+  appScope: string;
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 

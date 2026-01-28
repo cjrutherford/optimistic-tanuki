@@ -17,6 +17,9 @@ export class Blog {
   @Column()
   ownerId: string;
 
+  @Column({ type: 'varchar', default: 'blogging' })
+  appScope: string;
+
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 

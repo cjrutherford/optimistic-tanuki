@@ -1,4 +1,4 @@
-export { PostComponent, PostProfileStub } from './post/post.component';
+export { PostComponent, type PostProfileStub } from './post/post.component';
 export { CommentComponent } from './comment/comment.component';
 export { CommentListComponent } from './comment/comment-list/comment-list.component';
 export { VoteComponent } from './vote/vote.component';

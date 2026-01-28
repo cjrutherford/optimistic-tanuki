@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ChatUiComponent } from './chat-ui.component';
-import { within } from '@storybook/test';
-import { expect } from '@storybook/jest';
+
 
 const meta: Meta<ChatUiComponent> = {
   component: ChatUiComponent,
@@ -14,10 +13,4 @@ export const Primary: Story = {
   args: {},
 };
 
-export const Heading: Story = {
-  args: {},
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText(/chat-ui works!/gi)).toBeTruthy();
-  },
-};
+

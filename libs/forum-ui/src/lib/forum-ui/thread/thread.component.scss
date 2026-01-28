@@ -1,0 +1,34 @@
+.thread-header {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  h4 {
+    margin: 0;
+  }
+}
+
+.thread-content {
+  margin: 0.5rem 0;
+  color: var(--on-surface);
+}
+
+.thread-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+  margin: 0.5rem 0;
+}
+
+.thread-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.pinned-badge,
+.locked-badge {
+  font-size: 1rem;
+}

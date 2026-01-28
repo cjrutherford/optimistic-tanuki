@@ -1,0 +1,14 @@
+<otui-card>
+  <div class="post-content">
+    {{ post.content }}
+    <span *ngIf="post.isEdited" class="edited-badge">(edited)</span>
+  </div>
+  <div class="post-meta">
+    <span>Posted: {{ post.createdAt | date:'short' }}</span>
+    <span *ngIf="post.isEdited">Updated: {{ post.updatedAt | date:'short' }}</span>
+  </div>
+  <div class="post-actions" *ngIf="canEdit || canDelete">
+    <otui-button *ngIf="canEdit" (click)="onEdit()">Edit</otui-button>
+    <otui-button *ngIf="canDelete" (click)="onDelete()">Delete</otui-button>
+  </div>
+</otui-card>

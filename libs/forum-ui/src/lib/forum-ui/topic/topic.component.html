@@ -1,0 +1,16 @@
+<otui-card>
+  <div class="topic-header" (click)="onTopicClick()">
+    <h3>{{ topic.title }}</h3>
+    <span *ngIf="topic.isPinned" class="pinned-badge">📌 Pinned</span>
+    <span *ngIf="topic.isLocked" class="locked-badge">🔒 Locked</span>
+  </div>
+  <p class="topic-description">{{ topic.description }}</p>
+  <div class="topic-meta">
+    <span>Created: {{ topic.createdAt | date }}</span>
+    <span>Visibility: {{ topic.visibility }}</span>
+  </div>
+  <div class="topic-actions" *ngIf="canEdit || canDelete">
+    <otui-button *ngIf="canEdit" (click)="onEdit()">Edit</otui-button>
+    <otui-button *ngIf="canDelete" (click)="onDelete()">Delete</otui-button>
+  </div>
+</otui-card>

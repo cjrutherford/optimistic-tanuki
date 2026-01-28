@@ -1,0 +1,61 @@
+import { Component, computed, EventEmitter, Input, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { TextInputComponent, SelectComponent, TextAreaComponent } from '@optimistic-tanuki/form-ui';
+import { CreateThreadDto, TopicDto } from '../models';
+
+@Component({
+    selector: 'lib-create-thread',
+    standalone: true,
+    imports: [
+        CommonModule,
+        FormsModule,
+        CardComponent,
+        ButtonComponent,
+        TextInputComponent,
+        TextAreaComponent,
+        SelectComponent
+    ],
+    templateUrl: './create-thread.component.html',
+    styleUrls: ['./create-thread.component.scss']
+})
+export class CreateThreadComponent {
+    @Input() topics: TopicDto[] = [];
+    @Output() create = new EventEmitter<CreateThreadDto>();
+    @Output() cancelThread = new EventEmitter<void>();
+
+    title = '';
+    description = '';
+    selectedTopicId = '';
+    content = '';
+    visibility: 'public' | 'private' = 'public';
+    visibilityOptions: { label: string, value: 'public' | 'private' }[] = [
+        { label: 'Public', value: 'public' },
+        { label: 'Private', value: 'private' },
+    ]
+
+    topicOptions = computed(() => {
+        const currentTopicOptions = this.topics.map(t => ({ label: t.title, value: t.id }))
+        return currentTopicOptions;
+    })
+
+    onSubmit() {
+        if (!this.title || !this.selectedTopicId) return;
+
+        const newThread: CreateThreadDto = {
+            title: this.title,
+            description: this.description,
+            topicId: this.selectedTopicId,
+            visibility: this.visibility,
+            content: this.content,
+            userId: '',
+            profileId: ''
+        };
+        this.create.emit(newThread);
+    }
+
+    onCancel() {
+        this.cancelThread.emit();
+    }
+}

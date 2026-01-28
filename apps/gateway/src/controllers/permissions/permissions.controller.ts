@@ -39,7 +39,7 @@ export class PermissionsController {
     private readonly l: Logger,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly client: ClientProxy
-  ) {}
+  ) { }
 
   // App Scope endpoints
   @UseGuards(AuthGuard)
@@ -277,6 +277,21 @@ export class PermissionsController {
           profileId: data.targetId,
           ...data,
         }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Search Permissions based on name. Returns all valid for the logged in user based on "startsWith"' })
+  @Get('permission-search')
+  async searchPermissions(
+    @Query('startsWith') startsWith: string,
+    @User() user: UserDetails
+  ) {
+    return await firstValueFrom(
+      this.client.send(
+        { cmd: PermissionCommands.Search },
+        { query: startsWith, profileId: user.profileId }
       )
     );
   }

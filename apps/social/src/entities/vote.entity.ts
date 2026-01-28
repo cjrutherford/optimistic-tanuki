@@ -18,6 +18,9 @@ export class Vote {
   @Column()
   profileId: string;
 
+  @Column({ type: 'varchar', default: 'social' })
+  appScope: string;
+
   @ManyToOne(() => Post, (post) => post.votes, {
     onDelete: 'CASCADE',
     nullable: true,

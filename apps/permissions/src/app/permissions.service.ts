@@ -1,18 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 import { Permission } from '../permissions/entities/permission.entity';
 import {
   CreatePermissionDto,
   UpdatePermissionDto,
 } from '@optimistic-tanuki/models';
+import { RoleAssignment } from '../role-assignments/entities/role-assignment.entity';
 
 @Injectable()
 export class PermissionsService {
   constructor(
     @InjectRepository(Permission)
-    private permissionsRepository: Repository<Permission>
-  ) {}
+    private permissionsRepository: Repository<Permission>,
+    @InjectRepository(RoleAssignment)
+    private roleAssignmentsRepository: Repository<RoleAssignment>
+  ) { }
 
   async createPermission(
     createPermissionDto: CreatePermissionDto
@@ -42,5 +45,27 @@ export class PermissionsService {
 
   async deletePermission(id: string): Promise<void> {
     await this.permissionsRepository.delete(id);
+  }
+
+  async searchPermissions(query: string, profileId: string): Promise<string[]> {
+    const userRoles = await this.roleAssignmentsRepository.find({
+      where: { profileId },
+      relations: ['role'],
+    });
+
+    const roleIds = userRoles.map((assignment) => assignment.roleId);
+
+    const permissions = await this.permissionsRepository
+      .find({
+        where: {
+          name: Like(`${query}%`),
+          roles: {
+            id: In(roleIds),
+          },
+        },
+        relations: ['roles'],
+      });
+
+    return permissions.map((perm) => perm.name);
   }
 }

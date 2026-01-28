@@ -271,6 +271,31 @@ services:
       postgres:
         condition: service_healthy
 
+  forum:
+    container_name: ot_forum
+    build:
+      context: .
+      dockerfile: ./apps/forum/Dockerfile
+    volumes:
+      - ./dist/apps/forum:/usr/src/app
+      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9245',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9245:9245'
+    environment:
+      - NODE_ENV=development
+    depends_on: # Added
+      postgres:
+        condition: service_healthy
+
   chat-collector:
     container_name: ot_chat_collector
     build:

@@ -27,6 +27,9 @@ export class Task {
   @Column({ type: 'enum', enum: TaskPriority, default: TaskPriority.MEDIUM })
   priority: TaskPriority;
 
+  @Column({ type: 'varchar', default: 'project-planning' })
+  appScope: string;
+
   @Column()
   createdBy: string;
 

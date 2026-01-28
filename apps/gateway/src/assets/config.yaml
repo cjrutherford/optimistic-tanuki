@@ -65,6 +65,11 @@ services:
     transport: TCP
     host: ot_app_configurator
     port: 3014
+  forum:
+    name: forum
+    transport: TCP
+    host: ot_forum
+    port: 3015
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

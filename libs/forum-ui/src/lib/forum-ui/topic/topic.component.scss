@@ -1,0 +1,38 @@
+.topic-header {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.pinned-badge,
+.locked-badge {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  background-color: var(--surface-variant);
+  color: var(--on-surface-variant);
+}
+
+.topic-description {
+  margin: 0.5rem 0;
+  color: var(--on-surface-variant);
+}
+
+.topic-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+  margin: 0.5rem 0;
+}
+
+.topic-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

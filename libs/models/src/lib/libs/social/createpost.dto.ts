@@ -44,4 +44,13 @@ export class CreatePostDto {
   @IsArray()
   @IsUUID('4', { each: true })
   attachmentIds?: string[];
+
+  @ApiProperty({
+    description: 'App scope for the post',
+    required: false,
+    example: 'social',
+  })
+  @IsOptional()
+  @IsString()
+  appScope?: string;
 }
