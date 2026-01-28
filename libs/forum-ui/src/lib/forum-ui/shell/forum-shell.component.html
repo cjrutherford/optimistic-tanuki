@@ -5,7 +5,7 @@
       <otui-button (action)="showTopicModal.set(true)">Create New Topic</otui-button>
     }
     @if(userHasPermission('forum.thread.create')) {
-      <otui-button (action)="showThreadModal.set(true)"></otui-button>
+      <otui-button (action)="showThreadModal.set(true)">Create New Thread</otui-button>
     }
     <div class="breadcrumb">
       @if (currentThread()) {

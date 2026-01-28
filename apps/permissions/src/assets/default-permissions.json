@@ -2126,6 +2126,10 @@
       "role": "forum_moderator",
       "permission": "forum.topic.create",
       "permissionAppScope": "forum"
+    },    {
+      "role": "forum_moderator",
+      "permission": "forum.topic.create",
+      "permissionAppScope": "client-interface"
     },
     {
       "role": "forum_moderator",
