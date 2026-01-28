@@ -1,7 +1,7 @@
 /**
  * LangChain Service for AI Orchestration
  *
- * Replaces custom prompt engineering with LangChain.js
+ * Uses centralized prompt templates and emits thinking tokens
  */
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -12,7 +12,6 @@ import {
   SystemMessage,
   BaseMessage,
 } from '@langchain/core/messages';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import {
@@ -24,30 +23,80 @@ import {
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ToolsService } from './tools.service';
 import { ConfigService } from '@nestjs/config';
+import { ModelInitializerService } from './model-initializer.service';
+import { WorkflowControlService } from './workflow-control.service';
+import { SystemPromptBuilder } from './system-prompt-builder.service';
 import {
-  generateCoreSystemPrompt,
-  generateToolingGuidance,
-} from './utils/prompt-engineering';
+  StreamingEvent,
+  StreamingEventType,
+} from './streaming-events';
 
 @Injectable()
 export class LangChainService {
   private readonly logger = new Logger(LangChainService.name);
-  private llm: ChatOllama;
+  private conversationalLLM: ChatOllama;
+  private toolCallingLLM: ChatOllama;
 
   constructor(
     private readonly toolsService: ToolsService,
     private readonly mcpExecutor: MCPToolExecutor,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly modelInitializer: ModelInitializerService,
+    private readonly workflowControl: WorkflowControlService,
+    private readonly systemPromptBuilder: SystemPromptBuilder
   ) {
+    this.initializeModels();
+  }
+
+  /**
+   * Initialize models based on configuration
+   */
+  private initializeModels(): void {
     const ollama = this.config.get<{ host: string; port: number }>('ollama');
-    this.llm = new ChatOllama({
-      model: 'bjoernb/deepseek-r1-8b',
-      baseUrl:
-        ollama.host && ollama.port
-          ? `http://${ollama.host}:${ollama.port}`
-          : 'http://prompt-proxy:11434',
-      temperature: 0.7,
-    });
+    const baseUrl =
+      ollama?.host && ollama?.port
+        ? `http://${ollama.host}:${ollama.port}`
+        : 'http://prompt-proxy:11434';
+
+    // Initialize conversational model
+    const conversationalConfig =
+      this.modelInitializer.getModelConfig('conversational');
+    if (conversationalConfig) {
+      this.conversationalLLM = new ChatOllama({
+        model: conversationalConfig.name,
+        baseUrl,
+        temperature: conversationalConfig.temperature,
+      });
+      this.logger.log(
+        `Initialized conversational model: ${conversationalConfig.name}`
+      );
+    } else {
+      // Fallback to default
+      this.conversationalLLM = new ChatOllama({
+        model: 'bjoernb/deepseek-r1-8b',
+        baseUrl,
+        temperature: 0.7,
+      });
+      this.logger.warn('Using default conversational model');
+    }
+
+    // Initialize tool calling model
+    const toolCallingConfig =
+      this.modelInitializer.getModelConfig('tool_calling');
+    if (toolCallingConfig) {
+      this.toolCallingLLM = new ChatOllama({
+        model: toolCallingConfig.name,
+        baseUrl,
+        temperature: toolCallingConfig.temperature,
+      });
+      this.logger.log(
+        `Initialized tool calling model: ${toolCallingConfig.name}`
+      );
+    } else {
+      // Fallback to same as conversational
+      this.toolCallingLLM = this.conversationalLLM;
+      this.logger.warn('Using conversational model for tool calling');
+    }
   }
 
   /**
@@ -112,151 +161,6 @@ export class LangChainService {
     }
 
     return '';
-  }
-
-  private createSystemPromptTemplate(): ChatPromptTemplate {
-    return ChatPromptTemplate.fromMessages([
-      [
-        'system',
-        `You are {personaName}, {personaDescription}
-
-# USER CONTEXT
-- User ID: {userId}
-- User Name: {userName}
-
-# CONVERSATION SUMMARY
-{conversationSummary}
-
-{projectContext}
-
-# TOOL DISCOVERY
-You have access to tools through the MCP (Model Context Protocol) system. To discover what tools are available, call the 'list_tools' tool. This will show you all available tools with their exact parameter names and descriptions.
-
-**IMPORTANT**: The available tools may change over time. Always use 'list_tools' when you're uncertain about:
-- What tools are available
-- What parameters a tool requires
-- The exact parameter names to use
-
-# AVAILABLE RESOURCES
-You can access contextual information using MCP resources:
-- project://{{projectId}}/context - Get full project context including tasks, risks, changes, and journal entries
-
-# DATA RELATIONSHIPS & CRITICAL PARAMETER MAPPINGS
-
-## User Identity Parameters
-- **userId** or **createdBy**: ALWAYS use '{userId}' (the current user's profile ID)
-- **profileId**: SAME as userId - use '{userId}'
-- **owner**: SAME as userId - use '{userId}'
-
-## Project Management Entities
-1. **Project**: Container identified by UUID (e.g., "a1b2c3d4-e5f6-...")
-   - To GET project ID: Use list_projects or query_projects FIRST
-   - Parameters: name, description, userId, status, startDate, members
-   - Status values: PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED
-
-2. **Task**: Work item belonging to a Project
-   - REQUIRED: title, createdBy (use '{userId}'), projectId (from list/query)
-   - OPTIONAL: description, status, priority
-   - Status values: TODO, IN_PROGRESS, DONE, ARCHIVED
-   - Priority values: LOW, MEDIUM_LOW, MEDIUM, MEDIUM_HIGH, HIGH
-
-3. **Risk**: Risk assessment belonging to a Project
-   - REQUIRED: projectId, title, likelihood, impact, createdBy
-   - Parameters match risk_mcp service schemas
-
-4. **Change**: Change request belonging to a Project
-   - REQUIRED: projectId, title, description, createdBy
-   - Parameters match change_mcp service schemas
-
-## ID Resolution Workflow (CRITICAL)
-NEVER fabricate or guess IDs. ALWAYS follow this pattern:
-
-1. **Need projectId?**
-   - Step 1: Call list_projects with userId: '{userId}'
-   - Step 2: Extract the 'id' field from returned project
-   - Step 3: Use that exact ID in subsequent calls
-
-2. **Need taskId/riskId/changeId?**
-   - Step 1: Call list_tasks/list_risks/list_changes with projectId
-   - Step 2: Extract the 'id' field from returned items
-   - Step 3: Use that exact ID in subsequent calls
-
-# STRICT OPERATIONAL GUIDELINES
-1. **TOOL DISCOVERY FIRST**: If uncertain about available actions, call 'list_tools' to see what you can do.
-2. **NO ID HALLUCINATION**: You must NEVER invent IDs. If you need an ID (projectId, taskId, etc.), you MUST first query or list the items to find the correct ID. **If you don't have an ID, call a tool to find it.**
-3. **TOOL FIRST APPROACH**: If a user request requires data or action, call the appropriate tool immediately. Do not ask for permission.
-4. **ONE TOOL AT A TIME**: Execute one tool call, wait for the result, then decide the next step.
-5. **JSON ONLY OUTPUT**: When calling a tool, output ONLY the JSON object. No markdown, no explanations.
-6. **USER ID BINDING**: Always use the provided User ID ({userId}) for 'userId', 'createdBy', 'owner', etc.
-7. **EXACT PARAMETER NAMES**: Use the EXACT parameter names from the tool schema. The schemas are provided by 'list_tools' or bound to this conversation. Do NOT guess or assume parameter names.
-8. **CONTEXT-AWARE IDs**: Check conversation summary and project context for previously mentioned IDs before querying.
-
-# TOOL CALLING FORMAT
-When calling a tool, output a single JSON object with this structure:
-{{"name": "tool_name", "arguments": {{"param1": "value1", "param2": "value2"}}}}
-
-Do NOT wrap in markdown code blocks. Do NOT add explanations before or after.
-
-# EXAMPLE WORKFLOWS WITH PROJECT MANAGEMENT TOOLS
-
-## Example 1: Create Project (Simple)
-**User**: "Create a new project called 'Website Redesign' for planning our site update"
-**Action**: {{"name": "create_project", "arguments": {{"name": "Website Redesign", "description": "Planning our site update", "userId": "{userId}", "status": "PLANNING"}}}}
-**Response**: "I've created the 'Website Redesign' project. It's now in PLANNING status."
-
-## Example 2: Create Task (Requires Project ID Resolution)
-**User**: "Add a task 'Update homepage' to the Website Redesign project"
-**Step 1 - Get projectId**: {{"name": "query_projects", "arguments": {{"name": "Website Redesign", "userId": "{userId}"}}}}
-**[Returns]: {{"success": true, "projects": [{{"id": "a1b2c3d4-e5f6-...", "name": "Website Redesign", ...}}]}}
-**Step 2 - Create task**: {{"name": "create_task", "arguments": {{"title": "Update homepage", "projectId": "a1b2c3d4-e5f6-...", "createdBy": "{userId}", "status": "TODO", "priority": "MEDIUM"}}}}
-**Response**: "I've added the task 'Update homepage' to your Website Redesign project."
-
-## Example 3: List and Update Task
-**User**: "Mark the homepage update task as in progress"
-**Step 1 - Find project**: {{"name": "query_projects", "arguments": {{"name": "Website Redesign", "userId": "{userId}"}}}}
-**[Returns]: {{"projects": [{{"id": "a1b2c3d4-...", ...}}]}}
-**Step 2 - List tasks**: {{"name": "list_tasks", "arguments": {{"projectId": "a1b2c3d4-..."}}}}
-**[Returns]: {{"tasks": [{{"id": "task-xyz", "title": "Update homepage", ...}}]}}
-**Step 3 - Update task**: {{"name": "update_task", "arguments": {{"id": "task-xyz", "status": "IN_PROGRESS"}}}}
-**Response**: "The 'Update homepage' task is now marked as in progress."
-
-## Example 4: Query Specific Project Details
-**User**: "What tasks do I have in the Website project?"
-**Step 1 - Find project**: {{"name": "query_projects", "arguments": {{"name": "Website", "userId": "{userId}"}}}}
-**[Returns]: {{"projects": [{{"id": "proj-123", ...}}]}}
-**Step 2 - List tasks**: {{"name": "list_tasks", "arguments": {{"projectId": "proj-123"}}}}
-**Response**: "In your Website project, you have: [list tasks from result]"
-
-## Example 5: Using Context-Aware IDs
-**Context**: Previous message mentioned "project proj-abc123"
-**User**: "Add a task to review the design"
-**[Check context for proj-abc123]**
-**Action**: {{"name": "create_task", "arguments": {{"title": "Review the design", "projectId": "proj-abc123", "createdBy": "{userId}", "status": "TODO"}}}}
-**Response**: "I've added 'Review the design' to your project."
-
-## Example 6: Create Risk
-**User**: "Add a risk about potential delays to the Website project"
-**Step 1**: {{"name": "query_projects", "arguments": {{"name": "Website", "userId": "{userId}"}}}}
-**[Returns projectId]**
-**Step 2**: {{"name": "create_risk", "arguments": {{"projectId": "proj-xyz", "title": "Potential delays", "description": "Risk of timeline slippage", "likelihood": "MEDIUM", "impact": "HIGH", "createdBy": "{userId}"}}}}
-
-# PARAMETER CONSISTENCY CHECKLIST
-Before calling any project management tool, verify:
-- ✓ userId/createdBy = '{userId}'
-- ✓ projectId = Actual UUID from list/query (never invented)
-- ✓ taskId/riskId = Actual UUID from list (never invented)
-- ✓ status/priority = Valid enum value from tool schema
-- ✓ All REQUIRED parameters present
-- ✓ Parameter names match EXACTLY (not camelCase variations)
-
-# RESPONSE RULES
-- After tool execution completes, provide a clear natural language response.
-- If a tool fails, explain what went wrong and suggest next steps.
-- If you're uncertain about parameters, call 'list_tools' to verify.
-- Include relevant details from tool results in your response (project names, task counts, IDs when helpful).
-`,
-      ],
-    ]);
   }
 
   private async createTools(
@@ -443,8 +347,8 @@ Always verify parameter names match tool schemas before calling!`;
     profile: ProfileDto,
     conversationHistory: ChatMessage[],
     userMessage: string,
-    conversationSummary: string,
-    conversationId: string
+    conversationId: string,
+    onStreamEvent?: (event: StreamingEvent) => void | Promise<void>
   ): Promise<{
     response: string;
     intermediateSteps: any[];
@@ -456,32 +360,117 @@ Always verify parameter names match tool schemas before calling!`;
       userMessage
     );
 
-    const promptTemplate = this.createSystemPromptTemplate();
-    const systemMessages = await promptTemplate.formatMessages({
-      personaName: persona.name,
-      personaDescription: persona.description,
-      userId: profile.id,
-      userName: profile.profileName,
-      conversationSummary: conversationSummary,
-      projectContext: projectContext || '',
-    });
+    // Detect if this is the first message in the conversation
+    // First message = empty conversation history OR only system/assistant greetings
+    const isFirstMessage = conversationHistory.length === 0 || 
+      (conversationHistory.length === 1 && conversationHistory[0].role !== 'user');
+
+    // Use SystemPromptBuilder for STATIC TELOS-driven system prompts
+    // CRITICAL: System prompt should NOT include conversation summary
+    // Conversation context is passed as full message history below
+    const { template, variables } = await this.systemPromptBuilder.buildSystemPrompt(
+      {
+        personaId: persona.id,
+        profileId: profile.id,
+        projectContext: projectContext || '',
+      },
+      {
+        includeTools: !isFirstMessage, // Don't include tools on first message
+        includeExamples: false,
+        includeProjectContext: !!projectContext,
+        isFirstMessage: isFirstMessage, // Special first message instructions
+      }
+    );
+    
+    const systemMessages = await template.formatMessages(variables);
 
     const tools = await this.createTools(profile.id, conversationId);
     const chatHistory = this.convertChatHistory(conversationHistory);
 
+    // IMPORTANT: Full conversation history is passed as messages
+    // System prompt is STATIC (persona TELOS only)
     const messages: BaseMessage[] = [
       ...systemMessages,
       ...chatHistory,
       new HumanMessage(userMessage),
     ];
 
-    // Bind tools to LLM so it knows what tools are available and their schemas
-    const llmWithTools = this.llm.bindTools(tools);
-    this.logger.log(
-      `Executing conversation with ${tools.length} tools bound to LLM`
+    // For first message, ALWAYS use conversational model (no tool calling)
+    if (isFirstMessage) {
+      this.logger.log('First message detected - using conversational model only (no tools)');
+      
+      const response = await this.conversationalLLM.invoke(messages);
+      
+      // Extract and emit thinking tokens before filtering
+      const responseText = response.content as string;
+      const { thinking, filtered } = this.workflowControl.extractThinkingTokens(responseText);
+      
+      if (thinking.length > 0 && onStreamEvent) {
+        for (const thinkingText of thinking) {
+          await onStreamEvent({
+            type: StreamingEventType.THINKING,
+            content: {
+              text: thinkingText,
+              raw: responseText,
+            },
+            timestamp: new Date(),
+          });
+        }
+      }
+      
+      // Return conversational-only response (no tool calls)
+      return {
+        response: filtered,
+        intermediateSteps: [],
+        toolCalls: [],
+      };
+    }
+
+    // For subsequent messages, detect workflow type to determine which model to use
+    const toolNames = tools.map((t) => t.name);
+    const workflow = await this.workflowControl.detectWorkflow(
+      userMessage,
+      toolNames,
+      '' // No longer pass conversation summary to workflow detection
     );
 
+    this.logger.log(
+      `Workflow detected: ${workflow.type} (confidence: ${workflow.confidence})`
+    );
+
+    // Select appropriate model based on workflow
+    const selectedLLM = workflow.requiresToolCalling
+      ? this.toolCallingLLM
+      : this.conversationalLLM;
+
+    // Bind tools to LLM if tool calling is required
+    const llmWithTools = workflow.requiresToolCalling
+      ? selectedLLM.bindTools(tools)
+      : selectedLLM;
+
+    const toolsMessage = workflow.requiresToolCalling 
+      ? `with ${tools.length} tools bound to LLM` 
+      : 'with LLM (no tools)';
+    this.logger.log(`Executing conversation ${toolsMessage}`);
+
     const response = await llmWithTools.invoke(messages);
+
+    // Extract and emit thinking tokens before filtering
+    const responseText = response.content as string;
+    const { thinking, filtered } = this.workflowControl.extractThinkingTokens(responseText);
+    
+    if (thinking.length > 0 && onStreamEvent) {
+      for (const thinkingText of thinking) {
+        await onStreamEvent({
+          type: StreamingEventType.THINKING,
+          content: {
+            text: thinkingText,
+            raw: responseText,
+          },
+          timestamp: new Date(),
+        });
+      }
+    }
 
     // Check if response contains tool calls
     const toolCallsToExecute: any[] = (response as any).tool_calls || [];
@@ -494,6 +483,18 @@ Always verify parameter names match tool schemas before calling!`;
       // Execute each tool call
       for (const toolCall of toolCallsToExecute) {
         this.logger.log(`Executing tool: ${toolCall.name}`);
+
+        // Emit tool start event
+        if (onStreamEvent) {
+          await onStreamEvent({
+            type: StreamingEventType.TOOL_START,
+            content: {
+              tool: toolCall.name,
+              input: toolCall.args,
+            },
+            timestamp: new Date(),
+          });
+        }
 
         try {
           // Convert to OpenAI format for MCP executor
@@ -527,14 +528,40 @@ Always verify parameter names match tool schemas before calling!`;
             output: result.result || result,
           });
 
+          // Emit tool end event
+          if (onStreamEvent) {
+            await onStreamEvent({
+              type: StreamingEventType.TOOL_END,
+              content: {
+                tool: toolCall.name,
+                output: result.result || result,
+                success: true,
+              },
+              timestamp: new Date(),
+            });
+          }
+
           this.logger.log(`Tool ${toolCall.name} executed successfully`);
         } catch (error) {
           this.logger.error(`Tool ${toolCall.name} execution failed:`, error);
+          
           toolCalls.push({
             tool: toolCall.name,
             input: toolCall.args,
             output: { error: error.message },
           });
+
+          // Emit error event
+          if (onStreamEvent) {
+            await onStreamEvent({
+              type: StreamingEventType.ERROR,
+              content: {
+                message: `Tool ${toolCall.name} failed: ${error.message}`,
+                details: error,
+              },
+              timestamp: new Date(),
+            });
+          }
         }
       }
 
@@ -551,65 +578,164 @@ Always verify parameter names match tool schemas before calling!`;
         const finalMessages = [...messages, response, ...toolResultMessages];
         const finalResponse = await llmWithTools.invoke(finalMessages);
 
+        // Extract thinking tokens from final response
+        const finalResponseText = finalResponse.content as string;
+        const { thinking: finalThinking, filtered: cleanedResponse } =
+          this.workflowControl.extractThinkingTokens(finalResponseText);
+
+        // Emit final thinking tokens if any
+        if (finalThinking.length > 0 && onStreamEvent) {
+          for (const thinkingText of finalThinking) {
+            await onStreamEvent({
+              type: StreamingEventType.THINKING,
+              content: {
+                text: thinkingText,
+                raw: finalResponseText,
+              },
+              timestamp: new Date(),
+            });
+          }
+        }
+
         return {
-          response: finalResponse.content as string,
+          response: cleanedResponse,
           intermediateSteps: [],
           toolCalls,
         };
       }
     }
 
-    // No tool calls, just return the response
+    // No tool calls, just return the response with filtered thinking tokens
     return {
-      response: response.content as string,
+      response: filtered,
       intermediateSteps: [],
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
   }
 
+  /**
+   * Stream conversation with LLM using configured conversational model
+   * Now with static TELOS-driven system prompts (conversation history passed as messages)
+   */
   async *streamConversation(
     persona: PersonaTelosDto,
     profile: ProfileDto,
     conversationHistory: ChatMessage[],
     userMessage: string,
-    conversationSummary: string,
     conversationId: string
-  ): AsyncGenerator<{ type: string; content: string }> {
+  ): AsyncGenerator<StreamingEvent> {
     // Enrich with project context if available
     const projectContext = await this.enrichWithProjectContext(
       conversationHistory,
       userMessage
     );
 
-    const promptTemplate = this.createSystemPromptTemplate();
-    const systemMessages = await promptTemplate.formatMessages({
-      personaName: persona.name,
-      personaDescription: persona.description,
-      userId: profile.id,
-      userName: profile.profileName,
-      conversationSummary: conversationSummary,
-      projectContext: projectContext || '',
-    });
+    // Detect if this is the first message in the conversation
+    // First message = empty conversation history OR only system/assistant greetings
+    const isFirstMessage = conversationHistory.length === 0 || 
+      (conversationHistory.length === 1 && conversationHistory[0].role !== 'user');
+
+    // Use SystemPromptBuilder for STATIC TELOS-driven system prompts
+    // CRITICAL: System prompt should NOT include conversation summary
+    // Conversation context is passed as full message history below
+    const { template, variables } = await this.systemPromptBuilder.buildSystemPrompt(
+      {
+        personaId: persona.id,
+        profileId: profile.id,
+        projectContext: projectContext || '',
+      },
+      {
+        includeTools: !isFirstMessage, // Don't include tools on first message
+        includeExamples: false,
+        includeProjectContext: !!projectContext,
+        isFirstMessage: isFirstMessage, // Special first message instructions
+      }
+    );
+    
+    const systemMessages = await template.formatMessages(variables);
 
     const tools = await this.createTools(profile.id, conversationId);
     const chatHistory = this.convertChatHistory(conversationHistory);
 
+    // IMPORTANT: Full conversation history is passed as messages
+    // System prompt is STATIC (persona TELOS only)
     const messages: BaseMessage[] = [
       ...systemMessages,
       ...chatHistory,
       new HumanMessage(userMessage),
     ];
 
-    // Bind tools to LLM so it knows what tools are available and their schemas
-    const llmWithTools = this.llm.bindTools(tools);
-    this.logger.log(
-      `Streaming conversation with ${tools.length} tools bound to LLM`
+    // For first message, ALWAYS use conversational model (no tool calling)
+    if (isFirstMessage) {
+      this.logger.log('First message detected - streaming conversational response only (no tools)');
+      
+      const stream = await this.conversationalLLM.stream(messages);
+      let fullResponse = '';
+      
+      for await (const chunk of stream) {
+        const content = chunk.content as string;
+        fullResponse += content;
+        
+        yield {
+          type: StreamingEventType.CHUNK,
+          content: { text: content },
+          timestamp: new Date(),
+        };
+      }
+      
+      // Extract and emit thinking tokens from complete response
+      const { thinking, filtered } = this.workflowControl.extractThinkingTokens(fullResponse);
+      
+      if (thinking.length > 0) {
+        for (const thinkingText of thinking) {
+          yield {
+            type: StreamingEventType.THINKING,
+            content: {
+              text: thinkingText,
+              raw: fullResponse,
+            },
+            timestamp: new Date(),
+          };
+        }
+      }
+      
+      // Emit final response
+      yield {
+        type: StreamingEventType.FINAL_RESPONSE,
+        content: { text: filtered },
+        timestamp: new Date(),
+      };
+      
+      return;
+    }
+
+    // For subsequent messages, detect workflow type to determine which model to use
+    const toolNames = tools.map((t) => t.name);
+    const workflow = await this.workflowControl.detectWorkflow(
+      userMessage,
+      toolNames,
+      '' // No longer pass conversation summary to workflow detection
     );
+
+    // Select appropriate model based on workflow
+    const selectedLLM = workflow.requiresToolCalling
+      ? this.toolCallingLLM
+      : this.conversationalLLM;
+
+    // Bind tools to LLM if tool calling is required
+    const llmWithTools = workflow.requiresToolCalling
+      ? selectedLLM.bindTools(tools)
+      : selectedLLM;
+
+    const toolsMessage = workflow.requiresToolCalling
+      ? `with ${tools.length} tools bound to LLM`
+      : 'with LLM (no tools)';
+    this.logger.log(`Streaming conversation ${toolsMessage}`);
 
     const stream = await llmWithTools.stream(messages);
     let fullResponse = '';
 
-    // Stream chunks in real-time instead of accumulating
+    // Stream chunks in real-time
     for await (const chunk of stream) {
       if (chunk.content) {
         const contentStr =
@@ -619,11 +745,37 @@ Always verify parameter names match tool schemas before calling!`;
         fullResponse += contentStr;
 
         // Yield each chunk immediately for real-time updates
-        yield { type: 'chunk', content: contentStr };
+        yield {
+          type: StreamingEventType.CHUNK,
+          content: contentStr,
+          timestamp: new Date(),
+        };
       }
     }
 
-    // Final yield with complete response
-    yield { type: 'final_response', content: fullResponse };
+    // Extract and emit thinking tokens before final response
+    const { thinking, filtered } = this.workflowControl.extractThinkingTokens(fullResponse);
+    
+    if (thinking.length > 0) {
+      for (const thinkingText of thinking) {
+        yield {
+          type: StreamingEventType.THINKING,
+          content: {
+            text: thinkingText,
+            raw: fullResponse,
+          },
+          timestamp: new Date(),
+        };
+      }
+    }
+
+    // Final yield with complete response (filtered for thinking tokens)
+    yield {
+      type: StreamingEventType.FINAL_RESPONSE,
+      content: {
+        text: filtered,
+      },
+      timestamp: new Date(),
+    };
   }
 }

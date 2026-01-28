@@ -9,12 +9,10 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "webpack-cli build",
-        "args": ["node-env=production"]
+        "additionalEntrypoints": ["./src/benchmark.ts"]
       },
       "configurations": {
-        "development": {
-          "args": ["node-env=development"]
-        }
+        "development": {}
       }
     },
     "serve": {

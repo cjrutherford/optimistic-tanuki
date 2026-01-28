@@ -19,10 +19,24 @@ export type TcpServiceConfig = {
   port: number;
 };
 
+export type ModelConfig = {
+  name: string;
+  description?: string;
+  temperature?: number;
+  pullOnStartup?: boolean;
+};
+
+export type ModelConfigs = {
+  workflow_control: ModelConfig;
+  tool_calling: ModelConfig;
+  conversational: ModelConfig;
+};
+
 export declare type OrchestratorConfigType = {
   listenPort: number;
   dependencies: { [key: string]: TcpServiceConfig };
   'ai-enabled-services': { [key: string]: string };
+  models?: ModelConfigs;
   ollama: {
     host: string;
     port: number;

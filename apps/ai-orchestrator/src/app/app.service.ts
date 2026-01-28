@@ -6,7 +6,6 @@ import {
   ProfileCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
-import * as promptGeneration from '@optimistic-tanuki/prompt-generation';
 import { firstValueFrom } from 'rxjs';
 import {
   ChatConversation,
@@ -18,7 +17,9 @@ import { LangChainService } from './langchain.service';
 import { LangGraphService } from './langgraph.service';
 import { LangChainAgentService } from './langchain-agent.service';
 import { ContextStorageService } from './context-storage.service';
+import { SystemPromptBuilder } from './system-prompt-builder.service';
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
+import { StreamingEventType } from './streaming-events';
 
 @Injectable()
 export class AppService {
@@ -35,7 +36,8 @@ export class AppService {
     private readonly langChainService: LangChainService,
     private readonly langGraphService: LangGraphService,
     private readonly langChainAgentService: LangChainAgentService,
-    private readonly contextStorage: ContextStorageService
+    private readonly contextStorage: ContextStorageService,
+    private readonly systemPromptBuilder: SystemPromptBuilder
   ) {}
 
   /**
@@ -170,11 +172,11 @@ export class AppService {
       // directly via LangGraph/LangChain messages to avoid runtime
       // dependencies on the prompt proxy service.
 
+      // Phase 1 fix: No longer pass conversationSummary to executeConversation
       const result = await this.langGraphService.executeConversation(
         profile.id,
         langChainMessages,
         [], // Empty chat history for new profile
-        conversationSummary,
         assistant,
         profile,
         '' // No conversation ID yet
@@ -214,11 +216,10 @@ export class AppService {
   }
 
   /**
-   * Summarize conversation for context by calling the prompt proxy
+   * Summarize conversation for context
    */
   private async summarizeConversation(
-    messages: ChatMessage[],
-    personaPrompt: string
+    messages: ChatMessage[]
   ): Promise<string> {
     // Lightweight internal summarizer so we don't depend on the external
     // prompt proxy. Keeps conversation summarization deterministic for
@@ -267,17 +268,9 @@ export class AppService {
           profile.id
         );
 
-        // Generate (or re-generate) a summary for the conversation using the persona prompt
-        const personaSystemPrompt = (
-          promptGeneration.generatePersonaSystemMessage as any
-        )(persona);
-        // No external prompt proxy seeding: use internal summarizer and
-        // LangGraph execution. This keeps the services decoupled from the
-        // prompt proxy RPC surface.
-
+        // Generate conversation summary without old prompt generation library
         const generatedSummary = await this.summarizeConversation(
-          conversation.messages,
-          personaSystemPrompt
+          conversation.messages
         );
 
         const conversationSummary =
@@ -301,11 +294,11 @@ export class AppService {
           // Use LangGraph with Agent for state-managed, multi-step execution
           this.l.log('Executing conversation through LangGraph with Agent...');
 
+          // Phase 1 fix: No longer pass conversationSummary to executeConversation
           const result = await this.langGraphService.executeConversation(
             profile.id,
             langChainMessages,
             conversation.messages, // Pass full chat history
-            conversationSummary,
             persona,
             profile,
             conversation.id,
@@ -313,7 +306,25 @@ export class AppService {
             async (progress) => {
               this.l.debug('Received progress update:', progress);
               try {
-                if (progress.type === 'tool_start') {
+                if (progress.type === StreamingEventType.THINKING) {
+                  const thinkingMessage: Partial<ChatMessage> = {
+                    conversationId: conversation.id,
+                    senderId: persona.id,
+                    senderName: persona.name,
+                    recipientId: [profile.id],
+                    recipientName: [profile.profileName],
+                    content: `💭 Thinking: ${progress.content.text}`,
+                    timestamp: new Date(),
+                    type: 'system',
+                  };
+                  await firstValueFrom(
+                    this.chatCollectorService.send(
+                      { cmd: ChatCommands.POST_MESSAGE },
+                      thinkingMessage
+                    )
+                  );
+                  responses.push(thinkingMessage);
+                } else if (progress.type === StreamingEventType.TOOL_START) {
                   const toolCallMessage: Partial<ChatMessage> = {
                     conversationId: conversation.id,
                     senderId: persona.id,
@@ -331,7 +342,7 @@ export class AppService {
                     )
                   );
                   responses.push(toolCallMessage);
-                } else if (progress.type === 'tool_end') {
+                } else if (progress.type === StreamingEventType.TOOL_END) {
                   const toolResultMessage: Partial<ChatMessage> = {
                     conversationId: conversation.id,
                     senderId: persona.id,
