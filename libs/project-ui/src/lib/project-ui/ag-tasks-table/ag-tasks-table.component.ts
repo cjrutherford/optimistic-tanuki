@@ -5,6 +5,7 @@ import {
   Output,
   OnInit,
   OnChanges,
+  OnDestroy,
   SimpleChanges,
   signal,
   computed,
@@ -38,7 +39,7 @@ import { TaskFormComponent } from '../task-form/task-form.component';
   templateUrl: './ag-tasks-table.component.html',
   styleUrls: ['./ag-tasks-table.component.scss'],
 })
-export class AgTasksTableComponent implements OnInit, OnChanges {
+export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
   // Traditional inputs/outputs for compatibility with parent components
   @Input() tasks: Task[] = [];
   @Input() loading: boolean = false;
@@ -58,6 +59,9 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
 
   // Computed signal for grid data (allows for filtering, sorting, etc.)
   gridData = computed(() => this.tasksSignal());
+
+  // Timer interval for updating active timer displays
+  private timerInterval: NodeJS.Timeout | null = null;
 
   columnDefs: ColDef[] = [
     {
@@ -125,23 +129,14 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
       },
     },
     {
-      field: 'totalTimeSeconds',
+      field: 'timeInfo',
       headerName: 'Time Spent',
       flex: 1,
-      minWidth: 120,
-      filter: 'agNumberColumnFilter',
-      valueFormatter: (params) => {
-        const seconds = params.value || 0;
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        
-        if (hours > 0) {
-          return `${hours}h ${minutes}m`;
-        } else if (minutes > 0) {
-          return `${minutes}m`;
-        } else {
-          return `${seconds}s`;
-        }
+      minWidth: 180,
+      filter: false,
+      cellRenderer: (params: ICellRendererParams) => {
+        const task = params.data as Task;
+        return this.timeInfoRenderer(task);
       },
     },
     {
@@ -191,6 +186,8 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
       this.tasks?.length || 0,
       'tasks'
     );
+    // Start interval to update active timer displays every second
+    this.startTimerUpdates();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -198,6 +195,128 @@ export class AgTasksTableComponent implements OnInit, OnChanges {
       this.tasksSignal.set(this.tasks || []);
       console.log('ag-tasks-table tasks updated:', this.tasks?.length || 0);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.stopTimerUpdates();
+  }
+
+  /**
+   * Start the interval that updates active timer displays
+   */
+  private startTimerUpdates(): void {
+    // Clear any existing interval first
+    this.stopTimerUpdates();
+    
+    // Update every second
+    this.timerInterval = setInterval(() => {
+      // Trigger AG Grid to refresh cells with active timers
+      this.refreshTimerCells();
+    }, 1000);
+  }
+
+  /**
+   * Stop the timer update interval
+   */
+  private stopTimerUpdates(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  }
+
+  /**
+   * Refresh grid cells that display timer information
+   */
+  private refreshTimerCells(): void {
+    // This will be called every second to refresh timer displays
+    // AG Grid will automatically re-render cells when data changes
+    const tasks = this.tasksSignal();
+    const hasActiveTimers = tasks.some(task => 
+      task.timeEntries?.some(entry => !entry.endTime)
+    );
+    
+    // Only trigger update if there are active timers
+    if (hasActiveTimers) {
+      // Force a signal update to trigger re-render
+      this.tasksSignal.set([...tasks]);
+    }
+  }
+
+  /**
+   * Format seconds to a human-readable time string
+   */
+  private formatTime(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
+    }
+  }
+
+  /**
+   * Calculate current elapsed time for an active timer
+   */
+  private getCurrentElapsedTime(startTime: Date): number {
+    const now = new Date();
+    const start = new Date(startTime);
+    return Math.floor((now.getTime() - start.getTime()) / 1000);
+  }
+
+  /**
+   * Custom cell renderer for time info column
+   * Shows session time (if active) and total task time
+   */
+  private timeInfoRenderer(task: Task): HTMLElement {
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '2px';
+    container.style.fontSize = '0.875rem';
+
+    // Find active timer entry
+    const activeEntry = task.timeEntries?.find(entry => !entry.endTime);
+    
+    // Calculate total time from all completed entries
+    let totalSeconds = 0;
+    task.timeEntries?.forEach(entry => {
+      if (entry.elapsedSeconds) {
+        totalSeconds += entry.elapsedSeconds;
+      }
+    });
+
+    // If there's an active timer, add its current elapsed time
+    let sessionSeconds = 0;
+    if (activeEntry) {
+      sessionSeconds = this.getCurrentElapsedTime(activeEntry.startTime);
+      
+      // Session time display (active timer counting up)
+      const sessionDiv = document.createElement('div');
+      sessionDiv.style.color = 'var(--success)';
+      sessionDiv.style.fontWeight = 'bold';
+      sessionDiv.innerHTML = `🔴 Session: ${this.formatTime(sessionSeconds)}`;
+      container.appendChild(sessionDiv);
+    }
+
+    // Total time display
+    const totalDiv = document.createElement('div');
+    const totalWithSession = totalSeconds + sessionSeconds;
+    totalDiv.style.color = activeEntry ? 'var(--text-secondary)' : 'var(--text-primary)';
+    totalDiv.innerHTML = `Total: ${this.formatTime(totalWithSession)}`;
+    container.appendChild(totalDiv);
+
+    // If no time tracked yet
+    if (totalWithSession === 0) {
+      container.innerHTML = '<span style="color: var(--text-secondary)">No time tracked</span>';
+    }
+
+    return container;
   }
 
   /**
