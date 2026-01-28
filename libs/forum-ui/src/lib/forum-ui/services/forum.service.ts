@@ -41,7 +41,7 @@ export class ForumService {
 
   // Thread management
   getThreadsByTopic(topicId: string): Promise<ThreadDto[]> {
-    return this.http.get<ThreadDto[]>(`${this.baseUrl}/thread`).toPromise() as Promise<ThreadDto[]>;
+    return this.http.get<ThreadDto[]>(`${this.baseUrl}/topic/${topicId}/threads`).toPromise() as Promise<ThreadDto[]>;
   }
 
   getThread(id: string): Promise<ThreadDto> {
@@ -62,7 +62,7 @@ export class ForumService {
 
   // Post management
   getPostsByThread(threadId: string): Promise<ForumPostDto[]> {
-    return this.http.get<ForumPostDto[]>(`${this.baseUrl}/threads/${threadId}/posts`).toPromise() as Promise<ForumPostDto[]>;
+    return this.http.get<ForumPostDto[]>(`${this.baseUrl}/thread/${threadId}/posts`).toPromise() as Promise<ForumPostDto[]>;
   }
 
   getPost(id: string): Promise<ForumPostDto> {
@@ -78,7 +78,7 @@ export class ForumService {
   }
 
   deletePost(id: string): Promise<void> {
-    return this.http.delete<void>(`${this.baseUrl}/posts/${id}`).toPromise() as Promise<void>;
+    return this.http.delete<void>(`${this.baseUrl}/post/${id}`).toPromise() as Promise<void>;
   }
 
   // Search and filtering

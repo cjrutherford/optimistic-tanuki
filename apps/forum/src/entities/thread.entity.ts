@@ -17,6 +17,9 @@ export class Thread {
   title: string;
 
   @Column()
+  description: string;
+
+  @Column()
   content: string;
 
   @Column()

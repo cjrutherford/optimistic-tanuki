@@ -16,6 +16,11 @@ title: string;
 
 @IsString()
 @IsNotEmpty()
+@ApiProperty({ description: 'The description of the thread', required: false })
+description: string;
+
+@IsString()
+@IsNotEmpty()
 @ApiProperty({ description: 'The content of the thread' })
 content: string;
 

@@ -2,7 +2,7 @@ import { Component, computed, EventEmitter, Input, Output } from '@angular/core'
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
-import { TextInputComponent, SelectComponent } from '@optimistic-tanuki/form-ui';
+import { TextInputComponent, SelectComponent, TextAreaComponent } from '@optimistic-tanuki/form-ui';
 import { CreateThreadDto, TopicDto } from '../models';
 
 @Component({
@@ -14,6 +14,7 @@ import { CreateThreadDto, TopicDto } from '../models';
         CardComponent,
         ButtonComponent,
         TextInputComponent,
+        TextAreaComponent,
         SelectComponent
     ],
     templateUrl: './create-thread.component.html',
@@ -27,8 +28,9 @@ export class CreateThreadComponent {
     title = '';
     description = '';
     selectedTopicId = '';
+    content = '';
     visibility: 'public' | 'private' = 'public';
-    visablityOptions: { label: string, value: 'public' | 'private' }[] = [
+    visibilityOptions: { label: string, value: 'public' | 'private' }[] = [
         { label: 'Public', value: 'public' },
         { label: 'Private', value: 'private' },
     ]
@@ -46,7 +48,7 @@ export class CreateThreadComponent {
             description: this.description,
             topicId: this.selectedTopicId,
             visibility: this.visibility,
-            // userId and profileId will be handled by the smart component / service
+            content: this.content,
             userId: '',
             profileId: ''
         };

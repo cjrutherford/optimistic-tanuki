@@ -181,9 +181,10 @@ export class ForumShellComponent implements OnInit {
         const newThread: CreateThreadDto = {
           title: postData.newThreadTitle,
           description: `Thread: ${postData.newThreadTitle}`,
+          content: `${postData.content} - created at ${new Date().toLocaleDateString()}`,
           topicId: topicId,
           userId: this.currentUserId,
-          profileId: this.userProfile()?.id || '',
+          profileId: this.currentUserId,
         };
 
         const createdThread = await this.forumService.createThread(newThread);
@@ -279,8 +280,9 @@ export class ForumShellComponent implements OnInit {
       // Add user info to the DTO
       const newThread: CreateThreadDto = {
         ...threadDto,
+        content: threadDto.content || '',
         userId: this.currentUserId,
-        profileId: this.userProfile()?.id || '',
+        profileId: this.currentUserId,
       };
 
       const createdThread = await this.forumService.createThread(newThread);

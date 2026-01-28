@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -77,6 +78,22 @@ export class ForumController {
   async getTopic(@Param('id') id: string): Promise<TopicDto> {
     return await firstValueFrom(
       this.forumClient.send({ cmd: TopicCommands.FIND }, { id })
+    );
+  }
+
+  @Get('topic/:topicId/threads')
+  @ApiTags('topic')
+  @ApiOperation({ summary: 'Get all threads for a topic' })
+  @ApiResponse({
+    status: 200,
+    description: 'The threads have been successfully retrieved.',
+    type: [ThreadDto],
+  })
+  async getThreadsByTopic(
+    @Param('topicId') topicId: string
+  ): Promise<ThreadDto[]> {
+    return await firstValueFrom(
+      this.forumClient.send({ cmd: ThreadCommands.FIND_MANY }, { where: { topicId } })
     );
   }
 
@@ -162,6 +179,22 @@ export class ForumController {
   async getThread(@Param('id') id: string): Promise<ThreadDto> {
     return await firstValueFrom(
       this.forumClient.send({ cmd: ThreadCommands.FIND }, { id })
+    );
+  }
+
+  @ApiTags('thread')
+  @ApiOperation({ summary: 'Get posts for a thread' })
+  @ApiResponse({
+    status: 200,
+    description: 'The posts have been successfully retrieved.',
+    type: [ForumPostDto],
+  })
+  @Get('thread/:threadId/posts')
+  async getPostsByThread(
+    @Param('threadId') threadId: string
+  ): Promise<ForumPostDto[]> {
+    return await firstValueFrom(
+      this.forumClient.send({ cmd: ForumPostCommands.FIND_MANY }, { where: { threadId } })
     );
   }
 
@@ -300,4 +333,35 @@ export class ForumController {
       this.forumClient.send({ cmd: ForumPostCommands.DELETE }, { id })
     );
   }
+
+  // Search Routes.
+
+  @ApiTags('search')
+  @ApiOperation({ summary: 'Search topics by query' })
+  @ApiResponse({
+    status: 200,
+    description: 'The search results have been successfully retrieved.',
+    type: [TopicDto],
+  })
+  @Get('search/topics')
+  async searchTopics(@Query() query: Partial<TopicDto>): Promise<TopicDto[]> {
+    return await firstValueFrom(
+      this.forumClient.send({ cmd: TopicCommands.FIND_MANY }, { where:  query })
+    );
+  }
+
+  @ApiTags('search')
+  @ApiOperation({ summary: 'Search threads by query' })
+  @ApiResponse({
+    status: 200,
+    description: 'The search results have been successfully retrieved.',
+    type: [ThreadDto],
+  })
+  @Get('search/threads')
+  async searchThreads(@Query() query: Partial<ThreadDto>): Promise<ThreadDto[]> {
+    return await firstValueFrom(
+      this.forumClient.send({ cmd: ThreadCommands.FIND_MANY }, { where: query })
+    );
+  }
+
 }

@@ -16,6 +16,7 @@ export interface ThreadDto {
 export interface CreateThreadDto {
   title: string;
   description: string;
+  content: string;
   userId: string;
   profileId: string;
   topicId: string;

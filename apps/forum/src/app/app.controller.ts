@@ -16,6 +16,8 @@ import {
 import { TopicService } from './services/topic.service';
 import { ThreadService } from './services/thread.service';
 import { ForumPostService } from './services/forum-post.service';
+import { FindManyOptions } from 'typeorm';
+import { ForumPost, Thread, Topic } from '../entities';
 
 @Controller()
 export class AppController {
@@ -32,7 +34,7 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: TopicCommands.FIND_MANY })
-  async findAllTopics(@Payload() options?: any) {
+  async findAllTopics(@Payload() options?: FindManyOptions<Topic>) {
     return await this.topicService.findAll(options);
   }
 
@@ -61,7 +63,7 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: ThreadCommands.FIND_MANY })
-  async findAllThreads(@Payload() options?: any) {
+  async findAllThreads(@Payload() options?: FindManyOptions<Thread>) {
     return await this.threadService.findAll(options);
   }
 
@@ -90,7 +92,7 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: ForumPostCommands.FIND_MANY })
-  async findAllForumPosts(@Payload() options?: any) {
+  async findAllForumPosts(@Payload() options?: FindManyOptions<ForumPost>) {
     return await this.forumPostService.findAll(options);
   }
 
