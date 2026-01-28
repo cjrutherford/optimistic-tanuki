@@ -66,17 +66,20 @@
   }
 
   @if (showTopicModal()) {
-    <otui-modal>
-      Create Topic Works
-      <lib-create-topic></lib-create-topic>
-      <otui-button (action)="showTopicModal.set(false)">Close</otui-button>
+    <otui-modal (closeModal)="onCancelTopic()">
+      <lib-create-topic
+        (create)="onCreateTopic($event)"
+        (cancelTopic)="onCancelTopic()"
+      ></lib-create-topic>
     </otui-modal>
   }
   @if (showThreadModal()) {
-    <otui-modal>
-      Create Thread Works
-      <lib-create-thread></lib-create-thread>
-      <otui-button (action)="showThreadModal.set(false)">Close</otui-button>
+    <otui-modal (closeModal)="onCancelThread()">
+      <lib-create-thread
+        [topics]="topics()"
+        (create)="onCreateThread($event)"
+        (cancelThread)="onCancelThread()"
+      ></lib-create-thread>
     </otui-modal>
   }
 
@@ -89,7 +92,7 @@
       <div class="topics-grid">
         @for (topic of topics(); track topic.id) {
           <otui-card class="topic-card" (click)="onTopicClick(topic)">
-            <h3>{{ topic.name }}</h3>
+            <h3>{{ topic.title }}</h3>
             <p>{{ topic.description }}</p>
             <div class="topic-meta">
               <span>Created: {{ topic.createdAt | date }}</span>
@@ -116,7 +119,7 @@
     @if (currentTopic() && !currentThread()) {
       <div class="topic-detail">
         <otui-card class="topic-header">
-          <h2>{{ currentTopic()!.name }}</h2>
+          <h2>{{ currentTopic()!.title }}</h2>
           <p>{{ currentTopic()!.description }}</p>
         </otui-card>
         

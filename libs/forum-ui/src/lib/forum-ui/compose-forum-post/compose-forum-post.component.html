@@ -14,7 +14,7 @@
       >
         <option value="">Select Topic</option>
         <option *ngFor="let topic of availableTopics" [value]="topic.id">
-          {{ topic.name }}
+          {{ topic.title }}
         </option>
         <option value="new">+ Create New Topic</option>
       </lib-select>

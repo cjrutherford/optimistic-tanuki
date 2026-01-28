@@ -163,7 +163,7 @@ export class ForumShellComponent implements OnInit {
       // Create new topic if needed
       if (postData.newTopicName && !topicId) {
         const newTopic: CreateTopicDto = {
-          name: postData.newTopicName,
+          title: postData.newTopicName,
           description: `Topic: ${postData.newTopicName}`,
           userId: this.currentUserId,
           profileId: this.userProfile()?.id || '',
@@ -228,6 +228,83 @@ export class ForumShellComponent implements OnInit {
   onThreadCreated(threadData: { title: string; topicId: string }) {
     console.log('Thread created:', threadData);
     // Thread creation is handled in onPostSubmitted
+  }
+
+  async onCreateTopic(topicDto: CreateTopicDto) {
+    if (!this.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    try {
+      this.loading.set(true);
+      
+      // Add user info to the DTO
+      const newTopic: CreateTopicDto = {
+        ...topicDto,
+        userId: this.currentUserId,
+        profileId: this.userProfile()?.id || '',
+      };
+
+      const createdTopic = await this.forumService.createTopic(newTopic);
+      
+      // Close modal and refresh topics
+      this.showTopicModal.set(false);
+      await this.loadTopics();
+      
+      // Navigate to the new topic
+      this.router.navigate(['/forum/topic', createdTopic.id]);
+      
+    } catch (error) {
+      this.error.set('Failed to create topic');
+      console.error('Error creating topic:', error);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  onCancelTopic() {
+    this.showTopicModal.set(false);
+  }
+
+  async onCreateThread(threadDto: CreateThreadDto) {
+    if (!this.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    try {
+      this.loading.set(true);
+      
+      // Add user info to the DTO
+      const newThread: CreateThreadDto = {
+        ...threadDto,
+        userId: this.currentUserId,
+        profileId: this.userProfile()?.id || '',
+      };
+
+      const createdThread = await this.forumService.createThread(newThread);
+      
+      // Close modal and refresh threads if we're viewing the topic
+      this.showThreadModal.set(false);
+      
+      if (this.currentTopic()?.id === createdThread.topicId) {
+        await this.loadTopic(createdThread.topicId);
+      }
+      
+      // Navigate to the new thread
+      this.router.navigate(['/forum/thread', createdThread.id]);
+      
+    } catch (error) {
+      this.error.set('Failed to create thread');
+      console.error('Error creating thread:', error);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  onCancelThread() {
+    this.showThreadModal.set(false);
   }
 
   onTopicClick(topic: TopicDto) {

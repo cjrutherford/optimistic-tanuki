@@ -3,12 +3,12 @@
     <h3>Create New Topic</h3>
 
     <div class="form-group">
-      <label for="name">Name</label>
+      <label for="title">Title</label>
       <lib-text-input
-        id="name"
-        [(ngModel)]="name"
-        name="name"
-        placeholder="Topic Name"
+        id="title"
+        [(ngModel)]="title"
+        name="title"
+        placeholder="Topic Title"
         required
       ></lib-text-input>
     </div>
@@ -36,7 +36,7 @@
     </div>
 
     <div class="actions">
-      <otui-button type="submit" [disabled]="!name">Create Topic</otui-button>
+      <otui-button type="submit" [disabled]="!title">Create Topic</otui-button>
       <otui-button type="button" variant="secondary" (click)="onCancel()">Cancel</otui-button>
     </div>
   </form>

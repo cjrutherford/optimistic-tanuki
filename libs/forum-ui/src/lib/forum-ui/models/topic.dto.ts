@@ -1,6 +1,6 @@
 export interface TopicDto {
   id: string;
-  name: string;
+  title: string;  // Changed from 'name' to 'title' to match backend
   description: string;
   userId: string;
   profileId: string;
@@ -12,7 +12,7 @@ export interface TopicDto {
 }
 
 export interface CreateTopicDto {
-  name: string;
+  title: string;  // Changed from 'name' to 'title' to match backend
   description: string;
   userId: string;
   profileId: string;

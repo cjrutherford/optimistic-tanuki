@@ -23,15 +23,15 @@ export class CreateTopicComponent {
     @Output() create = new EventEmitter<CreateTopicDto>();
     @Output() cancelTopic = new EventEmitter<void>();
 
-    name = '';
+    title = '';
     description = '';
     visibility: 'public' | 'private' = 'public';
 
     onSubmit() {
-        if (!this.name) return;
+        if (!this.title) return;
 
         const newTopic: CreateTopicDto = {
-            name: this.name,
+            title: this.title,
             description: this.description,
             visibility: this.visibility,
             // userId and profileId will be handled by the smart component / service
