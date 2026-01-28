@@ -7,6 +7,7 @@ import {
   IsBoolean,
   IsString,
   IsDateString,
+  IsArray,
 } from 'class-validator';
 
 export class UpdateTaskDto extends PartialType(CreateTaskDto) {
@@ -30,6 +31,15 @@ export class UpdateTaskDto extends PartialType(CreateTaskDto) {
   @IsString()
   @IsUUID()
   updatedBy?: string;
+
+  @ApiPropertyOptional({
+    description: 'Array of tag IDs to associate with the task',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 }
 
 export class QueryTaskDto extends PartialType(CreateTaskDto) {
@@ -56,4 +66,13 @@ export class QueryTaskDto extends PartialType(CreateTaskDto) {
   @IsOptional()
   @IsBoolean()
   deleted?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by tag IDs',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 }

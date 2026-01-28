@@ -80,6 +80,8 @@
             (deleteTask)="onDeleteTask($event)"
             (editTask)="onEditTask($event)"
             (createTask)="onCreateTask($event)"
+            (startTimer)="onStartTimer($event)"
+            (stopTimer)="onStopTimer($event)"
             [tasks]="selectedProject()!.tasks"
             style="width: 100%; height: 100%"
           ></lib-ag-tasks-table>

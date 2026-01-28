@@ -1,13 +1,19 @@
 import {
   Column,
   Entity,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { TaskPriority, TaskStatus } from '@optimistic-tanuki/models';
 
 import { Project } from './project.entity';
+import { TaskNote } from './task-note.entity';
+import { TaskTag } from './task-tag.entity';
+import { TaskTimeEntry } from './task-time-entry.entity';
 import { Timer } from './timer.entity'; // Assuming Timer is another entity in your project
 
 @Entity()
@@ -41,6 +47,20 @@ export class Task {
 
   @ManyToOne(() => Project, (project) => project.tasks)
   project: Project; // manual reference to the Project Entity from the [Project Planning Service]
+
+  @OneToMany(() => TaskTimeEntry, (timeEntry) => timeEntry.task)
+  timeEntries: TaskTimeEntry[];
+
+  @OneToMany(() => TaskNote, (note) => note.task)
+  notes: TaskNote[];
+
+  @ManyToMany(() => TaskTag, (tag) => tag.tasks)
+  @JoinTable({
+    name: 'task_tags',
+    joinColumn: { name: 'task_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'tag_id', referencedColumnName: 'id' },
+  })
+  tags: TaskTag[];
 
   @Column()
   updatedBy: string;

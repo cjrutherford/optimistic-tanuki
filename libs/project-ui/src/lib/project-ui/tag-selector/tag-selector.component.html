@@ -1,0 +1,15 @@
+<div class="tag-selector">
+  <div class="tag-list">
+    <div
+      *ngFor="let tag of availableTags"
+      class="tag-item"
+      [class.selected]="isSelected(tag.id)"
+      (click)="toggleTag(tag.id)"
+      [style.backgroundColor]="isSelected(tag.id) ? (tag.color || '#3498db') : 'transparent'"
+      [style.borderColor]="tag.color || '#3498db'"
+      [style.color]="isSelected(tag.id) ? 'white' : (tag.color || '#3498db')"
+    >
+      {{ tag.name }}
+    </div>
+  </div>
+</div>

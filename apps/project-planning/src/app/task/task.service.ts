@@ -14,8 +14,10 @@ import {
   Like,
   Not,
   Repository,
+  In,
 } from 'typeorm';
 import { Project } from '../entities/project.entity';
+import { TaskTag } from '../entities/task-tag.entity';
 
 @Injectable()
 export class TaskService {
@@ -23,7 +25,9 @@ export class TaskService {
     @Inject(getRepositoryToken(Task))
     private readonly taskRepository: Repository<Task>,
     @Inject(getRepositoryToken(Project))
-    private readonly projectRepository: Repository<Project>
+    private readonly projectRepository: Repository<Project>,
+    @Inject(getRepositoryToken(TaskTag))
+    private readonly taskTagRepository: Repository<TaskTag>
   ) {}
 
   async create(createTaskDto: CreateTaskDto) {
@@ -34,9 +38,22 @@ export class TaskService {
     if (!project) {
       throw new Error('Project not found');
     }
+
+    let tags: TaskTag[] = [];
+    if (createTaskDto.tagIds && createTaskDto.tagIds.length > 0) {
+      tags = await this.taskTagRepository.find({
+        where: { id: In(createTaskDto.tagIds) },
+      });
+    }
+
     const task = this.taskRepository.create({
-      ...createTaskDto,
+      title: createTaskDto.title,
+      description: createTaskDto.description,
+      status: createTaskDto.status,
+      priority: createTaskDto.priority,
+      createdBy: createTaskDto.createdBy,
       project: project,
+      tags: tags,
       updatedBy: createTaskDto.createdBy,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -86,16 +103,67 @@ export class TaskService {
     if (query.deleted) {
       where.deletedAt = Not(IsNull());
     }
-    return await this.taskRepository.find({ where });
+
+    const tasks = await this.taskRepository.find({
+      where,
+      relations: ['tags', 'timeEntries', 'project'],
+    });
+
+    // Filter by tags if tagIds are provided
+    if (query.tagIds && query.tagIds.length > 0) {
+      return tasks.filter((task) =>
+        task.tags?.some((tag) => query.tagIds?.includes(tag.id))
+      );
+    }
+
+    return tasks;
   }
 
   async findOne(id: string) {
-    return await this.taskRepository.findOne({ where: { id } });
+    return await this.taskRepository.findOne({
+      where: { id },
+      relations: ['tags', 'timeEntries', 'project'],
+    });
   }
 
   async update(id: string, updateTaskDto: UpdateTaskDto) {
-    await this.taskRepository.update(id, updateTaskDto);
-    return await this.taskRepository.findOne({ where: { id } });
+    const task = await this.taskRepository.findOne({
+      where: { id: id },
+      relations: ['tags'],
+    });
+
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    // Handle tag updates
+    if (updateTaskDto.tagIds !== undefined) {
+      if (updateTaskDto.tagIds.length > 0) {
+        task.tags = await this.taskTagRepository.find({
+          where: { id: In(updateTaskDto.tagIds) },
+        });
+      } else {
+        task.tags = [];
+      }
+    }
+
+    // Update other fields
+    if (updateTaskDto.title !== undefined) task.title = updateTaskDto.title;
+    if (updateTaskDto.description !== undefined)
+      task.description = updateTaskDto.description;
+    if (updateTaskDto.status !== undefined) task.status = updateTaskDto.status;
+    if (updateTaskDto.priority !== undefined)
+      task.priority = updateTaskDto.priority;
+    if (updateTaskDto.updatedBy !== undefined)
+      task.updatedBy = updateTaskDto.updatedBy;
+
+    task.updatedAt = new Date();
+
+    await this.taskRepository.save(task);
+    return await this.taskRepository.findOne({
+      where: { id },
+      relations: ['tags', 'timeEntries', 'project'],
+    });
   }
 
   async remove(id: string) {

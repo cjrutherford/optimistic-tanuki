@@ -34,6 +34,7 @@ export class TasksTableComponent implements OnInit, OnChanges {
     new EventEmitter<CreateTask>();
   @Output() editTask: EventEmitter<Task> = new EventEmitter<Task>();
   @Output() deleteTask: EventEmitter<string> = new EventEmitter<string>();
+  @Output() timerToggled: EventEmitter<Task> = new EventEmitter<Task>();
   @Input() tasks: Task[] = [
     {
       id: '1',
@@ -192,5 +193,27 @@ export class TasksTableComponent implements OnInit, OnChanges {
 
   closeModal() {
     this.showModal.set(false);
+  }
+
+  isTimerRunning(task: Task): boolean {
+    return !!task.timeEntries?.some((entry) => !entry.endTime);
+  }
+
+  getActions(task: Task): TableRowAction[] {
+    const isRunning = this.isTimerRunning(task);
+    return [
+      {
+        title: isRunning ? 'Stop 🛑' : 'Start ⏱️',
+        action: (index: number) => {
+          this.onToggleTimer(index);
+        },
+      },
+      ...this.tableActions,
+    ];
+  }
+
+  onToggleTimer(index: number) {
+    const task = this.tasks[index];
+    this.timerToggled.emit(task);
   }
 }

@@ -51,3 +51,37 @@ export const TimerCommands = {
   REMOVE: 'timer.remove',
   FIND_ALL: 'timer.findAll',
 };
+
+export const TaskTimeEntryCommands = {
+  CREATE: 'taskTimeEntry.create',
+  UPDATE: 'taskTimeEntry.update',
+  DELETE: 'taskTimeEntry.delete',
+  FIND_ONE: 'taskTimeEntry.findOne',
+  REMOVE: 'taskTimeEntry.remove',
+  FIND_ALL: 'taskTimeEntry.findAll',
+  STOP: 'taskTimeEntry.stop',
+};
+
+export const TaskTagCommands = {
+  CREATE: 'taskTag.create',
+  UPDATE: 'taskTag.update',
+  DELETE: 'taskTag.delete',
+  FIND_ONE: 'taskTag.findOne',
+  REMOVE: 'taskTag.remove',
+  FIND_ALL: 'taskTag.findAll',
+};
+
+export const TaskNoteCommands = {
+  CREATE: 'taskNote.create',
+  UPDATE: 'taskNote.update',
+  DELETE: 'taskNote.delete',
+  FIND_ONE: 'taskNote.findOne',
+  REMOVE: 'taskNote.remove',
+  FIND_ALL: 'taskNote.findAll',
+};
+
+export const AnalyticsCommands = {
+  GET_TASK_ANALYTICS: 'analytics.getTaskAnalytics',
+  GET_PROJECT_ANALYTICS: 'analytics.getProjectAnalytics',
+  GET_TAG_ANALYTICS: 'analytics.getTagAnalytics',
+};

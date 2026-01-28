@@ -1,0 +1,28 @@
+<div class="time-tracker">
+  <div class="time-display">
+    <div class="current-time" *ngIf="isRunning">
+      <span class="label">Current:</span>
+      <span class="time">{{ displayTime }}</span>
+    </div>
+    <div class="total-time">
+      <span class="label">Total:</span>
+      <span class="time">{{ getTotalTimeFormatted() }}</span>
+    </div>
+  </div>
+  <div class="timer-controls">
+    <otui-button
+      *ngIf="!isRunning"
+      (click)="onStartTimer()"
+      [variant]="'primary'"
+    >
+      Start Timer
+    </otui-button>
+    <otui-button
+      *ngIf="isRunning"
+      (click)="onStopTimer()"
+      [variant]="'danger'"
+    >
+      Stop Timer
+    </otui-button>
+  </div>
+</div>

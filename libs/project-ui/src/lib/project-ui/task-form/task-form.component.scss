@@ -1,0 +1,11 @@
+.tags-section {
+  margin: 16px 0;
+
+  .tags-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text-primary, #333);
+  }
+}

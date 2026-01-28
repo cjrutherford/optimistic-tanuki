@@ -21,6 +21,17 @@ import { TaskService } from './task/task.service';
 import { Timer } from './entities/timer.entity';
 import { TimerController } from './timer/timer.controller';
 import { TimerService } from './timer/timer.service';
+import { TaskTimeEntry } from './entities/task-time-entry.entity';
+import { TaskTimeEntryController } from './task-time-entry/task-time-entry.controller';
+import { TaskTimeEntryService } from './task-time-entry/task-time-entry.service';
+import { TaskTag } from './entities/task-tag.entity';
+import { TaskTagController } from './task-tag/task-tag.controller';
+import { TaskTagService } from './task-tag/task-tag.service';
+import { TaskNote } from './entities/task-note.entity';
+import { TaskNoteController } from './task-note/task-note.controller';
+import { TaskNoteService } from './task-note/task-note.service';
+import { AnalyticsController } from './analytics/analytics.controller';
+import { AnalyticsService } from './analytics/analytics.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { loadConfig } from './config';
 import loadDatabase from './loadDatabase';
@@ -44,6 +55,10 @@ import loadDatabase from './loadDatabase';
     RiskController,
     TaskController,
     TimerController,
+    TaskTimeEntryController,
+    TaskTagController,
+    TaskNoteController,
+    AnalyticsController,
   ],
   providers: [
     ChangeService,
@@ -52,6 +67,10 @@ import loadDatabase from './loadDatabase';
     RiskService,
     TaskService,
     TimerService,
+    TaskTimeEntryService,
+    TaskTagService,
+    TaskNoteService,
+    AnalyticsService,
     {
       provide: getRepositoryToken(Project),
       useFactory: (connection: DataSource) => connection.getRepository(Project),
@@ -81,6 +100,24 @@ import loadDatabase from './loadDatabase';
     {
       provide: getRepositoryToken(Timer),
       useFactory: (connection: DataSource) => connection.getRepository(Timer),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(TaskTimeEntry),
+      useFactory: (connection: DataSource) =>
+        connection.getRepository(TaskTimeEntry),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(TaskTag),
+      useFactory: (connection: DataSource) =>
+        connection.getRepository(TaskTag),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(TaskNote),
+      useFactory: (connection: DataSource) =>
+        connection.getRepository(TaskNote),
       inject: ['PROJECT_PLANNING_CONNECTION'],
     },
   ],

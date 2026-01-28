@@ -40,6 +40,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ProjectService } from '../../project/project.service';
 import { RiskService } from '../../risk/risk.service';
 import { TaskService } from '../../task/task.service';
+import { TaskTimeEntryService } from '../../task-time-entry/task-time-entry.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
@@ -75,6 +76,7 @@ export class ProjectsComponent implements OnInit {
     private readonly riskService: RiskService,
     private readonly changeService: ChangeService,
     private readonly journalService: JournalService,
+    private readonly taskTimeEntryService: TaskTimeEntryService,
     private readonly messageService: MessageService,
     private readonly themeService: ThemeService
   ) {}
@@ -167,6 +169,29 @@ export class ProjectsComponent implements OnInit {
         this.messageService.addMessage({
           content:
             'Error loading projects: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  private loadProject(projectId: string) {
+    if (!projectId) return;
+    this.projectService.getProjectById(projectId).subscribe({
+      next: (project) => {
+        console.log('Project reloaded:', project);
+        // Update the selected project
+        this.selectedProject.set(project);
+        // Also update in the projects list
+        this.projects.update((projects) =>
+          projects.map((p) => (p.id === projectId ? project : p))
+        );
+      },
+      error: (error) => {
+        console.error('Error loading project:', error);
+        this.messageService.addMessage({
+          content:
+            'Error loading project: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
       },
@@ -624,6 +649,89 @@ export class ProjectsComponent implements OnInit {
           content:
             'Error deleting journal entry: ' +
             (error.message || 'Unknown error'),
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  onStartTimer(taskId: string) {
+    console.log('Start timer for task:', taskId);
+    this.taskTimeEntryService.startTimer(taskId).subscribe({
+      next: (timeEntry) => {
+        console.log('Timer started successfully:', timeEntry);
+        this.messageService.addMessage({
+          content: 'Timer started successfully',
+          type: 'success',
+        });
+        // Fetch the updated task to get all time entries
+        this.taskService.getTaskById(taskId).subscribe({
+          next: (updatedTask) => {
+            // Update the task in the current project without reloading everything
+            this.selectedProject.update((project) => {
+              if (!project) return project;
+              return {
+                ...project,
+                tasks: project.tasks.map((t) =>
+                  t.id === taskId ? updatedTask : t
+                ),
+              };
+            });
+          },
+          error: (error) => {
+            console.error('Error fetching updated task:', error);
+            // Fallback to reloading the project
+            this.loadProject(this.selectedProject()?.id || '');
+          },
+        });
+      },
+      error: (error) => {
+        console.error('Error starting timer:', error);
+        this.messageService.addMessage({
+          content: 'Error starting timer: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  onStopTimer(timeEntryId: string) {
+    console.log('Stop timer for time entry:', timeEntryId);
+    this.taskTimeEntryService.stopTimer(timeEntryId).subscribe({
+      next: (timeEntry) => {
+        console.log('Timer stopped successfully:', timeEntry);
+        this.messageService.addMessage({
+          content: 'Timer stopped successfully',
+          type: 'success',
+        });
+        // Get the task ID from the time entry (use taskId if task relation not populated)
+        const taskIdToUpdate = timeEntry.task?.id || timeEntry.taskId;
+        if (taskIdToUpdate) {
+          this.taskService.getTaskById(taskIdToUpdate).subscribe({
+            next: (updatedTask) => {
+              // Update the task in the current project without reloading everything
+              this.selectedProject.update((project) => {
+                if (!project) return project;
+                return {
+                  ...project,
+                  tasks: project.tasks.map((t) =>
+                    t.id === taskIdToUpdate ? updatedTask : t
+                  ),
+                };
+              });
+            },
+            error: (error) => {
+              console.error('Error fetching updated task:', error);
+              // Fallback to reloading the project
+              this.loadProject(this.selectedProject()?.id || '');
+            },
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Error stopping timer:', error);
+        this.messageService.addMessage({
+          content: 'Error stopping timer: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
       },

@@ -1,0 +1,28 @@
+.tag-selector {
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .tag-item {
+    padding: 6px 12px;
+    border-radius: 16px;
+    border: 2px solid;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    user-select: none;
+
+    &:hover {
+      opacity: 0.8;
+      transform: translateY(-1px);
+    }
+
+    &.selected {
+      font-weight: 600;
+    }
+  }
+}

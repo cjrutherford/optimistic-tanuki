@@ -18,6 +18,8 @@ import {
   RiskCommands,
   ServiceTokens,
   TaskCommands,
+  TaskNoteCommands,
+  TaskTimeEntryCommands,
   TimerCommands,
 } from '@optimistic-tanuki/constants';
 import {
@@ -26,17 +28,23 @@ import {
   CreateProjectJournalDto,
   CreateRiskDto,
   CreateTaskDto,
+  CreateTaskNoteDto,
+  CreateTaskTimeEntryDto,
   CreateTimerDto,
   QueryChangeDto,
   QueryProjectDto,
   QueryProjectJournalDto,
   QueryRiskDto,
   QueryTaskDto,
+  QueryTaskNoteDto,
+  QueryTaskTimeEntryDto,
   UpdateChangeDto,
   UpdateProjectDto,
   UpdateProjectJournalDto,
   UpdateRiskDto,
   UpdateTaskDto,
+  UpdateTaskNoteDto,
+  UpdateTaskTimeEntryDto,
   UpdateTimerDto,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -497,6 +505,193 @@ export class ProjectPlanningController {
   async deleteTimer(@Param('id') id: string) {
     return await firstValueFrom(
       this.projectPlanningService.send({ cmd: TimerCommands.DELETE }, { id })
+    );
+  }
+
+  // Task Notes endpoints
+  @ApiOperation({ summary: 'Find task note by ID' })
+  @ApiResponse({ status: 200, description: 'Task note found' })
+  @RequirePermissions('project-planning.task-note.read')
+  @Get('task-notes/:id')
+  async findTaskNoteById(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.FIND_ONE },
+        id
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Find all task notes' })
+  @ApiResponse({ status: 200, description: 'Task notes retrieved' })
+  @RequirePermissions('project-planning.task-note.read')
+  @Get('task-notes')
+  async findAllTaskNotes() {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.FIND_ALL },
+        {}
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Query task notes' })
+  @ApiResponse({ status: 200, description: 'Task notes retrieved' })
+  @RequirePermissions('project-planning.task-note.read')
+  @Post('task-notes/query')
+  async queryTaskNotes(@Body() query: QueryTaskNoteDto) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.FIND_ALL },
+        query
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Create a task note' })
+  @ApiResponse({
+    status: 201,
+    description: 'Task note created successfully',
+  })
+  @RequirePermissions('project-planning.task-note.create')
+  @Post('task-notes')
+  async createTaskNote(
+    @User() user: UserDetails,
+    @Body() createTaskNoteDto: CreateTaskNoteDto
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.CREATE },
+        { ...createTaskNoteDto, profileId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Update a task note' })
+  @ApiResponse({
+    status: 200,
+    description: 'Task note updated successfully',
+  })
+  @RequirePermissions('project-planning.task-note.update')
+  @Patch('task-notes')
+  async updateTaskNote(
+    @User() user: UserDetails,
+    @Body() updateTaskNoteDto: UpdateTaskNoteDto
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.UPDATE },
+        { ...updateTaskNoteDto, updatedBy: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Delete a task note' })
+  @ApiResponse({
+    status: 200,
+    description: 'Task note deleted successfully',
+  })
+  @RequirePermissions('project-planning.task-note.delete')
+  @Delete('task-notes/:id')
+  async deleteTaskNote(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.REMOVE },
+        id
+      )
+    );
+  }
+
+  // Task Time Entry endpoints
+  @ApiOperation({ summary: 'Find task time entry by ID' })
+  @ApiResponse({ status: 200, description: 'Task time entry found' })
+  @RequirePermissions('project-planning.task-time-entry.read')
+  @Get('task-time-entries/:id')
+  async findTaskTimeEntryById(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskTimeEntryCommands.FIND_ONE },
+        id
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Find all task time entries' })
+  @ApiResponse({ status: 200, description: 'Task time entries retrieved' })
+  @RequirePermissions('project-planning.task-time-entry.read')
+  @Get('task-time-entries')
+  async findAllTaskTimeEntries() {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskTimeEntryCommands.FIND_ALL },
+        {}
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Query task time entries' })
+  @ApiResponse({ status: 200, description: 'Task time entries retrieved' })
+  @RequirePermissions('project-planning.task-time-entry.read')
+  @Post('task-time-entries/query')
+  async queryTaskTimeEntries(@Body() query: QueryTaskTimeEntryDto) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskTimeEntryCommands.FIND_ALL },
+        query
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Create a task time entry (start timer)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Task time entry created successfully',
+  })
+  @RequirePermissions('project-planning.task-time-entry.create')
+  @Post('task-time-entries')
+  async createTaskTimeEntry(
+    @User() user: UserDetails,
+    @Body() createTaskTimeEntryDto: CreateTaskTimeEntryDto
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskTimeEntryCommands.CREATE },
+        { ...createTaskTimeEntryDto, createdBy: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Update a task time entry (stop timer)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Task time entry updated successfully',
+  })
+  @RequirePermissions('project-planning.task-time-entry.update')
+  @Patch('task-time-entries')
+  async updateTaskTimeEntry(
+    @Body() updateTaskTimeEntryDto: UpdateTaskTimeEntryDto
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskTimeEntryCommands.UPDATE },
+        updateTaskTimeEntryDto
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Delete a task time entry' })
+  @ApiResponse({
+    status: 200,
+    description: 'Task time entry deleted successfully',
+  })
+  @RequirePermissions('project-planning.task-time-entry.delete')
+  @Delete('task-time-entries/:id')
+  async deleteTaskTimeEntry(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskTimeEntryCommands.REMOVE },
+        id
+      )
     );
   }
 }

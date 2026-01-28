@@ -16,7 +16,7 @@ export class ProjectService {
   constructor(
     private readonly http: HttpClient,
     private readonly profileService: ProfileService
-  ) {}
+  ) { }
 
   createProject(data: CreateProject) {
     const profile = this.profileService.getCurrentUserProfile();
@@ -50,7 +50,7 @@ export class ProjectService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
-  inviteMember(projectId: string, email: string) {
+  inviteMember(projectId: string, email: string, createdBy: string) {
     const profile = this.profileService.getCurrentUserProfile();
     if (!profile) {
       throw new Error(
@@ -61,7 +61,7 @@ export class ProjectService {
     const invite = {
       projectId,
       email,
-      createdBy: profile.id,
+      createdBy,
     };
 
     return this.http.post(`${this.baseUrl}/${projectId}/invite`, invite);

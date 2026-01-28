@@ -10,7 +10,7 @@ import { ProjectCommands } from '@optimistic-tanuki/constants';
 
 @Controller()
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) {}
+  constructor(private readonly projectService: ProjectService) { }
 
   @MessagePattern({ cmd: ProjectCommands.CREATE })
   async create(@Payload() createProjectDto: CreateProjectDto) {
@@ -23,7 +23,7 @@ export class ProjectController {
   }
 
   @MessagePattern({ cmd: ProjectCommands.FIND_ONE })
-  async findOne(@Payload() id: string) {
+  async findOne(@Payload('id') id: string) {
     return await this.projectService.findOne(id);
   }
 

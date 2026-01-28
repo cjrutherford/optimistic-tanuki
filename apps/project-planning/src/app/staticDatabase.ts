@@ -8,6 +8,9 @@ import { Risk } from './entities/risk.entity';
 import { Timer } from './entities/timer.entity';
 import { ProjectJournal } from './entities/project-journal.entity';
 import { Change } from './entities/change.entity';
+import { TaskTag } from './entities/task-tag.entity';
+import { TaskTimeEntry } from './entities/task-time-entry.entity';
+import { TaskNote } from './entities/task-note.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')
@@ -28,7 +31,7 @@ const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [Project, Task, Risk, Change, Timer, ProjectJournal];
+const entities = [Project, Task, Risk, Change, Timer, ProjectJournal, TaskTag, TaskTimeEntry, TaskNote];
 
 console.log(
   `Using database configuration: host=${host}, port=${port}, username=${username}, database=${database}`
