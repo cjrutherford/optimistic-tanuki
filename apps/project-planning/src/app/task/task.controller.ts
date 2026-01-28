@@ -29,6 +29,7 @@ export class TaskController {
 
   @MessagePattern({ cmd: TaskCommands.UPDATE })
   async update(@Payload() updateTaskDto: UpdateTaskDto) {
+    console.log('Updating task with DTO:', updateTaskDto);
     return await this.taskService.update(updateTaskDto.id, updateTaskDto);
   }
 

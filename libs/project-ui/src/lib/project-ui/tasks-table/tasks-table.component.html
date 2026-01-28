@@ -7,7 +7,7 @@
   [cells]="row"
   [rowIndex]="idx"
   [spacer]="true"
-  [rowActions]="tableActions"
+  [rowActions]="getActions(tasks[idx])"
   [showActionsSplit]="true"
 ></otui-table>
 } }

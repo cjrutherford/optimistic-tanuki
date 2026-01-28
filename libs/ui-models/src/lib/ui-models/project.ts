@@ -153,6 +153,7 @@ export interface TaskTimeEntry {
 
 export interface CreateTaskTimeEntry {
   taskId: string;
+  startTime: Date;
   description?: string;
   createdBy: string;
 }

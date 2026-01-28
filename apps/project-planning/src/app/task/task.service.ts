@@ -128,7 +128,7 @@ export class TaskService {
 
   async update(id: string, updateTaskDto: UpdateTaskDto) {
     const task = await this.taskRepository.findOne({
-      where: { id },
+      where: { id: id },
       relations: ['tags'],
     });
 
