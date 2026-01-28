@@ -26,6 +26,10 @@ export class CreateTopicComponent {
     title = '';
     description = '';
     visibility: 'public' | 'private' = 'public';
+    visabilityOptions: { label: string, value: 'public' | 'private' }[] = [
+        { label: 'Public', value: 'public' },
+        { label: 'Private', value: 'private' },
+    ]
 
     onSubmit() {
         if (!this.title) return;

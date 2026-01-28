@@ -76,7 +76,7 @@ export class ForumShellComponent implements OnInit {
       this.userValidPermissions = data['userValidPermissions'] || [];
       this.userLoggedIn = data['userLoggedIn'] || false;
       this.currentUserId = data['currentUserId'] || '';
-      
+
       this.checkAuthState();
     });
 
@@ -238,23 +238,23 @@ export class ForumShellComponent implements OnInit {
 
     try {
       this.loading.set(true);
-      
+
       // Add user info to the DTO
       const newTopic: CreateTopicDto = {
         ...topicDto,
         userId: this.currentUserId,
-        profileId: this.userProfile()?.id || '',
+        profileId: this.currentUserId,
       };
 
       const createdTopic = await this.forumService.createTopic(newTopic);
-      
+
       // Close modal and refresh topics
       this.showTopicModal.set(false);
       await this.loadTopics();
-      
+
       // Navigate to the new topic
       this.router.navigate(['/forum/topic', createdTopic.id]);
-      
+
     } catch (error) {
       this.error.set('Failed to create topic');
       console.error('Error creating topic:', error);
@@ -275,7 +275,7 @@ export class ForumShellComponent implements OnInit {
 
     try {
       this.loading.set(true);
-      
+
       // Add user info to the DTO
       const newThread: CreateThreadDto = {
         ...threadDto,
@@ -284,17 +284,17 @@ export class ForumShellComponent implements OnInit {
       };
 
       const createdThread = await this.forumService.createThread(newThread);
-      
+
       // Close modal and refresh threads if we're viewing the topic
       this.showThreadModal.set(false);
-      
+
       if (this.currentTopic()?.id === createdThread.topicId) {
         await this.loadTopic(createdThread.topicId);
       }
-      
+
       // Navigate to the new thread
       this.router.navigate(['/forum/thread', createdThread.id]);
-      
+
     } catch (error) {
       this.error.set('Failed to create thread');
       console.error('Error creating thread:', error);

@@ -15,7 +15,7 @@
       } @else if (currentTopic()) {
         <button (click)="navigateBack()" class="back-button">← Back to Forums</button>
         <span class="separator">/</span>
-        <span class="current">{{ currentTopic()!.name }}</span>
+        <span class="current">{{ currentTopic()!.title }}</span>
       } @else {
         <span class="current">Forum Topics</span>
       }

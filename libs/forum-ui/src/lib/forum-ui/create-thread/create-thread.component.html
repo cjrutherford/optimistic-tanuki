@@ -7,6 +7,7 @@
       <lib-select
         id="topic"
         [(ngModel)]="selectedTopicId"
+        [options]="topicOptions()"
         name="topic"
         required
       >
@@ -43,10 +44,9 @@
       <lib-select
         id="visibility"
         [(ngModel)]="visibility"
+        [options]="visablityOptions"
         name="visibility"
       >
-        <option value="public">Public</option>
-        <option value="private">Private</option>
       </lib-select>
     </div>
 

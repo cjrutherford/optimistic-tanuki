@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, computed, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
@@ -28,6 +28,15 @@ export class CreateThreadComponent {
     description = '';
     selectedTopicId = '';
     visibility: 'public' | 'private' = 'public';
+    visablityOptions: { label: string, value: 'public' | 'private' }[] = [
+        { label: 'Public', value: 'public' },
+        { label: 'Private', value: 'private' },
+    ]
+
+    topicOptions = computed(() => {
+        const currentTopicOptions = this.topics.map(t => ({ label: t.title, value: t.id }))
+        return currentTopicOptions;
+    })
 
     onSubmit() {
         if (!this.title || !this.selectedTopicId) return;
