@@ -57,7 +57,7 @@ export const OWNER_PERMISSION_ACTIONS = [
 ] as const;
 
 const ALL_OWNER_ROLES: { [key: string]: string[] } = {
-  global: ['owner'],
+  global: ['owner', 'forum_moderator'],
   'digital-homestead': ['digital_homesteader', 'forum_moderator'],
   'client-interface': ['client_profile_owner', 'client_asset_manager', 'forum_moderator'],
   forgeofwill: ['forgeofwill_planner', 'forum_moderator'],
@@ -65,7 +65,7 @@ const ALL_OWNER_ROLES: { [key: string]: string[] } = {
   assets: ['asset_owner'],
   social: ['social_user'],
   'christopherrutherford-net': ['christopherrutherford_owner_user', 'forum_moderator'],
-  'owner-console': ['owner_console_owner'],
+  'owner-console': ['owner_console_owner', 'forum_moderator'],
   store: ['store_manager'],
 };
 
