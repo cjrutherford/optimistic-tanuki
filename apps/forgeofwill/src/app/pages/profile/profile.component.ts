@@ -1,8 +1,7 @@
 import { inject } from '@angular/core';
 import {
-  MessageLevelType,
   MessageService,
-  MessageType,
+  MessageLevelType,
 } from '@optimistic-tanuki/message-ui';
 import {
   BannerComponent,

@@ -8,7 +8,7 @@ describe('CatalogComponent', () => {
   let component: CatalogComponent;
   let fixture: ComponentFixture<CatalogComponent>;
   let router: Router;
-  let storeService: jasmine.SpyObj<StoreService>;
+  let storeService: jest.Mocked<StoreService>;
 
   const mockProducts: Product[] = [
     {
@@ -23,9 +23,9 @@ describe('CatalogComponent', () => {
   ];
 
   beforeEach(async () => {
-    const storeServiceSpy = jasmine.createSpyObj('StoreService', [
-      'getProducts',
-    ]);
+    const storeServiceSpy = {
+      getProducts: jest.fn(),
+    };
 
     await TestBed.configureTestingModule({
       imports: [CatalogComponent],
@@ -44,7 +44,7 @@ describe('CatalogComponent', () => {
     fixture = TestBed.createComponent(CatalogComponent);
     component = fixture.componentInstance;
     router = TestBed.inject(Router);
-    storeService = TestBed.inject(StoreService) as jasmine.SpyObj<StoreService>;
+    storeService = TestBed.inject(StoreService) as jest.Mocked<StoreService>;
   });
 
   it('should create', () => {
@@ -52,7 +52,7 @@ describe('CatalogComponent', () => {
   });
 
   it('should load products on init', () => {
-    storeService.getProducts.and.returnValue(of(mockProducts));
+    storeService.getProducts.mockReturnValue(of(mockProducts));
 
     fixture.detectChanges();
 
@@ -62,7 +62,7 @@ describe('CatalogComponent', () => {
   });
 
   it('should handle error when loading products fails', () => {
-    storeService.getProducts.and.returnValue(
+    storeService.getProducts.mockReturnValue(
       throwError(() => new Error('Test error'))
     );
 
@@ -75,7 +75,7 @@ describe('CatalogComponent', () => {
   });
 
   it('should navigate to cart when product is added', () => {
-    storeService.getProducts.and.returnValue(of(mockProducts));
+    storeService.getProducts.mockReturnValue(of(mockProducts));
     fixture.detectChanges();
 
     const product = mockProducts[0];

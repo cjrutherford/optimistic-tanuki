@@ -252,4 +252,29 @@ describe('ProjectService', () => {
       req.flush(null);
     });
   });
+
+  describe('inviteMember', () => {
+    it('should invite a member successfully', () => {
+      const projectId = '1';
+      const email = 'test@example.com';
+      const createdBy = 'user1';
+      const expectedResponse = { success: true };
+
+      service.inviteMember(projectId, email, createdBy).subscribe((response) => {
+        expect(response).toEqual(expectedResponse);
+      });
+
+      const req = httpMock.expectOne(`/api/project-planning/projects/${projectId}/invite`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ projectId, email, createdBy });
+      req.flush(expectedResponse);
+    });
+
+    it('should throw an error if no profile is selected', () => {
+      profileServiceMock.getCurrentUserProfile.mockReturnValue(null);
+      expect(() => service.inviteMember('1', 'test@example.com', 'user1')).toThrow(
+        'No profile selected. Please select a profile before inviting members.'
+      );
+    });
+  });
 });

@@ -98,4 +98,52 @@ describe('RedisCacheProvider', () => {
       ]);
     });
   });
+
+  describe('not connected scenarios', () => {
+    beforeEach(() => {
+      (provider as any).isConnected = false;
+    });
+
+    it('get returns null when not connected', async () => {
+      const result = await provider.get('test-key');
+      expect(result).toBeNull();
+    });
+
+    it('set/delete/clear skip redis operations when not connected', async () => {
+      await provider.set('k', true);
+      await provider.delete('k');
+      await provider.clear();
+      expect(redisClient.setEx).not.toHaveBeenCalled();
+      expect(redisClient.del).not.toHaveBeenCalled();
+      expect(redisClient.keys).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('errors and lifecycle', () => {
+    it('onModuleDestroy quits when connected', async () => {
+      (provider as any).isConnected = true;
+      await provider.onModuleDestroy();
+      expect(redisClient.quit).toHaveBeenCalled();
+    });
+
+    it('get handles redis error', async () => {
+      (provider as any).isConnected = true;
+      redisClient.get.mockRejectedValue(new Error('fail'));
+      const result = await provider.get('k');
+      expect(result).toBeNull();
+    });
+
+    it('getStats returns size 0 when not connected', async () => {
+      (provider as any).isConnected = false;
+      const stats = await provider.getStats();
+      expect(stats.size).toBe(0);
+    });
+
+    it('deletePattern with no keys does not call del', async () => {
+      (provider as any).isConnected = true;
+      redisClient.keys.mockResolvedValue([]);
+      await provider.deletePattern('*');
+      expect(redisClient.del).not.toHaveBeenCalledWith(expect.anything());
+    });
+  });
 });

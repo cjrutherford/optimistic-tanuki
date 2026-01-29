@@ -39,6 +39,14 @@ describe('AppController', () => {
       expect(appService.createAsset).toHaveBeenCalledWith(dto);
       expect(response).toEqual(result);
     });
+
+    it('should throw RpcException if appService.createAsset fails', async () => {
+      const dto: CreateAssetDto = { name: 'test', type: 'image' } as any;
+      const error = new Error('Create failed');
+      (appService.createAsset as jest.Mock).mockRejectedValue(error);
+
+      await expect(appController.createAsset(dto)).rejects.toThrow();
+    });
   });
 
   describe('removeAsset', () => {
@@ -51,6 +59,13 @@ describe('AppController', () => {
 
       expect(appService.removeAsset).toHaveBeenCalledWith(handle);
       expect(response).toEqual(result);
+    });
+
+    it('should throw RpcException if appService.removeAsset fails', async () => {
+      const handle: AssetHandle = { id: '1' } as any;
+      (appService.removeAsset as jest.Mock).mockRejectedValue(new Error('Remove failed'));
+
+      await expect(appController.removeAsset(handle)).rejects.toThrow();
     });
   });
 
@@ -65,6 +80,13 @@ describe('AppController', () => {
       expect(appService.retrieveAsset).toHaveBeenCalledWith(handle);
       expect(response).toEqual(result);
     });
+
+    it('should throw RpcException if appService.retrieveAsset fails', async () => {
+      const handle: AssetHandle = { id: '1' } as any;
+      (appService.retrieveAsset as jest.Mock).mockRejectedValue(new Error('Retrieve failed'));
+
+      await expect(appController.retrieveAsset(handle)).rejects.toThrow();
+    });
   });
 
   describe('readAsset', () => {
@@ -77,6 +99,13 @@ describe('AppController', () => {
 
       expect(appService.readAsset).toHaveBeenCalledWith(handle);
       expect(response).toEqual(result);
+    });
+
+    it('should throw RpcException if appService.readAsset fails', async () => {
+      const handle: AssetHandle = { id: '1' } as any;
+      (appService.readAsset as jest.Mock).mockRejectedValue(new Error('Read failed'));
+
+      await expect(appController.readAsset(handle)).rejects.toThrow();
     });
   });
 });

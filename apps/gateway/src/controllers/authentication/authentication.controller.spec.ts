@@ -48,6 +48,7 @@ describe('AuthenticationController', () => {
           useValue: {
             initializeRoles: jest.fn().mockResolvedValue(undefined),
             enqueue: jest.fn().mockResolvedValue(undefined),
+            processNow: jest.fn().mockResolvedValue(undefined),
           },
         },
         Logger,

@@ -258,9 +258,13 @@ describe('RolesService', () => {
       getMany.mockResolvedValue(assignments);
 
       const result = await service.getUserRoles('1', '1');
-      expect(andWhere).toHaveBeenCalledWith('appScope.id = :appScopeId', {
-        appScopeId: '1',
-      });
+      expect(andWhere).toHaveBeenCalledWith(
+        '(appScope.name = :appScopeName OR appScope.name = :globalScope)',
+        {
+          appScopeName: '1',
+          globalScope: 'global',
+        }
+      );
       expect(result).toEqual(assignments);
     });
   });

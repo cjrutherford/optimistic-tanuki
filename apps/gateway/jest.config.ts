@@ -7,7 +7,7 @@ export default {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/apps/gateway',
-  coverageReporters: ['summary', 'json', 'lcov', 'clover'],
+  coverageReporters: ['text-summary', 'text', 'json', 'lcov', 'clover'],
   coverageThreshold: {
     global: {
       branches: 50,

@@ -23,8 +23,16 @@ import { LangChainService } from './langchain.service';
 import { LangGraphService } from './langgraph.service';
 import { LangChainAgentService } from './langchain-agent.service';
 import { ContextStorageService } from './context-storage.service';
+import { SystemPromptBuilder } from './system-prompt-builder.service';
 
 jest.mock('@optimistic-tanuki/prompt-generation');
+
+class MockSystemPromptBuilder {
+  buildSystemPrompt = jest.fn().mockResolvedValue({
+    template: { formatMessages: jest.fn().mockResolvedValue([{ content: 'System prompt' }]) },
+    variables: {}
+  });
+}
 
 describe('AppService', () => {
   let service: AppService;
@@ -120,6 +128,10 @@ describe('AppService', () => {
           useValue: {
             getContext: jest.fn().mockResolvedValue({ summary: '' }),
           },
+        },
+        {
+          provide: SystemPromptBuilder,
+          useClass: MockSystemPromptBuilder,
         },
       ],
     }).compile();
@@ -308,8 +320,7 @@ describe('AppService', () => {
         { id: mockConversation.messages[1].senderId }
       );
       expect(service['summarizeConversation']).toHaveBeenCalledWith(
-        mockConversation.messages,
-        'System prompt'
+        mockConversation.messages
       );
       expect(chatCollectorService.send).toHaveBeenCalledTimes(
         mockAiPersonas.length
@@ -424,15 +435,14 @@ describe('AppService', () => {
         type: 'chat',
       },
     ];
-    const mockPersonaPrompt = 'Persona system prompt';
-    const mockSummaryResponse = {
-      message: { content: 'Conversation summary' },
-    };
+    // const mockPersonaPrompt = 'Persona system prompt'; // Unused
+    // const mockSummaryResponse = { // Unused
+    //   message: { content: 'Conversation summary' },
+    // };
 
     it('should successfully summarize conversation using internal summarizer', async () => {
       const result = await service['summarizeConversation'](
-        mockMessages,
-        mockPersonaPrompt
+        mockMessages
       );
       expect(result).toBe(
         'Recent conversation (last 2 messages): User: Message 1 | User: Message 2'
@@ -440,7 +450,7 @@ describe('AppService', () => {
     });
 
     it('should return no-history when messages empty', async () => {
-      const res = await service['summarizeConversation']([], mockPersonaPrompt);
+      const res = await service['summarizeConversation']([]);
       expect(res).toBe('No previous conversation history.');
     });
   });

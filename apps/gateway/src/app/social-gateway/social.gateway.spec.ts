@@ -98,13 +98,126 @@ describe('SocialGateway', () => {
   });
 
   describe('broadcastPostCreated', () => {
-    it('should broadcast post created event to subscribers', () => {
+    it('should broadcast post created event to subscribers', async () => {
+      const client: any = { emit: jest.fn() };
+      await gateway.handleSubscribePosts({ profileId: 'user123' }, client);
       const post = { id: 'post123', content: 'New post' };
+      gateway.broadcastPostCreated(post);
+      expect(client.emit).toHaveBeenCalledWith('post_created', post);
+    });
+  });
 
-      // This is a public method but relies on internal state
-      // In a real scenario, we'd need to set up mock clients first
-      // Just verify it doesn't throw
-      expect(() => gateway.broadcastPostCreated(post)).not.toThrow();
+  describe('subscriptions and broadcasts', () => {
+    it('broadcasts updates to specific post subscribers', async () => {
+      const client: any = { emit: jest.fn() };
+      await gateway.handleSubscribePosts(
+        { profileId: 'user123', postIds: ['post42'] },
+        client
+      );
+      gateway.broadcastPostUpdated({ id: 'post42' });
+      expect(client.emit).toHaveBeenCalledWith(
+        'post_updated',
+        expect.objectContaining({ id: 'post42' })
+      );
+      client.emit.mockClear();
+      gateway.broadcastPostDeleted('post42');
+      expect(client.emit).toHaveBeenCalledWith('post_deleted', {
+        postId: 'post42',
+      });
+    });
+
+    it('broadcasts user follow events', async () => {
+      const client: any = { emit: jest.fn() };
+      await gateway.handleSubscribeUserActivity(
+        { profileId: 'user123' },
+        client
+      );
+      gateway.broadcastFollowEvent('user123', 'other', 'follow');
+      expect(client.emit).toHaveBeenCalledWith(
+        'user_follow',
+        expect.objectContaining({ followerId: 'user123' })
+      );
+    });
+  });
+
+  describe('unsubscriptions', () => {
+    it('unsubscribes from specific posts', async () => {
+      const client: any = { emit: jest.fn() };
+      await gateway.handleSubscribePosts(
+        { profileId: 'user123', postIds: ['p1', 'p2'] },
+        client
+      );
+      client.emit.mockClear();
+      await gateway.handleUnsubscribePosts(
+        { profileId: 'user123', postIds: ['p1'] },
+        client
+      );
+      expect(client.emit).toHaveBeenCalledWith('unsubscribed', {
+        type: 'posts',
+        postIds: ['p1'],
+      });
+    });
+
+    it('unsubscribes from all posts', async () => {
+      const client: any = { emit: jest.fn() };
+      await gateway.handleSubscribePosts({ profileId: 'user123' }, client);
+      client.emit.mockClear();
+      await gateway.handleUnsubscribePosts({ profileId: 'user123' }, client);
+      expect(client.emit).toHaveBeenCalledWith('unsubscribed', {
+        type: 'posts',
+        postIds: ['all'],
+      });
+    });
+
+    it('unsubscribes from user activity', async () => {
+      const client: any = { emit: jest.fn() };
+      await gateway.handleSubscribeUserActivity(
+        { profileId: 'user123', targetUserIds: ['other'] },
+        client
+      );
+      client.emit.mockClear();
+      await gateway.handleUnsubscribeUserActivity(
+        { profileId: 'user123', targetUserIds: ['other'] },
+        client
+      );
+      expect(client.emit).toHaveBeenCalledWith('unsubscribed', {
+        type: 'user_activity',
+        userIds: ['other'],
+      });
+    });
+  });
+
+  describe('followers/following', () => {
+    it('emits following list', async () => {
+      const client: any = { emit: jest.fn() };
+      mockSocialClient.send.mockReturnValue(of(['a']));
+      await gateway.handleGetFollowing({ profileId: 'u1' }, client);
+      expect(client.emit).toHaveBeenCalledWith('following', ['a']);
+    });
+
+    it('emits error when following fetch fails', async () => {
+      const client: any = { emit: jest.fn() };
+      mockSocialClient.send.mockReturnValue(throwError(() => new Error('x')));
+      await gateway.handleGetFollowing({ profileId: 'u1' }, client);
+      expect(client.emit).toHaveBeenCalledWith('error', {
+        message: 'Failed to fetch following',
+      });
+    });
+
+    it('emits followers list', async () => {
+      const client: any = { emit: jest.fn() };
+      mockSocialClient.send.mockReturnValue(of(['a']));
+      await gateway.handleGetFollowers({ profileId: 'u1' }, client);
+      expect(client.emit).toHaveBeenCalledWith('followers', ['a']);
+    });
+
+    it('emits error when followers fetch fails', async () => {
+      const client: any = { emit: jest.fn() };
+      mockSocialClient.send.mockReturnValue(throwError(() => new Error('x')));
+      await gateway.handleGetFollowers({ profileId: 'u1' }, client);
+      expect(client.emit).toHaveBeenCalledWith('error', {
+        message: 'Failed to fetch followers',
+      });
     });
   });
 

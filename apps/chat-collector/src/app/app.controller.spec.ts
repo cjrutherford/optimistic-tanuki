@@ -5,6 +5,11 @@ import { Logger } from '@nestjs/common';
 import { ChatCommands } from '@optimistic-tanuki/constants';
 import { ChatMessage } from '@optimistic-tanuki/models';
 
+// Mock uuid
+jest.mock('uuid', () => ({
+  v4: jest.fn(() => 'mock-uuid'),
+}));
+
 describe('AppController', () => {
   let appController: AppController;
   let appService: AppService;
@@ -24,7 +29,7 @@ describe('AppController', () => {
         },
         {
           provide: Logger,
-          useValue: { log: jest.fn() },
+          useValue: { log: jest.fn(), debug: jest.fn() },
         },
       ],
     }).compile();
@@ -46,6 +51,7 @@ describe('AppController', () => {
         content: 'Hello',
         timestamp: new Date(),
         type: 'chat',
+        role: 'user',
       };
       const expectedResult = { ...chatMessage, id: 'new-id' };
       jest

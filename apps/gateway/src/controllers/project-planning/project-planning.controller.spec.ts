@@ -11,6 +11,7 @@ import {
 } from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
 import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
 import {
   CreateChangeDto,
   CreateProjectDto,
@@ -43,6 +44,15 @@ describe('ProjectPlanningController', () => {
   let controller: ProjectPlanningController;
   let projectPlanningService: any;
 
+  const mockUser: UserDetails = {
+    userId: 'user-id',
+    profileId: 'profile-id',
+    email: 'test@example.com',
+    name: 'Test User',
+    exp: 1234567890,
+    iat: 1234567890,
+  };
+
   beforeEach(async () => {
     projectPlanningService = {
       send: jest.fn().mockImplementation(() => of({})),
@@ -58,6 +68,8 @@ describe('ProjectPlanningController', () => {
       ],
     })
       .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => of(true) })
+      .overrideGuard(PermissionsGuard)
       .useValue({ canActivate: () => of(true) })
       .compile();
 
@@ -105,19 +117,19 @@ describe('ProjectPlanningController', () => {
       status: 'Not Started',
       startDate: new Date(),
     };
-    await controller.createProject(createDto);
+    await controller.createProject(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectCommands.CREATE },
-      createDto
+      { ...createDto, createdBy: mockUser.profileId }
     );
   });
 
   it('should update a project', async () => {
     const updateDto: UpdateProjectDto = { id: '1', name: 'Test' };
-    await controller.updateProject(updateDto);
+    await controller.updateProject(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectCommands.UPDATE },
-      updateDto
+      { ...updateDto, updatedBy: mockUser.profileId }
     );
   });
 
@@ -164,19 +176,19 @@ describe('ProjectPlanningController', () => {
       approver: 'approver-id',
       projectId: '1',
     };
-    await controller.createChange(createDto);
+    await controller.createChange(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ChangeCommands.CREATE },
-      createDto
+      { ...createDto, createdBy: mockUser.profileId }
     );
   });
 
   it('should update a change', async () => {
     const updateDto: UpdateChangeDto = { id: '1' };
-    await controller.updateChange(updateDto);
+    await controller.updateChange(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ChangeCommands.UPDATE },
-      updateDto
+      { ...updateDto, updatedBy: mockUser.profileId }
     );
   });
 
@@ -219,19 +231,19 @@ describe('ProjectPlanningController', () => {
       content: 'Test',
       projectId: '1',
     };
-    await controller.createJournal(createDto);
+    await controller.createJournal(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectJournalCommands.CREATE },
-      createDto
+      { ...createDto, createdBy: mockUser.profileId }
     );
   });
 
   it('should update a journal', async () => {
     const updateDto: UpdateProjectJournalDto = { id: '1' };
-    await controller.updateJournal(updateDto);
+    await controller.updateJournal(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectJournalCommands.UPDATE },
-      updateDto
+      { ...updateDto, updatedBy: mockUser.profileId }
     );
   });
 
@@ -278,19 +290,19 @@ describe('ProjectPlanningController', () => {
       impact: RiskImpact.LOW,
       status: RiskStatus.OPEN,
     };
-    await controller.createRisk(createDto);
+    await controller.createRisk(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: RiskCommands.CREATE },
-      createDto
+      { ...createDto, createdBy: mockUser.profileId }
     );
   });
 
   it('should update a risk', async () => {
     const updateDto: UpdateRiskDto = { id: '1', name: 'Test' };
-    await controller.updateRisk(updateDto);
+    await controller.updateRisk(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: RiskCommands.UPDATE },
-      updateDto
+      { ...updateDto, updatedBy: mockUser.profileId }
     );
   });
 
@@ -336,19 +348,19 @@ describe('ProjectPlanningController', () => {
       priority: TaskPriority.MEDIUM,
       status: TaskStatus.TODO,
     };
-    await controller.createTask(createDto);
+    await controller.createTask(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TaskCommands.CREATE },
-      createDto
+      { ...createDto, createdBy: mockUser.profileId }
     );
   });
 
   it('should update a task', async () => {
     const updateDto: UpdateTaskDto = { id: '1', title: 'Test' };
-    await controller.updateTask(updateDto);
+    await controller.updateTask(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TaskCommands.UPDATE },
-      updateDto
+      { ...updateDto, updatedBy: mockUser.profileId }
     );
   });
 
@@ -378,19 +390,19 @@ describe('ProjectPlanningController', () => {
 
   it('should create a timer', async () => {
     const createDto: CreateTimerDto = { taskId: '1' };
-    await controller.createTimer(createDto);
+    await controller.createTimer(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TimerCommands.CREATE },
-      createDto
+      { ...createDto, createdBy: mockUser.profileId }
     );
   });
 
   it('should update a timer', async () => {
     const updateDto: UpdateTimerDto = { id: '1' };
-    await controller.updateTimer(updateDto);
+    await controller.updateTimer(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TimerCommands.UPDATE },
-      updateDto
+      { ...updateDto, updatedBy: mockUser.profileId }
     );
   });
 
