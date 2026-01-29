@@ -18,7 +18,9 @@ export type TcpServiceConfig = {
     | 'ai_orchestration'
     | 'blogging'
     | 'permissions'
-    | 'app_configurator';
+    | 'app_configurator'
+    | 'forum'
+    | 'finance';
   transport: Transport;
   options: TcpClientOptions;
   host: string;
@@ -56,6 +58,8 @@ export type Config = {
     blogging: TcpServiceConfig;
     permissions: TcpServiceConfig;
     app_configurator: TcpServiceConfig;
+    forum: TcpServiceConfig;
+    finance: TcpServiceConfig;
   };
 };
 
