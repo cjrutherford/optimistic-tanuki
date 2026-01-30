@@ -48,9 +48,16 @@ export class ConfigurationsService {
       try {
         this.logger.log(`Creating app scope for configuration: ${createDto.name}`);
         
+        // Sanitize app scope name
+        const sanitizedName = createDto.name
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
+        
         // Create the app scope
         const appScopeDto: CreateAppScopeDto = {
-          name: createDto.name.toLowerCase().replace(/\s+/g, '-'),
+          name: sanitizedName,
           description: `App scope for ${createDto.name}`,
           active: true,
         };
@@ -67,7 +74,7 @@ export class ConfigurationsService {
 
         // Create an owner role for this app scope
         const ownerRoleDto: CreateRoleDto = {
-          name: `${appScopeDto.name}-owner`,
+          name: `${sanitizedName}-owner`,
           description: `Owner role for ${createDto.name}`,
           appScopeId: appScope.id,
         };
@@ -100,7 +107,10 @@ export class ConfigurationsService {
         );
       } catch (error) {
         this.logger.error('Failed to create app scope or assign owner role:', error);
-        // Continue with app config creation even if scope/role creation fails
+        // Fail the entire operation if scope/role creation fails
+        throw new Error(
+          'Failed to create app with permissions. Please try again or contact support.'
+        );
       }
     }
     

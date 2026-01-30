@@ -75,7 +75,7 @@ import { AuthStateService } from '../state/auth-state.service';
               </otui-button>
               <a
                 *ngIf="app.domain"
-                [href]="'http://' + app.domain"
+                [href]="getAppUrl(app.domain)"
                 target="_blank"
                 class="launch-link"
               >
@@ -252,5 +252,13 @@ export class MyAppsComponent implements OnInit {
     // Navigate to app editor
     console.log('Edit app:', app);
     alert(`Editing ${app.name} (implementation coming soon)`);
+  }
+
+  getAppUrl(domain: string): string {
+    // Use HTTPS for production domains, HTTP for localhost/dev
+    if (domain.includes('localhost') || domain.includes('127.0.0.1') || domain.endsWith('.local')) {
+      return `http://${domain}`;
+    }
+    return `https://${domain}`;
   }
 }

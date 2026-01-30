@@ -73,6 +73,9 @@ import { AuthStateService } from '../state/auth-state.service';
               <span class="field-hint">
                 Custom domain for your app (you'll need to configure DNS)
               </span>
+              <span *ngIf="formData.domain && !isDomainValid()" class="field-error">
+                Please enter a valid domain name (e.g., myapp.example.com)
+              </span>
             </div>
           </div>
 
@@ -213,6 +216,13 @@ import { AuthStateService } from '../state/auth-state.service';
         margin-top: 0.25rem;
       }
 
+      .field-error {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--danger, #f44336);
+        margin-top: 0.25rem;
+      }
+
       .checkbox-group {
         display: flex;
         flex-direction: column;
@@ -284,7 +294,23 @@ export class CreateAppComponent {
   };
 
   isValid(): boolean {
-    return this.formData.name.trim().length > 0;
+    const nameValid = this.formData.name.trim().length > 0 && 
+                      this.formData.name.length <= 100;
+    
+    // Validate domain format if provided
+    if (this.formData.domain) {
+      return nameValid && this.isDomainValid();
+    }
+    
+    return nameValid;
+  }
+
+  isDomainValid(): boolean {
+    if (!this.formData.domain) {
+      return true; // Domain is optional
+    }
+    const domainRegex = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
+    return domainRegex.test(this.formData.domain);
   }
 
   createApp(): void {
@@ -315,7 +341,7 @@ export class CreateAppComponent {
         layout: 'single-column',
       },
       routes: this.buildRoutes(),
-      features: this.formData.features as any,
+      features: this.formData.features,
       theme: {
         primaryColor: '#007bff',
         secondaryColor: '#6c757d',
@@ -331,7 +357,18 @@ export class CreateAppComponent {
       },
       error: (err) => {
         console.error('Failed to create app:', err);
-        this.error = err.error?.message || err.message || 'Failed to create app. Please try again.';
+        // Provide user-friendly error messages
+        let errorMessage = 'Failed to create app. Please try again.';
+        
+        if (err.status === 409) {
+          errorMessage = 'An app with this name already exists. Please choose a different name.';
+        } else if (err.status === 400) {
+          errorMessage = 'Invalid app configuration. Please check your inputs.';
+        } else if (err.status === 500) {
+          errorMessage = 'Server error occurred. Please try again later or contact support.';
+        }
+        
+        this.error = errorMessage;
         this.creating = false;
       },
     });

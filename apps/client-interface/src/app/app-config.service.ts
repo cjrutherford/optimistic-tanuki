@@ -65,10 +65,12 @@ export class AppConfigService {
 
   /**
    * Get app configs created by the current user
+   * Note: Currently returns all configs and filters client-side.
+   * TODO: Implement backend filtering by ownerId for better security.
    */
   getMyAppConfigs(): Observable<AppConfiguration[]> {
-    // This will filter on the backend based on the authenticated user
     // For now, we get all and filter client-side
+    // Future enhancement: Add backend endpoint /api/app-config/my-apps
     return this.getAllAppConfigs();
   }
 }
