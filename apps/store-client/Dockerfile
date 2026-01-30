@@ -9,7 +9,7 @@ COPY package.json ./
 COPY package-lock.json ./
 
 # Install all dependencies (including devDependencies needed for build)
-RUN npm ci --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
 # Copy the entire workspace source code
 # Nx needs this to build the application and its dependencies
@@ -32,7 +32,7 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/package-lock.json ./
 
 # Install only production dependencies
-RUN npm ci --omit=dev --legacy-peer-deps && npm i -g nodemon
+RUN npm install --omit=dev --legacy-peer-deps && npm i -g nodemon
 
 # Copy the built application (server and browser bundles) from the builder stage
 COPY --from=builder /usr/src/app/dist/apps/store-client ./dist/apps/store-client
