@@ -175,6 +175,27 @@ All documentation has been organized into a comprehensive, navigable structure. 
 - [Theme System](./docs/architecture/theme-system.md) - Theming architecture
 - [E2E Testing](./docs/testing/e2e-testing.md) - End-to-end testing guide
 
+## ✨ Key Features
+
+### User-Created Applications
+Regular users can now create and manage their own configured applications through the client-interface:
+
+- **App Creation Wizard**: Simple form-based wizard for creating new apps
+- **Automatic Permissions**: Apps created with app scopes get automatic owner role assignment
+- **Feature Selection**: Choose which features to enable (auth, social, tasks, blogging)
+- **Custom Domains**: Configure custom domains for your apps
+- **My Apps Dashboard**: Manage all your created applications in one place
+
+📖 **See the [User-Created Apps Guide](./docs/USER_CREATED_APPS.md)** for detailed documentation.
+
+### Multi-Tenant Architecture
+The platform supports multiple applications with isolated permissions:
+
+- **App Scopes**: Isolated permission boundaries for each application
+- **Role-Based Access Control**: Fine-grained permission management
+- **Configurable Client**: Host multiple apps on a single platform
+- **Domain-Based Routing**: Access apps via custom domains
+
 ## 📦 Project Applications
 
 Here's a list of the individual applications within this workspace:
