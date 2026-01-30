@@ -331,13 +331,24 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     instance.data = { ...instance.data, ...data };
 
     // Update component properties
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const innerRef = (instance.data as any)._innerComponentRef;
+    const targetRef = innerRef || instance.componentRef;
+
     Object.keys(data).forEach((key) => {
-      if (instance.componentRef.instance[key] !== undefined) {
-        instance.componentRef.instance[key] = data[key];
+      if (
+        key !== '_innerComponentRef' &&
+        targetRef.instance &&
+        targetRef.instance[key] !== undefined
+      ) {
+        targetRef.instance[key] = data[key];
       }
     });
 
     // Trigger change detection
+    if (innerRef && innerRef.changeDetectorRef) {
+      innerRef.changeDetectorRef.detectChanges();
+    }
     instance.componentRef.changeDetectorRef.detectChanges();
 
     // Emit event

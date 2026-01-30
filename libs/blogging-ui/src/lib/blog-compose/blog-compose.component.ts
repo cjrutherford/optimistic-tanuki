@@ -9,6 +9,7 @@ import {
   AfterViewInit,
   inject,
   forwardRef,
+  ChangeDetectorRef,
 } from '@angular/core';
 
 import {
@@ -194,6 +195,7 @@ export class BlogComposeComponent
   componentContainer!: ViewContainerRef;
 
   override readonly themeService: ThemeService = inject(ThemeService);
+  private cdr = inject(ChangeDetectorRef);
 
   private sanitize(input: string): string {
     return DOMPurify.sanitize(input);
@@ -265,93 +267,99 @@ export class BlogComposeComponent
   }
 
   ngAfterViewInit(): void {
-    this.componentInjectionService.setViewContainer(this.componentContainer);
+    Promise.resolve().then(() => {
+      this.componentInjectionService.setViewContainer(this.componentContainer);
 
-    // Set up callbacks for component wrapper events
-    this.componentInjectionService.setWrapperCallbacks({
-      onEdit: (instance) => this.onComponentEdit(instance),
-      onDelete: (instance) => this.onComponentDelete(instance),
-      onMoveUp: (instance) => this.onComponentMoveUp(instance),
-      onMoveDown: (instance) => this.onComponentMoveDown(instance),
-      onSelection: (instance) => this.onComponentSelection(instance),
-    });
+      // Set up callbacks for component wrapper events
+      this.componentInjectionService.setWrapperCallbacks({
+        onEdit: (instance) => this.onComponentEdit(instance),
+        onDelete: (instance) => this.onComponentDelete(instance),
+        onMoveUp: (instance) => this.onComponentMoveUp(instance),
+        onMoveDown: (instance) => this.onComponentMoveDown(instance),
+        onSelection: (instance) => this.onComponentSelection(instance),
+      });
 
-    this.initializeDefaultComponents();
+      this.initializeDefaultComponents();
 
-    this.editor = new Editor({
-      extensions: [
-        StarterKit,
-        Image,
-        Subscript,
-        Superscript,
-        Underline,
-        TextAlign.configure({
-          types: ['heading', 'paragraph'],
-        }),
-        Table.configure({
-          resizable: true,
-        }),
-        TableRow,
-        TableHeader,
-        TableCell,
-        BlogComposeComponentNode.configure({
-          onComponentClick: (componentId: string, instanceId: string) => {
-            this.onInlineComponentClick(componentId, instanceId);
+      this.editor = new Editor({
+        extensions: [
+          StarterKit,
+          Image,
+          Subscript,
+          Superscript,
+          Underline,
+          TextAlign.configure({
+            types: ['heading', 'paragraph'],
+          }),
+          Table.configure({
+            resizable: true,
+          }),
+          TableRow,
+          TableHeader,
+          TableCell,
+          BlogComposeComponentNode.configure({
+            onComponentClick: (componentId: string, instanceId: string) => {
+              this.onInlineComponentClick(componentId, instanceId);
+            },
+            onComponentDelete: (instanceId: string) => {
+              this.onInlineComponentDelete(instanceId);
+            },
+            onComponentEdit: (instanceId: string) => {
+              this.onInlineComponentEdit(instanceId);
+            },
+            renderer: (
+              componentId: string,
+              instanceId: string,
+              data: Record<string, unknown>,
+              element: HTMLElement
+            ) => {
+              return this.componentInjectionService.renderComponentInto(
+                componentId,
+                instanceId,
+                data,
+                element
+              );
+            },
+          }),
+        ],
+        editorProps: {
+          attributes: {
+            class: 'prosemirror-editor',
           },
-          onComponentDelete: (instanceId: string) => {
-            this.onInlineComponentDelete(instanceId);
-          },
-          onComponentEdit: (instanceId: string) => {
-            this.onInlineComponentEdit(instanceId);
-          },
-          renderer: (
-            componentId: string,
-            instanceId: string,
-            data: Record<string, unknown>,
-            element: HTMLElement
-          ) => {
-            return this.componentInjectionService.renderComponentInto(
-              componentId,
-              instanceId,
-              data,
-              element
-            );
-          },
-        }),
-      ],
-      editorProps: {
-        attributes: {
-          class: 'prosemirror-editor',
         },
-      },
-      content: this._content,
-    });
+        content: this._content,
+      });
 
-    // Apply pending content if writeValue was called before editor init
-    if (this.pendingContent !== null) {
-      this.editor.commands.setContent(this.pendingContent);
-      this.pendingContent = null;
-    }
+      // Apply pending content if writeValue was called before editor init
+      if (this.pendingContent !== null) {
+        this.editor.commands.setContent(this.pendingContent);
+        this.pendingContent = null;
+      }
 
-    this.editor.view.dom.addEventListener('contextmenu', (event) => {
-      event.preventDefault();
-      this.contextMenuX = event.clientX;
-      this.contextMenuY = event.clientY;
-      this.isContextMenuVisible = true;
-    });
+      this.editor.view.dom.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        this.contextMenuX = event.clientX;
+        this.contextMenuY = event.clientY;
+        this.isContextMenuVisible = true;
+      });
 
-    // Listen for content changes and emit for form control
-    this.editor.on('update', () => {
-      const newContent = this.editor.getHTML();
-      if (this._content !== newContent) {
-        this._content = this.sanitize(newContent);
-        this.emitChange();
+      // Listen for content changes and emit for form control
+      this.editor.on('update', () => {
+        const newContent = this.editor.getHTML();
+        if (this._content !== newContent) {
+          this._content = this.sanitize(newContent);
+          this.emitChange();
+        }
+      });
+
+      if (this.cdr) {
+        this.cdr.detectChanges();
       }
     });
   }
 
   override ngOnDestroy(): void {
-    this.editor.destroy();
+    this.editor?.destroy();
   }
 
   // Component injection system initialization
