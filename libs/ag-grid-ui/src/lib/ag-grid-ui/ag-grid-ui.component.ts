@@ -213,7 +213,9 @@ export class AgGridUiComponent
     const currentTheme = this.gridThemeSignal();
     if (currentTheme) {
       this.gridApi?.setGridOption('theme', currentTheme);
-      this.gridApi?.refreshCells();
+      if (this.gridApi && typeof (this.gridApi as any).refreshCells === 'function') {
+        (this.gridApi as any).refreshCells();
+      }
     }
 
     console.log(

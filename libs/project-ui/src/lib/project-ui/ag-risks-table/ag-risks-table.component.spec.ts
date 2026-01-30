@@ -123,8 +123,8 @@ describe('AgRisksTableComponent', () => {
   it('should set selected risk for editing', () => {
     const risk = mockRisks[0];
     component.onEdit(risk);
-    expect(component.selectedRisk).toEqual(risk);
-    expect(component.showEditModal).toBe(true);
+    expect(component.selectedRisk()).toEqual(risk);
+    expect(component.showEditModal()).toBe(true);
   });
 
   it('should update grid when risks input changes', (done) => {

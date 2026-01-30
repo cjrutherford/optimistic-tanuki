@@ -6,7 +6,7 @@ export class CreateGoalDto {
   @IsString()
   @MinLength(3)
   @MaxLength(200)
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'The description of the goal',
@@ -15,31 +15,31 @@ export class CreateGoalDto {
   @IsString()
   @MinLength(10)
   @MaxLength(5000)
-  description: string;
+  description!: string;
 
   @ApiProperty({ description: 'The ID of the user creating the goal' })
   @IsString()
   @IsUUID()
-  userId: string;
+  userId!: string;
 
   @ApiProperty({
     description: 'The ID of the timeline associated with the goal',
   })
   @IsString()
   @IsUUID()
-  timelineId: string;
+  timelineId!: string;
 
   @ApiProperty({
     description: 'The ID of the project associated with the goal',
   })
   @IsString()
   @IsUUID()
-  projectId: string;
+  projectId!: string;
 
   @ApiProperty({
     description: 'The ID of the profile associated with the goal',
   })
   @IsString()
   @IsUUID()
-  profileId: string;
+  profileId!: string;
 }

@@ -8,6 +8,8 @@ import { ThemeService, ColorPalette } from '@optimistic-tanuki/theme-lib';
 import { of, BehaviorSubject, Subject, throwError } from 'rxjs';
 import { PLATFORM_ID } from '@angular/core';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { SOCKET_HOST, SOCKET_NAMESPACE, SOCKET_IO_INSTANCE, SOCKET_AUTH_TOKEN_PROVIDER, SOCKET_AUTH_ERROR_HANDLER } from '@optimistic-tanuki/chat-ui';
+import { io } from 'socket.io-client';
 
 import { signal } from '@angular/core';
 
@@ -60,7 +62,12 @@ describe('AppComponent', () => {
         { provide: ProfileService, useValue: profileService },
         { provide: MessageService, useValue: messageService },
         { provide: ThemeService, useValue: themeService },
-        { provide: PLATFORM_ID, useValue: 'browser' }
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: SOCKET_HOST, useValue: 'http://localhost' },
+        { provide: SOCKET_NAMESPACE, useValue: '/chat' },
+        { provide: SOCKET_IO_INSTANCE, useValue: io },
+        { provide: SOCKET_AUTH_TOKEN_PROVIDER, useValue: () => 'test-token' },
+        { provide: SOCKET_AUTH_ERROR_HANDLER, useValue: () => {} }
       ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();

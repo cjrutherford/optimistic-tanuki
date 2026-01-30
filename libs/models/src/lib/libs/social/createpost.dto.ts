@@ -16,13 +16,13 @@ export class CreatePostDto {
   @IsString()
   @MinLength(1)
   @MaxLength(500)
-  title: string;
+  title!: string;
 
   @ApiProperty({ description: 'The content of the post in HTML format' })
   @IsString()
   @MinLength(1)
   @MaxLength(50000)
-  content: string;
+  content!: string;
 
   @ApiProperty({ description: 'The ID of the user', required: false })
   @IsOptional()
@@ -33,7 +33,7 @@ export class CreatePostDto {
   @ApiProperty({ description: 'The ID of the profile' })
   @IsString()
   @IsUUID()
-  profileId: string;
+  profileId!: string;
 
   @ApiProperty({
     description: 'Array of attachment IDs',

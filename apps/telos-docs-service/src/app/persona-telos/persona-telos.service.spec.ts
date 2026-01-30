@@ -19,7 +19,7 @@ describe('PersonaTelosService', () => {
         },
         {
           provide: Logger,
-          useValue: { log: jest.fn() },
+          useValue: { log: jest.fn(), debug: jest.fn() },
         },
       ],
     }).compile();
@@ -146,7 +146,7 @@ describe('PersonaTelosService', () => {
 
   describe('update', () => {
     it('should update a persona and return it', async () => {
-      const updateDto = { name: 'Updated Persona' };
+      const updateDto = { id: '1', name: 'Updated Persona' };
       const existingPersona = { id: '1', name: 'Test Persona' } as PersonaTelos;
       const updatedPersona = {
         ...existingPersona,

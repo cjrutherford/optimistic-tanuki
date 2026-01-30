@@ -4,11 +4,11 @@ import { IsUUID, IsOptional, IsBoolean } from 'class-validator';
 export class UpdateFollowDto {
   @ApiProperty({ description: 'Follower user ID' })
   @IsUUID()
-  followerId: string;
+  followerId!: string;
 
   @ApiProperty({ description: 'Followee user ID' })
   @IsUUID()
-  followeeId: string;
+  followeeId!: string;
 }
 
 export class QueryFollowsDto {

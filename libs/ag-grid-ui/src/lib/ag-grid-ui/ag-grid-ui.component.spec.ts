@@ -109,6 +109,7 @@ describe('AgGridUiComponent', () => {
         hideOverlay: () => {},
         getDisplayedRowCount: () => 0,
         setGridOption: () => {},
+        refreshCells: () => {},
       },
     } as any;
 

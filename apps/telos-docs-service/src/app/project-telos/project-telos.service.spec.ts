@@ -127,7 +127,7 @@ describe('ProjectTelosService', () => {
 
   describe('update', () => {
     it('should update a project and return it', async () => {
-      const updateDto = { name: 'Updated Project' };
+      const updateDto = { id: '1', name: 'Updated Project' };
       const existingProject = { id: '1', name: 'Test Project' } as ProjectTelos;
       const updatedProject = {
         ...existingProject,

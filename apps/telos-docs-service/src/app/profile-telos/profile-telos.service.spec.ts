@@ -127,7 +127,7 @@ describe('ProfileTelosService', () => {
 
   describe('update', () => {
     it('should update a profile and return it', async () => {
-      const updateDto = { name: 'Updated Profile' };
+      const updateDto = { id: '1', name: 'Updated Profile' };
       const existingProfile = { id: '1', name: 'Test Profile' } as ProfileTelos;
       const updatedProfile = {
         ...existingProfile,

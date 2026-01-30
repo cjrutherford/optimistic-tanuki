@@ -8,9 +8,9 @@ export class CreateLinkDto {
   })
   @IsUrl({}, { message: 'Must be a valid URL' })
   @MaxLength(2048)
-  url: string;
+  url!: string;
 
   @ApiProperty({ description: 'The ID of the post' })
   @IsUUID()
-  postId: string;
+  postId!: string;
 }

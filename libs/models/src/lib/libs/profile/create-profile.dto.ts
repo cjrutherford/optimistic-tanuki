@@ -13,7 +13,7 @@ export class CreateProfileDto {
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'Description of the profile',
@@ -21,30 +21,30 @@ export class CreateProfileDto {
   })
   @IsString()
   @MaxLength(500)
-  description: string;
+  description!: string;
 
   @ApiProperty({ description: 'User ID associated with the profile' })
   @IsString()
   @IsUUID()
-  userId: string;
+  userId!: string;
 
   @ApiProperty({ description: 'URL of the profile picture' })
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  profilePic: string;
+  profilePic!: string;
 
   @ApiProperty({ description: 'URL of the cover picture' })
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  coverPic: string;
+  coverPic!: string;
 
   @ApiProperty({ description: 'Bio of the profile' })
   @IsOptional()
   @IsString()
   @MaxLength(2000)
-  bio: string;
+  bio!: string;
 
   @ApiProperty({
     description: 'Location of the profile',
@@ -53,7 +53,7 @@ export class CreateProfileDto {
   @IsOptional()
   @IsString()
   @MaxLength(200)
-  location: string;
+  location!: string;
 
   @ApiProperty({
     description: 'Occupation of the profile',
@@ -62,7 +62,7 @@ export class CreateProfileDto {
   @IsOptional()
   @IsString()
   @MaxLength(200)
-  occupation: string;
+  occupation!: string;
 
   @ApiProperty({
     description: 'Interests of the profile',
@@ -71,7 +71,7 @@ export class CreateProfileDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  interests: string;
+  interests!: string;
 
   @ApiProperty({
     description: 'Skills of the profile',
@@ -80,5 +80,5 @@ export class CreateProfileDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  skills: string;
+  skills!: string;
 }

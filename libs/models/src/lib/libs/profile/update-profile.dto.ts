@@ -6,5 +6,5 @@ import { IsUUID } from 'class-validator';
 export class UpdateProfileDto extends PartialType(CreateProfileDto) {
   @ApiProperty({ description: 'ID of the profile' })
   @IsUUID()
-  id: string;
+  id!: string;
 }

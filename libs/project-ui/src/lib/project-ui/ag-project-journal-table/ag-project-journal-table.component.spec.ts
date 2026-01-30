@@ -116,7 +116,7 @@ describe('AgProjectJournalTableComponent', () => {
   });
 
   it('should emit editJournalEntry event with correct data', (done) => {
-    component.selectedJournal = mockJournals[0];
+    component.selectedJournal.set(mockJournals[0]);
 
     component.editJournalEntry.subscribe((journal) => {
       expect(journal.id).toBe('1');
@@ -132,8 +132,8 @@ describe('AgProjectJournalTableComponent', () => {
   it('should set selected journal for editing', () => {
     const journal = mockJournals[0];
     component.onEdit(journal);
-    expect(component.selectedJournal).toEqual(journal);
-    expect(component.showEditModal).toBe(true);
+    expect(component.selectedJournal()).toEqual(journal);
+    expect(component.showEditModal()).toBe(true);
   });
 
   it('should update grid when journals input changes', (done) => {
@@ -171,12 +171,12 @@ describe('AgProjectJournalTableComponent', () => {
   });
 
   it('should handle modal open/close correctly', () => {
-    expect(component.showModal).toBe(false);
+    expect(component.showModal()).toBe(false);
 
-    component.showModal = true;
-    expect(component.showModal).toBe(true);
+    component.showModal.set(true);
+    expect(component.showModal()).toBe(true);
 
     component.closeModal();
-    expect(component.showModal).toBe(false);
+    expect(component.showModal()).toBe(false);
   });
 });

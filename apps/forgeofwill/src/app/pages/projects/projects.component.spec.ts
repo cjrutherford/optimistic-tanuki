@@ -167,6 +167,8 @@ describe('ProjectsComponent', () => {
     messageService = TestBed.inject(MessageService) as jest.Mocked<MessageService>;
     taskTimeEntryService = TestBed.inject(TaskTimeEntryService) as jest.Mocked<TaskTimeEntryService>;
     themeService = TestBed.inject(ThemeService) as jest.Mocked<ThemeService>;
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'log').mockImplementation(() => {});
     fixture.detectChanges();
   });
 

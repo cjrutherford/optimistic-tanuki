@@ -170,21 +170,21 @@ describe('AgTasksTableComponent', () => {
   });
 
   it('should handle modal open/close correctly', () => {
-    expect(component.showModal).toBe(false);
+    expect(component.showModal()).toBe(false);
 
-    component.showModal = true;
-    expect(component.showModal).toBe(true);
+    component.showModal.set(true);
+    expect(component.showModal()).toBe(true);
 
     component.closeModal();
-    expect(component.showModal).toBe(false);
+    expect(component.showModal()).toBe(false);
   });
 
   it('should set selected task for editing and open edit modal', () => {
     const task = mockTasks[0];
     component.onEdit(task);
 
-    expect(component.selectedTask).toEqual(task);
-    expect(component.showEditModal).toBe(true);
+    expect(component.selectedTask()).toEqual(task);
+    expect(component.showEditModal()).toBe(true);
   });
 
   it('should properly configure action column with edit and delete buttons', () => {

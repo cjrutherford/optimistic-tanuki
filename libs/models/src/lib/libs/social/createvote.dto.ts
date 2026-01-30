@@ -10,7 +10,7 @@ export class CreateVoteDto {
   @IsIn([-1, 0, 1], {
     message: 'Vote value must be -1 (downvote), 0 (unvote), or 1 (upvote)',
   })
-  value: number;
+  value!: number;
 
   @ApiProperty({ description: 'The ID of the user', required: false })
   @IsOptional()
@@ -19,9 +19,9 @@ export class CreateVoteDto {
 
   @ApiProperty({ description: 'The ID of the post' })
   @IsUUID()
-  postId: string;
+  postId!: string;
 
   @ApiProperty({ description: 'The ID of the profile' })
   @IsUUID()
-  profileId: string;
+  profileId!: string;
 }
