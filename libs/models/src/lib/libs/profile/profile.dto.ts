@@ -2,29 +2,29 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ProfileDto {
   @ApiProperty({ description: 'Profile ID' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'User Id (Auth User)' })
-  userId: string;
+  userId!: string;
 
   @ApiProperty({ description: 'Profile name' })
-  profileName: string;
+  profileName!: string;
 
   @ApiProperty({ description: 'Email address' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ description: 'Biography' })
-  bio: string;
+  bio!: string;
 
   @ApiProperty({ description: 'Avatar URL' })
-  avatarUrl: string;
+  avatarUrl!: string;
 
   @ApiProperty({ description: 'Created timestamp' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({ description: 'Updated timestamp' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @ApiProperty({ description: 'Application scope' })
-  appScope: string;
+  appScope!: string;
 }

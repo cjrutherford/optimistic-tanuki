@@ -1,4 +1,9 @@
-import { STORAGE_ADAPTERS, StorageAdapter } from '@optimistic-tanuki/storage';
+import {
+  STORAGE_ADAPTERS,
+  StorageAdapter,
+  FileValidationService,
+  VirusScanService,
+} from '@optimistic-tanuki/storage';
 
 import { AppService } from './app.service';
 import AssetEntity from '../entities/asset.entity';
@@ -13,6 +18,8 @@ describe('AppService', () => {
   let logger: Logger;
   let assetRepo: Repository<AssetEntity>;
   let storageAdapter: StorageAdapter;
+  let fileValidationService: FileValidationService;
+  let virusScanService: VirusScanService;
 
   beforeEach(async () => {
     logger = new Logger();
@@ -32,6 +39,12 @@ describe('AppService', () => {
       read: jest.fn(),
       retrieve: jest.fn(),
     } as StorageAdapter;
+    fileValidationService = {
+      validateFile: jest.fn().mockReturnValue({ isValid: true }),
+    } as unknown as FileValidationService;
+    virusScanService = {
+      scanFile: jest.fn().mockResolvedValue({ isClean: true, scanner: 'clamav' }),
+    } as unknown as VirusScanService;
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -39,6 +52,8 @@ describe('AppService', () => {
         { provide: Logger, useValue: logger },
         { provide: getRepositoryToken(AssetEntity), useValue: assetRepo },
         { provide: STORAGE_ADAPTERS, useValue: storageAdapter },
+        { provide: FileValidationService, useValue: fileValidationService },
+        { provide: VirusScanService, useValue: virusScanService },
       ],
     }).compile();
 
@@ -137,6 +152,60 @@ describe('AppService', () => {
         dto.type,
         dto.content.length
       );
+    });
+
+    it('should create an asset with base64 content and validation/scanning', async () => {
+      const dto = { name: 'test', type: 'image', content: Buffer.from('test').toString('base64'), fileExtension: 'jpg' } as any;
+      const createdAsset = { id: '1', name: 'sanitized_test.jpg', type: 'image' } as any;
+      jest.spyOn(assetRepo, 'create').mockReturnValue(createdAsset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue(createdAsset);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(createdAsset);
+      jest.spyOn(fileValidationService, 'validateFile').mockReturnValue({ isValid: true, sanitizedFilename: 'sanitized_test' } as any);
+
+      const result = await appService.createAsset(dto);
+
+      expect(fileValidationService.validateFile).toHaveBeenCalledWith('test', 'image/jpeg', expect.any(Number), 'image');
+      expect(virusScanService.scanFile).toHaveBeenCalled();
+      expect(result.name).toBe('sanitized_test.jpg');
+    });
+
+    it('should throw RpcException if file validation fails', async () => {
+      const dto = { name: 'test', type: 'image', content: 'abc' } as any;
+      jest.spyOn(fileValidationService, 'validateFile').mockReturnValue({ isValid: false, errors: ['Invalid size'] } as any);
+
+      await expect(appService.createAsset(dto)).rejects.toThrow(RpcException);
+      expect(logger.error).toHaveBeenCalledWith('File validation failed:', ['Invalid size']);
+    });
+
+    it('should throw RpcException if virus scan fails', async () => {
+      const dto = { name: 'test', type: 'image', content: 'abc' } as any;
+      jest.spyOn(fileValidationService, 'validateFile').mockReturnValue({ isValid: true } as any);
+      jest.spyOn(virusScanService, 'scanFile').mockResolvedValue({ isClean: false, threats: ['Eicar-Test-Signature'] } as any);
+
+      await expect(appService.createAsset(dto)).rejects.toThrow(RpcException);
+      expect(logger.error).toHaveBeenCalledWith('Virus scan failed:', ['Eicar-Test-Signature']);
+    });
+
+    it('should handle buffer content in createAsset', async () => {
+        const dto = { name: 'test', type: 'image', content: Buffer.from('test'), fileExtension: 'pdf' } as any;
+        const asset = { id: '1', ...dto };
+        jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+        jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
+        jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+        
+        await appService.createAsset(dto);
+        expect(fileValidationService.validateFile).toHaveBeenCalledWith('test', 'application/pdf', 4, 'image');
+    });
+
+    it('should handle unknown file extension', async () => {
+        const dto = { name: 'test', type: 'image', content: 'abc', fileExtension: 'unknown' } as any;
+        const asset = { id: '1', ...dto };
+        jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+        jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
+        jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+        
+        await appService.createAsset(dto);
+        expect(fileValidationService.validateFile).toHaveBeenCalledWith('test', 'application/octet-stream', expect.any(Number), 'image');
     });
   });
 

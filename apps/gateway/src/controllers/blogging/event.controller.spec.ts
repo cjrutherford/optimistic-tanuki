@@ -8,20 +8,25 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { Reflector } from '@nestjs/core';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 
+import { EventCommands } from '@optimistic-tanuki/constants';
+
 describe('EventController', () => {
   let controller: EventController;
+  let eventService: any;
 
   beforeEach(async () => {
+    eventService = {
+      send: jest.fn(),
+      connect: jest.fn().mockResolvedValue(null),
+      close: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [EventController],
       providers: [
         {
           provide: ServiceTokens.BLOG_SERVICE,
-          useValue: {
-            send: jest.fn(),
-            connect: jest.fn().mockResolvedValue(null),
-            close: jest.fn(),
-          },
+          useValue: eventService,
         },
         {
           provide: Logger,
@@ -62,5 +67,53 @@ describe('EventController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('should create an event', async () => {
+    const dto: any = { title: 'Test' };
+    eventService.send.mockReturnValue(of(dto));
+    await controller.createEvent(dto);
+    expect(eventService.send).toHaveBeenCalledWith(
+      { cmd: EventCommands.CREATE },
+      dto
+    );
+  });
+
+  it('should find all events', async () => {
+    const query: any = {};
+    eventService.send.mockReturnValue(of([]));
+    await controller.findAllEvents(query);
+    expect(eventService.send).toHaveBeenCalledWith(
+      { cmd: EventCommands.FIND_ALL },
+      query
+    );
+  });
+
+  it('should get an event', async () => {
+    eventService.send.mockReturnValue(of({ id: '1' }));
+    await controller.getEvent('1');
+    expect(eventService.send).toHaveBeenCalledWith(
+      { cmd: EventCommands.FIND },
+      '1'
+    );
+  });
+
+  it('should update an event', async () => {
+    const dto: any = { title: 'Updated' };
+    eventService.send.mockReturnValue(of({ id: '1', ...dto }));
+    await controller.updateEvent('1', dto);
+    expect(eventService.send).toHaveBeenCalledWith(
+      { cmd: EventCommands.UPDATE },
+      { id: '1', updateEventDto: dto }
+    );
+  });
+
+  it('should delete an event', async () => {
+    eventService.send.mockReturnValue(of({}));
+    await controller.deleteEvent('1');
+    expect(eventService.send).toHaveBeenCalledWith(
+      { cmd: EventCommands.DELETE },
+      '1'
+    );
   });
 });

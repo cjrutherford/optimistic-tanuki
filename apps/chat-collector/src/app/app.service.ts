@@ -40,7 +40,7 @@ export class AppService {
     }
     if (!conversation) {
       conversation = this.conversationRepository.create({
-        id: conversation?.id ?? uuidv4(),
+        id: data.conversationId || uuidv4(),
         title: [data.recipientName, ...data.recipientName].join(', '),
         participants: [data.senderId, ...data.recipientId],
         messages: [message],

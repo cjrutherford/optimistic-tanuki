@@ -6,5 +6,5 @@ import { IsUUID } from 'class-validator';
 export class UpdateTimelineDto extends PartialType(CreateTimelineDto) {
   @ApiProperty({ description: 'ID of the timeline' })
   @IsUUID()
-  id: string;
+  id!: string;
 }

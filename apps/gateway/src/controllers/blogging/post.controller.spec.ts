@@ -9,6 +9,8 @@ import { of, throwError } from 'rxjs';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 
+import { PermissionsProxyService } from '../../auth/permissions-proxy.service';
+
 describe('PostController', () => {
   let controller: PostController;
   let mockBlogService: {
@@ -98,6 +100,12 @@ describe('PostController', () => {
             cleanupExpired: jest.fn().mockResolvedValue(undefined),
           },
         },
+        {
+          provide: PermissionsProxyService,
+          useValue: {
+            checkPermission: jest.fn().mockResolvedValue(true),
+          },
+        },
       ],
     })
       .overrideGuard(AuthGuard)
@@ -145,7 +153,7 @@ describe('PostController', () => {
 
       expect(mockBlogService.send).toHaveBeenCalledWith(
         { cmd: BlogPostCommands.FIND_DRAFTS_BY_AUTHOR },
-        'profile-1'
+        { authorId: 'profile-1' }
       );
       expect(result).toEqual([mockPost]);
     });

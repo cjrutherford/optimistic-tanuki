@@ -225,7 +225,7 @@ staying true to your own identity and the user's goals.`);
     }
 
     // 4. TOOLS & CAPABILITIES (if applicable)
-    if (options.includeTools !== false) {
+    if (options.includeTools !== false && !options.isFirstMessage) {
       sections.push(`# TOOLS & CAPABILITIES
 
 You have access to tools through the MCP (Model Context Protocol) system.

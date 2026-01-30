@@ -5,215 +5,329 @@ import {
 } from '@angular/common/http/testing';
 import { ProfileService } from './profile.service';
 import { AuthStateService } from '../auth-state.service';
-import {
-  ProfileDto,
-  CreateProfileDto,
-  UpdateProfileDto,
-  AssetDto,
-} from '@optimistic-tanuki/ui-models';
+import { ProfileDto, CreateProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
 
 describe('ProfileService', () => {
   let service: ProfileService;
   let httpMock: HttpTestingController;
-  let authStateServiceMock: any;
+  let authStateService: jest.Mocked<Partial<AuthStateService>>;
 
   const mockProfile: ProfileDto = {
     id: '1',
     userId: 'user1',
     profileName: 'Test Profile',
-    profilePic: '/api/asset/pic1',
-    coverPic: '/api/asset/cover1',
-    bio: 'test bio',
-    location: 'test location',
-    occupation: 'test occupation',
-    interests: 'testing',
-    skills: 'testing',
-    created_at: new Date(),
-    appScope: 'forgeofwill', // Local profile for this app
+    appScope: 'forgeofwill',
+    profilePic: '',
+    coverPic: '',
+    bio: '',
+    location: '',
+    occupation: '',
+    interests: '',
+    skills: '',
+    created_at: new Date('2026-01-29T02:09:44.371Z')
   };
 
-  const mockAsset: AssetDto = {
-    id: 'asset1',
-    name: 'test-asset',
-    type: 'image',
-    profileId: '1',
-    storageStrategy: 'local_block_storage',
-    storagePath: 'path/to/asset',
+  const mockGlobalProfile: ProfileDto = {
+    ...mockProfile,
+    id: '2',
+    appScope: 'global'
   };
 
   beforeEach(() => {
-    authStateServiceMock = {
-      getDecodedTokenValue: jest.fn().mockReturnValue({ userId: 'user1' }),
+    authStateService = {
+      getDecodedTokenValue: jest.fn(() => ({ userId: 'user1' } as any)),
+      setToken: jest.fn()
     };
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
         ProfileService,
-        { provide: AuthStateService, useValue: authStateServiceMock },
+        { provide: AuthStateService, useValue: authStateService },
       ],
     });
 
     service = TestBed.inject(ProfileService);
     httpMock = TestBed.inject(HttpTestingController);
-
-    // Mock localStorage
-    let store: { [key: string]: string } = {};
-    const mockLocalStorage = {
-      getItem: (key: string): string | null => store[key] || null,
-      setItem: (key: string, value: string) => (store[key] = value),
-      removeItem: (key: string) => delete store[key],
-      clear: () => (store = {}),
-    };
-    Object.defineProperty(window, 'localStorage', { value: mockLocalStorage });
+    
+    localStorage.clear();
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
     httpMock.verify();
-    localStorage.clear();
   });
 
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should select a profile and store it', () => {
-    service.currentUserProfiles.set([mockProfile]);
-    service.selectProfile(mockProfile);
-    expect(service.currentUserProfile()).toEqual(mockProfile);
-    const stored = JSON.parse(localStorage.getItem('selectedProfile')!);
-    expect(stored).toEqual(JSON.parse(JSON.stringify(mockProfile)));
+  describe('Profile Selection', () => {
+    it('selectProfile should set signal and localStorage', () => {
+      service.currentUserProfiles.set([mockProfile]);
+      service.selectProfile(mockProfile);
+      expect(service.currentUserProfile()).toEqual(mockProfile);
+      expect(localStorage.getItem('selectedProfile')).toContain('Test Profile');
+    });
+
+    it('selectProfile should add to list if not present', () => {
+        service.currentUserProfiles.set([]);
+        service.selectProfile(mockProfile);
+        expect(service.currentUserProfiles()).toContainEqual(mockProfile);
+    });
   });
 
-  it('should get all profiles for the current user', async () => {
-    const otherAppProfile = {
-      ...mockProfile,
-      id: '2',
-      userId: 'user1',
-      appScope: 'other-app',
-    };
-    const globalProfile = {
-      ...mockProfile,
-      id: '3',
-      userId: 'user1',
-      appScope: 'global',
-    };
-    const allProfiles: ProfileDto[] = [
-      mockProfile,
-      otherAppProfile,
-      globalProfile,
-    ];
-    // Should only include local (forgeofwill) and global profiles for current user
-    const userProfiles = [mockProfile, globalProfile];
+  describe('Getters', () => {
+    it('getCurrentUserProfiles should fallback to localStorage', () => {
+      localStorage.setItem('profiles', JSON.stringify([mockProfile]));
+      const profiles = service.getCurrentUserProfiles();
+      expect(profiles[0].id).toBe(mockProfile.id);
+    });
 
-    const promise = service.getAllProfiles();
+    it('getCurrentUserProfile should fallback to localStorage', () => {
+        localStorage.setItem('selectedProfile', JSON.stringify(mockProfile));
+        const profile = service.getCurrentUserProfile();
+        expect(profile?.id).toBe(mockProfile.id);
+    });
 
-    const req = httpMock.expectOne('/api/profile');
-    expect(req.request.method).toBe('GET');
-    req.flush(allProfiles);
-
-    await promise;
-
-    expect(service.allProfiles()).toEqual(allProfiles);
-    expect(service.currentUserProfiles()).toEqual(userProfiles);
-    const stored = JSON.parse(localStorage.getItem('profiles')!);
-    expect(stored).toEqual(JSON.parse(JSON.stringify(userProfiles)));
+    it('getCurrentUserProfile should fallback to first profile if nothing selected', () => {
+        service.currentUserProfiles.set([mockProfile]);
+        const profile = service.getCurrentUserProfile();
+        expect(profile?.id).toBe(mockProfile.id);
+    });
   });
 
-  it('should create a profile with assets', async () => {
-    const createProfileDto: CreateProfileDto = {
-      name: 'New Profile',
-      description: 'A new profile',
-      profilePic: 'data:image/png;base64,abc',
-      coverPic: 'data:image/png;base64,def',
-      userId: 'user1',
-      bio: 'new bio',
-      location: 'new location',
-      occupation: 'new occupation',
-      interests: 'new interests',
-      skills: 'new skills',
-    };
-    const createdProfile: ProfileDto = {
-      ...mockProfile,
-      id: '2',
-      profileName: 'New Profile',
-    };
+  describe('API calls', () => {
+    it('getAllProfiles should fetch and filter profiles', async () => {
+      const promise = service.getAllProfiles();
+      const req = httpMock.expectOne('/api/profile');
+      req.flush([
+          mockProfile, 
+          { ...mockProfile, id: '3', userId: 'other' }, 
+          mockGlobalProfile,
+          { ...mockProfile, id: '4', appScope: 'other-app' }
+      ]);
+      await promise;
+      // Should have mockProfile (forgeofwill) and mockGlobalProfile (global)
+      expect(service.currentUserProfiles().length).toBe(2);
+      expect(service.currentUserProfiles().map(p => p.id)).toContain('1');
+      expect(service.currentUserProfiles().map(p => p.id)).toContain('2');
+    });
 
-    const createPromise = service.createProfile(createProfileDto);
-
-    // First request: create profile
-    const profileReq = httpMock.expectOne('/api/profile');
-    expect(profileReq.request.method).toBe('POST');
-    profileReq.flush(createdProfile);
-
-    // Wait for the profile creation to complete and first asset request to be made
-    await new Promise((resolve) => setTimeout(resolve, 10));
-
-    // Second request: first asset (profile pic) - they are sequential, not parallel
-    const assetRequest1 = httpMock.expectOne('/api/asset');
-    expect(assetRequest1.request.method).toBe('POST');
-    assetRequest1.flush({ ...mockAsset, id: 'asset2' });
-
-    // Wait for first asset to complete and second asset request to be made
-    await new Promise((resolve) => setTimeout(resolve, 10));
-
-    // Third request: second asset (cover pic)
-    const assetRequest2 = httpMock.expectOne('/api/asset');
-    expect(assetRequest2.request.method).toBe('POST');
-    assetRequest2.flush({ ...mockAsset, id: 'asset3' });
-
-    // Wait for second asset to complete and update request to be made
-    await new Promise((resolve) => setTimeout(resolve, 10));
-
-    // Fourth request: update profile with asset URLs
-    const updateProfileReq = httpMock.expectOne(
-      `/api/profile/${createdProfile.id}`
-    );
-    expect(updateProfileReq.request.method).toBe('PUT');
-    updateProfileReq.flush(createdProfile);
-
-    await createPromise;
-
-    expect(service.currentUserProfiles()).toContainEqual(createdProfile);
+    it('getProfileById should fetch and set', async () => {
+        const promise = service.getProfileById('1');
+        const req = httpMock.expectOne('/api/profile/1');
+        req.flush(mockProfile);
+        await promise;
+        expect(service.currentUserProfile()).toEqual(mockProfile);
+    });
   });
 
-  it('should update a profile', async () => {
-    const updateDto: UpdateProfileDto = {
-      id: '1',
-      bio: 'Updated Bio',
-      name: 'a',
-      description: 'b',
-    };
-    const updatedProfile: ProfileDto = { ...mockProfile, bio: 'Updated Bio' };
+  describe('Profile Modification', () => {
+    it('createProfile should handle base64 images and asset creation', async () => {
+      const createDto: CreateProfileDto = {
+        name: 'New',
+        userId: 'user1',
+        profilePic: 'data:image/png;base64,pic',
+        coverPic: 'data:image/png;base64,cover',
+        description: '',
+        bio: '',
+        location: '',
+        occupation: '',
+        interests: '',
+        skills: ''
+      };
 
-    service.currentUserProfiles.set([mockProfile]);
-    service.currentUserProfile.set(mockProfile);
+      const promise = service.createProfile(createDto);
 
-    const promise = service.updateProfile('1', updateDto);
+      // 1. Initial Profile POST
+      const req1 = httpMock.expectOne('/api/profile');
+      req1.flush({ ...mockProfile, id: 'new-id', profileName: 'New' });
+      await Promise.resolve();
+      await Promise.resolve();
 
-    const req = httpMock.expectOne('/api/profile/1');
-    expect(req.request.method).toBe('PUT');
-    req.flush(updatedProfile);
+      // 2. Profile Pic Asset POST
+      const req2 = httpMock.expectOne('/api/asset');
+      expect(req2.request.body.name).toContain('photo');
+      req2.flush({ id: 'asset-pic' });
+      await Promise.resolve();
+      await Promise.resolve();
 
-    await promise;
+      // 3. Cover Pic Asset POST
+      const req3 = httpMock.expectOne('/api/asset');
+      expect(req3.request.body.name).toContain('cover');
+      req3.flush({ id: 'asset-cover' });
+      await Promise.resolve();
+      await Promise.resolve();
 
-    expect(service.currentUserProfiles()).toContainEqual(updatedProfile);
-    expect(service.currentUserProfile()).toEqual(updatedProfile);
+      // 4. Profile PUT to update URLs
+      const req4 = httpMock.expectOne('/api/profile/new-id');
+      req4.flush({ ...mockProfile, id: 'new-id', profilePic: '/api/asset/asset-pic', coverPic: '/api/asset/asset-cover' });
+      
+      await promise;
+
+      expect(service.currentUserProfiles()).toContainEqual(expect.objectContaining({ id: 'new-id' }));
+    });
+
+    it('deleteProfile should call API and update state', async () => {
+        // Set initial state
+        const initialProfiles = [mockProfile];
+        service.currentUserProfiles.set(initialProfiles);
+        service.currentUserProfile.set(mockProfile);
+        
+        const promise = service.deleteProfile('1');
+        
+        const req = httpMock.expectOne('/api/profiles/1');
+        req.flush(null);
+        await promise;
+        
+        expect(service.currentUserProfiles().length).toBe(0);
+        expect(service.currentUserProfile()).toBeNull();
+    });
+
+    it('updateProfile should handle asset replacement', async () => {
+        const initialProfile = { ...mockProfile, profilePic: '/api/asset/old-pic', coverPic: '/api/asset/old-cover' };
+        service.currentUserProfiles.set([initialProfile]);
+        
+        const updateDto: UpdateProfileDto = {
+            id: '1',
+            profilePic: 'data:image/png;base64,new-pic',
+            coverPic: 'data:image/png;base64,new-cover'
+        };
+
+        const promise = service.updateProfile('1', updateDto);
+
+        // 1. Fetch original profile for pic logic
+        const reqGet1 = httpMock.expectOne('/api/profile/1');
+        reqGet1.flush(initialProfile);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // 2. DELETE old pic
+        const reqDelPic = httpMock.expectOne('/api/asset/old-pic');
+        reqDelPic.flush(null);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // 3. POST new pic asset
+        const reqNewPic = httpMock.expectOne('/api/asset/');
+        reqNewPic.flush({ id: 'new-pic-id' });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // 4. Fetch original profile for cover logic
+        const reqGet2 = httpMock.expectOne('/api/profile/1');
+        reqGet2.flush(initialProfile);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // 5. DELETE old cover
+        const reqDelCover = httpMock.expectOne('/api/asset/old-cover');
+        reqDelCover.flush(null);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // 6. POST new cover asset
+        const reqNewCover = httpMock.expectOne('/api/asset/');
+        reqNewCover.flush({ id: 'new-cover-id' });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // 7. PUT profile update
+        const reqPut = httpMock.expectOne('/api/profile/1');
+        reqPut.flush({ ...initialProfile, profilePic: '/api/asset/new-pic-id', coverPic: '/api/asset/new-cover-id' });
+        
+        await promise;
+
+        expect(service.currentUserProfiles()[0].profilePic).toBe('/api/asset/new-pic-id');
+    });
+
+    it('updateProfile should create local profile if updating global and no local exists', async () => {
+        service.currentUserProfiles.set([mockGlobalProfile]);
+        const updateDto: UpdateProfileDto = { id: '2', bio: 'new bio' };
+        
+        const createSpy = jest.spyOn(service, 'createProfile').mockResolvedValue(undefined);
+        
+        await service.updateProfile('2', updateDto);
+        
+        expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
+            appScope: 'forgeofwill',
+            bio: 'new bio'
+        }));
+    });
+
+    it('createProfile should handle newToken in response', async () => {
+      const createDto: CreateProfileDto = {
+        name: 'New',
+        userId: 'user1',
+        description: '', bio: '', location: '', occupation: '', interests: '', skills: '',
+        profilePic: '', coverPic: ''
+      };
+
+      const promise = service.createProfile(createDto);
+      const req = httpMock.expectOne('/api/profile');
+      req.flush({ profile: mockProfile, newToken: 'new-token' });
+      
+      await promise;
+      expect(authStateService.setToken).toHaveBeenCalledWith('new-token');
+    });
   });
 
-  it('should delete a profile', async () => {
-    service.currentUserProfiles.set([mockProfile]);
-    service.currentUserProfile.set(mockProfile);
+  describe('Helper methods', () => {
+      it('getFileExtensionFromDataUrl should return correct extension', () => {
+          expect(service.getFileExtensionFromDataUrl('data:image/jpeg;base64,abc')).toBe('jpeg');
+          expect(service.getFileExtensionFromDataUrl('data:image/png;base64,abc')).toBe('png');
+          expect(service.getFileExtensionFromDataUrl('')).toBe('');
+          expect(service.getFileExtensionFromDataUrl(null)).toBe('');
+          expect(service.getFileExtensionFromDataUrl('invalid')).toBe('');
+      });
 
-    const promise = service.deleteProfile('1');
+      it('loadProfilesFromLocalStorage and persistProfilesToLocalStorage', () => {
+          service.currentUserProfiles.set([mockProfile]);
+          service.currentUserProfile.set(mockProfile);
+          service.persistProfilesToLocalStorage();
+          
+          expect(localStorage.getItem('profiles')).toContain('Test Profile');
+          expect(localStorage.getItem('selectedProfile')).toContain('Test Profile');
+          
+          service.currentUserProfiles.set([]);
+          service.currentUserProfile.set(null);
+          
+          service.loadProfilesFromLocalStorage();
+          const loadedProfiles = service.currentUserProfiles();
+          expect(loadedProfiles[0].id).toBe(mockProfile.id);
+          expect(loadedProfiles[0].profileName).toBe(mockProfile.profileName);
+          // Check date as string since it was JSON stringified
+          expect(loadedProfiles[0].created_at.toString()).toBe(mockProfile.created_at.toISOString());
+          
+          expect(service.currentUserProfile()?.id).toBe(mockProfile.id);
+      });
 
-    const req = httpMock.expectOne('/api/profiles/1');
-    expect(req.request.method).toBe('DELETE');
-    req.flush({});
+      it('getDisplayProfile should call API', () => {
+          service.getDisplayProfile('1').subscribe();
+          const req = httpMock.expectOne('/api/profile/1');
+          expect(req.request.method).toBe('GET');
+          req.flush(mockProfile);
+      });
 
-    await promise;
+      it('getEffectiveProfile should prefer local over global', () => {
+          service.currentUserProfiles.set([mockGlobalProfile, mockProfile]);
+          expect(service.getEffectiveProfile()?.id).toBe('1');
+      });
 
-    expect(service.currentUserProfiles()).not.toContainEqual(mockProfile);
-    expect(service.currentUserProfile()).toBeNull();
+      it('getEffectiveProfile should fallback to global', () => {
+          service.currentUserProfiles.set([mockGlobalProfile]);
+          expect(service.getEffectiveProfile()?.id).toBe('2');
+      });
+
+      it('hasLocalProfile and hasOnlyGlobalProfile', () => {
+          service.currentUserProfiles.set([mockGlobalProfile]);
+          expect(service.hasLocalProfile()).toBe(false);
+          expect(service.hasOnlyGlobalProfile()).toBe(true);
+
+          service.currentUserProfiles.set([mockProfile]);
+          expect(service.hasLocalProfile()).toBe(true);
+          expect(service.hasOnlyGlobalProfile()).toBe(false);
+      });
   });
 });

@@ -19,6 +19,7 @@ import {
   UpdatePostDto,
   UpdateCommentDto,
   UpdateAttachmentDto,
+  AttachmentType,
 } from '@optimistic-tanuki/models';
 import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
@@ -142,7 +143,7 @@ describe('SocialController', () => {
     const attachmentDto: CreateAttachmentDto = {
       name: 'test-attachment',
       url: 'http://test.com',
-      type: 'image',
+      type: AttachmentType.IMAGE,
       size: 1024,
     };
     await socialController.attachment(mockUser, attachmentDto);
@@ -192,7 +193,7 @@ describe('SocialController', () => {
     const searchCriteria: SearchPostDto = {
       title: 'Test Post',
       content: 'Test Content',
-      userId: mockUser.id,
+      userIds: [mockUser.id],
     };
     await socialController.searchPosts(searchCriteria);
     expect(clientProxy.send).toHaveBeenCalledWith(
@@ -219,7 +220,7 @@ describe('SocialController', () => {
   it('should search attachments', async () => {
     const searchCriteria: SearchAttachmentDto = {
       filePath: 'http://test.com',
-      type: 'IMAGE',
+      type: AttachmentType.IMAGE,
       description: '1',
     };
     await socialController.searchAttachments(searchCriteria);
@@ -259,7 +260,7 @@ describe('SocialController', () => {
     const id = '1';
     const updateAttachmentDto: UpdateAttachmentDto = {
       url: 'http://test.com',
-      type: 'IMAGE',
+      type: AttachmentType.IMAGE,
     };
     await socialController.updateAttachment(id, updateAttachmentDto);
     expect(clientProxy.send).toHaveBeenCalledWith(

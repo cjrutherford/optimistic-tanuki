@@ -12,25 +12,25 @@ import {
 
 export class AttachmentDto {
   @ApiProperty({ description: 'Unique identifier for the attachment' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'Name of the attachment' })
-  name: string;
+  name!: string;
 
   @ApiProperty({ description: 'URL of the attachment' })
-  url: string;
+  url!: string;
 
   @ApiProperty({ description: 'Type of the attachment' })
-  type: string;
+  type!: string;
 
   @ApiProperty({ description: 'Size of the attachment in bytes' })
-  size: number;
+  size!: number;
 
   @ApiProperty({ description: 'Date when the attachment was created' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({ description: 'Date when the attachment was last updated' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export class CreateAttachmentDto {
@@ -41,7 +41,7 @@ export class CreateAttachmentDto {
   @IsString()
   @MinLength(1)
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'URL of the attachment',
@@ -49,7 +49,7 @@ export class CreateAttachmentDto {
   })
   @IsUrl({}, { message: 'Must be a valid URL' })
   @MaxLength(2048)
-  url: string;
+  url!: string;
 
   @ApiProperty({
     description: 'MIME type of the attachment',
@@ -57,7 +57,7 @@ export class CreateAttachmentDto {
   })
   @IsString()
   @MaxLength(255)
-  type: string;
+  type!: string;
 
   @ApiProperty({
     description: 'Size of the attachment in bytes',
@@ -66,5 +66,5 @@ export class CreateAttachmentDto {
   @IsNumber()
   @Min(0)
   @Max(100 * 1024 * 1024) // 100MB max
-  size: number;
+  size!: number;
 }

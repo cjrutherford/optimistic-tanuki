@@ -31,7 +31,7 @@ describe('AppService', () => {
         },
         {
           provide: Logger,
-          useValue: { log: jest.fn() },
+          useValue: { log: jest.fn(), debug: jest.fn() },
         },
       ],
     }).compile();
@@ -73,6 +73,7 @@ describe('AppService', () => {
       content: 'Hello',
       timestamp: new Date(),
       type: MessageType.CHAT,
+      role: 'user',
     };
 
     it('should create a new conversation if one does not exist', async () => {

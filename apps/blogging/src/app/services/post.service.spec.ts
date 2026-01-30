@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+jest.mock('isomorphic-dompurify', () => ({
+  sanitize: jest.fn((content) => content),
+}));
+
+import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import {
   CreateBlogPostDto,
   UpdateBlogPostDto,
@@ -7,10 +11,12 @@ import {
 import { Post } from '../entities';
 import { PostService } from './post.service';
 import { Repository } from 'typeorm';
+import { SanitizationService } from './sanitization.service';
 
 describe('PostService', () => {
   let service: PostService;
   let postRepo: jest.Mocked<Partial<Repository<Post>>>;
+  let sanitizationService: jest.Mocked<Partial<SanitizationService>>;
 
   const mockPost: Post = {
     id: 'post-1',
@@ -41,7 +47,16 @@ describe('PostService', () => {
       delete: jest.fn(),
       createQueryBuilder: jest.fn(),
     };
-    service = new PostService(postRepo as Repository<Post>);
+    sanitizationService = {
+      sanitizeHtml: jest.fn((c: string) => c),
+      sanitizeUserInput: jest.fn((c: string) => c),
+      sanitizePlainText: jest.fn((c: string) => c),
+      containsMaliciousPatterns: jest.fn((c: string) => false),
+    };
+    service = new PostService(
+      postRepo as Repository<Post>,
+      sanitizationService as any
+    );
   });
 
   it('should be defined', () => {
@@ -68,6 +83,22 @@ describe('PostService', () => {
       });
       expect(postRepo.save).toHaveBeenCalledWith(createdPost);
       expect(result).toEqual(createdPost);
+    });
+
+    it('should throw BadRequestException if content is empty', async () => {
+        const dto: CreateBlogPostDto = { title: 'T', content: '', authorId: 'a' };
+        await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if content is too long', async () => {
+        const dto: CreateBlogPostDto = { title: 'T', content: 'a'.repeat(100001), authorId: 'a' };
+        await expect(service.create(dto)).rejects.toThrow('Post content is too long (max 100KB)');
+    });
+
+    it('should throw BadRequestException if content contains malicious patterns', async () => {
+        const dto: CreateBlogPostDto = { title: 'T', content: 'malicious', authorId: 'a' };
+        sanitizationService.containsMaliciousPatterns!.mockReturnValue(true);
+        await expect(service.create(dto)).rejects.toThrow('Post content contains potentially malicious patterns');
     });
 
     it('should create a published post when isDraft is false', async () => {
@@ -475,6 +506,11 @@ describe('PostService', () => {
 
       expect(postRepo.createQueryBuilder).not.toHaveBeenCalled();
       expect(result).toEqual([]);
+    });
+
+    it('should return empty array for null or undefined search term', async () => {
+        expect(await service.searchPosts(null as any)).toEqual([]);
+        expect(await service.searchPosts(undefined as any)).toEqual([]);
     });
 
     it('should only search published posts', async () => {

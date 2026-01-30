@@ -49,6 +49,12 @@ describe('ChatGateway', () => {
           provide: ServiceTokens.TELOS_DOCS_SERVICE,
           useValue: telosDocsService,
         },
+        {
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: {
+            send: jest.fn(() => of({})),
+          },
+        },
         { provide: JwtService, useValue: { verify: jest.fn() } },
       ],
     }).compile();
@@ -89,6 +95,7 @@ describe('ChatGateway', () => {
         content: 'hello',
         timestamp: new Date(),
         type: 'chat',
+        role: 'user',
       };
       const messageReceipt = { id: 'msg-1' };
       const aiRecipients = [];
@@ -125,6 +132,7 @@ describe('ChatGateway', () => {
         content: 'hello',
         timestamp: new Date(),
         type: 'chat',
+        role: 'user',
       };
       const messageReceipt = { id: 'msg-1' };
       const aiRecipients = [{ id: 'ai-recipient-id' }];

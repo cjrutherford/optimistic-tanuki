@@ -1,3 +1,7 @@
+jest.mock('isomorphic-dompurify', () => ({
+  sanitize: jest.fn((content) => content),
+}));
+
 import { PostController } from './post.controller';
 import { PostService, RssService, SeoService } from '../services';
 import {
@@ -194,6 +198,51 @@ describe('PostController', () => {
       expect(postService.publish).toHaveBeenCalledWith('post-1', 'author-1');
       expect(result.isDraft).toBe(false);
       expect(result.publishedAt).toBeDefined();
+    });
+  });
+
+  describe('generateRssFeed', () => {
+    it('should generate RSS feed for published posts', async () => {
+      const blogInfo = { title: 'Blog', description: 'Desc', link: 'url', feedUrl: 'feed' };
+      postService.findPublished.mockResolvedValue([mockPublishedPost]);
+      rssService.generateRssFeed.mockReturnValue('rss-xml');
+
+      const result = await controller.generateRssFeed({ blogInfo });
+
+      expect(postService.findPublished).toHaveBeenCalled();
+      expect(rssService.generateRssFeed).toHaveBeenCalledWith([mockPublishedPost], blogInfo);
+      expect(result).toBe('rss-xml');
+    });
+  });
+
+  describe('generateSeoMetadata', () => {
+    it('should generate SEO metadata for a post', async () => {
+      postService.findOne.mockResolvedValue(mockPublishedPost);
+      const mockSeo = { title: 'SEO', description: 'Desc', keywords: [], url: 'url', image: 'img' };
+      seoService.generatePostMetadata.mockReturnValue(mockSeo as any);
+
+      const result = await controller.generateSeoMetadata({ postId: 'post-2', baseUrl: 'url' });
+
+      expect(postService.findOne).toHaveBeenCalledWith('post-2');
+      expect(seoService.generatePostMetadata).toHaveBeenCalledWith(mockPublishedPost, 'url', undefined);
+      expect(result).toEqual(mockSeo);
+    });
+
+    it('should throw error if post not found for SEO', async () => {
+      postService.findOne.mockResolvedValue(null);
+
+      await expect(controller.generateSeoMetadata({ postId: 'none', baseUrl: 'url' })).rejects.toThrow('Post not found');
+    });
+  });
+
+  describe('searchPosts', () => {
+    it('should search posts by term', async () => {
+      postService.searchPosts.mockResolvedValue([mockPublishedPost]);
+
+      const result = await controller.searchPosts({ searchTerm: 'test' });
+
+      expect(postService.searchPosts).toHaveBeenCalledWith('test');
+      expect(result).toEqual([mockPublishedPost]);
     });
   });
 });

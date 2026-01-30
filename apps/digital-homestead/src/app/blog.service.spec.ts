@@ -133,7 +133,8 @@ describe('BlogService', () => {
   describe('updatePost', () => {
     it('should update a post', () => {
       const postId = '123';
-      const updateData: Partial<UpdateBlogPostDto> = {
+      const updateData: UpdateBlogPostDto = {
+        id: postId,
         title: 'Updated Title',
       };
 
@@ -142,7 +143,7 @@ describe('BlogService', () => {
       });
 
       const req = httpMock.expectOne(`/api/post/${postId}`);
-      expect(req.request.method).toBe('PATCH');
+      expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual(updateData);
       req.flush(mockBlogPost);
     });

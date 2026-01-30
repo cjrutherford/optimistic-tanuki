@@ -120,6 +120,53 @@ describe('AuthStateService', () => {
         .subscribe((decoded) => expect(decoded).toBeNull());
       expect(removeItemSpy).toHaveBeenCalledWith(tokenKey);
     });
+
+    it('should persist and retrieve profiles', () => {
+      service = TestBed.inject(AuthStateService);
+      const profiles: any[] = [{ id: 'p1', profileName: 'P1' }];
+      service.persistProfiles(profiles);
+      expect(service.getPersistedProfiles()).toEqual(profiles);
+
+      service.persistProfiles(null);
+      expect(service.getPersistedProfiles()).toBeNull();
+    });
+
+    it('should persist and retrieve selected profile', () => {
+      service = TestBed.inject(AuthStateService);
+      const profile: any = { id: 'p1', profileName: 'P1' };
+      service.persistSelectedProfile(profile);
+      expect(service.getPersistedSelectedProfile()).toEqual(profile);
+
+      service.persistSelectedProfile(null);
+      expect(service.getPersistedSelectedProfile()).toBeNull();
+    });
+
+    it('should return decoded token value', () => {
+      localStorage.setItem(tokenKey, mockToken);
+      service = TestBed.inject(AuthStateService);
+      expect(service.getDecodedTokenValue()).toEqual(mockDecodedToken);
+    });
+
+    it('should handle token without profileId', () => {
+      const tokenNoProfileId = 'token-no-profile-id';
+      const decodedNoProfileId = { userId: '123', name: 'User' };
+      localStorage.setItem(tokenKey, tokenNoProfileId);
+      (jwtDecode as jest.Mock).mockReturnValue(decodedNoProfileId);
+
+      service = TestBed.inject(AuthStateService);
+      expect(service.getDecodedTokenValue()).toEqual({
+        ...decodedNoProfileId,
+        profileId: '',
+      });
+    });
+
+    it('should fall back to localStorage in getToken if subject is null', () => {
+      localStorage.setItem(tokenKey, mockToken);
+      service = TestBed.inject(AuthStateService);
+      // Manually set private subject value to null to test fallback
+      (service as any).tokenSubject.next(null);
+      expect(service.getToken()).toBe(mockToken);
+    });
   });
 
   describe('when not in a browser environment', () => {
@@ -159,6 +206,32 @@ describe('AuthStateService', () => {
 
     it('logout should not throw error', () => {
       expect(() => service.logout()).not.toThrow();
+    });
+
+    it('should return default values for all methods on server', () => {
+      expect(service.isAuthenticated).toBe(false);
+      expect(service.getDecodedTokenValue()).toBeNull();
+      expect(service.getPersistedProfiles()).toBeNull();
+      expect(service.getPersistedSelectedProfile()).toBeNull();
+
+      service.persistProfiles([]);
+      service.persistSelectedProfile({} as any);
+      expect(service.getPersistedProfiles()).toBeNull();
+      expect(service.getPersistedSelectedProfile()).toBeNull();
+    });
+
+    it('should return empty observables on server', (done) => {
+      service.isAuthenticated$().subscribe((val) => {
+        expect(val).toBe(false);
+        done();
+      });
+    });
+
+    it('should return empty decodedToken observable on server', (done) => {
+      service.decodedToken$().subscribe((val) => {
+        expect(val).toBeNull();
+        done();
+      });
     });
   });
 });

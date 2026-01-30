@@ -6,7 +6,7 @@ export { CreatePostDto } from './createpost.dto';
 export { CreateVoteDto } from './createvote.dto';
 export { QueryFollowsDto, UpdateFollowDto } from './follow.dto';
 export { PostDto } from './post.dto';
-export { SearchAttachmentDto } from './searchAttachment.dto';
+export { AttachmentType, SearchAttachmentDto } from './searchAttachment.dto';
 export { SearchCommentDto } from './searchcomment.dto';
 export { SearchPostDto, SearchPostOptions } from './searchpost.dto';
 export { UpdateAttachmentDto } from './updateattachment.dto';

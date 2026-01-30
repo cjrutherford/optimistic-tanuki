@@ -43,6 +43,8 @@ describe('RegisterComponent', () => {
     authService = TestBed.inject(AuthenticationService);
     router = TestBed.inject(Router);
     messageService = TestBed.inject(MessageService);
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'log').mockImplementation(() => {});
     fixture.detectChanges();
   });
 

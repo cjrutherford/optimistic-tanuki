@@ -22,10 +22,10 @@ describe('variantOptionsToCssVars', () => {
       backgroundFilter: 'blur(5px)',
     };
     const cssVars = variantOptionsToCssVars(options);
-    expect(cssVars['style.--gradient-stops']).toBe('#fff, #000');
-    expect(cssVars['style.--border-color']).toBe('red');
-    expect(cssVars['style.--border-width']).toBe('2px');
-    expect(cssVars['style.--background-filter']).toBe('blur(5px)');
+    expect(cssVars['[style.--gradient-stops]']).toBe('#fff, #000');
+    expect(cssVars['[style.--border-color]']).toBe('red');
+    expect(cssVars['[style.--border-width]']).toBe('2px');
+    expect(cssVars['[style.--background-filter]']).toBe('blur(5px)');
   });
 
   it('should handle empty options', () => {
@@ -37,7 +37,7 @@ describe('variantOptionsToCssVars', () => {
       gradientStops: ['#123', '#456', '#789'],
     };
     const cssVars = variantOptionsToCssVars(options);
-    expect(cssVars['style.--gradient-stops']).toBe('#123, #456, #789');
+    expect(cssVars['[style.--gradient-stops]']).toBe('#123, #456, #789');
   });
 
   it('should handle undefined values as empty strings', () => {
@@ -45,6 +45,6 @@ describe('variantOptionsToCssVars', () => {
       borderColor: undefined,
     };
     const cssVars = variantOptionsToCssVars(options);
-    expect(cssVars['style.--border-color']).toBe('undefined');
+    expect(cssVars['[style.--border-color]']).toBe('undefined');
   });
 });

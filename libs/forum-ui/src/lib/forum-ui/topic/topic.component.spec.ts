@@ -9,7 +9,7 @@ describe('TopicComponent', () => {
 
   const mockTopic: TopicDto = {
     id: '1',
-    name: 'Test Topic',
+    title: 'Test Topic',
     description: 'Test Description',
     userId: 'user1',
     profileId: 'profile1',

@@ -108,6 +108,24 @@ describe('CommentService', () => {
       expect(commentRepo.findOne).toHaveBeenCalledWith({ where: { id: 'c1' } });
       expect(result).toBe(comment);
     });
+
+    it('should handle where as an array in findOne', async () => {
+      const comment = { id: 'c1' } as Comment;
+      commentRepo.findOne.mockResolvedValue(comment);
+      await service.findOne('c1', { where: [{ userId: 'u1' }, { profileId: 'pr1' }] });
+      expect(commentRepo.findOne).toHaveBeenCalledWith({
+        where: [{ userId: 'u1', id: 'c1' }, { profileId: 'pr1', id: 'c1' }],
+      });
+    });
+
+    it('should handle where as an object in findOne', async () => {
+      const comment = { id: 'c1' } as Comment;
+      commentRepo.findOne.mockResolvedValue(comment);
+      await service.findOne('c1', { where: { userId: 'u1' } });
+      expect(commentRepo.findOne).toHaveBeenCalledWith({
+        where: { userId: 'u1', id: 'c1' },
+      });
+    });
   });
 
   describe('update', () => {
@@ -116,6 +134,15 @@ describe('CommentService', () => {
       const dto: UpdateCommentDto = { content: 'updated' };
       await service.update('c1', dto);
       expect(commentRepo.update).toHaveBeenCalledWith('c1', dto);
+    });
+
+    it('should sanitize content in update', async () => {
+      commentRepo.update.mockResolvedValue(undefined);
+      const dto: UpdateCommentDto = { content: '<strong>Hello</strong><script>alert(1)</script>' };
+      await service.update('c1', dto);
+      expect(commentRepo.update).toHaveBeenCalledWith('c1', expect.objectContaining({
+        content: '<strong>Hello</strong>'
+      }));
     });
   });
 

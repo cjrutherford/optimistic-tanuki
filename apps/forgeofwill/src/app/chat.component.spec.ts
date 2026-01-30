@@ -4,7 +4,7 @@ import {
   fakeAsync,
   tick,
 } from '@angular/core/testing';
-import { PLATFORM_ID } from '@angular/core';
+import { PLATFORM_ID, SimpleChange, SimpleChanges, signal, WritableSignal } from '@angular/core';
 import { of } from 'rxjs';
 import { io } from 'socket.io-client';
 
@@ -26,6 +26,7 @@ class MockSocketChatService {
   onConversations = jest.fn();
   getConversations = jest.fn();
   sendMessage = jest.fn();
+  destroy = jest.fn();
 }
 
 describe('ChatComponent', () => {
@@ -59,7 +60,7 @@ describe('ChatComponent', () => {
 
   beforeEach(async () => {
     const profileServiceMock = {
-      currentUserProfile: jest.fn().mockReturnValue(mockProfile),
+      currentUserProfile: signal<ProfileDto | null>(mockProfile),
       getDisplayProfile: jest.fn().mockReturnValue(of(mockProfile)),
     };
 
@@ -150,6 +151,17 @@ describe('ChatComponent', () => {
     expect(socketChatService.sendMessage).toHaveBeenCalledWith(message);
   });
 
+  it('should not initialize socket connection if not in browser', () => {
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+    // Re-create component with non-browser platform
+    fixture = TestBed.createComponent(ChatComponent);
+    component = fixture.componentInstance;
+    (component as any).platformId = 'server';
+    component.ngOnInit();
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Not in browser'));
+    consoleSpy.mockRestore();
+  });
+
   it('should handle error when posting message if socket service is not available', () => {
     component.socketChat = null;
     const message: Partial<ChatMessage> = { content: 'test' };
@@ -157,5 +169,120 @@ describe('ChatComponent', () => {
     expect(messageService.addMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'error' })
     );
+  });
+
+  it('should process external messages in ngOnChanges', () => {
+    socketChatService.sendMessage.mockClear();
+    const messages: Partial<ChatMessage>[] = [{ content: 'external' }];
+    const changes: SimpleChanges = {
+      externalMessages: new SimpleChange(null, messages, true), // isFirstChange = true
+    };
+
+    // Simulate first change (already handled in ngOnInit, so ngOnChanges should skip it)
+    component.ngOnChanges(changes);
+    expect(socketChatService.sendMessage).not.toHaveBeenCalled();
+
+    // Simulate subsequent change
+    const nextMessages: Partial<ChatMessage>[] = [{ content: 'next external' }];
+    const nextChanges: SimpleChanges = {
+      externalMessages: new SimpleChange(messages, nextMessages, false),
+    };
+    component.ngOnChanges(nextChanges);
+    expect(socketChatService.sendMessage).toHaveBeenCalledWith(nextMessages[0]);
+  });
+
+  it('should destroy socketChat on ngOnDestroy', () => {
+    component.ngOnDestroy();
+    expect(socketChatService.destroy).toHaveBeenCalled();
+  });
+
+  it('should handle incoming messages', () => {
+    component.conversations.set([mockConversation]);
+    const incomingMessage: ChatMessage = {
+      id: 'msg2',
+      content: 'Incoming',
+      senderId: 'user2',
+      conversationId: 'conv1',
+      recipientId: ['user1'],
+      timestamp: new Date(),
+      type: 'chat',
+    };
+
+    const messageCallback = socketChatService.onMessage.mock.calls[0][0];
+    messageCallback(incomingMessage);
+
+    const updatedConv = component.conversations().find((c) => c.id === 'conv1');
+    expect(updatedConv?.messages.length).toBe(1);
+    expect(updatedConv?.messages[0].id).toBe('msg2');
+  });
+
+  it('should handle window state changes', () => {
+    component.handleWindowStateChange('conv1', 'popout');
+    expect(component.isWindowOpen('conv1')).toBe(true);
+
+    component.handleWindowStateChange('conv1', 'hidden');
+    expect(component.isWindowOpen('conv1')).toBe(false);
+  });
+
+  it('should open existing persona chat', fakeAsync(() => {
+    const personaId = 'persona1';
+    const personaConv: ChatConversation = {
+      ...mockConversation,
+      id: 'personaConv',
+      participants: ['user1', personaId],
+    };
+    component.conversations.set([personaConv]);
+
+    component.openOrCreatePersonaChat(personaId);
+    tick();
+
+    expect(component.isWindowOpen('personaConv')).toBe(true);
+    expect(component.selectedConversation()).toBe('personaConv');
+  }));
+
+  it('should show warning when opening persona chat if not logged in', fakeAsync(() => {
+    (profileService.currentUserProfile as WritableSignal<ProfileDto | null>).set(null);
+
+    component.openOrCreatePersonaChat('persona1');
+    tick();
+
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'warning' })
+    );
+  }));
+
+  it('should open existing AI assistant chat', fakeAsync(() => {
+    const aiConv: ChatConversation = {
+      ...mockConversation,
+      id: 'aiConv',
+      participants: ['user1', 'ai-assistant'],
+    };
+    component.conversations.set([aiConv]);
+
+    component.openAiAssistantChat();
+    tick();
+
+    expect(component.isWindowOpen('aiConv')).toBe(true);
+    expect(component.selectedConversation()).toBe('aiConv');
+  }));
+
+  it('should update contacts and handle null current user', async () => {
+    (profileService.currentUserProfile as WritableSignal<ProfileDto | null>).set(null);
+    await component.updateContacts();
+    expect(component.contacts()).toEqual([]);
+  });
+
+  it('should process external messages correctly', () => {
+    const messages: Partial<ChatMessage>[] = [{ content: 'msg1' }, { content: 'msg2' }];
+    component.processExternalMessages(messages);
+    expect(socketChatService.sendMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('should log error if socketChat is null in processExternalMessages', () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    component.socketChat = null;
+    component.processExternalMessages([{ content: 'test' }]);
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('SocketChatService is not available'));
+    consoleSpy.mockRestore();
   });
 });

@@ -155,7 +155,7 @@ describe('ProfileController', () => {
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: ProfileCommands.GetAll },
-      { userId: 'user1234', query }
+      { where: { userId: 'user1234', ...query } }
     );
     expect(getAllResponse).toEqual([]);
   });

@@ -59,20 +59,44 @@ describe('VoteService', () => {
     expect(result).toBe(vote);
   });
 
-  it('should find all votes', async () => {
-    const votes = [{ id: 1 } as Vote, { id: 2 } as Vote];
+  it('should create a vote without postId', async () => {
+    const dto: CreateVoteDto = { userId: 'u1', value: 1 };
+    const vote = {
+      id: 1,
+      userId: 'u1',
+      value: 1,
+    } as Vote;
+    voteRepo.create.mockReturnValue(vote);
+    voteRepo.save.mockResolvedValue(vote);
+    const result = await service.create(dto);
+    expect(voteRepo.create).toHaveBeenCalledWith({
+      userId: 'u1',
+      value: 1,
+      post: undefined,
+    });
+    expect(result).toBe(vote);
+  });
+
+  it('should find all votes with options', async () => {
+    const votes = [{ id: 1 } as Vote];
     voteRepo.find.mockResolvedValue(votes);
-    const result = await service.findAll();
-    expect(voteRepo.find).toHaveBeenCalled();
-    expect(result).toBe(votes);
+    await service.findAll({ where: { value: 1 } });
+    expect(voteRepo.find).toHaveBeenCalledWith({ where: { value: 1 } });
   });
 
   it('should find one vote', async () => {
-    const vote = { id: 1 } as Vote;
+    const vote = { id: '1' } as unknown as Vote;
     voteRepo.findOne.mockResolvedValue(vote);
-    const result = await service.findOne(1);
-    expect(voteRepo.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+    const result = await service.findOne('1');
+    expect(voteRepo.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
     expect(result).toBe(vote);
+  });
+
+  it('should find one vote with options', async () => {
+    const vote = { id: '1' } as unknown as Vote;
+    voteRepo.findOne.mockResolvedValue(vote);
+    await service.findOne('1', { relations: ['post'] });
+    expect(voteRepo.findOne).toHaveBeenCalledWith({ where: { id: '1' }, relations: ['post'] });
   });
 
   it('should update a vote', async () => {

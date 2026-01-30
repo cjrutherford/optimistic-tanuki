@@ -115,7 +115,7 @@ describe('AgChangesTableComponent', () => {
   });
 
   it('should emit editChange event with correct data', (done) => {
-    component.selectedChange = mockChanges[0];
+    component.selectedChange.set(mockChanges[0]);
 
     component.editChange.subscribe((change) => {
       expect(change.id).toBe('1');
@@ -131,8 +131,8 @@ describe('AgChangesTableComponent', () => {
   it('should set selected change for editing', () => {
     const change = mockChanges[0];
     component.onEdit(change);
-    expect(component.selectedChange).toEqual(change);
-    expect(component.showEditModal).toBe(true);
+    expect(component.selectedChange()).toEqual(change);
+    expect(component.showEditModal()).toBe(true);
   });
 
   it('should update grid when changes input changes', (done) => {
@@ -170,12 +170,12 @@ describe('AgChangesTableComponent', () => {
   });
 
   it('should handle modal open/close correctly', () => {
-    expect(component.showModal).toBe(false);
+    expect(component.showModal()).toBe(false);
 
-    component.showModal = true;
-    expect(component.showModal).toBe(true);
+    component.showModal.set(true);
+    expect(component.showModal()).toBe(true);
 
     component.closeModal();
-    expect(component.showModal).toBe(false);
+    expect(component.showModal()).toBe(false);
   });
 });

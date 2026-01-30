@@ -14,13 +14,14 @@ describe('PermissionsGuard', () => {
   let permissionsClient: any;
   let cacheService: PermissionsCacheService;
   let logger: Logger;
+  let module: TestingModule;
 
   beforeEach(async () => {
     permissionsClient = {
       send: jest.fn().mockReturnValue(of({})),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         Reflector,
         Logger,
@@ -161,13 +162,20 @@ describe('PermissionsGuard', () => {
         permissions: ['test.permission'],
       });
 
-      const context = createMockContext({ id: 'user1' });
+      // Mock ProfileService to return empty list so fallback fails
+      const profileService = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
+      jest.spyOn(profileService, 'send').mockReturnValue(of([]));
+
+      const context = createMockContext(
+        { id: 'user1' },
+        { 'x-ot-appscope': 'global' }
+      );
 
       await expect(guard.canActivate(context)).rejects.toThrow(
         ForbiddenException
       );
       await expect(guard.canActivate(context)).rejects.toThrow(
-        'User not authenticated'
+        'User profile required for this action'
       );
     });
   });

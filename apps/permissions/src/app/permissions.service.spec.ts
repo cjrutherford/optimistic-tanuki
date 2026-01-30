@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PermissionsService } from './permissions.service';
 import { Permission } from '../permissions/entities/permission.entity';
+import { RoleAssignment } from '../role-assignments/entities/role-assignment.entity';
 import {
   CreatePermissionDto,
   UpdatePermissionDto,
@@ -17,6 +18,10 @@ const mockPermissionsRepository = () => ({
   delete: jest.fn(),
 });
 
+const mockRoleAssignmentRepository = () => ({
+  find: jest.fn(),
+});
+
 describe('PermissionsService', () => {
   let service: PermissionsService;
   let repository: Repository<Permission>;
@@ -28,6 +33,10 @@ describe('PermissionsService', () => {
         {
           provide: getRepositoryToken(Permission),
           useFactory: mockPermissionsRepository,
+        },
+        {
+          provide: getRepositoryToken(RoleAssignment),
+          useFactory: mockRoleAssignmentRepository,
         },
       ],
     }).compile();

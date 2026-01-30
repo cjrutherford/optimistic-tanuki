@@ -82,74 +82,6 @@ export class LangChainAgentService {
   }
 
   /**
-<<<<<<< HEAD
-   * Create agent prompt template
-   */
-  private createAgentPrompt(): string {
-    return `You are an AI assistant helping users manage projects, tasks, risks, and more.
-
-IMPORTANT: You are the assistant. The user is the person making requests. Do not respond as if you are the user.
-
-# CORE OPERATING PROCEDURE (THINK-ACT LOOP)
-1. **THINK**: Analyze the user's request. What information is missing? Do you need an ID?
-2. **ACT**: If you need data, call a 'list_*' or 'query_*' tool. If you have data, call a 'create_*' or 'update_*' tool.
-3. **OBSERVE**: Wait for the tool result.
-4. **REFINE**: If the tool failed, analyze the error. Did you use the wrong ID? Wrong parameters? Retry with corrected values.
-
-# YOUR CAPABILITIES
-You have access to the following core tools (and more via 'list_tools'):
-- **create_project**: Create a new project. Required: name, userId.
-- **list_projects**: List all projects for a user.
-- **query_projects**: Find a project by name.
-- **create_task**: Add a task to a project.
-- **list_tasks**: List tasks in a project.
-- **create_risk**: Add a risk to a project.
-- **create_change**: Create a change request.
-- **list_tools**: detailed list of all available tools.
-
-# OPERATIONAL RULES
-1. **NO HALLUCINATIONS**: NEVER invent IDs. If you need a 'projectId', 'taskId', or any other ID, you MUST find it using a list or query tool first.
-   - Example: To add a task to "Project Omega", first call 'query_projects' with name="Project Omega" to get its ID.
-2. **TOOL DISCOVERY**: Call 'list_tools' when uncertain about available actions or parameter names.
-3. **SEQUENTIAL EXECUTION**: Call ONE tool at a time. Wait for the result.
-4. **CONTEXT INJECTION**: Do NOT provide 'userId', 'profileId', or 'createdBy' unless you are assigning to a DIFFERENT user. The system automatically injects the current user's ID.
-5. **TOOL SELECTION**:
-   - Creating a Project? Use 'create_project'.
-   - Creating a Change Request? Use 'create_change'.
-   - Adding a Task? Use 'create_task'.
-   - Adding a Risk? Use 'create_risk'.
-   - DO NOT confuse these. A "change" is a formal request, not just "changing something".
-
-6. **ENUM VALUES**: Always use UPPERCASE for status/priority values.
-   - Task Status: 'TODO', 'IN_PROGRESS', 'DONE', 'ARCHIVED'
-   - Task Priority: 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
-   - Project Status: 'PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'
-   - Risk Impact: 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
-   - Risk Likelihood: 'UNLIKELY', 'POSSIBLE', 'LIKELY', 'IMMINENT'
-   - Risk Status: 'OPEN', 'IN_PROGRESS', 'CLOSED'
-   - Change Status: 'PROPOSED', 'APPROVED', 'IN_PROGRESS', 'COMPLETE', 'DISCARDED'
-
-7. **TOOL SPECIFIC INSTRUCTIONS**:
-   - 'query_projects': Use the 'name' parameter for the search term. Do NOT use 'query'.
-   - 'create_risk': Ensure 'status' is one of 'OPEN', 'IN_PROGRESS', 'CLOSED'. Default to 'OPEN' if unsure.
-   - 'create_task': Use this for adding work items, todos, or action items.
-   - 'create_change': Use this ONLY for formal change requests or modifications to the project scope. Do NOT use for regular tasks.
-   - 'list_projects': may sometimes return an empty list. if this happens, try again to ensure we don't have database consistency issues.(sometimes returns results inconsistently after new inserts.)
-
-# ERROR HANDLING
-- If a tool fails due to "Invalid parameters", check the enum values and required fields.
-- If a tool fails due to "Missing ID" or "Invalid UUID", YOU LIKELY USED A FAKE ID. Stop. Call a list/query tool to find the real ID.
-- if a tool fails due to ambiguity in connected id's please try to lookup the correct id using the appropriate list or query tool before retrying.
-
-# OUTPUT FORMAT
-For each function call, return a json object with function name and arguments within <function-call> and </function-call> XML tags.
-Example:
-<function-call>{"name": "create_project", "arguments": {"name": "My Project", "description": "Desc"}}</function-call>
-`;
-  }
-  /**
-=======
->>>>>>> 96ce766 (update to specific models for fit purpose)
    * Initialize the agent for a given user/conversation.
    * This prepares LangChain tools and compiles the agent graph.
    */
@@ -289,9 +221,7 @@ Example:
                   const required = t.inputSchema.required?.includes(name)
                     ? '(required)'
                     : '(optional)';
-                  return `  - ${name} ${required}: ${
-                    schema.description || schema.type
-                  }`;
+                  return `  - ${name} ${required}: ${schema.description || schema.type}`;
                 })
                 .join('\n')
             : '  No parameters';
@@ -550,7 +480,9 @@ Example:
       const lastMessage = messages[messages.length - 1];
       const output = lastMessage?.content || '';
 
-      if (!output && toolCalls.length === 0) {
+      const hasToolCalls = (lastMessage as any)?.tool_calls?.length > 0;
+
+      if (!output && toolCalls.length === 0 && !hasToolCalls) {
         const msg =
           'Agent execution completed but produced no output and no tool calls. The model may have failed to respond or encountered an internal error.';
         this.logger.warn(msg);
@@ -583,131 +515,10 @@ Example:
         }
       }
 
-<<<<<<< HEAD
-      // FALLBACK: Check for XML or raw JSON function calls if no native tool calls were found
-      // This handles models like DeepSeek-R1 that prefer text output over native tool calling
-      if (allToolCalls.length === 0 && typeof output === 'string') {
-        let functionCall = null;
-        let toolName = '';
-        let toolArgs = null;
-
-        // Strip <think> blocks first to avoid parsing reasoning artifacts
-        const cleanOutput = output
-          .replace(/<think>[\s\S]*?<\/think>/g, '')
-          .trim();
-
-        // Strategy 1: Look for <function-call> tags
-        if (cleanOutput.includes('<function-call>')) {
-          this.logger.warn(
-            'No native tool calls found, but <function-call> tag detected. Attempting XML parsing.'
-          );
-          try {
-            const regex = /<function-call>(.*?)<\/function-call>/s;
-            const match = cleanOutput.match(regex);
-            if (match && match[1]) {
-              const jsonStr = match[1].trim();
-              functionCall = JSON.parse(jsonStr);
-            }
-          } catch (e) {
-            this.logger.error(
-              `Failed to parse XML function call: ${e.message}`
-            );
-          }
-        }
-        // Strategy 2: Look for raw JSON { "name": "...", "arguments": ... }
-        // Often appears after </think> tag
-        else if (
-          (cleanOutput.includes('"name"') &&
-            cleanOutput.includes('"arguments"')) ||
-          (cleanOutput.includes("'name'") &&
-            cleanOutput.includes("'arguments'"))
-        ) {
-          this.logger.warn(
-            'No native tool calls found, checking for raw JSON pattern.'
-          );
-          try {
-            // Try to find the JSON object
-            const regex = /\{[\s\S]*"name"[\s\S]*:[\s\S]*"arguments"[\s\S]*\}/s;
-            const match = cleanOutput.match(regex);
-            if (match) {
-              functionCall = JSON.parse(match[0]);
-            }
-          } catch (e) {
-            this.logger.debug(
-              `Raw JSON parsing failed (this is expected for normal text): ${e.message}`
-            );
-          }
-        }
-
-        if (functionCall && functionCall.name && functionCall.arguments) {
-          toolName = functionCall.name;
-          let parsedArgs =
-            typeof functionCall.arguments === 'string'
-              ? JSON.parse(functionCall.arguments)
-              : functionCall.arguments;
-
-          // Filter out null values to avoid Zod validation errors (optional fields should be undefined, not null)
-          if (parsedArgs && typeof parsedArgs === 'object') {
-            parsedArgs = Object.fromEntries(
-              Object.entries(parsedArgs).filter(([_, v]) => v != null)
-            );
-          }
-          toolArgs = parsedArgs;
-
-          this.logger.log(
-            `Manually executing tool from fallback parsing: ${toolName}`,
-            toolArgs
-          );
-
-          const tool = this.tools.find((t) => t.name === toolName);
-          if (tool) {
-            try {
-              // Execute the tool manually
-              const result = await tool.call(toolArgs, {
-                configurable: {
-                  userId,
-                  conversationId,
-                },
-              });
-
-              this.logger.log(`Manual tool execution result:`, result);
-
-              // Add to toolCalls
-              allToolCalls.push({
-                tool: toolName,
-                input: toolArgs,
-                output: result,
-              });
-
-              // Report progress
-              if (onProgress) {
-                await onProgress({
-                  type: 'tool_start',
-                  content: { tool: toolName, input: toolArgs },
-                });
-                await onProgress({
-                  type: 'tool_end',
-                  content: { tool: toolName, output: result },
-                });
-              }
-            } catch (err) {
-              this.logger.error(
-                `Manual tool execution failed: ${err.message}`
-              );
-            }
-          } else {
-            this.logger.warn(
-              `Tool ${toolName} found in fallback but not available in agent tools.`
-            );
-          }
-        }
-      }
-=======
       // Filter thinking tokens from final output
       const cleanedOutput = this.workflowControl.filterThinkingTokens(
         typeof output === 'string' ? output : JSON.stringify(output)
       );
->>>>>>> 55adcd5 (Add model configuration and workflow control services)
 
       // FALLBACK: If no native tool calls, check for manual JSON tool call in the text
       // This supports models that output JSON text instead of native tool calls (e.g. DeepSeek via prompt instructions)

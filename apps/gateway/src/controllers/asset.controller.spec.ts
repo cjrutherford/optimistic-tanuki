@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AssetController } from './asset.controller';
 import { of } from 'rxjs';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { ServiceTokens, AssetCommands } from '@optimistic-tanuki/constants';
 import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
@@ -12,8 +12,13 @@ import { ICacheProvider } from '../auth/cache/cache-provider.interface';
 
 describe('AssetController', () => {
   let controller: AssetController;
+  let assetService: any;
 
   beforeEach(async () => {
+    assetService = {
+      send: jest.fn().mockReturnValue(of({})),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
@@ -22,7 +27,7 @@ describe('AssetController', () => {
         },
         {
           provide: ServiceTokens.ASSETS_SERVICE,
-          useValue: { send: jest.fn().mockResolvedValue(of({})) },
+          useValue: assetService,
         },
         {
           provide: ServiceTokens.PERMISSIONS_SERVICE,
@@ -34,33 +39,18 @@ describe('AssetController', () => {
         {
           provide: 'ICacheProvider', // Use a string token for the interface
           useFactory: () => {
-            const cache = new Map<
-              string,
-              { value: boolean; timestamp: number }
-            >();
             return {
-              get: jest.fn(async (key: string) => {
-                const entry = cache.get(key);
-                if (!entry) return null;
-                // Simple TTL check for testing
-                if (Date.now() - entry.timestamp > 5 * 60 * 1000) {
-                  cache.delete(key);
-                  return null;
-                }
-                return entry.value;
-              }),
-              set: jest.fn(async (key: string, value: boolean) => {
-                cache.set(key, { value, timestamp: Date.now() });
-              }),
+              get: jest.fn(),
+              set: jest.fn(),
             };
           },
         },
         {
           provide: PermissionsCacheService,
-          useFactory: (provider: ICacheProvider) => {
-            return new PermissionsCacheService(provider);
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
           },
-          inject: ['ICacheProvider'],
         },
       ],
       controllers: [AssetController],
@@ -76,5 +66,40 @@ describe('AssetController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('should create an asset', async () => {
+    const createDto: any = { name: 'test' };
+    await controller.createAsset(createDto);
+    expect(assetService.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.CREATE },
+      createDto
+    );
+  });
+
+  it('should delete an asset', async () => {
+    await controller.deleteAsset('1');
+    expect(assetService.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.REMOVE },
+      { id: '1' }
+    );
+  });
+
+  it('should get an asset by id', async () => {
+    const mockRes = {
+      setHeader: jest.fn(),
+      send: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+    } as any;
+    assetService.send.mockReturnValue(of('data:image/png;base64,dGVzdA=='));
+
+    await controller.getAssetById('1', mockRes);
+
+    expect(assetService.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.READ },
+      { id: '1' }
+    );
+    expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
+    expect(mockRes.send).toHaveBeenCalled();
   });
 });

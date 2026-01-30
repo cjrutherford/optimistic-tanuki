@@ -6,5 +6,5 @@ import { IsUUID } from 'class-validator';
 export class UpdateGoalDto extends PartialType(CreateGoalDto) {
   @ApiProperty({ description: 'ID of the goal' })
   @IsUUID()
-  id: string;
+  id!: string;
 }

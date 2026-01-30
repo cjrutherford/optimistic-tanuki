@@ -18,7 +18,7 @@ export class CreateTimelineDto {
   @IsString()
   @MinLength(3)
   @MaxLength(200)
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'Description of the timeline',
@@ -27,75 +27,75 @@ export class CreateTimelineDto {
   @IsString()
   @MinLength(10)
   @MaxLength(5000)
-  description: string;
+  description!: string;
 
   @ApiProperty({ description: 'ID of the user' })
   @IsString()
   @IsUUID()
-  userId: string;
+  userId!: string;
 
   @ApiProperty({ description: 'ID of the profile' })
   @IsString()
   @IsUUID()
-  profileId: string;
+  profileId!: string;
 
   @ApiProperty({ description: 'ID of the project' })
   @IsString()
   @IsUUID()
-  projectId: string;
+  projectId!: string;
 
   @ApiProperty({ description: 'ID of the goal' })
   @IsString()
   @IsUUID()
-  goalId: string;
+  goalId!: string;
 
   @ApiProperty({
     description: 'Start date of the timeline',
     example: '2023-01-01',
   })
   @IsDateString()
-  startDate: string;
+  startDate!: string;
 
   @ApiProperty({
     description: 'End date of the timeline',
     example: '2023-12-31',
   })
   @IsDateString()
-  endDate: string;
+  endDate!: string;
 
   @ApiProperty({ description: 'Completion status of the timeline' })
   @IsBoolean()
-  isCompleted: boolean;
+  isCompleted!: boolean;
 
   @ApiProperty({ description: 'Publication status of the timeline' })
   @IsBoolean()
-  isPublished: boolean;
+  isPublished!: boolean;
 
   @ApiProperty({ description: 'Deletion status of the timeline' })
   @IsBoolean()
-  isDeleted: boolean;
+  isDeleted!: boolean;
 
   @ApiProperty({
     description: 'Type of the timeline event',
     enum: TimelineEventType,
   })
   @IsEnum(TimelineEventType)
-  type: TimelineEventType;
+  type!: TimelineEventType;
 }
 
 export class CreateTimelineDtoFactory {
-  private name: string;
-  private description: string;
-  private userId: string;
-  private profileId: string;
-  private projectId: string;
-  private goalId: string;
-  private startDate: string;
-  private endDate: string;
-  private isCompleted: boolean;
-  private isPublished: boolean;
-  private isDeleted: boolean;
-  private type: TimelineEventType;
+  private name!: string;
+  private description!: string;
+  private userId!: string;
+  private profileId!: string;
+  private projectId!: string;
+  private goalId!: string;
+  private startDate!: string;
+  private endDate!: string;
+  private isCompleted!: boolean;
+  private isPublished!: boolean;
+  private isDeleted!: boolean;
+  private type!: TimelineEventType;
 
   setName(name: string): this {
     this.name = name;
