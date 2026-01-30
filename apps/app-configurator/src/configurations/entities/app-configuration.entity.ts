@@ -32,6 +32,12 @@ export class AppConfigurationEntity {
   @Column({ default: true })
   active: boolean;
 
+  @Column({ nullable: true })
+  ownerId: string; // Profile ID of the user who created this app
+
+  @Column({ nullable: true })
+  appScopeId: string; // Associated app scope ID for permissions
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
