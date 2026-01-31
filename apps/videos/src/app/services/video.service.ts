@@ -72,6 +72,10 @@ export class VideoService {
   }
 
   async update(id: string, updateVideoDto: UpdateVideoDto): Promise<Video> {
+    const video = await this.findOne(id);
+    if (!video) {
+      throw new Error(`Video with ID ${id} not found`);
+    }
     await this.videoRepository.update(id, {
       ...updateVideoDto,
       updatedAt: new Date(),
