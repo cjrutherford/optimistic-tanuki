@@ -42,10 +42,10 @@ export class AppComponent implements OnInit {
     this.themeService.themeColors$.subscribe({
       next: (colors) => {
         if (!colors || !isPlatformBrowser(this.platformId)) return;
-        const accentRgb = hexToRgb(colors.accent);
-        const complementRgb = hexToRgb(colors.complementary);
-        const accentRgba = `rgba(${accentRgb}, 0.9)`;
-        const complementRgba = `rgba(${complementRgb}, 0.9)`;
+        const accentRgb = hexToRgb(colors.accent) as { r: number; g: number; b: number };
+        const complementRgb = hexToRgb(colors.complementary) as { r: number; g: number; b: number };
+        const accentRgba = `rgba(${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}, 0.9)`;
+        const complementRgba = `rgba(${complementRgb.r}, ${complementRgb.g}, ${complementRgb.b}, 0.9)`;
 
         this.headingGradient = new GradientBuilder()
           .setType('linear')
@@ -55,6 +55,7 @@ export class AppComponent implements OnInit {
           })
           .build();
 
+          console.log('Updated heading gradient:', this.headingGradient);
         // Only set app-specific variables, theme colors are handled by ThemeService
         const backgroundPattern = `
 <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">
