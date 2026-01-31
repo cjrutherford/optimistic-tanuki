@@ -41,7 +41,10 @@ export class ChannelService {
     id: string,
     updateChannelDto: UpdateChannelDto
   ): Promise<Channel> {
-    await this.channelRepository.update(id, updateChannelDto);
+    await this.channelRepository.update(id, {
+      ...updateChannelDto,
+      updatedAt: new Date(),
+    });
     return this.findOne(id);
   }
 
