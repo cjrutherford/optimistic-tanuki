@@ -74,3 +74,5 @@ export {
   ForumLinkCommands,
 } from './lib/libs/forum';
 
+export { VideoCommands } from './lib/libs/videos';
+

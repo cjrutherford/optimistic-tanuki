@@ -5,6 +5,7 @@
     "firsttris.vscode-jest-runner",
     "ms-playwright.playwright",
     "angular.ng-template",
-    "orta.vscode-jest"
+    "orta.vscode-jest",
+    "esbenp.prettier-vscode"
   ]
 }
