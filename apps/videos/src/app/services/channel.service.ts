@@ -41,6 +41,10 @@ export class ChannelService {
     id: string,
     updateChannelDto: UpdateChannelDto
   ): Promise<Channel> {
+    const channel = await this.findOne(id);
+    if (!channel) {
+      throw new Error(`Channel with ID ${id} not found`);
+    }
     await this.channelRepository.update(id, {
       ...updateChannelDto,
       updatedAt: new Date(),
