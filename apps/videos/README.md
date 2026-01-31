@@ -158,6 +158,35 @@ docker-compose up -d
 docker-compose up -d videos
 ```
 
+### Running the Video Client
+
+#### Development
+```bash
+# Start the Angular app
+nx serve video-client
+
+# Access at http://localhost:4200
+```
+
+#### Docker
+```bash
+# Build and start the client
+docker-compose up -d video-client
+
+# Access at http://localhost:8086
+```
+
+### Uploading Videos
+
+1. Navigate to the video client: `http://localhost:8086`
+2. Click "Upload" in the navigation
+3. Select a video file (MP4, WebM, MOV - max 500MB)
+4. Optionally upload a thumbnail
+5. Fill in video details (title, description)
+6. Select a channel
+7. Choose visibility (public/unlisted/private)
+8. Click "Upload Video"
+
 ### Seeding Sample Data
 
 ```bash
@@ -239,18 +268,26 @@ services:
 - UI component library
 - Docker deployment
 - Seed data
+- Angular client application with SSR
+- Video upload interface
+- Video player with controls
+- Channel pages
+- Home page with recommendations
 
-### Planned 📋
-- Frontend client application
-- Video upload integration with asset service
+### In Progress 🚧
+- Video upload to asset service
 - Thumbnail generation
 - Enhanced recommendation algorithm (ML-based)
+
+### Planned 📋
 - Comments integration with social service
-- Like/share functionality
+- Like/share functionality (backend integration)
 - Search and filtering
 - Playlists
 - Watch history
 - Analytics dashboard
+- Multi-quality streaming
+- Live streaming support
 
 ## Testing
 
