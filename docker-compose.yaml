@@ -344,6 +344,18 @@ services:
       - '8085:4000'
     depends_on:
       - gateway
+
+  video-client:
+    container_name: ot_video_client
+    build:
+      context: .
+      dockerfile: ./apps/video-client/Dockerfile
+    ports:
+      - '8086:4000'
+    depends_on:
+      - gateway
+      - videos
+
   store:
     container_name: ot_store
     build:
