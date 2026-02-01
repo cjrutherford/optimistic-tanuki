@@ -7,6 +7,7 @@ import {
   IsUUID,
   MaxLength,
   MinLength,
+  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -37,6 +38,16 @@ export class PostDto {
   updatedAt: Date;
 }
 
+export class ThemeConfig {
+  @ApiProperty({ description: 'Theme name' })
+  @IsString()
+  theme: string;
+
+  @ApiProperty({ description: 'Accent color' })
+  @IsString()
+  accentColor: string;
+}
+
 export class CreateBlogPostDto {
   @ApiProperty({ description: 'Post title', example: 'My First Blog Post' })
   @IsString()
@@ -59,6 +70,12 @@ export class CreateBlogPostDto {
   @IsOptional()
   @IsBoolean()
   isDraft?: boolean;
+
+  @ApiProperty({ description: 'Theme configuration for the post', required: false })
+  @IsOptional()
+  @Type(() => ThemeConfig)
+  @IsObject()
+  themeConfig?: ThemeConfig;
 }
 
 export class UpdateBlogPostDto {

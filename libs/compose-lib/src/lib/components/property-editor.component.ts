@@ -364,6 +364,7 @@ export class PropertyEditorComponent implements OnInit, OnChanges {
   }
 
   onSave(): void {
+    console.log('[compose lib] Saving edited properties:', this.editedData);
     // Clean up temporary JSON strings
     const cleanedData = { ...this.editedData };
     this.propertyDefinitions.forEach((prop) => {
@@ -372,6 +373,7 @@ export class PropertyEditorComponent implements OnInit, OnChanges {
       }
     });
 
+    console.log('[compose lib] Cleaned data to emit:', cleanedData);
     this.propertiesUpdated.emit(cleanedData);
   }
 

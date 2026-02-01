@@ -16,11 +16,10 @@ services:
       timeout: 5s
       retries: 5
   db-setup:
-    image: node:lts-alpine
     container_name: db-setup
-    working_dir: /workspace
-    volumes:
-      - .:/workspace
+    build:
+      context: .
+      dockerfile: docker/db-setup.Dockerfile
     environment:
       POSTGRES_HOST: db
       POSTGRES_USER: postgres
@@ -28,7 +27,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
     restart: 'no'
   redis:
     image: redis:latest
@@ -334,6 +332,8 @@ services:
     build:
       context: .
       dockerfile: ./apps/app-configurator/Dockerfile
+    environment:
+      - RUN_SEED=true
     ports:
       - '3014:3014'
     depends_on:
@@ -343,24 +343,6 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
-
-  app-configurator-seed:
-    container_name: ot_app_configurator_seed
-    build:
-      context: .
-      dockerfile: ./apps/app-configurator/Dockerfile
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=ot_app_configurator
-      - PORT=3014
-    depends_on:
-      app-configurator:
-        condition: service_started
-    command: sh -c "sleep 5 && node seed-data/seed-script.js"
-    restart: 'no'
 
   configurable-client:
     container_name: ot_configurable_client
@@ -372,7 +354,6 @@ services:
     depends_on:
       - gateway
       - app-configurator
-      - app-configurator-seed
 
 volumes:
   postgres_data:

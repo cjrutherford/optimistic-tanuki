@@ -6,19 +6,19 @@ import {
 } from '@optimistic-tanuki/ui-models';
 
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TaskTimeEntryService {
+  private readonly http = inject(HttpClient);
+  private readonly profileService = inject(ProfileService);
+
   private baseUrl = '/api/project-planning/task-time-entries';
 
-  constructor(
-    private readonly http: HttpClient,
-    private readonly profileService: ProfileService
-  ) { }
+  constructor() { }
 
   createTaskTimeEntry(data: CreateTaskTimeEntry) {
     const currentProfile = this.profileService.getCurrentUserProfile();

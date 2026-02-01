@@ -33,6 +33,13 @@ export class ChatGateway {
   server: Server;
 
   private connectedClients: { id: string; client: Socket }[] = [];
+  // Track active streaming conversations: conversationId -> { status, participants, lastUpdate }
+  private activeStreams = new Map<string, {
+    status: 'thinking' | 'responding' | 'streaming';
+    participants: string[];
+    lastUpdate: Date;
+    aiPersonas: string[];
+  }>();
 
   constructor(
     private readonly l: Logger,
@@ -200,83 +207,25 @@ export class ChatGateway {
         "'"
       );
 
-      // Set up polling for real-time updates while AI processes
+      // Get all participant IDs for broadcasting
       const conversationId = payload.conversationId;
       const allParticipantIds = [...new Set([senderId, ...recipientIds])];
 
-      // Start polling immediately for new messages
-      const pollInterval = setInterval(async () => {
-        try {
-          for (const participantId of allParticipantIds) {
-            const participantSocket = this.connectedClients.find(
-              (c) => c.id === participantId
-            );
-
-            if (participantSocket) {
-              const conversations = await firstValueFrom(
-                this.chatCollectorClient.send(
-                  { cmd: ChatCommands.GET_CONVERSATIONS },
-                  { profileId: participantId }
-                )
-              );
-              participantSocket.client.emit(
-                'conversations',
-                conversations || []
-              );
-            }
-          }
-        } catch (error) {
-          this.l.error('Error during conversation polling:', error);
-        }
-      }, 500); // Poll every 500ms for new messages
-
-      // Send to AI orchestrator (non-blocking for polling)
-      firstValueFrom(
-        this.aiOrchestrationClient.send(
-          { cmd: AIOrchestrationCommands.CONVERSATION_UPDATE },
-          { conversation: aiPayload, aiPersonas: aiRecipients }
-        )
-      )
-        .then((aiResponses: Partial<ChatMessage>[]) => {
-          this.l.log(
-            `AI orchestrator completed with ${aiResponses.length} messages`
-          );
-
-          // Notify that AI has completed
-          this.broadcastToConversation(payload.conversationId, 'ai_status_update', {
-            conversationId: payload.conversationId,
-            status: 'complete'
-          });
-
-          // Stop polling after AI completes
-          clearInterval(pollInterval);
-
-          // Do one final emit to ensure all messages are sent
-          allParticipantIds.forEach(async (participantId) => {
-            const participantSocket = this.connectedClients.find(
-              (c) => c.id === participantId
-            );
-
-            if (participantSocket) {
-              const conversations = await firstValueFrom(
-                this.chatCollectorClient.send(
-                  { cmd: ChatCommands.GET_CONVERSATIONS },
-                  { profileId: participantId }
-                )
-              );
-              participantSocket.client.emit(
-                'conversations',
-                conversations || []
-              );
-            }
-          });
-
-          this.l.log('AI message processing complete.');
-        })
-        .catch((error) => {
-          this.l.error('Error in AI orchestration:', error);
-          clearInterval(pollInterval);
+      // Start AI processing with streaming
+      this.processAIResponseWithStreaming(
+        aiPayload,
+        aiRecipients,
+        senderId,
+        recipientIds
+      ).catch((error) => {
+        this.l.error('Error processing AI response:', error);
+        // Notify participants of error
+        this.broadcastToConversation(payload.conversationId, 'ai_status_update', {
+          conversationId: payload.conversationId,
+          status: 'error',
+          message: error.message || 'An error occurred'
         });
+      });
     } else {
       this.l.log('Message handling complete.');
     }
@@ -313,6 +262,31 @@ export class ChatGateway {
       this.chatCollectorClient.send(
         { cmd: ChatCommands.GET_CONVERSATIONS },
         payload
+      )
+    );
+    client.emit('conversations', conversations || []);
+
+    // Send current streaming status for any active streams this user is part of
+    this.sendActiveStreamsStatus(senderId, client);
+  }
+
+  @SubscribeMessage('reconnect_request')
+  async handleReconnectRequest(
+    @MessageBody() payload: { profileId: string },
+    @ConnectedSocket() client: Socket
+  ): Promise<void> {
+    this.l.log(`Reconnect request from profile: ${payload.profileId}`);
+    const senderId = payload.profileId;
+    this.updateConnectedSockets(senderId, client, 'connect');
+
+    // Send active streams status
+    this.sendActiveStreamsStatus(senderId, client);
+
+    // Refresh conversations
+    const conversations = await firstValueFrom(
+      this.chatCollectorClient.send(
+        { cmd: ChatCommands.GET_CONVERSATIONS },
+        { profileId: senderId }
       )
     );
     client.emit('conversations', conversations || []);
@@ -367,5 +341,235 @@ export class ChatGateway {
     this.connectedClients.forEach(({ client }) => {
       client.emit(event, data);
     });
+  }
+
+  /**
+   * Process AI response with real-time streaming
+   */
+  private async processAIResponseWithStreaming(
+    conversation: ChatConversation,
+    aiPersonas: PersonaTelosDto[],
+    senderId: string,
+    recipientIds: string[]
+  ): Promise<void> {
+    const allParticipantIds = [...new Set([senderId, ...recipientIds])];
+
+    try {
+      // Track this streaming conversation
+      this.activeStreams.set(conversation.id, {
+        status: 'thinking',
+        participants: allParticipantIds,
+        lastUpdate: new Date(),
+        aiPersonas: aiPersonas.map(p => p.id)
+      });
+
+      this.l.log(`Starting streaming for conversation ${conversation.id} with ${aiPersonas.length} AI personas`);
+
+      // Emit AI status: thinking
+      this.emitToParticipants(allParticipantIds, 'ai_status_update', {
+        conversationId: conversation.id,
+        status: 'thinking',
+        message: 'AI is processing your message...',
+      });
+      this.l.log('Calling AI Orchestrator with STREAM_CONVERSATION command');
+      const streamObservable = this.aiOrchestrationClient.send(
+        { cmd: AIOrchestrationCommands.STREAM_CONVERSATION },
+        { conversation, aiPersonas }
+      );
+
+      this.l.log('Observable created, subscribing to stream...');
+      let currentChunk = '';
+      let receivedEvents = 0;
+
+      // Subscribe to streaming events
+      streamObservable.subscribe({
+        next: (event: any) => {
+          receivedEvents++;
+          this.l.log(`Received streaming event #${receivedEvents}:`, event.type);
+          this.l.debug('Received streaming event:', event);
+
+          switch (event.type) {
+            case 'thinking':
+              // Update stream status
+              // eslint-disable-next-line no-case-declarations
+              const thinkingStream = this.activeStreams.get(conversation.id);
+              if (thinkingStream) {
+                thinkingStream.status = 'thinking';
+                thinkingStream.lastUpdate = new Date();
+              }
+              // Emit thinking status
+              this.emitToParticipants(allParticipantIds, 'ai_status_update', {
+                conversationId: conversation.id,
+                status: 'thinking',
+                message: event.content.text,
+              });
+              break;
+
+            case 'tool_start':
+              // Emit tool call notification
+              this.emitToParticipants(allParticipantIds, 'tool_call_update', {
+                conversationId: conversation.id,
+                toolName: event.content.tool,
+                status: 'calling',
+              });
+              break;
+
+            case 'tool_end':
+              // Emit tool completion
+              this.emitToParticipants(allParticipantIds, 'tool_call_update', {
+                conversationId: conversation.id,
+                toolName: event.content.tool,
+                status: event.content.success ? 'success' : 'error',
+              });
+              break;
+
+            case 'chunk':
+              // Update stream status
+              // eslint-disable-next-line no-case-declarations
+              const chunkStream = this.activeStreams.get(conversation.id);
+              if (chunkStream) {
+                chunkStream.status = 'streaming';
+                chunkStream.lastUpdate = new Date();
+              }
+              // Accumulate and emit streaming response
+              currentChunk += event.content.text || event.content;
+              this.emitToParticipants(allParticipantIds, 'streaming_response', {
+                conversationId: conversation.id,
+                chunk: event.content.text || event.content,
+                isComplete: false,
+              });
+              break;
+
+            case 'final_response':
+              // Remove from active streams
+              this.activeStreams.delete(conversation.id);
+
+              // Emit completion status
+              this.emitToParticipants(allParticipantIds, 'ai_status_update', {
+                conversationId: conversation.id,
+                status: 'complete',
+              });
+
+              this.emitToParticipants(allParticipantIds, 'streaming_response', {
+                conversationId: conversation.id,
+                chunk: '',
+                isComplete: true,
+              });
+
+              // Refresh conversations
+              this.refreshConversationsForParticipants(allParticipantIds);
+              break;
+
+            case 'error':
+              // Remove from active streams on error
+              this.activeStreams.delete(conversation.id);
+
+              this.l.error('Streaming error event:', event.content);
+              this.emitToParticipants(allParticipantIds, 'ai_status_update', {
+                conversationId: conversation.id,
+                status: 'error',
+                message: event.content.message || 'An error occurred',
+              });
+              break;
+          }
+        },
+        error: (error) => {
+          // Remove from active streams on error
+          this.activeStreams.delete(conversation.id);
+
+          this.l.error('Streaming error:', error);
+          this.l.error('Error stack:', error?.stack);
+          this.emitToParticipants(allParticipantIds, 'ai_status_update', {
+            conversationId: conversation.id,
+            status: 'error',
+            message: error.message || 'An error occurred',
+          });
+        },
+        complete: () => {
+          this.l.log(`AI streaming completed for conversation ${conversation.id}. Received ${receivedEvents} events`);
+        },
+      });
+    } catch (error) {
+      this.l.error('Error in streaming AI response:', error);
+      this.emitToParticipants(allParticipantIds, 'ai_status_update', {
+        conversationId: conversation.id,
+        status: 'error',
+        message: error.message || 'An error occurred',
+      });
+    }
+  }
+
+  /**
+   * Emit event to all participants
+   */
+  private emitToParticipants(
+    participantIds: string[],
+    event: string,
+    data: any
+  ): void {
+    participantIds.forEach((participantId) => {
+      const participantSocket = this.connectedClients.find(
+        (c) => c.id === participantId
+      );
+      if (participantSocket) {
+        participantSocket.client.emit(event, data);
+      }
+    });
+  }
+
+  /**
+   * Refresh conversations for all participants
+   */
+  private async refreshConversationsForParticipants(
+    participantIds: string[]
+  ): Promise<void> {
+    for (const participantId of participantIds) {
+      const participantSocket = this.connectedClients.find(
+        (c) => c.id === participantId
+      );
+
+      if (participantSocket) {
+        const conversations = await firstValueFrom(
+          this.chatCollectorClient.send(
+            { cmd: ChatCommands.GET_CONVERSATIONS },
+            { profileId: participantId }
+          )
+        );
+        participantSocket.client.emit('conversations', conversations || []);
+      }
+    }
+  }
+
+  /**
+   * Send active streaming status to a reconnected client
+   */
+  private sendActiveStreamsStatus(profileId: string, client: Socket): void {
+    this.l.log(`Sending active streams status to profile: ${profileId}`);
+
+    // Find all active streams this user is participating in
+    const userStreams: any[] = [];
+    this.activeStreams.forEach((streamData, conversationId) => {
+      if (streamData.participants.includes(profileId)) {
+        userStreams.push({
+          conversationId,
+          status: streamData.status,
+          lastUpdate: streamData.lastUpdate
+        });
+
+        // Re-emit current status
+        client.emit('ai_status_update', {
+          conversationId,
+          status: streamData.status,
+          message: streamData.status === 'thinking'
+            ? 'AI is processing your message...'
+            : 'AI is responding...'
+        });
+      }
+    });
+
+    if (userStreams.length > 0) {
+      this.l.log(`Found ${userStreams.length} active streams for profile ${profileId}`);
+      client.emit('active_streams', userStreams);
+    }
   }
 }

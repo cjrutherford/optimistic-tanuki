@@ -16,6 +16,11 @@ module.exports = {
       tsConfig: './tsconfig.app.json',
       assets: [
         './src/assets',
+        {
+          input: './src/seed-data',
+          glob: '**/*',
+          output: 'seed-data',
+        },
         // {
         //   input: './migrations',
         //   glob: '**/*',

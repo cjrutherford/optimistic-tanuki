@@ -1,13 +1,6 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { Change, CreateChange } from '@optimistic-tanuki/ui-models';
-import {
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-  signal,
-  OnInit,
-} from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import {
   SelectComponent,
@@ -29,13 +22,15 @@ import {
   styleUrl: './change-form.component.scss',
 })
 export class ChangeFormComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+
   @Input() change: Change | null = null;
   isEditing = signal<boolean>(false);
   changeForm: FormGroup;
   @Output() submitted: EventEmitter<Partial<Change>> = new EventEmitter<
     Partial<Change>
   >();
-  constructor(private readonly fb: FormBuilder) {
+  constructor() {
     this.changeForm = this.fb.group({
       changeType: this.fb.control('ADDITION'),
       changeDescription: this.fb.control(''),

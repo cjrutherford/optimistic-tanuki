@@ -1,72 +1,73 @@
+import { CommonModule } from '@angular/common';
 import {
+  AfterViewInit,
   Component,
+  ComponentRef,
+  ElementRef,
   EventEmitter,
   Input,
+  OnDestroy,
   Output,
   ViewChild,
-  ElementRef,
-  OnDestroy,
-  inject,
-  AfterViewInit,
   ViewContainerRef,
-  ComponentRef,
+  inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatCardModule } from '@angular/material/card';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
-import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import {
-  ThemeService,
-  ThemeColors,
-  Themeable,
-} from '@optimistic-tanuki/theme-lib';
-import {
-  GradientBuilder,
   ButtonComponent,
   CardComponent,
+  GradientBuilder,
 } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
-import { TiptapEditorDirective } from 'ngx-tiptap';
+import {
+  ThemeColors,
+  ThemeService,
+  Themeable,
+} from '@optimistic-tanuki/theme-lib';
+import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
 import { Editor } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
-import Underline from '@tiptap/extension-underline';
-import TextAlign from '@tiptap/extension-text-align';
-import { Table } from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
+import { Table } from '@tiptap/extension-table';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import TableRow from '@tiptap/extension-table-row';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
+import StarterKit from '@tiptap/starter-kit';
 import DOMPurify from 'dompurify';
+import { TiptapEditorDirective } from 'ngx-tiptap';
 
-import { ComponentInjectionService } from './services/component-injection.service';
-import { SocialComposeComponentNode } from './extensions/social-compose-component.extension';
-import { ComponentSelectorComponent } from './components/component-selector.component';
 import {
-  PropertyEditorComponent,
-  PropertyDefinition,
-} from './components/property-editor.component';
-import { RichTextToolbarComponent } from './components/rich-text-toolbar.component';
-import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
+  ComponentInjectionAPI,
+  ComponentInjectionService,
+  InjectableComponent,
+  InjectedComponentInstance,
+  UnifiedComponentRegistryService,
+} from '@optimistic-tanuki/compose-lib';
+import { ComponentSelectorComponent } from './components/component-selector.component';
 import { CalloutBoxComponent } from './components/example-components/callout-box.component';
 import { CodeSnippetComponent } from './components/example-components/code-snippet.component';
 import { ImageGalleryComponent } from './components/example-components/image-gallery.component';
 import {
-  InjectableComponent,
-  InjectedComponentInstance,
-  ComponentInjectionAPI,
-} from './interfaces/component-injection.interface';
+  PropertyDefinition,
+  PropertyEditorComponent,
+} from './components/property-editor.component';
+import { RichTextToolbarComponent } from './components/rich-text-toolbar.component';
+import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
+import { SocialComposeComponentNode } from './extensions/social-compose-component.extension';
 import { ImageUploadService } from './services/image-upload.service';
 
-import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
+import { DEFAULT_POST_THEME, PostThemeConfig } from '@optimistic-tanuki/ui-models';
 
 export interface PostData {
   title: string;
@@ -105,12 +106,11 @@ export interface ImageUploadCallback {
   ],
   templateUrl: './compose.component.html',
   styleUrls: ['./compose.component.scss'],
-  providers: [ComponentInjectionService, ImageUploadService],
+  providers: [ImageUploadService],
 })
 export class ComposeComponent
   extends Themeable
-  implements OnDestroy, AfterViewInit, ComponentInjectionAPI
-{
+  implements OnDestroy, AfterViewInit, ComponentInjectionAPI {
   @Input() title = '';
   @Input() attachments: CreateAttachmentDto[] = [];
   @Input() links: { url: string }[] = [];
@@ -150,13 +150,14 @@ export class ComposeComponent
   isPropertyEditorVisible = false;
   selectedComponentInstance: InjectedComponentInstance | null = null;
   selectedComponentProperties: PropertyDefinition[] = [];
-  
+
   // Post theme configuration properties
   isThemeConfigVisible = false;
   postTheme: 'light' | 'dark' = 'light';
   postAccentColor = '#3f51b5';
 
   private componentInjectionService = inject(ComponentInjectionService);
+  private unifiedRegistry = inject(UnifiedComponentRegistryService);
   private dialog = inject(MatDialog);
   private imageUploadService = inject(ImageUploadService);
 
@@ -309,29 +310,29 @@ export class ComposeComponent
 
   // Component injection API implementation
   registerComponent(component: InjectableComponent): void {
-    this.componentInjectionService.registerComponent(component);
+    this.unifiedRegistry.registerComponent(component, 'social-ui');
     this.registeredComponents = this.getRegisteredComponents();
   }
 
   unregisterComponent(componentId: string): void {
-    this.componentInjectionService.unregisterComponent(componentId);
+    this.unifiedRegistry.unregisterComponent(componentId, 'social-ui');
     this.registeredComponents = this.getRegisteredComponents();
   }
 
   getRegisteredComponents(): InjectableComponent[] {
-    return this.componentInjectionService.getRegisteredComponents();
+    return this.unifiedRegistry.getAllComponents();
   }
 
   getComponentsByCategory(category: string): InjectableComponent[] {
-    return this.componentInjectionService.getComponentsByCategory(category);
+    return this.unifiedRegistry.getComponentsByCategory(category);
   }
 
   async injectComponent(
     componentId: string,
     data?: Record<string, unknown>
   ): Promise<InjectedComponentInstance> {
-    const component = this.componentInjectionService
-      .getRegisteredComponents()
+    const component = this.unifiedRegistry
+      .getAllComponents()
       .find((comp) => comp.id === componentId);
 
     if (!component) {
@@ -376,8 +377,12 @@ export class ComposeComponent
     return Array.from(this.activeComponents.values());
   }
 
-  getComponent(instanceId: string): InjectedComponentInstance | undefined {
-    return this.activeComponents.get(instanceId);
+  getComponent(instanceId: string): InjectedComponentInstance {
+    const instance = this.activeComponents.get(instanceId);
+    if (!instance) {
+      throw new Error(`Component instance ${instanceId} not found`);
+    }
+    return instance;
   }
 
   removeComponent(instanceId: string): void {

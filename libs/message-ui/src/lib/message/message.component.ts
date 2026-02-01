@@ -3,7 +3,7 @@ import {
   CardComponent,
   TileComponent,
 } from '@optimistic-tanuki/common-ui';
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 import { MessageService } from '../message.service';
@@ -16,7 +16,9 @@ import { MessageService } from '../message.service';
 })
 export class MessageComponent {
   messageService: MessageService;
-  constructor(_messageService: MessageService) {
+  constructor() {
+    const _messageService = inject(MessageService);
+
     this.messageService = _messageService;
   }
 

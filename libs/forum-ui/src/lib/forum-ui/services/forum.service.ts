@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
@@ -14,9 +14,11 @@ import {
   providedIn: 'root'
 })
 export class ForumService {
+  private http = inject(HttpClient);
+
   private readonly baseUrl = '/api/forum';
 
-  constructor(private http: HttpClient) { }
+  constructor() { }
 
   // Topic management
   getTopics(): Promise<TopicDto[]> {

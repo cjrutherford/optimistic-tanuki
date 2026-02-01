@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
-import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
+import { InjectedComponentInstance } from '@optimistic-tanuki/compose-lib';
 
 export interface PropertyDefinition {
   key: string;
@@ -188,7 +188,9 @@ export interface PropertyDefinition {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 500px;
+        min-width: 500px;
+        max-width: calc(100vw - 2rem);
+        height: auto;
         max-height: 80vh;
         z-index: 1000;
         overflow: hidden;
@@ -423,6 +425,7 @@ export class PropertyEditorComponent implements OnInit, OnChanges {
   }
 
   onSave(): void {
+    console.log('[blog compose] Saving edited properties:', this.editedData);
     // Clean up temporary JSON strings
     const cleanedData = { ...this.editedData };
     this.propertyDefinitions.forEach((prop) => {
@@ -431,6 +434,7 @@ export class PropertyEditorComponent implements OnInit, OnChanges {
       }
     });
 
+    console.log('[blog compose] Cleaned data to emit:', cleanedData);
     this.propertiesUpdated.emit(cleanedData);
   }
 

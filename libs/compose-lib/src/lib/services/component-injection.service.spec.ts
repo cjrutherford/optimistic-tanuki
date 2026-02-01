@@ -5,6 +5,7 @@ import {
   InjectableComponent,
   InjectedComponentInstance,
 } from '../interfaces/component-injection.interface';
+import { ComponentInjectionStateManager } from '../state/component-injection-state';
 
 @Component({
   selector: 'test-component',
@@ -45,7 +46,7 @@ describe('ComponentInjectionService', () => {
       };
 
       service.registerComponent(testComponent);
-      const registered = service.getRegisteredComponents();
+      const registered = service.registeredComponents();
 
       expect(registered).toContain(testComponent);
       expect(registered.length).toBe(1);
@@ -67,7 +68,7 @@ describe('ComponentInjectionService', () => {
       service.registerComponent(component1);
       service.registerComponent(component2);
 
-      const registered = service.getRegisteredComponents();
+      const registered = service.registeredComponents();
       expect(registered.length).toBe(2);
     });
   });
@@ -83,7 +84,7 @@ describe('ComponentInjectionService', () => {
       service.registerComponent(testComponent);
       service.unregisterComponent('test-component');
 
-      const registered = service.getRegisteredComponents();
+      const registered = service.registeredComponents();
       expect(registered.length).toBe(0);
     });
 
@@ -94,9 +95,9 @@ describe('ComponentInjectionService', () => {
     });
   });
 
-  describe('getRegisteredComponents', () => {
+  describe('registeredComponents', () => {
     it('should return empty array when no components registered', () => {
-      const components = service.getRegisteredComponents();
+      const components = service.registeredComponents();
       expect(components).toEqual([]);
     });
 
@@ -116,12 +117,12 @@ describe('ComponentInjectionService', () => {
       service.registerComponent(component1);
       service.registerComponent(component2);
 
-      const components = service.getRegisteredComponents();
+      const components = service.registeredComponents();
       expect(components.length).toBe(2);
     });
   });
 
-  describe('getComponentsByCategory', () => {
+  describe('componentsByCategory', () => {
     beforeEach(() => {
       const component1: InjectableComponent = {
         id: 'test-1',
@@ -150,13 +151,13 @@ describe('ComponentInjectionService', () => {
     });
 
     it('should return components by category', () => {
-      const categoryA = service.getComponentsByCategory('Category A');
+      const categoryA = service.componentsByCategory().get('Category A') || [];
       expect(categoryA.length).toBe(2);
-      expect(categoryA.every((c) => c.category === 'Category A')).toBe(true);
+      expect(categoryA.every((c: any) => c.category === 'Category A')).toBe(true);
     });
 
     it('should return empty array for non-existent category', () => {
-      const components = service.getComponentsByCategory('Non-existent');
+      const components = service.componentsByCategory().get('Non-existent') || [];
       expect(components).toEqual([]);
     });
   });
@@ -195,9 +196,9 @@ describe('ComponentInjectionService', () => {
     });
   });
 
-  describe('getActiveComponents', () => {
+  describe('activeComponents', () => {
     it('should return empty array when no components are active', () => {
-      const active = service.getActiveComponents();
+      const active = service.activeComponents();
       expect(active).toEqual([]);
     });
   });
@@ -209,10 +210,9 @@ describe('ComponentInjectionService', () => {
     });
   });
 
-  describe('clearAllComponents', () => {
-    it('should clear all components', () => {
-      service.clearAllComponents();
-      const active = service.getActiveComponents();
+  describe('clear all components', () => {
+    it('should have no active components initially', () => {
+      const active = service.activeComponents();
       expect(active).toEqual([]);
     });
   });

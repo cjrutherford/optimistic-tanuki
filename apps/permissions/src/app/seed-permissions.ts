@@ -61,7 +61,7 @@ async function main() {
 
     for (const scopeData of seedData.app_scopes) {
       try {
-        let existing = await appScopeRepo.findOne({
+        const existing = await appScopeRepo.findOne({
           where: { name: scopeData.name },
         });
 
@@ -103,7 +103,7 @@ async function main() {
           ? createdAppScopes.find((s) => s.name === permissionData.appScope)
           : null;
 
-        let existing = await permissionRepo.findOne({
+        const existing = await permissionRepo.findOne({
           where: {
             name: permissionData.name,
             appScopeId: permissionAppScope ? permissionAppScope.id : IsNull(),
@@ -162,7 +162,7 @@ async function main() {
 
     for (const roleData of seedData.roles) {
       try {
-        let existing = await roleRepo.findOne({
+        const existing = await roleRepo.findOne({
           where: { name: roleData.name },
         });
 

@@ -1,12 +1,12 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'lib-component-wrapper',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [CommonModule, MatIconModule],
   template: `
     <div
       class="component-wrapper"
@@ -51,7 +51,7 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
       </div>
       } @if (isSelected) {
       <div class="component-label">
-        {{ componentInstance.componentDef.name }}
+        {{ componentInstance?.componentDef?.name }}
       </div>
       }
 
@@ -153,16 +153,32 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
     `,
   ],
 })
-export class ComponentWrapperComponent {
-  @Input() componentInstance!: InjectedComponentInstance;
+export class ComponentWrapperComponent implements OnInit, OnDestroy {
+  @Input() componentInstance: InjectedComponentInstance | null = null;
   @Input() isSelected = false;
   @Output() editRequested = new EventEmitter<InjectedComponentInstance>();
   @Output() deleteRequested = new EventEmitter<InjectedComponentInstance>();
   @Output() moveUpRequested = new EventEmitter<InjectedComponentInstance>();
   @Output() moveDownRequested = new EventEmitter<InjectedComponentInstance>();
   @Output() selectionChanged = new EventEmitter<InjectedComponentInstance>();
+  @Output() propertiesChanged = new EventEmitter<{
+    instance: InjectedComponentInstance;
+    data: Record<string, any>;
+  }>();
 
   isHovered = false;
+
+  ngOnInit(): void {
+    if (!this.componentInstance) {
+      console.warn('BlogComposeComponentWrapper: No component instance provided');
+    } else {
+      console.log('BlogComposeComponentWrapper: Initialized with instance:', this.componentInstance.instanceId);
+    }
+  }
+
+  ngOnDestroy(): void {
+    // Cleanup if needed
+  }
 
   onMouseEnter(): void {
     this.isHovered = true;
@@ -174,26 +190,48 @@ export class ComponentWrapperComponent {
 
   onClick(event: Event): void {
     event.stopPropagation();
-    this.selectionChanged.emit(this.componentInstance);
+    if (this.componentInstance) {
+      this.selectionChanged.emit(this.componentInstance);
+    }
   }
 
   onEdit(event: Event): void {
     event.stopPropagation();
-    this.editRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('BlogComposeComponentWrapper: Edit requested for instance:', this.componentInstance.instanceId);
+      this.editRequested.emit(this.componentInstance);
+    } else {
+      console.error('BlogComposeComponentWrapper: Cannot edit - no component instance');
+    }
   }
 
   onDelete(event: Event): void {
     event.stopPropagation();
-    this.deleteRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('BlogComposeComponentWrapper: Delete requested for instance:', this.componentInstance.instanceId);
+      this.deleteRequested.emit(this.componentInstance);
+    } else {
+      console.error('BlogComposeComponentWrapper: Cannot delete - no component instance');
+    }
   }
 
   onMoveUp(event: Event): void {
     event.stopPropagation();
-    this.moveUpRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('BlogComposeComponentWrapper: Move up requested for instance:', this.componentInstance.instanceId);
+      this.moveUpRequested.emit(this.componentInstance);
+    } else {
+      console.error('BlogComposeComponentWrapper: Cannot move up - no component instance');
+    }
   }
 
   onMoveDown(event: Event): void {
     event.stopPropagation();
-    this.moveDownRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('BlogComposeComponentWrapper: Move down requested for instance:', this.componentInstance.instanceId);
+      this.moveDownRequested.emit(this.componentInstance);
+    } else {
+      console.error('BlogComposeComponentWrapper: Cannot move down - no component instance');
+    }
   }
 }

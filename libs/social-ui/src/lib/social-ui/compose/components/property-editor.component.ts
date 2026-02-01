@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
-import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
+import { InjectedComponentInstance } from '@optimistic-tanuki/compose-lib';
 
 export interface PropertyDefinition {
   key: string;
@@ -360,6 +360,7 @@ export class PropertyEditorComponent implements OnInit, OnChanges {
   }
 
   onSave(): void {
+    console.log('[social ui] Saving edited properties:', this.editedData);
     // Clean up temporary JSON strings
     const cleanedData = { ...this.editedData };
     this.propertyDefinitions.forEach((prop) => {
@@ -368,6 +369,7 @@ export class PropertyEditorComponent implements OnInit, OnChanges {
       }
     });
 
+    console.log('[social ui] Cleaned data to emit:', cleanedData);
     this.propertiesUpdated.emit(cleanedData);
   }
 

@@ -11,7 +11,7 @@ import {
   template: '<div>Test</div>',
   standalone: true,
 })
-class TestComponent {}
+class TestComponent { }
 
 describe('ComponentWrapperComponent', () => {
   let component: ComponentWrapperComponent;
@@ -107,7 +107,7 @@ describe('ComponentWrapperComponent', () => {
         done();
       });
 
-      component.onClick(mockEvent);
+      component.onWrapperClick(mockEvent);
     });
 
     it('should stop event propagation on click', () => {
@@ -115,7 +115,7 @@ describe('ComponentWrapperComponent', () => {
         stopPropagation: jest.fn(),
       } as any;
 
-      component.onClick(mockEvent);
+      component.onWrapperClick(mockEvent);
 
       expect(mockEvent.stopPropagation).toHaveBeenCalled();
     });
@@ -246,7 +246,7 @@ describe('ComponentWrapperComponent', () => {
         stopPropagation: jest.fn(),
       } as any;
 
-      expect(() => component.onClick(mockEvent)).not.toThrow();
+      expect(() => component.onWrapperClick(mockEvent)).not.toThrow();
     });
 
     it('should handle undefined component instance gracefully', () => {
@@ -257,7 +257,7 @@ describe('ComponentWrapperComponent', () => {
         stopPropagation: jest.fn(),
       } as any;
 
-      expect(() => component.onClick(mockEvent)).not.toThrow();
+      expect(() => component.onWrapperClick(mockEvent)).not.toThrow();
     });
   });
 });

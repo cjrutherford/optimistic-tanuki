@@ -5,14 +5,15 @@ import {
 } from '@optimistic-tanuki/ui-models';
 
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ChangeService {
+  private readonly http = inject(HttpClient);
+
   private baseUrl = '/api/project-planning/changes';
-  constructor(private readonly http: HttpClient) {}
 
   createChange(data: CreateChange) {
     return this.http.post<Change>(`${this.baseUrl}`, data);

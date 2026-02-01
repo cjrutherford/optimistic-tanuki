@@ -1,4 +1,4 @@
-import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
@@ -13,6 +13,10 @@ import {
   providedIn: 'root',
 })
 export class AuthService {
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  private platformId = inject<object>(PLATFORM_ID);
+
   private readonly API_URL = '/api';
   private readonly TOKEN_KEY = 'auth_token';
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(
@@ -20,11 +24,7 @@ export class AuthService {
   );
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  constructor(
-    private http: HttpClient,
-    private router: Router,
-    @Inject(PLATFORM_ID) private platformId: Object
-  ) {}
+
 
   private hasToken(): boolean {
     if (!isPlatformBrowser(this.platformId)) {

@@ -18,7 +18,9 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 RUN npm i --save typeorm
 COPY ./dist/apps/app-configurator .
+COPY apps/app-configurator/entrypoint.sh .
 RUN chown -R node:node .
 USER node
 EXPOSE 3014
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["dumb-init", "node", "main.js"]

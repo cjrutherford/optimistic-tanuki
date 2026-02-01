@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ThemeService, ColorPalette } from '@optimistic-tanuki/theme-lib';
@@ -26,6 +26,8 @@ interface ShadowPreset {
   styleUrls: ['./theme-designer.component.scss'],
 })
 export class ThemeDesignerComponent implements OnInit, OnDestroy {
+  private themeService = inject(ThemeService);
+
   // Color selection
   accentColor = '#3f51b5';
   complementaryColor = '#c0af4b';
@@ -116,7 +118,6 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private themeService: ThemeService) {}
 
   ngOnInit(): void {
     // Load current theme settings

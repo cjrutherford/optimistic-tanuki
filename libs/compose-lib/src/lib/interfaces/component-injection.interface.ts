@@ -55,9 +55,9 @@ export interface InjectedComponentInstance {
   componentDef: InjectableComponent;
 
   /**
-   * Angular component reference
+   * Angular component reference (optional for TipTap integration)
    */
-  componentRef: ComponentRef<unknown>;
+  componentRef?: ComponentRef<unknown>;
 
   /**
    * Position information within the editor

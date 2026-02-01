@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -17,12 +17,14 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
   styleUrls: ['./mfa-block.component.scss'],
 })
 export class MfaBlockComponent {
+  private fb = inject(FormBuilder);
+
   mfaForm: FormGroup;
   @Input() onboarding = false;
   @Input() qrCodeUrl = '';
   @Output() submitMfa = new EventEmitter<string>();
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     this.mfaForm = this.fb.group({
       token: [''],
     });

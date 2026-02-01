@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 
 import {
   ReactiveFormsModule,
@@ -33,10 +33,9 @@ import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
   styleUrl: './register.component.scss',
 })
 export class RegisterComponent {
-  constructor(
-    private readonly authenticationService: AuthenticationService,
-    private readonly router: Router
-  ) {}
+  private readonly authenticationService = inject(AuthenticationService);
+  private readonly router = inject(Router);
+
 
   // Custom validator to check if password and confirmPassword match
   passwordMatchValidator(form: FormGroup) {

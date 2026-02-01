@@ -5,18 +5,18 @@ import {
 } from '@optimistic-tanuki/ui-models';
 
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ProjectService {
+  private readonly http = inject(HttpClient);
+  private readonly profileService = inject(ProfileService);
+
   baseUrl = '/api/project-planning/projects';
-  constructor(
-    private readonly http: HttpClient,
-    private readonly profileService: ProfileService
-  ) { }
+  constructor() { }
 
   createProject(data: CreateProject) {
     const profile = this.profileService.getCurrentUserProfile();

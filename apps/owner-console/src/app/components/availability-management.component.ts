@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../services/store.service';
@@ -16,6 +16,8 @@ import {
   styleUrls: ['./availability-management.component.scss'],
 })
 export class AvailabilityManagementComponent implements OnInit {
+  private storeService = inject(StoreService);
+
   availabilities: Availability[] = [];
   loading = false;
   error: string | null = null;
@@ -45,7 +47,7 @@ export class AvailabilityManagementComponent implements OnInit {
     { value: 6, label: 'Saturday' },
   ];
 
-  constructor(private storeService: StoreService) {}
+
 
   ngOnInit(): void {
     this.loadAvailabilities();

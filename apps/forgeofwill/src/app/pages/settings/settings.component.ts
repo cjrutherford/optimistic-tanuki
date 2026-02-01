@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
 import {
@@ -26,7 +26,10 @@ import {
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
-export class SettingsComponent {
+export class SettingsComponent implements OnInit {
+  private profileService = inject(ProfileService);
+  private auth = inject(AuthStateService);
+
   title = 'Settings';
 
   showThemeDesigner = false;
@@ -37,10 +40,6 @@ export class SettingsComponent {
   backgroundImage = '';
   profile = signal<ProfileDto | null>(null);
 
-  constructor(
-    private profileService: ProfileService,
-    private auth: AuthStateService
-  ) {}
 
   ngOnInit() {
     const p = this.profileService.getCurrentUserProfile();

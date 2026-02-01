@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 
 import {
   ButtonComponent,
@@ -20,7 +20,8 @@ import { ContactService } from '../../contact.service';
   styleUrl: './contact.component.scss',
 })
 export class ContactComponent {
-  constructor(private readonly contactService: ContactService) {}
+  private readonly contactService = inject(ContactService);
+
 
   subjects = [
     { value: 'general', label: 'General Inquiry' },

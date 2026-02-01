@@ -501,8 +501,7 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
   ],
 })
 export class ComponentEditorWrapperComponent
-  implements OnInit, OnDestroy, OnChanges, AfterViewInit
-{
+  implements OnInit, OnDestroy, OnChanges, AfterViewInit {
   @ViewChild('componentHost', { read: ViewContainerRef })
   componentHost!: ViewContainerRef;
 
@@ -596,18 +595,33 @@ export class ComponentEditorWrapperComponent
 
   onEditClick(event: Event): void {
     event.stopPropagation();
-    this.isEditing = true;
-    this.editingData = { ...this.componentData };
+    if (this.componentInstance) {
+      console.log('ComponentEditorWrapper: Edit requested for instance:', this.componentInstance.instanceId);
+      this.isEditing = true;
+      this.editingData = { ...this.componentData };
+    } else {
+      console.error('ComponentEditorWrapper: Cannot edit - no component instance');
+    }
   }
 
   onDuplicateClick(event: Event): void {
     event.stopPropagation();
-    this.duplicateRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('ComponentEditorWrapper: Duplicate requested for instance:', this.componentInstance.instanceId);
+      this.duplicateRequested.emit(this.componentInstance);
+    } else {
+      console.error('ComponentEditorWrapper: Cannot duplicate - no component instance');
+    }
   }
 
   onDeleteClick(event: Event): void {
     event.stopPropagation();
-    this.deleteRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('ComponentEditorWrapper: Delete requested for instance:', this.componentInstance.instanceId);
+      this.deleteRequested.emit(this.componentInstance);
+    } else {
+      console.error('ComponentEditorWrapper: Cannot delete - no component instance');
+    }
   }
 
   closeQuickEdit(): void {
@@ -620,6 +634,13 @@ export class ComponentEditorWrapperComponent
   }
 
   saveQuickEdit(): void {
+    if (!this.componentInstance) {
+      console.error('ComponentEditorWrapper: Cannot save - no component instance');
+      return;
+    }
+
+    console.log('ComponentEditorWrapper: Saving quick edit for instance:', this.componentInstance.instanceId, this.editingData);
+
     this.propertiesChanged.emit({
       instance: this.componentInstance,
       data: { ...this.editingData },

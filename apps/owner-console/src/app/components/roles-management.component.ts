@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
 import {
@@ -38,13 +38,13 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
   ],
 })
 export class RolesManagementComponent implements OnInit {
+  private rolesService = inject(RolesService);
+  private messageService = inject(MessageService);
+
   roles: RoleDto[] = [];
   loading = false;
 
-  constructor(
-    private rolesService: RolesService,
-    private messageService: MessageService
-  ) {}
+
 
   ngOnInit(): void {
     this.loadRoles();

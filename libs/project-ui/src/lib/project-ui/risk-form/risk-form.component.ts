@@ -1,5 +1,5 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, inject } from '@angular/core';
 import { Risk } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent, TextAreaComponent } from '@optimistic-tanuki/form-ui';
@@ -17,11 +17,13 @@ import { SelectComponent, TextAreaComponent } from '@optimistic-tanuki/form-ui';
   styleUrl: './risk-form.component.scss',
 })
 export class RiskFormComponent implements OnInit {
+  private fb = inject(FormBuilder);
+
   @Input() risk: Risk | null = null;
   riskForm: FormGroup;
   @Output() submitted: EventEmitter<Risk> = new EventEmitter<Risk>();
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     this.riskForm = this.fb.group({
       description: [''],
       impact: [''],

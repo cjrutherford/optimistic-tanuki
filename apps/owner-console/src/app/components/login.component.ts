@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
@@ -66,9 +66,12 @@ import { LoginType } from '@optimistic-tanuki/ui-models';
   ],
 })
 export class LoginComponent {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
   error = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+
 
   onLogin(loginData: LoginType): void {
     this.error = '';

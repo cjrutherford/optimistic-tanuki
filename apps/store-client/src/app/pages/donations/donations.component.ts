@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   DonationComponent,
@@ -14,12 +14,14 @@ import { StoreService } from '../../services/store.service';
   styleUrls: ['./donations.component.scss'],
 })
 export class DonationsComponent {
+  private storeService = inject(StoreService);
+
   loading = false;
   error: string | null = null;
   success: string | null = null;
   disabled = false;
 
-  constructor(private storeService: StoreService) {}
+
 
   onDonate(donation: DonationRequest): void {
     this.loading = true;

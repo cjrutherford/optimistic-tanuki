@@ -54,6 +54,10 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
   styleUrl: './profile-selector.component.scss',
 })
 export class ProfileSelectorComponent implements OnInit, AfterViewInit {
+  private fb = inject(FormBuilder);
+  private elRef = inject(ElementRef);
+  private cdr = inject(ChangeDetectorRef);
+
   @Input() profiles: ProfileDto[] = [];
   @Input() currentSelectedProfile: ProfileDto | null = null;
   @Output() selectedProfile: EventEmitter<ProfileDto> =
@@ -80,13 +84,10 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
   complement?: string;
   borderColor?: string;
   borderGradient?: string;
-  transitionDuration?: string = '0.3s'; // Default transition duration
+  transitionDuration?: string = '0.3s';
+// Default transition duration
 
-  constructor(
-    private fb: FormBuilder,
-    private elRef: ElementRef,
-    private cdr: ChangeDetectorRef
-  ) {
+  constructor() {
     this.profileForm = this.fb.group({
       profileName: this.fb.control('', Validators.required),
       // Ensure all form controls used in the template are defined here

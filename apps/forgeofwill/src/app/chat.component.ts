@@ -12,7 +12,7 @@ import {
   OnDestroy,
   Input,
   SimpleChange,
-  SimpleChanges,
+  SimpleChanges, OnChanges,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
@@ -39,39 +39,40 @@ import { io } from 'socket.io-client';
   selector: 'app-chat',
   imports: [ChatWindowComponent, ContactBubbleComponent],
   providers: [
-    {
-      provide: SocketChatService,
-      useFactory: (
-        platformId: object,
-        socketHost: string,
-        socketNamespace: string,
-        socketIoInstance: typeof io,
-        authTokenProvider?: () => string | null,
-        authErrorHandler?: () => void
-      ) =>
-        isPlatformBrowser(platformId)
-          ? new SocketChatService(
-            socketHost,
-            socketNamespace,
-            socketIoInstance,
-            authTokenProvider,
-            authErrorHandler
-          )
-          : null,
-      deps: [
-        PLATFORM_ID,
-        SOCKET_HOST,
-        SOCKET_NAMESPACE,
-        SOCKET_IO_INSTANCE,
-        SOCKET_AUTH_TOKEN_PROVIDER,
-        SOCKET_AUTH_ERROR_HANDLER,
-      ],
-    },
+    SocketChatService,
+    // {
+    //   provide: SocketChatService,
+    //   useFactory: (
+    //     platformId: object,
+    //     socketHost: string,
+    //     socketNamespace: string,
+    //     socketIoInstance: typeof io,
+    //     authTokenProvider?: () => string | null,
+    //     authErrorHandler?: () => void
+    //   ) =>
+    //     isPlatformBrowser(platformId)
+    //       ? new SocketChatService(
+    //         socketHost,
+    //         socketNamespace,
+    //         socketIoInstance,
+    //         authTokenProvider,
+    //         authErrorHandler
+    //       )
+    //       : null,
+    //   deps: [
+    //     PLATFORM_ID,
+    //     SOCKET_HOST,
+    //     SOCKET_NAMESPACE,
+    //     SOCKET_IO_INSTANCE,
+    //     SOCKET_AUTH_TOKEN_PROVIDER,
+    //     SOCKET_AUTH_ERROR_HANDLER,
+    //   ],
+    // },
   ],
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss',
 })
-export class ChatComponent implements OnInit, OnDestroy {
+export class ChatComponent implements OnInit, OnDestroy, OnChanges {
   @Input() externalMessages: Partial<ChatMessage>[] = [];
   socketChat?: SocketChatService | null;
   private injector = inject(EnvironmentInjector);
@@ -89,6 +90,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   aiRespondingStatus = signal<{ [conversationId: string]: boolean }>({});
   aiThinkingMessages = signal<{ [conversationId: string]: string | null }>({});
   toolCallStatus = signal<{ [conversationId: string]: { toolName: string; status: string; attempt?: number } }>({});
+  streamingMessages = signal<{ [conversationId: string]: string }>({});
 
   private platformId = inject(PLATFORM_ID);
   private profileService = inject(ProfileService);
@@ -109,6 +111,9 @@ export class ChatComponent implements OnInit, OnDestroy {
       );
       return;
     }
+
+    // Restore open windows from localStorage
+    this.restoreUIState();
 
     this.initializeSocketConnection();
 
@@ -195,6 +200,21 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.socketChat.onStreamingResponse((data) => {
       console.log('Streaming response:', data);
       this.handleStreamingResponse(data);
+    });
+
+    // Set up active streams handler (for reconnection)
+    this.socketChat.onActiveStreams((streams) => {
+      console.log('Active streams on reconnect:', streams);
+      this.handleActiveStreams(streams);
+    });
+
+    // Set up reconnection handler
+    this.socketChat.onReconnect(() => {
+      console.log('Socket reconnected, requesting current state');
+      const profile = this.profileService.currentUserProfile();
+      if (profile) {
+        this.socketChat?.requestReconnect(profile.id);
+      }
     });
 
     console.log('Socket connection handlers initialized');
@@ -320,12 +340,27 @@ export class ChatComponent implements OnInit, OnDestroy {
    * Handle streaming AI responses
    */
   private handleStreamingResponse(data: { conversationId: string, chunk: string, isComplete: boolean }) {
+    const currentStreaming = this.streamingMessages();
+
     if (data.isComplete) {
+      // Clear streaming state
+      this.streamingMessages.set({ ...currentStreaming, [data.conversationId]: '' });
       const currentStatus = this.aiRespondingStatus();
       this.aiRespondingStatus.set({ ...currentStatus, [data.conversationId]: false });
+
+      // Refresh conversations to get final message
+      const profile = this.profileService.currentUserProfile();
+      if (profile && this.socketChat) {
+        this.socketChat.getConversations(profile.id);
+      }
+    } else {
+      // Append chunk to streaming message
+      const current = currentStreaming[data.conversationId] || '';
+      this.streamingMessages.set({
+        ...currentStreaming,
+        [data.conversationId]: current + data.chunk
+      });
     }
-    // Note: Real streaming would update the message content in real-time
-    // For now, we just update the status
   }
 
   /**
@@ -340,6 +375,68 @@ export class ChatComponent implements OnInit, OnDestroy {
    */
   getAIThinkingMessage(conversationId: string): string | null {
     return this.aiThinkingMessages()[conversationId] || null;
+  }
+
+  /**
+   * Get streaming message content for a conversation
+   */
+  getStreamingMessage(conversationId: string): string | null {
+    return this.streamingMessages()[conversationId] || null;
+  }
+
+  /**
+   * Handle active streams notification on reconnect
+   */
+  private handleActiveStreams(streams: Array<{ conversationId: string; status: string; lastUpdate: Date }>) {
+    console.log('Handling active streams:', streams);
+
+    streams.forEach(stream => {
+      const currentStatus = this.aiRespondingStatus();
+      this.aiRespondingStatus.set({
+        ...currentStatus,
+        [stream.conversationId]: true
+      });
+
+      const currentThinking = this.aiThinkingMessages();
+      this.aiThinkingMessages.set({
+        ...currentThinking,
+        [stream.conversationId]: stream.status === 'thinking'
+          ? 'AI is processing your message...'
+          : 'AI is responding...'
+      });
+    });
+  }
+
+  /**
+   * Restore UI state from localStorage
+   */
+  private restoreUIState() {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    try {
+      const savedOpenWindows = localStorage.getItem('chat_open_windows');
+      if (savedOpenWindows) {
+        const openWindowIds = JSON.parse(savedOpenWindows) as string[];
+        this.openWindows.set(new Set(openWindowIds));
+        console.log('Restored open windows:', openWindowIds);
+      }
+    } catch (error) {
+      console.error('Error restoring UI state:', error);
+    }
+  }
+
+  /**
+   * Save UI state to localStorage
+   */
+  private saveUIState() {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    try {
+      const openWindowIds = Array.from(this.openWindows());
+      localStorage.setItem('chat_open_windows', JSON.stringify(openWindowIds));
+    } catch (error) {
+      console.error('Error saving UI state:', error);
+    }
   }
 
   /**
@@ -479,12 +576,14 @@ export class ChatComponent implements OnInit, OnDestroy {
     open.add(conversationId);
     this.openWindows.set(open);
     this.selectedConversation.set(conversationId);
+    this.saveUIState();
   }
 
   closeChat(conversationId: string) {
     const open = new Set(this.openWindows());
     open.delete(conversationId);
     this.openWindows.set(open);
+    this.saveUIState();
   }
 
   isWindowOpen(conversationId: string): boolean {
@@ -515,6 +614,7 @@ export class ChatComponent implements OnInit, OnDestroy {
       open.delete(conversationId);
     }
     this.openWindows.set(open);
+    this.saveUIState();
   }
 
   handleNewMessage(content: string, conversationId: string) {

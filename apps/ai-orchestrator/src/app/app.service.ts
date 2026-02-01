@@ -6,7 +6,7 @@ import {
   ProfileCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import {
   ChatConversation,
   ChatMessage,
@@ -21,7 +21,7 @@ import { SystemPromptBuilder } from './system-prompt-builder.service';
 import { ToolValidationService } from './tool-validation.service';
 import { EnhancedMCPToolExecutor } from './enhanced-mcp-tool-executor.service';
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
-import { StreamingEventType } from './streaming-events';
+import { StreamingEvent, StreamingEventType } from './streaming-events';
 
 @Injectable()
 export class AppService {
@@ -353,8 +353,8 @@ export class AppService {
                     recipientId: [profile.id],
                     recipientName: [profile.profileName],
                     content: `✅ Tool result (${progress.content.tool}):\n${typeof progress.content.output === 'string'
-                        ? progress.content.output
-                        : JSON.stringify(progress.content.output, null, 2)
+                      ? progress.content.output
+                      : JSON.stringify(progress.content.output, null, 2)
                       }`,
                     timestamp: new Date(),
                     type: 'system',
@@ -460,7 +460,7 @@ export class AppService {
     conversationId: string,
     persona: PersonaTelosDto,
     profile: ProfileDto,
-    retryCount: number = 0
+    retryCount = 0
   ): Promise<{ success: boolean; result?: unknown; errorMessage?: string; shouldRetry?: boolean }> {
     const MAX_RETRIES = 2;
 
@@ -676,5 +676,156 @@ export class AppService {
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Stream conversation updates in real-time
+   * Returns an Observable that emits streaming events
+   */
+  streamConversation(data: {
+    conversation: ChatConversation;
+    aiPersonas: PersonaTelosDto[];
+  }): Observable<StreamingEvent> {
+    this.l.log('streamConversation called with conversation:', data.conversation.id);
+    this.l.log('AI Personas:', data.aiPersonas.map(p => p.name).join(', '));
+
+    return new Observable((observer) => {
+      this.l.log('Observable created, starting async processing...');
+
+      (async () => {
+        const { conversation, aiPersonas } = data;
+        const lastMessage = conversation.messages[conversation.messages.length - 1];
+
+        try {
+          this.l.log('Fetching profile for sender:', lastMessage.senderId);
+          const profile: ProfileDto = await firstValueFrom(
+            this.profileService.send(
+              { cmd: ProfileCommands.Get },
+              { id: lastMessage.senderId }
+            )
+          );
+
+          this.l.log('Profile fetched:', profile.profileName);
+
+          for (const persona of aiPersonas) {
+            this.l.log(`Starting stream for persona: ${persona.name}`);
+
+            // Stream from LangChain service
+            this.l.log('Calling langChainService.streamConversation...');
+            const stream = this.langChainService.streamConversation(
+              persona,
+              profile,
+              conversation.messages.slice(0, -1),
+              lastMessage.content,
+              conversation.id
+            );
+
+            this.l.log('LangChain stream obtained, iterating...');
+            let fullResponse = '';
+            let eventCount = 0;
+
+            for await (const event of stream) {
+              eventCount++;
+              this.l.log(`Stream event #${eventCount}:`, event.type);
+
+              // Emit event to observer
+              observer.next(event);
+
+              // Accumulate full response for final posting
+              if (event.type === StreamingEventType.CHUNK) {
+                fullResponse += event.content.text || event.content;
+              }
+
+              // Post intermediate messages to chat collector
+              if (event.type === StreamingEventType.THINKING) {
+                const thinkingMessage: Partial<ChatMessage> = {
+                  conversationId: conversation.id,
+                  senderId: persona.id,
+                  senderName: persona.name,
+                  recipientId: [profile.id],
+                  recipientName: [profile.profileName],
+                  content: `💭 ${event.content.text}`,
+                  timestamp: new Date(),
+                  type: 'system',
+                };
+                await firstValueFrom(
+                  this.chatCollectorService.send(
+                    { cmd: ChatCommands.POST_MESSAGE },
+                    thinkingMessage
+                  )
+                );
+              }
+
+              if (event.type === StreamingEventType.TOOL_START) {
+                const toolMessage: Partial<ChatMessage> = {
+                  conversationId: conversation.id,
+                  senderId: persona.id,
+                  senderName: persona.name,
+                  recipientId: [profile.id],
+                  recipientName: [profile.profileName],
+                  content: `🔧 Calling tool: ${event.content.tool}`,
+                  timestamp: new Date(),
+                  type: 'system',
+                };
+                await firstValueFrom(
+                  this.chatCollectorService.send(
+                    { cmd: ChatCommands.POST_MESSAGE },
+                    toolMessage
+                  )
+                );
+              }
+            }
+
+            this.l.log(`Stream completed for persona ${persona.name}. Received ${eventCount} events. Response length: ${fullResponse.length}`);
+
+            // Post final complete message
+            this.l.log('Posting final message to chat collector...');
+            const finalMessage: Partial<ChatMessage> = {
+              conversationId: conversation.id,
+              senderId: persona.id,
+              senderName: persona.name,
+              recipientId: [profile.id],
+              recipientName: [profile.profileName],
+              content: fullResponse,
+              timestamp: new Date(),
+              type: 'chat',
+            };
+
+            await firstValueFrom(
+              this.chatCollectorService.send(
+                { cmd: ChatCommands.POST_MESSAGE },
+                finalMessage
+              )
+            );
+
+            this.l.log('Final message posted successfully');
+
+            // Emit final event
+            observer.next({
+              type: StreamingEventType.FINAL_RESPONSE,
+              content: { text: fullResponse },
+              timestamp: new Date(),
+            });
+
+            this.l.log('Final response event emitted');
+          }
+
+          this.l.log('All personas processed, completing observable');
+          observer.complete();
+        } catch (error) {
+          this.l.error('Error streaming conversation:', error);
+          this.l.error('Error stack:', error?.stack);
+          observer.next({
+            type: StreamingEventType.ERROR,
+            content: {
+              message: error.message || 'Unknown error',
+              details: error,
+            },
+            timestamp: new Date(),
+          });
+          observer.error(error);
+        }
+      })();
+    });
   }
 }

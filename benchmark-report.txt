@@ -1,0 +1,154 @@
+═══════════════════════════════════════════════════════════════
+           AI ORCHESTRATOR BENCHMARK REPORT
+═══════════════════════════════════════════════════════════════
+
+Generated: 2026-02-01T21:07:16.934Z
+Total Tests: 132
+Models Tested: 12
+
+───────────────────────────────────────────────────────────────
+                     OVERALL RESULTS
+───────────────────────────────────────────────────────────────
+
+✓ Passed:        32 (24.2%)
+✗ Failed:       100 (75.8%)
+
+───────────────────────────────────────────────────────────────
+                  PERFORMANCE METRICS
+───────────────────────────────────────────────────────────────
+
+Response Time (ms):
+  Average:     82592.94
+  Minimum:      1196.00
+  Maximum:     120000.00
+  P50:         120000.00
+  P95:         120000.00
+  P99:         120000.00
+
+Tokens Per Second:
+  Average:        15.96
+  Minimum:         7.49
+  Maximum:        27.13
+
+GPU Utilization: 0.0% of tests
+
+───────────────────────────────────────────────────────────────
+                    MODEL COMPARISON
+───────────────────────────────────────────────────────────────
+
+deepseek-r1:8b
+  Size: 8.2B | Format: gguf
+  Success Rate:    18.2% (2/11)
+  Avg Response:    91001.82 ms
+  Avg TPS:         10.51 tokens/sec
+  GPU Usage:       0%
+
+phi3:14b-medium-128k-instruct-q2_K
+  Size: 14.0B | Format: gguf
+  Success Rate:    0.0% (0/11)
+  Avg Response:    90258.36 ms
+  Avg TPS:         10.55 tokens/sec
+  GPU Usage:       0%
+
+qwen2.5:14b-instruct-q3_K_S
+  Size: 14.8B | Format: gguf
+  Success Rate:    18.2% (2/11)
+  Avg Response:    92939.73 ms
+  Avg TPS:         7.54 tokens/sec
+  GPU Usage:       0%
+
+nemotron-mini:4b
+  Size: 4.2B | Format: gguf
+  Success Rate:    9.1% (1/11)
+  Avg Response:    88920.36 ms
+  Avg TPS:         22.12 tokens/sec
+  GPU Usage:       0%
+
+mistral-nemo:12b-instruct-2407-q3_K_M
+  Size: 12.2B | Format: gguf
+  Success Rate:    18.2% (2/11)
+  Avg Response:    86161.73 ms
+  Avg TPS:         8.72 tokens/sec
+  GPU Usage:       0%
+
+gemma3:4b
+  Size: 4.3B | Format: gguf
+  Success Rate:    36.4% (4/11)
+  Avg Response:    74722.09 ms
+  Avg TPS:         19.70 tokens/sec
+  GPU Usage:       0%
+
+gemma3:latest
+  Size: 4.3B | Format: gguf
+  Success Rate:    36.4% (4/11)
+  Avg Response:    60851.00 ms
+  Avg TPS:         19.50 tokens/sec
+  GPU Usage:       0%
+
+bjoernb/deepseek-r1-8b:latest
+  Size: 8.2B | Format: gguf
+  Success Rate:    0.0% (0/11)
+  Avg Response:    107630.36 ms
+  Avg TPS:         10.47 tokens/sec
+  GPU Usage:       0%
+
+qwen2.5:3b
+  Size: 3.1B | Format: gguf
+  Success Rate:    45.5% (5/11)
+  Avg Response:    60145.18 ms
+  Avg TPS:         19.14 tokens/sec
+  GPU Usage:       0%
+
+qwen:latest
+  Size: 4B | Format: gguf
+  Success Rate:    45.5% (5/11)
+  Avg Response:    78910.73 ms
+  Avg TPS:         17.34 tokens/sec
+  GPU Usage:       0%
+
+deepseek-r1:latest
+  Size: 8.2B | Format: gguf
+  Success Rate:    27.3% (3/11)
+  Avg Response:    94829.91 ms
+  Avg TPS:         10.65 tokens/sec
+  GPU Usage:       0%
+
+llama3.2:latest
+  Size: 3.2B | Format: gguf
+  Success Rate:    36.4% (4/11)
+  Avg Response:    64744.00 ms
+  Avg TPS:         19.73 tokens/sec
+  GPU Usage:       0%
+
+───────────────────────────────────────────────────────────────
+                   TELOS FIDELITY SCORE
+───────────────────────────────────────────────────────────────
+
+Overall Fidelity:        13%
+
+Respects Limitations:    2%
+Leverages Skills:        10%
+Mentions Goals:          10%
+Aligns with Objective:   0%
+
+───────────────────────────────────────────────────────────────
+                  TEST TYPE BREAKDOWN
+───────────────────────────────────────────────────────────────
+
+WORKFLOW CONTROL:
+  Tests:     36
+  Success:   50.0% (18/36)
+
+CONVERSATION:
+  Tests:     24
+  Success:   8.3% (2/24)
+
+TOOL CALLING:
+  Tests:     24
+  Success:   25.0% (6/24)
+
+TELOS FIDELITY:
+  Tests:     48
+  Success:   12.5% (6/48)
+
+═══════════════════════════════════════════════════════════════

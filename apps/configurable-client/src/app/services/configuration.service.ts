@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AppConfiguration } from '@optimistic-tanuki/app-config-models';
@@ -7,10 +7,12 @@ import { AppConfiguration } from '@optimistic-tanuki/app-config-models';
   providedIn: 'root',
 })
 export class ConfigurationService {
+  private http = inject(HttpClient);
+
   private readonly API_URL = '/api/app-config';
   private configuration: AppConfiguration | null = null;
 
-  constructor(private http: HttpClient) {}
+
 
   /**
    * Fetch configuration by domain

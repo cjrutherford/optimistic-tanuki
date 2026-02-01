@@ -6,18 +6,17 @@ import {
 } from '@optimistic-tanuki/ui-models';
 
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TaskService {
+  private readonly http = inject(HttpClient);
+  private readonly profileService = inject(ProfileService);
+
   private baseUrl = '/api/project-planning/tasks';
-  constructor(
-    private readonly http: HttpClient,
-    private readonly profileService: ProfileService
-  ) {}
 
   createTask(data: CreateTask) {
     const currentProfile = this.profileService.getCurrentUserProfile();

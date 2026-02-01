@@ -1,7 +1,7 @@
 import { Socket, io } from 'socket.io-client';
 
 import { ChatConversation, ChatMessage } from './types/message';
-import { Inject, Injectable, Optional } from '@angular/core';
+import { Injectable, InjectionToken, inject } from '@angular/core';
 
 /**
  * Injection Tokens for the SocketChatService.
@@ -42,11 +42,11 @@ import { Inject, Injectable, Optional } from '@angular/core';
  *     deps: [Router, AuthService]
  *  }]
  */
-export const SOCKET_HOST = 'SOCKET_HOST';
-export const SOCKET_NAMESPACE = 'SOCKET_NAMESPACE';
-export const SOCKET_IO_INSTANCE = 'SOCKET_IO_INSTANCE';
-export const SOCKET_AUTH_TOKEN_PROVIDER = 'SOCKET_AUTH_TOKEN_PROVIDER';
-export const SOCKET_AUTH_ERROR_HANDLER = 'SOCKET_AUTH_ERROR_HANDLER';
+export const SOCKET_HOST = new InjectionToken<string>('SOCKET_HOST');
+export const SOCKET_NAMESPACE = new InjectionToken<string>('SOCKET_NAMESPACE');
+export const SOCKET_IO_INSTANCE = new InjectionToken<typeof io>('SOCKET_IO_INSTANCE');
+export const SOCKET_AUTH_TOKEN_PROVIDER = new InjectionToken<() => string | null>('SOCKET_AUTH_TOKEN_PROVIDER');
+export const SOCKET_AUTH_ERROR_HANDLER = new InjectionToken<() => void>('SOCKET_AUTH_ERROR_HANDLER');
 
 /**
  * Service for handling chat functionality via WebSockets.
@@ -55,6 +55,12 @@ export const SOCKET_AUTH_ERROR_HANDLER = 'SOCKET_AUTH_ERROR_HANDLER';
   providedIn: 'root',
 })
 export class SocketChatService {
+  private readonly hostUrl = inject<string>(SOCKET_HOST) ?? 'http://localhost:3000';
+  private readonly namespace = inject<string>(SOCKET_NAMESPACE) ?? 'chat';
+  private readonly ioInstance = inject<typeof io>(SOCKET_IO_INSTANCE);
+  private readonly authTokenProvider = inject<() => string | null>(SOCKET_AUTH_TOKEN_PROVIDER as any, { optional: true });
+  private readonly authErrorHandler = inject<() => void>(SOCKET_AUTH_ERROR_HANDLER as any, { optional: true });
+
   private socket: Socket;
 
   /**
@@ -65,17 +71,7 @@ export class SocketChatService {
    * @param authTokenProvider Function that returns the current auth token.
    * @param authErrorHandler Function called when auth errors occur (e.g., redirect to login).
    */
-  constructor(
-    @Inject(SOCKET_HOST) private readonly hostUrl = 'http://localhost:3000',
-    @Inject(SOCKET_NAMESPACE) private readonly namespace = 'chat',
-    @Inject(SOCKET_IO_INSTANCE) private readonly ioInstance: typeof io,
-    @Optional()
-    @Inject(SOCKET_AUTH_TOKEN_PROVIDER)
-    private readonly authTokenProvider?: () => string | null,
-    @Optional()
-    @Inject(SOCKET_AUTH_ERROR_HANDLER)
-    private readonly authErrorHandler?: () => void
-  ) {
+  constructor() {
     const token = this.authTokenProvider?.();
     this.socket = this.ioInstance(`${this.hostUrl}/${this.namespace}`, {
       autoConnect: true,
@@ -187,6 +183,27 @@ export class SocketChatService {
    */
   onToolCallUpdate(callback: (data: { conversationId: string, toolName: string, status: 'calling' | 'success' | 'error' | 'retrying', error?: string, attempt?: number }) => void): void {
     this.socket.on('tool_call_update', callback);
+  }
+
+  /**
+   * Listens for active streams status (sent on reconnection)
+   */
+  onActiveStreams(callback: (streams: Array<{ conversationId: string, status: string, lastUpdate: Date }>) => void): void {
+    this.socket.on('active_streams', callback);
+  }
+
+  /**
+   * Listens for reconnection events
+   */
+  onReconnect(callback: () => void): void {
+    this.socket.on('reconnect', callback);
+  }
+
+  /**
+   * Request reconnect status update
+   */
+  requestReconnect(profileId: string): void {
+    this.socket.emit('reconnect_request', { profileId });
   }
 
   sendInit(profileId: string, personaId: string, appId: string) {

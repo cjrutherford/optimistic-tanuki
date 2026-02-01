@@ -1,11 +1,4 @@
-import {
-  Component,
-  EventEmitter,
-  Input,
-  OnChanges,
-  Output,
-  SimpleChanges,
-} from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import {
   ReactiveFormsModule,
   FormBuilder,
@@ -40,6 +33,8 @@ import { ProfilePhotoComponent } from './profile-photo/profile-photo.component';
   styleUrls: ['./profile-editor.component.scss'],
 })
 export class ProfileEditorComponent implements OnChanges {
+  private fb = inject(FormBuilder);
+
   @Input() open = false;
   @Input() profile: ProfileDto | null = null;
   @Input() defaultName = '';
@@ -49,7 +44,7 @@ export class ProfileEditorComponent implements OnChanges {
 
   profileForm!: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     this.profileForm = this.fb.group({
       profileName: this.fb.control('', Validators.required),
       description: this.fb.control(''),

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Observable, Subject, Subscription, filter, takeUntil } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
@@ -23,6 +23,8 @@ import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
   },
 })
 export class ThemeToggleComponent implements OnInit, OnDestroy {
+  private readonly themeService = inject(ThemeService);
+
   theme: 'light' | 'dark';
   accentColor = '#ff4081';
   background = '#ffffff';
@@ -34,7 +36,7 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
   transitionDuration: string = '0.3s';
 
-  constructor(private readonly themeService: ThemeService) {
+  constructor() {
     this.theme = this.themeService.getTheme();
     this.accentColor = this.themeService.getAccentColor();
   }

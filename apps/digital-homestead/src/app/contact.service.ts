@@ -1,11 +1,12 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ContactService {
-  constructor(private readonly http: HttpClient) {}
+  private readonly http = inject(HttpClient);
+
 
   postContact(data: {
     name: string;

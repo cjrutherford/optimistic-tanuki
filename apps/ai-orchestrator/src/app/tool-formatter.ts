@@ -9,7 +9,7 @@ import { ToolDefinition } from '@optimistic-tanuki/models';
 export type OpenAITool = ToolDefinition;
 
 // Keep the old interface name for internal use
-export interface McpTool extends Tool {}
+export type McpTool = Tool
 
 /**
  * Enhance tool parameter descriptions with user context

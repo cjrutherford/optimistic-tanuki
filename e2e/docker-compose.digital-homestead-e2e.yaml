@@ -16,11 +16,10 @@ services:
       retries: 5
 
   db-setup:
-    image: node:lts-alpine
     container_name: e2e_db_setup_dh
-    working_dir: /workspace
-    volumes:
-      - ..:/workspace
+    build:
+      context: ..
+      dockerfile: docker/db-setup.Dockerfile
     environment:
       POSTGRES_HOST: db
       POSTGRES_USER: postgres
@@ -28,7 +27,21 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    restart: 'no'
+
+  db-seed:
+    container_name: e2e_db_seed_dh
+    build:
+      context: ..
+      dockerfile: docker/db-setup.Dockerfile
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      db-setup:
+        condition: service_completed_successfully
+    command: sh /usr/src/app/seed-e2e.sh
     restart: 'no'
 
   authentication:
@@ -159,7 +172,6 @@ services:
     working_dir: /workspace
     volumes:
       - ..:/workspace
-      - /workspace/node_modules
     environment:
       BASE_URL: http://digital-homestead-client-interface:4000
       CI: 'true'

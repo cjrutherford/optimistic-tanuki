@@ -13,6 +13,7 @@
       [windowState]="'popout'"
       [aiIsResponding]="isAIResponding(conv.id)"
       [aiThinkingMessage]="getAIThinkingMessage(conv.id)"
+      [streamingMessage]="getStreamingMessage(conv.id)"
       (windowStateChange)="handleWindowStateChange(conv.id, $event)"
       (messageSubmitted)="handleNewMessage($event, conv.id)"
     ></lib-chat-window>

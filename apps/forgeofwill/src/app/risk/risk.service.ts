@@ -1,18 +1,17 @@
 import { CreateRisk, QueryRisk, Risk } from '@optimistic-tanuki/ui-models';
 
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RiskService {
+  private readonly http = inject(HttpClient);
+  private readonly profileService = inject(ProfileService);
+
   private baseUrl = '/api/project-planning/risk';
-  constructor(
-    private readonly http: HttpClient,
-    private readonly profileService: ProfileService
-  ) {}
 
   getRisks() {
     return this.http.get<Risk[]>(`${this.baseUrl}/`);

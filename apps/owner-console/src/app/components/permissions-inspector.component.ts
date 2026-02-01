@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgGridAngular } from 'ag-grid-angular';
@@ -367,6 +367,10 @@ interface UnusedInfo {
   ],
 })
 export class PermissionsInspectorComponent extends Themeable implements OnInit {
+  private usersService = inject(UsersService);
+  private rolesService = inject(RolesService);
+  private permissionsService = inject(PermissionsService);
+
   profiles = signal<ProfileDto[]>([]);
   selectedProfileId = signal<string>('');
   selectedPermissionInfo = signal<UserPermissionInfo | null>(null);
@@ -440,11 +444,8 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
     paginationPageSize: 20,
   };
 
-  constructor(
-    private usersService: UsersService,
-    private rolesService: RolesService,
-    private permissionsService: PermissionsService
-  ) {
+
+  constructor() {
     super();
   }
 

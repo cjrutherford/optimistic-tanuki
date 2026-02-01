@@ -3,16 +3,17 @@ import {
   Input,
   Output,
   EventEmitter,
-  HostListener,
+  OnInit,
+  OnDestroy,
 } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'lib-component-wrapper',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [CommonModule, MatIconModule],
   template: `
     <div
       class="component-wrapper"
@@ -20,46 +21,50 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
       [class.hover]="isHovered"
       (mouseenter)="onMouseEnter()"
       (mouseleave)="onMouseLeave()"
-      (click)="onClick($event)"
+      (click)="onWrapperClick($event)"
     >
-      @if (isHovered || isSelected) {
-      <div class="component-controls">
-        <button
-          class="control-btn edit-btn"
+      <!-- Component content will be projected here -->
+      <ng-content></ng-content>
+      
+      <!-- Control overlay -->
+      <div class="component-controls" *ngIf="isHovered || isSelected">
+        <button 
+          type="button"
+          class="control-btn edit-btn" 
           (click)="onEdit($event)"
-          title="Edit Properties"
+          title="Edit Component"
         >
           <mat-icon>edit</mat-icon>
         </button>
-        <button
-          class="control-btn delete-btn"
+        <button 
+          type="button"
+          class="control-btn delete-btn" 
           (click)="onDelete($event)"
           title="Delete Component"
         >
           <mat-icon>delete</mat-icon>
         </button>
-        <button
-          class="control-btn move-up-btn"
+        <button 
+          type="button"
+          class="control-btn move-up-btn" 
           (click)="onMoveUp($event)"
           title="Move Up"
         >
           <mat-icon>keyboard_arrow_up</mat-icon>
         </button>
-        <button
-          class="control-btn move-down-btn"
+        <button 
+          type="button"
+          class="control-btn move-down-btn" 
           (click)="onMoveDown($event)"
           title="Move Down"
         >
           <mat-icon>keyboard_arrow_down</mat-icon>
         </button>
       </div>
-      } @if (isSelected) {
-      <div class="component-label">
+      
+      <div class="component-label" *ngIf="isSelected && componentInstance">
         {{ componentInstance.componentDef.name }}
       </div>
-      }
-
-      <ng-content></ng-content>
     </div>
   `,
   styles: [
@@ -157,9 +162,10 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
     `,
   ],
 })
-export class ComponentWrapperComponent {
-  @Input() componentInstance!: InjectedComponentInstance;
+export class ComponentWrapperComponent implements OnInit, OnDestroy {
+  @Input() componentInstance: InjectedComponentInstance | null = null;
   @Input() isSelected = false;
+
   @Output() editRequested = new EventEmitter<InjectedComponentInstance>();
   @Output() deleteRequested = new EventEmitter<InjectedComponentInstance>();
   @Output() moveUpRequested = new EventEmitter<InjectedComponentInstance>();
@@ -167,6 +173,17 @@ export class ComponentWrapperComponent {
   @Output() selectionChanged = new EventEmitter<InjectedComponentInstance>();
 
   isHovered = false;
+
+  ngOnInit(): void {
+    // Ensure we have a valid component instance
+    if (!this.componentInstance) {
+      console.warn('ComponentWrapper: No component instance provided');
+    }
+  }
+
+  ngOnDestroy(): void {
+    // Cleanup if needed
+  }
 
   onMouseEnter(): void {
     this.isHovered = true;
@@ -176,28 +193,50 @@ export class ComponentWrapperComponent {
     this.isHovered = false;
   }
 
-  onClick(event: Event): void {
+  onWrapperClick(event: Event): void {
     event.stopPropagation();
-    this.selectionChanged.emit(this.componentInstance);
+    if (this.componentInstance) {
+      this.selectionChanged.emit(this.componentInstance);
+    }
   }
 
   onEdit(event: Event): void {
     event.stopPropagation();
-    this.editRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('ComponentWrapper: Edit requested for instance:', this.componentInstance.instanceId);
+      this.editRequested.emit(this.componentInstance);
+    } else {
+      console.error('ComponentWrapper: Cannot edit - no component instance');
+    }
   }
 
   onDelete(event: Event): void {
     event.stopPropagation();
-    this.deleteRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('ComponentWrapper: Delete requested for instance:', this.componentInstance.instanceId);
+      this.deleteRequested.emit(this.componentInstance);
+    } else {
+      console.error('ComponentWrapper: Cannot delete - no component instance');
+    }
   }
 
   onMoveUp(event: Event): void {
     event.stopPropagation();
-    this.moveUpRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('ComponentWrapper: Move up requested for instance:', this.componentInstance.instanceId);
+      this.moveUpRequested.emit(this.componentInstance);
+    } else {
+      console.error('ComponentWrapper: Cannot move up - no component instance');
+    }
   }
 
   onMoveDown(event: Event): void {
     event.stopPropagation();
-    this.moveDownRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('ComponentWrapper: Move down requested for instance:', this.componentInstance.instanceId);
+      this.moveDownRequested.emit(this.componentInstance);
+    } else {
+      console.error('ComponentWrapper: Cannot move down - no component instance');
+    }
   }
 }

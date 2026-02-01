@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import {
@@ -62,10 +62,13 @@ import { AuthService } from '../services/auth.service';
   ],
 })
 export class DashboardComponent implements OnInit {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
   sidebarOpen = false;
   navItems: NavItem[] = [];
 
-  constructor(private authService: AuthService, private router: Router) {}
+
 
   ngOnInit(): void {
     this.navItems = [

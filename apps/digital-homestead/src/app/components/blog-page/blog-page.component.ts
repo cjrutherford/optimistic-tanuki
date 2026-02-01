@@ -88,6 +88,11 @@ export class BlogPageComponent {
     attachments: [],
   });
 
+  logout(): void {
+    this.authState.logout();
+    this.router.navigate(['/blog']);
+  }
+
   // Auth state as signals
   readonly isAuthenticated = toSignal(this.authState.isAuthenticated$(), {
     initialValue: false,

@@ -1,4 +1,4 @@
-import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import {
   generateColorShades,
@@ -22,6 +22,8 @@ import { STANDARD_THEME_VARIABLES, getAllVariableNames } from './theme-config';
   providedIn: 'root',
 })
 export class ThemeService {
+  private platformId = inject(PLATFORM_ID);
+
   private _theme!: 'light' | 'dark';
   private accentColor!: string;
   private complementColor!: string;
@@ -37,7 +39,7 @@ export class ThemeService {
   private availablePalettes: BehaviorSubject<ColorPalette[]> =
     new BehaviorSubject<ColorPalette[]>(this.predefinedPalettes);
 
-  constructor(@Inject(PLATFORM_ID) private platformId: object) {
+  constructor() {
     if (isPlatformBrowser(this.platformId)) {
       // Initialize available palettes including custom ones
       const init = () => {

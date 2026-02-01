@@ -15,6 +15,12 @@
         @if (canEdit()) {
         <otui-button (action)="startCreatePost()">New Post</otui-button>
         }
+        @if (!isAuthenticated()) {
+          <a routerLink="/login">Login</a>
+        }
+        @if (isAuthenticated()) {
+          <otui-button [variant]="'text'" (action)="logout()">Logout</otui-button>
+        }
       </div>
 
       @if (loading() && posts().length === 0) {

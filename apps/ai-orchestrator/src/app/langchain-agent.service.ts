@@ -223,7 +223,7 @@ export class LangChainAgentService {
                   : '[optional]';
 
                 // Extract type info
-                let typeInfo = schema.type || 'any';
+                const typeInfo = schema.type || 'any';
 
                 // Extract and display enum values if present
                 const enumValues = schema.enum

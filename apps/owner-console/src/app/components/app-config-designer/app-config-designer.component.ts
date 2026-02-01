@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -60,6 +60,10 @@ import { SectionEditorComponent } from './section-editors/section-editor.compone
   changeDetection: ChangeDetectionStrategy.Default, // Using Default for FormsModule compatibility
 })
 export class AppConfigDesignerComponent implements OnInit {
+  private appConfigService = inject(AppConfigService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
   @Input() configId?: string;
   @Output() saved = new EventEmitter<AppConfiguration>();
   @Output() cancelled = new EventEmitter<void>();
@@ -105,11 +109,7 @@ export class AppConfigDesignerComponent implements OnInit {
   selectedSection: Section | null = null;
   selectedSectionIndex = -1;
 
-  constructor(
-    private appConfigService: AppConfigService,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {}
+
 
   ngOnInit(): void {
     // Check for route parameter first

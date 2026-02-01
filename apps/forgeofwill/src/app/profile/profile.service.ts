@@ -5,7 +5,7 @@ import {
   ProfileDto,
   UpdateProfileDto,
 } from '@optimistic-tanuki/ui-models';
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { firstValueFrom, forkJoin, map, switchMap } from 'rxjs';
 
 import { AuthStateService } from '../auth-state.service';
@@ -16,6 +16,9 @@ import { UpdateAttachmentDto } from '@optimistic-tanuki/social-ui';
   providedIn: 'root',
 })
 export class ProfileService {
+  private readonly http = inject(HttpClient);
+  private readonly authState = inject(AuthStateService);
+
   currentUserProfiles = signal<ProfileDto[]>([]);
   allProfiles = signal<ProfileDto[]>([]);
   currentUserProfile = signal<ProfileDto | null>(null);
@@ -23,10 +26,6 @@ export class ProfileService {
   /** The app scope identifier for this application */
   private readonly appScope = 'forgeofwill';
 
-  constructor(
-    private readonly http: HttpClient,
-    private readonly authState: AuthStateService
-  ) {}
 
   selectProfile(_p: ProfileDto) {
     console.log('Selecting profile:', _p);

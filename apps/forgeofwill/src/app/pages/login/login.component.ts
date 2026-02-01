@@ -3,7 +3,7 @@ import { AuthStateService } from '../../auth-state.service';
 import { AuthenticationService } from '../../authentication.service';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from '../../profile/profile.service';
@@ -16,13 +16,12 @@ import { Router } from '@angular/router';
   styleUrl: './login.component.scss',
 })
 export class LoginComponent {
-  constructor(
-    private readonly authService: AuthenticationService,
-    private readonly authState: AuthStateService,
-    private readonly profileService: ProfileService,
-    private readonly router: Router,
-    private readonly messageService: MessageService
-  ) {}
+  private readonly authService = inject(AuthenticationService);
+  private readonly authState = inject(AuthStateService);
+  private readonly profileService = inject(ProfileService);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+
 
   onLoginSubmit(event: LoginType) {
     console.log('Logging in user with data:', event);

@@ -1,13 +1,18 @@
-const { FlatCompat } = require('@eslint/eslintrc');
-const baseConfig = require('../../eslint.config.mjs');
-const js = require('@eslint/js');
+import { FlatCompat } from '@eslint/eslintrc';
+import js from '@eslint/js';
+import baseConfig from '../../eslint.config.mjs';
+import jsoncParser from 'jsonc-eslint-parser';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
   recommendedConfig: js.configs.recommended,
 });
 
-module.exports = [
+export default [
   ...baseConfig,
   ...compat
     .config({
@@ -33,7 +38,7 @@ module.exports = [
       '@nx/dependency-checks': 'error',
     },
     languageOptions: {
-      parser: require('jsonc-eslint-parser'),
+      parser: jsoncParser,
     },
   },
 ];

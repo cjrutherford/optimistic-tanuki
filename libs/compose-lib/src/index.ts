@@ -1,5 +1,10 @@
 // Services
 export * from './lib/services/component-injection.service';
+export * from './lib/services/unified-component-registry.service';
+export * from './lib/services/tiptap-integration.service';
+
+// State Management
+export * from './lib/state/component-injection-state';
 
 // Interfaces
 export * from './lib/interfaces/component-injection.interface';

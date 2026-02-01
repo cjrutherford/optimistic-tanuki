@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -425,6 +425,10 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
   ],
 })
 export class AppScopesManagementComponent implements OnInit {
+  private appScopesService = inject(AppScopesService);
+  private permissionsService = inject(PermissionsService);
+  private messageService = inject(MessageService);
+
   appScopes: AppScopeDto[] = [];
   permissions: PermissionDto[] = [];
   relatedPermissions: PermissionDto[] = [];
@@ -449,11 +453,7 @@ export class AppScopesManagementComponent implements OnInit {
   confirmModalMessage = '';
   confirmAction: 'create' | 'update' | 'delete' = 'create';
 
-  constructor(
-    private appScopesService: AppScopesService,
-    private permissionsService: PermissionsService,
-    private messageService: MessageService
-  ) {}
+
 
   ngOnInit(): void {
     this.loadAppScopes();

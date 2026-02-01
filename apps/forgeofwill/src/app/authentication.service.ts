@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
   LoginRequest,
@@ -11,13 +11,14 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
   providedIn: 'root',
 })
 export class AuthenticationService {
+  private readonly http = inject(HttpClient);
+
   isAuthenticated: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(
     false
   );
   userData: BehaviorSubject<UserDto | null> =
     new BehaviorSubject<UserDto | null>(null);
 
-  constructor(private readonly http: HttpClient) {}
 
   isAuthenticated$() {
     return this.isAuthenticated.asObservable();

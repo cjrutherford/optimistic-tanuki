@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AppConfigService } from '../../services/app-config.service';
@@ -260,14 +260,14 @@ import { MatIconModule } from '@angular/material/icon';
   `]
 })
 export class AppConfigListComponent implements OnInit {
+  private appConfigService = inject(AppConfigService);
+  private router = inject(Router);
+
   configurations: AppConfiguration[] = [];
   loading = false;
   error: string | null = null;
 
-  constructor(
-    private appConfigService: AppConfigService,
-    private router: Router
-  ) {}
+
 
   ngOnInit(): void {
     this.loadConfigurations();

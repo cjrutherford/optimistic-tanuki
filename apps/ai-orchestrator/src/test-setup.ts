@@ -4,7 +4,6 @@
 // Mock the langgraph package - minimal implementation to prevent loading heavy dependencies
 jest.mock('@langchain/langgraph', () => {
   class MockStateGraph {
-    constructor() {}
     addNode() {
       return this; // Chainable
     }

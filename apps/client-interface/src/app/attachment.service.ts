@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
@@ -13,12 +13,12 @@ import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
   providedIn: 'root',
 })
 export class AttachmentService {
+  private apiBaseUrl = inject(API_BASE_URL);
+  private http = inject(HttpClient);
+
   private baseUrl: string;
 
-  constructor(
-    @Inject(API_BASE_URL) private apiBaseUrl: string,
-    private http: HttpClient
-  ) {
+  constructor() {
     this.baseUrl = `${this.apiBaseUrl}/social/attachment`;
   }
 

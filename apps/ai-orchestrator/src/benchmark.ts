@@ -4,7 +4,7 @@
  *
  * Tests workflow control, conversation, and tool calling capabilities
  * against models from the configured Ollama endpoint using real personas
- * and scenarios. Generates JSON benchmark results.
+ * and scenarios. Generates JSON benchmark results and text report.
  *
  * Usage: node benchmark.js [--models model1,model2] [--output results.json]
  */
@@ -52,11 +52,38 @@ interface BenchmarkResult {
   response: string;
   metadata?: any;
   error?: string;
+  performance?: {
+    tokensPerSecond?: number;
+    totalTokens?: number;
+    promptTokens?: number;
+    completionTokens?: number;
+    loadTime?: number;
+    evalCount?: number;
+    evalDuration?: number;
+  };
+  hardware?: {
+    gpu: boolean;
+    device?: string;
+  };
+}
+
+interface ModelInfo {
+  name: string;
+  size: string;
+  format: string;
+  family: string;
+  parameter_size: string;
+  quantization_level: string;
 }
 
 class BenchmarkRunner {
   private config: BenchmarkConfig;
   private results: BenchmarkResult[] = [];
+  private modelInfoCache: Map<string, ModelInfo> = new Map();
+  private currentProgress = 0;
+  private totalTests = 0;
+  private currentScenario = '';
+  private currentModel = '';
 
   constructor(config: BenchmarkConfig) {
     this.config = config;
@@ -75,6 +102,129 @@ class BenchmarkRunner {
       console.error('Failed to fetch models from Ollama:', error);
       return [];
     }
+  }
+
+  /**
+   * Fetch detailed model information from Ollama
+   */
+  async fetchModelInfo(modelName: string): Promise<ModelInfo | null> {
+    if (this.modelInfoCache.has(modelName)) {
+      return this.modelInfoCache.get(modelName)!;
+    }
+
+    try {
+      const baseUrl = `http://${this.config.ollamaHost}:${this.config.ollamaPort}`;
+      const response = await fetch(`${baseUrl}/api/show`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: modelName }),
+      });
+      const data = await response.json();
+
+      const info: ModelInfo = {
+        name: modelName,
+        size: data.details?.parameter_size || 'unknown',
+        format: data.details?.format || 'unknown',
+        family: data.details?.family || 'unknown',
+        parameter_size: data.details?.parameter_size || 'unknown',
+        quantization_level: data.details?.quantization_level || 'unknown',
+      };
+
+      this.modelInfoCache.set(modelName, info);
+      return info;
+    } catch (error) {
+      console.error(`Failed to fetch model info for ${modelName}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if model is running on GPU
+   */
+  async checkGPUUsage(modelName: string): Promise<{ gpu: boolean; device?: string }> {
+    try {
+      const baseUrl = `http://${this.config.ollamaHost}:${this.config.ollamaPort}`;
+      const response = await fetch(`${baseUrl}/api/ps`);
+      const data = await response.json();
+
+      const runningModel = data.models?.find((m: any) => m.name === modelName);
+      if (runningModel) {
+        return {
+          gpu: runningModel.details?.gpu_layers > 0 || false,
+          device: runningModel.details?.device || 'unknown',
+        };
+      }
+    } catch (error) {
+      // Silently fail, will return default
+    }
+
+    return { gpu: false };
+  }
+
+  /**
+   * Extract performance metrics from Ollama response
+   */
+  extractPerformanceMetrics(response: any): any {
+    const metrics: any = {};
+
+    if (response.response_metadata) {
+      const meta = response.response_metadata;
+
+      // Token counts
+      if (meta.eval_count) metrics.evalCount = meta.eval_count;
+      if (meta.prompt_eval_count) metrics.promptTokens = meta.prompt_eval_count;
+      metrics.completionTokens = meta.eval_count || 0;
+      metrics.totalTokens = (meta.prompt_eval_count || 0) + (meta.eval_count || 0);
+
+      // Timing in nanoseconds, convert to ms
+      if (meta.load_duration) metrics.loadTime = meta.load_duration / 1_000_000;
+      if (meta.eval_duration) {
+        metrics.evalDuration = meta.eval_duration / 1_000_000;
+
+        // Calculate tokens per second
+        if (meta.eval_count && meta.eval_duration > 0) {
+          metrics.tokensPerSecond = (meta.eval_count / (meta.eval_duration / 1_000_000_000)).toFixed(2);
+        }
+      }
+    }
+
+    return Object.keys(metrics).length > 0 ? metrics : undefined;
+  }
+
+  /**
+   * Print progress bar
+   */
+  printProgress(): void {
+    const percentage = Math.round((this.currentProgress / this.totalTests) * 100);
+    const filled = Math.round(percentage / 2);
+    const empty = 50 - filled;
+    const bar = '█'.repeat(filled) + '░'.repeat(empty);
+
+    // Truncate scenario name if too long
+    const maxScenarioLength = 40;
+    const scenarioDisplay = this.currentScenario.length > maxScenarioLength
+      ? this.currentScenario.substring(0, maxScenarioLength - 3) + '...'
+      : this.currentScenario.padEnd(maxScenarioLength);
+
+    const modelDisplay = this.currentModel.padEnd(20);
+
+    process.stdout.write(`\r[${bar}] ${percentage}% | ${scenarioDisplay} | ${modelDisplay} | ${this.currentProgress}/${this.totalTests}`);
+  }
+
+  /**
+   * Format time in ms with appropriate units
+   */
+  private formatTime(ms: number): string {
+    if (ms < 1000) return `${Math.round(ms)}ms`;
+    return `${(ms / 1000).toFixed(2)}s`;
+  }
+
+  /**
+   * Format tokens per second
+   */
+  private formatTPS(tps: number | undefined): string {
+    if (!tps || isNaN(tps)) return 'N/A';
+    return `${tps.toFixed(1)} t/s`;
   }
 
   /**
@@ -188,7 +338,7 @@ class BenchmarkRunner {
         availableTools: ['list_projects', 'query_projects'],
       },
 
-      // TELOS Fidelity Scenarios (Phase 4 enhancement)
+      // TELOS Fidelity Scenarios
       {
         name: 'TELOS Fidelity - Respect Limitations',
         type: 'telos_fidelity',
@@ -304,6 +454,9 @@ Respond with JSON: {"type": "...", "confidence": 0.0-1.0, "reasoning": "..."}`;
 
       const response = await llm.invoke(messages);
       const responseTime = Date.now() - startTime;
+      const hardware = await this.checkGPUUsage(model);
+      const performance = this.extractPerformanceMetrics(response);
+
       const content =
         typeof response.content === 'string'
           ? response.content
@@ -336,6 +489,8 @@ Respond with JSON: {"type": "...", "confidence": 0.0-1.0, "reasoning": "..."}`;
           expectedWorkflow: scenario.expectedWorkflow,
           detectedWorkflow: detectedType,
         },
+        performance,
+        hardware,
       };
     } catch (error: any) {
       return {
@@ -367,9 +522,8 @@ Respond with JSON: {"type": "...", "confidence": 0.0-1.0, "reasoning": "..."}`;
         temperature: 0.7,
       });
 
-      const systemPrompt = `You are an AI assistant named ${
-        scenario.persona.name
-      }. ${scenario.persona.description}
+      const systemPrompt = `You are an AI assistant named ${scenario.persona.name
+        }. ${scenario.persona.description}
 
 Goals: ${scenario.persona.goals.join(', ')}
 Skills: ${scenario.persona.skills.join(', ')}
@@ -384,6 +538,9 @@ Provide a helpful, natural response to the user's question.`;
 
       const response = await llm.invoke(messages);
       const responseTime = Date.now() - startTime;
+      const hardware = await this.checkGPUUsage(model);
+      const performance = this.extractPerformanceMetrics(response);
+
       const content =
         typeof response.content === 'string'
           ? response.content
@@ -402,6 +559,8 @@ Provide a helpful, natural response to the user's question.`;
         metadata: {
           responseLength: content.length,
         },
+        performance,
+        hardware,
       };
     } catch (error: any) {
       return {
@@ -450,6 +609,9 @@ For example: {"name": "create_project", "arguments": {"name": "My Project", "use
 
       const response = await llm.invoke(messages);
       const responseTime = Date.now() - startTime;
+      const hardware = await this.checkGPUUsage(model);
+      const performance = this.extractPerformanceMetrics(response);
+
       const content =
         typeof response.content === 'string'
           ? response.content
@@ -470,6 +632,8 @@ For example: {"name": "create_project", "arguments": {"name": "My Project", "use
         metadata: {
           hasToolCall,
         },
+        performance,
+        hardware,
       };
     } catch (error: any) {
       return {
@@ -486,7 +650,6 @@ For example: {"name": "create_project", "arguments": {"name": "My Project", "use
 
   /**
    * Run TELOS fidelity benchmark
-   * Tests if the model properly embodies the persona's TELOS
    */
   async benchmarkTelosFidelity(
     scenario: BenchmarkScenario,
@@ -502,7 +665,6 @@ For example: {"name": "create_project", "arguments": {"name": "My Project", "use
         temperature: 0.7,
       });
 
-      // Use TELOS-first system prompt structure
       const systemPrompt = `# PERSONA IDENTITY (TELOS Framework)
 
 You are ${scenario.persona.name}, an AI assistant embodying the following TELOS:
@@ -536,6 +698,9 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
 
       const response = await llm.invoke(messages);
       const responseTime = Date.now() - startTime;
+      const hardware = await this.checkGPUUsage(model);
+      const performance = this.extractPerformanceMetrics(response);
+
       const content =
         typeof response.content === 'string'
           ? response.content
@@ -618,6 +783,8 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
           passedChecks,
           totalChecks,
         },
+        performance,
+        hardware,
       };
     } catch (error: any) {
       return {
@@ -639,22 +806,43 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
     scenario: BenchmarkScenario,
     model: string
   ): Promise<BenchmarkResult> {
-    console.log(
-      `Running ${scenario.type} benchmark: ${scenario.name} with ${model}`
-    );
+    this.currentScenario = scenario.name;
+    this.currentModel = model;
+    this.currentProgress++;
+    this.printProgress();
 
-    switch (scenario.type) {
-      case 'workflow_control':
-        return this.benchmarkWorkflowControl(scenario, model);
-      case 'conversation':
-        return this.benchmarkConversation(scenario, model);
-      case 'tool_calling':
-        return this.benchmarkToolCalling(scenario, model);
-      case 'telos_fidelity':
-        return this.benchmarkTelosFidelity(scenario, model);
-      default:
-        throw new Error(`Unknown scenario type: ${scenario.type}`);
-    }
+    const timeOutMs = 2 * 60 * 1000; //2min in ms
+
+    const timeoutPromise = new Promise<BenchmarkResult>((resolve) => {
+      setTimeout(() => {
+        resolve({
+          scenario: scenario.name,
+          model,
+          type: scenario.type,
+          success: false,
+          responseTime: timeOutMs,
+          response: '',
+          error: 'Timeout exceeded (2 minutes)',
+        })
+      }, timeOutMs)
+    });
+
+    const benchmarkPromise = (async () => {
+      switch (scenario.type) {
+        case 'workflow_control':
+          return this.benchmarkWorkflowControl(scenario, model);
+        case 'conversation':
+          return this.benchmarkConversation(scenario, model);
+        case 'tool_calling':
+          return this.benchmarkToolCalling(scenario, model);
+        case 'telos_fidelity':
+          return this.benchmarkTelosFidelity(scenario, model);
+        default:
+          throw new Error(`Unknown scenario type: ${scenario.type}`);
+      }
+    })();
+
+    return Promise.race([benchmarkPromise, timeoutPromise]);
   }
 
   /**
@@ -668,26 +856,202 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
       return;
     }
 
-    console.log(`Running benchmarks with models: ${models.join(', ')}\n`);
+    console.log('╔════════════════════════════════════════════════════════════╗');
+    console.log('║        AI Orchestrator Benchmark Suite                     ║');
+    console.log('╚════════════════════════════════════════════════════════════╝\n');
+    console.log(`Models: ${models.join(', ')}\n`);
+
+    // Fetch model info
+    console.log('Loading model information...');
+    for (const model of models) {
+      await this.fetchModelInfo(model);
+    }
 
     const scenarios = this.getScenarios();
+    this.totalTests = scenarios.length * models.length;
+
+    console.log(`\nRunning ${this.totalTests} tests...\n`);
 
     for (const scenario of scenarios) {
       for (const model of models) {
         const result = await this.runBenchmark(scenario, model);
         this.results.push(result);
-
-        const status = result.success ? '✓ PASS' : '✗ FAIL';
-        console.log(
-          `${status} | ${scenario.name} | ${model} | ${result.responseTime}ms`
-        );
-        if (result.error) {
-          console.log(`  Error: ${result.error}`);
-        }
       }
     }
 
+    console.log('\n\n✓ All benchmarks completed!\n');
+
     this.saveBenchmarkResults();
+    this.generateTextReport();
+  }
+
+  /**
+   * Calculate performance statistics
+   */
+  calculatePerformanceStats(): any {
+    const responseTimes = this.results.map(r => r.responseTime);
+    const tokensPerSecond = this.results
+      .filter(r => r.performance?.tokensPerSecond)
+      .map(r => parseFloat(r.performance!.tokensPerSecond.toString()!));
+
+    const sortedTimes = [...responseTimes].sort((a, b) => a - b);
+
+    return {
+      responseTime: {
+        min: Math.min(...responseTimes),
+        max: Math.max(...responseTimes),
+        avg: responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length,
+        p50: sortedTimes[Math.floor(sortedTimes.length * 0.5)],
+        p95: sortedTimes[Math.floor(sortedTimes.length * 0.95)],
+        p99: sortedTimes[Math.floor(sortedTimes.length * 0.99)],
+      },
+      tokensPerSecond: tokensPerSecond.length > 0 ? {
+        min: Math.min(...tokensPerSecond),
+        max: Math.max(...tokensPerSecond),
+        avg: tokensPerSecond.reduce((a, b) => a + b, 0) / tokensPerSecond.length,
+      } : null,
+      gpuUsage: this.results.filter(r => r.hardware?.gpu).length / this.results.length * 100,
+    };
+  }
+
+  /**
+   * Generate text report
+   */
+  generateTextReport(): void {
+    const outputFile = this.config.outputFile?.replace('.json', '.txt') ||
+      path.join(process.cwd(), 'benchmark-report.txt');
+
+    const stats = this.calculatePerformanceStats();
+    const byModel = this.groupByModel();
+    const telosAnalysis = this.analyzeTelosFidelity();
+
+    let report = '';
+
+    report += '═══════════════════════════════════════════════════════════════\n';
+    report += '           AI ORCHESTRATOR BENCHMARK REPORT\n';
+    report += '═══════════════════════════════════════════════════════════════\n\n';
+
+    report += `Generated: ${new Date().toISOString()}\n`;
+    report += `Total Tests: ${this.results.length}\n`;
+    report += `Models Tested: ${Object.keys(byModel).length}\n\n`;
+
+    // Overall Results
+    report += '───────────────────────────────────────────────────────────────\n';
+    report += '                     OVERALL RESULTS\n';
+    report += '───────────────────────────────────────────────────────────────\n\n';
+
+    const passed = this.results.filter(r => r.success).length;
+    const failed = this.results.filter(r => !r.success).length;
+    const successRate = (passed / this.results.length * 100).toFixed(1);
+
+    report += `✓ Passed:      ${passed.toString().padStart(4)} (${successRate}%)\n`;
+    report += `✗ Failed:      ${failed.toString().padStart(4)} (${(100 - parseFloat(successRate)).toFixed(1)}%)\n\n`;
+
+    // Performance Metrics
+    report += '───────────────────────────────────────────────────────────────\n';
+    report += '                  PERFORMANCE METRICS\n';
+    report += '───────────────────────────────────────────────────────────────\n\n';
+
+    report += 'Response Time (ms):\n';
+    report += `  Average:     ${stats.responseTime.avg.toFixed(2).padStart(8)}\n`;
+    report += `  Minimum:     ${stats.responseTime.min.toFixed(2).padStart(8)}\n`;
+    report += `  Maximum:     ${stats.responseTime.max.toFixed(2).padStart(8)}\n`;
+    report += `  P50:         ${stats.responseTime.p50.toFixed(2).padStart(8)}\n`;
+    report += `  P95:         ${stats.responseTime.p95.toFixed(2).padStart(8)}\n`;
+    report += `  P99:         ${stats.responseTime.p99.toFixed(2).padStart(8)}\n\n`;
+
+    if (stats.tokensPerSecond) {
+      report += 'Tokens Per Second:\n';
+      report += `  Average:     ${stats.tokensPerSecond.avg.toFixed(2).padStart(8)}\n`;
+      report += `  Minimum:     ${stats.tokensPerSecond.min.toFixed(2).padStart(8)}\n`;
+      report += `  Maximum:     ${stats.tokensPerSecond.max.toFixed(2).padStart(8)}\n\n`;
+    }
+
+    report += `GPU Utilization: ${stats.gpuUsage.toFixed(1)}% of tests\n\n`;
+
+    // Model Comparison
+    report += '───────────────────────────────────────────────────────────────\n';
+    report += '                    MODEL COMPARISON\n';
+    report += '───────────────────────────────────────────────────────────────\n\n';
+
+    for (const [modelName, results] of Object.entries(byModel)) {
+      const modelInfo = this.modelInfoCache.get(modelName);
+      const modelPassed = results.filter((r: any) => r.success).length;
+      const modelTotal = results.length;
+      const modelSuccessRate = (modelPassed / modelTotal * 100).toFixed(1);
+      const avgResponseTime = results.reduce((sum: number, r: any) => sum + r.responseTime, 0) / modelTotal;
+      const avgTPS = results
+        .filter((r: any) => r.performance?.tokensPerSecond)
+        .map((r: any) => parseFloat(r.performance.tokensPerSecond));
+      const avgTPSValue = avgTPS.length > 0 ? avgTPS.reduce((a: number, b: number) => a + b, 0) / avgTPS.length : 0;
+      const gpuPct = results.filter((r: any) => r.hardware?.gpu).length / modelTotal * 100;
+
+      report += `${modelName}\n`;
+      if (modelInfo) {
+        report += `  Size: ${modelInfo.parameter_size} | Format: ${modelInfo.format}\n`;
+      }
+      report += `  Success Rate:    ${modelSuccessRate}% (${modelPassed}/${modelTotal})\n`;
+      report += `  Avg Response:    ${avgResponseTime.toFixed(2)} ms\n`;
+      if (avgTPSValue > 0) {
+        report += `  Avg TPS:         ${avgTPSValue.toFixed(2)} tokens/sec\n`;
+      }
+      report += `  GPU Usage:       ${gpuPct.toFixed(0)}%\n\n`;
+    }
+
+    // TELOS Fidelity
+    if (telosAnalysis.totalTests > 0) {
+      report += '───────────────────────────────────────────────────────────────\n';
+      report += '                   TELOS FIDELITY SCORE\n';
+      report += '───────────────────────────────────────────────────────────────\n\n';
+
+      report += `Overall Fidelity:        ${telosAnalysis.averageFidelity}%\n\n`;
+      report += `Respects Limitations:    ${telosAnalysis.respectsLimitations}%\n`;
+      report += `Leverages Skills:        ${telosAnalysis.leveragesSkills}%\n`;
+      report += `Mentions Goals:          ${telosAnalysis.mentionsGoals}%\n`;
+      report += `Aligns with Objective:   ${telosAnalysis.alignsWithObjective}%\n\n`;
+    }
+
+    // Test Type Breakdown
+    report += '───────────────────────────────────────────────────────────────\n';
+    report += '                  TEST TYPE BREAKDOWN\n';
+    report += '───────────────────────────────────────────────────────────────\n\n';
+
+    const types = ['workflow_control', 'conversation', 'tool_calling', 'telos_fidelity'];
+    for (const type of types) {
+      const typeResults = this.results.filter(r => r.type === type);
+      if (typeResults.length === 0) continue;
+
+      const typePassed = typeResults.filter(r => r.success).length;
+      const typeRate = (typePassed / typeResults.length * 100).toFixed(1);
+
+      report += `${type.replace('_', ' ').toUpperCase()}:\n`;
+      report += `  Tests:     ${typeResults.length}\n`;
+      report += `  Success:   ${typeRate}% (${typePassed}/${typeResults.length})\n\n`;
+    }
+
+    report += '═══════════════════════════════════════════════════════════════\n';
+
+    fs.writeFileSync(outputFile, report);
+    console.log(`\n📊 Text report saved to: ${outputFile}\n`);
+
+    // Print summary to console
+    console.log(report);
+  }
+
+  /**
+   * Group results by model
+   */
+  groupByModel(): Record<string, BenchmarkResult[]> {
+    const byModel: Record<string, BenchmarkResult[]> = {};
+
+    for (const result of this.results) {
+      if (!byModel[result.model]) {
+        byModel[result.model] = [];
+      }
+      byModel[result.model].push(result);
+    }
+
+    return byModel;
   }
 
   /**
@@ -703,9 +1067,8 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
       totalTests: this.results.length,
       passed: this.results.filter((r) => r.success).length,
       failed: this.results.filter((r) => !r.success).length,
-      averageResponseTime:
-        this.results.reduce((sum, r) => sum + r.responseTime, 0) /
-        this.results.length,
+      performanceStats: this.calculatePerformanceStats(),
+      modelInfo: Array.from(this.modelInfoCache.values()),
       results: this.results,
       byType: {
         workflow_control: this.results.filter(
@@ -715,36 +1078,12 @@ You are NOT role-playing as the user. You are an AI assistant with the above ide
         tool_calling: this.results.filter((r) => r.type === 'tool_calling'),
         telos_fidelity: this.results.filter((r) => r.type === 'telos_fidelity'),
       },
+      byModel: this.groupByModel(),
       telosFidelityAnalysis: this.analyzeTelosFidelity(),
     };
 
     fs.writeFileSync(outputFile, JSON.stringify(summary, null, 2));
-    console.log(`\nBenchmark results saved to: ${outputFile}`);
-    console.log(
-      `Total: ${summary.totalTests} | Passed: ${summary.passed} | Failed: ${summary.failed}`
-    );
-    console.log(
-      `Average Response Time: ${summary.averageResponseTime.toFixed(2)}ms`
-    );
-
-    // Print TELOS fidelity summary
-    if (summary.telosFidelityAnalysis.totalTests > 0) {
-      console.log(
-        `\nTELOS Fidelity: ${summary.telosFidelityAnalysis.averageFidelity}%`
-      );
-      console.log(
-        `  Respects Limitations: ${summary.telosFidelityAnalysis.respectsLimitations}%`
-      );
-      console.log(
-        `  Leverages Skills: ${summary.telosFidelityAnalysis.leveragesSkills}%`
-      );
-      console.log(
-        `  Mentions Goals: ${summary.telosFidelityAnalysis.mentionsGoals}%`
-      );
-      console.log(
-        `  Aligns with Objective: ${summary.telosFidelityAnalysis.alignsWithObjective}%`
-      );
-    }
+    console.log(`💾 JSON results saved to: ${outputFile}`);
   }
 
   /**

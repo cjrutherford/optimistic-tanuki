@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
   LoginRequest,
@@ -12,6 +12,9 @@ import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
   providedIn: 'root',
 })
 export class AuthenticationService {
+  private apiBaseUrl = inject(API_BASE_URL);
+  private readonly http = inject(HttpClient);
+
   isAuthenticated: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(
     false
   );
@@ -19,10 +22,7 @@ export class AuthenticationService {
     new BehaviorSubject<UserDto | null>(null);
   private baseUrl: string;
 
-  constructor(
-    @Inject(API_BASE_URL) private apiBaseUrl: string,
-    private readonly http: HttpClient
-  ) {
+  constructor() {
     this.baseUrl = `${this.apiBaseUrl}/authentication`;
   }
 

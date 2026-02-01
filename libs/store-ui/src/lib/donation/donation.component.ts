@@ -24,10 +24,10 @@ export interface DonationRequest {
 export class DonationComponent extends Themeable {
   @Output() donate = new EventEmitter<DonationRequest>();
 
-  amount: number = 10;
+  amount = 10;
   customAmount: number | null = null;
-  message: string = '';
-  anonymous: boolean = false;
+  message = '';
+  anonymous = false;
   presetAmounts = [5, 10, 25, 50, 100];
 
   selectAmount(amount: number): void {

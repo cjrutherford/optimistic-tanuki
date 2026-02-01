@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
@@ -33,6 +33,8 @@ import { LoginType } from '@optimistic-tanuki/ui-models';
   },
 })
 export class LoginBlockComponent extends Themeable {
+  private readonly fb = inject(FormBuilder);
+
   @Input() title = 'login-block works!';
   @Input() description = 'login-block works!';
   @Input() heroSrc =
@@ -40,7 +42,7 @@ export class LoginBlockComponent extends Themeable {
   @Input() heroAlt = 'login-block works!';
   @Output() submitEvent = new EventEmitter<LoginType>();
   loginForm: FormGroup;
-  constructor(private readonly fb: FormBuilder) {
+  constructor() {
     super();
     this.loginForm = this.fb.group({
       email: this.fb.control(''),

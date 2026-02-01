@@ -40,8 +40,8 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 })
 export class AgRolesTableComponent implements OnInit, OnChanges {
   @Input() roles: RoleDto[] = [];
-  @Input() loading: boolean = false;
-  @Input() height: string = '600px';
+  @Input() loading = false;
+  @Input() height = '600px';
 
   // Internal signals
   private rolesSignal = signal<RoleDto[]>([]);

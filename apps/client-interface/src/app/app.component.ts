@@ -1,13 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {
-  Component,
-  inject,
-  signal,
-  OnInit,
-  OnDestroy,
-  PLATFORM_ID,
-  Inject,
-} from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
@@ -30,6 +22,9 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
   imports: [CommonModule, RouterModule, AppBarComponent, NavSidebarComponent],
 })
 export class AppComponent implements OnInit, OnDestroy {
+  private router = inject(Router);
+  private platformId = inject(PLATFORM_ID);
+
   background!: string;
   foreground!: string;
   accent!: string;
@@ -44,10 +39,6 @@ export class AppComponent implements OnInit, OnDestroy {
   public profileService = inject(ProfileService);
   public currentUrl$!: Observable<string>;
 
-  constructor(
-    private router: Router,
-    @Inject(PLATFORM_ID) private platformId: object // Injected PLATFORM_ID
-  ) {}
   title = 'client-interface';
   isNavExpanded = signal(false);
   isAuthenticated = signal(false);

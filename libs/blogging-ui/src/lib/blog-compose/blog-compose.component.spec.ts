@@ -28,7 +28,7 @@ export class MockCardComponent {
 @Component({ selector: 'lib-text-input', standalone: true, template: '', providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => MockTextInputComponent), multi: true }] })
 export class MockTextInputComponent implements ControlValueAccessor {
   @Input() label: any; @Input() placeholder: any; @Input() id: any; @Input() type: any;
-  writeValue() {} registerOnChange() {} registerOnTouched() {}
+  writeValue() { } registerOnChange() { } registerOnTouched() { }
 }
 
 @Component({ selector: 'otui-button', standalone: true, template: '<ng-content></ng-content>' })
@@ -54,7 +54,7 @@ export class MockTiptapEditorDirective {
 
 // Mock ngx-tiptap
 jest.mock('ngx-tiptap', () => ({
-  TiptapEditorDirective: class {}
+  TiptapEditorDirective: class { }
 }));
 
 // Mock Editor
@@ -69,8 +69,8 @@ const mockEditorCommands = {
 };
 
 const mockEditorChain = {
-  focus: jest.fn().mockReturnValue({ 
-    setImage: jest.fn().mockReturnValue({ run: jest.fn() }) 
+  focus: jest.fn().mockReturnValue({
+    setImage: jest.fn().mockReturnValue({ run: jest.fn() })
   }),
   ...mockEditorCommands
 };
@@ -123,47 +123,52 @@ describe('BlogComposeComponent', () => {
   let themeServiceSpy: any;
   let componentInjectionServiceSpy: any;
 
-    beforeEach(() => {
-      themeServiceSpy = {
-        themeColors$: of({      getTheme: jest.fn().mockReturnValue('light')
+  beforeEach(async () => {
+    themeServiceSpy = {
+      themeColors$: of({}),
+      getTheme: jest.fn().mockReturnValue('light')
     };
+
+    const mockComponentDef = { id: 'test', name: 'Test', component: MockCardComponent, category: 'test', icon: 'test', data: {} };
+
     componentInjectionServiceSpy = {
       setViewContainer: jest.fn(),
       setWrapperCallbacks: jest.fn(),
       registerComponent: jest.fn(),
       unregisterComponent: jest.fn(),
-      getRegisteredComponents: jest.fn().mockReturnValue([]),
+      getRegisteredComponents: jest.fn().mockReturnValue([mockComponentDef]),
       getComponentsByCategory: jest.fn().mockReturnValue([]),
-      getInstance: jest.fn(),
+      getInstance: jest.fn().mockReturnValue({ instanceId: 'inst-1', componentId: 'test', data: {}, properties: {} }),
       renderComponentInto: jest.fn()
     };
 
     await TestBed.configureTestingModule({
       imports: [BlogComposeComponent, FormsModule, NoopAnimationsModule],
       providers: [
-        { provide: ThemeService, useValue: themeServiceSpy },
-        { provide: ComponentInjectionService, useValue: componentInjectionServiceSpy }
+        { provide: ThemeService, useValue: themeServiceSpy }
       ]
     })
-    .overrideComponent(BlogComposeComponent, {
-      remove: { 
-        imports: [
-          CardComponent, TextInputComponent, ButtonComponent, 
-          ContextMenuComponent, ComponentSelectorComponent, 
-          PropertyEditorComponent, RichTextToolbarComponent,
-          TiptapEditorDirective
-        ] 
-      },
-      add: { 
-        imports: [
-          MockCardComponent, MockTextInputComponent, MockButtonComponent, 
-          MockContextMenuComponent, MockComponentSelectorComponent, 
-          MockPropertyEditorComponent, MockRichTextToolbarComponent,
-          MockTiptapEditorDirective
-        ] 
-      }
-    })
-    .compileComponents();
+      .overrideComponent(BlogComposeComponent, {
+        remove: {
+          imports: [
+            CardComponent, TextInputComponent, ButtonComponent,
+            ContextMenuComponent, ComponentSelectorComponent,
+            PropertyEditorComponent, RichTextToolbarComponent,
+            TiptapEditorDirective
+          ],
+          providers: [ComponentInjectionService]  // Remove the real service
+        },
+        add: {
+          imports: [
+            MockCardComponent, MockTextInputComponent, MockButtonComponent,
+            MockContextMenuComponent, MockComponentSelectorComponent,
+            MockPropertyEditorComponent, MockRichTextToolbarComponent,
+            MockTiptapEditorDirective
+          ],
+          providers: [{ provide: ComponentInjectionService, useValue: componentInjectionServiceSpy }]  // Add mock service
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(BlogComposeComponent);
     component = fixture.componentInstance;
@@ -175,14 +180,18 @@ describe('BlogComposeComponent', () => {
 
   it('should initialize editor on view init', async () => {
     fixture.detectChanges(); // triggers ngAfterViewInit
-    await new Promise(resolve => setTimeout(resolve, 0)); // wait for promise
+    // Wait for the Promise.resolve().then() in ngAfterViewInit to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await fixture.whenStable();
     expect(component.editor).toBeDefined();
     expect(componentInjectionServiceSpy.setViewContainer).toHaveBeenCalled();
   });
 
   it('should register default components', async () => {
     fixture.detectChanges();
+    // Wait for the Promise.resolve().then() in ngAfterViewInit to complete
     await new Promise(resolve => setTimeout(resolve, 0));
+    await fixture.whenStable();
     // Check if registerComponent was called multiple times
     expect(componentInjectionServiceSpy.registerComponent).toHaveBeenCalled();
   });
@@ -215,18 +224,14 @@ describe('BlogComposeComponent', () => {
     });
 
     it('should inject component', async () => {
-      const mockComponentDef = { id: 'test', name: 'Test' };
-      // Setup mock before component init
-      componentInjectionServiceSpy.getRegisteredComponents.mockReturnValue([mockComponentDef]);
-      componentInjectionServiceSpy.getInstance.mockReturnValue({ instanceId: 'inst-1', data: {} });
-
       fixture.detectChanges(); // triggers ngAfterViewInit
-      await new Promise(resolve => setTimeout(resolve, 0)); // wait for editor init
+      await new Promise(resolve => setTimeout(resolve, 0)); // wait for promise resolution
+      await fixture.whenStable();
 
-      await component.injectComponent('test');
-      
+      const result = await component.injectComponent('test');
+
       expect(component.editor.commands.insertAngularComponent).toHaveBeenCalled();
-      expect(component.getActiveComponents().length).toBe(1);
+      expect(result).toEqual({ instanceId: 'inst-1', componentId: 'test', data: {}, properties: {} });
     });
   });
 });

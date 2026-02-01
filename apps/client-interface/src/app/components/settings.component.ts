@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
 import {
@@ -23,6 +23,9 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
   styleUrl: './settings.component.scss',
 })
 export class SettingsComponent {
+  profileService = inject(ProfileService);
+  private auth = inject(AuthStateService);
+
   title = 'Settings';
 
   showThemeDesigner = false;
@@ -35,10 +38,7 @@ export class SettingsComponent {
 
   profile = signal<ProfileDto | null>(null);
 
-  constructor(
-    public profileService: ProfileService,
-    private auth: AuthStateService
-  ) {
+  constructor() {
     try {
       // Load current profile if present
       const p = this.profileService.getCurrentUserProfile();

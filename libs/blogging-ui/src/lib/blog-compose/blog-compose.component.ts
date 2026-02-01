@@ -1,66 +1,62 @@
 import {
+  AfterViewInit,
+  ChangeDetectorRef,
   Component,
   EventEmitter,
-  Output,
-  OnDestroy,
+  forwardRef,
   HostListener,
+  inject,
+  OnDestroy,
+  Output,
   ViewChild,
   ViewContainerRef,
-  AfterViewInit,
-  inject,
-  forwardRef,
-  ChangeDetectorRef,
 } from '@angular/core';
 
 import {
-  FormsModule,
   ControlValueAccessor,
+  FormsModule,
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
 import { Editor } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
-import { TiptapEditorDirective } from 'ngx-tiptap';
 import Image from '@tiptap/extension-image';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
-import Underline from '@tiptap/extension-underline';
-import TextAlign from '@tiptap/extension-text-align';
 import { Table } from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import TableRow from '@tiptap/extension-table-row';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
+import StarterKit from '@tiptap/starter-kit';
+import { TiptapEditorDirective } from 'ngx-tiptap';
 
+import {
+  AccordionComponent, ButtonComponent,
+  CardComponent, ContentSectionComponent, GradientBuilder, HeroSectionComponent, ModalComponent
+} from '@optimistic-tanuki/common-ui';
+import {
+  CheckboxComponent,
+  RadioButtonComponent,
+  SelectComponent,
+  TextAreaComponent,
+  TextInputComponent,
+} from '@optimistic-tanuki/form-ui';
 import {
   Themeable,
   ThemeColors,
   ThemeService,
 } from '@optimistic-tanuki/theme-lib';
-import { GradientBuilder } from '@optimistic-tanuki/common-ui';
-import {
-  ButtonComponent,
-  CardComponent,
-  AccordionComponent,
-  ModalComponent,
-  HeroSectionComponent,
-  ContentSectionComponent,
-} from '@optimistic-tanuki/common-ui';
-import {
-  TextAreaComponent,
-  TextInputComponent,
-  CheckboxComponent,
-  SelectComponent,
-  RadioButtonComponent,
-} from '@optimistic-tanuki/form-ui';
 import { ContextMenuComponent } from '../context-menu/context-menu.component';
 
 // Component injection system imports
-import { ComponentInjectionService } from './services/component-injection.service';
-import { ComponentSelectorComponent } from './components/component-selector.component';
 import {
+  ComponentInjectionAPI,
+  ComponentInjectionService,
   InjectableComponent,
   InjectedComponentInstance,
-  ComponentInjectionAPI,
-} from './interfaces/component-injection.interface';
+  UnifiedComponentRegistryService,
+} from '@optimistic-tanuki/compose-lib';
+import { ComponentSelectorComponent } from './components/component-selector.component';
 
 // Example components
 import { CalloutBoxComponent } from './components/example-components/callout-box.component';
@@ -68,17 +64,17 @@ import { CodeSnippetComponent } from './components/example-components/code-snipp
 import { ImageGalleryComponent } from './components/example-components/image-gallery.component';
 
 // Existing blogging components
-import { HeroComponent } from '../hero/hero.component';
 import { FeaturedPostsComponent } from '../featured-posts/featured-posts.component';
+import { HeroComponent } from '../hero/hero.component';
 import { NewsletterSignupComponent } from '../newsletter-signup/newsletter-signup.component';
 
 // Property editing system
+import DOMPurify from 'dompurify';
 import {
-  PropertyEditorComponent,
   PropertyDefinition,
+  PropertyEditorComponent,
 } from './components/property-editor.component';
 import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
-import DOMPurify from 'dompurify';
 
 // Rich text toolbar
 import { RichTextToolbarComponent } from './components/rich-text-toolbar.component';
@@ -86,7 +82,7 @@ import { RichTextToolbarComponent } from './components/rich-text-toolbar.compone
 // Angular Component Node Extension
 import { BlogComposeComponentNode } from './extensions/blog-compose-component.extension';
 
-import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
+import { DEFAULT_POST_THEME, PostThemeConfig } from '@optimistic-tanuki/ui-models';
 
 interface PostData {
   title: string;
@@ -179,11 +175,10 @@ interface PostData {
 export class BlogComposeComponent
   extends Themeable
   implements
-    OnDestroy,
-    AfterViewInit,
-    ComponentInjectionAPI,
-    ControlValueAccessor
-{
+  OnDestroy,
+  AfterViewInit,
+  ComponentInjectionAPI,
+  ControlValueAccessor {
   @Output() postSubmitted: EventEmitter<PostData> =
     new EventEmitter<PostData>();
   @Output() attachmentAdded = new EventEmitter<{
@@ -254,16 +249,41 @@ export class BlogComposeComponent
 
   // Flag to track if there's pending content to set after editor init
   private pendingContent: string | null = null;
+  // Inject centralized services from compose-lib
   private componentInjectionService = inject(ComponentInjectionService);
+  private unifiedRegistry = inject(UnifiedComponentRegistryService);
 
   constructor() {
     super();
   }
 
-  @HostListener('document:click')
-  onDocumentClick(): void {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('lib-property-editor') ||
+      target.closest('lib-component-selector') ||
+      target.closest('.property-editor')
+    ) {
+      return;
+    }
+
     this.isContextMenuVisible = false;
     this.selectedComponentInstance = null;
+
+    if (this.isPropertyEditorVisible) {
+      this.hidePropertyEditor();
+    }
+  }
+
+  private deepClone<T>(value: T): T {
+    if (value === null || value === undefined) return value;
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch (e) {
+      console.warn('Failed to deep clone value, falling back to spread', e);
+      return Array.isArray(value) ? [...value] as any : { ...value };
+    }
   }
 
   ngAfterViewInit(): void {
@@ -277,6 +297,7 @@ export class BlogComposeComponent
         onMoveUp: (instance) => this.onComponentMoveUp(instance),
         onMoveDown: (instance) => this.onComponentMoveDown(instance),
         onSelection: (instance) => this.onComponentSelection(instance),
+        onPropertiesChanged: (instance, data) => this.onComponentPropertiesChanged(instance, data),
       });
 
       this.initializeDefaultComponents();
@@ -423,7 +444,7 @@ export class BlogComposeComponent
         description:
           'Discover the latest news, tips, and stories from our community.',
         buttonText: 'Get Started',
-        imageUrl: 'https://via.placeholder.com/600x400',
+        imageUrl: 'https://media.craiyon.com/2026-02-01/Utu4UCrMQeGuDr15FVIRnQ.webp',
       },
     });
 
@@ -458,7 +479,7 @@ export class BlogComposeComponent
       category: 'Blogging',
       icon: 'email',
       data: {
-        bannerImage: 'https://picsum.photos/1200/300',
+        bannerImage: 'https://media.craiyon.com/2026-02-01/Utu4UCrMQeGuDr15FVIRnQ.webp',
       },
     });
 
@@ -636,60 +657,77 @@ export class BlogComposeComponent
 
   // Component injection API implementation (now working with inline editor)
   registerComponent(component: InjectableComponent): void {
-    // Keep using the service for registration as it manages the component definitions
-    this.componentInjectionService.registerComponent(component);
+    // Register with unified registry using source identifier
+    this.unifiedRegistry.registerComponent(component, 'blogging-ui');
     this.registeredComponents = this.getRegisteredComponents();
   }
 
   unregisterComponent(componentId: string): void {
-    this.componentInjectionService.unregisterComponent(componentId);
+    this.unifiedRegistry.unregisterComponent(componentId, 'blogging-ui');
     this.registeredComponents = this.getRegisteredComponents();
   }
 
   getRegisteredComponents(): InjectableComponent[] {
-    return this.componentInjectionService.getRegisteredComponents();
+    return this.unifiedRegistry.getAllComponents();
   }
 
   getComponentsByCategory(category: string): InjectableComponent[] {
-    return this.componentInjectionService.getComponentsByCategory(category);
+    return this.unifiedRegistry.getComponentsByCategory(category);
   }
 
   async injectComponent(
     componentId: string,
     data?: Record<string, unknown>
   ): Promise<InjectedComponentInstance> {
+    console.log('[blog compose] injectComponent called for:', componentId);
+
     // Use our new inline injection method instead
-    const component = this.componentInjectionService
-      .getRegisteredComponents()
+    const component = this.unifiedRegistry
+      .getAllComponents()
       .find((comp) => comp.id === componentId);
 
     if (!component) {
+      console.error('[blog compose] Component not found:', componentId);
       throw new Error(`Component ${componentId} not found`);
     }
+
+    console.log('[blog compose] Found component definition:', component);
 
     const instanceId = `${componentId}-${Date.now()}-${Math.random()
       .toString(36)
       .substring(2, 9)}`;
 
+    console.log('[blog compose] Generated instance ID:', instanceId);
+
+    const componentData = this.deepClone(data || component.data || {});
+
     // Insert into TipTap editor
     this.editor.commands.insertAngularComponent({
       componentId,
       instanceId,
-      data: data || component.data || {},
+      data: componentData,
       componentDef: component,
     });
+
+    console.log('[blog compose] Inserted component into TipTap editor');
 
     // Retrieve the instance from the service
     // Since Tiptap updates are synchronous for DOM, the renderer should have been called.
     const instance = this.componentInjectionService.getInstance(instanceId);
 
     if (!instance) {
+      console.error('[blog compose] Failed to retrieve instance:', instanceId);
       // Fallback if something went wrong, though it shouldn't if renderer works.
       // We return a mock or throw.
       throw new Error('Failed to inject component instance');
     }
 
+    console.log('[blog compose] Retrieved instance from service:', instance);
+
     this.activeComponents.set(instanceId, instance);
+    console.log('[blog compose] Added to activeComponents. Total active components:', this.activeComponents.size);
+    console.log('[blog compose] ActiveComponents keys:', Array.from(this.activeComponents.keys()));
+
     return instance;
   }
 
@@ -750,10 +788,25 @@ export class BlogComposeComponent
 
   // Property editing methods
   onComponentEdit(instance: InjectedComponentInstance): void {
+    console.log('[blog compose] onComponentEdit called');
+    console.log('[blog compose] Instance:', instance);
+    console.log('[blog compose] Component ID:', instance.componentDef.id);
+    console.log('[blog compose] Component name:', instance.componentDef.name);
+    console.log('[blog compose] Instance ID:', instance.instanceId);
+    console.log('[blog compose] Component data:', instance.data);
+
     this.selectedComponentInstance = instance;
-    this.selectedComponentProperties =
-      COMPONENT_PROPERTY_DEFINITIONS[instance.componentDef.id] || [];
+    console.log('[blog compose] Set selectedComponentInstance to:', this.selectedComponentInstance);
+
+    // Check if property definitions exist
+    const propertyDefs = COMPONENT_PROPERTY_DEFINITIONS[instance.componentDef.id];
+    console.log('[blog compose] Property definitions for', instance.componentDef.id, ':', propertyDefs);
+
+    this.selectedComponentProperties = propertyDefs || [];
+    console.log('[blog compose] Set selectedComponentProperties to:', this.selectedComponentProperties);
+
     this.isPropertyEditorVisible = true;
+    console.log('[blog compose] Set property editor visible');
   }
 
   onComponentDelete(instance: InjectedComponentInstance): void {
@@ -790,8 +843,39 @@ export class BlogComposeComponent
     this.selectedComponentInstance = instance;
   }
 
+  onComponentPropertiesChanged(instance: InjectedComponentInstance, data: Record<string, any>): void {
+    // Temporarily set selected instance to use existing update logic
+    const prevSelected = this.selectedComponentInstance;
+    this.selectedComponentInstance = instance;
+
+    // Get property definitions to handle outputs properly
+    this.selectedComponentProperties = COMPONENT_PROPERTY_DEFINITIONS[instance.componentDef.id] || [];
+
+    this.onPropertiesUpdated(data);
+
+    // Restore previous selection if it wasn't the one we just edited
+    if (prevSelected?.instanceId !== instance.instanceId) {
+      this.selectedComponentInstance = prevSelected;
+      // Restore properties for the selected one if needed
+      if (prevSelected) {
+        this.selectedComponentProperties = COMPONENT_PROPERTY_DEFINITIONS[prevSelected.componentDef.id] || [];
+      } else {
+        this.selectedComponentProperties = [];
+      }
+    }
+  }
+
   onPropertiesUpdated(updatedData: any): void {
+    console.log('[blog compose] onPropertiesUpdated called with data:', updatedData);
+    console.log('[blog compose] Selected component instance:', this.selectedComponentInstance);
+    console.log('[blog compose] Selected component properties:', this.selectedComponentProperties);
+
     if (this.selectedComponentInstance) {
+      console.log('[blog compose] Component ID:', this.selectedComponentInstance.componentDef.id);
+      console.log('[blog compose] Component name:', this.selectedComponentInstance.componentDef.name);
+      console.log('[blog compose] Instance ID:', this.selectedComponentInstance.instanceId);
+      console.log('[blog compose] Component data:', this.selectedComponentInstance.data);
+
       // Handle output configuration
       const outputConfigs: any = {};
       this.selectedComponentProperties.forEach((prop) => {
@@ -816,19 +900,22 @@ export class BlogComposeComponent
       }
 
       // Update the inner component properties
-      const innerComponentRef =
-        this.selectedComponentInstance.data._innerComponentRef;
-      if (innerComponentRef) {
+      interface InnerComponentRef {
+        instance: Record<string, unknown>;
+        changeDetectorRef: { detectChanges: () => void };
+      }
+      const innerComponentRef = this.selectedComponentInstance?.data?.['_innerComponentRef'] as InnerComponentRef | undefined;
+      if (innerComponentRef && typeof innerComponentRef === 'object') {
         Object.keys(finalData).forEach((key) => {
           if (
             key !== '_innerComponentRef' &&
             key !== '_outputConfigs' &&
-            innerComponentRef.instance[key] !== undefined
+            innerComponentRef.instance?.[key] !== undefined
           ) {
             innerComponentRef.instance[key] = finalData[key];
           }
         });
-        innerComponentRef.changeDetectorRef.detectChanges();
+        innerComponentRef.changeDetectorRef?.detectChanges();
       }
 
       this.updateComponent(
@@ -920,14 +1007,40 @@ export class BlogComposeComponent
       const instanceId = `${component.id}-${Date.now()}-${Math.random()
         .toString(36)
         .substring(2, 9)}`;
+      console.log('[blog compose] Injecting component:', component.id, 'with instanceId:', instanceId);
+
+      const componentData = this.deepClone(component.data || {});
 
       // Insert into TipTap editor instead of separate container
-      this.editor.commands.insertAngularComponent({
-        componentId: component.id,
-        instanceId: instanceId,
-        data: component.data || {},
-        componentDef: component,
-      });
+      // this.editor.commands.insertAngularComponent({
+      //   componentId: component.id,
+      //   instanceId: instanceId,
+      //   data: componentData,
+      //   componentDef: component,
+      // });
+
+      this.editor
+        .chain()
+        .focus()
+        .insertAngularComponent({
+          componentId: component.id,
+          instanceId: instanceId,
+          data: componentData,
+          componentDef: component,
+        })
+        .insertContent('<p></p>')
+        .run();
+
+      console.log('[blog compose] Inserted component into TipTap editor');
+
+      const realInstance = this.componentInjectionService.getInstance(instanceId);
+
+      if (realInstance) {
+        console.log('[blog compose] Retrieved real instance from service:', realInstance);
+        this.activeComponents.set(instanceId, realInstance);
+        this.hideComponentSelector();
+        return;
+      }
 
       // Still track the component in our system for editing
       const mockComponentRef = {
@@ -946,7 +1059,7 @@ export class BlogComposeComponent
         instanceId,
         componentDef: component,
         componentRef: mockComponentRef,
-        data: component.data || {},
+        data: componentData,
       };
 
       this.activeComponents.set(instanceId, injectedInstance);
@@ -1023,7 +1136,7 @@ export class BlogComposeComponent
       this._content = value.content || '';
       this.links = value.links || [];
       this.attachments = value.attachments || [];
-      
+
       // Load post theme configuration
       if (value.themeConfig) {
         this.postTheme = value.themeConfig.theme || DEFAULT_POST_THEME.theme;

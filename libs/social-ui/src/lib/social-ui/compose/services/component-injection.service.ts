@@ -118,6 +118,8 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       .toString(36)
       .substring(2, 9)}`;
 
+    console.log('SocialUIComponentInjectionService: Creating component instance:', instanceId);
+
     // Create wrapper component
     const wrapperRef =
       this.viewContainer.createComponent<ComponentWrapperComponent>(
@@ -151,36 +153,43 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       data: { ...componentDef.data, ...data },
     };
 
-    // Configure wrapper component
+    // CRITICAL FIX: Set the component instance BEFORE subscribing to events
     wrapperRef.instance.componentInstance = instance;
+
+    console.log('SocialUIComponentInjectionService: Setting up event subscriptions for instance:', instanceId);
 
     // Set up wrapper event handlers
     wrapperRef.instance.editRequested.subscribe(
       (inst: InjectedComponentInstance) => {
+        console.log('SocialUIComponentInjectionService: Edit callback triggered for:', inst?.instanceId);
         this.onEditCallback?.(inst);
       }
     );
 
     wrapperRef.instance.deleteRequested.subscribe(
       (inst: InjectedComponentInstance) => {
+        console.log('SocialUIComponentInjectionService: Delete callback triggered for:', inst?.instanceId);
         this.onDeleteCallback?.(inst);
       }
     );
 
     wrapperRef.instance.moveUpRequested.subscribe(
       (inst: InjectedComponentInstance) => {
+        console.log('SocialUIComponentInjectionService: Move up callback triggered for:', inst?.instanceId);
         this.onMoveUpCallback?.(inst);
       }
     );
 
     wrapperRef.instance.moveDownRequested.subscribe(
       (inst: InjectedComponentInstance) => {
+        console.log('SocialUIComponentInjectionService: Move down callback triggered for:', inst?.instanceId);
         this.onMoveDownCallback?.(inst);
       }
     );
 
     wrapperRef.instance.selectionChanged.subscribe(
       (inst: InjectedComponentInstance) => {
+        console.log('SocialUIComponentInjectionService: Selection callback triggered for:', inst?.instanceId);
         this.onSelectionCallback?.(inst);
       }
     );

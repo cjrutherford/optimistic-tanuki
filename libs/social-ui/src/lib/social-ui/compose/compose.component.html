@@ -100,8 +100,8 @@
 
 <!-- Property editor -->
 <lib-property-editor
-  [isVisible]="isPropertyEditorVisible"
-  [componentInstance]="selectedComponentInstance"
+  [isVisible]="isPropertyEditorVisible && !!selectedComponentInstance"
+  [componentInstance]="selectedComponentInstance!"
   [propertyDefinitions]="selectedComponentProperties"
   (propertiesUpdated)="onPropertiesUpdated($event)"
   (closed)="hidePropertyEditor()"

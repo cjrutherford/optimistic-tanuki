@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService, Order } from '../services/store.service';
@@ -12,13 +12,15 @@ import { UpdateOrderDto } from '@optimistic-tanuki/ui-models';
   styleUrls: ['./order-management.component.scss'],
 })
 export class OrderManagementComponent implements OnInit {
+  private storeService = inject(StoreService);
+
   orders: Order[] = [];
   selectedOrder: Order | null = null;
   loading = false;
   error: string | null = null;
-  filterStatus: string = 'all';
+  filterStatus = 'all';
 
-  constructor(private storeService: StoreService) {}
+
 
   ngOnInit(): void {
     this.loadOrders();

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ConfigurationService } from '../services/configuration.service';
 import { Section, AppConfiguration } from '@optimistic-tanuki/app-config-models';
@@ -75,10 +75,12 @@ import { FooterSectionComponent } from './sections/footer-section.component';
   ],
 })
 export class LandingPageComponent implements OnInit {
-  sections: Section[] = [];
-  layout: string = 'single-column';
+  private configService = inject(ConfigurationService);
 
-  constructor(private configService: ConfigurationService) {}
+  sections: Section[] = [];
+  layout = 'single-column';
+
+
 
   ngOnInit(): void {
     const config = this.configService.getCurrentConfiguration();

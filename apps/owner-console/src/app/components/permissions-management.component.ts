@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -337,6 +337,10 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
   ],
 })
 export class PermissionsManagementComponent implements OnInit {
+  private permissionsService = inject(PermissionsService);
+  private appScopesService = inject(AppScopesService);
+  private messageService = inject(MessageService);
+
   permissions: PermissionDto[] = [];
   appScopes: AppScopeDto[] = [];
   loading = false;
@@ -361,11 +365,7 @@ export class PermissionsManagementComponent implements OnInit {
   confirmModalMessage = '';
   confirmAction: 'create' | 'update' | 'delete' = 'create';
 
-  constructor(
-    private permissionsService: PermissionsService,
-    private appScopesService: AppScopesService,
-    private messageService: MessageService
-  ) {}
+
 
   ngOnInit(): void {
     this.loadPermissions();

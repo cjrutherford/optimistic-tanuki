@@ -1,12 +1,4 @@
-import {
-  Directive,
-  ElementRef,
-  Input,
-  OnChanges,
-  SimpleChanges,
-  OnDestroy,
-  OnInit,
-} from '@angular/core';
+import { Directive, ElementRef, Input, OnChanges, SimpleChanges, OnDestroy, OnInit, inject } from '@angular/core';
 import { ThemeService } from './theme.service';
 import { ThemeColors } from './theme.interface';
 import { Subject, takeUntil } from 'rxjs';
@@ -75,6 +67,9 @@ const FONT_SIZE_MAP = {
 export class ThemeHostBindingsDirective
   implements OnInit, OnChanges, OnDestroy
 {
+  private elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private themeService = inject(ThemeService);
+
   @Input() themeHostBindings: HostThemeBindings = {};
   @Input() useThemeColors = true; // Whether to auto-bind to theme service colors
   @Input() useLocalScope = true; // Whether to use --local-* prefix for component-scoped variables
@@ -82,10 +77,6 @@ export class ThemeHostBindingsDirective
   private destroy$ = new Subject<void>();
   private isInitialized = false;
 
-  constructor(
-    private elementRef: ElementRef<HTMLElement>,
-    private themeService: ThemeService
-  ) {}
 
   ngOnInit() {
     this.isInitialized = true;

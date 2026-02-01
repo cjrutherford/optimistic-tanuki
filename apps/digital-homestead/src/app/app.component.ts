@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
@@ -16,13 +16,13 @@ import { hexToRgb } from '@optimistic-tanuki/theme-lib';
   },
 })
 export class AppComponent implements OnInit {
-  title = 'digital-homestead';
-  headingGradient = 'linear-gradient(90deg, #ff7e5f, #feb47b)'; // Example gradient
+  private readonly themeService = inject(ThemeService);
+  private platformId = inject<object>(PLATFORM_ID);
 
-  constructor(
-    private readonly themeService: ThemeService,
-    @Inject(PLATFORM_ID) private platformId: Object
-  ) {}
+  title = 'digital-homestead';
+  headingGradient = 'linear-gradient(90deg, #ff7e5f, #feb47b)';
+// Example gradient
+
 
   ngOnInit() {
     // Initialize theme - only in browser to avoid SSR issues

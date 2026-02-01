@@ -78,6 +78,11 @@ export class ChatWindowComponent
   @Input() aiThinkingMessage: string | null = null;
 
   /**
+   * Streaming message content (real-time AI response)
+   */
+  @Input() streamingMessage: string | null = null;
+
+  /**
    * The current state of the chat window.
    */
   @Input() windowState: ChatWindowState = 'popout';

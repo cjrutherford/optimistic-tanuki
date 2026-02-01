@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -9,13 +9,15 @@ import {
 } from '../../services/store.service';
 
 @Component({
-  selector: 'app-bookings',
+  selector: 'store-bookings',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './bookings.component.html',
   styleUrls: ['./bookings.component.scss'],
 })
 export class BookingsComponent implements OnInit {
+  private storeService = inject(StoreService);
+
   resources: Resource[] = [];
   userAppointments: Appointment[] = [];
   selectedResource: Resource | null = null;
@@ -42,7 +44,7 @@ export class BookingsComponent implements OnInit {
   showBookingModal = false;
   showMyBookings = false;
 
-  constructor(private storeService: StoreService) {}
+
 
   ngOnInit(): void {
     this.loadResources();

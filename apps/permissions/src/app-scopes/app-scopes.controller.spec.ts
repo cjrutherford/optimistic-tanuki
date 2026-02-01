@@ -6,7 +6,6 @@ import {
   CreateAppScopeDto,
   UpdateAppScopeDto,
 } from '@optimistic-tanuki/models';
-import { AppScope } from './entities/app-scope.entity';
 
 describe('AppScopesController', () => {
   let controller: AppScopesController;

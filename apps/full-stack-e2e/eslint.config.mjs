@@ -1,9 +1,11 @@
 import nxEslint from '@nx/eslint/plugin';
+import baseConfig from '../../eslint.config.mjs';
 
 export default [
-  ...nxEslint.configs['flat/base'],
-  ...nxEslint.configs['flat/typescript'],
+  ...baseConfig,
   {
+    files: ['**/*.ts', '**/*.tsx'],
     rules: {},
   },
 ];
+

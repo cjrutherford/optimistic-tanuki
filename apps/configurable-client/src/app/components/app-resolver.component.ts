@@ -1,4 +1,4 @@
-import { Component, OnInit, PLATFORM_ID, Inject } from '@angular/core';
+import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
@@ -97,15 +97,15 @@ import { ConfigurationService } from '../services/configuration.service';
   `],
 })
 export class AppResolverComponent implements OnInit {
+  private configService = inject(ConfigurationService);
+  private route = inject(ActivatedRoute);
+  private platformId = inject<object>(PLATFORM_ID);
+
   loading = true;
   error: string | null = null;
   loadingMessage = '';
 
-  constructor(
-    private configService: ConfigurationService,
-    private route: ActivatedRoute,
-    @Inject(PLATFORM_ID) private platformId: Object
-  ) {}
+
 
   ngOnInit(): void {
     // Only load configuration in browser, not during SSR

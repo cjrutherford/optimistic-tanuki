@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
@@ -74,10 +74,13 @@ import { RegisterSubmitType } from '@optimistic-tanuki/ui-models';
   ],
 })
 export class RegisterComponent {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
   error = '';
   success = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+
 
   onRegister(registerData: RegisterSubmitType): void {
     this.error = '';

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -91,9 +91,11 @@ export interface CreateAppointmentRequest {
   providedIn: 'root',
 })
 export class StoreService {
+  private http = inject(HttpClient);
+
   private readonly API_URL = '/api/store';
 
-  constructor(private http: HttpClient) {}
+
 
   // Product operations
   getProducts(): Observable<Product[]> {

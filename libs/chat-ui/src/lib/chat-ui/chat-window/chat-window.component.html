@@ -26,6 +26,20 @@
     ></lib-message-list>
     }
     
+    @if(streamingMessage) {
+      <div class="streaming-message">
+        <div class="message-header">
+          <span class="sender-name">{{ contact?.[0]?.name || 'AI Assistant' }}</span>
+          <span class="streaming-indicator">
+            <span class="typing-dots"></span>
+          </span>
+        </div>
+        <div class="message-content streaming">
+          {{ streamingMessage }}
+        </div>
+      </div>
+    }
+    
     @if(aiIsResponding || aiThinkingMessage) {
       <div class="ai-status-indicator">
         @if(aiThinkingMessage) {

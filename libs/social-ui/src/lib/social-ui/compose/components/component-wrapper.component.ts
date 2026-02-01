@@ -1,11 +1,12 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'lib-component-wrapper',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [CommonModule, MatIconModule],
   template: `
     <div
       class="component-wrapper"
@@ -152,8 +153,8 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
     `,
   ],
 })
-export class ComponentWrapperComponent {
-  @Input() componentInstance!: InjectedComponentInstance;
+export class ComponentWrapperComponent implements OnInit, OnDestroy {
+  @Input() componentInstance: InjectedComponentInstance | null = null;
   @Input() isSelected = false;
   @Output() editRequested = new EventEmitter<InjectedComponentInstance>();
   @Output() deleteRequested = new EventEmitter<InjectedComponentInstance>();
@@ -162,6 +163,18 @@ export class ComponentWrapperComponent {
   @Output() selectionChanged = new EventEmitter<InjectedComponentInstance>();
 
   isHovered = false;
+
+  ngOnInit(): void {
+    if (!this.componentInstance) {
+      console.warn('SocialUIComponentWrapper: No component instance provided');
+    } else {
+      console.log('SocialUIComponentWrapper: Initialized with instance:', this.componentInstance.instanceId);
+    }
+  }
+
+  ngOnDestroy(): void {
+    // Cleanup if needed
+  }
 
   onMouseEnter(): void {
     this.isHovered = true;
@@ -173,26 +186,48 @@ export class ComponentWrapperComponent {
 
   onClick(event: Event): void {
     event.stopPropagation();
-    this.selectionChanged.emit(this.componentInstance);
+    if (this.componentInstance) {
+      this.selectionChanged.emit(this.componentInstance);
+    }
   }
 
   onEdit(event: Event): void {
     event.stopPropagation();
-    this.editRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('SocialUIComponentWrapper: Edit requested for instance:', this.componentInstance.instanceId);
+      this.editRequested.emit(this.componentInstance);
+    } else {
+      console.error('SocialUIComponentWrapper: Cannot edit - no component instance');
+    }
   }
 
   onDelete(event: Event): void {
     event.stopPropagation();
-    this.deleteRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('SocialUIComponentWrapper: Delete requested for instance:', this.componentInstance.instanceId);
+      this.deleteRequested.emit(this.componentInstance);
+    } else {
+      console.error('SocialUIComponentWrapper: Cannot delete - no component instance');
+    }
   }
 
   onMoveUp(event: Event): void {
     event.stopPropagation();
-    this.moveUpRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('SocialUIComponentWrapper: Move up requested for instance:', this.componentInstance.instanceId);
+      this.moveUpRequested.emit(this.componentInstance);
+    } else {
+      console.error('SocialUIComponentWrapper: Cannot move up - no component instance');
+    }
   }
 
   onMoveDown(event: Event): void {
     event.stopPropagation();
-    this.moveDownRequested.emit(this.componentInstance);
+    if (this.componentInstance) {
+      console.log('SocialUIComponentWrapper: Move down requested for instance:', this.componentInstance.instanceId);
+      this.moveDownRequested.emit(this.componentInstance);
+    } else {
+      console.error('SocialUIComponentWrapper: Cannot move down - no component instance');
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
-import { AppConfigCommands } from '../../../app-configurator/src/configurations/configurations.controller';
+import { AppConfigCommands } from '@optimistic-tanuki/constants';
 
 describe('AppConfigurator Microservice (TCP)', () => {
   let client: ClientProxy;

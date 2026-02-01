@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
@@ -33,6 +33,8 @@ import { RegisterSubmitType } from '@optimistic-tanuki/ui-models';
   },
 })
 export class RegisterBlockComponent extends Themeable {
+  private readonly fb = inject(FormBuilder);
+
   @Input() registerHeader = 'Register';
   @Input() registerButtonText = 'Register';
   @Input() callToAction = 'Join us on your journey';
@@ -40,7 +42,7 @@ export class RegisterBlockComponent extends Themeable {
     'https://source.unsplash.com/random/800x600/?nature,water';
   @Output() submitEvent = new EventEmitter<RegisterSubmitType>();
   registerForm: FormGroup;
-  constructor(private readonly fb: FormBuilder) {
+  constructor() {
     super();
     this.registerForm = this.fb.group({
       firstName: this.fb.control(''),

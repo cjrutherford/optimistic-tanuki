@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthStateService } from './auth-state.service';
 
@@ -17,12 +17,11 @@ export interface UserProfile {
   providedIn: 'root'
 })
 export class ProfileService {
+  private http = inject(HttpClient);
+  private authState = inject(AuthStateService);
+
   private readonly baseUrl = '/api/profile';
 
-  constructor(
-    private http: HttpClient,
-    private authState: AuthStateService
-  ) {}
 
   getCurrentUserProfile(): UserProfile | null {
     const user = this.authState.getCurrentUser();

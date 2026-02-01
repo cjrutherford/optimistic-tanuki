@@ -30,7 +30,7 @@ import {
   TaskKanbanComponent,
   MindMapComponent,
 } from '@optimistic-tanuki/project-ui';
-import { Component, computed, signal, OnInit } from '@angular/core';
+import { Component, computed, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { ChangeService } from '../../change/change.service';
@@ -70,16 +70,15 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
   },
 })
 export class ProjectsComponent implements OnInit {
-  constructor(
-    private readonly projectService: ProjectService,
-    private readonly taskService: TaskService,
-    private readonly riskService: RiskService,
-    private readonly changeService: ChangeService,
-    private readonly journalService: JournalService,
-    private readonly taskTimeEntryService: TaskTimeEntryService,
-    private readonly messageService: MessageService,
-    private readonly themeService: ThemeService
-  ) {}
+  private readonly projectService = inject(ProjectService);
+  private readonly taskService = inject(TaskService);
+  private readonly riskService = inject(RiskService);
+  private readonly changeService = inject(ChangeService);
+  private readonly journalService = inject(JournalService);
+  private readonly taskTimeEntryService = inject(TaskTimeEntryService);
+  private readonly messageService = inject(MessageService);
+  private readonly themeService = inject(ThemeService);
+
 
   filterColor = 'rgba(255,255,255,0.4)';
 

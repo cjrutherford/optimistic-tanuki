@@ -1,5 +1,5 @@
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, inject } from '@angular/core';
 import { CreateProject, Project } from '@optimistic-tanuki/ui-models';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import {
@@ -20,12 +20,14 @@ import {
   styleUrl: './project-form.component.scss',
 })
 export class ProjectFormComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+
   @Input() project: Project | null = null;
   projectForm: FormGroup;
   @Output() submitEvent: EventEmitter<CreateProject> =
     new EventEmitter<CreateProject>();
 
-  constructor(private readonly fb: FormBuilder) {
+  constructor() {
     this.projectForm = this.fb.group({
       projectName: this.fb.control(''),
       projectDescription: this.fb.control(''),

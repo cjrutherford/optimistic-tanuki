@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../services/store.service';
@@ -16,6 +16,8 @@ import {
   styleUrls: ['./appointment-management.component.scss'],
 })
 export class AppointmentManagementComponent implements OnInit {
+  private storeService = inject(StoreService);
+
   appointments: Appointment[] = [];
   filteredAppointments: Appointment[] = [];
   loading = false;
@@ -37,7 +39,7 @@ export class AppointmentManagementComponent implements OnInit {
 
   generatedInvoice: any = null;
 
-  constructor(private storeService: StoreService) {}
+
 
   ngOnInit(): void {
     this.loadAppointments();

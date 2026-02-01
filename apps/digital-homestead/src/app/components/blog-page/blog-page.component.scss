@@ -1,7 +1,5 @@
 .blog-page-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 1rem;
+  max-width: 2880px;
 }
 
 .blog-layout {
@@ -9,6 +7,10 @@
   grid-template-columns: 280px 1fr;
   gap: 2rem;
   min-height: calc(100vh - 100px);
+  min-width: calc(100vw - 250px);
+  margin: 0;
+  margin-left: 2rem;
+  padding: 0;
 }
 
 // Sidebar styles

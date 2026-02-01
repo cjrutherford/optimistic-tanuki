@@ -6,7 +6,7 @@ import {
 import { AuthenticationService } from '../../authentication.service';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
 import { Router } from '@angular/router';
@@ -18,11 +18,10 @@ import { Router } from '@angular/router';
   styleUrl: './register.component.scss',
 })
 export class RegisterComponent {
-  constructor(
-    private readonly authService: AuthenticationService,
-    private readonly router: Router,
-    private readonly messageService: MessageService
-  ) {}
+  private readonly authService = inject(AuthenticationService);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+
 
   onSubmit(event: RegisterSubmitType) {
     console.log('Registering user with data:', event);

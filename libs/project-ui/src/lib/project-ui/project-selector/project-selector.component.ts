@@ -7,17 +7,7 @@ import {
   Task,
   Timer,
 } from '@optimistic-tanuki/ui-models';
-import {
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-  SimpleChanges,
-  computed,
-  signal,
-  OnChanges,
-  OnInit,
-} from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges, computed, signal, OnChanges, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { SelectComponent } from '@optimistic-tanuki/form-ui';
@@ -34,6 +24,8 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
   styleUrl: './project-selector.component.scss',
 })
 export class ProjectSelectorComponent implements OnChanges, OnInit {
+  private fb = inject(FormBuilder);
+
   @Input() projects: Project[] = [];
   availableProjects = signal<Project[]>([]);
   selectedProject = signal<Project | null>(null);
@@ -44,7 +36,7 @@ export class ProjectSelectorComponent implements OnChanges, OnInit {
 
   projectForm: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     this.projectForm = this.fb.group({
       project: this.fb.control<string | null>(null),
     });

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
@@ -7,9 +7,11 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
   providedIn: 'root',
 })
 export class UsersService {
+  private http = inject(HttpClient);
+
   private readonly API_URL = '/api/profile';
 
-  constructor(private http: HttpClient) {}
+
 
   getProfiles(): Observable<ProfileDto[]> {
     return this.http.get<ProfileDto[]>(`${this.API_URL}`);

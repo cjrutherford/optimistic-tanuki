@@ -16,7 +16,7 @@ export class AppController {
   constructor(
     private readonly l: Logger,
     private readonly appService: AppService
-  ) {}
+  ) { }
 
   @MessagePattern({ cmd: CommonCommands.HealthCheck })
   healthCheck() {
@@ -66,5 +66,16 @@ export class AppController {
   @MessagePattern({ cmd: AIOrchestrationCommands.REFER_PERSONA })
   async referPersona(data: any) {
     this.l.log("refer persona called. here's where we refer the persona....");
+  }
+
+  @MessagePattern({ cmd: AIOrchestrationCommands.STREAM_CONVERSATION })
+  streamConversation(data: {
+    conversation: ChatConversation;
+    aiPersonas: PersonaTelosDto[];
+  }) {
+    this.l.log(
+      "stream conversation called. here's where we stream AI responses in real-time...."
+    );
+    return this.appService.streamConversation(data);
   }
 }

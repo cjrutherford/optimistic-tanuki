@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService, Product } from '../services/store.service';
@@ -15,6 +15,8 @@ import {
   styleUrls: ['./product-management.component.scss'],
 })
 export class ProductManagementComponent implements OnInit {
+  private storeService = inject(StoreService);
+
   products: Product[] = [];
   selectedProduct: Product | null = null;
   isEditing = false;
@@ -24,7 +26,7 @@ export class ProductManagementComponent implements OnInit {
 
   productForm: CreateProductDto & { id?: string } = this.getEmptyForm();
 
-  constructor(private storeService: StoreService) {}
+
 
   ngOnInit(): void {
     this.loadProducts();

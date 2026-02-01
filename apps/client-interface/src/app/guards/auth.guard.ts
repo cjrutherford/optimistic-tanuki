@@ -7,11 +7,13 @@ import { ProfileService } from '../profile.service';
   providedIn: 'root',
 })
 export class AuthGuard implements CanActivate {
+  private readonly profileService = inject(ProfileService);
+
   private router = inject(Router);
   private authStateService = inject(AuthStateService);
   private isAuthenticated = false;
 
-  constructor(private readonly profileService: ProfileService) {
+  constructor() {
     this.authStateService.isAuthenticated$.subscribe((isAuthenticated) => {
       this.isAuthenticated = isAuthenticated;
     });

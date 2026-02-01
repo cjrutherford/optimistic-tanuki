@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ShoppingCartComponent, CartItem } from '@optimistic-tanuki/store-ui';
 import { Router } from '@angular/router';
@@ -11,6 +11,8 @@ import { Router } from '@angular/router';
   styleUrls: ['./cart.component.scss'],
 })
 export class CartComponent {
+  private router = inject(Router);
+
   items: CartItem[] = [
     {
       productId: '1',
@@ -28,7 +30,7 @@ export class CartComponent {
     },
   ];
 
-  constructor(private router: Router) {}
+
 
   onUpdateQuantity(event: { productId: string; quantity: number }): void {
     const item = this.items.find((i) => i.productId === event.productId);

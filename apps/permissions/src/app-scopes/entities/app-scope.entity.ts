@@ -4,11 +4,9 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
-  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Permission } from '../../permissions/entities/permission.entity';
-import { permission } from 'process';
 
 @Entity()
 export class AppScope {

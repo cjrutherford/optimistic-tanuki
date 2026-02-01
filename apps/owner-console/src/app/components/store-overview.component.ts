@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   StoreService,
@@ -14,12 +14,14 @@ import {
   styleUrls: ['./store-overview.component.scss'],
 })
 export class StoreOverviewComponent implements OnInit {
+  private storeService = inject(StoreService);
+
   donations: Donation[] = [];
   subscriptions: Subscription[] = [];
   loading = false;
   error: string | null = null;
 
-  constructor(private storeService: StoreService) {}
+
 
   ngOnInit(): void {
     this.loadData();

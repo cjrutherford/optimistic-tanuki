@@ -1,10 +1,4 @@
-import {
-  Component,
-  ElementRef,
-  Input,
-  OnChanges,
-  SimpleChanges,
-} from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ThemeColors,
@@ -59,6 +53,8 @@ import { Subject } from 'rxjs';
   },
 })
 export class CardComponent extends Variantable implements OnChanges {
+  private themeVariableService = inject(ThemeVariableService);
+
   @Input() glassEffect = false;
   @Input() CardVariant: VariantType = 'default';
   @Input() variantOverrides?: VariantOptions;
@@ -83,7 +79,7 @@ export class CardComponent extends Variantable implements OnChanges {
   bodyGradient!: string;
   backgroundPattern!: string;
 
-  constructor(private themeVariableService: ThemeVariableService) {
+  constructor() {
     super();
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProductListComponent, Product } from '@optimistic-tanuki/store-ui';
 import { Router } from '@angular/router';
@@ -12,11 +12,14 @@ import { StoreService } from '../../services/store.service';
   styleUrls: ['./catalog.component.scss'],
 })
 export class CatalogComponent implements OnInit {
+  private router = inject(Router);
+  private storeService = inject(StoreService);
+
   products: Product[] = [];
   loading = false;
   error: string | null = null;
 
-  constructor(private router: Router, private storeService: StoreService) {}
+
 
   ngOnInit(): void {
     this.loadProducts();
