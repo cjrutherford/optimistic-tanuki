@@ -267,9 +267,8 @@ export class LangChainService {
                   const enumValues = schema.enum
                     ? ` (values: ${schema.enum.join(', ')})`
                     : '';
-                  return `  - ${name} (${typeInfo})${enumValues}${
-                    isRequired ? ' **[REQUIRED]**' : ' [optional]'
-                  }: ${description}`;
+                  return `  - ${name} (${typeInfo})${enumValues}${isRequired ? ' **[REQUIRED]**' : ' [optional]'
+                    }: ${description}`;
                 })
                 .join('\n');
 
@@ -315,12 +314,21 @@ Always verify parameter names match tool schemas before calling!`;
         jsonSchema.properties as Record<string, any>
       )) {
         let zodType: z.ZodTypeAny = z.any();
-        if (prop.type === 'string') zodType = z.string();
-        else if (prop.type === 'number' || prop.type === 'integer')
+
+        // Handle enums FIRST - they have higher specificity than base types
+        if (prop.enum && Array.isArray(prop.enum) && prop.enum.length > 0) {
+          zodType = z.enum(prop.enum as [string, ...string[]]);
+        } else if (prop.type === 'string') {
+          zodType = z.string();
+        } else if (prop.type === 'number' || prop.type === 'integer') {
           zodType = z.number();
-        else if (prop.type === 'boolean') zodType = z.boolean();
-        else if (prop.type === 'array') zodType = z.array(z.any());
-        else if (prop.type === 'object') zodType = z.object({}).passthrough();
+        } else if (prop.type === 'boolean') {
+          zodType = z.boolean();
+        } else if (prop.type === 'array') {
+          zodType = z.array(z.any());
+        } else if (prop.type === 'object') {
+          zodType = z.object({}).passthrough();
+        }
 
         if (prop.description) zodType = zodType.describe(prop.description);
         if (!jsonSchema.required || !jsonSchema.required.includes(key))
@@ -362,7 +370,7 @@ Always verify parameter names match tool schemas before calling!`;
 
     // Detect if this is the first message in the conversation
     // First message = empty conversation history OR only system/assistant greetings
-    const isFirstMessage = conversationHistory.length === 0 || 
+    const isFirstMessage = conversationHistory.length === 0 ||
       (conversationHistory.length === 1 && conversationHistory[0].role !== 'user');
 
     // Use SystemPromptBuilder for STATIC TELOS-driven system prompts
@@ -381,7 +389,7 @@ Always verify parameter names match tool schemas before calling!`;
         isFirstMessage: isFirstMessage, // Special first message instructions
       }
     );
-    
+
     const systemMessages = await template.formatMessages(variables);
 
     const tools = await this.createTools(profile.id, conversationId);
@@ -398,13 +406,13 @@ Always verify parameter names match tool schemas before calling!`;
     // For first message, ALWAYS use conversational model (no tool calling)
     if (isFirstMessage) {
       this.logger.log('First message detected - using conversational model only (no tools)');
-      
+
       const response = await this.conversationalLLM.invoke(messages);
-      
+
       // Extract and emit thinking tokens before filtering
       const responseText = response.content as string;
       const { thinking, filtered } = this.workflowControl.extractThinkingTokens(responseText);
-      
+
       if (thinking.length > 0 && onStreamEvent) {
         for (const thinkingText of thinking) {
           await onStreamEvent({
@@ -417,7 +425,7 @@ Always verify parameter names match tool schemas before calling!`;
           });
         }
       }
-      
+
       // Return conversational-only response (no tool calls)
       return {
         response: filtered,
@@ -448,8 +456,8 @@ Always verify parameter names match tool schemas before calling!`;
       ? selectedLLM.bindTools(tools)
       : selectedLLM;
 
-    const toolsMessage = workflow.requiresToolCalling 
-      ? `with ${tools.length} tools bound to LLM` 
+    const toolsMessage = workflow.requiresToolCalling
+      ? `with ${tools.length} tools bound to LLM`
       : 'with LLM (no tools)';
     this.logger.log(`Executing conversation ${toolsMessage}`);
 
@@ -458,7 +466,7 @@ Always verify parameter names match tool schemas before calling!`;
     // Extract and emit thinking tokens before filtering
     const responseText = response.content as string;
     const { thinking, filtered } = this.workflowControl.extractThinkingTokens(responseText);
-    
+
     if (thinking.length > 0 && onStreamEvent) {
       for (const thinkingText of thinking) {
         await onStreamEvent({
@@ -544,7 +552,7 @@ Always verify parameter names match tool schemas before calling!`;
           this.logger.log(`Tool ${toolCall.name} executed successfully`);
         } catch (error) {
           this.logger.error(`Tool ${toolCall.name} execution failed:`, error);
-          
+
           toolCalls.push({
             tool: toolCall.name,
             input: toolCall.args,
@@ -632,7 +640,7 @@ Always verify parameter names match tool schemas before calling!`;
 
     // Detect if this is the first message in the conversation
     // First message = empty conversation history OR only system/assistant greetings
-    const isFirstMessage = conversationHistory.length === 0 || 
+    const isFirstMessage = conversationHistory.length === 0 ||
       (conversationHistory.length === 1 && conversationHistory[0].role !== 'user');
 
     // Use SystemPromptBuilder for STATIC TELOS-driven system prompts
@@ -651,7 +659,7 @@ Always verify parameter names match tool schemas before calling!`;
         isFirstMessage: isFirstMessage, // Special first message instructions
       }
     );
-    
+
     const systemMessages = await template.formatMessages(variables);
 
     const tools = await this.createTools(profile.id, conversationId);
@@ -668,24 +676,24 @@ Always verify parameter names match tool schemas before calling!`;
     // For first message, ALWAYS use conversational model (no tool calling)
     if (isFirstMessage) {
       this.logger.log('First message detected - streaming conversational response only (no tools)');
-      
+
       const stream = await this.conversationalLLM.stream(messages);
       let fullResponse = '';
-      
+
       for await (const chunk of stream) {
         const content = chunk.content as string;
         fullResponse += content;
-        
+
         yield {
           type: StreamingEventType.CHUNK,
           content: { text: content },
           timestamp: new Date(),
         };
       }
-      
+
       // Extract and emit thinking tokens from complete response
       const { thinking, filtered } = this.workflowControl.extractThinkingTokens(fullResponse);
-      
+
       if (thinking.length > 0) {
         for (const thinkingText of thinking) {
           yield {
@@ -698,14 +706,14 @@ Always verify parameter names match tool schemas before calling!`;
           };
         }
       }
-      
+
       // Emit final response
       yield {
         type: StreamingEventType.FINAL_RESPONSE,
         content: { text: filtered },
         timestamp: new Date(),
       };
-      
+
       return;
     }
 
@@ -755,7 +763,7 @@ Always verify parameter names match tool schemas before calling!`;
 
     // Extract and emit thinking tokens before final response
     const { thinking, filtered } = this.workflowControl.extractThinkingTokens(fullResponse);
-    
+
     if (thinking.length > 0) {
       for (const thinkingText of thinking) {
         yield {

@@ -25,6 +25,23 @@
       [contacts]="[]"
     ></lib-message-list>
     }
+    
+    @if(aiIsResponding || aiThinkingMessage) {
+      <div class="ai-status-indicator">
+        @if(aiThinkingMessage) {
+          <div class="ai-thinking">
+            <span class="thinking-dots"></span>
+            {{ aiThinkingMessage }}
+          </div>
+        } @else {
+          <div class="ai-responding">
+            <span class="typing-indicator"></span>
+            AI is responding...
+          </div>
+        }
+      </div>
+    }
+    
     <lib-compose-chat
       (messageSubmitted)="onMessageSubmitted($event)"
     ></lib-compose-chat>

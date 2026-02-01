@@ -112,10 +112,10 @@ export class MCPToolExecutor {
         error instanceof MCPError
           ? error
           : new MCPError(
-              MCPErrorCode.TOOL_EXECUTION_FAILED,
-              `Tool execution failed: ${error.message}`,
-              { originalError: error.message, stack: error.stack }
-            ),
+            MCPErrorCode.TOOL_EXECUTION_FAILED,
+            `Tool execution failed: ${error.message}`,
+            { originalError: error.message, stack: error.stack }
+          ),
         executionTime
       );
     }
@@ -273,18 +273,14 @@ export class MCPToolExecutor {
       normalized['createdBy'] = context.profileId;
     }
 
-    // Default status and normalize to uppercase
+    // Default status - schema will validate it's a valid enum value
     if (!normalized['status']) {
       normalized['status'] = 'TODO';
-    } else if (typeof normalized['status'] === 'string') {
-      normalized['status'] = normalized['status'].toUpperCase();
     }
 
-    // Default priority and normalize to uppercase
+    // Default priority - schema will validate it's a valid enum value
     if (!normalized['priority']) {
       normalized['priority'] = 'MEDIUM';
-    } else if (typeof normalized['priority'] === 'string') {
-      normalized['priority'] = normalized['priority'].toUpperCase();
     }
 
     // Check for invalid projectId (e.g. matching profileId)
@@ -316,7 +312,7 @@ export class MCPToolExecutor {
             if (Array.isArray(parsed)) projects = parsed;
             else if (parsed.projects && Array.isArray(parsed.projects))
               projects = parsed.projects;
-          } catch {}
+          } catch { }
         }
 
         if (projects.length > 0) {

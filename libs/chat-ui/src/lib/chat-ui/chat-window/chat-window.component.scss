@@ -34,6 +34,32 @@
   display: none;
 }
 
+.ai-status-indicator {
+  padding: 8px 16px;
+  background: var(--local-background, var(--background));
+  border-top: 1px solid var(--local-border-color, var(--border-color));
+  font-style: italic;
+  color: var(--local-accent, var(--accent));
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+}
+
+.thinking-dots, .typing-indicator {
+  display: inline-block;
+  width: 20px;
+  height: 4px;
+  background: var(--local-accent, var(--accent));
+  border-radius: 2px;
+  animation: pulse 1.5s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
 .chat-window-header {
   display: flex;
   justify-content: space-between;

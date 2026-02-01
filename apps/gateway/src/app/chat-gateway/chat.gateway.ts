@@ -44,7 +44,7 @@ export class ChatGateway {
     private readonly telosDocsClient: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy
-  ) {}
+  ) { }
 
   @SubscribeMessage('new_persona_chat')
   async handleNewPersonaChat(
@@ -160,6 +160,13 @@ export class ChatGateway {
     if (aiRecipients && aiRecipients.length > 0) {
       this.l.log('AI recipients found, preparing message for AI.');
       payload.recipientName = aiRecipients.map((x) => x.name); // Add a flag or modify the payload as needed
+
+      // Notify that AI is thinking
+      this.broadcastToConversation(payload.conversationId, 'ai_status_update', {
+        conversationId: payload.conversationId,
+        status: 'thinking',
+        message: 'AI is processing your message...'
+      });
     }
 
     // Post the message
@@ -171,6 +178,13 @@ export class ChatGateway {
     // Continue processing for AI recipients if any
     if (aiRecipients && aiRecipients.length > 0) {
       this.l.log('Sending to AI Orchestration Service');
+
+      // Update status to responding
+      this.broadcastToConversation(payload.conversationId, 'ai_status_update', {
+        conversationId: payload.conversationId,
+        status: 'responding'
+      });
+
       const aiPayload: ChatConversation = await firstValueFrom(
         this.chatCollectorClient.send(
           { cmd: ChatCommands.GET_CONVERSATION },
@@ -180,10 +194,10 @@ export class ChatGateway {
       aiPayload.messages.push(payload);
       this.l.debug(
         "Current ai payload: aiPayload='" +
-          JSON.stringify(aiPayload) +
-          "' new payload='" +
-          JSON.stringify(payload) +
-          "'"
+        JSON.stringify(aiPayload) +
+        "' new payload='" +
+        JSON.stringify(payload) +
+        "'"
       );
 
       // Set up polling for real-time updates while AI processes
@@ -228,6 +242,12 @@ export class ChatGateway {
             `AI orchestrator completed with ${aiResponses.length} messages`
           );
 
+          // Notify that AI has completed
+          this.broadcastToConversation(payload.conversationId, 'ai_status_update', {
+            conversationId: payload.conversationId,
+            status: 'complete'
+          });
+
           // Stop polling after AI completes
           clearInterval(pollInterval);
 
@@ -265,7 +285,7 @@ export class ChatGateway {
       .map((c) => ({ id: c.id, client: c.client }));
     this.l.log(
       'Updating recipient sockets...' +
-        JSON.stringify(recipientSockets.map((r) => r.id))
+      JSON.stringify(recipientSockets.map((r) => r.id))
     );
     for (const { id, client } of recipientSockets) {
       this.l.log(`Notifying recipient: ${id}`);
@@ -336,5 +356,16 @@ export class ChatGateway {
       this.updateConnectedSockets(disconnectedClient.id, client, 'disconnect');
     }
     client.disconnect();
+  }
+
+  /**
+   * Broadcast AI status updates to all clients in a conversation
+   */
+  private broadcastToConversation(conversationId: string, event: string, data: any) {
+    this.l.debug(`Broadcasting ${event} to conversation ${conversationId}:`, data);
+    // Send to all connected clients - in a real implementation, we'd filter by conversation participants
+    this.connectedClients.forEach(({ client }) => {
+      client.emit(event, data);
+    });
   }
 }

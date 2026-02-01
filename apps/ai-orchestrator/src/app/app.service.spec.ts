@@ -24,6 +24,8 @@ import { LangGraphService } from './langgraph.service';
 import { LangChainAgentService } from './langchain-agent.service';
 import { ContextStorageService } from './context-storage.service';
 import { SystemPromptBuilder } from './system-prompt-builder.service';
+import { ToolValidationService } from './tool-validation.service';
+import { EnhancedMCPToolExecutor } from './enhanced-mcp-tool-executor.service';
 
 jest.mock('@optimistic-tanuki/prompt-generation');
 
@@ -132,6 +134,21 @@ describe('AppService', () => {
         {
           provide: SystemPromptBuilder,
           useClass: MockSystemPromptBuilder,
+        },
+        {
+          provide: ToolValidationService,
+          useValue: {
+            validateToolCall: jest.fn().mockReturnValue({ isValid: true, errors: [], suggestions: [] }),
+            analyzeToolCallError: jest.fn().mockReturnValue({ success: false, retryable: true, suggestedFix: 'Try again' }),
+            generateToolHelpMessage: jest.fn().mockReturnValue('Tool help message'),
+          },
+        },
+        {
+          provide: EnhancedMCPToolExecutor,
+          useValue: {
+            executeToolWithRetry: jest.fn().mockResolvedValue({ success: true, result: { message: 'success' } }),
+            executeToolWithGuidance: jest.fn().mockResolvedValue({ result: { message: 'success' } }),
+          },
         },
       ],
     }).compile();

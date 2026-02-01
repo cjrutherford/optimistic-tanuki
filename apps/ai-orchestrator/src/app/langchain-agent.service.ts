@@ -211,22 +211,33 @@ export class LangChainAgentService {
     const listToolsTool = new DynamicStructuredTool({
       name: 'list_tools',
       description:
-        'List all available tools with their descriptions and parameters',
+        'List all available tools with their descriptions and parameters. Shows exact parameter names, types, required/optional status, and valid enum values.',
       schema: z.object({}),
       func: async () => {
         const toolsList = mcpTools.map((t) => {
           const params = t.inputSchema?.properties
             ? Object.entries(t.inputSchema.properties)
-                .map(([name, schema]: [string, any]) => {
-                  const required = t.inputSchema.required?.includes(name)
-                    ? '(required)'
-                    : '(optional)';
-                  return `  - ${name} ${required}: ${schema.description || schema.type}`;
-                })
-                .join('\n')
+              .map(([name, schema]: [string, any]) => {
+                const required = t.inputSchema.required?.includes(name)
+                  ? '**[REQUIRED]**'
+                  : '[optional]';
+
+                // Extract type info
+                let typeInfo = schema.type || 'any';
+
+                // Extract and display enum values if present
+                const enumValues = schema.enum
+                  ? ` (values: ${schema.enum.join(', ')})`
+                  : '';
+
+                const description = schema.description || 'No description';
+
+                return `  - ${name} (${typeInfo})${enumValues} ${required}: ${description}`;
+              })
+              .join('\n')
             : '  No parameters';
 
-          return `${t.name}: ${t.description || 'No description'}\n${params}`;
+          return `### ${t.name}\n${t.description || 'No description'}\n**Parameters:**\n${params}`;
         });
 
         return `Available tools:\n\n${toolsList.join('\n\n')}`;
@@ -277,40 +288,48 @@ export class LangChainAgentService {
       const property = prop as any;
       let zodType: z.ZodTypeAny;
 
-      switch (property.type) {
-        case 'string':
-          zodType = z.string();
-          if (property.description) {
-            zodType = zodType.describe(property.description);
-          }
-          break;
-        case 'number':
-        case 'integer':
-          zodType = z.number();
-          if (property.description) {
-            zodType = zodType.describe(property.description);
-          }
-          break;
-        case 'boolean':
-          zodType = z.boolean();
-          if (property.description) {
-            zodType = zodType.describe(property.description);
-          }
-          break;
-        case 'array':
-          zodType = z.array(z.any());
-          if (property.description) {
-            zodType = zodType.describe(property.description);
-          }
-          break;
-        case 'object':
-          zodType = z.record(z.any());
-          if (property.description) {
-            zodType = zodType.describe(property.description);
-          }
-          break;
-        default:
-          zodType = z.any();
+      // Handle enums FIRST - they have higher specificity than base types
+      if (property.enum && Array.isArray(property.enum) && property.enum.length > 0) {
+        zodType = z.enum(property.enum as [string, ...string[]]);
+        if (property.description) {
+          zodType = zodType.describe(property.description);
+        }
+      } else {
+        switch (property.type) {
+          case 'string':
+            zodType = z.string();
+            if (property.description) {
+              zodType = zodType.describe(property.description);
+            }
+            break;
+          case 'number':
+          case 'integer':
+            zodType = z.number();
+            if (property.description) {
+              zodType = zodType.describe(property.description);
+            }
+            break;
+          case 'boolean':
+            zodType = z.boolean();
+            if (property.description) {
+              zodType = zodType.describe(property.description);
+            }
+            break;
+          case 'array':
+            zodType = z.array(z.any());
+            if (property.description) {
+              zodType = zodType.describe(property.description);
+            }
+            break;
+          case 'object':
+            zodType = z.record(z.any());
+            if (property.description) {
+              zodType = zodType.describe(property.description);
+            }
+            break;
+          default:
+            zodType = z.any();
+        }
       }
 
       // Handle required vs optional
@@ -526,7 +545,7 @@ export class LangChainAgentService {
         const manualToolCall = this.parseJsonToolCall(cleanedOutput);
         if (manualToolCall) {
           this.logger.log(`Detected manual JSON tool call: ${manualToolCall.name}`);
-          
+
           if (onProgress) {
             await onProgress({
               type: 'tool_start',
@@ -588,7 +607,7 @@ export class LangChainAgentService {
 
           } catch (err) {
             this.logger.error(`Manual tool execution failed: ${err.message}`);
-             if (onProgress) {
+            if (onProgress) {
               await onProgress({
                 type: 'log',
                 content: `Manual tool execution failed: ${err.message}`,
@@ -628,7 +647,7 @@ export class LangChainAgentService {
       if (!jsonMatch) return null;
 
       const parsed = JSON.parse(jsonMatch[0]);
-      
+
       // Check if it has the expected structure
       if (parsed.name && (parsed.arguments || parsed.parameters)) {
         return {

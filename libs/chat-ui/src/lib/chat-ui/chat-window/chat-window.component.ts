@@ -17,9 +17,8 @@ import { CommonModule } from '@angular/common';
 import { MessageListComponent } from './message-list/message-list.component';
 import { ParticipantsComponent } from './participants/participants.component';
 import { ComposeChatComponent } from '../compose-chat/compose-chat.component';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
-import { GradientBuilder } from 'libs/common-ui/src/lib/common-ui/gradient-builder';
-import { hexToRgb } from 'libs/common-ui/src/lib/common-ui/glass-container.component';
+import { Themeable, ThemeColors, hexToRgb } from '@optimistic-tanuki/theme-lib';
+import { GradientBuilder } from '@optimistic-tanuki/common-ui'
 
 export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
 
@@ -53,8 +52,7 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
  */
 export class ChatWindowComponent
   extends Themeable
-  implements OnChanges, AfterViewInit
-{
+  implements OnChanges, AfterViewInit {
   /**
    * The contact or contacts in the chat.
    */
@@ -69,6 +67,16 @@ export class ChatWindowComponent
     createdAt: new Date(),
     updatedAt: new Date(),
   };
+  /**
+   * Indicates if AI is currently responding
+   */
+  @Input() aiIsResponding = false;
+
+  /**
+   * AI thinking message
+   */
+  @Input() aiThinkingMessage: string | null = null;
+
   /**
    * The current state of the chat window.
    */

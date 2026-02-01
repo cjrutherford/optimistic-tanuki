@@ -168,6 +168,27 @@ export class SocketChatService {
     this.socket.on('conversations', callback);
   }
 
+  /**
+   * Listens for AI status updates
+   */
+  onAIStatusUpdate(callback: (data: { conversationId: string, status: 'thinking' | 'responding' | 'complete' | 'error', message?: string }) => void): void {
+    this.socket.on('ai_status_update', callback);
+  }
+
+  /**
+   * Listens for streaming AI responses
+   */
+  onStreamingResponse(callback: (data: { conversationId: string, chunk: string, isComplete: boolean }) => void): void {
+    this.socket.on('streaming_response', callback);
+  }
+
+  /**
+   * Listens for tool call updates
+   */
+  onToolCallUpdate(callback: (data: { conversationId: string, toolName: string, status: 'calling' | 'success' | 'error' | 'retrying', error?: string, attempt?: number }) => void): void {
+    this.socket.on('tool_call_update', callback);
+  }
+
   sendInit(profileId: string, personaId: string, appId: string) {
     this.socket.emit('new_persona_chat', {
       profileId,
