@@ -23,7 +23,7 @@ describe('ComponentEventBusService', () => {
   describe('publish', () => {
     it('should publish an event', (done) => {
       const testEvent: ComponentEvent = {
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-123',
         componentId: 'test-component',
         timestamp: Date.now(),
@@ -45,14 +45,14 @@ describe('ComponentEventBusService', () => {
       });
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
       });
 
       service.publish({
-        type: 'component-updated',
+        type: 'component:updated',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
@@ -60,13 +60,13 @@ describe('ComponentEventBusService', () => {
       });
 
       expect(events.length).toBe(2);
-      expect(events[0].type).toBe('component-inserted');
-      expect(events[1].type).toBe('component-updated');
+      expect(events[0].type).toBe('component:inserted');
+      expect(events[1].type).toBe('component:updated');
     });
 
     it('should update statistics when publishing', () => {
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
@@ -74,7 +74,7 @@ describe('ComponentEventBusService', () => {
 
       const stats = service.getStats();
       expect(stats.totalPublished).toBe(1);
-      expect(stats.eventsByType['component-inserted']).toBe(1);
+      expect(stats.eventsByType['component:inserted']).toBe(1);
     });
   });
 
@@ -94,7 +94,7 @@ describe('ComponentEventBusService', () => {
       });
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
@@ -105,7 +105,7 @@ describe('ComponentEventBusService', () => {
       subscription.unsubscribe();
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-2',
         componentId: 'comp-2',
         timestamp: Date.now(),
@@ -133,19 +133,19 @@ describe('ComponentEventBusService', () => {
     it('should only receive events of specified type', () => {
       const receivedEvents: ComponentEvent[] = [];
 
-      service.subscribeToType('component-inserted', (event) => {
+      service.subscribeToType('component:inserted', (event) => {
         receivedEvents.push(event);
       });
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
       });
 
       service.publish({
-        type: 'component-updated',
+        type: 'component:updated',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
@@ -153,27 +153,27 @@ describe('ComponentEventBusService', () => {
       });
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-2',
         componentId: 'comp-2',
         timestamp: Date.now(),
       });
 
       expect(receivedEvents.length).toBe(2);
-      expect(receivedEvents[0].type).toBe('component-inserted');
-      expect(receivedEvents[1].type).toBe('component-inserted');
+      expect(receivedEvents[0].type).toBe('component:inserted');
+      expect(receivedEvents[1].type).toBe('component:inserted');
     });
 
     it('should provide type-narrowed events', (done) => {
-      service.subscribeToType('component-updated', (event) => {
+      service.subscribeToType('component:updated', (event) => {
         // TypeScript should know this is ComponentUpdatedEvent
-        expect(event.type).toBe('component-updated');
+        expect(event.type).toBe('component:updated');
         expect(event.changes).toBeDefined();
         done();
       });
 
       service.publish({
-        type: 'component-updated',
+        type: 'component:updated',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
@@ -194,21 +194,21 @@ describe('ComponentEventBusService', () => {
       );
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
       });
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-2',
         componentId: 'comp-2',
         timestamp: Date.now(),
       });
 
       service.publish({
-        type: 'component-updated',
+        type: 'component:updated',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
@@ -223,21 +223,21 @@ describe('ComponentEventBusService', () => {
 
   describe('ofType', () => {
     it('should return Observable of specific event type', (done) => {
-      service.ofType('component-removed').subscribe((event) => {
-        expect(event.type).toBe('component-removed');
+      service.ofType('component:removed').subscribe((event) => {
+        expect(event.type).toBe('component:removed');
         expect(event.instanceId).toBe('test-1');
         done();
       });
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-2',
         componentId: 'comp-2',
         timestamp: Date.now(),
       });
 
       service.publish({
-        type: 'component-removed',
+        type: 'component:removed',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
@@ -253,14 +253,14 @@ describe('ComponentEventBusService', () => {
 
     it('should store event history', () => {
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
       });
 
       service.publish({
-        type: 'component-updated',
+        type: 'component:updated',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
@@ -275,7 +275,7 @@ describe('ComponentEventBusService', () => {
       // Publish more than max size (100)
       for (let i = 0; i < 150; i++) {
         service.publish({
-          type: 'component-inserted',
+          type: 'component:inserted',
           instanceId: `test-${i}`,
           componentId: 'comp-1',
           timestamp: Date.now(),
@@ -289,7 +289,7 @@ describe('ComponentEventBusService', () => {
     it('should respect limit parameter', () => {
       for (let i = 0; i < 50; i++) {
         service.publish({
-          type: 'component-inserted',
+          type: 'component:inserted',
           instanceId: `test-${i}`,
           componentId: 'comp-1',
           timestamp: Date.now(),
@@ -304,14 +304,14 @@ describe('ComponentEventBusService', () => {
   describe('getHistoryByType', () => {
     it('should return only events of specified type', () => {
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
       });
 
       service.publish({
-        type: 'component-updated',
+        type: 'component:updated',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
@@ -319,29 +319,29 @@ describe('ComponentEventBusService', () => {
       });
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-2',
         componentId: 'comp-2',
         timestamp: Date.now(),
       });
 
-      const history = service.getHistoryByType('component-inserted');
+      const history = service.getHistoryByType('component:inserted');
       expect(history.length).toBe(2);
-      expect(history[0].type).toBe('component-inserted');
-      expect(history[1].type).toBe('component-inserted');
+      expect(history[0].type).toBe('component:inserted');
+      expect(history[1].type).toBe('component:inserted');
     });
 
     it('should respect limit parameter', () => {
       for (let i = 0; i < 20; i++) {
         service.publish({
-          type: 'component-inserted',
+          type: 'component:inserted',
           instanceId: `test-${i}`,
           componentId: 'comp-1',
           timestamp: Date.now(),
         });
       }
 
-      const history = service.getHistoryByType('component-inserted', 5);
+      const history = service.getHistoryByType('component:inserted', 5);
       expect(history.length).toBe(5);
     });
   });
@@ -358,21 +358,21 @@ describe('ComponentEventBusService', () => {
 
     it('should track events by type', () => {
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
       });
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-2',
         componentId: 'comp-2',
         timestamp: Date.now(),
       });
 
       service.publish({
-        type: 'component-updated',
+        type: 'component:updated',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),
@@ -381,8 +381,8 @@ describe('ComponentEventBusService', () => {
 
       const stats = service.getStats();
       expect(stats.totalPublished).toBe(3);
-      expect(stats.eventsByType['component-inserted']).toBe(2);
-      expect(stats.eventsByType['component-updated']).toBe(1);
+      expect(stats.eventsByType['component:inserted']).toBe(2);
+      expect(stats.eventsByType['component:updated']).toBe(1);
     });
   });
 
@@ -407,7 +407,7 @@ describe('ComponentEventBusService', () => {
       service.ngOnDestroy();
 
       service.publish({
-        type: 'component-inserted',
+        type: 'component:inserted',
         instanceId: 'test-1',
         componentId: 'comp-1',
         timestamp: Date.now(),

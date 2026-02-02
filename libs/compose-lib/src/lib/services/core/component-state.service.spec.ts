@@ -463,7 +463,7 @@ describe('ComponentStateService', () => {
     });
 
     it('should emit selection event', (done) => {
-      eventBus.subscribeToType('component-selected', (event) => {
+      eventBus.subscribeToType('component:selected', (event) => {
         expect(event.instanceId).toBe('test-1');
         done();
       });
@@ -504,7 +504,7 @@ describe('ComponentStateService', () => {
     });
 
     it('should emit event', (done) => {
-      eventBus.subscribeToType('property-editor-opened', (event) => {
+      eventBus.subscribeToType('property-editor:opened', (event) => {
         done();
       });
 

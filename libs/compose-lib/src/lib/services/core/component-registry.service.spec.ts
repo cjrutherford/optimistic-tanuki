@@ -58,7 +58,7 @@ describe('ComponentRegistryService', () => {
     });
 
     it('should emit component-registered event', (done) => {
-      eventBus.subscribeToType('component-registered', (event) => {
+      eventBus.subscribeToType('component:registered', (event) => {
         expect(event.componentId).toBe('test-component');
         done();
       });
@@ -126,7 +126,7 @@ describe('ComponentRegistryService', () => {
         component: TestComponent,
       });
 
-      eventBus.subscribeToType('component-unregistered', (event) => {
+      eventBus.subscribeToType('component:unregistered', (event) => {
         expect(event.componentId).toBe('test-component');
         done();
       });
