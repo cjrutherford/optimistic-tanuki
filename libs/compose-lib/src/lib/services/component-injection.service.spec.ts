@@ -216,4 +216,124 @@ describe('ComponentInjectionService', () => {
       expect(active).toEqual([]);
     });
   });
+
+  describe('renderComponentInto', () => {
+    it('should create a wrapper component for content projection', () => {
+      // Register a test component
+      const testComponent: InjectableComponent = {
+        id: 'test-component',
+        name: 'Test Component',
+        component: TestComponent,
+        category: 'Test',
+        data: { testProp: 'initial' }
+      };
+      
+      service.registerComponent(testComponent);
+      
+      // Create mock event emitters
+      const mockEditRequested = { subscribe: jest.fn() };
+      const mockDeleteRequested = { subscribe: jest.fn() };
+      const mockMoveUpRequested = { subscribe: jest.fn() };
+      const mockMoveDownRequested = { subscribe: jest.fn() };
+      const mockSelectionChanged = { subscribe: jest.fn() };
+      
+      // Create mock component refs
+      const mockWrapperRef: any = {
+        instance: { 
+          componentInstance: null,
+          editRequested: mockEditRequested,
+          deleteRequested: mockDeleteRequested,
+          moveUpRequested: mockMoveUpRequested,
+          moveDownRequested: mockMoveDownRequested,
+          selectionChanged: mockSelectionChanged,
+        },
+        location: { nativeElement: document.createElement('div') },
+        changeDetectorRef: { detectChanges: jest.fn() },
+        destroy: jest.fn(),
+      };
+      
+      const mockComponentRef: any = {
+        instance: { testProp: 'initial' },
+        location: { nativeElement: document.createElement('span') },
+        changeDetectorRef: { detectChanges: jest.fn() },
+      };
+      
+      // Setup mock to return wrapper first, then component
+      viewContainerRef.createComponent = jest.fn()
+        .mockReturnValueOnce(mockWrapperRef)
+        .mockReturnValueOnce(mockComponentRef);
+      
+      service.setViewContainer(viewContainerRef);
+      
+      // Create a target element
+      const targetElement = document.createElement('div');
+      
+      // Call renderComponentInto
+      const instance = service.renderComponentInto(
+        'test-component',
+        'test-instance-123',
+        { testProp: 'updated' },
+        targetElement
+      );
+      
+      // Verify wrapper was created first (first call to createComponent)
+      expect(viewContainerRef.createComponent).toHaveBeenCalledTimes(2);
+      
+      // Verify the wrapper's componentInstance was set
+      expect(mockWrapperRef.instance.componentInstance).toBeTruthy();
+      expect(mockWrapperRef.instance.componentInstance.instanceId).toBe('test-instance-123');
+      
+      // Verify event handlers were subscribed
+      expect(mockEditRequested.subscribe).toHaveBeenCalled();
+      expect(mockDeleteRequested.subscribe).toHaveBeenCalled();
+      expect(mockMoveUpRequested.subscribe).toHaveBeenCalled();
+      expect(mockMoveDownRequested.subscribe).toHaveBeenCalled();
+      expect(mockSelectionChanged.subscribe).toHaveBeenCalled();
+      
+      // Verify the component element was appended to the wrapper (content projection)
+      expect(mockWrapperRef.location.nativeElement.children.length).toBeGreaterThan(0);
+      
+      // Verify the wrapper was appended to the target element
+      expect(targetElement.children.length).toBeGreaterThan(0);
+      
+      // Verify change detection was triggered
+      expect(mockComponentRef.changeDetectorRef.detectChanges).toHaveBeenCalled();
+      expect(mockWrapperRef.changeDetectorRef.detectChanges).toHaveBeenCalled();
+    });
+
+    it('should throw error if view container not set', () => {
+      const testComponent: InjectableComponent = {
+        id: 'test-component',
+        name: 'Test Component',
+        component: TestComponent,
+      };
+      
+      service.registerComponent(testComponent);
+      
+      const targetElement = document.createElement('div');
+      
+      expect(() => {
+        service.renderComponentInto(
+          'test-component',
+          'test-instance',
+          {},
+          targetElement
+        );
+      }).toThrow('ViewContainer not set');
+    });
+
+    it('should throw error if component not found', () => {
+      service.setViewContainer(viewContainerRef);
+      const targetElement = document.createElement('div');
+      
+      expect(() => {
+        service.renderComponentInto(
+          'non-existent',
+          'test-instance',
+          {},
+          targetElement
+        );
+      }).toThrow('Component non-existent not found in unified registry');
+    });
+  });
 });
