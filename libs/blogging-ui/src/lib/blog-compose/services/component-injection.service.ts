@@ -7,7 +7,6 @@ import {
   computed,
   Injector,
   ApplicationRef,
-  ComponentFactoryResolver,
 } from '@angular/core';
 import { ComponentPortal, DomPortalOutlet } from '@angular/cdk/portal';
 import {
@@ -310,7 +309,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
 
     const wrapperOutlet = new DomPortalOutlet(
       targetElement,
-      this.appRef.components[0]?.componentFactoryResolver || this.appRef.injector.get(ComponentFactoryResolver),
+      null, // ComponentFactoryResolver deprecated in Angular 20
       this.appRef,
       this.injector
     );
@@ -331,7 +330,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     
     const componentOutlet = new DomPortalOutlet(
       componentContainer,
-      this.appRef.components[0]?.componentFactoryResolver || this.appRef.injector.get(ComponentFactoryResolver),
+      null, // ComponentFactoryResolver deprecated in Angular 20
       this.appRef,
       this.injector
     );

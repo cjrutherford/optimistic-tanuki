@@ -8,8 +8,6 @@ import {
   effect,
   Injector,
   ApplicationRef,
-  ComponentFactoryResolver,
-  EnvironmentInjector,
 } from '@angular/core';
 import { ComponentPortal, DomPortalOutlet } from '@angular/cdk/portal';
 import {
@@ -679,7 +677,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     // Create a portal outlet attached to the target DOM element
     const portalOutlet = new DomPortalOutlet(
       element,
-      this.appRef.components[0]?.componentFactoryResolver || this.appRef.injector.get(ComponentFactoryResolver),
+      null, // ComponentFactoryResolver deprecated in Angular 20
       this.appRef,
       this.injector
     );
