@@ -288,6 +288,10 @@ export class BlogComposeComponent
 
   ngAfterViewInit(): void {
     Promise.resolve().then(() => {
+      console.log('[BlogComposeComponent] ngAfterViewInit - componentContainer:', this.componentContainer);
+      if (!this.componentContainer) {
+        console.error('[BlogComposeComponent] CRITICAL: componentContainer is UNDEFINED');
+      }
       this.componentInjectionService.setViewContainer(this.componentContainer);
 
       // Set up callbacks for component wrapper events
@@ -702,11 +706,16 @@ export class BlogComposeComponent
     const componentData = this.deepClone(data || component.data || {});
 
     // Insert into TipTap editor
-    this.editor.commands.insertAngularComponent({
-      componentId,
-      instanceId,
-      data: componentData,
-      componentDef: component,
+    // Insert into TipTap editor using the correct node type name directly
+    // This bypasses the insertAngularComponent command which might be using the base class name
+    this.editor.commands.insertContent({
+      type: 'blogComposeComponent',
+      attrs: {
+        componentId,
+        instanceId,
+        data: componentData,
+        componentDef: component,
+      },
     });
 
     console.log('[blog compose] Inserted component into TipTap editor');
@@ -733,10 +742,27 @@ export class BlogComposeComponent
 
   // Override component injection methods to work with inline editor
   updateComponent(instanceId: string, data: Record<string, unknown>): void {
-    this.editor.commands.updateAngularComponent({
-      instanceId,
-      data,
+    // Manually update the component to ensure we target the correct node type
+    const { state, dispatch } = this.editor.view;
+    const { tr } = state;
+    let updated = false;
+
+    state.doc.descendants((node, pos) => {
+      if (
+        node.type.name === 'blogComposeComponent' &&
+        node.attrs['instanceId'] === instanceId
+      ) {
+        tr.setNodeMarkup(pos, undefined, {
+          ...node.attrs,
+          data,
+        });
+        updated = true;
+      }
     });
+
+    if (updated && dispatch) {
+      dispatch(tr);
+    }
 
     // Also update local cache if present
     const instance = this.activeComponents.get(instanceId);

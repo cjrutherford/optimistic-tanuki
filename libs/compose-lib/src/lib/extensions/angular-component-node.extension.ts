@@ -1,7 +1,5 @@
 import { Node, mergeAttributes, CommandProps } from '@tiptap/core';
-import { PluginKey } from '@tiptap/pm/state';
-import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import { Plugin, EditorState, Transaction } from '@tiptap/pm/state';
+import { EditorState, Transaction } from '@tiptap/pm/state';
 import { ViewContainerRef } from '@angular/core';
 import {
   InjectableComponent,
@@ -169,161 +167,62 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
           data?: Record<string, any>;
           componentDef: InjectableComponent;
         }) =>
-        ({ commands }: CommandProps) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: {
-              componentId: options.componentId,
-              instanceId: options.instanceId,
-              data: options.data,
-              componentDef: options.componentDef,
-            },
-          });
-        },
+          ({ commands }: CommandProps) => {
+            return commands.insertContent({
+              type: this.name,
+              attrs: {
+                componentId: options.componentId,
+                instanceId: options.instanceId,
+                data: options.data,
+                componentDef: options.componentDef,
+              },
+            });
+          },
 
       updateAngularComponent:
         (options: { instanceId: string; data: Record<string, any> }) =>
-        ({ tr, state }: { tr: Transaction; state: EditorState }) => {
-          const { doc } = state;
-          let updated = false;
-
-          doc.descendants((node, pos) => {
-            if (
-              node.type.name === this.name &&
-              node.attrs['instanceId'] === options.instanceId
-            ) {
-              tr.setNodeMarkup(pos, undefined, {
-                ...node.attrs,
-                data: options.data,
-              });
-              updated = true;
-            }
-          });
-
-          return updated;
-        },
-
-      removeAngularComponent:
-        (instanceId: string) =>
-        ({ tr, state }: { tr: Transaction; state: EditorState }) => {
-          const { doc } = state;
-          let removed = false;
-
-          doc.descendants((node, pos) => {
-            if (
-              node.type.name === this.name &&
-              node.attrs['instanceId'] === instanceId
-            ) {
-              tr.delete(pos, pos + node.nodeSize);
-              removed = true;
-            }
-          });
-
-          return removed;
-        },
-    };
-  },
-
-  addProseMirrorPlugins(): Plugin[] {
-    const options = this.options;
-
-    return [
-      new Plugin({
-        key: new PluginKey('angularComponentRenderer'),
-        props: {
-          decorations: (state: EditorState): DecorationSet => {
-            const decorations: Decoration[] = [];
+          ({ tr, state }: { tr: Transaction; state: EditorState }) => {
             const { doc } = state;
+            let updated = false;
 
             doc.descendants((node, pos) => {
-              if (node.type.name === this.name) {
-                const decoration = Decoration.widget(pos, () => {
-                  const container = document.createElement('div');
-                  container.className = 'angular-component-container';
-                  container.setAttribute(
-                    'data-instance-id',
-                    node.attrs['instanceId']
-                  );
-
-                  // Add component controls
-                  const controls = document.createElement('div');
-                  controls.className = 'component-controls';
-                  controls.innerHTML = `
-                    <button class="component-edit-btn" title="Edit Component">✏️</button>
-                    <button class="component-delete-btn" title="Delete Component">🗑️</button>
-                    <span class="component-label">${
-                      node.attrs['componentDef']?.name || 'Component'
-                    }</span>
-                  `;
-
-                  // Add event listeners
-                  const editBtn = controls.querySelector('.component-edit-btn');
-                  const deleteBtn = controls.querySelector(
-                    '.component-delete-btn'
-                  );
-
-                  if (editBtn) {
-                    editBtn.addEventListener('click', (e: Event) => {
-                      e.stopPropagation();
-                      if (options.onComponentEdit) {
-                        options.onComponentEdit(node.attrs['instanceId']);
-                      }
-                    });
-                  }
-
-                  if (deleteBtn) {
-                    deleteBtn.addEventListener('click', (e: Event) => {
-                      e.stopPropagation();
-                      if (options.onComponentDelete) {
-                        options.onComponentDelete(node.attrs['instanceId']);
-                      }
-                    });
-                  }
-
-                  container.appendChild(controls);
-
-                  // Add component content placeholder
-                  const content = document.createElement('div');
-                  content.className = 'component-content';
-                  content.innerHTML = `
-                    <div class="component-preview">
-                      <h4>${
-                        node.attrs['componentDef']?.name || 'Angular Component'
-                      }</h4>
-                      <p>${
-                        node.attrs['componentDef']?.description ||
-                        'Click to edit this component'
-                      }</p>
-                    </div>
-                  `;
-
-                  container.appendChild(content);
-
-                  // Make the container clickable
-                  container.addEventListener('click', () => {
-                    if (options.onComponentClick) {
-                      options.onComponentClick(
-                        node.attrs['componentId'],
-                        node.attrs['instanceId']
-                      );
-                    }
-                  });
-
-                  return container;
+              if (
+                node.type.name === this.name &&
+                node.attrs['instanceId'] === options.instanceId
+              ) {
+                tr.setNodeMarkup(pos, undefined, {
+                  ...node.attrs,
+                  data: options.data,
                 });
-
-                if (decoration) {
-                  decorations.push(decoration);
-                }
+                updated = true;
               }
             });
 
-            return DecorationSet.create(doc, decorations);
+            return updated;
           },
-        },
-      }),
-    ];
+
+      removeAngularComponent:
+        (instanceId: string) =>
+          ({ tr, state }: { tr: Transaction; state: EditorState }) => {
+            const { doc } = state;
+            let removed = false;
+
+            doc.descendants((node, pos) => {
+              if (
+                node.type.name === this.name &&
+                node.attrs['instanceId'] === instanceId
+              ) {
+                tr.delete(pos, pos + node.nodeSize);
+                removed = true;
+              }
+            });
+
+            return removed;
+          },
+    };
   },
+
+
 });
 
 export default AngularComponentNode;
