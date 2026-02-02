@@ -5,6 +5,8 @@ import {
   EventEmitter,
   signal,
   computed,
+  createComponent,
+  EnvironmentInjector,
 } from '@angular/core';
 import {
   InjectableComponent,
@@ -290,17 +292,20 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       throw new Error(`Component with id '${componentId}' not found.`);
     }
 
-    // Create wrapper component
-    console.log('[BlogComponentInjectionService] Creating wrapper component for render');
-    const wrapperRef = viewContainer.createComponent(
-      ComponentWrapperComponent
-    );
+    // Get the environment injector from the view container
+    const environmentInjector = viewContainer.injector.get(EnvironmentInjector);
 
-    // Create the actual component within the wrapper
+    // Create wrapper component using standalone createComponent (not attached to ViewContainer)
+    console.log('[BlogComponentInjectionService] Creating wrapper component for render');
+    const wrapperRef = createComponent(ComponentWrapperComponent, {
+      environmentInjector,
+    });
+
+    // Create the actual component using standalone createComponent
     console.log('[BlogComponentInjectionService] Creating target component for render');
-    const componentRef = viewContainer.createComponent(
-      componentDef.component
-    );
+    const componentRef = createComponent(componentDef.component, {
+      environmentInjector,
+    });
 
     // Set initial data if provided
     if (data || componentDef.data) {
@@ -361,7 +366,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     const componentElement = componentRef.location.nativeElement;
     wrapperElement.appendChild(componentElement);
 
-    // Append wrapper to target element
+    // Append wrapper to target element  
     targetElement.appendChild(wrapperElement);
 
     // Store the instance (with additional reference to the inner component)
@@ -372,6 +377,8 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       newComponents.set(instanceId, instance);
       return newComponents;
     });
+
+    console.log('[BlogComponentInjectionService] Component rendered into target element successfully');
 
     return instance;
   }

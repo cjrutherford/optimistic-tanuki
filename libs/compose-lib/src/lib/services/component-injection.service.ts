@@ -6,6 +6,8 @@ import {
   signal,
   computed,
   effect,
+  createComponent,
+  EnvironmentInjector,
 } from '@angular/core';
 import {
   InjectableComponent,
@@ -653,13 +655,18 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
 
     console.log('[ComponentInjectionService] renderComponentInto - Creating wrapper for:', componentId);
 
-    // Create wrapper component (for content projection)
-    const wrapperRef = viewContainer.createComponent<ComponentWrapperComponent>(
-      ComponentWrapperComponent
-    );
+    // Get the environment injector from the view container
+    const environmentInjector = viewContainer.injector.get(EnvironmentInjector);
 
-    // Create the actual component
-    const componentRef = viewContainer.createComponent(component.component);
+    // Create wrapper component using standalone createComponent (not attached to ViewContainer)
+    const wrapperRef = createComponent(ComponentWrapperComponent, {
+      environmentInjector,
+    });
+
+    // Create the actual component using standalone createComponent
+    const componentRef = createComponent(component.component, {
+      environmentInjector,
+    });
 
     // Set data on the component instance
     const componentData = { ...component.data, ...data };
@@ -698,7 +705,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     componentRef.changeDetectorRef.detectChanges();
     wrapperRef.changeDetectorRef.detectChanges();
 
-    console.log('[ComponentInjectionService] renderComponentInto - Component rendered with wrapper');
+    console.log('[ComponentInjectionService] renderComponentInto - Component rendered with wrapper in target element');
 
     // Track the instance
     this.dispatch({ type: 'ADD_INSTANCE', instance });
