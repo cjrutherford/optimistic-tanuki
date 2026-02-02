@@ -51,7 +51,7 @@
     "@langchain/core": "^1.1.8",
     "@langchain/langgraph": "^1.0.7",
     "@langchain/ollama": "^1.1.0",
-    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@modelcontextprotocol/sdk": "^1.25.2",
     "@nestjs-mcp/server": "^0.3.0",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.0.0",
