@@ -67,6 +67,9 @@ import { ImageGalleryComponent } from './components/example-components/image-gal
 import { FeaturedPostsComponent } from '../featured-posts/featured-posts.component';
 import { HeroComponent } from '../hero/hero.component';
 import { NewsletterSignupComponent } from '../newsletter-signup/newsletter-signup.component';
+import { TagListComponent } from '../tag-list/tag-list.component';
+import { AuthorProfileComponent } from '../author-profile/author-profile.component';
+import { BlogPostCardComponent } from '../blog-post/card.component';
 
 // Property editing system
 import DOMPurify from 'dompurify';
@@ -484,6 +487,50 @@ export class BlogComposeComponent
       icon: 'email',
       data: {
         bannerImage: 'https://media.craiyon.com/2026-02-01/Utu4UCrMQeGuDr15FVIRnQ.webp',
+      },
+    });
+
+    this.registerComponent({
+      id: 'tag-list',
+      name: 'Tag List',
+      description: 'Display a list of tags for categorizing blog content',
+      component: TagListComponent,
+      category: 'Blogging',
+      icon: 'label',
+      data: {
+        tags: ['Technology', 'Tutorial', 'Web Development'],
+      },
+    });
+
+    this.registerComponent({
+      id: 'author-profile',
+      name: 'Author Profile',
+      description: 'Display author information with profile photo and bio',
+      component: AuthorProfileComponent,
+      category: 'Blogging',
+      icon: 'person',
+      data: {
+        authorName: 'John Doe',
+        authorBio: 'Passionate writer and technology enthusiast with 10 years of experience in web development.',
+        profileImage: 'https://picsum.photos/200',
+      },
+    });
+
+    this.registerComponent({
+      id: 'blog-post-card',
+      name: 'Blog Post Card',
+      description: 'Display a blog post preview card with image, title, and excerpt',
+      component: BlogPostCardComponent,
+      category: 'Blogging',
+      icon: 'article',
+      data: {
+        title: 'Getting Started with Modern Web Development',
+        bannerImage: 'https://picsum.photos/600/200',
+        excerpt: 'Learn the fundamentals of modern web development with this comprehensive guide.',
+        authorName: 'Jane Smith',
+        publishDate: 'February 2, 2024',
+        readMoreText: 'Read More',
+        readMoreLink: '#',
       },
     });
 
