@@ -1,4 +1,5 @@
 import { ComponentRef, Type } from '@angular/core';
+import { DomPortalOutlet } from '@angular/cdk/portal';
 
 /**
  * Interface for components that can be dynamically injected into editors
@@ -71,6 +72,11 @@ export interface InjectedComponentInstance {
    * Current component data
    */
   data?: Record<string, unknown>;
+
+  /**
+   * Portal outlet for CDK-based rendering (optional)
+   */
+  portalOutlet?: DomPortalOutlet;
 }
 
 /**

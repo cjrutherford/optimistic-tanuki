@@ -6,7 +6,12 @@ import {
   signal,
   computed,
   effect,
+  Injector,
+  ApplicationRef,
+  ComponentFactoryResolver,
+  EnvironmentInjector,
 } from '@angular/core';
+import { ComponentPortal, DomPortalOutlet } from '@angular/cdk/portal';
 import {
   InjectableComponent,
   InjectedComponentInstance,
@@ -73,7 +78,9 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
 
   constructor(
     private unifiedRegistry: UnifiedComponentRegistryService,
-    private tipTapIntegration: TipTapIntegrationService
+    private tipTapIntegration: TipTapIntegrationService,
+    private appRef: ApplicationRef,
+    private injector: Injector
   ) {
     // Set up TipTap integration callbacks
     this.setupTipTapIntegration();
@@ -417,6 +424,14 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     }
 
     console.log('[ComponentInjectionService] Destroying component instance');
+    
+    // If using CDK Portal, detach and dispose the portal outlet
+    if (instance.portalOutlet) {
+      instance.portalOutlet.detach();
+      instance.portalOutlet.dispose();
+      console.log('[ComponentInjectionService] Portal outlet disposed');
+    }
+    
     // Destroy the component
     instance.componentRef?.destroy();
 
@@ -632,6 +647,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
 
   /**
    * Render a component into a specific DOM element (for TipTap integration)
+   * Uses Angular CDK Portal for clean component lifecycle management
    */
   renderComponentInto(
     componentId: string,
@@ -651,12 +667,25 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       throw new Error(`Component ${componentId} not found in unified registry`);
     }
 
-    // Create a temporary container for the ViewContainerRef
-    const tempContainer = document.createElement('div');
-    element.appendChild(tempContainer);
+    console.log('[ComponentInjectionService] renderComponentInto using CDK Portal:', componentId);
 
-    // Create component dynamically
-    const componentRef = viewContainer.createComponent(component.component);
+    // Create a portal for the component
+    const componentPortal = new ComponentPortal(
+      component.component,
+      null, // viewContainerRef - null for detached component
+      this.injector
+    );
+
+    // Create a portal outlet attached to the target DOM element
+    const portalOutlet = new DomPortalOutlet(
+      element,
+      this.appRef.components[0]?.componentFactoryResolver || this.appRef.injector.get(ComponentFactoryResolver),
+      this.appRef,
+      this.injector
+    );
+
+    // Attach the portal to render the component
+    const componentRef = portalOutlet.attach(componentPortal);
 
     // Set data on the component instance
     Object.keys(data).forEach(key => {
@@ -664,11 +693,6 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
         (componentRef.instance as any)[key] = data[key];
       }
     });
-
-    // Move the component's DOM to the target element
-    const componentElement = componentRef.location.nativeElement;
-    element.removeChild(tempContainer);
-    element.appendChild(componentElement);
 
     // Trigger change detection
     componentRef.changeDetectorRef.detectChanges();
@@ -679,11 +703,14 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       componentDef: component,
       componentRef,
       data,
-      position: undefined
+      position: undefined,
+      portalOutlet // Store the outlet for cleanup
     };
 
     // Track the instance
     this.dispatch({ type: 'ADD_INSTANCE', instance });
+
+    console.log('[ComponentInjectionService] Component rendered via CDK Portal');
 
     return instance;
   }

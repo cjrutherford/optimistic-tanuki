@@ -5,7 +5,11 @@ import {
   EventEmitter,
   signal,
   computed,
+  Injector,
+  ApplicationRef,
+  ComponentFactoryResolver,
 } from '@angular/core';
+import { ComponentPortal, DomPortalOutlet } from '@angular/cdk/portal';
 import {
   InjectableComponent,
   InjectedComponentInstance,
@@ -38,6 +42,11 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
    * Event emitter for component injection events
    */
   public componentEvents = new EventEmitter<ComponentInjectionEvent>();
+
+  constructor(
+    private appRef: ApplicationRef,
+    private injector: Injector
+  ) {}
 
   /**
    * Set the view container reference for component injection
@@ -268,7 +277,8 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   }
 
   /**
-   * Render a component into a specific DOM element
+   * Render a component into a specific DOM element using CDK Portal
+   * This version creates both a wrapper and the target component using portals
    */
   renderComponentInto(
     componentId: string,
@@ -276,7 +286,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     data: any,
     targetElement: HTMLElement
   ): InjectedComponentInstance {
-    console.log('[BlogComponentInjectionService] Rendering component into element:', { componentId, instanceId });
+    console.log('[BlogComponentInjectionService] Rendering component into element with CDK Portal:', { componentId, instanceId });
 
     const viewContainer = this.viewContainer();
     if (!viewContainer) {
@@ -290,17 +300,43 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       throw new Error(`Component with id '${componentId}' not found.`);
     }
 
-    // Create wrapper component
-    console.log('[BlogComponentInjectionService] Creating wrapper component for render');
-    const wrapperRef = viewContainer.createComponent(
-      ComponentWrapperComponent
+    // Create wrapper portal and outlet
+    console.log('[BlogComponentInjectionService] Creating wrapper portal');
+    const wrapperPortal = new ComponentPortal(
+      ComponentWrapperComponent,
+      null,
+      this.injector
     );
 
-    // Create the actual component within the wrapper
-    console.log('[BlogComponentInjectionService] Creating target component for render');
-    const componentRef = viewContainer.createComponent(
-      componentDef.component
+    const wrapperOutlet = new DomPortalOutlet(
+      targetElement,
+      this.appRef.components[0]?.componentFactoryResolver || this.appRef.injector.get(ComponentFactoryResolver),
+      this.appRef,
+      this.injector
     );
+
+    const wrapperRef = wrapperOutlet.attach(wrapperPortal);
+
+    // Create the actual component portal
+    console.log('[BlogComponentInjectionService] Creating target component portal');
+    const componentPortal = new ComponentPortal(
+      componentDef.component,
+      null,
+      this.injector
+    );
+
+    // Get the wrapper's DOM element and create an outlet for the component
+    const wrapperElement = wrapperRef.location.nativeElement;
+    const componentContainer = wrapperElement.querySelector('.component-wrapper') || wrapperElement;
+    
+    const componentOutlet = new DomPortalOutlet(
+      componentContainer,
+      this.appRef.components[0]?.componentFactoryResolver || this.appRef.injector.get(ComponentFactoryResolver),
+      this.appRef,
+      this.injector
+    );
+
+    const componentRef = componentOutlet.attach(componentPortal);
 
     // Set initial data if provided
     if (data || componentDef.data) {
@@ -318,6 +354,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       componentDef,
       componentRef: wrapperRef, // Store wrapper ref as main ref
       data: { ...componentDef.data, ...data },
+      portalOutlet: wrapperOutlet // Store the main outlet for cleanup
     };
 
     // Configure wrapper component
@@ -356,22 +393,22 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       );
     }
 
-    // Append the actual component to the wrapper
-    const wrapperElement = wrapperRef.location.nativeElement;
-    const componentElement = componentRef.location.nativeElement;
-    wrapperElement.appendChild(componentElement);
-
-    // Append wrapper to target element
-    targetElement.appendChild(wrapperElement);
-
-    // Store the instance (with additional reference to the inner component)
+    // Store the instance (with additional reference to the inner component and outlet)
     instance.data._innerComponentRef = componentRef;
+    instance.data._componentOutlet = componentOutlet;
+    
     console.log('[BlogComponentInjectionService] Adding render instance to active components');
     this.activeComponents.update(components => {
       const newComponents = new Map(components);
       newComponents.set(instanceId, instance);
       return newComponents;
     });
+
+    // Trigger change detection
+    componentRef.changeDetectorRef.detectChanges();
+    wrapperRef.changeDetectorRef.detectChanges();
+
+    console.log('[BlogComponentInjectionService] Component rendered via CDK Portal with wrapper');
 
     return instance;
   }
@@ -396,8 +433,28 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     }
 
     console.log('[BlogComponentInjectionService] Destroying component instance');
+    
+    // Clean up inner component outlet if exists
+    if (instance.data?._componentOutlet) {
+      instance.data._componentOutlet.detach();
+      instance.data._componentOutlet.dispose();
+      console.log('[BlogComponentInjectionService] Inner component outlet disposed');
+    }
+    
+    // Clean up inner component ref if exists
+    if (instance.data?._innerComponentRef) {
+      instance.data._innerComponentRef.destroy();
+    }
+    
+    // If using CDK Portal, detach and dispose the portal outlet
+    if (instance.portalOutlet) {
+      instance.portalOutlet.detach();
+      instance.portalOutlet.dispose();
+      console.log('[BlogComponentInjectionService] Main portal outlet disposed');
+    }
+    
     // Destroy the component
-    instance.componentRef.destroy();
+    instance.componentRef?.destroy();
 
     // Remove from active components
     console.log('[BlogComponentInjectionService] Removing from active components');

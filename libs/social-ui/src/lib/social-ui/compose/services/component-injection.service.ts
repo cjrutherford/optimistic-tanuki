@@ -3,7 +3,11 @@ import {
   ComponentRef,
   ViewContainerRef,
   EventEmitter,
+  Injector,
+  ApplicationRef,
+  ComponentFactoryResolver,
 } from '@angular/core';
+import { ComponentPortal, DomPortalOutlet } from '@angular/cdk/portal';
 import {
   InjectableComponent,
   InjectedComponentInstance,
@@ -31,6 +35,11 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
    * Event emitter for component injection events
    */
   public componentEvents = new EventEmitter<ComponentInjectionEvent>();
+
+  constructor(
+    private appRef: ApplicationRef,
+    private injector: Injector
+  ) {}
 
   /**
    * Set the view container reference for component injection
@@ -219,7 +228,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   }
 
   /**
-   * Render a component into a specific DOM element
+   * Render a component into a specific DOM element using CDK Portal
    */
   renderComponentInto(
     componentId: string,
@@ -236,16 +245,43 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       throw new Error(`Component with id '${componentId}' not found.`);
     }
 
-    // Create wrapper component
-    const wrapperRef =
-      this.viewContainer.createComponent<ComponentWrapperComponent>(
-        ComponentWrapperComponent
-      );
+    console.log('[SocialComponentInjectionService] Rendering component with CDK Portal:', componentId);
 
-    // Create the actual component within the wrapper
-    const componentRef = this.viewContainer.createComponent(
-      componentDef.component
+    // Create wrapper portal and outlet
+    const wrapperPortal = new ComponentPortal(
+      ComponentWrapperComponent,
+      null,
+      this.injector
     );
+
+    const wrapperOutlet = new DomPortalOutlet(
+      targetElement,
+      this.appRef.components[0]?.componentFactoryResolver || this.appRef.injector.get(ComponentFactoryResolver),
+      this.appRef,
+      this.injector
+    );
+
+    const wrapperRef = wrapperOutlet.attach(wrapperPortal);
+
+    // Create the actual component portal
+    const componentPortal = new ComponentPortal(
+      componentDef.component,
+      null,
+      this.injector
+    );
+
+    // Get the wrapper's DOM element and create an outlet for the component
+    const wrapperElement = wrapperRef.location.nativeElement;
+    const componentContainer = wrapperElement.querySelector('.component-wrapper') || wrapperElement;
+    
+    const componentOutlet = new DomPortalOutlet(
+      componentContainer,
+      this.appRef.components[0]?.componentFactoryResolver || this.appRef.injector.get(ComponentFactoryResolver),
+      this.appRef,
+      this.injector
+    );
+
+    const componentRef = componentOutlet.attach(componentPortal);
 
     // Set initial data if provided
     if (data || componentDef.data) {
@@ -266,6 +302,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       componentDef,
       componentRef: wrapperRef as ComponentRef<unknown>, // Store wrapper ref as main ref
       data: { ...componentDef.data, ...data },
+      portalOutlet: wrapperOutlet
     };
 
     // Configure wrapper component
@@ -290,18 +327,16 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       }
     );
 
-    // Append the actual component to the wrapper
-    const wrapperElement = wrapperRef.location.nativeElement;
-    const componentElement = componentRef.location.nativeElement;
-    wrapperElement.appendChild(componentElement);
-
-    // Append wrapper to target element
-    targetElement.appendChild(wrapperElement);
-
-    // Store the instance (with additional reference to the inner component)
-    (instance.data as Record<string, unknown>)['_innerComponentRef'] =
-      componentRef;
+    // Store the instance (with additional reference to the inner component and outlet)
+    (instance.data as Record<string, unknown>)['_innerComponentRef'] = componentRef;
+    (instance.data as Record<string, unknown>)['_componentOutlet'] = componentOutlet;
     this.activeComponents.set(instanceId, instance);
+
+    // Trigger change detection
+    componentRef.changeDetectorRef.detectChanges();
+    wrapperRef.changeDetectorRef.detectChanges();
+
+    console.log('[SocialComponentInjectionService] Component rendered via CDK Portal with wrapper');
 
     return instance;
   }
@@ -320,6 +355,23 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     const instance = this.activeComponents.get(instanceId);
     if (!instance) {
       return;
+    }
+
+    // Clean up inner component outlet if exists
+    if ((instance.data as any)?._componentOutlet) {
+      (instance.data as any)._componentOutlet.detach();
+      (instance.data as any)._componentOutlet.dispose();
+    }
+    
+    // Clean up inner component ref if exists
+    if ((instance.data as any)?._innerComponentRef) {
+      (instance.data as any)._innerComponentRef.destroy();
+    }
+    
+    // If using CDK Portal, detach and dispose the portal outlet
+    if (instance.portalOutlet) {
+      instance.portalOutlet.detach();
+      instance.portalOutlet.dispose();
     }
 
     // Destroy the component
