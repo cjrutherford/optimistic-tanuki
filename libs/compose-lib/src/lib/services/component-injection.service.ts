@@ -6,8 +6,6 @@ import {
   signal,
   computed,
   effect,
-  createComponent,
-  EnvironmentInjector,
 } from '@angular/core';
 import {
   InjectableComponent,
@@ -653,59 +651,36 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       throw new Error(`Component ${componentId} not found in unified registry`);
     }
 
-    console.log('[ComponentInjectionService] renderComponentInto - Creating wrapper for:', componentId);
+    // Create a temporary container for the ViewContainerRef
+    const tempContainer = document.createElement('div');
+    element.appendChild(tempContainer);
 
-    // Get the environment injector from the view container
-    const environmentInjector = viewContainer.injector.get(EnvironmentInjector);
-
-    // Create wrapper component using standalone createComponent (not attached to ViewContainer)
-    const wrapperRef = createComponent(ComponentWrapperComponent, {
-      environmentInjector,
-    });
-
-    // Create the actual component using standalone createComponent
-    const componentRef = createComponent(component.component, {
-      environmentInjector,
-    });
+    // Create component dynamically
+    const componentRef = viewContainer.createComponent(component.component);
 
     // Set data on the component instance
-    const componentData = { ...component.data, ...data };
-    Object.keys(componentData).forEach(key => {
+    Object.keys(data).forEach(key => {
       if (key in (componentRef.instance as any)) {
-        (componentRef.instance as any)[key] = componentData[key];
+        (componentRef.instance as any)[key] = data[key];
       }
     });
+
+    // Move the component's DOM to the target element
+    const componentElement = componentRef.location.nativeElement;
+    element.removeChild(tempContainer);
+    element.appendChild(componentElement);
+
+    // Trigger change detection
+    componentRef.changeDetectorRef.detectChanges();
 
     // Create instance record
     const instance: InjectedComponentInstance = {
       instanceId,
       componentDef: component,
-      componentRef: wrapperRef as ComponentRef<unknown>, // Store wrapper ref as main ref
-      data: componentData,
+      componentRef,
+      data,
       position: undefined
     };
-
-    // Configure wrapper component
-    wrapperRef.instance.componentInstance = instance;
-
-    // Set up wrapper event handlers
-    this.setupWrapperEventHandlers(wrapperRef, instance);
-
-    // Project the component content into the wrapper using content projection
-    const wrapperElement = wrapperRef.location.nativeElement as HTMLElement;
-    const componentElement = componentRef.location.nativeElement as HTMLElement;
-    
-    // Append the component to the wrapper (content projection)
-    wrapperElement.appendChild(componentElement);
-
-    // Append the wrapper to the target element
-    element.appendChild(wrapperElement);
-
-    // Trigger change detection
-    componentRef.changeDetectorRef.detectChanges();
-    wrapperRef.changeDetectorRef.detectChanges();
-
-    console.log('[ComponentInjectionService] renderComponentInto - Component rendered with wrapper in target element');
 
     // Track the instance
     this.dispatch({ type: 'ADD_INSTANCE', instance });

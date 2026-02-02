@@ -3,8 +3,6 @@ import {
   ComponentRef,
   ViewContainerRef,
   EventEmitter,
-  createComponent,
-  EnvironmentInjector,
 } from '@angular/core';
 import {
   InjectableComponent,
@@ -238,18 +236,16 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       throw new Error(`Component with id '${componentId}' not found.`);
     }
 
-    // Get the environment injector from the view container
-    const environmentInjector = this.viewContainer.injector.get(EnvironmentInjector);
+    // Create wrapper component
+    const wrapperRef =
+      this.viewContainer.createComponent<ComponentWrapperComponent>(
+        ComponentWrapperComponent
+      );
 
-    // Create wrapper component using standalone createComponent (not attached to ViewContainer)
-    const wrapperRef = createComponent(ComponentWrapperComponent, {
-      environmentInjector,
-    });
-
-    // Create the actual component using standalone createComponent
-    const componentRef = createComponent(componentDef.component, {
-      environmentInjector,
-    });
+    // Create the actual component within the wrapper
+    const componentRef = this.viewContainer.createComponent(
+      componentDef.component
+    );
 
     // Set initial data if provided
     if (data || componentDef.data) {
@@ -306,8 +302,6 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     (instance.data as Record<string, unknown>)['_innerComponentRef'] =
       componentRef;
     this.activeComponents.set(instanceId, instance);
-
-    console.log('[SocialComponentInjectionService] Component rendered into target element successfully');
 
     return instance;
   }
