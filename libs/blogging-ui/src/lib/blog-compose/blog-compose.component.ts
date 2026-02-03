@@ -20,7 +20,6 @@ import {
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { TiptapEditorDirective } from 'ngx-tiptap';
-import Image from '@tiptap/extension-image';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import Underline from '@tiptap/extension-underline';
@@ -82,6 +81,9 @@ import { RichTextToolbarComponent } from './components/rich-text-toolbar.compone
 
 // Angular Component Node Extension
 import { BlogComposeComponentNode } from './extensions/blog-compose-component.extension';
+
+// Resizable Image Extension
+import { ResizableImage } from './extensions/resizable-image.extension';
 
 import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
 
@@ -290,7 +292,7 @@ export class BlogComposeComponent
       this.editor = new Editor({
         extensions: [
           StarterKit,
-          Image,
+          ResizableImage,
           Subscript,
           Superscript,
           Underline,
@@ -1074,7 +1076,25 @@ export class BlogComposeComponent
     reader.onload = (e) => {
       const result = e.target?.result as string;
       if (this.editor && result) {
-        this.editor.chain().focus().setImage({ src: result }).run();
+        // Get the editor's content area width
+        const editorElement = this.editor.view.dom;
+        const editorWidth = editorElement.clientWidth;
+        
+        // Set image width to 95% of editor width (leaving some margin)
+        const defaultWidth = Math.floor(editorWidth * 0.95);
+        
+        // Load the image to get its natural dimensions
+        const img = new Image();
+        img.onload = () => {
+          const aspectRatio = img.naturalHeight / img.naturalWidth;
+          const defaultHeight = Math.floor(defaultWidth * aspectRatio);
+          
+          this.editor.chain().focus().setImage({ 
+            src: result,
+            width: `${defaultWidth}px`,
+          }).run();
+        };
+        img.src = result;
       }
     };
     reader.readAsDataURL(file);

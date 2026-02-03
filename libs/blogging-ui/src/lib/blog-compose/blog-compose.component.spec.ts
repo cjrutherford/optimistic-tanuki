@@ -83,7 +83,12 @@ class MockEditor {
   chain = jest.fn().mockReturnValue(mockEditorChain);
   on = jest.fn();
   destroy = jest.fn();
-  view = { dom: { addEventListener: jest.fn() } };
+  view = { 
+    dom: { 
+      addEventListener: jest.fn(),
+      clientWidth: 800 // Mock editor width for image resize calculation
+    } 
+  };
   getHTML = jest.fn().mockReturnValue('<p>Content</p>');
   setEditable = jest.fn();
 }
@@ -100,7 +105,6 @@ jest.mock('@tiptap/core', () => {
 
 // Mock Extensions
 jest.mock('@tiptap/starter-kit', () => ({}));
-jest.mock('@tiptap/extension-image', () => ({}));
 jest.mock('@tiptap/extension-subscript', () => ({}));
 jest.mock('@tiptap/extension-superscript', () => ({}));
 jest.mock('@tiptap/extension-underline', () => ({}));
@@ -109,6 +113,11 @@ jest.mock('@tiptap/extension-table', () => ({ Table: { configure: () => ({}) } }
 jest.mock('@tiptap/extension-table-row', () => ({}));
 jest.mock('@tiptap/extension-table-header', () => ({}));
 jest.mock('@tiptap/extension-table-cell', () => ({}));
+
+// Mock ResizableImage extension
+jest.mock('./extensions/resizable-image.extension', () => ({
+  ResizableImage: {}
+}));
 
 // Mock compose-lib
 jest.mock('@optimistic-tanuki/compose-lib', () => ({
