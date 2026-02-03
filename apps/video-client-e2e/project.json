@@ -1,0 +1,47 @@
+{
+  "name": "video-client-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/video-client-e2e/src",
+  "implicitDependencies": [
+    "video-client"
+  ],
+  "targets": {
+    "up": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f e2e/docker-compose.video-client-e2e.yaml up -d --build"
+      }
+    },
+    "down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f e2e/docker-compose.video-client-e2e.yaml down -v"
+      }
+    },
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "options": {},
+      "configurations": {
+        "ci": {
+          "env": {
+            "BASE_URL": "http://localhost:8086"
+          }
+        }
+      }
+    },
+    "e2e-docker": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx run video-client-e2e:up",
+          "echo 'Waiting for services to stabilize (45s)...'",
+          "sleep 45",
+          "nx run video-client-e2e:e2e",
+          "nx run video-client-e2e:down"
+        ],
+        "parallel": false
+      }
+    }
+  }
+}
