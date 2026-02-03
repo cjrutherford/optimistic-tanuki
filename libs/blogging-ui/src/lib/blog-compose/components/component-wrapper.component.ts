@@ -21,6 +21,14 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
       @if (isHovered || isSelected) {
       <div class="component-controls">
         <button
+          class="control-btn drag-handle"
+          data-drag-handle
+          title="Drag to Move"
+          style="cursor: grab;"
+        >
+          <mat-icon>drag_indicator</mat-icon>
+        </button>
+        <button
           class="control-btn edit-btn"
           (click)="onEdit($event)"
           title="Edit Properties"
@@ -66,6 +74,8 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
         border-radius: 4px;
         transition: all 0.2s ease;
         margin: 0.5rem 0;
+        min-height: 40px;
+        pointer-events: auto;
       }
 
       .component-wrapper.hover {
@@ -121,14 +131,16 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
       }
 
       .move-up-btn,
-      .move-down-btn {
+      .move-down-btn,
+      .drag-handle {
         background-color: var(--background, white);
         color: var(--foreground, #333);
         border: 1px solid var(--border-color, #e0e0e0);
       }
 
       .move-up-btn:hover,
-      .move-down-btn:hover {
+      .move-down-btn:hover,
+      .drag-handle:hover {
         background-color: var(--background-secondary, #f8f9fa);
       }
 

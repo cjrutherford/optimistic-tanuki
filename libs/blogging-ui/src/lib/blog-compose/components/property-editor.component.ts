@@ -11,18 +11,11 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
-import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
+import {
+  InjectedComponentInstance,
+  PropertyDefinition,
+} from '../interfaces/component-injection.interface';
 
-export interface PropertyDefinition {
-  key: string;
-  type: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'url' | 'select';
-  label: string;
-  description?: string;
-  defaultValue?: any;
-  options?: { label: string; value: any }[];
-  isOutput?: boolean;
-  outputSchema?: any; // JSON schema for output data
-}
 
 @Component({
   selector: 'lib-property-editor',

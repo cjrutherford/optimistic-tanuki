@@ -28,7 +28,7 @@ export class MockCardComponent {
 @Component({ selector: 'lib-text-input', standalone: true, template: '', providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => MockTextInputComponent), multi: true }] })
 export class MockTextInputComponent implements ControlValueAccessor {
   @Input() label: any; @Input() placeholder: any; @Input() id: any; @Input() type: any;
-  writeValue() {} registerOnChange() {} registerOnTouched() {}
+  writeValue() { } registerOnChange() { } registerOnTouched() { }
 }
 
 @Component({ selector: 'otui-button', standalone: true, template: '<ng-content></ng-content>' })
@@ -54,7 +54,7 @@ export class MockTiptapEditorDirective {
 
 // Mock ngx-tiptap
 jest.mock('ngx-tiptap', () => ({
-  TiptapEditorDirective: class {}
+  TiptapEditorDirective: class { }
 }));
 
 // Mock Editor
@@ -69,8 +69,8 @@ const mockEditorCommands = {
 };
 
 const mockEditorChain = {
-  focus: jest.fn().mockReturnValue({ 
-    setImage: jest.fn().mockReturnValue({ run: jest.fn() }) 
+  focus: jest.fn().mockReturnValue({
+    setImage: jest.fn().mockReturnValue({ run: jest.fn() })
   }),
   ...mockEditorCommands
 };
@@ -123,10 +123,19 @@ describe('BlogComposeComponent', () => {
   let themeServiceSpy: any;
   let componentInjectionServiceSpy: any;
 
-    beforeEach(() => {
-      themeServiceSpy = {
-        themeColors$: of({      getTheme: jest.fn().mockReturnValue('light')
+  beforeEach(async () => {
+    themeServiceSpy = {
+      themeColors$: of({
+        background: '#ffffff',
+        foreground: '#000000',
+        accent: '#5969c3',
+        complementary: '#59c360',
+        accentGradients: { light: 'linear-gradient(...)', dark: 'linear-gradient(...)' },
+        complementaryShades: [['#eee'], ['#ddd'], ['#ccc']]
+      }),
+      getTheme: jest.fn().mockReturnValue('light')
     };
+
     componentInjectionServiceSpy = {
       setViewContainer: jest.fn(),
       setWrapperCallbacks: jest.fn(),
@@ -135,7 +144,11 @@ describe('BlogComposeComponent', () => {
       getRegisteredComponents: jest.fn().mockReturnValue([]),
       getComponentsByCategory: jest.fn().mockReturnValue([]),
       getInstance: jest.fn(),
-      renderComponentInto: jest.fn()
+      renderComponentInto: jest.fn(),
+      removeComponent: jest.fn(),
+      moveComponent: jest.fn(),
+      updateComponent: jest.fn(),
+      getActiveComponents: jest.fn().mockReturnValue([])
     };
 
     await TestBed.configureTestingModule({
@@ -145,25 +158,25 @@ describe('BlogComposeComponent', () => {
         { provide: ComponentInjectionService, useValue: componentInjectionServiceSpy }
       ]
     })
-    .overrideComponent(BlogComposeComponent, {
-      remove: { 
-        imports: [
-          CardComponent, TextInputComponent, ButtonComponent, 
-          ContextMenuComponent, ComponentSelectorComponent, 
-          PropertyEditorComponent, RichTextToolbarComponent,
-          TiptapEditorDirective
-        ] 
-      },
-      add: { 
-        imports: [
-          MockCardComponent, MockTextInputComponent, MockButtonComponent, 
-          MockContextMenuComponent, MockComponentSelectorComponent, 
-          MockPropertyEditorComponent, MockRichTextToolbarComponent,
-          MockTiptapEditorDirective
-        ] 
-      }
-    })
-    .compileComponents();
+      .overrideComponent(BlogComposeComponent, {
+        remove: {
+          imports: [
+            CardComponent, TextInputComponent, ButtonComponent,
+            ContextMenuComponent, ComponentSelectorComponent,
+            PropertyEditorComponent, RichTextToolbarComponent,
+            TiptapEditorDirective
+          ]
+        },
+        add: {
+          imports: [
+            MockCardComponent, MockTextInputComponent, MockButtonComponent,
+            MockContextMenuComponent, MockComponentSelectorComponent,
+            MockPropertyEditorComponent, MockRichTextToolbarComponent,
+            MockTiptapEditorDirective
+          ]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(BlogComposeComponent);
     component = fixture.componentInstance;
@@ -219,12 +232,14 @@ describe('BlogComposeComponent', () => {
       // Setup mock before component init
       componentInjectionServiceSpy.getRegisteredComponents.mockReturnValue([mockComponentDef]);
       componentInjectionServiceSpy.getInstance.mockReturnValue({ instanceId: 'inst-1', data: {} });
+      const mockInstance = { instanceId: 'inst-1', data: {}, componentDef: mockComponentDef };
+      componentInjectionServiceSpy.getActiveComponents.mockImplementation(() => [mockInstance]);
 
       fixture.detectChanges(); // triggers ngAfterViewInit
-      await new Promise(resolve => setTimeout(resolve, 0)); // wait for editor init
+      await new Promise(resolve => setTimeout(resolve, 100)); // wait for editor init
 
       await component.injectComponent('test');
-      
+
       expect(component.editor.commands.insertAngularComponent).toHaveBeenCalled();
       expect(component.getActiveComponents().length).toBe(1);
     });

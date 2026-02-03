@@ -1,4 +1,4 @@
-import { PropertyDefinition } from '../components/property-editor.component';
+import { PropertyDefinition } from '../interfaces/component-injection.interface';
 
 /**
  * Component Property Definitions
@@ -7,10 +7,8 @@ import { PropertyDefinition } from '../components/property-editor.component';
  * Used by the property editor and component editor wrapper to provide
  * configuration UI for injectable components.
  *
- * Components are organized by library:
- * - Blogging UI: callout-box, code-snippet, image-gallery, hero, featured-posts, newsletter-signup
- * - Common UI: card, button, accordion, modal, hero-section, content-section
- * - Form UI: text-input, checkbox, select, radio-button, text-area
+ * NOTE: Components now define their own properties in their component definition.
+ * This file is kept for backward compatibility and fallback if needed.
  */
 export const COMPONENT_PROPERTY_DEFINITIONS: {
   [componentId: string]: PropertyDefinition[];

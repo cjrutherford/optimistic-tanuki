@@ -60,6 +60,7 @@ import {
   InjectableComponent,
   InjectedComponentInstance,
   ComponentInjectionAPI,
+  PropertyDefinition,
 } from './interfaces/component-injection.interface';
 
 // Example components
@@ -73,11 +74,7 @@ import { FeaturedPostsComponent } from '../featured-posts/featured-posts.compone
 import { NewsletterSignupComponent } from '../newsletter-signup/newsletter-signup.component';
 
 // Property editing system
-import {
-  PropertyEditorComponent,
-  PropertyDefinition,
-} from './components/property-editor.component';
-import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
+import { PropertyEditorComponent } from './components/property-editor.component';
 import DOMPurify from 'dompurify';
 
 // Rich text toolbar
@@ -179,11 +176,10 @@ interface PostData {
 export class BlogComposeComponent
   extends Themeable
   implements
-    OnDestroy,
-    AfterViewInit,
-    ComponentInjectionAPI,
-    ControlValueAccessor
-{
+  OnDestroy,
+  AfterViewInit,
+  ComponentInjectionAPI,
+  ControlValueAccessor {
   @Output() postSubmitted: EventEmitter<PostData> =
     new EventEmitter<PostData>();
   @Output() attachmentAdded = new EventEmitter<{
@@ -208,6 +204,11 @@ export class BlogComposeComponent
   private _title = '';
   private _content = '';
 
+  // ControlValueAccessor callbacks
+  onChange: (value: any) => void = () => { };
+  onTouched: () => void = () => { };
+  isDisabled = false;
+
   get title(): string {
     return this._title;
   }
@@ -225,7 +226,7 @@ export class BlogComposeComponent
 
   set content(value: string) {
     this._content = value;
-    // Don't emit change here as it's handled by editor update event
+    this.onChange({ title: this.title, content: this.content });
   }
 
   links: Array<{ url: string }> = [];
@@ -240,7 +241,7 @@ export class BlogComposeComponent
   // Component injection properties
   isComponentSelectorVisible = false;
   registeredComponents: InjectableComponent[] = [];
-  activeComponents = new Map<string, InjectedComponentInstance>();
+  // Removed local activeComponents map in favor of service
 
   // Theme configuration properties
   isThemeConfigVisible = false;
@@ -259,6 +260,8 @@ export class BlogComposeComponent
   constructor() {
     super();
   }
+
+
 
   @HostListener('document:click')
   onDocumentClick(): void {
@@ -298,15 +301,6 @@ export class BlogComposeComponent
           TableHeader,
           TableCell,
           BlogComposeComponentNode.configure({
-            onComponentClick: (componentId: string, instanceId: string) => {
-              this.onInlineComponentClick(componentId, instanceId);
-            },
-            onComponentDelete: (instanceId: string) => {
-              this.onInlineComponentDelete(instanceId);
-            },
-            onComponentEdit: (instanceId: string) => {
-              this.onInlineComponentEdit(instanceId);
-            },
             renderer: (
               componentId: string,
               instanceId: string,
@@ -320,6 +314,7 @@ export class BlogComposeComponent
                 element
               );
             },
+            disableDefaultControls: true,
           }),
         ],
         editorProps: {
@@ -376,10 +371,44 @@ export class BlogComposeComponent
       category: 'Blogging',
       icon: 'info',
       data: {
-        type: 'info',
         title: 'Important Note',
         content: 'This is an important callout box.',
       },
+      properties: [
+        {
+          key: 'theme',
+          type: 'select',
+          label: 'Theme',
+          description: 'Theme mode for this component',
+          options: [
+            { label: 'Light', value: 'light' },
+            { label: 'Dark', value: 'dark' },
+            { label: 'Auto', value: 'auto' },
+          ],
+          defaultValue: 'auto',
+        },
+        {
+          key: 'type',
+          type: 'string',
+          label: 'Callout Type',
+          description: 'Type of callout box (info, warning, success, error)',
+          defaultValue: 'info',
+        },
+        {
+          key: 'title',
+          type: 'string',
+          label: 'Title',
+          description: 'Optional title for the callout box',
+          defaultValue: '',
+        },
+        {
+          key: 'content',
+          type: 'string',
+          label: 'Content',
+          description: 'Main content of the callout box',
+          defaultValue: 'This is a callout box component.',
+        },
+      ],
     });
 
     this.registerComponent({
@@ -394,6 +423,41 @@ export class BlogComposeComponent
         language: 'javascript',
         code: 'console.log("Hello, World!");',
       },
+      properties: [
+        {
+          key: 'theme',
+          type: 'select',
+          label: 'Theme',
+          description: 'Theme mode for this component',
+          options: [
+            { label: 'Light', value: 'light' },
+            { label: 'Dark', value: 'dark' },
+            { label: 'Auto', value: 'auto' },
+          ],
+          defaultValue: 'auto',
+        },
+        {
+          key: 'title',
+          type: 'string',
+          label: 'Title',
+          description: 'Optional title for the code snippet',
+          defaultValue: '',
+        },
+        {
+          key: 'language',
+          type: 'string',
+          label: 'Programming Language',
+          description: 'Language for syntax highlighting',
+          defaultValue: 'javascript',
+        },
+        {
+          key: 'code',
+          type: 'string',
+          label: 'Code Content',
+          description: 'The actual code to display',
+          defaultValue: 'console.log("Hello, World!");',
+        },
+      ],
     });
 
     this.registerComponent({
@@ -407,6 +471,58 @@ export class BlogComposeComponent
         title: 'Sample Gallery',
         columns: 3,
       },
+      properties: [
+        {
+          key: 'theme',
+          type: 'select',
+          label: 'Theme',
+          description: 'Theme mode for this component',
+          options: [
+            { label: 'Light', value: 'light' },
+            { label: 'Dark', value: 'dark' },
+            { label: 'Auto', value: 'auto' },
+          ],
+          defaultValue: 'auto',
+        },
+        {
+          key: 'title',
+          type: 'string',
+          label: 'Gallery Title',
+          description: 'Optional title for the image gallery',
+          defaultValue: '',
+        },
+        {
+          key: 'columns',
+          type: 'number',
+          label: 'Number of Columns',
+          description: 'How many columns to display (1-4)',
+          defaultValue: 3,
+        },
+        {
+          key: 'images',
+          type: 'array',
+          label: 'Images',
+          description:
+            'Array of image objects with url, alt, and caption properties',
+          defaultValue: [
+            {
+              url: 'https://picsum.photos/300/200?random=1',
+              alt: 'Sample image 1',
+              caption: 'Sample caption 1',
+            },
+            {
+              url: 'https://picsum.photos/300/200?random=2',
+              alt: 'Sample image 2',
+              caption: 'Sample caption 2',
+            },
+            {
+              url: 'https://picsum.photos/300/200?random=3',
+              alt: 'Sample image 3',
+              caption: 'Sample caption 3',
+            },
+          ],
+        },
+      ],
     });
 
     this.registerComponent({
@@ -425,6 +541,56 @@ export class BlogComposeComponent
         buttonText: 'Get Started',
         imageUrl: 'https://via.placeholder.com/600x400',
       },
+      properties: [
+        {
+          key: 'theme',
+          type: 'select',
+          label: 'Theme',
+          description: 'Theme mode for this component',
+          options: [
+            { label: 'Light', value: 'light' },
+            { label: 'Dark', value: 'dark' },
+            { label: 'Auto', value: 'auto' },
+          ],
+          defaultValue: 'auto',
+        },
+        {
+          key: 'title',
+          type: 'string',
+          label: 'Hero Title',
+          description: 'Main title text for the hero section',
+          defaultValue: 'Welcome to Our Blog!',
+        },
+        {
+          key: 'subtitle',
+          type: 'string',
+          label: 'Subtitle',
+          description: 'Optional subtitle text',
+          defaultValue: '',
+        },
+        {
+          key: 'description',
+          type: 'string',
+          label: 'Description',
+          description: 'Descriptive text below the title',
+          defaultValue:
+            'Discover the latest news, tips, and stories from our community.',
+        },
+        {
+          key: 'buttonText',
+          type: 'string',
+          label: 'Button Text',
+          description: 'Text for the call-to-action button',
+          defaultValue: 'Get Started',
+        },
+        {
+          key: 'imageUrl',
+          type: 'url',
+          label: 'Background Image URL',
+          description: 'URL for the hero background image',
+          defaultValue: 'https://via.placeholder.com/600x400',
+        },
+      ],
     });
 
     this.registerComponent({
@@ -448,6 +614,45 @@ export class BlogComposeComponent
           },
         ],
       },
+      properties: [
+        {
+          key: 'theme',
+          type: 'select',
+          label: 'Theme',
+          description: 'Theme mode for this component',
+          options: [
+            { label: 'Light', value: 'light' },
+            { label: 'Dark', value: 'dark' },
+            { label: 'Auto', value: 'auto' },
+          ],
+          defaultValue: 'auto',
+        },
+        {
+          key: 'visibleItems',
+          type: 'number',
+          label: 'Visible Posts',
+          description: 'Number of posts to show at once',
+          defaultValue: 3,
+        },
+        {
+          key: 'featuredPosts',
+          type: 'array',
+          label: 'Featured Posts',
+          description:
+            'Array of post objects with title, bannerImage, excerpt, authorName, publishDate, and readMoreLink',
+          defaultValue: [
+            {
+              title: 'Understanding Microservices Architecture',
+              bannerImage: 'https://picsum.photos/id/1011/800/400',
+              excerpt:
+                'A deep dive into the principles and benefits of microservices.',
+              authorName: 'Jane Doe',
+              publishDate: '2024-05-10',
+              readMoreLink: '/blog/microservices-architecture',
+            },
+          ],
+        },
+      ],
     });
 
     this.registerComponent({
@@ -460,6 +665,49 @@ export class BlogComposeComponent
       data: {
         bannerImage: 'https://picsum.photos/1200/300',
       },
+      properties: [
+        {
+          key: 'theme',
+          type: 'select',
+          label: 'Theme',
+          description: 'Theme mode for this component',
+          options: [
+            { label: 'Light', value: 'light' },
+            { label: 'Dark', value: 'dark' },
+            { label: 'Auto', value: 'auto' },
+          ],
+          defaultValue: 'auto',
+        },
+        {
+          key: 'bannerImage',
+          type: 'string',
+          label: 'Banner Image URL',
+          description: 'URL for the newsletter signup banner image',
+          defaultValue: 'https://via.placeholder.com/600x200',
+        },
+        {
+          key: 'heading',
+          type: 'string',
+          label: 'Heading',
+          description: 'Main heading text for the signup section',
+          defaultValue: 'Subscribe to Our Newsletter',
+        },
+        {
+          key: 'subheading',
+          type: 'string',
+          label: 'Subheading',
+          description: 'Optional subheading text',
+          defaultValue: 'Get the latest updates delivered to your inbox.',
+        },
+        {
+          key: 'submitEvent',
+          type: 'string',
+          label: 'Submit Event',
+          description: 'Event emitted when the signup form is submitted',
+          isOutput: true,
+          outputSchema: { email: 'string' },
+        },
+      ],
     });
 
     // ============================================
@@ -475,9 +723,37 @@ export class BlogComposeComponent
       category: 'Common UI',
       icon: 'dashboard',
       data: {
-        glassEffect: false,
         CardVariant: 'default',
       },
+      properties: [
+        {
+          key: 'theme',
+          type: 'select',
+          label: 'Theme',
+          description: 'Theme mode for this component',
+          options: [
+            { label: 'Light', value: 'light' },
+            { label: 'Dark', value: 'dark' },
+            { label: 'Auto', value: 'auto' },
+          ],
+          defaultValue: 'auto',
+        },
+        {
+          key: 'glassEffect',
+          type: 'boolean',
+          label: 'Glass Effect',
+          description: 'Enable glassmorphism visual effect',
+          defaultValue: false,
+        },
+        {
+          key: 'CardVariant',
+          type: 'string',
+          label: 'Card Variant',
+          description:
+            'Visual style variant (default, glass, gradient, neon, etc.)',
+          defaultValue: 'default',
+        },
+      ],
     });
 
     this.registerComponent({
@@ -635,8 +911,8 @@ export class BlogComposeComponent
   }
 
   // Component injection API implementation (now working with inline editor)
+  // ComponentInjectionAPI implementation
   registerComponent(component: InjectableComponent): void {
-    // Keep using the service for registration as it manages the component definitions
     this.componentInjectionService.registerComponent(component);
     this.registeredComponents = this.getRegisteredComponents();
   }
@@ -654,75 +930,121 @@ export class BlogComposeComponent
     return this.componentInjectionService.getComponentsByCategory(category);
   }
 
-  async injectComponent(
-    componentId: string,
-    data?: Record<string, unknown>
-  ): Promise<InjectedComponentInstance> {
-    // Use our new inline injection method instead
-    const component = this.componentInjectionService
-      .getRegisteredComponents()
-      .find((comp) => comp.id === componentId);
-
-    if (!component) {
-      throw new Error(`Component ${componentId} not found`);
-    }
-
-    const instanceId = `${componentId}-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)}`;
-
-    // Insert into TipTap editor
-    this.editor.commands.insertAngularComponent({
-      componentId,
-      instanceId,
-      data: data || component.data || {},
-      componentDef: component,
-    });
-
-    // Retrieve the instance from the service
-    // Since Tiptap updates are synchronous for DOM, the renderer should have been called.
-    const instance = this.componentInjectionService.getInstance(instanceId);
-
-    if (!instance) {
-      // Fallback if something went wrong, though it shouldn't if renderer works.
-      // We return a mock or throw.
-      throw new Error('Failed to inject component instance');
-    }
-
-    this.activeComponents.set(instanceId, instance);
-    return instance;
+  // Component Wrapper Event Handlers
+  onComponentEdit(instance: InjectedComponentInstance): void {
+    this.selectedComponentInstance = instance;
+    this.selectedComponentProperties = instance.componentDef.properties || [];
+    this.isPropertyEditorVisible = true;
   }
 
-  // Override component injection methods to work with inline editor
-  updateComponent(instanceId: string, data: Record<string, unknown>): void {
-    this.editor.commands.updateAngularComponent({
-      instanceId,
-      data,
-    });
+  onComponentDelete(instance: InjectedComponentInstance): void {
+    this.componentInjectionService.removeComponent(instance.instanceId);
+    // Also remove from editor
+    this.editor.commands.removeAngularComponent(instance.instanceId);
 
-    // Also update local cache if present
-    const instance = this.activeComponents.get(instanceId);
-    if (instance) {
-      instance.data = { ...instance.data, ...data };
+    if (this.selectedComponentInstance?.instanceId === instance.instanceId) {
+      this.closePropertyEditor();
     }
   }
 
-  getActiveComponents(): InjectedComponentInstance[] {
-    return Array.from(this.activeComponents.values());
+  onComponentMoveUp(instance: InjectedComponentInstance): void {
+    const activeComponents = this.componentInjectionService.getActiveComponents();
+    const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+    if (currentIndex > 0) {
+      this.componentInjectionService.moveComponent(instance.instanceId, currentIndex - 1);
+    }
+  }
+
+  onComponentMoveDown(instance: InjectedComponentInstance): void {
+    const activeComponents = this.componentInjectionService.getActiveComponents();
+    const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+    if (currentIndex >= 0 && currentIndex < activeComponents.length - 1) {
+      this.componentInjectionService.moveComponent(instance.instanceId, currentIndex + 1);
+    }
+  }
+
+  onComponentSelection(instance: InjectedComponentInstance): void {
+    this.selectedComponentInstance = instance;
+  }
+
+  // Property Editor Handlers
+  onPropertiesUpdated(updatedData: any): void {
+    if (this.selectedComponentInstance) {
+      this.componentInjectionService.updateComponent(
+        this.selectedComponentInstance.instanceId,
+        updatedData
+      );
+
+      // Update the TipTap editor node as well to ensure data persistence
+      this.editor.commands.updateAngularComponent({
+        instanceId: this.selectedComponentInstance.instanceId,
+        data: updatedData,
+      });
+
+      this.emitChange();
+    }
+  }
+
+  closePropertyEditor(): void {
+    this.isPropertyEditorVisible = false;
+    this.selectedComponentInstance = null;
+    this.selectedComponentProperties = [];
+  }
+
+  // Additional API methods required by interface
+  injectComponent(componentId: string, data?: any): Promise<InjectedComponentInstance> {
+    // This method delegates to the new implementation that interacts with the service
+    return this.onComponentSelected({ id: componentId, data } as any);
+  }
+
+  updateComponent(instanceId: string, data: any): void {
+    this.componentInjectionService.updateComponent(instanceId, data);
+    this.editor.commands.updateAngularComponent({ instanceId, data });
   }
 
   getComponent(instanceId: string): InjectedComponentInstance | undefined {
-    return this.activeComponents.get(instanceId);
+    return this.componentInjectionService.getInstance(instanceId);
+  }
+
+  getActiveComponents(): InjectedComponentInstance[] {
+    return this.componentInjectionService.getActiveComponents();
   }
 
   removeComponent(instanceId: string): void {
-    this.activeComponents.delete(instanceId);
+    this.componentInjectionService.removeComponent(instanceId);
   }
 
   moveComponent(instanceId: string, newPosition: number): void {
-    // TipTap handles the positioning within the editor
-    // This method is kept for interface compatibility
-    console.log(`Moving component ${instanceId} to position ${newPosition}`);
+    this.componentInjectionService.moveComponent(instanceId, newPosition);
+  }
+
+  // UI Event Handlers
+  onToolbarComponentsClick(): void {
+    this.isComponentSelectorVisible = !this.isComponentSelectorVisible;
+  }
+
+  onToolbarImageUploadClick(): void {
+    const fileInput = document.getElementById('imageInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) {
+      return;
+    }
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (this.editor && result) {
+        this.editor.chain().focus().setImage({ src: result }).run();
+      }
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
   }
 
   toggleThemeConfig(): void {
@@ -731,15 +1053,12 @@ export class BlogComposeComponent
 
   updatePostTheme(theme: 'light' | 'dark'): void {
     this.postTheme = theme;
-    // Don't update global theme - this is post-specific
   }
 
   updatePostAccentColor(color: string): void {
     this.postAccentColor = color;
-    // Don't update global theme - this is post-specific
   }
 
-  // UI event handlers
   showComponentSelector(): void {
     this.isComponentSelectorVisible = true;
   }
@@ -748,225 +1067,66 @@ export class BlogComposeComponent
     this.isComponentSelectorVisible = false;
   }
 
-  // Property editing methods
-  onComponentEdit(instance: InjectedComponentInstance): void {
-    this.selectedComponentInstance = instance;
-    this.selectedComponentProperties =
-      COMPONENT_PROPERTY_DEFINITIONS[instance.componentDef.id] || [];
-    this.isPropertyEditorVisible = true;
-  }
+  // Injection Logic
+  async onComponentSelected(component: InjectableComponent): Promise<InjectedComponentInstance> {
+    const realComponent = this.getRegisteredComponents().find(c => c.id === component.id) || component;
 
-  onComponentDelete(instance: InjectedComponentInstance): void {
-    // Remove from TipTap editor first
-    this.editor.commands.removeAngularComponent(instance.instanceId);
-    // Then remove from our tracking system
-    this.removeComponent(instance.instanceId);
-    if (this.selectedComponentInstance?.instanceId === instance.instanceId) {
-      this.selectedComponentInstance = null;
+    const instanceId = `${realComponent.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    const instanceData = { ...(component.data || {}), ...(realComponent.data || {}) };
+
+    this.editor.commands.insertAngularComponent({
+      componentId: realComponent.id,
+      instanceId,
+      data: instanceData,
+      componentDef: realComponent,
+    });
+
+    // Move cursor to a new paragraph after the inserted component
+    // This allows users to immediately continue typing or insert another component
+    if (this.editor?.state?.selection) {
+      this.editor.chain()
+        .insertContentAt(this.editor.state.selection.to, { type: 'paragraph' })
+        .focus()
+        .run();
     }
-  }
 
-  onComponentMoveUp(instance: InjectedComponentInstance): void {
-    const activeComponents = this.getActiveComponents();
-    const currentIndex = activeComponents.findIndex(
-      (c) => c.instanceId === instance.instanceId
-    );
-    if (currentIndex > 0) {
-      this.moveComponent(instance.instanceId, currentIndex - 1);
-    }
-  }
+    // The renderer calls renderComponentInto, which calls service.renderComponentInto
+    // We wait a tick to get the instance?? 
+    // Actually render is synchronous-ish in Tiptap for DOM, but Angular might be async.
 
-  onComponentMoveDown(instance: InjectedComponentInstance): void {
-    const activeComponents = this.getActiveComponents();
-    const currentIndex = activeComponents.findIndex(
-      (c) => c.instanceId === instance.instanceId
-    );
-    if (currentIndex < activeComponents.length - 1) {
-      this.moveComponent(instance.instanceId, currentIndex + 1);
-    }
-  }
-
-  onComponentSelection(instance: InjectedComponentInstance): void {
-    this.selectedComponentInstance = instance;
-  }
-
-  onPropertiesUpdated(updatedData: any): void {
-    if (this.selectedComponentInstance) {
-      // Handle output configuration
-      const outputConfigs: any = {};
-      this.selectedComponentProperties.forEach((prop) => {
-        if (prop.isOutput) {
-          const url = updatedData[prop.key + '_url'];
-          if (url) {
-            outputConfigs[prop.key] = {
-              url,
-              schema: prop.outputSchema,
-            };
-          }
-          // Remove temporary keys
-          delete updatedData[prop.key + '_url'];
-          delete updatedData[prop.key + '_schema'];
-        }
-      });
-
-      // Store output configurations separately
-      const finalData = { ...updatedData };
-      if (Object.keys(outputConfigs).length > 0) {
-        finalData._outputConfigs = outputConfigs;
-      }
-
-      // Update the inner component properties
-      const innerComponentRef =
-        this.selectedComponentInstance.data._innerComponentRef;
-      if (innerComponentRef) {
-        Object.keys(finalData).forEach((key) => {
-          if (
-            key !== '_innerComponentRef' &&
-            key !== '_outputConfigs' &&
-            innerComponentRef.instance[key] !== undefined
-          ) {
-            innerComponentRef.instance[key] = finalData[key];
-          }
+    // Return a temporary promise/placeholder
+    return new Promise(resolve => {
+      setTimeout(() => {
+        const instance = this.componentInjectionService.getInstance(instanceId);
+        if (instance) resolve(instance);
+        else resolve({
+          instanceId,
+          componentDef: realComponent,
+          componentRef: {} as any,
+          data: instanceData
         });
-        innerComponentRef.changeDetectorRef.detectChanges();
-      }
-
-      this.updateComponent(
-        this.selectedComponentInstance.instanceId,
-        finalData
-      );
-
-      // Update the TipTap editor node as well
-      this.editor.commands.updateAngularComponent({
-        instanceId: this.selectedComponentInstance.instanceId,
-        data: finalData,
-      });
-
-      this.hidePropertyEditor();
-    }
+      }, 50);
+    });
   }
 
-  hidePropertyEditor(): void {
-    this.isPropertyEditorVisible = false;
-    this.selectedComponentInstance = null;
-    this.selectedComponentProperties = [];
-  }
-
-  isComponentSelected(instance: InjectedComponentInstance): boolean {
-    return this.selectedComponentInstance?.instanceId === instance.instanceId;
-  }
-
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files?.length) {
-      return;
-    }
-
-    const file = input.files[0];
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const base64Src = reader.result as string;
-      if (base64Src) {
-        this.editor.chain().focus().setImage({ src: base64Src }).run();
-      }
-    };
-
-    reader.readAsDataURL(file);
-  }
-
-  onToolbarComponentsClick(): void {
-    this.showComponentSelector();
-  }
-
-  onToolbarImageUploadClick(): void {
-    // Trigger the hidden file input
-    const fileInput = document.getElementById('imageInput') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.click();
-    }
-  }
-
-  // Inline component interaction methods
-  onInlineComponentClick(componentId: string, instanceId: string): void {
-    // Find the component instance and trigger edit mode
-    const instance = this.getActiveComponents().find(
-      (comp) => comp.instanceId === instanceId
-    );
-    if (instance) {
-      this.onComponentEdit(instance);
-    }
-  }
-
-  onInlineComponentDelete(instanceId: string): void {
-    // Remove from editor and component system
-    this.editor.commands.removeAngularComponent(instanceId);
-    this.removeComponent(instanceId);
-  }
-
-  onInlineComponentEdit(instanceId: string): void {
-    // Find the component instance and open property editor
-    const instance = this.getActiveComponents().find(
-      (comp) => comp.instanceId === instanceId
-    );
-    if (instance) {
-      this.onComponentEdit(instance);
-    }
-  }
-
-  // Modified component injection to work with inline editor
-  async onComponentSelected(component: InjectableComponent): Promise<void> {
-    try {
-      const instanceId = `${component.id}-${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2, 9)}`;
-
-      // Insert into TipTap editor instead of separate container
-      this.editor.commands.insertAngularComponent({
-        componentId: component.id,
-        instanceId: instanceId,
-        data: component.data || {},
-        componentDef: component,
-      });
-
-      // Still track the component in our system for editing
-      const mockComponentRef = {
-        instance: component.data || {},
-        changeDetectorRef: {
-          detectChanges: () => {
-            // Mock implementation
-          },
-        },
-        destroy: () => {
-          // Mock implementation
-        },
-      } as any;
-
-      const injectedInstance: InjectedComponentInstance = {
-        instanceId,
-        componentDef: component,
-        componentRef: mockComponentRef,
-        data: component.data || {},
-      };
-
-      this.activeComponents.set(instanceId, injectedInstance);
-      this.hideComponentSelector();
-    } catch (error) {
-      console.error('Error injecting component:', error);
-    }
-  }
-
-  handleDragEnter(e: Event): void {
+  handleDragEnter(e: DragEvent): void {
     e.preventDefault();
+    // Only show drag overlay if files are being dragged (not internal components)
+    const hasFiles = e.dataTransfer?.types?.includes('Files');
+    if (!hasFiles) return;
     this.isDragOver = true;
   }
 
-  handleDragOver(e: Event): void {
+  handleDragOver(e: DragEvent): void {
     e.preventDefault();
+    // Only show drag overlay if files are being dragged (not internal components)
+    const hasFiles = e.dataTransfer?.types?.includes('Files');
+    if (!hasFiles) return;
     this.isDragOver = true;
   }
 
-  handleDragLeave(e: Event): void {
+  handleDragLeave(e: DragEvent): void {
     e.preventDefault();
     this.isDragOver = false;
   }
@@ -974,25 +1134,36 @@ export class BlogComposeComponent
   handleDrop(e: DragEvent): void {
     e.preventDefault();
     this.isDragOver = false;
-
     if (!e.dataTransfer?.files.length) return;
-
     const files = Array.from(e.dataTransfer.files);
-    files.forEach((file) => {
-      const placeholderId = `upload-${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2, 9)}`;
-      this.attachmentAdded.emit({ placeholderId, file });
-
+    files.forEach(file => {
       const reader = new FileReader();
-      reader.onload = (event: ProgressEvent<FileReader>) => {
-        const base64Src = event.target?.result as string;
-        if (base64Src) {
-          this.editor.chain().focus().setImage({ src: base64Src }).run();
-        }
+      reader.onload = (event) => {
+        const src = event.target?.result as string;
+        if (src) this.editor.chain().focus().setImage({ src }).run();
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  // Inline component interaction methods
+  onInlineComponentClick(componentId: string, instanceId: string): void {
+    const instance = this.componentInjectionService.getInstance(instanceId);
+    if (instance) {
+      this.onComponentEdit(instance);
+    }
+  }
+
+  onInlineComponentDelete(instanceId: string): void {
+    this.editor.commands.removeAngularComponent(instanceId);
+    this.componentInjectionService.removeComponent(instanceId);
+  }
+
+  onInlineComponentEdit(instanceId: string): void {
+    const instance = this.componentInjectionService.getInstance(instanceId);
+    if (instance) {
+      this.onComponentEdit(instance);
+    }
   }
 
   onPostSubmit() {
@@ -1010,12 +1181,7 @@ export class BlogComposeComponent
   }
 
   // ControlValueAccessor implementation
-  private onChange = (value: any) => {
-    // Default implementation
-  };
-  private onTouched = () => {
-    // Default implementation
-  };
+
 
   writeValue(value: any): void {
     if (value && typeof value === 'object') {
@@ -1023,7 +1189,7 @@ export class BlogComposeComponent
       this._content = value.content || '';
       this.links = value.links || [];
       this.attachments = value.attachments || [];
-      
+
       // Load post theme configuration
       if (value.themeConfig) {
         this.postTheme = value.themeConfig.theme || DEFAULT_POST_THEME.theme;

@@ -20,9 +20,8 @@ import { MatIconModule } from '@angular/material/icon';
 import {
   InjectedComponentInstance,
   InjectableComponent,
+  PropertyDefinition,
 } from '../interfaces/component-injection.interface';
-import { PropertyDefinition } from './property-editor.component';
-import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.config';
 
 /**
  * ComponentEditorWrapperComponent
@@ -501,8 +500,7 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
   ],
 })
 export class ComponentEditorWrapperComponent
-  implements OnInit, OnDestroy, OnChanges, AfterViewInit
-{
+  implements OnInit, OnDestroy, OnChanges, AfterViewInit {
   @ViewChild('componentHost', { read: ViewContainerRef })
   componentHost!: ViewContainerRef;
 
@@ -529,7 +527,7 @@ export class ComponentEditorWrapperComponent
 
   get editableProperties(): PropertyDefinition[] {
     if (!this.componentDef?.id) return [];
-    const props = COMPONENT_PROPERTY_DEFINITIONS[this.componentDef.id] || [];
+    const props = this.componentDef.properties || [];
     // Filter out output properties and complex types for quick edit
     return props.filter(
       (p) =>
@@ -634,7 +632,7 @@ export class ComponentEditorWrapperComponent
 
   getPreviewProperties(): PropertyDefinition[] {
     if (!this.componentDef?.id) return [];
-    const props = COMPONENT_PROPERTY_DEFINITIONS[this.componentDef.id] || [];
+    const props = this.componentDef.properties || [];
     // Show only simple properties in preview
     return props
       .filter(

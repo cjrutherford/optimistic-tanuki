@@ -1,6 +1,6 @@
 .blog-page-container {
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 2rem;
   padding: 1rem;
 }
 
@@ -8,6 +8,7 @@
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 2rem;
+  width: calc(100vw - 250px);
   min-height: calc(100vh - 100px);
 }
 
@@ -147,7 +148,7 @@
   box-sizing: border-box;
 
   // Ensure all child elements respect container width
-  > * {
+  >* {
     max-width: 100%;
     overflow-wrap: break-word;
   }
@@ -163,7 +164,7 @@
 
 .error-state {
   background: var(--danger);
-  opacity: 0.1;
+  opacity: 0.9;
   border: 1px solid var(--danger);
   border-radius: var(--border-radius-lg, 8px);
   padding: var(--spacing-md, 1rem);
@@ -174,7 +175,7 @@
 }
 
 .error-message {
-  color: var(--danger);
+  color: var(--foreground);
   margin: 0;
 }
 
@@ -344,7 +345,7 @@
   .editor-actions {
     flex-direction: column;
 
-    > * {
+    >* {
       width: 100%;
     }
   }

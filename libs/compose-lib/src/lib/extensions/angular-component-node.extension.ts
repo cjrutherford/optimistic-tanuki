@@ -20,6 +20,7 @@ export interface AngularComponentOptions {
     data: Record<string, unknown>,
     element: HTMLElement
   ) => InjectedComponentInstance;
+  disableDefaultControls?: boolean;
 }
 
 declare module '@tiptap/core' {
@@ -66,6 +67,7 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
       onComponentDelete: undefined,
       onComponentEdit: undefined,
       renderer: undefined,
+      disableDefaultControls: false,
     };
   },
 
@@ -169,63 +171,68 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
           data?: Record<string, any>;
           componentDef: InjectableComponent;
         }) =>
-        ({ commands }: CommandProps) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: {
-              componentId: options.componentId,
-              instanceId: options.instanceId,
-              data: options.data,
-              componentDef: options.componentDef,
-            },
-          });
-        },
+          ({ commands }: CommandProps) => {
+            return commands.insertContent({
+              type: this.name,
+              attrs: {
+                componentId: options.componentId,
+                instanceId: options.instanceId,
+                data: options.data,
+                componentDef: options.componentDef,
+              },
+            });
+          },
 
       updateAngularComponent:
         (options: { instanceId: string; data: Record<string, any> }) =>
-        ({ tr, state }: { tr: Transaction; state: EditorState }) => {
-          const { doc } = state;
-          let updated = false;
+          ({ tr, state }: { tr: Transaction; state: EditorState }) => {
+            const { doc } = state;
+            let updated = false;
 
-          doc.descendants((node, pos) => {
-            if (
-              node.type.name === this.name &&
-              node.attrs['instanceId'] === options.instanceId
-            ) {
-              tr.setNodeMarkup(pos, undefined, {
-                ...node.attrs,
-                data: options.data,
-              });
-              updated = true;
-            }
-          });
+            doc.descendants((node, pos) => {
+              if (
+                node.type.name === this.name &&
+                node.attrs['instanceId'] === options.instanceId
+              ) {
+                tr.setNodeMarkup(pos, undefined, {
+                  ...node.attrs,
+                  data: options.data,
+                });
+                updated = true;
+              }
+            });
 
-          return updated;
-        },
+            return updated;
+          },
 
       removeAngularComponent:
         (instanceId: string) =>
-        ({ tr, state }: { tr: Transaction; state: EditorState }) => {
-          const { doc } = state;
-          let removed = false;
+          ({ tr, state }: { tr: Transaction; state: EditorState }) => {
+            const { doc } = state;
+            let removed = false;
 
-          doc.descendants((node, pos) => {
-            if (
-              node.type.name === this.name &&
-              node.attrs['instanceId'] === instanceId
-            ) {
-              tr.delete(pos, pos + node.nodeSize);
-              removed = true;
-            }
-          });
+            doc.descendants((node, pos) => {
+              if (
+                node.type.name === this.name &&
+                node.attrs['instanceId'] === instanceId
+              ) {
+                tr.delete(pos, pos + node.nodeSize);
+                removed = true;
+              }
+            });
 
-          return removed;
-        },
+            return removed;
+          },
     };
   },
 
   addProseMirrorPlugins(): Plugin[] {
     const options = this.options;
+
+    // If default controls are disabled, do not add the decoration plugin
+    if (options.disableDefaultControls) {
+      return [];
+    }
 
     return [
       new Plugin({
@@ -251,8 +258,7 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
                   controls.innerHTML = `
                     <button class="component-edit-btn" title="Edit Component">✏️</button>
                     <button class="component-delete-btn" title="Delete Component">🗑️</button>
-                    <span class="component-label">${
-                      node.attrs['componentDef']?.name || 'Component'
+                    <span class="component-label">${node.attrs['componentDef']?.name || 'Component'
                     }</span>
                   `;
 
@@ -287,13 +293,11 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
                   content.className = 'component-content';
                   content.innerHTML = `
                     <div class="component-preview">
-                      <h4>${
-                        node.attrs['componentDef']?.name || 'Angular Component'
-                      }</h4>
-                      <p>${
-                        node.attrs['componentDef']?.description ||
-                        'Click to edit this component'
-                      }</p>
+                      <h4>${node.attrs['componentDef']?.name || 'Angular Component'
+                    }</h4>
+                      <p>${node.attrs['componentDef']?.description ||
+                    'Click to edit this component'
+                    }</p>
                     </div>
                   `;
 
