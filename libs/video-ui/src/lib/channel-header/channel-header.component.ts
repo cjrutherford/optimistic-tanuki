@@ -1,13 +1,15 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChannelDto } from '@optimistic-tanuki/ui-models';
+import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'channel-header',
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="channel-header">
+    <div class="channel-header" [ngStyle]="headerStyles">
       <div class="channel-banner" *ngIf="channel.bannerAssetId" 
            [style.backgroundImage]="'url(/api/asset/' + channel.bannerAssetId + ')'">
       </div>
@@ -19,7 +21,7 @@ import { ChannelDto } from '@optimistic-tanuki/ui-models';
         
         <div class="channel-details">
           <h1>{{ channel.name }}</h1>
-          <div class="channel-meta">
+          <div class="channel-meta" [ngStyle]="metaStyles">
             <span class="subscriber-count" *ngIf="channel.subscriberCount">
               {{ channel.subscriberCount | number }} subscribers
             </span>
@@ -33,6 +35,7 @@ import { ChannelDto } from '@optimistic-tanuki/ui-models';
           <button 
             class="subscribe-button"
             [class.subscribed]="isSubscribed"
+            [ngStyle]="buttonStyles"
             (click)="onSubscribeClick()"
             [disabled]="subscribing"
           >
@@ -87,13 +90,11 @@ import { ChannelDto } from '@optimistic-tanuki/ui-models';
     }
 
     .channel-meta {
-      color: #606060;
       font-size: 0.875rem;
       margin-bottom: 0.75rem;
     }
 
     .channel-description {
-      color: #030303;
       line-height: 1.6;
       margin: 0;
     }
@@ -107,26 +108,16 @@ import { ChannelDto } from '@optimistic-tanuki/ui-models';
       padding: 0.625rem 1rem;
       border: none;
       border-radius: 2px;
-      background: #cc0000;
-      color: white;
       font-weight: 500;
       cursor: pointer;
       text-transform: uppercase;
       font-size: 0.875rem;
       letter-spacing: 0.5px;
-      transition: background 0.2s;
+      transition: background 0.2s, opacity 0.2s;
     }
 
     .subscribe-button:hover:not(:disabled) {
-      background: #a80000;
-    }
-
-    .subscribe-button.subscribed {
-      background: #909090;
-    }
-
-    .subscribe-button.subscribed:hover:not(:disabled) {
-      background: #606060;
+      opacity: 0.9;
     }
 
     .subscribe-button:disabled {
@@ -135,13 +126,45 @@ import { ChannelDto } from '@optimistic-tanuki/ui-models';
     }
   `]
 })
-export class ChannelHeaderComponent {
+export class ChannelHeaderComponent implements OnInit, OnDestroy {
+  private themeService = inject(ThemeService);
+  private themeSub?: Subscription;
+  
+  headerStyles: any = {};
+  metaStyles: any = {};
+  buttonStyles: any = {};
+  
   @Input() channel!: ChannelDto;
   @Input() isSubscribed = false;
   @Input() subscribing = false;
   
   @Output() subscribe = new EventEmitter<string>();
   @Output() unsubscribe = new EventEmitter<string>();
+
+  ngOnInit() {
+    this.themeSub = this.themeService.themeColors$.subscribe((colors: ThemeColors | undefined) => {
+      if (colors) {
+        this.headerStyles = {
+          background: colors.background,
+          color: colors.foreground,
+        };
+        this.metaStyles = {
+          color: colors.foreground,
+          opacity: 0.7,
+        };
+        this.buttonStyles = {
+          background: this.isSubscribed ? colors.foreground : colors.accent,
+          color: this.isSubscribed ? colors.background : colors.background,
+        };
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.themeSub) {
+      this.themeSub.unsubscribe();
+    }
+  }
 
   onSubscribeClick() {
     if (this.isSubscribed) {

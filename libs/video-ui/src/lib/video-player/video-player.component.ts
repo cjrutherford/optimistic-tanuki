@@ -1,12 +1,14 @@
-import { Component, Input, AfterViewInit, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
+import { Component, Input, AfterViewInit, ViewChild, ElementRef, Output, EventEmitter, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'video-player',
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="video-player-container">
+    <div class="video-player-container" [ngStyle]="containerStyles">
       <video
         #videoElement
         class="video-element"
@@ -21,7 +23,7 @@ import { CommonModule } from '@angular/common';
         Your browser does not support the video tag.
       </video>
       
-      <div class="video-info" *ngIf="title">
+      <div class="video-info" *ngIf="title" [ngStyle]="infoStyles">
         <h2>{{ title }}</h2>
         <p *ngIf="description">{{ description }}</p>
       </div>
@@ -44,7 +46,6 @@ import { CommonModule } from '@angular/common';
 
     .video-info {
       padding: 1rem;
-      background: #fff;
     }
 
     .video-info h2 {
@@ -55,12 +56,17 @@ import { CommonModule } from '@angular/common';
 
     .video-info p {
       margin: 0;
-      color: #606060;
+      opacity: 0.8;
       line-height: 1.5;
     }
   `]
 })
-export class VideoPlayerComponent implements AfterViewInit {
+export class VideoPlayerComponent implements AfterViewInit, OnInit, OnDestroy {
+  private themeService = inject(ThemeService);
+  private themeSub?: Subscription;
+  
+  containerStyles: any = {};
+  infoStyles: any = {};
   @Input() videoUrl!: string;
   @Input() title?: string;
   @Input() description?: string;
@@ -73,8 +79,28 @@ export class VideoPlayerComponent implements AfterViewInit {
   
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
 
+  ngOnInit() {
+    this.themeSub = this.themeService.themeColors$.subscribe((colors: ThemeColors | undefined) => {
+      if (colors) {
+        this.infoStyles = {
+          background: colors.background,
+          color: colors.foreground,
+        };
+        this.containerStyles = {
+          borderColor: colors.accent,
+        };
+      }
+    });
+  }
+
   ngAfterViewInit() {
     // Video element is now available
+  }
+
+  ngOnDestroy() {
+    if (this.themeSub) {
+      this.themeSub.unsubscribe();
+    }
   }
 
   onPlay() {
