@@ -610,23 +610,58 @@ export class ComposeComponent
     this.isDragOver = false;
   }
 
-  handleDrop(e: DragEvent): void {
+  async handleDrop(e: DragEvent): Promise<void> {
     e.preventDefault();
     this.isDragOver = false;
 
     if (!e.dataTransfer?.files.length) return;
 
+    // Check if profileId is available
+    if (!this.profileId) {
+      console.error('Profile ID is required for image upload');
+      alert('Unable to upload image: User profile not found');
+      return;
+    }
+
     const files = Array.from(e.dataTransfer.files);
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event: ProgressEvent<FileReader>) => {
-        const base64Src = event.target?.result as string;
-        if (base64Src) {
-          this.editor?.chain().focus().setImage({ src: base64Src }).run();
+    
+    // Filter for image files only
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+      alert('Please drop image files only');
+      return;
+    }
+
+    // Upload each image file to Assets service
+    for (const file of imageFiles) {
+      try {
+        // If custom callback is provided, use it
+        if (this.imageUploadCallback) {
+          const reader = new FileReader();
+          reader.onload = async (event: ProgressEvent<FileReader>) => {
+            const base64Src = event.target?.result as string;
+            if (base64Src) {
+              const uploadedUrl = await this.imageUploadCallback!(base64Src, file.name);
+              this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
+            }
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // Upload to Assets service
+          const assetUrl = await this.imageUploadService.uploadFile(
+            file,
+            this.profileId,
+            `social-drag-drop-${Date.now()}`
+          );
+          
+          this.editor?.chain().focus().setImage({ src: assetUrl }).run();
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (error) {
+        console.error('Error uploading dropped file:', error);
+        alert(`Failed to upload ${file.name}. Please try again.`);
+      }
+    }
   }
 
   async onPostSubmit(): Promise<void> {

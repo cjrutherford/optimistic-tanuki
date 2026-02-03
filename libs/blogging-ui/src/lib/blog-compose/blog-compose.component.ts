@@ -1204,19 +1204,56 @@ export class BlogComposeComponent
     this.isDragOver = false;
   }
 
-  handleDrop(e: DragEvent): void {
+  async handleDrop(e: DragEvent): Promise<void> {
     e.preventDefault();
     this.isDragOver = false;
+    
     if (!e.dataTransfer?.files.length) return;
+    
+    // Check if profileId is available
+    if (!this.profileId) {
+      console.error('Profile ID is required for image upload');
+      alert('Unable to upload image: User profile not found');
+      return;
+    }
+    
     const files = Array.from(e.dataTransfer.files);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const src = event.target?.result as string;
-        if (src) this.editor.chain().focus().setImage({ src }).run();
-      };
-      reader.readAsDataURL(file);
-    });
+    
+    // Filter for image files only
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+      alert('Please drop image files only');
+      return;
+    }
+    
+    // Upload each image file to Assets service
+    for (const file of imageFiles) {
+      try {
+        // Upload to Assets service
+        const assetUrl = await this.imageUploadService.uploadFile(
+          file,
+          this.profileId,
+          `blog-drag-drop-${Date.now()}`
+        );
+        
+        // Get the editor's content area width for default sizing
+        const editorElement = this.editor.view.dom;
+        const editorWidth = editorElement.clientWidth;
+        
+        // Set image width to 95% of editor width
+        const defaultWidth = Math.floor(editorWidth * 0.95);
+        
+        // Insert the image with asset URL
+        this.editor.chain().focus().setImage({
+          src: assetUrl,
+          width: `${defaultWidth}px`,
+        }).run();
+      } catch (error) {
+        console.error('Error uploading dropped file:', error);
+        alert(`Failed to upload ${file.name}. Please try again.`);
+      }
+    }
   }
 
   // Inline component interaction methods
