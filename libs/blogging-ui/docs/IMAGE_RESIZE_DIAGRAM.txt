@@ -1,0 +1,102 @@
+┌─────────────────────────────────────────────────────────────────┐
+│                       TipTap Editor (800px)                     │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                   Content Area                            │  │
+│  │                                                           │  │
+│  │  Image Resize Behavior:                                  │  │
+│  │                                                           │  │
+│  │  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓  │  │
+│  │  ┃                                                      ┃  │  │
+│  │  ┃         Image (760px = 95% of 800px)               ┃  │  │
+│  │  ┃                                                      ┃  │  │
+│  │  ┃         Default size on insertion                   ┃  │  │
+│  │  ┃                                                      ┃  │  │
+│  │  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛  │  │
+│  │                                               ↑          │  │
+│  │                                              [🔵]  ← Resize Handle
+│  │                                                           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+
+States:
+═══════
+
+1. Normal State:
+   ┌─────────────┐
+   │             │
+   │   Image     │
+   │             │
+   └─────────────┘
+   - No border
+   - No visible handle
+
+2. Hover State:
+   ┌─────────────┐
+   │             │
+   │   Image     │
+   │            🔵│ ← Handle appears
+   └─────────────┘
+
+3. Selected State:
+   ╔═════════════╗
+   ║             ║
+   ║   Image     ║ ← Blue outline
+   ║            🔵║ ← Handle visible
+   ╚═════════════╝
+
+4. Resizing:
+   ╔═════════════╗           ╔═══════════════════╗
+   ║             ║    →      ║                   ║
+   ║   Image     ║  Drag     ║  Resized Image    ║
+   ║            🔵║   →→      ║                  🔵║
+   ╚═════════════╝           ╚═══════════════════╝
+        400px                        600px
+
+Resize Algorithm:
+═════════════════
+
+1. Mouse Down on Handle
+   ├─ Store: startX, startWidth
+   └─ Get: aspectRatio = height / width
+
+2. Mouse Move
+   ├─ Calculate: deltaX = currentX - startX
+   ├─ Calculate: newWidth = max(50, startWidth + deltaX)
+   ├─ Calculate: newHeight = newWidth × aspectRatio
+   └─ Update: img.style.width, img.style.height
+
+3. Mouse Up
+   ├─ Find: node position in document
+   ├─ Update: node.attrs.width, node.attrs.height
+   └─ Persist: changes to editor state
+
+Constraints:
+═══════════
+
+┌──────────────────────────────────────────┐
+│ Minimum Width:    50px                   │
+│ Maximum Width:    100% of editor         │
+│ Aspect Ratio:     Always maintained      │
+│ Default Width:    95% of editor width    │
+│ Resize Direction: Horizontal (SE corner) │
+└──────────────────────────────────────────┘
+
+Integration Flow:
+════════════════
+
+User Action          →  Event Handler         →  Result
+─────────────────────────────────────────────────────────────
+Upload Image         →  onFileSelected()      →  Calculate 95% width
+                                                  Load image dimensions
+                                                  Insert with width attr
+                                                  
+Hover Image          →  CSS :hover            →  Show resize handle
+                                                  
+Click Image          →  TipTap selection      →  Add selected class
+                                                  Blue outline appears
+                                                  
+Drag Handle          →  mousedown/mousemove   →  Real-time resize
+                                                  Maintain aspect ratio
+                                                  
+Release Handle       →  mouseup               →  Update node attrs
+                                                  Persist to document
