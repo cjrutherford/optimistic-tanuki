@@ -22,7 +22,7 @@ export interface Video {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="video-card" (click)="onCardClick()">
+    <div class="video-card" tabindex="0" (click)="onCardClick()" (keydown.enter)="onCardClick()" (keyup.space)="onCardClick()">
       <div class="thumbnail-container">
         <img 
           *ngIf="video.thumbnailAssetId"
@@ -40,8 +40,8 @@ export interface Video {
       </div>
       
       <div class="video-details">
-        <div class="channel-avatar" *ngIf="video.channel?.avatarAssetId">
-          <img [src]="'/api/asset/' + video.channel.avatarAssetId" [alt]="video.channel.name" />
+        <div class="channel-avatar" *ngIf="video.channel!.avatarAssetId">
+          <img [src]="'/api/asset/' + video.channel!.avatarAssetId" [alt]="video.channel!.name" />
         </div>
         
         <div class="video-info">

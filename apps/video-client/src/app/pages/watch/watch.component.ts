@@ -45,7 +45,7 @@ import { VideoPlayerComponent, ChannelHeaderComponent } from '@optimistic-tanuki
 
       <div class="channel-section" *ngIf="video?.channel">
         <channel-header
-          [channel]="video.channel"
+          [channel]="video!.channel!"
           [isSubscribed]="isSubscribed"
           (subscribe)="onSubscribe($event)"
           (unsubscribe)="onUnsubscribe($event)"
@@ -181,7 +181,7 @@ export class WatchComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private videoService: VideoService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
