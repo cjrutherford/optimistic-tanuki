@@ -41,10 +41,6 @@ export class VideoService {
     return this.http.get<VideoDto[]>(url);
   }
 
-  getChannelVideos(channelId: string): Observable<VideoDto[]> {
-    return this.http.get<VideoDto[]>(`${this.API_URL}/channel/${channelId}`);
-  }
-
   createVideo(video: CreateVideoDto): Observable<VideoDto> {
     return this.http.post<VideoDto>(this.API_URL, video);
   }
@@ -74,8 +70,16 @@ export class VideoService {
     return this.http.get<ChannelDto[]>(`${this.API_URL}/channels/user/${userId}`);
   }
 
-  createChannel(channel: CreateChannelDto): Observable<ChannelDto> {
-    return this.http.post<ChannelDto>(`${this.API_URL}/channels`, channel);
+  async getMyChannels(): Promise<ChannelDto[]> {
+    return this.http.get<ChannelDto[]>(`${this.API_URL}/channels/my`).toPromise() as Promise<ChannelDto[]>;
+  }
+
+  async getChannelVideos(channelId: string): Promise<VideoDto[]> {
+    return this.http.get<VideoDto[]>(`${this.API_URL}/channel/${channelId}`).toPromise() as Promise<VideoDto[]>;
+  }
+
+  createChannel(channel: CreateChannelDto): Promise<ChannelDto> {
+    return this.http.post<ChannelDto>(`${this.API_URL}/channels`, channel).toPromise() as Promise<ChannelDto>;
   }
 
   // Subscription operations

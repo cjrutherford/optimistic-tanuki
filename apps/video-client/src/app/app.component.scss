@@ -1,64 +1,11 @@
-.app-container {
+.container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-.app-header {
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.header-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0.75rem 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-decoration: none;
-  color: #030303;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.logo-icon {
-  font-size: 1.5rem;
-}
-
-.main-nav {
-  display: flex;
-  gap: 1.5rem;
-}
-
-.main-nav a {
-  text-decoration: none;
-  color: #606060;
-  font-weight: 500;
-  padding: 0.5rem 0;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.main-nav a:hover {
-  color: #030303;
-}
-
-.main-nav a.active {
-  color: #030303;
-  border-bottom-color: #030303;
-}
-
-.app-main {
+.content {
   flex: 1;
-  background: #f9f9f9;
+  padding-top: 64px; /* Height of app-bar */
+  min-height: calc(100vh - 64px);
 }

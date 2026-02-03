@@ -1,22 +1,26 @@
-<div class="app-container">
-  <header class="app-header">
-    <div class="header-content">
-      <a routerLink="/" class="logo">
-        <span class="logo-icon">📺</span>
-        <span class="logo-text">VideoTube</span>
-      </a>
-      
-      <nav class="main-nav">
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Home</a>
-        <a routerLink="/upload" routerLinkActive="active" class="upload-link">
-          <span class="upload-icon">⬆️</span>
-          Upload
-        </a>
-      </nav>
-    </div>
-  </header>
+<div
+  class="container"
+  [ngStyle]="{ background: backgroundGradient, color: foreground }"
+>
+  <otui-app-bar
+    appTitle="Video Platform"
+    logoSrc="assets/logo.png"
+    logoAlt="Video Platform Logo"
+    [showThemeToggle]="true"
+    [useTile]="false"
+    (menuToggle)="toggleNav()"
+  >
+  </otui-app-bar>
 
-  <main class="app-main">
+  <otui-nav-sidebar
+    [isOpen]="isNavExpanded()"
+    [navItems]="navItems()"
+    heading="Navigation"
+    (close)="isNavExpanded.set(false)"
+  >
+  </otui-nav-sidebar>
+
+  <div class="content">
     <router-outlet />
-  </main>
+  </div>
 </div>
