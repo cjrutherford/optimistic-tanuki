@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { VideoService, Video } from '../../services/video.service';
+import { VideoService } from '../../services/video.service';
+import { VideoDto } from '@optimistic-tanuki/ui-models';
 import { VideoPlayerComponent, ChannelHeaderComponent } from '@optimistic-tanuki/video-ui';
 
 @Component({
@@ -170,7 +171,7 @@ import { VideoPlayerComponent, ChannelHeaderComponent } from '@optimistic-tanuki
   `]
 })
 export class WatchComponent implements OnInit {
-  video: Video | null = null;
+  video: VideoDto | null = null;
   videoId: string | null = null;
   loading = false;
   error: string | null = null;
