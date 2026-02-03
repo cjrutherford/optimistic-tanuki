@@ -131,6 +131,7 @@ describe('BlogComposeComponent', () => {
         accent: '#5969c3',
         complementary: '#59c360',
         accentGradients: { light: 'linear-gradient(...)', dark: 'linear-gradient(...)' },
+        complementaryGradients: { light: 'linear-gradient(...)', dark: 'linear-gradient(...)' },
         complementaryShades: [['#eee'], ['#ddd'], ['#ccc']]
       }),
       getTheme: jest.fn().mockReturnValue('light')
@@ -144,11 +145,13 @@ describe('BlogComposeComponent', () => {
       getRegisteredComponents: jest.fn().mockReturnValue([]),
       getComponentsByCategory: jest.fn().mockReturnValue([]),
       getInstance: jest.fn(),
+      injectComponent: jest.fn().mockResolvedValue({ instanceId: 'test-instance', data: {}, componentDef: { id: 'test' } }),
       renderComponentInto: jest.fn(),
       removeComponent: jest.fn(),
       moveComponent: jest.fn(),
       updateComponent: jest.fn(),
-      getActiveComponents: jest.fn().mockReturnValue([])
+      getActiveComponents: jest.fn().mockReturnValue([]),
+      componentEvents: { subscribe: jest.fn() }
     };
 
     await TestBed.configureTestingModule({
@@ -165,7 +168,8 @@ describe('BlogComposeComponent', () => {
             ContextMenuComponent, ComponentSelectorComponent,
             PropertyEditorComponent, RichTextToolbarComponent,
             TiptapEditorDirective
-          ]
+          ],
+          providers: [ComponentInjectionService]
         },
         add: {
           imports: [
@@ -173,6 +177,9 @@ describe('BlogComposeComponent', () => {
             MockContextMenuComponent, MockComponentSelectorComponent,
             MockPropertyEditorComponent, MockRichTextToolbarComponent,
             MockTiptapEditorDirective
+          ],
+          providers: [
+            { provide: ComponentInjectionService, useValue: componentInjectionServiceSpy }
           ]
         }
       })

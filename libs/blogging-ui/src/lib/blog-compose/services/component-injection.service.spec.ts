@@ -280,9 +280,10 @@ describe('ComponentInjectionService', () => {
         const callbacks = {
             onEdit: jest.fn(),
             onDelete: jest.fn(),
-            onMoveUp: jest.fn(),
-            onMoveDown: jest.fn(),
-            onSelection: jest.fn()
+            onDuplicate: jest.fn(),
+            onConfig: jest.fn(),
+            onSelection: jest.fn(),
+            onPropertiesChanged: jest.fn()
         };
         
         service.setWrapperCallbacks(callbacks);
@@ -298,14 +299,17 @@ describe('ComponentInjectionService', () => {
         wrapperInstanceSpy.deleteRequested.emit({} as any);
         expect(callbacks.onDelete).toHaveBeenCalled();
         
-        wrapperInstanceSpy.moveUpRequested.emit({} as any);
-        expect(callbacks.onMoveUp).toHaveBeenCalled();
+        wrapperInstanceSpy.duplicateRequested.emit({} as any);
+        expect(callbacks.onDuplicate).toHaveBeenCalled();
         
-        wrapperInstanceSpy.moveDownRequested.emit({} as any);
-        expect(callbacks.onMoveDown).toHaveBeenCalled();
+        wrapperInstanceSpy.configRequested.emit({} as any);
+        expect(callbacks.onConfig).toHaveBeenCalled();
         
         wrapperInstanceSpy.selectionChanged.emit({} as any);
         expect(callbacks.onSelection).toHaveBeenCalled();
+        
+        wrapperInstanceSpy.propertiesChanged.emit({ instance: {} as any, data: {} });
+        expect(callbacks.onPropertiesChanged).toHaveBeenCalled();
     });
   });
 });
