@@ -1,14 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-export interface Channel {
-  id: string;
-  name: string;
-  description?: string;
-  avatarAssetId?: string;
-  bannerAssetId?: string;
-  subscriberCount?: number;
-}
+import { ChannelDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'channel-header',
@@ -144,7 +136,7 @@ export interface Channel {
   `]
 })
 export class ChannelHeaderComponent {
-  @Input() channel!: Channel;
+  @Input() channel!: ChannelDto;
   @Input() isSubscribed = false;
   @Input() subscribing = false;
   

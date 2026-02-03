@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { VideoService, Video } from '../../services/video.service';
+import { VideoService } from '../../services/video.service';
+import { VideoDto } from '@optimistic-tanuki/ui-models';
 import { VideoGridComponent } from '@optimistic-tanuki/video-ui';
 
 @Component({
@@ -78,8 +79,8 @@ import { VideoGridComponent } from '@optimistic-tanuki/video-ui';
   `]
 })
 export class HomeComponent implements OnInit {
-  recommendedVideos: Video[] = [];
-  trendingVideos: Video[] = [];
+  recommendedVideos: VideoDto[] = [];
+  trendingVideos: VideoDto[] = [];
   loading = false;
   error: string | null = null;
 
@@ -115,7 +116,7 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  navigateToVideo(video: Video) {
+  navigateToVideo(video: VideoDto) {
     // Navigation will be handled by router in the template
     window.location.href = `/watch/${video.id}`;
   }

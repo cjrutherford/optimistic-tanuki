@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { VideoService, CreateVideoDto } from '../../services/video.service';
+import { VideoService } from '../../services/video.service';
+import { CreateVideoDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'video-upload',

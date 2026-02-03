@@ -1,21 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-export interface Video {
-  id: string;
-  title: string;
-  description?: string;
-  thumbnailAssetId?: string;
-  channelId: string;
-  viewCount: number;
-  createdAt: Date;
-  durationSeconds?: number;
-  channel?: {
-    id: string;
-    name: string;
-    avatarAssetId?: string;
-  };
-}
+import { VideoDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'video-card',
@@ -40,8 +25,8 @@ export interface Video {
       </div>
       
       <div class="video-details">
-        <div class="channel-avatar" *ngIf="video.channel!.avatarAssetId">
-          <img [src]="'/api/asset/' + video.channel!.avatarAssetId" [alt]="video.channel!.name" />
+        <div class="channel-avatar" *ngIf="video.channel?.avatarAssetId">
+          <img [src]="'/api/asset/' + video.channel.avatarAssetId" [alt]="video.channel.name" />
         </div>
         
         <div class="video-info">
@@ -166,8 +151,8 @@ export interface Video {
   `]
 })
 export class VideoCardComponent {
-  @Input() video!: Video;
-  @Output() cardClick = new EventEmitter<Video>();
+  @Input() video!: VideoDto;
+  @Output() cardClick = new EventEmitter<VideoDto>();
 
   onCardClick() {
     this.cardClick.emit(this.video);

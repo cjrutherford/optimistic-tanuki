@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { VideoCardComponent, Video } from '../video-card/video-card.component';
+import { VideoCardComponent } from '../video-card/video-card.component';
+import { VideoDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'video-grid',
@@ -32,10 +33,10 @@ import { VideoCardComponent, Video } from '../video-card/video-card.component';
   `]
 })
 export class VideoGridComponent {
-  @Input() videos: Video[] = [];
-  @Output() videoClick = new EventEmitter<Video>();
+  @Input() videos: VideoDto[] = [];
+  @Output() videoClick = new EventEmitter<VideoDto>();
 
-  onVideoClick(video: Video) {
+  onVideoClick(video: VideoDto) {
     this.videoClick.emit(video);
   }
 }

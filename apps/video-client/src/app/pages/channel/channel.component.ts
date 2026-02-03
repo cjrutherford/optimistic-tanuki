@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { VideoService, Video, Channel } from '../../services/video.service';
+import { VideoService } from '../../services/video.service';
+import { VideoDto, ChannelDto } from '@optimistic-tanuki/ui-models';
 import { ChannelHeaderComponent, VideoGridComponent } from '@optimistic-tanuki/video-ui';
 
 @Component({
@@ -107,8 +108,8 @@ import { ChannelHeaderComponent, VideoGridComponent } from '@optimistic-tanuki/v
   `]
 })
 export class ChannelComponent implements OnInit {
-  channel: Channel | null = null;
-  channelVideos: Video[] = [];
+  channel: ChannelDto | null = null;
+  channelVideos: VideoDto[] = [];
   channelId: string | null = null;
   loading = false;
   error: string | null = null;
@@ -157,7 +158,7 @@ export class ChannelComponent implements OnInit {
     });
   }
 
-  navigateToVideo(video: Video) {
+  navigateToVideo(video: VideoDto) {
     window.location.href = `/watch/${video.id}`;
   }
 
