@@ -2,6 +2,7 @@ import {
   Component,
   EventEmitter,
   Output,
+  Input,
   OnDestroy,
   HostListener,
   ViewChild,
@@ -84,6 +85,9 @@ import { BlogComposeComponentNode } from './extensions/blog-compose-component.ex
 
 // Resizable Image Extension
 import { ResizableImage } from './extensions/resizable-image.extension';
+
+// Image Upload Service
+import { ImageUploadService } from '../services/image-upload.service';
 
 import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
 
@@ -182,6 +186,7 @@ export class BlogComposeComponent
   AfterViewInit,
   ComponentInjectionAPI,
   ControlValueAccessor {
+  @Input() profileId?: string; // Profile ID for asset uploads
   @Output() postSubmitted: EventEmitter<PostData> =
     new EventEmitter<PostData>();
   @Output() attachmentAdded = new EventEmitter<{
@@ -194,6 +199,7 @@ export class BlogComposeComponent
 
   override readonly themeService: ThemeService = inject(ThemeService);
   private cdr = inject(ChangeDetectorRef);
+  private imageUploadService = inject(ImageUploadService);
 
   private sanitize(input: string): string {
     return DOMPurify.sanitize(input);
@@ -1066,39 +1072,52 @@ export class BlogComposeComponent
     }
   }
 
-  onFileSelected(event: Event): void {
+  async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) {
       return;
     }
+    
     const file = input.files[0];
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (this.editor && result) {
-        // Get the editor's content area width
-        const editorElement = this.editor.view.dom;
-        const editorWidth = editorElement.clientWidth;
-
-        // Set image width to 95% of editor width (leaving some margin)
-        const defaultWidth = Math.floor(editorWidth * 0.95);
-
-        // Load the image to get its natural dimensions
-        const img = new Image();
-        img.onload = () => {
-          const aspectRatio = img.naturalHeight / img.naturalWidth;
-          const defaultHeight = Math.floor(defaultWidth * aspectRatio);
-
-          this.editor.chain().focus().setImage({
-            src: result,
-            width: `${defaultWidth}px`,
-          }).run();
-        };
-        img.src = result;
-      }
-    };
-    reader.readAsDataURL(file);
-    input.value = '';
+    
+    // Check if profileId is available
+    if (!this.profileId) {
+      console.error('Profile ID is required for image upload');
+      alert('Unable to upload image: User profile not found');
+      input.value = '';
+      return;
+    }
+    
+    try {
+      // Upload file to Assets service
+      const assetUrl = await this.imageUploadService.uploadFile(
+        file,
+        this.profileId,
+        `blog-image-${Date.now()}`
+      );
+      
+      // Get the editor's content area width for default sizing
+      const editorElement = this.editor.view.dom;
+      const editorWidth = editorElement.clientWidth;
+      
+      // Set image width to 95% of editor width (leaving some margin)
+      const defaultWidth = Math.floor(editorWidth * 0.95);
+      
+      // Load the image to get its natural dimensions
+      const img = new Image();
+      img.onload = () => {
+        this.editor.chain().focus().setImage({
+          src: assetUrl, // Use asset URL instead of base64
+          width: `${defaultWidth}px`,
+        }).run();
+      };
+      img.src = assetUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      input.value = '';
+    }
   }
 
   toggleThemeConfig(): void {
