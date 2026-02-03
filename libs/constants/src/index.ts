@@ -72,3 +72,10 @@ export {
   ForumLinkCommands,
 } from './lib/libs/forum';
 
+export {
+  AccountCommands,
+  TransactionCommands,
+  InventoryItemCommands,
+  BudgetCommands,
+} from './lib/libs/finance';
+

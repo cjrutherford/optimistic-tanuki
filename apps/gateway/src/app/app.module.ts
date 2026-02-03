@@ -33,6 +33,7 @@ import { StoreController } from '../controllers/store/store.controller';
 import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
+import { FinanceController } from '../controllers/finance/finance.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -76,6 +77,7 @@ import { ForumController } from '../controllers/forum/forum.controller';
     StoreController,
     AppConfigController,
     ForumController,
+    FinanceController,
   ],
   providers: [
     {
@@ -299,6 +301,22 @@ import { ForumController } from '../controllers/forum/forum.controller';
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
           'services.forum'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.FINANCE_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.finance'
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
