@@ -4,6 +4,7 @@ import { ChannelService } from './app/services/channel.service';
 import { VideoService } from './app/services/video.service';
 import { SubscriptionService } from './app/services/subscription.service';
 import { Logger } from '@nestjs/common';
+import { CreateVideoDto, VideoDto, VideoVisibility } from '@optimistic-tanuki/models';
 
 async function bootstrap() {
   const logger = new Logger('VideoSeedScript');
@@ -57,7 +58,7 @@ async function bootstrap() {
     }
 
     // Create sample videos
-    const videos = [
+    const videos: CreateVideoDto[] = [
       // Tech Tutorials Channel
       {
         title: 'Getting Started with NestJS',
@@ -67,9 +68,7 @@ async function bootstrap() {
         durationSeconds: 1245,
         resolution: '1920x1080',
         encoding: 'H.264',
-        visibility: 'public' as const,
-        viewCount: 1523,
-        likeCount: 156,
+        visibility: VideoVisibility.PUBLIC,
       },
       {
         title: 'Angular Best Practices 2024',
@@ -79,9 +78,7 @@ async function bootstrap() {
         durationSeconds: 1876,
         resolution: '1920x1080',
         encoding: 'H.264',
-        visibility: 'public' as const,
-        viewCount: 2341,
-        likeCount: 287,
+        visibility: VideoVisibility.PUBLIC,
       },
       {
         title: 'TypeScript Advanced Features',
@@ -91,11 +88,9 @@ async function bootstrap() {
         durationSeconds: 2156,
         resolution: '1920x1080',
         encoding: 'H.264',
-        visibility: 'public' as const,
-        viewCount: 3129,
-        likeCount: 421,
+        visibility: VideoVisibility.PUBLIC,
       },
-      
+
       // Cooking Adventures Channel
       {
         title: 'Perfect Homemade Pizza',
@@ -105,9 +100,7 @@ async function bootstrap() {
         durationSeconds: 945,
         resolution: '1920x1080',
         encoding: 'H.264',
-        visibility: 'public' as const,
-        viewCount: 5432,
-        likeCount: 678,
+        visibility: VideoVisibility.PUBLIC,
       },
       {
         title: 'Thai Green Curry Recipe',
@@ -117,11 +110,9 @@ async function bootstrap() {
         durationSeconds: 1123,
         resolution: '1920x1080',
         encoding: 'H.264',
-        visibility: 'public' as const,
-        viewCount: 4231,
-        likeCount: 512,
+        visibility: VideoVisibility.PUBLIC,
       },
-      
+
       // Fitness & Health Channel
       {
         title: '30-Minute Full Body Workout',
@@ -131,9 +122,7 @@ async function bootstrap() {
         durationSeconds: 1876,
         resolution: '1920x1080',
         encoding: 'H.264',
-        visibility: 'public' as const,
-        viewCount: 6789,
-        likeCount: 892,
+        visibility: VideoVisibility.PUBLIC,
       },
       {
         title: 'Meal Prep for Beginners',
@@ -143,9 +132,7 @@ async function bootstrap() {
         durationSeconds: 1456,
         resolution: '1920x1080',
         encoding: 'H.264',
-        visibility: 'public' as const,
-        viewCount: 3456,
-        likeCount: 423,
+        visibility: VideoVisibility.PUBLIC,
       },
     ];
 

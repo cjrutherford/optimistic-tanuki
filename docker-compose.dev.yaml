@@ -529,6 +529,23 @@ services:
       - '8085:4000'
     depends_on:
       - gateway
+  videos:
+    container_name: ot_videos
+    volumes:
+      - ./dist/apps/videos:/usr/src/app
+      - /usr/src/app/node_modules
+  video-client:
+    volumes:
+      - ./dist/apps/video-client:/usr/src/app
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9244',
+        '-L',
+        '/app/dist/apps/video-client/server/server.mjs',
+      ]
 
 volumes:
   asset-data:

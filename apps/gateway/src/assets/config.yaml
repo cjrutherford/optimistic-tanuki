@@ -74,7 +74,7 @@ services:
     name: videos
     transport: TCP
     host: ot_videos
-    port: 3009
+    port: 3016
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

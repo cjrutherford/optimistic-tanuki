@@ -362,7 +362,7 @@ services:
       context: .
       dockerfile: ./apps/store/Dockerfile
     ports:
-      - '3013:3009'
+      - '3013:3013'
     depends_on:
       postgres:
         condition: service_healthy
@@ -420,14 +420,7 @@ services:
       context: .
       dockerfile: ./apps/videos/Dockerfile
     ports:
-      - '3016:3009'
-    environment:
-      - POSTGRES_HOST=db
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=videos
-      - PORT=3009
+      - '3016:3016'
     depends_on:
       postgres:
         condition: service_healthy
