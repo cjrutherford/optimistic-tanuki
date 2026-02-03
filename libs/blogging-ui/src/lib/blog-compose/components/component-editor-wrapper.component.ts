@@ -201,22 +201,25 @@ import {
         margin: 0.5rem 0;
         transition: all 0.2s ease;
         background: var(--wrapper-background, transparent);
+        isolation: isolate; /* Create new stacking context */
       }
 
       .component-editor-wrapper.hovered {
         border-color: var(--accent, #007acc);
         background-color: rgba(0, 122, 204, 0.03);
+        z-index: 1; /* Ensure hovered wrapper is above siblings */
       }
 
       .component-editor-wrapper.selected {
         border-color: var(--accent, #007acc);
         background-color: rgba(0, 122, 204, 0.08);
         box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.15);
+        z-index: 2; /* Selected wrapper is above hovered */
       }
 
       .component-editor-wrapper.editing {
         border-color: var(--accent, #007acc);
-        z-index: 100;
+        z-index: 100; /* Editing wrapper is above everything */
       }
 
       /* Control Bar */
@@ -235,11 +238,13 @@ import {
         visibility: hidden;
         transition: all 0.2s ease;
         z-index: 10;
+        pointer-events: auto; /* Ensure controls are always clickable */
       }
 
       .control-bar.visible {
         opacity: 1;
         visibility: visible;
+        pointer-events: auto; /* Ensure controls remain clickable when visible */
       }
 
       .component-label {
@@ -274,10 +279,16 @@ import {
         transition: all 0.15s ease;
         background: rgba(255, 255, 255, 0.2);
         color: white;
+        pointer-events: auto; /* Ensure each button is clickable */
       }
 
       .control-btn:hover {
         background: rgba(255, 255, 255, 0.35);
+        transform: scale(1.05); /* Subtle scale on hover for feedback */
+      }
+
+      .control-btn:active {
+        transform: scale(0.95); /* Provide click feedback */
       }
 
       .control-btn mat-icon {
@@ -294,6 +305,9 @@ import {
       .component-content {
         padding: 12px;
         min-height: 60px;
+        pointer-events: auto; /* Allow interaction with content */
+        position: relative;
+        z-index: 1;
       }
 
       .component-preview {

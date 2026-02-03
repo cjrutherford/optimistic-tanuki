@@ -280,6 +280,9 @@ export class BlogComposeComponent
         onMoveUp: (instance) => this.onComponentMoveUp(instance),
         onMoveDown: (instance) => this.onComponentMoveDown(instance),
         onSelection: (instance) => this.onComponentSelection(instance),
+        onDuplicate: (instance) => this.onComponentDuplicate(instance),
+        onConfig: (instance) => this.onComponentConfig(instance),
+        onPropertiesChanged: (data) => this.onComponentPropertiesChanged(data),
       });
 
       this.initializeDefaultComponents();
@@ -965,6 +968,37 @@ export class BlogComposeComponent
 
   onComponentSelection(instance: InjectedComponentInstance): void {
     this.selectedComponentInstance = instance;
+  }
+
+  onComponentDuplicate(instance: InjectedComponentInstance): void {
+    // Create a duplicate of the component with the same data
+    const duplicateData = { ...instance.data };
+    delete duplicateData._innerComponentRef; // Remove internal reference
+    this.componentInjectionService.injectComponent(
+      instance.componentDef.id,
+      duplicateData
+    );
+  }
+
+  onComponentConfig(instance: InjectedComponentInstance): void {
+    // Open property editor for configuration (same as edit)
+    this.onComponentEdit(instance);
+  }
+
+  onComponentPropertiesChanged(data: { instance: InjectedComponentInstance; data: Record<string, any> }): void {
+    // Update component properties from inline quick edit
+    this.componentInjectionService.updateComponent(
+      data.instance.instanceId,
+      data.data
+    );
+
+    // Update the TipTap editor node as well to ensure data persistence
+    this.editor.commands.updateAngularComponent({
+      instanceId: data.instance.instanceId,
+      data: data.data,
+    });
+
+    this.emitChange();
   }
 
   // Property Editor Handlers

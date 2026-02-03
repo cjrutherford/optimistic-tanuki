@@ -10,7 +10,7 @@ import {
   ComponentInjectionEvent,
   ComponentInjectionAPI,
 } from '../interfaces/component-injection.interface';
-import { ComponentWrapperComponent } from '../components/component-wrapper.component';
+import { ComponentEditorWrapperComponent } from '../components/component-editor-wrapper.component';
 
 @Injectable({
   providedIn: 'root',
@@ -26,6 +26,9 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   private onMoveUpCallback?: (instance: InjectedComponentInstance) => void;
   private onMoveDownCallback?: (instance: InjectedComponentInstance) => void;
   private onSelectionCallback?: (instance: InjectedComponentInstance) => void;
+  private onDuplicateCallback?: (instance: InjectedComponentInstance) => void;
+  private onConfigCallback?: (instance: InjectedComponentInstance) => void;
+  private onPropertiesChangedCallback?: (data: { instance: InjectedComponentInstance; data: Record<string, any> }) => void;
 
   /**
    * Event emitter for component injection events
@@ -49,12 +52,18 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     onMoveUp?: (instance: InjectedComponentInstance) => void;
     onMoveDown?: (instance: InjectedComponentInstance) => void;
     onSelection?: (instance: InjectedComponentInstance) => void;
+    onDuplicate?: (instance: InjectedComponentInstance) => void;
+    onConfig?: (instance: InjectedComponentInstance) => void;
+    onPropertiesChanged?: (data: { instance: InjectedComponentInstance; data: Record<string, any> }) => void;
   }): void {
     this.onEditCallback = callbacks.onEdit;
     this.onDeleteCallback = callbacks.onDelete;
     this.onMoveUpCallback = callbacks.onMoveUp;
     this.onMoveDownCallback = callbacks.onMoveDown;
     this.onSelectionCallback = callbacks.onSelection;
+    this.onDuplicateCallback = callbacks.onDuplicate;
+    this.onConfigCallback = callbacks.onConfig;
+    this.onPropertiesChangedCallback = callbacks.onPropertiesChanged;
   }
 
   /**
@@ -120,7 +129,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
 
     // Create wrapper component
     const wrapperRef = this.viewContainer.createComponent(
-      ComponentWrapperComponent
+      ComponentEditorWrapperComponent
     );
 
     // Create the actual component within the wrapper
@@ -149,6 +158,8 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
 
     // Configure wrapper component
     wrapperRef.instance.componentInstance = instance;
+    wrapperRef.instance.componentDef = componentDef;
+    wrapperRef.instance.componentData = { ...componentDef.data, ...data };
 
     // Set up wrapper event handlers
     wrapperRef.instance.editRequested.subscribe(
@@ -163,21 +174,27 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       }
     );
 
-    wrapperRef.instance.moveUpRequested.subscribe(
+    wrapperRef.instance.duplicateRequested.subscribe(
       (inst: InjectedComponentInstance) => {
-        this.onMoveUpCallback?.(inst);
+        this.onDuplicateCallback?.(inst);
       }
     );
 
-    wrapperRef.instance.moveDownRequested.subscribe(
+    wrapperRef.instance.configRequested.subscribe(
       (inst: InjectedComponentInstance) => {
-        this.onMoveDownCallback?.(inst);
+        this.onConfigCallback?.(inst);
       }
     );
 
     wrapperRef.instance.selectionChanged.subscribe(
       (inst: InjectedComponentInstance) => {
         this.onSelectionCallback?.(inst);
+      }
+    );
+
+    wrapperRef.instance.propertiesChanged.subscribe(
+      (data: { instance: InjectedComponentInstance; data: Record<string, any> }) => {
+        this.onPropertiesChangedCallback?.(data);
       }
     );
 
@@ -224,7 +241,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
 
     // Create wrapper component
     const wrapperRef = this.viewContainer.createComponent(
-      ComponentWrapperComponent
+      ComponentEditorWrapperComponent
     );
 
     // Create the actual component within the wrapper
@@ -252,6 +269,8 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
 
     // Configure wrapper component
     wrapperRef.instance.componentInstance = instance;
+    wrapperRef.instance.componentDef = componentDef;
+    wrapperRef.instance.componentData = { ...componentDef.data, ...data };
 
     // Set up wrapper event handlers
     wrapperRef.instance.editRequested.subscribe(
@@ -266,9 +285,27 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       }
     );
 
+    wrapperRef.instance.duplicateRequested.subscribe(
+      (inst: InjectedComponentInstance) => {
+        this.onDuplicateCallback?.(inst);
+      }
+    );
+
+    wrapperRef.instance.configRequested.subscribe(
+      (inst: InjectedComponentInstance) => {
+        this.onConfigCallback?.(inst);
+      }
+    );
+
     wrapperRef.instance.selectionChanged.subscribe(
       (inst: InjectedComponentInstance) => {
         this.onSelectionCallback?.(inst);
+      }
+    );
+
+    wrapperRef.instance.propertiesChanged.subscribe(
+      (data: { instance: InjectedComponentInstance; data: Record<string, any> }) => {
+        this.onPropertiesChangedCallback?.(data);
       }
     );
 
