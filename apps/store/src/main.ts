@@ -13,7 +13,7 @@ import { NestFactory } from '@nestjs/core';
 export async function bootstrap() {
   const configApp = await NestFactory.create(AppModule);
   const config = configApp.get(ConfigService);
-  const port = Number(config.get('listenPort')) || 3009;
+  const port = Number(config.get('listenPort')) || 3013;
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
     {

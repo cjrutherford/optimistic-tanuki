@@ -26,7 +26,7 @@ import { VideoDto } from '@optimistic-tanuki/ui-models';
       
       <div class="video-details">
         <div class="channel-avatar" *ngIf="video.channel?.avatarAssetId">
-          <img [src]="'/api/asset/' + video.channel.avatarAssetId" [alt]="video.channel.name" />
+          <img [src]="'/api/asset/' + video.channel?.avatarAssetId" [alt]="video.channel?.name" />
         </div>
         
         <div class="video-info">
