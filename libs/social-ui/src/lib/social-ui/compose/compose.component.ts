@@ -64,7 +64,8 @@ import {
   InjectedComponentInstance,
   ComponentInjectionAPI,
 } from './interfaces/component-injection.interface';
-import { ImageUploadService } from './services/image-upload.service';
+import { ImageUploadService as LocalImageUploadService } from './services/image-upload.service';
+import { ImageUploadService } from '@optimistic-tanuki/blogging-ui';
 
 import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
 
@@ -105,13 +106,14 @@ export interface ImageUploadCallback {
   ],
   templateUrl: './compose.component.html',
   styleUrls: ['./compose.component.scss'],
-  providers: [ComponentInjectionService, ImageUploadService],
+  providers: [ComponentInjectionService, LocalImageUploadService],
 })
 export class ComposeComponent
   extends Themeable
   implements OnDestroy, AfterViewInit, ComponentInjectionAPI
 {
   @Input() title = '';
+  @Input() profileId?: string; // Profile ID for asset uploads
   @Input() attachments: CreateAttachmentDto[] = [];
   @Input() links: { url: string }[] = [];
   @Input() imageUploadCallback?: ImageUploadCallback;
@@ -479,23 +481,50 @@ export class ComposeComponent
     this.selectedComponentProperties = [];
   }
 
-  onFileSelected(event: Event): void {
+  async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) {
       return;
     }
 
     const file = input.files[0];
-    const reader = new FileReader();
 
-    reader.onload = () => {
-      const base64Src = reader.result as string;
-      if (base64Src) {
-        this.editor?.chain().focus().setImage({ src: base64Src }).run();
+    // Check if profileId is available
+    if (!this.profileId) {
+      console.error('Profile ID is required for image upload');
+      alert('Unable to upload image: User profile not found');
+      input.value = '';
+      return;
+    }
+
+    try {
+      // If custom callback is provided, use it
+      if (this.imageUploadCallback) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const base64Src = reader.result as string;
+          if (base64Src && this.imageUploadCallback) {
+            const uploadedUrl = await this.imageUploadCallback(base64Src, file.name);
+            this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Upload to Assets service
+        const assetUrl = await this.imageUploadService.uploadFile(
+          file,
+          this.profileId,
+          `social-image-${Date.now()}`
+        );
+        
+        this.editor?.chain().focus().setImage({ src: assetUrl }).run();
       }
-    };
-
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      input.value = '';
+    }
   }
 
   onToolbarComponentsClick(): void {
