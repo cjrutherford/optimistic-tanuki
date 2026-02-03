@@ -1079,17 +1079,17 @@ export class BlogComposeComponent
         // Get the editor's content area width
         const editorElement = this.editor.view.dom;
         const editorWidth = editorElement.clientWidth;
-        
+
         // Set image width to 95% of editor width (leaving some margin)
         const defaultWidth = Math.floor(editorWidth * 0.95);
-        
+
         // Load the image to get its natural dimensions
         const img = new Image();
         img.onload = () => {
           const aspectRatio = img.naturalHeight / img.naturalWidth;
           const defaultHeight = Math.floor(defaultWidth * aspectRatio);
-          
-          this.editor.chain().focus().setImage({ 
+
+          this.editor.chain().focus().setImage({
             src: result,
             width: `${defaultWidth}px`,
           }).run();
@@ -1227,10 +1227,10 @@ export class BlogComposeComponent
       links: this.links,
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(),
-      themeConfig: {
-        theme: this.postTheme,
-        accentColor: this.postAccentColor,
-      },
+      // themeConfig: {
+      //   theme: this.postTheme,
+      //   accentColor: this.postAccentColor,
+      // },
     });
   }
 

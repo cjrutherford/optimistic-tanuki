@@ -55,11 +55,11 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
         default: null,
         parseHTML: element => element.getAttribute('width'),
         renderHTML: attributes => {
-          if (!attributes.width) {
+          if (!attributes['width']) {
             return {};
           }
           return {
-            width: attributes.width,
+            width: attributes['width'],
           };
         },
       },
@@ -67,11 +67,11 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
         default: null,
         parseHTML: element => element.getAttribute('height'),
         renderHTML: attributes => {
-          if (!attributes.height) {
+          if (!attributes['height']) {
             return {};
           }
           return {
-            height: attributes.height,
+            height: attributes['height'],
           };
         },
       },
@@ -129,9 +129,9 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
             doc.descendants((node, pos) => {
               if (node.type.name === this.name) {
                 // Check if this image is selected
-                const selected = selection.from === pos || 
-                               (selection.from <= pos && selection.to >= pos + node.nodeSize);
-                
+                const selected = selection.from === pos ||
+                  (selection.from <= pos && selection.to >= pos + node.nodeSize);
+
                 if (selected) {
                   // Add decoration for resize handles
                   decorations.push(
@@ -148,12 +148,12 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
           handleDOMEvents: {
             mousedown: (view, event) => {
               const target = event.target as HTMLElement;
-              
+
               // Check if we're clicking on a resize handle
               if (target.classList.contains('resize-handle')) {
                 event.preventDefault();
                 const img = target.closest('.resizable-image-wrapper')?.querySelector('img') as HTMLImageElement;
-                
+
                 if (!img) return false;
 
                 const startX = event.clientX;
@@ -164,7 +164,7 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
                   const deltaX = e.clientX - startX;
                   const newWidth = Math.max(50, startWidth + deltaX);
                   const newHeight = newWidth * aspectRatio;
-                  
+
                   img.style.width = `${newWidth}px`;
                   img.style.height = `${newHeight}px`;
                 };
@@ -180,7 +180,7 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
                     if (node) {
                       const newWidth = img.offsetWidth;
                       const newHeight = img.offsetHeight;
-                      
+
                       view.dispatch(
                         view.state.tr.setNodeMarkup(pos, undefined, {
                           ...node.attrs,
@@ -212,12 +212,12 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
       dom.classList.add('resizable-image-wrapper');
 
       const img = document.createElement('img');
-      img.src = node.attrs.src;
-      if (node.attrs.alt) img.alt = node.attrs.alt;
-      if (node.attrs.title) img.title = node.attrs.title;
-      if (node.attrs.width) img.style.width = typeof node.attrs.width === 'number' ? `${node.attrs.width}px` : node.attrs.width;
-      if (node.attrs.height) img.style.height = typeof node.attrs.height === 'number' ? `${node.attrs.height}px` : node.attrs.height;
-      
+      img.src = node.attrs['src'];
+      if (node.attrs['alt']) img.alt = node.attrs['alt'];
+      if (node.attrs['title']) img.title = node.attrs['title'];
+      if (node.attrs['width']) img.style.width = typeof node.attrs['width'] === 'number' ? `${node.attrs['width']}px` : node.attrs['width'];
+      if (node.attrs['height']) img.style.height = typeof node.attrs['height'] === 'number' ? `${node.attrs['height']}px` : node.attrs['height'];
+
       dom.appendChild(img);
 
       // Add resize handle
@@ -234,11 +234,11 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
             return false;
           }
 
-          img.src = updatedNode.attrs.src;
-          if (updatedNode.attrs.alt) img.alt = updatedNode.attrs.alt;
-          if (updatedNode.attrs.title) img.title = updatedNode.attrs.title;
-          if (updatedNode.attrs.width) img.style.width = typeof updatedNode.attrs.width === 'number' ? `${updatedNode.attrs.width}px` : updatedNode.attrs.width;
-          if (updatedNode.attrs.height) img.style.height = typeof updatedNode.attrs.height === 'number' ? `${updatedNode.attrs.height}px` : updatedNode.attrs.height;
+          img.src = updatedNode.attrs['src'];
+          if (updatedNode.attrs['alt']) img.alt = updatedNode.attrs['alt'];
+          if (updatedNode.attrs['title']) img.title = updatedNode.attrs['title'];
+          if (updatedNode.attrs['width']) img.style.width = typeof updatedNode.attrs['width'] === 'number' ? `${updatedNode.attrs['width']}px` : updatedNode.attrs['width'];
+          if (updatedNode.attrs['height']) img.style.height = typeof updatedNode.attrs['height'] === 'number' ? `${updatedNode.attrs['height']}px` : updatedNode.attrs['height'];
 
           return true;
         },

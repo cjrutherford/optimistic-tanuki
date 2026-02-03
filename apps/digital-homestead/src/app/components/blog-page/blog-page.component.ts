@@ -441,7 +441,7 @@ export class BlogPageComponent {
         content: postData.content,
         authorId: authorId,
         isDraft: isDraft,
-        themeConfig: postData.themeConfig,
+        // themeConfig: postData.themeConfig,
       };
       // Create new post
       this.blogService.createPost(postPayload).subscribe({
