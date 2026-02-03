@@ -1,13 +1,15 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { VideoDto } from '@optimistic-tanuki/ui-models';
+import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'video-card',
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="video-card" tabindex="0" (click)="onCardClick()" (keydown.enter)="onCardClick()" (keyup.space)="onCardClick()">
+    <div class="video-card" tabindex="0" (click)="onCardClick()" (keydown.enter)="onCardClick()" (keyup.space)="onCardClick()" [ngStyle]="cardStyles">
       <div class="thumbnail-container">
         <img 
           *ngIf="video.thumbnailAssetId"
@@ -15,7 +17,7 @@ import { VideoDto } from '@optimistic-tanuki/ui-models';
           [alt]="video.title"
           class="thumbnail"
         />
-        <div *ngIf="!video.thumbnailAssetId" class="thumbnail-placeholder">
+        <div *ngIf="!video.thumbnailAssetId" class="thumbnail-placeholder" [ngStyle]="placeholderStyles">
           <span>No thumbnail</span>
         </div>
         
@@ -32,7 +34,7 @@ import { VideoDto } from '@optimistic-tanuki/ui-models';
         <div class="video-info">
           <h3 class="video-title" [title]="video.title">{{ video.title }}</h3>
           
-          <div class="video-meta">
+          <div class="video-meta" [ngStyle]="metaStyles">
             <span class="channel-name" *ngIf="video.channel">{{ video.channel.name }}</span>
             <div class="video-stats">
               <span>{{ video.viewCount | number }} views</span>
@@ -47,18 +49,20 @@ import { VideoDto } from '@optimistic-tanuki/ui-models';
   styles: [`
     .video-card {
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border-radius: 8px;
+      padding: 0.5rem;
     }
 
     .video-card:hover {
       transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .thumbnail-container {
       position: relative;
       width: 100%;
       padding-bottom: 56.25%; /* 16:9 aspect ratio */
-      background: #f0f0f0;
       border-radius: 8px;
       overflow: hidden;
     }
@@ -81,8 +85,6 @@ import { VideoDto } from '@optimistic-tanuki/ui-models';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #e0e0e0;
-      color: #606060;
     }
 
     .duration {
@@ -136,7 +138,6 @@ import { VideoDto } from '@optimistic-tanuki/ui-models';
 
     .video-meta {
       font-size: 0.75rem;
-      color: #606060;
     }
 
     .channel-name {
@@ -150,9 +151,42 @@ import { VideoDto } from '@optimistic-tanuki/ui-models';
     }
   `]
 })
-export class VideoCardComponent {
+export class VideoCardComponent implements OnInit, OnDestroy {
+  private themeService = inject(ThemeService);
+  private themeSub?: Subscription;
+  
+  cardStyles: any = {};
+  placeholderStyles: any = {};
+  metaStyles: any = {};
+  
   @Input() video!: VideoDto;
   @Output() cardClick = new EventEmitter<VideoDto>();
+
+  ngOnInit() {
+    this.themeSub = this.themeService.themeColors$.subscribe((colors: ThemeColors | undefined) => {
+      if (colors) {
+        this.cardStyles = {
+          background: colors.background,
+          color: colors.foreground,
+        };
+        this.placeholderStyles = {
+          background: colors.background,
+          color: colors.foreground,
+          opacity: 0.6,
+        };
+        this.metaStyles = {
+          color: colors.foreground,
+          opacity: 0.7,
+        };
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.themeSub) {
+      this.themeSub.unsubscribe();
+    }
+  }
 
   onCardClick() {
     this.cardClick.emit(this.video);
