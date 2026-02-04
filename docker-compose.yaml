@@ -316,13 +316,25 @@ services:
       - '8085:4000'
     depends_on:
       - gateway
+
+  video-client:
+    container_name: ot_video_client
+    build:
+      context: .
+      dockerfile: ./apps/video-client/Dockerfile
+    ports:
+      - '8086:4000'
+    depends_on:
+      - gateway
+      - videos
+
   store:
     container_name: ot_store
     build:
       context: .
       dockerfile: ./apps/store/Dockerfile
     ports:
-      - '3013:3009'
+      - '3013:3013'
     depends_on:
       postgres:
         condition: service_healthy
@@ -373,6 +385,19 @@ services:
       - gateway
       - app-configurator
       - app-configurator-seed
+
+  videos:
+    container_name: ot_videos
+    build:
+      context: .
+      dockerfile: ./apps/videos/Dockerfile
+    ports:
+      - '3016:3016'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:

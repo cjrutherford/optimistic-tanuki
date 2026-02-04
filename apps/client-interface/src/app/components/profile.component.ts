@@ -1,4 +1,4 @@
-import { inject } from '@angular/core';
+import { inject, PLATFORM_ID } from '@angular/core';
 import {
   MessageLevelType,
   MessageService,
@@ -15,6 +15,7 @@ import {
   ProfileDto,
 } from '@optimistic-tanuki/ui-models';
 import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-profile',
@@ -30,15 +31,18 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
   styleUrl: './profile.component.scss',
 })
 export class ProfileComponent implements OnInit {
+  private readonly platformId = inject(PLATFORM_ID);
   private readonly messageService = inject(MessageService);
   profileService: ProfileService;
 
   constructor(readonly _profileService: ProfileService) {
+   if(isPlatformBrowser(this.platformId)) {
     this.profileService = _profileService;
     const profile = localStorage.getItem('selectedProfile');
     if (profile) {
       this.profileService.selectProfile(JSON.parse(profile));
     }
+  }
   }
 
   ngOnInit(): void {

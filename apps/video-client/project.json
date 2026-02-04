@@ -1,0 +1,100 @@
+{
+  "name": "video-client",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "video",
+  "sourceRoot": "apps/video-client/src",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/video-client",
+        "browser": "apps/video-client/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/video-client/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "sourceMap": true,
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/video-client/public"
+          }
+        ],
+        "styles": ["apps/video-client/src/styles.scss"],
+        "server": "apps/video-client/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/video-client/src/server.ts"
+        },
+        "prerender": false
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "4kb",
+              "maximumError": "8kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "proxyConfig": "apps/video-client/proxy.conf.json"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "video-client:build:production"
+        },
+        "development": {
+          "buildTarget": "video-client:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular/build:extract-i18n",
+      "options": {
+        "buildTarget": "video-client:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/video-client/jest.config.ts",
+        "tsConfig": "apps/video-client/tsconfig.spec.json"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "video-client:build",
+        "port": 4200,
+        "staticFilePath": "dist/apps/video-client/browser",
+        "spa": true
+      }
+    }
+  }
+}

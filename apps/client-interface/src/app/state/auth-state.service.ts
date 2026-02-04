@@ -47,7 +47,7 @@ export class AuthStateService {
       this.currentProfile$ = this.currentProfileSubject.asObservable();
       return;
     }
-
+    
     this.tokenSubject = new BehaviorSubject<string | null>(
       localStorage.getItem(this.tokenKey)
     );
@@ -63,7 +63,7 @@ export class AuthStateService {
     this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
     this.decodedToken$ = this.decodedTokenSubject.asObservable();
     this.currentProfile$ = this.currentProfileSubject.asObservable();
-
+    
     const token = localStorage.getItem(this.tokenKey);
     if (token) {
       this.setToken(token);

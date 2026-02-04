@@ -70,6 +70,11 @@ services:
     transport: TCP
     host: ot_forum
     port: 3015
+  videos:
+    name: videos
+    transport: TCP
+    host: ot_videos
+    port: 3016
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=
