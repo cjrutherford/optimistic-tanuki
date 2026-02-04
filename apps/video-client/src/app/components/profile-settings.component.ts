@@ -14,12 +14,12 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
       <div class="current-profile" *ngIf="currentProfile">
         <h2>Current Profile</h2>
         <div class="profile-card">
-          <img *ngIf="currentProfile.avatarAssetId" 
-               [src]="'/api/asset/' + currentProfile.avatarAssetId" 
+          <img *ngIf="currentProfile.profilePic" 
+               [src]="'/api/asset/' + currentProfile.profilePic" 
                alt="Profile Avatar"
                class="avatar" />
           <div class="profile-info">
-            <h3>{{ currentProfile.handle }}</h3>
+            <h3>{{ currentProfile.profileName }}</h3>
             <p>{{ currentProfile.bio }}</p>
           </div>
         </div>
@@ -31,12 +31,15 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
           <div *ngFor="let profile of profiles" 
                class="profile-item"
                [class.selected]="profile.id === currentProfile?.id"
-               (click)="selectProfile(profile)">
-            <img *ngIf="profile.avatarAssetId" 
-                 [src]="'/api/asset/' + profile.avatarAssetId" 
+               tabindex="0"
+               (click)="selectProfile(profile)"
+               (keydown.enter)="selectProfile(profile)"
+               (keydown.space)="selectProfile(profile)">
+            <img *ngIf="profile.profilePic" 
+                 [src]="'/api/asset/' + profile.profilePic" 
                  alt="Profile Avatar" 
                  class="avatar-small" />
-            <span>{{ profile.handle }}</span>
+            <span>{{ profile.profileName }}</span>
           </div>
         </div>
       </div>

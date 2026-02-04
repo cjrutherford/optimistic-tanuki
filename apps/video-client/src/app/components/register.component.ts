@@ -13,7 +13,7 @@ import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
       <div class="register-content">
         <h1>Create Your Account</h1>
         <p>Join the video platform community</p>
-        <otui-register-block (submitEvent)="onSubmit($event)"></otui-register-block>
+        <lib-register-block (submitEvent)="onSubmit($event)"></lib-register-block>
       </div>
     </div>
   `,

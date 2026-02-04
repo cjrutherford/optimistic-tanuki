@@ -15,6 +15,7 @@
         "polyfills": ["zone.js"],
         "tsConfig": "apps/video-client/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
+        "sourceMap": true,
         "assets": [
           {
             "glob": "**/*",
@@ -26,7 +27,7 @@
         "ssr": {
           "entry": "apps/video-client/src/server.ts"
         },
-        "prerender": true
+        "prerender": false
       },
       "configurations": {
         "production": {

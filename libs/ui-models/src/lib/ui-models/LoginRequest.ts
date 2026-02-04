@@ -3,3 +3,9 @@ export default interface LoginRequest {
   password: string;
   mfa?: string;
 }
+
+export interface LoginResponse {
+  data: {
+    newToken: string;
+  };
+}

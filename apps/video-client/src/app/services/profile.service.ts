@@ -1,7 +1,8 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { isPlatformBrowser } from '@angular/common';
 
 @Injectable({
   providedIn: 'root',
@@ -52,8 +53,11 @@ export class ProfileService {
   }
 
   selectProfile(profile: ProfileDto): void {
+    const platformId = inject(PLATFORM_ID);
     this.currentProfileSubject.next(profile);
-    localStorage.setItem('selectedProfile', JSON.stringify(profile));
+    if (isPlatformBrowser(platformId)) {
+      localStorage.setItem('selectedProfile', JSON.stringify(profile));
+    }
   }
 
   getCurrentUserProfile(): ProfileDto | null {
@@ -65,13 +69,16 @@ export class ProfileService {
   }
 
   loadStoredProfile(): void {
-    const stored = localStorage.getItem('selectedProfile');
-    if (stored) {
-      try {
-        const profile = JSON.parse(stored);
-        this.currentProfileSubject.next(profile);
-      } catch (error) {
-        console.error('Error loading stored profile:', error);
+    const platformId = inject(PLATFORM_ID);
+    if (isPlatformBrowser(platformId)) {
+      const stored = localStorage.getItem('selectedProfile');
+      if (stored) {
+        try {
+          const profile = JSON.parse(stored);
+          this.currentProfileSubject.next(profile);
+        } catch {
+          console.error('Failed to parse stored profile');
+        }
       }
     }
   }

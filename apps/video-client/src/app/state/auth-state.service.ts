@@ -1,8 +1,9 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { LoginRequest, LoginResponse } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
+import { isPlatformBrowser } from '@angular/common';
 
 export interface DecodedToken {
   userId: string;
@@ -24,10 +25,13 @@ export class AuthStateService {
   public readonly isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
   constructor() {
+    const platformId = inject(PLATFORM_ID);
     // Check for stored token on initialization
-    const storedToken = localStorage.getItem('authToken');
-    if (storedToken) {
-      this.setToken(storedToken);
+    if (isPlatformBrowser(platformId)) {
+      const storedToken = localStorage.getItem('authToken');
+      if (storedToken) {
+        this.setToken(storedToken);
+      }
     }
   }
 
@@ -44,7 +48,10 @@ export class AuthStateService {
   }
 
   setToken(token: string): void {
-    localStorage.setItem('authToken', token);
+    const platformId = inject(PLATFORM_ID);
+    if (isPlatformBrowser(platformId)) {
+      localStorage.setItem('authToken', token);
+    }
     this.tokenSubject.next(token);
     this.isAuthenticatedSubject.next(true);
   }
@@ -54,8 +61,11 @@ export class AuthStateService {
   }
 
   logout(): void {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('selectedProfile');
+    const platformId = inject(PLATFORM_ID);
+    if (isPlatformBrowser(platformId)) {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('selectedProfile');
+    }
     this.tokenSubject.next(null);
     this.isAuthenticatedSubject.next(false);
   }

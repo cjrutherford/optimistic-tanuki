@@ -147,15 +147,12 @@ export class ChannelComponent implements OnInit {
     });
   }
 
-  loadChannelVideos(channelId: string) {
-    this.videoService.getChannelVideos(channelId).subscribe({
-      next: (videos) => {
-        this.channelVideos = videos;
-      },
-      error: (err) => {
+  async loadChannelVideos(channelId: string) {
+    this.channelVideos = await this.videoService.getChannelVideos(channelId)
+      .catch((err: any) => {
         console.error('Error loading channel videos:', err);
-      },
-    });
+        return [];
+      })
   }
 
   navigateToVideo(video: VideoDto) {

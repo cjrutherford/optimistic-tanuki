@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { LoginRequest } from '@optimistic-tanuki/ui-models';
@@ -20,8 +21,9 @@ import { ProfileService } from '../profile.service';
   imports: [LoginBlockComponent],
 })
 export class LoginComponent implements OnDestroy {
+  private readonly platformId = inject(PLATFORM_ID);
   private readonly messageService = inject(MessageService);
-  themeSub: Subscription;
+  themeSub?: Subscription;
   themeStyles!: {
     backgroundColor: string;
     color: string;
@@ -34,8 +36,8 @@ export class LoginComponent implements OnDestroy {
   private readonly profileService = inject(ProfileService);
 
   constructor() {
-    this.themeSub = this.themeService.themeColors$
-      .pipe(filter((x) => !!x))
+    if(isPlatformBrowser(this.platformId)) {
+    this.themeSub = this.themeService.themeColors$.pipe(filter((x) => !!x))
       .subscribe((colors) => {
         this.themeStyles = {
           backgroundColor: colors.background,
@@ -43,10 +45,11 @@ export class LoginComponent implements OnDestroy {
           border: `1px solid ${colors.accent}`,
         };
       });
+    }
   }
 
   ngOnDestroy() {
-    this.themeSub.unsubscribe();
+    this.themeSub?.unsubscribe();
   }
 
   async onSubmit($event: LoginType) {

@@ -224,7 +224,9 @@ export class MyChannelComponent implements OnInit {
 
     try {
       this.channel = await this.videoService.createChannel({
-        name: `${profile.handle}'s Channel`,
+        profileId: profile.id,
+        userId: profile.userId,
+        name: `${profile.profileName}'s Channel`,
         description: 'My video channel',
       });
     } catch (error) {

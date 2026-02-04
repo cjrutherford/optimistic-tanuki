@@ -1,4 +1,5 @@
-import { Component, inject, OnDestroy } from '@angular/core';
+import { Component, inject, OnDestroy, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subscription, filter } from 'rxjs';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -12,11 +13,11 @@ import { ProfileService } from '../services/profile.service';
   standalone: true,
   imports: [LoginBlockComponent],
   template: `
-    <div class="login-container" [ngStyle]="themeStyles">
+    <div class="login-container" [style]="themeStyles">
       <div class="login-content">
         <h1>Welcome to Video Platform</h1>
         <p>Sign in to watch, upload, and interact with videos</p>
-        <otui-login-block (submitEvent)="onSubmit($event)"></otui-login-block>
+        <lib-login-block (submitEvent)="onSubmit($event)"></lib-login-block>
       </div>
     </div>
   `,
@@ -48,27 +49,28 @@ import { ProfileService } from '../services/profile.service';
   `]
 })
 export class LoginComponent implements OnDestroy {
-  private readonly themeService = inject(ThemeService);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly themeService = isPlatformBrowser(this.platformId) ? inject(ThemeService) : null;
   private readonly authStateService = inject(AuthStateService);
   private readonly profileService = inject(ProfileService);
   private readonly router = inject(Router);
   
   themeStyles: any = {};
-  private themeSub: Subscription;
+  private themeSub: Subscription | null = null;
 
   constructor() {
-    this.themeSub = this.themeService.themeColors$
+    this.themeSub = this.themeService?.themeColors$
       .pipe(filter((x) => !!x))
       .subscribe((colors) => {
         this.themeStyles = {
           backgroundColor: colors.background,
           color: colors.foreground,
         };
-      });
+      }) || null;
   }
 
   ngOnDestroy() {
-    this.themeSub.unsubscribe();
+    this.themeSub?.unsubscribe();
   }
 
   async onSubmit($event: LoginType) {
