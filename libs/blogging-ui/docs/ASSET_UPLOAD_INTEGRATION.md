@@ -39,7 +39,8 @@ Editor inserts URL instead of base64
 ### Files Created
 
 #### 1. ImageUploadService
-**Location**: `libs/blogging-ui/src/lib/services/image-upload.service.ts`
+**Location**: `libs/compose-lib/src/lib/services/image-upload.service.ts`
+**Import**: `import { ImageUploadService } from '@optimistic-tanuki/compose-lib';`
 
 **Purpose**: Reusable service for uploading files to Assets service
 
