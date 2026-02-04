@@ -487,28 +487,32 @@ export class ComposeComponent
 
     const file = input.files[0];
 
-    // Check if profileId is available
-    if (!this.profileId) {
-      console.error('Profile ID is required for image upload');
-      alert('Unable to upload image: User profile not found');
-      input.value = '';
-      return;
-    }
-
     try {
       // If custom callback is provided, use it
       if (this.imageUploadCallback) {
         const reader = new FileReader();
         reader.onload = async () => {
-          const base64Src = reader.result as string;
-          if (base64Src && this.imageUploadCallback) {
-            const uploadedUrl = await this.imageUploadCallback(base64Src, file.name);
-            this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
+          try {
+            const base64Src = reader.result as string;
+            if (base64Src && this.imageUploadCallback) {
+              const uploadedUrl = await this.imageUploadCallback(base64Src, file.name);
+              this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
+            }
+          } catch (error) {
+            console.error('Error in image upload callback:', error);
+            alert('Failed to upload image. Please try again.');
           }
         };
         reader.readAsDataURL(file);
       } else {
-        // Upload to Assets service
+        // Upload to Assets service (requires profileId)
+        if (!this.profileId) {
+          console.error('Profile ID is required for image upload');
+          alert('Unable to upload image: User profile not found');
+          input.value = '';
+          return;
+        }
+
         const assetUrl = await this.imageUploadService.uploadFile(
           file,
           this.profileId,
@@ -614,13 +618,6 @@ export class ComposeComponent
 
     if (!e.dataTransfer?.files.length) return;
 
-    // Check if profileId is available
-    if (!this.profileId) {
-      console.error('Profile ID is required for image upload');
-      alert('Unable to upload image: User profile not found');
-      return;
-    }
-
     const files = Array.from(e.dataTransfer.files);
 
     // Filter for image files only
@@ -638,15 +635,26 @@ export class ComposeComponent
         if (this.imageUploadCallback) {
           const reader = new FileReader();
           reader.onload = async (event: ProgressEvent<FileReader>) => {
-            const base64Src = event.target?.result as string;
-            if (base64Src) {
-              const uploadedUrl = await this.imageUploadCallback!(base64Src, file.name);
-              this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
+            try {
+              const base64Src = event.target?.result as string;
+              if (base64Src) {
+                const uploadedUrl = await this.imageUploadCallback!(base64Src, file.name);
+                this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
+              }
+            } catch (error) {
+              console.error('Error in image upload callback:', error);
+              alert(`Failed to upload ${file.name}. Please try again.`);
             }
           };
           reader.readAsDataURL(file);
         } else {
-          // Upload to Assets service
+          // Upload to Assets service (requires profileId)
+          if (!this.profileId) {
+            console.error('Profile ID is required for image upload');
+            alert('Unable to upload image: User profile not found');
+            return;
+          }
+
           const assetUrl = await this.imageUploadService.uploadFile(
             file,
             this.profileId,

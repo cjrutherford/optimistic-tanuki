@@ -25,7 +25,7 @@ import DOMPurify from 'dompurify';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { RichTextToolbarComponent } from '../compose/components/rich-text-toolbar.component';
 import { ImageUploadCallback } from '..';
-import { ImageUploadService } from '@optimistic-tanuki/blogging-ui';
+import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
 
 @Component({
   selector: 'lib-comment',

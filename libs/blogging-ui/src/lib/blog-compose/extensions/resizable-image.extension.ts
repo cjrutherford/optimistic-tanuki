@@ -53,25 +53,31 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
       },
       width: {
         default: null,
-        parseHTML: element => element.getAttribute('width'),
+        parseHTML: element => {
+          const width = element.getAttribute('width');
+          return width ? parseInt(width, 10) : null;
+        },
         renderHTML: attributes => {
           if (!attributes['width']) {
             return {};
           }
           return {
-            width: attributes['width'],
+            width: attributes['width'], // numeric value
           };
         },
       },
       height: {
         default: null,
-        parseHTML: element => element.getAttribute('height'),
+        parseHTML: element => {
+          const height = element.getAttribute('height');
+          return height ? parseInt(height, 10) : null;
+        },
         renderHTML: attributes => {
           if (!attributes['height']) {
             return {};
           }
           return {
-            height: attributes['height'],
+            height: attributes['height'], // numeric value
           };
         },
       },
@@ -173,21 +179,25 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
                   document.removeEventListener('mousemove', onMouseMove);
                   document.removeEventListener('mouseup', onMouseUp);
 
-                  // Update the node attributes
-                  const pos = view.posAtDOM(img, 0);
-                  if (pos !== null && pos >= 0) {
-                    const node = view.state.doc.nodeAt(pos);
-                    if (node) {
-                      const newWidth = img.offsetWidth;
-                      const newHeight = img.offsetHeight;
+                  // Update the node attributes using getPos from the node view
+                  // Find the wrapper and get its position
+                  const wrapper = target.closest('.resizable-image-wrapper') as HTMLElement;
+                  if (wrapper) {
+                    const pos = view.posAtDOM(wrapper, 0);
+                    if (pos !== null && pos >= 0) {
+                      const node = view.state.doc.nodeAt(pos);
+                      if (node && node.type.name === 'resizableImage') {
+                        const newWidth = img.offsetWidth;
+                        const newHeight = img.offsetHeight;
 
-                      view.dispatch(
-                        view.state.tr.setNodeMarkup(pos, undefined, {
-                          ...node.attrs,
-                          width: `${newWidth}px`,
-                          height: `${newHeight}px`,
-                        })
-                      );
+                        view.dispatch(
+                          view.state.tr.setNodeMarkup(pos, undefined, {
+                            ...node.attrs,
+                            width: newWidth,  // numeric value
+                            height: newHeight, // numeric value
+                          })
+                        );
+                      }
                     }
                   }
                 };

@@ -24,7 +24,7 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent, SelectComponent } from '@optimistic-tanuki/form-ui';
 import { RichTextToolbarComponent } from '@optimistic-tanuki/social-ui';
 import { Themeable, ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
-import { ImageUploadService } from '@optimistic-tanuki/blogging-ui';
+import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
 
 import { TopicDto, ThreadDto } from '../models';
 

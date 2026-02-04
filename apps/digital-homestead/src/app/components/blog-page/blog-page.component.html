@@ -125,17 +125,17 @@
         >
         }
       </div>
-      @if(!selectedPost() && posts().length > 0) { @for(post of posts(); track
-      post.id){
-      <dh-blog-viewer
-        [title]="post.title"
-        [content]="post.content"
-        [authorId]="post.authorId"
-        [createdAt]="post.createdAt"
-      ></dh-blog-viewer>
-      } }
-      {{ selectedPost() && posts().length > 0 }}
-      } }
+      @if (!selectedPost() && posts().length > 0) {
+        @for (post of posts(); track post.id) {
+          <dh-blog-viewer
+            [title]="post.title"
+            [content]="post.content"
+            [authorId]="post.authorId"
+            [createdAt]="post.createdAt"
+          ></dh-blog-viewer>
+        }
+      }
+      }
 
       <!-- Create/Edit Mode (only shown if user has permission) -->
       @if (mode() === 'create' || mode() === 'edit') { @if (canEdit()) {

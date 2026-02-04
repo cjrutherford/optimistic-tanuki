@@ -1182,7 +1182,7 @@ export class BlogComposeComponent
       img.onload = () => {
         this.editor.chain().focus().setImage({
           src: assetUrl, // Use asset URL instead of base64
-          width: `${defaultWidth}px`,
+          width: defaultWidth, // numeric value, not string
         }).run();
       };
       img.src = assetUrl;
@@ -1304,12 +1304,11 @@ export class BlogComposeComponent
     // Upload each image file to Assets service
     for (const file of imageFiles) {
       try {
-        const extension = file.name.split('.').pop()!;
-        // Upload to Assets service
+        // Upload to Assets service with a generated base filename (no extension)
         const assetUrl = await this.imageUploadService.uploadFile(
           file,
           this.profileId,
-          `blog-drag-drop-${Date.now()}.${extension}`
+          `blog-drag-drop-${Date.now()}`
         );
 
         // Get the editor's content area width for default sizing
@@ -1322,7 +1321,7 @@ export class BlogComposeComponent
         // Insert the image with asset URL
         this.editor.chain().focus().setImage({
           src: assetUrl,
-          width: `${defaultWidth}px`,
+          width: defaultWidth, // numeric value, not string
         }).run();
       } catch (error) {
         console.error('Error uploading dropped file:', error);
