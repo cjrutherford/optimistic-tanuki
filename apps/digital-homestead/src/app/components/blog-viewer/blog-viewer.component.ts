@@ -3,16 +3,83 @@ import {
   Input,
   OnInit,
   OnChanges,
+  OnDestroy,
   SimpleChanges,
   signal,
+  ViewChild,
+  ViewContainerRef,
+  ComponentRef,
+  AfterViewInit,
+  ElementRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import DOMPurify from 'dompurify';
 
+// Import common-ui components that can be injected
+import {
+  ButtonComponent,
+  CardComponent,
+  AccordionComponent,
+  ModalComponent,
+  HeroSectionComponent,
+  ContentSectionComponent,
+  CalloutBoxComponent,
+  CodeSnippetComponent,
+  VideoPlayerComponent,
+  ImageGalleryComponent,
+  QuoteBlockComponent,
+  TimelineComponent,
+  StatsDisplayComponent,
+  PricingTableComponent,
+  TestimonialComponent,
+  FaqItemComponent,
+  SocialShareComponent,
+} from '@optimistic-tanuki/common-ui';
+
+// Component map for reconstruction
+const COMPONENT_MAP: Record<string, any> = {
+  'callout-box': CalloutBoxComponent,
+  'code-snippet': CodeSnippetComponent,
+  'video-player': VideoPlayerComponent,
+  'image-gallery': ImageGalleryComponent,
+  'quote-block': QuoteBlockComponent,
+  'timeline': TimelineComponent,
+  'stats-display': StatsDisplayComponent,
+  'pricing-table': PricingTableComponent,
+  'testimonial': TestimonialComponent,
+  'faq-item': FaqItemComponent,
+  'social-share': SocialShareComponent,
+  'button': ButtonComponent,
+  'card': CardComponent,
+  'accordion': AccordionComponent,
+  'modal': ModalComponent,
+  'hero-section': HeroSectionComponent,
+  'content-section': ContentSectionComponent,
+};
+
 @Component({
   selector: 'dh-blog-viewer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    ButtonComponent,
+    CardComponent,
+    AccordionComponent,
+    ModalComponent,
+    HeroSectionComponent,
+    ContentSectionComponent,
+    CalloutBoxComponent,
+    CodeSnippetComponent,
+    VideoPlayerComponent,
+    ImageGalleryComponent,
+    QuoteBlockComponent,
+    TimelineComponent,
+    StatsDisplayComponent,
+    PricingTableComponent,
+    TestimonialComponent,
+    FaqItemComponent,
+    SocialShareComponent,
+  ],
   template: `
     <article class="blog-viewer">
       <header class="blog-header">
@@ -24,7 +91,7 @@ import DOMPurify from 'dompurify';
           }}</span>
         </div>
       </header>
-      <div class="blog-content" [innerHTML]="sanitizedContent"></div>
+      <div #contentContainer class="blog-content" [innerHTML]="sanitizedContent"></div>
     </article>
   `,
   styles: [
@@ -166,27 +233,132 @@ import DOMPurify from 'dompurify';
         background: var(--local-background, #f5f5f5);
         font-weight: 600;
       }
+
+      .blog-content :deep(.angular-component-node) {
+        display: block;
+        margin: 1.5rem 0;
+      }
+
+      .blog-content :deep(.component-placeholder) {
+        padding: 1rem;
+        border: 1px dashed var(--local-border-color, #ccc);
+        border-radius: 4px;
+        text-align: center;
+        color: var(--local-foreground, #666);
+        background: var(--local-background, #f9f9f9);
+      }
     `,
   ],
 })
-export class BlogViewerComponent implements OnInit, OnChanges {
+export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   @Input() title = '';
   @Input() content = '';
   @Input() authorId = '';
   @Input() createdAt?: Date;
 
+  @ViewChild('contentContainer', { read: ViewContainerRef })
+  contentContainer?: ViewContainerRef;
+
+  @ViewChild('contentContainer', { read: ElementRef })
+  contentElement?: ElementRef<HTMLElement>;
+
   loading = signal(true);
 
   sanitizedContent = '';
+  private componentRefs: ComponentRef<any>[] = [];
 
   ngOnInit() {
     this.sanitizedContent = DOMPurify.sanitize(this.content);
+  }
 
+  ngAfterViewInit() {
+    // Reconstruct Angular components from HTML after view is initialized
+    this.reconstructComponents();
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['content']) {
       this.sanitizedContent = DOMPurify.sanitize(this.content);
+      // Reconstruct components when content changes
+      setTimeout(() => this.reconstructComponents(), 0);
     }
+  }
+
+  ngOnDestroy() {
+    // Clean up component references
+    this.componentRefs.forEach(ref => ref.destroy());
+    this.componentRefs = [];
+  }
+
+  /**
+   * Reconstruct Angular components from HTML data attributes
+   */
+  private reconstructComponents(): void {
+    if (!this.contentElement || !this.contentContainer) {
+      return;
+    }
+
+    // Clean up existing component refs
+    this.componentRefs.forEach(ref => ref.destroy());
+    this.componentRefs = [];
+
+    // Find all component nodes in the content
+    const componentNodes = this.contentElement.nativeElement.querySelectorAll(
+      '[data-angular-component]'
+    );
+
+    componentNodes.forEach((node: Element) => {
+      try {
+        // Extract component metadata from data attributes
+        const componentId = node.getAttribute('data-component-id');
+        const instanceId = node.getAttribute('data-instance-id');
+        const dataStr = node.getAttribute('data-component-data');
+        const componentDefStr = node.getAttribute('data-component-def');
+
+        if (!componentId) {
+          console.warn('Component node missing data-component-id:', node);
+          return;
+        }
+
+        // Parse component data
+        const componentData = dataStr ? JSON.parse(dataStr) : {};
+        const componentDef = componentDefStr ? JSON.parse(componentDefStr) : null;
+
+        // Get component class from map
+        const ComponentClass = COMPONENT_MAP[componentId];
+        if (!ComponentClass) {
+          console.warn(`Component not found in map: ${componentId}`, node);
+          // Leave placeholder visible with component name
+          node.innerHTML = `<div class="component-placeholder" style="padding: 1rem; border: 1px dashed #ccc; border-radius: 4px; text-align: center; color: #666;">
+            <strong>${componentDef?.name || componentId}</strong>
+            <p style="margin: 0.5rem 0 0; font-size: 0.9rem;">Component not available in viewer</p>
+          </div>`;
+          return;
+        }
+
+        // Create component instance
+        const componentRef = this.contentContainer!.createComponent(ComponentClass);
+
+        // Set component inputs from data
+        Object.keys(componentData).forEach(key => {
+          if (componentRef.instance[key] !== undefined) {
+            componentRef.instance[key] = componentData[key];
+          }
+        });
+
+        // Trigger change detection
+        componentRef.changeDetectorRef.detectChanges();
+
+        // Store reference for cleanup
+        this.componentRefs.push(componentRef);
+
+        // Replace placeholder with actual component
+        node.innerHTML = '';
+        node.appendChild(componentRef.location.nativeElement);
+
+      } catch (error) {
+        console.error('Error reconstructing component:', error, node);
+      }
+    });
   }
 }
