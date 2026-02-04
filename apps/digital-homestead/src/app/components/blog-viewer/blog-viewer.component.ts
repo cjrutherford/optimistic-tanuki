@@ -23,32 +23,22 @@ import {
   ModalComponent,
   HeroSectionComponent,
   ContentSectionComponent,
-  CalloutBoxComponent,
-  CodeSnippetComponent,
-  VideoPlayerComponent,
-  ImageGalleryComponent,
-  QuoteBlockComponent,
-  TimelineComponent,
-  StatsDisplayComponent,
-  PricingTableComponent,
-  TestimonialComponent,
-  FaqItemComponent,
-  SocialShareComponent,
 } from '@optimistic-tanuki/common-ui';
+import { CalloutBoxComponent, CodeSnippetComponent, ImageGalleryComponent, InjectedComponentInstance } from '@optimistic-tanuki/blogging-ui';
 
 // Component map for reconstruction
 const COMPONENT_MAP: Record<string, any> = {
   'callout-box': CalloutBoxComponent,
   'code-snippet': CodeSnippetComponent,
-  'video-player': VideoPlayerComponent,
+  // 'video-player': VideoPlayerComponent,
   'image-gallery': ImageGalleryComponent,
-  'quote-block': QuoteBlockComponent,
-  'timeline': TimelineComponent,
-  'stats-display': StatsDisplayComponent,
-  'pricing-table': PricingTableComponent,
-  'testimonial': TestimonialComponent,
-  'faq-item': FaqItemComponent,
-  'social-share': SocialShareComponent,
+  // 'quote-block': QuoteBlockComponent,
+  // 'timeline': TimelineComponent,
+  // 'stats-display': StatsDisplayComponent,
+  // 'pricing-table': PricingTableComponent,
+  // 'testimonial': TestimonialComponent,
+  // 'faq-item': FaqItemComponent,
+  // 'social-share': SocialShareComponent,
   'button': ButtonComponent,
   'card': CardComponent,
   'accordion': AccordionComponent,
@@ -70,15 +60,15 @@ const COMPONENT_MAP: Record<string, any> = {
     ContentSectionComponent,
     CalloutBoxComponent,
     CodeSnippetComponent,
-    VideoPlayerComponent,
+    // VideoPlayerComponent,
     ImageGalleryComponent,
-    QuoteBlockComponent,
-    TimelineComponent,
-    StatsDisplayComponent,
-    PricingTableComponent,
-    TestimonialComponent,
-    FaqItemComponent,
-    SocialShareComponent,
+    // QuoteBlockComponent,
+    // TimelineComponent,
+    // StatsDisplayComponent,
+    // PricingTableComponent,
+    // TestimonialComponent,
+    // FaqItemComponent,
+    // SocialShareComponent,
   ],
   template: `
     <article class="blog-viewer">
@@ -337,7 +327,7 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
         }
 
         // Create component instance
-        const componentRef = this.contentContainer!.createComponent(ComponentClass);
+        const componentRef: ComponentRef<any> = this.contentContainer!.createComponent(ComponentClass);
 
         // Set component inputs from data
         Object.keys(componentData).forEach(key => {
