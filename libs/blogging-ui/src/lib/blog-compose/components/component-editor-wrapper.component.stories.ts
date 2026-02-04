@@ -39,6 +39,24 @@ const mockComponentDef: InjectableComponent = {
     title: 'Sample Title',
     content: 'This is sample content for the component.',
   },
+  properties: [
+    {
+      key: 'title',
+      label: 'Title',
+      type: 'string',
+      description: 'The title of the component',
+      defaultValue: 'Sample Title',
+      isOutput: false,
+    },
+    {
+      key: 'content',
+      label: 'Content',
+      type: 'string',
+      description: 'The main content text',
+      defaultValue: 'This is sample content for the component.',
+      isOutput: false,
+    },
+  ],
 };
 
 const mockComponentInstance: InjectedComponentInstance = {

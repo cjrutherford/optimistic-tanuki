@@ -130,13 +130,11 @@ import {
       <div
         class="quick-edit-overlay"
         *ngIf="isEditing"
-        (click)="$event.stopPropagation()"
-        (keyup.enter)="$event.stopPropagation()"
-        tabindex="0"
+        (click)="onOverlayClick($event)"
       >
         <div class="quick-edit-header">
           <h4>Quick Edit: {{ componentDef?.name }}</h4>
-          <button class="close-btn" (click)="closeQuickEdit()">
+          <button class="close-btn" (click)="closeQuickEdit(); $event.stopPropagation()">
             <mat-icon>close</mat-icon>
           </button>
         </div>
@@ -176,10 +174,10 @@ import {
           </div>
         </div>
         <div class="quick-edit-actions">
-          <button class="action-btn cancel-btn" (click)="cancelQuickEdit()">
+          <button class="action-btn cancel-btn" (click)="cancelQuickEdit(); $event.stopPropagation()">
             Cancel
           </button>
-          <button class="action-btn save-btn" (click)="saveQuickEdit()">
+          <button class="action-btn save-btn" (click)="saveQuickEdit(); $event.stopPropagation()">
             Apply Changes
           </button>
         </div>
@@ -579,10 +577,22 @@ export class ComponentEditorWrapperComponent
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    // Close quick edit if clicking outside
+    // Close quick edit if clicking outside the overlay
     if (this.isEditing) {
       const target = event.target as HTMLElement;
-      if (!target.closest('.component-editor-wrapper')) {
+      const clickedInOverlay = target.closest('.quick-edit-overlay');
+      const clickedInWrapper = target.closest('.component-editor-wrapper');
+
+      // Close if clicked outside the wrapper entirely
+      if (!clickedInWrapper) {
+        this.closeQuickEdit();
+      }
+      // Don't close if clicked in the overlay (allow form interaction)
+      else if (clickedInOverlay) {
+        // Do nothing - allow normal interaction
+      }
+      // Close if clicked in the wrapper but outside the overlay (e.g., control buttons)
+      else {
         this.closeQuickEdit();
       }
     }
@@ -601,24 +611,41 @@ export class ComponentEditorWrapperComponent
     this.selectionChanged.emit(this.componentInstance);
   }
 
+  onOverlayClick(event: Event): void {
+    // Stop clicks in the overlay from reaching the wrapper's onClick
+    // This prevents focus loss when clicking on inputs
+    event.stopPropagation();
+  }
+
   onConfigClick(event: Event): void {
     event.stopPropagation();
+    if (this.isEditing) {
+      this.closeQuickEdit();
+    }
     this.configRequested.emit(this.componentInstance);
   }
 
   onEditClick(event: Event): void {
     event.stopPropagation();
-    this.isEditing = true;
-    this.editingData = { ...this.componentData };
+    this.isEditing = !this.isEditing;
+    if (this.isEditing) {
+      this.editingData = { ...this.componentData };
+    }
   }
 
   onDuplicateClick(event: Event): void {
     event.stopPropagation();
+    if (this.isEditing) {
+      this.closeQuickEdit();
+    }
     this.duplicateRequested.emit(this.componentInstance);
   }
 
   onDeleteClick(event: Event): void {
     event.stopPropagation();
+    if (this.isEditing) {
+      this.closeQuickEdit();
+    }
     this.deleteRequested.emit(this.componentInstance);
   }
 

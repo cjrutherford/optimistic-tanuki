@@ -128,24 +128,11 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       .substring(2, 9)}`;
 
     // Create wrapper component
-    const wrapperRef = this.viewContainer.createComponent(
+    const wrapperRef = position !== undefined ? this.viewContainer.createComponent(
+      ComponentEditorWrapperComponent, { index: position }
+    ) : this.viewContainer.createComponent(
       ComponentEditorWrapperComponent
     );
-
-    // Create the actual component within the wrapper
-    const componentRef = this.viewContainer.createComponent(
-      componentDef.component
-    );
-
-    // Set initial data if provided
-    if (data || componentDef.data) {
-      const componentData = { ...componentDef.data, ...data };
-      Object.keys(componentData).forEach((key) => {
-        if (componentRef.instance[key] !== undefined) {
-          componentRef.instance[key] = componentData[key];
-        }
-      });
-    }
 
     // Create instance object
     const instance: InjectedComponentInstance = {
@@ -156,7 +143,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       data: { ...componentDef.data, ...data },
     };
 
-    // Configure wrapper component
+    // Configure wrapper component - it will create the inner component itself
     wrapperRef.instance.componentInstance = instance;
     wrapperRef.instance.componentDef = componentDef;
     wrapperRef.instance.componentData = { ...componentDef.data, ...data };
@@ -198,19 +185,8 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       }
     );
 
-    // Append the actual component to the wrapper
-    const wrapperElement = wrapperRef.location.nativeElement;
-    const componentElement = componentRef.location.nativeElement;
-    wrapperElement.appendChild(componentElement);
-
-    // Store the instance (with additional reference to the inner component)
-    instance.data._innerComponentRef = componentRef;
+    // Store the instance
     this.activeComponents.set(instanceId, instance);
-
-    // Move to specific position if requested
-    if (position !== undefined) {
-      this.moveComponentToPosition(wrapperRef, position);
-    }
 
     // Emit event
     this.componentEvents.emit({
@@ -244,21 +220,6 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       ComponentEditorWrapperComponent
     );
 
-    // Create the actual component within the wrapper
-    const componentRef = this.viewContainer.createComponent(
-      componentDef.component
-    );
-
-    // Set initial data if provided
-    if (data || componentDef.data) {
-      const componentData = { ...componentDef.data, ...data };
-      Object.keys(componentData).forEach((key) => {
-        if (componentRef.instance[key] !== undefined) {
-          componentRef.instance[key] = componentData[key];
-        }
-      });
-    }
-
     // Create instance object
     const instance: InjectedComponentInstance = {
       instanceId,
@@ -267,7 +228,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       data: { ...componentDef.data, ...data },
     };
 
-    // Configure wrapper component
+    // Configure wrapper component - it will create the inner component itself
     wrapperRef.instance.componentInstance = instance;
     wrapperRef.instance.componentDef = componentDef;
     wrapperRef.instance.componentData = { ...componentDef.data, ...data };
@@ -309,16 +270,11 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       }
     );
 
-    // Append the actual component to the wrapper
-    const wrapperElement = wrapperRef.location.nativeElement;
-    const componentElement = componentRef.location.nativeElement;
-    wrapperElement.appendChild(componentElement);
-
     // Append wrapper to target element
+    const wrapperElement = wrapperRef.location.nativeElement;
     targetElement.appendChild(wrapperElement);
 
-    // Store the instance (with additional reference to the inner component)
-    instance.data._innerComponentRef = componentRef;
+    // Store the instance
     this.activeComponents.set(instanceId, instance);
 
     return instance;
@@ -367,25 +323,17 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     // Update instance data
     instance.data = { ...instance.data, ...data };
 
-    // Update component properties
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const innerRef = (instance.data as any)._innerComponentRef;
-    const targetRef = innerRef || instance.componentRef;
-
-    Object.keys(data).forEach((key) => {
-      if (
-        key !== '_innerComponentRef' &&
-        targetRef.instance &&
-        targetRef.instance[key] !== undefined
-      ) {
-        targetRef.instance[key] = data[key];
+    // Update wrapper component's data - it will update the inner component
+    const wrapperInstance = instance.componentRef.instance as ComponentEditorWrapperComponent;
+    if (wrapperInstance && wrapperInstance.componentData) {
+      wrapperInstance.componentData = { ...wrapperInstance.componentData, ...data };
+      // Trigger the wrapper to update its inner component
+      if (wrapperInstance['updateDynamicComponent']) {
+        wrapperInstance['updateDynamicComponent']();
       }
-    });
+    }
 
     // Trigger change detection
-    if (innerRef && innerRef.changeDetectorRef) {
-      innerRef.changeDetectorRef.detectChanges();
-    }
     instance.componentRef.changeDetectorRef.detectChanges();
 
     // Emit event
