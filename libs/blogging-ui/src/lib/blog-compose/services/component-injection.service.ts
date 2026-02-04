@@ -28,7 +28,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   private onSelectionCallback?: (instance: InjectedComponentInstance) => void;
   private onDuplicateCallback?: (instance: InjectedComponentInstance) => void;
   private onConfigCallback?: (instance: InjectedComponentInstance) => void;
-  private onPropertiesChangedCallback?: (data: { instance: InjectedComponentInstance; data: Record<string, any> }) => void;
+  private onPropertiesChangedCallback?: (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => void;
 
   /**
    * Event emitter for component injection events
@@ -54,7 +54,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     onSelection?: (instance: InjectedComponentInstance) => void;
     onDuplicate?: (instance: InjectedComponentInstance) => void;
     onConfig?: (instance: InjectedComponentInstance) => void;
-    onPropertiesChanged?: (data: { instance: InjectedComponentInstance; data: Record<string, any> }) => void;
+    onPropertiesChanged?: (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => void;
   }): void {
     this.onEditCallback = callbacks.onEdit;
     this.onDeleteCallback = callbacks.onDelete;
@@ -110,7 +110,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
    */
   async injectComponent(
     componentId: string,
-    data?: any,
+    data?: unknown,
     position?: number
   ): Promise<InjectedComponentInstance> {
     if (!this.viewContainer) {
@@ -140,21 +140,15 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       componentDef,
       componentRef: wrapperRef, // Store wrapper ref as main ref
       position: position !== undefined ? { index: position } : undefined,
-      data: { ...componentDef.data, ...data },
+      data: { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) },
     };
 
     // Configure wrapper component - it will create the inner component itself
     wrapperRef.instance.componentInstance = instance;
     wrapperRef.instance.componentDef = componentDef;
-    wrapperRef.instance.componentData = { ...componentDef.data, ...data };
+    wrapperRef.instance.componentData = { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) };
 
     // Set up wrapper event handlers
-    wrapperRef.instance.editRequested.subscribe(
-      (inst: InjectedComponentInstance) => {
-        this.onEditCallback?.(inst);
-      }
-    );
-
     wrapperRef.instance.deleteRequested.subscribe(
       (inst: InjectedComponentInstance) => {
         this.onDeleteCallback?.(inst);
@@ -167,12 +161,6 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       }
     );
 
-    wrapperRef.instance.configRequested.subscribe(
-      (inst: InjectedComponentInstance) => {
-        this.onConfigCallback?.(inst);
-      }
-    );
-
     wrapperRef.instance.selectionChanged.subscribe(
       (inst: InjectedComponentInstance) => {
         this.onSelectionCallback?.(inst);
@@ -180,7 +168,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     );
 
     wrapperRef.instance.propertiesChanged.subscribe(
-      (data: { instance: InjectedComponentInstance; data: Record<string, any> }) => {
+      (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => {
         this.onPropertiesChangedCallback?.(data);
       }
     );
@@ -203,7 +191,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   renderComponentInto(
     componentId: string,
     instanceId: string,
-    data: any,
+    data: unknown,
     targetElement: HTMLElement
   ): InjectedComponentInstance {
     if (!this.viewContainer) {
@@ -225,21 +213,15 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       instanceId,
       componentDef,
       componentRef: wrapperRef, // Store wrapper ref as main ref
-      data: { ...componentDef.data, ...data },
+      data: { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) },
     };
 
     // Configure wrapper component - it will create the inner component itself
     wrapperRef.instance.componentInstance = instance;
     wrapperRef.instance.componentDef = componentDef;
-    wrapperRef.instance.componentData = { ...componentDef.data, ...data };
+    wrapperRef.instance.componentData = { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) };
 
     // Set up wrapper event handlers
-    wrapperRef.instance.editRequested.subscribe(
-      (inst: InjectedComponentInstance) => {
-        this.onEditCallback?.(inst);
-      }
-    );
-
     wrapperRef.instance.deleteRequested.subscribe(
       (inst: InjectedComponentInstance) => {
         this.onDeleteCallback?.(inst);
@@ -252,12 +234,6 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       }
     );
 
-    wrapperRef.instance.configRequested.subscribe(
-      (inst: InjectedComponentInstance) => {
-        this.onConfigCallback?.(inst);
-      }
-    );
-
     wrapperRef.instance.selectionChanged.subscribe(
       (inst: InjectedComponentInstance) => {
         this.onSelectionCallback?.(inst);
@@ -265,7 +241,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     );
 
     wrapperRef.instance.propertiesChanged.subscribe(
-      (data: { instance: InjectedComponentInstance; data: Record<string, any> }) => {
+      (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => {
         this.onPropertiesChangedCallback?.(data);
       }
     );
@@ -312,27 +288,28 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   /**
    * Update component data
    */
-  updateComponent(instanceId: string, data: any): void {
+  updateComponent(instanceId: string, data: unknown): void {
     const instance = this.activeComponents.get(instanceId);
     if (!instance) {
       throw new Error(`Component instance '${instanceId}' not found.`);
     }
 
-    const oldData = { ...instance.data };
+    const oldData = { ...(instance.data as Record<string, unknown>) };
+    const dataToMerge = data as Record<string, unknown>;
 
     // Update instance data
-    instance.data = { ...instance.data, ...data };
+    instance.data = { ...(instance.data as Record<string, unknown>), ...dataToMerge };
 
     // Update wrapper component's data
     const wrapperInstance = instance.componentRef.instance as ComponentEditorWrapperComponent;
     if (wrapperInstance) {
       // Use the public updateComponentData method if available
       if (typeof wrapperInstance.updateComponentData === 'function') {
-        wrapperInstance.updateComponentData(data);
+        wrapperInstance.updateComponentData(dataToMerge);
       } else {
         // Fallback to direct property update
         if (wrapperInstance.componentData) {
-          wrapperInstance.componentData = { ...wrapperInstance.componentData, ...data };
+          wrapperInstance.componentData = { ...wrapperInstance.componentData, ...dataToMerge };
         }
       }
     }
@@ -371,7 +348,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       throw new Error(`Component instance '${instanceId}' not found.`);
     }
 
-    const oldPosition = instance.position?.index;
+    // Position tracking handled by TipTap
 
     this.moveComponentToPosition(instance.componentRef, newPosition);
 
@@ -398,7 +375,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
    * Private helper to move component to specific position in view container
    */
   private moveComponentToPosition(
-    componentRef: ComponentRef<any>,
+    componentRef: ComponentRef<unknown>,
     position: number
   ): void {
     if (!this.viewContainer) {

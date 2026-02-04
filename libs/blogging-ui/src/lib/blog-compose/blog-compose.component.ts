@@ -943,12 +943,25 @@ export class BlogComposeComponent
 
   // Component Wrapper Event Handlers
   onComponentEdit(instance: InjectedComponentInstance): void {
+    console.log('[BlogCompose] Component edit requested', {
+      instanceId: instance.instanceId,
+      componentDefId: instance.componentDef.id,
+      currentData: instance.data
+    });
     this.selectedComponentInstance = instance;
     this.selectedComponentProperties = instance.componentDef.properties || [];
     this.isPropertyEditorVisible = true;
+    console.log('[BlogCompose] Property editor opened', {
+      propertyCount: this.selectedComponentProperties.length
+    });
   }
 
   onComponentDelete(instance: InjectedComponentInstance): void {
+    console.log('[BlogCompose] Component delete requested', {
+      instanceId: instance.instanceId,
+      componentDefId: instance.componentDef.id
+    });
+
     this.componentInjectionService.removeComponent(instance.instanceId);
     // Also remove from editor
     this.editor.commands.removeAngularComponent(instance.instanceId);
@@ -956,29 +969,65 @@ export class BlogComposeComponent
     if (this.selectedComponentInstance?.instanceId === instance.instanceId) {
       this.closePropertyEditor();
     }
+
+    console.log('[BlogCompose] Component deleted successfully', {
+      instanceId: instance.instanceId
+    });
   }
 
   onComponentMoveUp(instance: InjectedComponentInstance): void {
     const activeComponents = this.componentInjectionService.getActiveComponents();
     const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+
+    console.log('[BlogCompose] Component move up requested', {
+      instanceId: instance.instanceId,
+      currentIndex,
+      canMoveUp: currentIndex > 0
+    });
+
     if (currentIndex > 0) {
       this.componentInjectionService.moveComponent(instance.instanceId, currentIndex - 1);
+      console.log('[BlogCompose] Component moved up', {
+        instanceId: instance.instanceId,
+        newIndex: currentIndex - 1
+      });
     }
   }
 
   onComponentMoveDown(instance: InjectedComponentInstance): void {
     const activeComponents = this.componentInjectionService.getActiveComponents();
     const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+
+    console.log('[BlogCompose] Component move down requested', {
+      instanceId: instance.instanceId,
+      currentIndex,
+      canMoveDown: currentIndex >= 0 && currentIndex < activeComponents.length - 1
+    });
+
     if (currentIndex >= 0 && currentIndex < activeComponents.length - 1) {
       this.componentInjectionService.moveComponent(instance.instanceId, currentIndex + 1);
+      console.log('[BlogCompose] Component moved down', {
+        instanceId: instance.instanceId,
+        newIndex: currentIndex + 1
+      });
     }
   }
 
   onComponentSelection(instance: InjectedComponentInstance): void {
+    console.log('[BlogCompose] Component selected', {
+      instanceId: instance.instanceId,
+      componentDefId: instance.componentDef.id
+    });
     this.selectedComponentInstance = instance;
   }
 
   onComponentDuplicate(instance: InjectedComponentInstance): void {
+    console.log('[BlogCompose] Component duplicate requested', {
+      instanceId: instance.instanceId,
+      componentDefId: instance.componentDef.id,
+      data: instance.data
+    });
+
     // Create a duplicate of the component with the same data
     const duplicateData = { ...instance.data };
     delete duplicateData._innerComponentRef; // Remove internal reference
@@ -986,14 +1035,29 @@ export class BlogComposeComponent
       instance.componentDef.id,
       duplicateData
     );
+
+    console.log('[BlogCompose] Component duplicated successfully', {
+      originalInstanceId: instance.instanceId
+    });
   }
 
   onComponentConfig(instance: InjectedComponentInstance): void {
+    console.log('[BlogCompose] Component config requested', {
+      instanceId: instance.instanceId,
+      componentDefId: instance.componentDef.id
+    });
     // Open property editor for configuration (same as edit)
     this.onComponentEdit(instance);
   }
 
   onComponentPropertiesChanged(data: { instance: InjectedComponentInstance; data: Record<string, any> }): void {
+    console.log('[BlogCompose] Component properties changed (from inline edit)', {
+      instanceId: data.instance.instanceId,
+      componentDefId: data.instance.componentDef.id,
+      oldData: data.instance.data,
+      newData: data.data
+    });
+
     // Update component properties from inline quick edit
     this.componentInjectionService.updateComponent(
       data.instance.instanceId,
@@ -1007,6 +1071,10 @@ export class BlogComposeComponent
     });
 
     this.emitChange();
+
+    console.log('[BlogCompose] Component properties updated successfully', {
+      instanceId: data.instance.instanceId
+    });
   }
 
   // Property Editor Handlers

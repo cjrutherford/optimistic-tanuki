@@ -71,7 +71,7 @@ export class PostController {
       this.l.log('Post created successfully');
       return post;
     } catch (error) {
-      this.l.error('Error creating post', error);
+      this.l.error(`Error creating post [${JSON.stringify(createPost)} - ${JSON.stringify(error)}]`);
       throw new HttpException(
         'Failed to create post: [' + error.message + ']',
         500

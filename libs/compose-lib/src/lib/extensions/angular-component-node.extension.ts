@@ -7,6 +7,7 @@ import {
   InjectableComponent,
   InjectedComponentInstance,
 } from '../interfaces/component-injection.interface';
+import { ComponentEditorWrapperComponent } from '@optimistic-tanuki/blogging-ui';
 
 export interface AngularComponentOptions {
   HTMLAttributes: Record<string, unknown>;
@@ -144,11 +145,11 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
             instance.componentRef.instance
           ) {
             // Update the wrapper component's componentData property
-            const wrapperInstance = instance.componentRef.instance;
+            const wrapperInstance: ComponentEditorWrapperComponent = instance.componentRef.instance as ComponentEditorWrapperComponent;
             if (wrapperInstance.componentData) {
               wrapperInstance.componentData = { ...wrapperInstance.componentData, ...newData };
             }
-            
+
             // Also update the instance data
             instance.data = { ...instance.data, ...newData };
 

@@ -414,6 +414,9 @@ export class BlogPageComponent {
 
     const postId = this.currentPostId(); // Move this above postPayload
 
+    const dataStringifiedContent = this.cleanInjectedContent(postData.content);
+    postData.content = dataStringifiedContent;
+
     const currentMode = this.mode();
 
     if (currentMode === 'edit' && postId) {
@@ -428,16 +431,27 @@ export class BlogPageComponent {
       // Update existing post
       this.blogService.updatePost(postId, postPayload).subscribe({
         next: (updatedPost) => {
-          this.selectedPost.set(updatedPost);
-          this.mode.set('view');
+          // Wait for the update to complete successfully before changing UI state
           this.loading.set(false);
+          this.selectedPost.set(updatedPost);
+
           // Update the post in the sidebar list
           this.updatePostInList(updatedPost);
+
+          // Reset the form and hide compose view
+          this.mode.set('view');
+
+          // Navigate to the updated post (stays on same page if already there)
+          if (updatedPost.id) {
+            this.router.navigate(['/blog', updatedPost.id]);
+          }
         },
         error: (err) => {
+          // Keep the form visible and editable so user can correct errors
           this.error.set('Failed to update post: ' + err.message);
           this.loading.set(false);
           console.error('Error updating post:', err);
+          // Form stays in edit mode, allowing user to fix issues and retry
         },
       });
     } else {
@@ -451,22 +465,50 @@ export class BlogPageComponent {
       // Create new post
       this.blogService.createPost(postPayload).subscribe({
         next: (newPost) => {
-          this.selectedPost.set(newPost);
-          this.mode.set('view');
+          // Wait for the post to be created successfully before changing UI state
           this.loading.set(false);
+          this.selectedPost.set(newPost);
+
           // Add the new post to the sidebar list
           this.addPostToList(newPost);
+
+          // Reset the form and hide compose view
+          this.mode.set('view');
+
+          // Navigate to the newly created post
           if (newPost.id) {
             this.router.navigate(['/blog', newPost.id]);
           }
         },
         error: (err) => {
+          // Keep the form visible and editable so user can correct errors
           this.error.set('Failed to create post: ' + err.message);
           this.loading.set(false);
           console.error('Error creating post:', err);
+          // Form stays in edit mode, allowing user to fix issues and retry
         },
       });
     }
+  }
+
+  cleanInjectedContent(content: string): string {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, 'text/html');
+    const nodes = doc.querySelectorAll('div.angular-component-node');
+
+    nodes.forEach((node) => {
+      const data = node.getAttribute('data');
+      if (data) {
+        try {
+          const parsedData = JSON.parse(data);
+          node.setAttribute('data', JSON.stringify(parsedData));
+        } catch (error) {
+          console.error('Failed to parse data attribute:', error);
+        }
+      }
+    });
+
+    return doc.body.innerHTML;
   }
 
   /**

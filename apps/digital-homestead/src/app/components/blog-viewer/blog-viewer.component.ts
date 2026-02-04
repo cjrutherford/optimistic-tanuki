@@ -4,6 +4,7 @@ import {
   OnInit,
   OnChanges,
   SimpleChanges,
+  signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import DOMPurify from 'dompurify';
@@ -174,10 +175,13 @@ export class BlogViewerComponent implements OnInit, OnChanges {
   @Input() authorId = '';
   @Input() createdAt?: Date;
 
+  loading = signal(true);
+
   sanitizedContent = '';
 
   ngOnInit() {
     this.sanitizedContent = DOMPurify.sanitize(this.content);
+
   }
 
   ngOnChanges(changes: SimpleChanges) {
