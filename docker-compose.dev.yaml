@@ -344,6 +344,7 @@ services:
     volumes:
       - ./dist/apps/assets:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
+      - asset-data:/usr/src/app/storage
     command:
       [
         'dumb-init',
@@ -528,3 +529,6 @@ services:
       - '8085:4000'
     depends_on:
       - gateway
+
+volumes:
+  asset-data:

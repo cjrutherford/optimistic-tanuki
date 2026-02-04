@@ -100,6 +100,11 @@ export class BlogPageComponent {
     { initialValue: false }
   );
 
+  readonly profileId = computed(() => {
+    const profile = this.authState.getProfileId();
+    return profile || undefined;
+  })
+
   // Computed: can user edit
   readonly canEdit = computed(
     () => this.isAuthenticated() && this.hasFullAccess()

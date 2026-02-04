@@ -87,8 +87,7 @@
       <div class="theme-designer-section">
         <lib-theme-designer></lib-theme-designer>
       </div>
-      }
-
+      } @if(selectedPost()) {
       <dh-blog-viewer
         [title]="selectedPost()!.title"
         [content]="selectedPost()!.content"
@@ -96,6 +95,7 @@
         [createdAt]="selectedPost()!.createdAt"
       >
       </dh-blog-viewer>
+      }
 
       <!-- Post metadata -->
       <div class="post-metadata">
@@ -125,6 +125,16 @@
         >
         }
       </div>
+      @if(!selectedPost() && posts().length > 0) { @for(post of posts(); track
+      post.id){
+      <dh-blog-viewer
+        [title]="post.title"
+        [content]="post.content"
+        [authorId]="post.authorId"
+        [createdAt]="post.createdAt"
+      ></dh-blog-viewer>
+      } }
+      {{ selectedPost() && posts().length > 0 }}
       } }
 
       <!-- Create/Edit Mode (only shown if user has permission) -->
@@ -154,6 +164,7 @@
         #blogCompose
         [ngModel]="editorData()"
         (postSubmitted)="onPostSubmitted($event)"
+        [profileId]="profileId()"
       >
       </lib-blog-compose>
 

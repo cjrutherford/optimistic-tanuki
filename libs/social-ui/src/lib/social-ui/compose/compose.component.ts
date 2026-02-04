@@ -64,8 +64,7 @@ import {
   InjectedComponentInstance,
   ComponentInjectionAPI,
 } from './interfaces/component-injection.interface';
-import { ImageUploadService as LocalImageUploadService } from './services/image-upload.service';
-import { ImageUploadService } from '@optimistic-tanuki/blogging-ui';
+import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
 
 import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
 
@@ -106,12 +105,11 @@ export interface ImageUploadCallback {
   ],
   templateUrl: './compose.component.html',
   styleUrls: ['./compose.component.scss'],
-  providers: [ComponentInjectionService, LocalImageUploadService],
+  providers: [ComponentInjectionService, ImageUploadService],
 })
 export class ComposeComponent
   extends Themeable
-  implements OnDestroy, AfterViewInit, ComponentInjectionAPI
-{
+  implements OnDestroy, AfterViewInit, ComponentInjectionAPI {
   @Input() title = '';
   @Input() profileId?: string; // Profile ID for asset uploads
   @Input() attachments: CreateAttachmentDto[] = [];
@@ -152,7 +150,7 @@ export class ComposeComponent
   isPropertyEditorVisible = false;
   selectedComponentInstance: InjectedComponentInstance | null = null;
   selectedComponentProperties: PropertyDefinition[] = [];
-  
+
   // Post theme configuration properties
   isThemeConfigVisible = false;
   postTheme: 'light' | 'dark' = 'light';
@@ -516,7 +514,7 @@ export class ComposeComponent
           this.profileId,
           `social-image-${Date.now()}`
         );
-        
+
         this.editor?.chain().focus().setImage({ src: assetUrl }).run();
       }
     } catch (error) {
@@ -624,10 +622,10 @@ export class ComposeComponent
     }
 
     const files = Array.from(e.dataTransfer.files);
-    
+
     // Filter for image files only
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
+
     if (imageFiles.length === 0) {
       alert('Please drop image files only');
       return;
@@ -654,7 +652,7 @@ export class ComposeComponent
             this.profileId,
             `social-drag-drop-${Date.now()}`
           );
-          
+
           this.editor?.chain().focus().setImage({ src: assetUrl }).run();
         }
       } catch (error) {

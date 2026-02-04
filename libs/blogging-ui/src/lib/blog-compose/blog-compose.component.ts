@@ -87,7 +87,7 @@ import { BlogComposeComponentNode } from './extensions/blog-compose-component.ex
 import { ResizableImage } from './extensions/resizable-image.extension';
 
 // Image Upload Service
-import { ImageUploadService } from '../services/image-upload.service';
+import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
 
 import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
 
@@ -1077,9 +1077,9 @@ export class BlogComposeComponent
     if (!input.files?.length) {
       return;
     }
-    
+
     const file = input.files[0];
-    
+
     // Check if profileId is available
     if (!this.profileId) {
       console.error('Profile ID is required for image upload');
@@ -1087,7 +1087,7 @@ export class BlogComposeComponent
       input.value = '';
       return;
     }
-    
+
     try {
       // Upload file to Assets service
       const assetUrl = await this.imageUploadService.uploadFile(
@@ -1095,14 +1095,14 @@ export class BlogComposeComponent
         this.profileId,
         `blog-image-${Date.now()}`
       );
-      
+
       // Get the editor's content area width for default sizing
       const editorElement = this.editor.view.dom;
       const editorWidth = editorElement.clientWidth;
-      
+
       // Set image width to 95% of editor width (leaving some margin)
       const defaultWidth = Math.floor(editorWidth * 0.95);
-      
+
       // Load the image to get its natural dimensions
       const img = new Image();
       img.onload = () => {
@@ -1207,43 +1207,44 @@ export class BlogComposeComponent
   async handleDrop(e: DragEvent): Promise<void> {
     e.preventDefault();
     this.isDragOver = false;
-    
+
     if (!e.dataTransfer?.files.length) return;
-    
+
     // Check if profileId is available
     if (!this.profileId) {
       console.error('Profile ID is required for image upload');
       alert('Unable to upload image: User profile not found');
       return;
     }
-    
+
     const files = Array.from(e.dataTransfer.files);
-    
+
     // Filter for image files only
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
+
     if (imageFiles.length === 0) {
       alert('Please drop image files only');
       return;
     }
-    
+
     // Upload each image file to Assets service
     for (const file of imageFiles) {
       try {
+        const extension = file.name.split('.').pop()!;
         // Upload to Assets service
         const assetUrl = await this.imageUploadService.uploadFile(
           file,
           this.profileId,
-          `blog-drag-drop-${Date.now()}`
+          `blog-drag-drop-${Date.now()}.${extension}`
         );
-        
+
         // Get the editor's content area width for default sizing
         const editorElement = this.editor.view.dom;
         const editorWidth = editorElement.clientWidth;
-        
+
         // Set image width to 95% of editor width
         const defaultWidth = Math.floor(editorWidth * 0.95);
-        
+
         // Insert the image with asset URL
         this.editor.chain().focus().setImage({
           src: assetUrl,

@@ -24,6 +24,53 @@ type AssetType = 'image' | 'video' | 'audio' | 'document';
 export class ImageUploadService {
   private readonly http = inject(HttpClient);
   private readonly apiBaseUrl = inject(API_BASE_URL);
+  /**
+   * Extract all base64 images from HTML content
+   * Returns an array of { original, dataUrl }
+   */
+  extractBase64Images(
+    htmlContent: string
+  ): Array<{ original: string; dataUrl: string }> {
+    const images: Array<{ original: string; dataUrl: string }> = [];
+    const imgRegex = /<img[^>]+src="(data:image\/[^;]+;base64,[^"]+)"[^>]*>/g;
+    let match;
+
+    while ((match = imgRegex.exec(htmlContent)) !== null) {
+      images.push({
+        original: match[0], // Full img tag
+        dataUrl: match[1], // Data URL
+      });
+    }
+
+    return images;
+  }
+
+  /**
+   * Replace base64 image data URLs with asset URLs in HTML content
+   */
+  replaceImageUrls(
+    htmlContent: string,
+    replacements: Array<{ dataUrl: string; assetUrl: string }>
+  ): string {
+    let updatedContent = htmlContent;
+
+    replacements.forEach(({ dataUrl, assetUrl }) => {
+      // Replace all occurrences of the data URL with the asset URL
+      updatedContent = updatedContent.replace(
+        new RegExp(this.escapeRegex(dataUrl), 'g'),
+        assetUrl
+      );
+    });
+
+    return updatedContent;
+  }
+
+  /**
+   * Escape special regex characters in a string
+   */
+  private escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
 
   /**
    * Uploads a file to the Assets service and returns the asset URL
@@ -39,13 +86,13 @@ export class ImageUploadService {
   ): Promise<string> {
     // Read file as base64
     const base64Content = await this.fileToBase64(file);
-    
+
     // Extract file extension
     const fileExtension = this.getFileExtension(file.name);
-    
+
     // Determine asset type from MIME type
     const assetType = this.getAssetType(file.type);
-    
+
     // Create asset DTO
     const assetDto: CreateAssetDto = {
       name: fileName || file.name.replace(/\.[^/.]+$/, ''), // Remove extension
@@ -54,12 +101,12 @@ export class ImageUploadService {
       content: base64Content,
       fileExtension: fileExtension,
     };
-    
+
     // Upload to asset service
     const asset = await firstValueFrom(
       this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, assetDto)
     );
-    
+
     // Return the URL to access the asset
     return `${this.apiBaseUrl}/asset/${asset.id}`;
   }
@@ -78,11 +125,11 @@ export class ImageUploadService {
   ): Promise<string> {
     // Extract file extension from data URL
     const fileExtension = this.getFileExtensionFromDataUrl(dataUrl);
-    
+
     // Determine asset type from MIME type in data URL
     const mimeType = this.getMimeTypeFromDataUrl(dataUrl);
     const assetType = this.getAssetType(mimeType);
-    
+
     // Create asset DTO
     const assetDto: CreateAssetDto = {
       name: fileName || `upload-${Date.now()}`,
@@ -91,12 +138,12 @@ export class ImageUploadService {
       content: dataUrl,
       fileExtension: fileExtension,
     };
-    
+
     // Upload to asset service
     const asset = await firstValueFrom(
       this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, assetDto)
     );
-    
+
     // Return the URL to access the asset
     return `${this.apiBaseUrl}/asset/${asset.id}`;
   }

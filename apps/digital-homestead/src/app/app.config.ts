@@ -19,6 +19,7 @@ import {
 } from '@angular/platform-browser';
 import { Injectable } from '@angular/core';
 import { AuthStateService } from './auth-state.service';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 @Injectable()
 class AppScopeInterceptor implements HttpInterceptor {
@@ -77,5 +78,9 @@ export const appConfig: ApplicationConfig = {
       useClass: HttpBearerAuthInterceptor,
       multi: true,
     },
+    {
+      provide: API_BASE_URL,
+      useValue: '/api',
+    }
   ],
 };

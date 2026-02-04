@@ -1,5 +1,6 @@
 // Services
 export * from './lib/services/component-injection.service';
+export * from './lib/services/image-upload.service';
 
 // Interfaces
 export * from './lib/interfaces/component-injection.interface';

@@ -25,4 +25,4 @@ export * from './lib/comments/comments.component';
 export * from './lib/tag-list/tag-list.component';
 
 // Services
-export * from './lib/services/image-upload.service';
+export * from '../../compose-lib/src/lib/services/image-upload.service';
