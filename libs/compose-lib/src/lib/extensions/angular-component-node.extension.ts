@@ -89,29 +89,66 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
     };
   },
 
-  parseHTML(): { tag: string }[] {
+  parseHTML(): Array<{ tag: string; getAttrs?: (dom: HTMLElement) => Record<string, any> | false }> {
     return [
       {
         tag: 'div[data-angular-component]',
+        getAttrs: (dom: HTMLElement) => {
+          const componentId = dom.getAttribute('data-component-id');
+          const instanceId = dom.getAttribute('data-instance-id');
+          const dataStr = dom.getAttribute('data-component-data');
+          const componentDefStr = dom.getAttribute('data-component-def');
+
+          return {
+            componentId: componentId || null,
+            instanceId: instanceId || null,
+            data: dataStr ? JSON.parse(dataStr) : {},
+            componentDef: componentDefStr ? JSON.parse(componentDefStr) : null,
+          };
+        },
       },
     ];
   },
 
   renderHTML({
+    node,
     HTMLAttributes,
   }: {
+    node?: any;
     HTMLAttributes: Record<string, any>;
   }): [string, Record<string, any>, ...any[]] {
+    // Get node attributes if available
+    const componentId = node?.attrs?.componentId || '';
+    const instanceId = node?.attrs?.instanceId || '';
+    const data = node?.attrs?.data || {};
+    const componentDef = node?.attrs?.componentDef || null;
+
+    // Serialize component data as JSON strings in data attributes
+    const attributes: Record<string, any> = {
+      'data-angular-component': '',
+      'class': 'angular-component-node',
+    };
+
+    if (componentId) {
+      attributes['data-component-id'] = componentId;
+    }
+    if (instanceId) {
+      attributes['data-instance-id'] = instanceId;
+    }
+    if (data && Object.keys(data).length > 0) {
+      attributes['data-component-data'] = JSON.stringify(data);
+    }
+    if (componentDef) {
+      attributes['data-component-def'] = JSON.stringify(componentDef);
+    }
+
     return [
       'div',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-angular-component': '',
-        class: 'angular-component-node',
-      }),
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, attributes),
       [
         'div',
         { class: 'component-placeholder' },
-        'Angular Component Loading...',
+        componentDef?.name || 'Angular Component Loading...',
       ],
     ];
   },
