@@ -123,6 +123,11 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
     const data = node?.attrs?.data || {};
     const componentDef = node?.attrs?.componentDef || null;
 
+    // Filter out complex objects from HTMLAttributes to prevent [object Object] in DOM
+    // These are handled manually below as stringified JSON in data-* attributes
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { data: _d, componentDef: _cd, ...cleanHTMLAttributes } = HTMLAttributes;
+
     // Serialize component data as JSON strings in data attributes
     const attributes: Record<string, any> = {
       'data-angular-component': '',
@@ -144,7 +149,7 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
 
     return [
       'div',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, attributes),
+      mergeAttributes(this.options.HTMLAttributes, cleanHTMLAttributes, attributes),
       [
         'div',
         { class: 'component-placeholder' },

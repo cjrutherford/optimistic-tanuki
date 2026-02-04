@@ -234,7 +234,7 @@ export class BlogComposeComponent
 
   set content(value: string) {
     this._content = value;
-    this.onChange({ title: this.title, content: this.content });
+    this.emitChange();
   }
 
   links: Array<{ url: string }> = [];
@@ -263,6 +263,7 @@ export class BlogComposeComponent
 
   // Flag to track if there's pending content to set after editor init
   private pendingContent: string | null = null;
+  private pendingInjectedComponents: any[] | null = null;
   private componentInjectionService = inject(ComponentInjectionService);
 
   constructor() {
@@ -340,6 +341,11 @@ export class BlogComposeComponent
       if (this.pendingContent !== null) {
         this.editor.commands.setContent(this.pendingContent);
         this.pendingContent = null;
+
+        if (this.pendingInjectedComponents) {
+          this.restoreInjectedComponentData(this.pendingInjectedComponents);
+          this.pendingInjectedComponents = null;
+        }
       }
 
       this.editor.view.dom.addEventListener('contextmenu', (event) => {
@@ -1345,10 +1351,192 @@ export class BlogComposeComponent
     }
   }
 
+  /**
+   * Embedded serialization marker so injected component state survives:
+   * editor HTML -> DB -> editor HTML.
+   */
+  private static readonly INJECTED_COMPONENTS_META_ATTR =
+    'data-ot-injected-components';
+
+  /**
+   * Safe deep copy that removes circular references
+   */
+  private safeCycleBreaker(obj: any, seen = new WeakSet()): any {
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
+    }
+
+    if (seen.has(obj)) {
+      return undefined;
+    }
+
+    seen.add(obj);
+
+    if (Array.isArray(obj)) {
+      return obj
+        .map(item => this.safeCycleBreaker(item, seen))
+        .filter(item => item !== undefined);
+    }
+
+    const result: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        // Exclude specific known dangerous keys
+        if (key === 'componentRef' || key === '_innerComponentRef' || key === 'viewContainerRef') {
+          continue;
+        }
+
+        const value = this.safeCycleBreaker(obj[key], seen);
+        if (value !== undefined) {
+          result[key] = value;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private addInjectedComponentsMeta(html: string, injectedComponents: unknown): string {
+    const safeHtml = html ?? '';
+
+    // Avoid bloating output if there are no injected components.
+    const hasComponents =
+      Array.isArray(injectedComponents) ? injectedComponents.length > 0 : !!injectedComponents;
+    if (!hasComponents) {
+      // Still strip any stale meta so the stored HTML stays clean.
+      return this.stripInjectedComponentsMeta(safeHtml).html;
+    }
+
+    // Pre-sanitize and simplify the payload structure
+    let serializableComponents: any[] = [];
+    if (Array.isArray(injectedComponents)) {
+      serializableComponents = injectedComponents.map((comp: any) => {
+        // Only pick what we need to minimize data and risk
+        return {
+          instanceId: comp.instanceId,
+          componentDef: {
+            id: comp?.componentDef?.id
+          },
+          data: this.safeCycleBreaker(comp.data),
+          position: comp.position
+        };
+      });
+    }
+
+    const payload = {
+      v: 1,
+      injectedComponents: serializableComponents,
+    };
+
+    // Use a simple JSON stringify since we've already cleaned the data
+    const encoded = this.base64UrlEncodeUtf8(JSON.stringify(payload));
+
+    const doc = new DOMParser().parseFromString(safeHtml, 'text/html');
+
+    // Remove any existing meta nodes to prevent duplicates.
+    doc
+      .querySelectorAll(`span[${BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR}]`)
+      .forEach((n) => n.remove());
+
+    const meta = doc.createElement('span');
+    meta.setAttribute(BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR, encoded);
+    // Ensure it stays non-visible even if style attributes are stripped.
+    meta.setAttribute('hidden', '');
+    meta.setAttribute('aria-hidden', 'true');
+
+    doc.body.appendChild(meta);
+
+    return doc.body.innerHTML;
+  }
+
+  private stripInjectedComponentsMeta(html: string): { html: string; injectedComponents?: unknown } {
+    const safeHtml = html ?? '';
+    const doc = new DOMParser().parseFromString(safeHtml, 'text/html');
+
+    const meta = doc.querySelector(
+      `span[${BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR}]`
+    ) as HTMLSpanElement | null;
+
+    let injectedComponents: unknown | undefined;
+
+    const encoded = meta?.getAttribute(BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR);
+    if (encoded) {
+      try {
+        const decoded = this.base64UrlDecodeUtf8(encoded);
+        const parsed = JSON.parse(decoded) as { v?: number; injectedComponents?: unknown };
+        if (parsed && parsed.v === 1) {
+          injectedComponents = parsed.injectedComponents;
+        }
+      } catch {
+        // Ignore malformed meta; treat as absent.
+      }
+    }
+
+    meta?.remove();
+
+    return { html: doc.body.innerHTML, injectedComponents };
+  }
+
+  private base64UrlEncodeUtf8(value: string): string {
+    const bytes = new TextEncoder().encode(value);
+    let binary = '';
+    for (const b of bytes) binary += String.fromCharCode(b);
+    const b64 = btoa(binary);
+    // base64url
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+
+  private base64UrlDecodeUtf8(value: string): string {
+    // base64url -> base64
+    let b64 = value.replace(/-/g, '+').replace(/_/g, '/');
+    // pad
+    while (b64.length % 4 !== 0) b64 += '=';
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  private restoreInjectedComponentData(components: any[]): void {
+    if (!components || !components.length) return;
+
+    // We schedule this to run after the current stack, 
+    // to allow Tiptap's synchronous rendering to complete first (if called immediately after setContent).
+    setTimeout(() => {
+      components.forEach(comp => {
+        // Only restore if the component ID and instance ID are valid
+        if (comp && comp.instanceId && comp.data) {
+          try {
+            // 1. Ensure service has the latest data
+            // Note: updateComponent throws if instance not found, so we should check first
+            if (this.componentInjectionService.getInstance(comp.instanceId)) {
+              this.componentInjectionService.updateComponent(comp.instanceId, comp.data);
+            }
+
+            // 2. Ensure Tiptap node has the latest data
+            this.editor?.commands.updateAngularComponent({
+              instanceId: comp.instanceId,
+              data: comp.data
+            });
+          } catch (e) {
+            console.warn('[BlogCompose] Failed to restore component data', comp.instanceId, e);
+          }
+        }
+      });
+    }, 0);
+  }
+
   onPostSubmit() {
+    // Ensure stored content includes serialized injected component state.
+    const editorHtml = this.editor?.getHTML?.() ?? this.content;
+    const contentForStorage = this.addInjectedComponentsMeta(
+      editorHtml,
+      this.getActiveComponents()
+    );
+
     this.postSubmitted.emit({
       title: this.title,
-      content: this.content,
+      content: contentForStorage,
       links: this.links,
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(),
@@ -1364,8 +1552,23 @@ export class BlogComposeComponent
 
   writeValue(value: any): void {
     if (value && typeof value === 'object') {
+      let componentsToRestore = value.injectedComponents;
+
+      // Normalize content coming back from DB: extract embedded meta and
+      // keep the editor-visible HTML clean.
+      if (value.content && typeof value.content === 'string') {
+        const extracted = this.stripInjectedComponentsMeta(value.content);
+        this._content = extracted.html;
+
+        // Use components from meta if available, as they are guaranteed to match the content version
+        if (extracted.injectedComponents) {
+          componentsToRestore = extracted.injectedComponents;
+        }
+      } else {
+        this._content = value.content || '';
+      }
+
       this._title = value.title || '';
-      this._content = value.content || '';
       this.links = value.links || [];
       this.attachments = value.attachments || [];
 
@@ -1382,9 +1585,13 @@ export class BlogComposeComponent
       if (this.editor) {
         this.editor.commands.setContent(this._content);
         this.pendingContent = null;
+        if (componentsToRestore) {
+          this.restoreInjectedComponentData(componentsToRestore);
+        }
       } else {
         // Queue content to be set after editor initialization
         this.pendingContent = this._content;
+        this.pendingInjectedComponents = componentsToRestore || null;
       }
     }
   }
@@ -1405,9 +1612,15 @@ export class BlogComposeComponent
   }
 
   private emitChange(): void {
+    // Persist a storage-safe version of the content that includes injected component state.
+    const contentForStorage = this.addInjectedComponentsMeta(
+      this.content,
+      this.getActiveComponents()
+    );
+
     const value = {
       title: this.title,
-      content: this.content,
+      content: contentForStorage, // Use the version with embedded meta
       links: this.links,
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(),
