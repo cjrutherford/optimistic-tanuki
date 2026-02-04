@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, OnDestroy, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { LoginRequest } from '@optimistic-tanuki/ui-models';
@@ -28,7 +29,7 @@ export class LoginComponent implements OnDestroy, OnInit {
   private readonly messageService = inject(MessageService);
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
-  themeSub: Subscription;
+  themeSub?: Subscription;
   themeStyles!: {
     backgroundColor: string;
     color: string;
@@ -39,19 +40,20 @@ export class LoginComponent implements OnDestroy, OnInit {
     inject(AuthStateService);
   private readonly router: Router = inject(Router);
   private readonly profileService = inject(ProfileService);
-  private oauthService: OAuthService;
+  private oauthService?: OAuthService;
 
   constructor() {
-    this.themeSub = this.themeService.themeColors$
-      .pipe(filter((x) => !!x))
-      .subscribe((colors) => {
-        this.themeStyles = {
-          backgroundColor: colors.background,
-          color: colors.foreground,
-          border: `1px solid ${colors.accent}`,
-        };
-      });
-    this.oauthService = new OAuthService(this.http, '/api');
+    if (isPlatformBrowser(this.platformId)) {
+      this.themeSub = this.themeService.themeColors$.pipe(filter((x) => !!x))
+        .subscribe((colors) => {
+          this.themeStyles = {
+            backgroundColor: colors.background,
+            color: colors.foreground,
+            border: `1px solid ${colors.accent}`,
+          };
+        });
+      this.oauthService = new OAuthService(this.http, '/api') as OAuthService;
+    }
   }
 
   ngOnInit() {
@@ -59,13 +61,13 @@ export class LoginComponent implements OnDestroy, OnInit {
   }
 
   ngOnDestroy() {
-    this.themeSub.unsubscribe();
+    this.themeSub?.unsubscribe();
   }
 
   private async loadOAuthConfig(): Promise<void> {
     try {
       const config: any = await this.http.get('/api/oauth/config').toPromise();
-      if (config) {
+      if (config && this.oauthService) {
         this.oauthService.configureProviders(config);
       }
     } catch (e) {
@@ -127,7 +129,14 @@ export class LoginComponent implements OnDestroy, OnInit {
 
   async onOAuthProvider(event: OAuthProviderEvent) {
     try {
-      const result = await this.oauthService.initiateOAuthLogin(event.provider);
+      const result = await this.oauthService?.initiateOAuthLogin(event.provider);
+      if (!result) {
+        this.messageService.addMessage({
+          content: 'OAuth login failed. Please try again.',
+          type: 'error',
+        });
+        return;
+      }
 
       if (result.success && result.token) {
         this.authStateService.setToken(result.token);
@@ -174,7 +183,7 @@ export class LoginComponent implements OnDestroy, OnInit {
         const firstName = names[0] || '';
         const lastName = names.slice(1).join(' ') || '';
 
-        const regResult = await this.oauthService.completeOAuthRegistration(
+        const regResult = await this.oauthService?.completeOAuthRegistration(
           result.userData.provider,
           result.userData.providerUserId,
           result.userData.email,
@@ -183,7 +192,7 @@ export class LoginComponent implements OnDestroy, OnInit {
           ''
         );
 
-        if (regResult.success && regResult.token) {
+        if (regResult && regResult.success && regResult.token) {
           this.authStateService.setToken(regResult.token);
           this.router.navigate(['/feed']);
           this.messageService.addMessage({
@@ -193,7 +202,7 @@ export class LoginComponent implements OnDestroy, OnInit {
         } else {
           this.messageService.addMessage({
             content:
-              regResult.error || 'Registration failed. Please try again.',
+              regResult?.error || 'Registration failed. Please try again.',
             type: 'error',
           });
         }
