@@ -18,6 +18,7 @@ export interface DecodedToken {
 })
 export class AuthStateService {
   private readonly http = inject(HttpClient);
+  private platformId = inject(PLATFORM_ID);
   private readonly tokenSubject = new BehaviorSubject<string | null>(null);
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
 
@@ -25,9 +26,8 @@ export class AuthStateService {
   public readonly isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
   constructor() {
-    const platformId = inject(PLATFORM_ID);
     // Check for stored token on initialization
-    if (isPlatformBrowser(platformId)) {
+    if (isPlatformBrowser(this.platformId)) {
       const storedToken = localStorage.getItem('authToken');
       if (storedToken) {
         this.setToken(storedToken);
@@ -48,8 +48,7 @@ export class AuthStateService {
   }
 
   setToken(token: string): void {
-    const platformId = inject(PLATFORM_ID);
-    if (isPlatformBrowser(platformId)) {
+    if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('authToken', token);
     }
     this.tokenSubject.next(token);
@@ -61,8 +60,7 @@ export class AuthStateService {
   }
 
   logout(): void {
-    const platformId = inject(PLATFORM_ID);
-    if (isPlatformBrowser(platformId)) {
+    if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('selectedProfile');
     }

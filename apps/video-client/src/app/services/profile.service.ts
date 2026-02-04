@@ -8,6 +8,7 @@ import { isPlatformBrowser } from '@angular/common';
   providedIn: 'root',
 })
 export class ProfileService {
+  private platformId = inject(PLATFORM_ID);
   private readonly http = inject(HttpClient);
   private currentProfileSubject = new BehaviorSubject<ProfileDto | null>(null);
   private profilesSubject = new BehaviorSubject<ProfileDto[]>([]);
@@ -53,9 +54,8 @@ export class ProfileService {
   }
 
   selectProfile(profile: ProfileDto): void {
-    const platformId = inject(PLATFORM_ID);
     this.currentProfileSubject.next(profile);
-    if (isPlatformBrowser(platformId)) {
+    if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('selectedProfile', JSON.stringify(profile));
     }
   }
@@ -69,8 +69,7 @@ export class ProfileService {
   }
 
   loadStoredProfile(): void {
-    const platformId = inject(PLATFORM_ID);
-    if (isPlatformBrowser(platformId)) {
+    if (isPlatformBrowser(this.platformId)) {
       const stored = localStorage.getItem('selectedProfile');
       if (stored) {
         try {
