@@ -50,6 +50,7 @@ import {
       (mouseleave)="onMouseLeave()"
       (click)="onClick($event)"
       (keyup.enter)="onClick($event)"
+      contenteditable="false"
       tabindex="0"
     >
       <!-- Top Control Bar -->
@@ -131,6 +132,8 @@ import {
         class="quick-edit-overlay"
         *ngIf="isEditing"
         (click)="onOverlayClick($event)"
+        (mousedown)="onOverlayMouseDown($event)"
+        contenteditable="true"
       >
         <div class="quick-edit-header">
           <h4>Quick Edit: {{ componentDef?.name }}</h4>
@@ -556,8 +559,14 @@ export class ComponentEditorWrapperComponent
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['componentData'] && !changes['componentData'].firstChange) {
-      this.editingData = { ...this.componentData };
+    if (changes['componentData']) {
+      // Always update editingData when componentData changes from parent
+      // This ensures the quick-edit form shows the latest data
+      if (!this.isEditing) {
+        // Only update if not currently editing to prevent overwriting user changes
+        this.editingData = { ...this.componentData };
+      }
+      // Always update the dynamic component
       this.updateDynamicComponent();
     }
     if (changes['componentDef'] && this.componentHost) {
@@ -614,6 +623,12 @@ export class ComponentEditorWrapperComponent
   onOverlayClick(event: Event): void {
     // Stop clicks in the overlay from reaching the wrapper's onClick
     // This prevents focus loss when clicking on inputs
+    event.stopPropagation();
+  }
+
+  onOverlayMouseDown(event: MouseEvent): void {
+    // Prevent TipTap editor from capturing focus when clicking in the overlay
+    // This is critical for maintaining focus in form inputs
     event.stopPropagation();
   }
 
@@ -722,7 +737,6 @@ export class ComponentEditorWrapperComponent
     const data = {
       ...this.componentDef.data,
       ...this.componentData,
-      ...this.editingData,
     };
     Object.keys(data).forEach((key) => {
       if (this.dynamicComponentRef!.instance[key] !== undefined) {
@@ -731,6 +745,18 @@ export class ComponentEditorWrapperComponent
     });
 
     this.dynamicComponentRef.changeDetectorRef.detectChanges();
+  }
+
+  /**
+   * Public method to update component data from external sources
+   * Used by the injection service when data changes
+   */
+  public updateComponentData(newData: Record<string, any>): void {
+    this.componentData = { ...this.componentData, ...newData };
+    if (!this.isEditing) {
+      this.editingData = { ...this.componentData };
+    }
+    this.updateDynamicComponent();
   }
 
   private destroyDynamicComponent(): void {

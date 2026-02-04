@@ -143,10 +143,16 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
             instance.componentRef &&
             instance.componentRef.instance
           ) {
-            Object.assign(instance.componentRef.instance, newData);
+            // Update the wrapper component's componentData property
+            const wrapperInstance = instance.componentRef.instance;
+            if (wrapperInstance.componentData) {
+              wrapperInstance.componentData = { ...wrapperInstance.componentData, ...newData };
+            }
+            
             // Also update the instance data
             instance.data = { ...instance.data, ...newData };
 
+            // Trigger change detection on the wrapper
             if (instance.componentRef.changeDetectorRef) {
               instance.componentRef.changeDetectorRef.detectChanges();
             }
@@ -185,7 +191,7 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
 
       updateAngularComponent:
         (options: { instanceId: string; data: Record<string, any> }) =>
-          ({ tr, state }: { tr: Transaction; state: EditorState }) => {
+          ({ tr, state, dispatch }: { tr: Transaction; state: EditorState; dispatch?: (tr: Transaction) => void }) => {
             const { doc } = state;
             let updated = false;
 
@@ -201,6 +207,11 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
                 updated = true;
               }
             });
+
+            // Actually dispatch the transaction to update the editor state
+            if (updated && dispatch) {
+              dispatch(tr);
+            }
 
             return updated;
           },

@@ -323,13 +323,17 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     // Update instance data
     instance.data = { ...instance.data, ...data };
 
-    // Update wrapper component's data - it will update the inner component
+    // Update wrapper component's data
     const wrapperInstance = instance.componentRef.instance as ComponentEditorWrapperComponent;
-    if (wrapperInstance && wrapperInstance.componentData) {
-      wrapperInstance.componentData = { ...wrapperInstance.componentData, ...data };
-      // Trigger the wrapper to update its inner component
-      if (wrapperInstance['updateDynamicComponent']) {
-        wrapperInstance['updateDynamicComponent']();
+    if (wrapperInstance) {
+      // Use the public updateComponentData method if available
+      if (typeof wrapperInstance.updateComponentData === 'function') {
+        wrapperInstance.updateComponentData(data);
+      } else {
+        // Fallback to direct property update
+        if (wrapperInstance.componentData) {
+          wrapperInstance.componentData = { ...wrapperInstance.componentData, ...data };
+        }
       }
     }
 
