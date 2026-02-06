@@ -20,7 +20,12 @@ import {
   PostData,
   ImageUploadCallback,
 } from '@optimistic-tanuki/social-ui';
-import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
+import { 
+  CreateAttachmentDto,
+  CreateSocialComponentDto,
+  SocialComponentCommands,
+  InjectedComponentData,
+} from '@optimistic-tanuki/ui-models';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
@@ -33,6 +38,7 @@ import { SocialWebSocketService } from '../../social-websocket.service';
 import { AssetService } from '../../asset.service';
 import { CreateAssetDto, FollowDto } from '@optimistic-tanuki/ui-models';
 import { FollowService } from '../../follow.service';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-feed',
@@ -108,6 +114,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   socialWebSocketService = inject(SocialWebSocketService);
   assetService = inject(AssetService);
   followService = inject(FollowService);
+  private readonly http = inject(HttpClient);
+  private readonly gatewayUrl = 'http://localhost:3000/social';
 
   ngOnInit() {
     this.themeService.themeColors$
@@ -225,21 +233,28 @@ export class FeedComponent implements OnInit, OnDestroy {
     });
   }
 
-  createdPost(postData: PostData) {
-    console.log('create called.');
-    const { title, content, attachments, links } = postData;
+  async createdPost(postData: PostData) {
+    console.log('[Feed] create called with postData:', postData);
+    const { title, content, attachments, links, injectedComponentsNew } = postData;
     const currentProfile = this.profileService.currentUserProfile();
     if (!currentProfile) {
       console.error('No current profile found');
       return;
     }
+    
     const finalPost: CreatePostDto = {
       title,
       content,
       profileId: currentProfile.id,
     };
-    this.postService.createPost(finalPost).subscribe(async (newPost) => {
-      if (attachments.length > 0) {
+    
+    try {
+      // 1. Create post
+      const newPost = await firstValueFrom(this.postService.createPost(finalPost));
+      console.log('[Feed] Post created:', newPost.id);
+      
+      // 2. Create attachments
+      if (attachments && attachments.length > 0) {
         for (const attachment of attachments) {
           const atta: CreateAttachmentDto = {
             ...attachment,
@@ -247,7 +262,16 @@ export class FeedComponent implements OnInit, OnDestroy {
           };
           await firstValueFrom(this.attachmentService.createAttachment(atta));
         }
+        console.log(`[Feed] ${attachments.length} attachments created`);
       }
+      
+      // 3. Create components (NEW)
+      if (injectedComponentsNew && injectedComponentsNew.length > 0) {
+        console.log(`[Feed] Saving ${injectedComponentsNew.length} components`);
+        await this.saveComponents(newPost.id, injectedComponentsNew);
+      }
+      
+      // 4. Update UI
       // Ensure profile is in map for the new post
       if (!this.profiles()[currentProfile.id]) {
         this.profiles.update((p: { [key: string]: PostProfileStub }) => ({
@@ -262,7 +286,44 @@ export class FeedComponent implements OnInit, OnDestroy {
       if (!this.posts().some((p) => p.id === newPost.id)) {
         this.posts.update((posts) => [newPost, ...posts]);
       }
-    });
+      console.log('[Feed] Post added to feed');
+    } catch (error) {
+      console.error('[Feed] Failed to create post:', error);
+    }
+  }
+  
+  /**
+   * Save injected components to the database via RPC
+   */
+  private async saveComponents(
+    postId: string,
+    components: InjectedComponentData[]
+  ): Promise<void> {
+    console.log(`[Feed] Saving ${components.length} components for post ${postId}`);
+    
+    for (const component of components) {
+      const dto: CreateSocialComponentDto = {
+        postId,
+        instanceId: component.instanceId,
+        componentType: component.componentType,
+        componentData: component.componentData,
+        position: component.position || 0,
+      };
+      
+      try {
+        await firstValueFrom(
+          this.http.post(this.gatewayUrl, {
+            cmd: SocialComponentCommands.CREATE,
+            data: dto,
+          })
+        );
+        console.log(`[Feed] Component saved: ${component.instanceId} (${component.componentType})`);
+      } catch (error) {
+        console.error(`[Feed] Failed to save component ${component.instanceId}:`, error);
+        // Continue with other components even if one fails
+      }
+    }
+    console.log('[Feed] All components saved');
   }
 
   ngOnDestroy() {
