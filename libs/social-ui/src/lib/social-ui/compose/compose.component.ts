@@ -21,7 +21,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
-import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
+import { 
+  CreateAttachmentDto,
+  InjectedComponentData,
+} from '@optimistic-tanuki/ui-models';
 import {
   ThemeService,
   ThemeColors,
@@ -73,7 +76,8 @@ export interface PostData {
   content: string;
   links: { url: string }[];
   attachments: CreateAttachmentDto[];
-  injectedComponents?: InjectedComponentInstance[];
+  injectedComponents?: InjectedComponentInstance[]; // Old format (backward compat)
+  injectedComponentsNew?: InjectedComponentData[]; // New format for DB persistence
   themeConfig?: PostThemeConfig;
 }
 
@@ -670,6 +674,33 @@ export class ComposeComponent
     }
   }
 
+  /**
+   * Extract injected components from editor for database persistence
+   * Traverses the editor document and collects all component nodes
+   */
+  getInjectedComponentsNew(): InjectedComponentData[] {
+    const components: InjectedComponentData[] = [];
+    
+    if (!this.editor) {
+      return components;
+    }
+
+    this.editor.state.doc.descendants((node) => {
+      if (node.type.name === 'socialComposeComponent' || 
+          node.type.name === 'angularComponent') {
+        components.push({
+          instanceId: node.attrs.instanceId,
+          componentType: node.attrs.componentId,
+          componentData: node.attrs.data || {},
+          position: components.length
+        });
+      }
+    });
+    
+    console.log('[SocialCompose] Extracted components:', components);
+    return components;
+  }
+
   async onPostSubmit(): Promise<void> {
     let finalContent = this.content;
 
@@ -707,12 +738,16 @@ export class ComposeComponent
       }
     }
 
+    // Extract components in new format for database persistence
+    const componentsNewFormat = this.getInjectedComponentsNew();
+
     this.postSubmitted.emit({
       title: this.title,
       content: finalContent,
       links: this.links,
       attachments: this.attachments,
-      injectedComponents: this.getActiveComponents(),
+      injectedComponents: this.getActiveComponents(), // Old format (backward compat)
+      injectedComponentsNew: componentsNewFormat, // New format for DB
       themeConfig: {
         theme: this.postTheme,
         accentColor: this.postAccentColor,
