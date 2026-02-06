@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin } from 'rxjs';
-import { BlogComponentDto, CreateBlogComponentDto } from '@optimistic-tanuki/ui-models';
+import { Observable, forkJoin, from } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { BlogComponentDto, CreateBlogComponentDto, BlogComponentCommands } from '@optimistic-tanuki/ui-models';
 
 export interface ComponentExtractionResult {
   instanceId: string;
@@ -15,6 +16,7 @@ export interface ComponentExtractionResult {
   providedIn: 'root'
 })
 export class ComponentPersistenceService {
+  private readonly gatewayUrl = 'http://localhost:3000/blogging';
   
   constructor(private http: HttpClient) {}
 
@@ -58,7 +60,7 @@ export class ComponentPersistenceService {
   }
 
   /**
-   * Saves components to the database
+   * Saves components to the database using RPC
    */
   saveComponents(blogPostId: string, components: ComponentExtractionResult[]): Observable<BlogComponentDto[]> {
     if (components.length === 0) {
@@ -77,21 +79,27 @@ export class ComponentPersistenceService {
         position: comp.position
       };
 
-      return this.http.post<BlogComponentDto>('/api/blog-components', createDto);
+      return this.http.post<BlogComponentDto>(this.gatewayUrl, {
+        cmd: BlogComponentCommands.CREATE,
+        data: createDto
+      });
     });
     
     return forkJoin(saveRequests);
   }
 
   /**
-   * Gets stored components for a blog post
+   * Gets stored components for a blog post using RPC
    */
   getComponentsForPost(postId: string): Observable<BlogComponentDto[]> {
-    return this.http.get<BlogComponentDto[]>(`/api/blog-components/post/${postId}`);
+    return this.http.post<BlogComponentDto[]>(this.gatewayUrl, {
+      cmd: BlogComponentCommands.FIND_BY_POST,
+      data: { blogPostId: postId }
+    });
   }
 
   /**
-   * Updates a component in the database
+   * Updates a component in the database using RPC
    */
   updateComponent(componentId: string, componentData: Record<string, any>, position?: number): Observable<BlogComponentDto> {
     const updateDto = {
@@ -99,21 +107,30 @@ export class ComponentPersistenceService {
       ...(position !== undefined && { position })
     };
 
-    return this.http.put<BlogComponentDto>(`/api/blog-components/${componentId}`, updateDto);
+    return this.http.post<BlogComponentDto>(this.gatewayUrl, {
+      cmd: BlogComponentCommands.UPDATE,
+      data: { id: componentId, ...updateDto }
+    });
   }
 
   /**
-   * Deletes a component from the database
+   * Deletes a component from the database using RPC
    */
   deleteComponent(componentId: string): Observable<void> {
-    return this.http.delete<void>(`/api/blog-components/${componentId}`);
+    return this.http.post<void>(this.gatewayUrl, {
+      cmd: BlogComponentCommands.DELETE,
+      data: { id: componentId }
+    });
   }
 
   /**
-   * Deletes all components for a post
+   * Deletes all components for a post using RPC
    */
   deleteComponentsByPost(postId: string): Observable<void> {
-    return this.http.delete<void>(`/api/blog-components/post/${postId}`);
+    return this.http.post<void>(this.gatewayUrl, {
+      cmd: BlogComponentCommands.DELETE_BY_POST,
+      data: { blogPostId: postId }
+    });
   }
 
   /**
