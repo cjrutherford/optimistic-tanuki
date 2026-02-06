@@ -25,9 +25,13 @@ import {
   BlogPostDto,
   CreateBlogPostDto,
   UpdateBlogPostDto,
+  CreateBlogComponentDto,
+  BlogComponentCommands,
 } from '@optimistic-tanuki/ui-models';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
-import { PostThemeConfig } from '@optimistic-tanuki/ui-models';
+import { PostThemeConfig, InjectedComponentData } from '@optimistic-tanuki/ui-models';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 /**
  * Editor data matching the PostData interface from BlogComposeComponent
@@ -38,7 +42,8 @@ interface PostData {
   links: { url: string }[];
   attachments: File[];
   themeConfig?: PostThemeConfig;
-  injectedComponents?: any[];
+  injectedComponents?: any[]; // Old format
+  injectedComponentsNew?: InjectedComponentData[]; // New format
 }
 
 /**
@@ -71,6 +76,10 @@ export class BlogPageComponent implements OnDestroy {
   private readonly authState = inject(AuthStateService);
   private readonly permissionService = inject(PermissionService);
   private readonly componentPersistence = inject(ComponentPersistenceService);
+  private readonly http = inject(HttpClient);
+
+  // Gateway URL for RPC calls
+  private readonly gatewayUrl = 'http://localhost:3000'; // TODO: Use environment config
 
   // Auto-save subject
   private readonly editorChange$ = new Subject<PostData>();
@@ -529,15 +538,16 @@ export class BlogPageComponent implements OnDestroy {
     const postId = this.currentPostId();
     const currentMode = this.mode();
 
-    // Check if post has components that need persistence
-    const hasComponents = this.hasInjectedComponents(postData.content);
+    // Check if post has components that need persistence (new format preferred)
+    const hasComponents = postData.injectedComponentsNew && postData.injectedComponentsNew.length > 0;
+    console.log('[BlogPage] Post has components:', hasComponents, postData.injectedComponentsNew);
 
     if (currentMode === 'edit' && postId) {
-      this.updatePostWithComponents(postData, postId, authorId, saveAction);
+      this.updatePostWithComponentsNew(postData, postId, authorId, saveAction);
     } else {
       // For new posts with components, always create as draft first
       if (hasComponents) {
-        this.createDraftWithComponents(postData, authorId, saveAction);
+        this.createDraftWithComponentsNew(postData, authorId, saveAction);
       } else {
         this.createPostDirectly(postData, authorId, saveAction);
       }
@@ -744,6 +754,131 @@ export class BlogPageComponent implements OnDestroy {
       if (createdPost.id) {
         this.router.navigate(['/blog', createdPost.id]);
       }
+    }
+  }
+
+  /**
+   * Create post with components using new format
+   */
+  private async createDraftWithComponentsNew(postData: PostData, authorId: string, finalAction: SaveAction): Promise<void> {
+    try {
+      // Create post first
+      const draftPayload: CreateBlogPostDto = {
+        title: postData.title,
+        content: postData.content,
+        authorId: authorId,
+        isDraft: true,
+        themeConfig: postData.themeConfig,
+      };
+
+      const createdPost = await firstValueFrom(this.blogService.createPost(draftPayload));
+      console.log('[BlogPage] Post created:', createdPost.id);
+
+      // Save components if available
+      if (postData.injectedComponentsNew && postData.injectedComponentsNew.length > 0) {
+        await this.saveComponentsNew(createdPost.id, postData.injectedComponentsNew);
+        console.log('[BlogPage] Components saved for post:', createdPost.id);
+      }
+
+      // Handle publish if needed
+      this.handlePostCreateSuccess(createdPost, finalAction);
+    } catch (err: any) {
+      this.error.set('Failed to create post: ' + err.message);
+      this.loading.set(false);
+      console.error('Error creating post with components:', err);
+    }
+  }
+
+  /**
+   * Update post with components using new format
+   */
+  private async updatePostWithComponentsNew(postData: PostData, postId: string, authorId: string, saveAction: SaveAction): Promise<void> {
+    try {
+      // Update post content
+      const updateData: UpdateBlogPostDto = {
+        id: postId,
+        title: postData.title,
+        content: postData.content,
+        authorId,
+        isDraft: saveAction === 'draft',
+        themeConfig: postData.themeConfig,
+      };
+
+      const updatedPost = await firstValueFrom(this.blogService.updatePost(postId, updateData));
+      console.log('[BlogPage] Post updated:', postId);
+
+      // Update components
+      if (postData.injectedComponentsNew) {
+        // Delete old components first
+        await this.deleteComponentsByPostId(postId);
+        
+        // Save new components
+        if (postData.injectedComponentsNew.length > 0) {
+          await this.saveComponentsNew(postId, postData.injectedComponentsNew);
+          console.log('[BlogPage] Components updated for post:', postId);
+        }
+      }
+
+      this.loading.set(false);
+      this.selectedPost.set(updatedPost);
+      this.updatePostInList(updatedPost);
+      this.mode.set('view');
+
+      if (updatedPost.id) {
+        this.router.navigate(['/blog', updatedPost.id]);
+      }
+    } catch (err: any) {
+      this.error.set('Failed to update post: ' + err.message);
+      this.loading.set(false);
+      console.error('Error updating post with components:', err);
+    }
+  }
+
+  /**
+   * Save components to database using RPC
+   */
+  private async saveComponentsNew(blogPostId: string, components: InjectedComponentData[]): Promise<void> {
+    console.log('[BlogPage] Saving components:', components);
+    
+    for (const component of components) {
+      const dto: CreateBlogComponentDto = {
+        blogPostId,
+        instanceId: component.instanceId,
+        componentType: component.componentType,
+        componentData: component.componentData,
+        position: component.position || 0,
+      };
+
+      try {
+        await firstValueFrom(
+          this.http.post(`${this.gatewayUrl}/blogging`, {
+            cmd: BlogComponentCommands.CREATE,
+            data: dto,
+          })
+        );
+        console.log('[BlogPage] Component saved:', component.instanceId);
+      } catch (error) {
+        console.error('[BlogPage] Failed to save component:', component.instanceId, error);
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Delete all components for a post using RPC
+   */
+  private async deleteComponentsByPostId(blogPostId: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.gatewayUrl}/blogging`, {
+          cmd: BlogComponentCommands.DELETE_BY_POST,
+          data: { blogPostId },
+        })
+      );
+      console.log('[BlogPage] Components deleted for post:', blogPostId);
+    } catch (error) {
+      console.error('[BlogPage] Failed to delete components:', error);
+      // Don't throw - continue with saving new components
     }
   }
 

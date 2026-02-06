@@ -96,7 +96,8 @@ interface PostData {
   content: string;
   links: { url: string }[];
   attachments: File[];
-  injectedComponents?: InjectedComponentInstance[];
+  injectedComponents?: InjectedComponentInstance[]; // Old format for backward compatibility
+  injectedComponentsNew?: InjectedComponentData[]; // New format for database persistence
   themeConfig?: PostThemeConfig;
 }
 
@@ -1164,7 +1165,27 @@ export class BlogComposeComponent
 
   // NEW: Get components from ComponentInjection extension
   getInjectedComponentsNew(): InjectedComponentData[] {
-    return this.editor?.commands.getInjectedComponents() || [];
+    // Extract components from the editor document using new format
+    const components: InjectedComponentData[] = [];
+    
+    if (!this.editor) {
+      return components;
+    }
+
+    this.editor.state.doc.descendants((node) => {
+      // Check for both old and new component node types
+      if (node.type.name === 'blogComposeComponent' || node.type.name === 'angularComponent') {
+        components.push({
+          instanceId: node.attrs.instanceId,
+          componentType: node.attrs.componentId,
+          componentData: node.attrs.data || {},
+          position: components.length
+        });
+      }
+    });
+    
+    console.log('[BlogCompose] Extracted components (new format):', components);
+    return components;
   }
 
   removeComponent(instanceId: string): void {
@@ -1583,12 +1604,17 @@ export class BlogComposeComponent
       this.getActiveComponents()
     );
 
+    // Extract components in new format for database persistence
+    const componentsNewFormat = this.getInjectedComponentsNew();
+    console.log('[BlogCompose] Emitting post with components:', componentsNewFormat);
+
     this.postSubmitted.emit({
       title: this.title,
       content: contentForStorage,
       links: this.links,
       attachments: this.attachments,
-      injectedComponents: this.getActiveComponents(),
+      injectedComponents: this.getActiveComponents(), // Old format for backward compatibility
+      injectedComponentsNew: componentsNewFormat, // New format for database persistence
       // themeConfig: {
       //   theme: this.postTheme,
       //   accentColor: this.postAccentColor,
