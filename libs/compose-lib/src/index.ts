@@ -7,6 +7,7 @@ export * from './lib/interfaces/component-injection.interface';
 
 // Extensions
 export * from './lib/extensions/angular-component-node.extension';
+export * from './lib/extensions/component-injection.extension';
 
 // Components
 export * from './lib/components/component-selector.component';
