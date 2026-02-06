@@ -17,6 +17,7 @@ import { Comment } from './comment.entity';
 import { Link } from './link.entity';
 import { SearchPostDto } from '@optimistic-tanuki/models';
 import { Vote } from './vote.entity';
+import { SocialComponent } from './social-component.entity';
 
 @Entity()
 export class Post {
@@ -49,6 +50,9 @@ export class Post {
 
   @OneToMany(() => Attachment, (attachment) => attachment.post)
   attachments: Attachment[];
+
+  @OneToMany(() => SocialComponent, (component) => component.post)
+  components: SocialComponent[];
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

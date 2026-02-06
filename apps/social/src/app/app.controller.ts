@@ -4,6 +4,7 @@ import { PostService } from './services/post.service';
 import { AttachmentService } from './services/attachment.service';
 import { CommentService } from './services/comment.service';
 import { VoteService } from './services/vote.service';
+import { SocialComponentService } from './services/social-component.service';
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import {
   AttachmentCommands,
@@ -12,6 +13,7 @@ import {
   PostCommands,
   VoteCommands,
   FollowCommands,
+  SocialComponentCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateAttachmentDto,
@@ -28,6 +30,9 @@ import {
   UpdateFollowDto,
   UpdateLinkDto,
   UpdatePostDto,
+  CreateSocialComponentDto,
+  UpdateSocialComponentDto,
+  SocialComponentQueryDto,
 } from '@optimistic-tanuki/models';
 import { postSearchDtoToFindManyOptions } from '../entities/post.entity';
 import { transformSearchCommentDtoToFindOptions } from '../entities/comment.entity';
@@ -42,7 +47,8 @@ export class AppController {
     private readonly voteService: VoteService,
     private readonly attachmentService: AttachmentService,
     private readonly commentService: CommentService,
-    private readonly followService: FollowService
+    private readonly followService: FollowService,
+    private readonly socialComponentService: SocialComponentService
   ) {}
 
   @MessagePattern({ cmd: PostCommands.CREATE })
@@ -295,5 +301,45 @@ export class AppController {
   @MessagePattern({ cmd: FollowCommands.GET_FOLLOWING_COUNT })
   async getFollowingCount(@Payload() data: QueryFollowsDto) {
     return await this.followService.getFollowingCount(data.followerId);
+  }
+
+  // Social Component endpoints
+  @MessagePattern({ cmd: SocialComponentCommands.CREATE })
+  async createSocialComponent(
+    @Payload() createComponentDto: CreateSocialComponentDto
+  ) {
+    return await this.socialComponentService.create(createComponentDto);
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.FIND_BY_POST })
+  async getComponentsForPost(@Payload('postId') postId: string) {
+    return await this.socialComponentService.findByPostId(postId);
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.FIND })
+  async findOneSocialComponent(@Payload('id') id: string) {
+    return await this.socialComponentService.findOne(id);
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.UPDATE })
+  async updateSocialComponent(
+    @Payload() data: { id: string; dto: UpdateSocialComponentDto }
+  ) {
+    return await this.socialComponentService.update(data.id, data.dto);
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.DELETE })
+  async deleteSocialComponent(@Payload('id') id: string) {
+    return await this.socialComponentService.remove(id);
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.DELETE_BY_POST })
+  async deleteComponentsByPost(@Payload('postId') postId: string) {
+    return await this.socialComponentService.removeByPostId(postId);
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.FIND_BY_QUERY })
+  async findComponentsByQuery(@Payload() query: SocialComponentQueryDto) {
+    return await this.socialComponentService.findByQuery(query);
   }
 }
