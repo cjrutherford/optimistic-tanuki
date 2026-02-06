@@ -65,7 +65,7 @@
         <otui-button (action)="publishDraft()">Publish Now</otui-button>
         }
       </div>
-      }
+      } }
 
       <div class="view-actions">
         @if (canEdit() && isPostOwner()) {
@@ -93,6 +93,7 @@
         [content]="selectedPost()!.content"
         [authorId]="selectedPost()!.authorId"
         [createdAt]="selectedPost()!.createdAt"
+        [postId]="selectedPost()!.id"
       >
       </dh-blog-viewer>
       }
@@ -125,17 +126,16 @@
         >
         }
       </div>
-      @if (!selectedPost() && posts().length > 0) {
-        @for (post of posts(); track post.id) {
-          <dh-blog-viewer
-            [title]="post.title"
-            [content]="post.content"
-            [authorId]="post.authorId"
-            [createdAt]="post.createdAt"
-          ></dh-blog-viewer>
-        }
-      }
-      }
+      @if (!selectedPost() && posts().length > 0) { @for (post of posts(); track
+      post.id) {
+      <dh-blog-viewer
+        [title]="post.title"
+        [content]="post.content"
+        [authorId]="post.authorId"
+        [createdAt]="post.createdAt"
+        [postId]="post.id"
+      ></dh-blog-viewer>
+      } } }
 
       <!-- Create/Edit Mode (only shown if user has permission) -->
       @if (mode() === 'create' || mode() === 'edit') { @if (canEdit()) {
@@ -163,6 +163,7 @@
       <lib-blog-compose
         #blogCompose
         [ngModel]="editorData()"
+        (ngModelChange)="onEditorChange($event)"
         (postSubmitted)="onPostSubmitted($event)"
         [profileId]="profileId()"
       >

@@ -17,3 +17,10 @@ export {
   UpdateBlogPostDto as UpdateBlogPostDto,
   PostQueryDto as BlogPostQueryDto,
 } from './post';
+export {
+  BlogComponentDto,
+  CreateBlogComponentDto,
+  UpdateBlogComponentDto,
+  BlogComponentQueryDto,
+  ComponentExtractionResult,
+} from './blog-component';

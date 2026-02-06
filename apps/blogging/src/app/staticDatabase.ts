@@ -5,6 +5,7 @@ import * as yaml from 'js-yaml';
 import { Post } from './entities/post.entity';
 import { Event } from './entities/event.entity';
 import { Contact } from './entities/contact.entity';
+import { BlogComponent } from './entities/blog-component.entity';
 import { Blog } from './entities';
 
 const config = yaml.load(
@@ -26,7 +27,7 @@ const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [Post, Event, Contact, Blog];
+const entities = [Post, Event, Contact, Blog, BlogComponent];
 
 const staticSource = new DataSource({
   type: 'postgres',

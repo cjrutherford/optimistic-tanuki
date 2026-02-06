@@ -9,6 +9,7 @@ export * from './lib/featured-posts/featured-posts.component';
 export * from './lib/blog-compose/blog-compose.component';
 export * from './lib/blog-compose/interfaces/component-injection.interface';
 export * from './lib/blog-compose/services/component-injection.service';
+export * from './lib/blog-compose/services/component-persistence.service';
 export * from './lib/blog-compose/components/component-selector.component';
 export * from './lib/blog-compose/components/property-editor.component';
 export * from './lib/blog-compose/components/component-wrapper.component';

@@ -21,6 +21,7 @@ import { ContactController } from '../controllers/blogging/contact.controller';
 import { PostController } from '../controllers/blogging/post.controller';
 import { EventController } from '../controllers/blogging/event.controller';
 import { BlogController } from '../controllers/blogging/blog.controller';
+import { BlogComponentController } from '../controllers/blogging/blog-component.controller';
 import { PermissionsController } from '../controllers/permissions/permissions.controller';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
@@ -71,6 +72,7 @@ import { ForumController } from '../controllers/forum/forum.controller';
     PostController,
     EventController,
     BlogController,
+    BlogComponentController,
     PermissionsController,
     PersonaController,
     StoreController,

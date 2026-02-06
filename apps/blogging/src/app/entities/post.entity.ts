@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
 import { Blog } from './blog.entity';
+import { BlogComponent } from './blog-component.entity';
 
 @Entity()
 export class Post {
@@ -26,6 +27,9 @@ export class Post {
 
   @ManyToOne(() => Blog, (blog) => blog.posts)
   blog: Blog;
+
+  @OneToMany(() => BlogComponent, (component) => component.post, { cascade: true })
+  components: BlogComponent[];
 
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

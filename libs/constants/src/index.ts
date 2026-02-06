@@ -38,6 +38,7 @@ export * from './lib/libs/common';
 
 export {
   BlogCommands,
+  BlogComponentCommands,
   ContactCommands,
   EventCommands,
   PostCommands as BlogPostCommands,

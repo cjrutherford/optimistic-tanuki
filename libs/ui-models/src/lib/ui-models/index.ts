@@ -36,6 +36,12 @@ export type {
   UpdateBlogPostDto,
   BlogPostQueryDto,
 } from './blog-post';
+export type {
+  BlogComponentDto,
+  CreateBlogComponentDto,
+  UpdateBlogComponentDto,
+  BlogComponentQueryDto,
+} from './blog-component';
 export type { PostDto, CreatePostDto, UpdatePostDto } from './post';
 export type { CommentDto, CreateCommentDto, UpdateCommentDto } from './comment';
 export type { VoteDto, CreateVoteDto } from './vote';
