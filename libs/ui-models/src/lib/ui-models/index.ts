@@ -42,6 +42,12 @@ export type {
   UpdateBlogComponentDto,
   BlogComponentQueryDto,
 } from './blog-component';
+export type {
+  SocialComponentDto,
+  CreateSocialComponentDto,
+  UpdateSocialComponentDto,
+  SocialComponentQueryDto,
+} from './social-component';
 export type { PostDto, CreatePostDto, UpdatePostDto } from './post';
 export type { CommentDto, CreateCommentDto, UpdateCommentDto } from './comment';
 export type { VoteDto, CreateVoteDto } from './vote';

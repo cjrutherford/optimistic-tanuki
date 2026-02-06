@@ -12,6 +12,7 @@ export {
   VoteCommands,
   LinkCommands,
   FollowCommands,
+  SocialComponentCommands,
   SocialRealtimeCommands,
 } from './lib/libs/social';
 
