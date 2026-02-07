@@ -25,7 +25,6 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 
-@UseGuards(AuthGuard, PermissionsGuard)
 @Controller('blog-components')
 export class BlogComponentController {
   constructor(
@@ -43,6 +42,7 @@ export class BlogComponentController {
       .catch((e) => this.l.error('Error connecting to blogService', e));
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Post('')
   @RequirePermissions('blog.post.create')
   async createBlogComponent(
@@ -101,6 +101,7 @@ export class BlogComponentController {
     }
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Put(':id')
   @RequirePermissions('blog.post.update')
   async updateBlogComponent(
@@ -125,6 +126,7 @@ export class BlogComponentController {
     }
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Delete(':id')
   @RequirePermissions('blog.post.delete')
   async deleteBlogComponent(
@@ -145,6 +147,7 @@ export class BlogComponentController {
     }
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Delete('post/:postId')
   @RequirePermissions('blog.post.delete')
   async deleteComponentsByPost(
