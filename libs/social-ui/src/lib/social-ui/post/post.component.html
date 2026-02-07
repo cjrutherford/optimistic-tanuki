@@ -22,7 +22,7 @@
     <div class="subtitle">{{ content.createdAt | date }}</div>
   </div>
   <div class="content">
-    <div class="post-content" [innerHTML]="content.content"></div>
+    <div class="post-content" #contentContainer [innerHTML]="content.content"></div>
     @if (attachments.length > 0) {
     <div class="post-attachment">
       <h3>Attachments</h3>

@@ -10,7 +10,7 @@ import {
   ComponentInjectionEvent,
   ComponentInjectionAPI,
 } from '../interfaces/component-injection.interface';
-import { ComponentWrapperComponent } from '../components/component-wrapper.component';
+import { ComponentEditorWrapperComponent } from '../components/component-editor-wrapper.component';
 
 @Injectable({
   providedIn: 'root',
@@ -26,6 +26,9 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   private onMoveUpCallback?: (instance: InjectedComponentInstance) => void;
   private onMoveDownCallback?: (instance: InjectedComponentInstance) => void;
   private onSelectionCallback?: (instance: InjectedComponentInstance) => void;
+  private onDuplicateCallback?: (instance: InjectedComponentInstance) => void;
+  private onConfigCallback?: (instance: InjectedComponentInstance) => void;
+  private onPropertiesChangedCallback?: (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => void;
 
   /**
    * Event emitter for component injection events
@@ -49,12 +52,18 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     onMoveUp?: (instance: InjectedComponentInstance) => void;
     onMoveDown?: (instance: InjectedComponentInstance) => void;
     onSelection?: (instance: InjectedComponentInstance) => void;
+    onDuplicate?: (instance: InjectedComponentInstance) => void;
+    onConfig?: (instance: InjectedComponentInstance) => void;
+    onPropertiesChanged?: (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => void;
   }): void {
     this.onEditCallback = callbacks.onEdit;
     this.onDeleteCallback = callbacks.onDelete;
     this.onMoveUpCallback = callbacks.onMoveUp;
     this.onMoveDownCallback = callbacks.onMoveDown;
     this.onSelectionCallback = callbacks.onSelection;
+    this.onDuplicateCallback = callbacks.onDuplicate;
+    this.onConfigCallback = callbacks.onConfig;
+    this.onPropertiesChangedCallback = callbacks.onPropertiesChanged;
   }
 
   /**
@@ -101,7 +110,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
    */
   async injectComponent(
     componentId: string,
-    data?: any,
+    data?: unknown,
     position?: number
   ): Promise<InjectedComponentInstance> {
     if (!this.viewContainer) {
@@ -119,24 +128,11 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       .substring(2, 9)}`;
 
     // Create wrapper component
-    const wrapperRef = this.viewContainer.createComponent(
-      ComponentWrapperComponent
+    const wrapperRef = position !== undefined ? this.viewContainer.createComponent(
+      ComponentEditorWrapperComponent, { index: position }
+    ) : this.viewContainer.createComponent(
+      ComponentEditorWrapperComponent
     );
-
-    // Create the actual component within the wrapper
-    const componentRef = this.viewContainer.createComponent(
-      componentDef.component
-    );
-
-    // Set initial data if provided
-    if (data || componentDef.data) {
-      const componentData = { ...componentDef.data, ...data };
-      Object.keys(componentData).forEach((key) => {
-        if (componentRef.instance[key] !== undefined) {
-          componentRef.instance[key] = componentData[key];
-        }
-      });
-    }
 
     // Create instance object
     const instance: InjectedComponentInstance = {
@@ -144,34 +140,24 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       componentDef,
       componentRef: wrapperRef, // Store wrapper ref as main ref
       position: position !== undefined ? { index: position } : undefined,
-      data: { ...componentDef.data, ...data },
+      data: { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) },
     };
 
-    // Configure wrapper component
+    // Configure wrapper component - it will create the inner component itself
     wrapperRef.instance.componentInstance = instance;
+    wrapperRef.instance.componentDef = componentDef;
+    wrapperRef.instance.componentData = { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) };
 
     // Set up wrapper event handlers
-    wrapperRef.instance.editRequested.subscribe(
-      (inst: InjectedComponentInstance) => {
-        this.onEditCallback?.(inst);
-      }
-    );
-
     wrapperRef.instance.deleteRequested.subscribe(
       (inst: InjectedComponentInstance) => {
         this.onDeleteCallback?.(inst);
       }
     );
 
-    wrapperRef.instance.moveUpRequested.subscribe(
+    wrapperRef.instance.duplicateRequested.subscribe(
       (inst: InjectedComponentInstance) => {
-        this.onMoveUpCallback?.(inst);
-      }
-    );
-
-    wrapperRef.instance.moveDownRequested.subscribe(
-      (inst: InjectedComponentInstance) => {
-        this.onMoveDownCallback?.(inst);
+        this.onDuplicateCallback?.(inst);
       }
     );
 
@@ -181,19 +167,14 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       }
     );
 
-    // Append the actual component to the wrapper
-    const wrapperElement = wrapperRef.location.nativeElement;
-    const componentElement = componentRef.location.nativeElement;
-    wrapperElement.appendChild(componentElement);
+    wrapperRef.instance.propertiesChanged.subscribe(
+      (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => {
+        this.onPropertiesChangedCallback?.(data);
+      }
+    );
 
-    // Store the instance (with additional reference to the inner component)
-    instance.data._innerComponentRef = componentRef;
+    // Store the instance
     this.activeComponents.set(instanceId, instance);
-
-    // Move to specific position if requested
-    if (position !== undefined) {
-      this.moveComponentToPosition(wrapperRef, position);
-    }
 
     // Emit event
     this.componentEvents.emit({
@@ -210,7 +191,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   renderComponentInto(
     componentId: string,
     instanceId: string,
-    data: any,
+    data: unknown,
     targetElement: HTMLElement
   ): InjectedComponentInstance {
     if (!this.viewContainer) {
@@ -224,45 +205,32 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
 
     // Create wrapper component
     const wrapperRef = this.viewContainer.createComponent(
-      ComponentWrapperComponent
+      ComponentEditorWrapperComponent
     );
-
-    // Create the actual component within the wrapper
-    const componentRef = this.viewContainer.createComponent(
-      componentDef.component
-    );
-
-    // Set initial data if provided
-    if (data || componentDef.data) {
-      const componentData = { ...componentDef.data, ...data };
-      Object.keys(componentData).forEach((key) => {
-        if (componentRef.instance[key] !== undefined) {
-          componentRef.instance[key] = componentData[key];
-        }
-      });
-    }
 
     // Create instance object
     const instance: InjectedComponentInstance = {
       instanceId,
       componentDef,
       componentRef: wrapperRef, // Store wrapper ref as main ref
-      data: { ...componentDef.data, ...data },
+      data: { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) },
     };
 
-    // Configure wrapper component
+    // Configure wrapper component - it will create the inner component itself
     wrapperRef.instance.componentInstance = instance;
+    wrapperRef.instance.componentDef = componentDef;
+    wrapperRef.instance.componentData = { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) };
 
     // Set up wrapper event handlers
-    wrapperRef.instance.editRequested.subscribe(
-      (inst: InjectedComponentInstance) => {
-        this.onEditCallback?.(inst);
-      }
-    );
-
     wrapperRef.instance.deleteRequested.subscribe(
       (inst: InjectedComponentInstance) => {
         this.onDeleteCallback?.(inst);
+      }
+    );
+
+    wrapperRef.instance.duplicateRequested.subscribe(
+      (inst: InjectedComponentInstance) => {
+        this.onDuplicateCallback?.(inst);
       }
     );
 
@@ -272,16 +240,17 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       }
     );
 
-    // Append the actual component to the wrapper
-    const wrapperElement = wrapperRef.location.nativeElement;
-    const componentElement = componentRef.location.nativeElement;
-    wrapperElement.appendChild(componentElement);
+    wrapperRef.instance.propertiesChanged.subscribe(
+      (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => {
+        this.onPropertiesChangedCallback?.(data);
+      }
+    );
 
     // Append wrapper to target element
+    const wrapperElement = wrapperRef.location.nativeElement;
     targetElement.appendChild(wrapperElement);
 
-    // Store the instance (with additional reference to the inner component)
-    instance.data._innerComponentRef = componentRef;
+    // Store the instance
     this.activeComponents.set(instanceId, instance);
 
     return instance;
@@ -319,36 +288,33 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   /**
    * Update component data
    */
-  updateComponent(instanceId: string, data: any): void {
+  updateComponent(instanceId: string, data: unknown): void {
     const instance = this.activeComponents.get(instanceId);
     if (!instance) {
       throw new Error(`Component instance '${instanceId}' not found.`);
     }
 
-    const oldData = { ...instance.data };
+    const oldData = { ...(instance.data as Record<string, unknown>) };
+    const dataToMerge = data as Record<string, unknown>;
 
     // Update instance data
-    instance.data = { ...instance.data, ...data };
+    instance.data = { ...(instance.data as Record<string, unknown>), ...dataToMerge };
 
-    // Update component properties
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const innerRef = (instance.data as any)._innerComponentRef;
-    const targetRef = innerRef || instance.componentRef;
-
-    Object.keys(data).forEach((key) => {
-      if (
-        key !== '_innerComponentRef' &&
-        targetRef.instance &&
-        targetRef.instance[key] !== undefined
-      ) {
-        targetRef.instance[key] = data[key];
+    // Update wrapper component's data
+    const wrapperInstance = instance.componentRef.instance as ComponentEditorWrapperComponent;
+    if (wrapperInstance) {
+      // Use the public updateComponentData method if available
+      if (typeof wrapperInstance.updateComponentData === 'function') {
+        wrapperInstance.updateComponentData(dataToMerge);
+      } else {
+        // Fallback to direct property update
+        if (wrapperInstance.componentData) {
+          wrapperInstance.componentData = { ...wrapperInstance.componentData, ...dataToMerge };
+        }
       }
-    });
+    }
 
     // Trigger change detection
-    if (innerRef && innerRef.changeDetectorRef) {
-      innerRef.changeDetectorRef.detectChanges();
-    }
     instance.componentRef.changeDetectorRef.detectChanges();
 
     // Emit event
@@ -382,7 +348,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       throw new Error(`Component instance '${instanceId}' not found.`);
     }
 
-    const oldPosition = instance.position?.index;
+    // Position tracking handled by TipTap
 
     this.moveComponentToPosition(instance.componentRef, newPosition);
 
@@ -409,7 +375,7 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
    * Private helper to move component to specific position in view container
    */
   private moveComponentToPosition(
-    componentRef: ComponentRef<any>,
+    componentRef: ComponentRef<unknown>,
     position: number
   ): void {
     if (!this.viewContainer) {

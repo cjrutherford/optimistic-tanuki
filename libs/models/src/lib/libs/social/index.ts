@@ -15,3 +15,9 @@ export { UpdateLinkDto } from './updatelink.dto';
 export { UpdatePostDto } from './updatepost.dto';
 export { UpdateVoteDto } from './updatevote.dto';
 export { VoteDto } from './vote.dto';
+export { 
+  SocialComponentDto, 
+  CreateSocialComponentDto, 
+  UpdateSocialComponentDto,
+  SocialComponentQueryDto 
+} from './social-component';

@@ -36,3 +36,14 @@ export const PostCommands = {
   GENERATE_SEO: 'post.generateSeo',
   SEARCH: 'post.search',
 };
+
+export const BlogComponentCommands = {
+  CREATE: 'blog-component.create',
+  UPDATE: 'blog-component.update',
+  DELETE: 'blog-component.delete',
+  FIND: 'blog-component.find',
+  FIND_ALL: 'blog-component.findAll',
+  FIND_BY_POST: 'blog-component.findByPost',
+  FIND_BY_QUERY: 'blog-component.findByQuery',
+  DELETE_BY_POST: 'blog-component.deleteByPost',
+};

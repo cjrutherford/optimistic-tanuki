@@ -15,6 +15,7 @@ import {
   BlogPostDto,
 } from '@optimistic-tanuki/models';
 import { SanitizationService } from './sanitization.service';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class PostService {
@@ -27,26 +28,30 @@ export class PostService {
   }
 
   async create(createPostDto: CreateBlogPostDto): Promise<BlogPostDto> {
-    // Validate and sanitize input
-    this.validatePostContent(createPostDto.content);
+    try {
+      // Validate and sanitize input
+      this.validatePostContent(createPostDto.content);
 
-    const sanitizedContent = this.sanitizationService.sanitizeHtml(
-      createPostDto.content
-    );
-    const sanitizedTitle = this.sanitizationService.sanitizePlainText(
-      createPostDto.title
-    );
+      const sanitizedContent = this.sanitizationService.sanitizeHtml(
+        createPostDto.content
+      );
+      const sanitizedTitle = this.sanitizationService.sanitizePlainText(
+        createPostDto.title
+      );
 
-    const postData = {
-      ...createPostDto,
-      title: sanitizedTitle,
-      content: sanitizedContent,
-      isDraft:
-        createPostDto.isDraft !== undefined ? createPostDto.isDraft : true,
-      publishedAt: createPostDto.isDraft === false ? new Date() : null,
-    };
-    const post = this.postRepository.create(postData);
-    return this.postRepository.save(post);
+      const postData = {
+        ...createPostDto,
+        title: sanitizedTitle,
+        content: sanitizedContent,
+        isDraft:
+          createPostDto.isDraft !== undefined ? createPostDto.isDraft : true,
+        publishedAt: createPostDto.isDraft === false ? new Date() : null,
+      };
+      const post = this.postRepository.create(postData);
+      return this.postRepository.save(post);
+    } catch (error) {
+      throw new RpcException(`Failed to create blog post: ${error.message}`);
+    }
   }
 
   /**

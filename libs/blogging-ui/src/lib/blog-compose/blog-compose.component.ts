@@ -2,6 +2,7 @@ import {
   Component,
   EventEmitter,
   Output,
+  Input,
   OnDestroy,
   HostListener,
   ViewChild,
@@ -20,7 +21,6 @@ import {
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { TiptapEditorDirective } from 'ngx-tiptap';
-import Image from '@tiptap/extension-image';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import Underline from '@tiptap/extension-underline';
@@ -83,6 +83,12 @@ import { RichTextToolbarComponent } from './components/rich-text-toolbar.compone
 // Angular Component Node Extension
 import { BlogComposeComponentNode } from './extensions/blog-compose-component.extension';
 
+// Resizable Image Extension
+import { ResizableImage } from './extensions/resizable-image.extension';
+
+// Image Upload Service
+import { ImageUploadService, InjectedComponentData, ComponentInjection } from '@optimistic-tanuki/compose-lib';
+
 import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
 
 interface PostData {
@@ -90,7 +96,8 @@ interface PostData {
   content: string;
   links: { url: string }[];
   attachments: File[];
-  injectedComponents?: InjectedComponentInstance[];
+  injectedComponents?: InjectedComponentInstance[]; // Old format for backward compatibility
+  injectedComponentsNew?: InjectedComponentData[]; // New format for database persistence
   themeConfig?: PostThemeConfig;
 }
 
@@ -180,6 +187,7 @@ export class BlogComposeComponent
   AfterViewInit,
   ComponentInjectionAPI,
   ControlValueAccessor {
+  @Input() profileId?: string; // Profile ID for asset uploads
   @Output() postSubmitted: EventEmitter<PostData> =
     new EventEmitter<PostData>();
   @Output() attachmentAdded = new EventEmitter<{
@@ -192,6 +200,7 @@ export class BlogComposeComponent
 
   override readonly themeService: ThemeService = inject(ThemeService);
   private cdr = inject(ChangeDetectorRef);
+  private imageUploadService = inject(ImageUploadService);
 
   private sanitize(input: string): string {
     return DOMPurify.sanitize(input);
@@ -226,7 +235,7 @@ export class BlogComposeComponent
 
   set content(value: string) {
     this._content = value;
-    this.onChange({ title: this.title, content: this.content });
+    this.emitChange();
   }
 
   links: Array<{ url: string }> = [];
@@ -255,6 +264,7 @@ export class BlogComposeComponent
 
   // Flag to track if there's pending content to set after editor init
   private pendingContent: string | null = null;
+  private pendingInjectedComponents: any[] | null = null;
   private componentInjectionService = inject(ComponentInjectionService);
 
   constructor() {
@@ -280,6 +290,9 @@ export class BlogComposeComponent
         onMoveUp: (instance) => this.onComponentMoveUp(instance),
         onMoveDown: (instance) => this.onComponentMoveDown(instance),
         onSelection: (instance) => this.onComponentSelection(instance),
+        onDuplicate: (instance) => this.onComponentDuplicate(instance),
+        onConfig: (instance) => this.onComponentConfig(instance),
+        onPropertiesChanged: (data) => this.onComponentPropertiesChanged(data),
       });
 
       this.initializeDefaultComponents();
@@ -287,7 +300,7 @@ export class BlogComposeComponent
       this.editor = new Editor({
         extensions: [
           StarterKit,
-          Image,
+          ResizableImage,
           Subscript,
           Superscript,
           Underline,
@@ -300,6 +313,9 @@ export class BlogComposeComponent
           TableRow,
           TableHeader,
           TableCell,
+          // Inline Component Injection extension (new persistence-friendly format)
+          ComponentInjection.configure({}),
+          // Angular Component rendering extension
           BlogComposeComponentNode.configure({
             renderer: (
               componentId: string,
@@ -329,7 +345,15 @@ export class BlogComposeComponent
       if (this.pendingContent !== null) {
         this.editor.commands.setContent(this.pendingContent);
         this.pendingContent = null;
+
+        if (this.pendingInjectedComponents) {
+          this.restoreInjectedComponentData(this.pendingInjectedComponents);
+          this.pendingInjectedComponents = null;
+        }
       }
+
+      // Fallback reconstruction: ensure placeholders render wrappers on load
+      this.reconstructEditorComponents();
 
       this.editor.view.dom.addEventListener('contextmenu', (event) => {
         event.preventDefault();
@@ -932,12 +956,25 @@ export class BlogComposeComponent
 
   // Component Wrapper Event Handlers
   onComponentEdit(instance: InjectedComponentInstance): void {
+    console.log('[BlogCompose] Component edit requested', {
+      instanceId: instance.instanceId,
+      componentDefId: instance.componentDef.id,
+      currentData: instance.data
+    });
     this.selectedComponentInstance = instance;
     this.selectedComponentProperties = instance.componentDef.properties || [];
     this.isPropertyEditorVisible = true;
+    console.log('[BlogCompose] Property editor opened', {
+      propertyCount: this.selectedComponentProperties.length
+    });
   }
 
   onComponentDelete(instance: InjectedComponentInstance): void {
+    console.log('[BlogCompose] Component delete requested', {
+      instanceId: instance.instanceId,
+      componentDefId: instance.componentDef.id
+    });
+
     this.componentInjectionService.removeComponent(instance.instanceId);
     // Also remove from editor
     this.editor.commands.removeAngularComponent(instance.instanceId);
@@ -945,26 +982,112 @@ export class BlogComposeComponent
     if (this.selectedComponentInstance?.instanceId === instance.instanceId) {
       this.closePropertyEditor();
     }
+
+    console.log('[BlogCompose] Component deleted successfully', {
+      instanceId: instance.instanceId
+    });
   }
 
   onComponentMoveUp(instance: InjectedComponentInstance): void {
     const activeComponents = this.componentInjectionService.getActiveComponents();
     const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+
+    console.log('[BlogCompose] Component move up requested', {
+      instanceId: instance.instanceId,
+      currentIndex,
+      canMoveUp: currentIndex > 0
+    });
+
     if (currentIndex > 0) {
       this.componentInjectionService.moveComponent(instance.instanceId, currentIndex - 1);
+      console.log('[BlogCompose] Component moved up', {
+        instanceId: instance.instanceId,
+        newIndex: currentIndex - 1
+      });
     }
   }
 
   onComponentMoveDown(instance: InjectedComponentInstance): void {
     const activeComponents = this.componentInjectionService.getActiveComponents();
     const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+
+    console.log('[BlogCompose] Component move down requested', {
+      instanceId: instance.instanceId,
+      currentIndex,
+      canMoveDown: currentIndex >= 0 && currentIndex < activeComponents.length - 1
+    });
+
     if (currentIndex >= 0 && currentIndex < activeComponents.length - 1) {
       this.componentInjectionService.moveComponent(instance.instanceId, currentIndex + 1);
+      console.log('[BlogCompose] Component moved down', {
+        instanceId: instance.instanceId,
+        newIndex: currentIndex + 1
+      });
     }
   }
 
   onComponentSelection(instance: InjectedComponentInstance): void {
+    console.log('[BlogCompose] Component selected', {
+      instanceId: instance.instanceId,
+      componentDefId: instance.componentDef.id
+    });
     this.selectedComponentInstance = instance;
+  }
+
+  onComponentDuplicate(instance: InjectedComponentInstance): void {
+    console.log('[BlogCompose] Component duplicate requested', {
+      instanceId: instance.instanceId,
+      componentDefId: instance.componentDef.id,
+      data: instance.data
+    });
+
+    // Create a duplicate of the component with the same data
+    const duplicateData = { ...instance.data };
+    delete duplicateData._innerComponentRef; // Remove internal reference
+    this.componentInjectionService.injectComponent(
+      instance.componentDef.id,
+      duplicateData
+    );
+
+    console.log('[BlogCompose] Component duplicated successfully', {
+      originalInstanceId: instance.instanceId
+    });
+  }
+
+  onComponentConfig(instance: InjectedComponentInstance): void {
+    console.log('[BlogCompose] Component config requested', {
+      instanceId: instance.instanceId,
+      componentDefId: instance.componentDef.id
+    });
+    // Open property editor for configuration (same as edit)
+    this.onComponentEdit(instance);
+  }
+
+  onComponentPropertiesChanged(data: { instance: InjectedComponentInstance; data: Record<string, any> }): void {
+    console.log('[BlogCompose] Component properties changed (from inline edit)', {
+      instanceId: data.instance.instanceId,
+      componentDefId: data.instance.componentDef.id,
+      oldData: data.instance.data,
+      newData: data.data
+    });
+
+    // Update component properties from inline quick edit
+    this.componentInjectionService.updateComponent(
+      data.instance.instanceId,
+      data.data
+    );
+
+    // Update the TipTap editor node as well to ensure data persistence
+    this.editor.commands.updateAngularComponent({
+      instanceId: data.instance.instanceId,
+      data: data.data,
+    });
+
+    this.emitChange();
+
+    console.log('[BlogCompose] Component properties updated successfully', {
+      instanceId: data.instance.instanceId
+    });
   }
 
   // Property Editor Handlers
@@ -1010,8 +1133,35 @@ export class BlogComposeComponent
     return this.componentInjectionService.getActiveComponents();
   }
 
+  // NEW: Get components from ComponentInjection extension
+  getInjectedComponentsNew(): InjectedComponentData[] {
+    // Extract components from the editor document using new format
+    const components: InjectedComponentData[] = [];
+    
+    if (!this.editor) {
+      return components;
+    }
+
+    this.editor.state.doc.descendants((node) => {
+      // Check for both old and new component node types
+      if (node.type.name === 'blogComposeComponent' || node.type.name === 'angularComponent') {
+        components.push({
+          instanceId: node.attrs['instanceId'],
+          componentType: node.attrs['componentId'],
+          componentData: node.attrs['data'] || {},
+          position: components.length
+        });
+      }
+    });
+    
+    console.log('[BlogCompose] Extracted components (new format):', components);
+    return components;
+  }
+
   removeComponent(instanceId: string): void {
     this.componentInjectionService.removeComponent(instanceId);
+    // Also remove from new extension
+    this.editor?.commands.removeComponent(instanceId);
   }
 
   moveComponent(instanceId: string, newPosition: number): void {
@@ -1030,21 +1180,74 @@ export class BlogComposeComponent
     }
   }
 
-  onFileSelected(event: Event): void {
+  // Ensure editor reconstructs any placeholders present in DOM
+  private reconstructEditorComponents(): void {
+    const root = this.editor?.view?.dom as HTMLElement | undefined;
+    if (!root) return;
+    const nodes = root.querySelectorAll('[data-angular-component]');
+    nodes.forEach((node) => {
+      const el = node as HTMLElement;
+      const instanceId = el.getAttribute('data-instance-id');
+      const componentId = el.getAttribute('data-component-id');
+      const dataStr = el.getAttribute('data-component-data');
+      if (!instanceId || !componentId) return;
+      if (this.componentInjectionService.getInstance(instanceId)) return;
+      let data: Record<string, any> = {};
+      try { data = dataStr ? JSON.parse(dataStr) : {}; } catch {}
+      try {
+        this.componentInjectionService.renderComponentInto(componentId, instanceId, data, el);
+      } catch (e) {
+        console.warn('[BlogCompose] Failed to reconstruct component', componentId, instanceId, e);
+      }
+    });
+  }
+
+  async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) {
       return;
     }
+
     const file = input.files[0];
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (this.editor && result) {
-        this.editor.chain().focus().setImage({ src: result }).run();
-      }
-    };
-    reader.readAsDataURL(file);
-    input.value = '';
+
+    // Check if profileId is available
+    if (!this.profileId) {
+      console.error('Profile ID is required for image upload');
+      alert('Unable to upload image: User profile not found');
+      input.value = '';
+      return;
+    }
+
+    try {
+      // Upload file to Assets service
+      const assetUrl = await this.imageUploadService.uploadFile(
+        file,
+        this.profileId,
+        `blog-image-${Date.now()}`
+      );
+
+      // Get the editor's content area width for default sizing
+      const editorElement = this.editor.view.dom;
+      const editorWidth = editorElement.clientWidth;
+
+      // Set image width to 95% of editor width (leaving some margin)
+      const defaultWidth = Math.floor(editorWidth * 0.95);
+
+      // Load the image to get its natural dimensions
+      const img = new Image();
+      img.onload = () => {
+        this.editor.chain().focus().setImage({
+          src: assetUrl, // Use asset URL instead of base64
+          width: defaultWidth, // numeric value, not string
+        }).run();
+      };
+      img.src = assetUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      input.value = '';
+    }
   }
 
   toggleThemeConfig(): void {
@@ -1075,6 +1278,14 @@ export class BlogComposeComponent
 
     const instanceData = { ...(component.data || {}), ...(realComponent.data || {}) };
 
+    // Use NEW ComponentInjection extension
+    this.editor.commands.insertComponent({
+      instanceId,
+      componentType: realComponent.id,
+      data: instanceData,
+    });
+
+    // Also use OLD system for backward compatibility (temporary)
     this.editor.commands.insertAngularComponent({
       componentId: realComponent.id,
       instanceId,
@@ -1091,9 +1302,8 @@ export class BlogComposeComponent
         .run();
     }
 
-    // The renderer calls renderComponentInto, which calls service.renderComponentInto
-    // We wait a tick to get the instance?? 
-    // Actually render is synchronous-ish in Tiptap for DOM, but Angular might be async.
+    // Close component selector
+    this.isComponentSelectorVisible = false;
 
     // Return a temporary promise/placeholder
     return new Promise(resolve => {
@@ -1131,19 +1341,56 @@ export class BlogComposeComponent
     this.isDragOver = false;
   }
 
-  handleDrop(e: DragEvent): void {
+  async handleDrop(e: DragEvent): Promise<void> {
     e.preventDefault();
     this.isDragOver = false;
+
     if (!e.dataTransfer?.files.length) return;
+
+    // Check if profileId is available
+    if (!this.profileId) {
+      console.error('Profile ID is required for image upload');
+      alert('Unable to upload image: User profile not found');
+      return;
+    }
+
     const files = Array.from(e.dataTransfer.files);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const src = event.target?.result as string;
-        if (src) this.editor.chain().focus().setImage({ src }).run();
-      };
-      reader.readAsDataURL(file);
-    });
+
+    // Filter for image files only
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      alert('Please drop image files only');
+      return;
+    }
+
+    // Upload each image file to Assets service
+    for (const file of imageFiles) {
+      try {
+        // Upload to Assets service with a generated base filename (no extension)
+        const assetUrl = await this.imageUploadService.uploadFile(
+          file,
+          this.profileId,
+          `blog-drag-drop-${Date.now()}`
+        );
+
+        // Get the editor's content area width for default sizing
+        const editorElement = this.editor.view.dom;
+        const editorWidth = editorElement.clientWidth;
+
+        // Set image width to 95% of editor width
+        const defaultWidth = Math.floor(editorWidth * 0.95);
+
+        // Insert the image with asset URL
+        this.editor.chain().focus().setImage({
+          src: assetUrl,
+          width: defaultWidth, // numeric value, not string
+        }).run();
+      } catch (error) {
+        console.error('Error uploading dropped file:', error);
+        alert(`Failed to upload ${file.name}. Please try again.`);
+      }
+    }
   }
 
   // Inline component interaction methods
@@ -1166,17 +1413,212 @@ export class BlogComposeComponent
     }
   }
 
+  /**
+   * Embedded serialization marker so injected component state survives:
+   * editor HTML -> DB -> editor HTML.
+   */
+  private static readonly INJECTED_COMPONENTS_META_ATTR =
+    'data-ot-injected-components';
+
+  /**
+   * Safe deep copy that removes circular references
+   */
+  private safeCycleBreaker(obj: any, seen = new WeakSet()): any {
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
+    }
+
+    if (seen.has(obj)) {
+      return undefined;
+    }
+
+    seen.add(obj);
+
+    if (Array.isArray(obj)) {
+      return obj
+        .map(item => this.safeCycleBreaker(item, seen))
+        .filter(item => item !== undefined);
+    }
+
+    const result: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        // Exclude specific known dangerous keys
+        if (key === 'componentRef' || key === '_innerComponentRef' || key === 'viewContainerRef') {
+          continue;
+        }
+
+        const value = this.safeCycleBreaker(obj[key], seen);
+        if (value !== undefined) {
+          result[key] = value;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private addInjectedComponentsMeta(html: string, injectedComponents: unknown): string {
+    const safeHtml = html ?? '';
+
+    // Avoid bloating output if there are no injected components.
+    const hasComponents =
+      Array.isArray(injectedComponents) ? injectedComponents.length > 0 : !!injectedComponents;
+    if (!hasComponents) {
+      // Still strip any stale meta so the stored HTML stays clean.
+      return this.stripInjectedComponentsMeta(safeHtml).html;
+    }
+
+    // Pre-sanitize and simplify the payload structure
+    let serializableComponents: any[] = [];
+    if (Array.isArray(injectedComponents)) {
+      serializableComponents = injectedComponents.map((comp: any) => {
+        // Only pick what we need to minimize data and risk
+        return {
+          instanceId: comp.instanceId,
+          componentDef: {
+            id: comp?.componentDef?.id
+          },
+          data: this.safeCycleBreaker(comp.data),
+          position: comp.position
+        };
+      });
+    }
+
+    const payload = {
+      v: 1,
+      injectedComponents: serializableComponents,
+    };
+
+    // Use a simple JSON stringify since we've already cleaned the data
+    const encoded = this.base64UrlEncodeUtf8(JSON.stringify(payload));
+
+    const doc = new DOMParser().parseFromString(safeHtml, 'text/html');
+
+    // Remove any existing meta nodes to prevent duplicates.
+    doc
+      .querySelectorAll(`span[${BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR}]`)
+      .forEach((n) => n.remove());
+
+    const meta = doc.createElement('span');
+    meta.setAttribute(BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR, encoded);
+    // Ensure it stays non-visible even if style attributes are stripped.
+    meta.setAttribute('hidden', '');
+    meta.setAttribute('aria-hidden', 'true');
+
+    doc.body.appendChild(meta);
+
+    return doc.body.innerHTML;
+  }
+
+  private stripInjectedComponentsMeta(html: string): { html: string; injectedComponents?: unknown } {
+    const safeHtml = html ?? '';
+    const doc = new DOMParser().parseFromString(safeHtml, 'text/html');
+
+    const meta = doc.querySelector(
+      `span[${BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR}]`
+    ) as HTMLSpanElement | null;
+
+    let injectedComponents: unknown | undefined;
+
+    const encoded = meta?.getAttribute(BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR);
+    if (encoded) {
+      try {
+        const decoded = this.base64UrlDecodeUtf8(encoded);
+        const parsed = JSON.parse(decoded) as { v?: number; injectedComponents?: unknown };
+        if (parsed && parsed.v === 1) {
+          injectedComponents = parsed.injectedComponents;
+        }
+      } catch {
+        // Ignore malformed meta; treat as absent.
+      }
+    }
+
+    meta?.remove();
+
+    return { html: doc.body.innerHTML, injectedComponents };
+  }
+
+  private base64UrlEncodeUtf8(value: string): string {
+    const bytes = new TextEncoder().encode(value);
+    let binary = '';
+    for (const b of bytes) binary += String.fromCharCode(b);
+    const b64 = btoa(binary);
+    // base64url
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+
+  private base64UrlDecodeUtf8(value: string): string {
+    // base64url -> base64
+    let b64 = value.replace(/-/g, '+').replace(/_/g, '/');
+    // pad
+    while (b64.length % 4 !== 0) b64 += '=';
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  private restoreInjectedComponentData(components: any[]): void {
+    if (!components || !components.length) return;
+
+    // We schedule this to run after the current stack,
+    setTimeout(() => {
+      components.forEach(comp => {
+        if (comp && comp.instanceId) {
+          try {
+            // Ensure wrapper exists; if not, render into existing placeholder
+            const placeholder = this.editor?.view?.dom?.querySelector(`[data-angular-component][data-instance-id="${comp.instanceId}"]`) as HTMLElement | null;
+            if (placeholder && !this.componentInjectionService.getInstance(comp.instanceId)) {
+              const componentId = placeholder.getAttribute('data-component-id') || comp.componentId || comp.componentType;
+              if (componentId) {
+                this.componentInjectionService.renderComponentInto(componentId, comp.instanceId, comp.data || {}, placeholder);
+              }
+            }
+
+            // Update service instance if present
+            if (this.componentInjectionService.getInstance(comp.instanceId) && comp.data) {
+              this.componentInjectionService.updateComponent(comp.instanceId, comp.data);
+            }
+
+            // Update TipTap node data
+            if (comp.data) {
+              this.editor?.commands.updateAngularComponent({
+                instanceId: comp.instanceId,
+                data: comp.data
+              });
+            }
+          } catch (e) {
+            console.warn('[BlogCompose] Failed to restore component data', comp.instanceId, e);
+          }
+        }
+      });
+    }, 0);
+  }
+
   onPostSubmit() {
+    // Ensure stored content includes serialized injected component state.
+    const editorHtml = this.editor?.getHTML?.() ?? this.content;
+    const contentForStorage = this.addInjectedComponentsMeta(
+      editorHtml,
+      this.getActiveComponents()
+    );
+
+    // Extract components in new format for database persistence
+    const componentsNewFormat = this.getInjectedComponentsNew();
+    console.log('[BlogCompose] Emitting post with components:', componentsNewFormat);
+
     this.postSubmitted.emit({
       title: this.title,
-      content: this.content,
+      content: contentForStorage,
       links: this.links,
       attachments: this.attachments,
-      injectedComponents: this.getActiveComponents(),
-      themeConfig: {
-        theme: this.postTheme,
-        accentColor: this.postAccentColor,
-      },
+      injectedComponents: this.getActiveComponents(), // Old format for backward compatibility
+      injectedComponentsNew: componentsNewFormat, // New format for database persistence
+      // themeConfig: {
+      //   theme: this.postTheme,
+      //   accentColor: this.postAccentColor,
+      // },
     });
   }
 
@@ -1185,8 +1627,23 @@ export class BlogComposeComponent
 
   writeValue(value: any): void {
     if (value && typeof value === 'object') {
+      let componentsToRestore = value.injectedComponents;
+
+      // Normalize content coming back from DB: extract embedded meta and
+      // keep the editor-visible HTML clean.
+      if (value.content && typeof value.content === 'string') {
+        const extracted = this.stripInjectedComponentsMeta(value.content);
+        this._content = extracted.html;
+
+        // Use components from meta if available, as they are guaranteed to match the content version
+        if (extracted.injectedComponents) {
+          componentsToRestore = extracted.injectedComponents;
+        }
+      } else {
+        this._content = value.content || '';
+      }
+
       this._title = value.title || '';
-      this._content = value.content || '';
       this.links = value.links || [];
       this.attachments = value.attachments || [];
 
@@ -1203,9 +1660,13 @@ export class BlogComposeComponent
       if (this.editor) {
         this.editor.commands.setContent(this._content);
         this.pendingContent = null;
+        if (componentsToRestore) {
+          this.restoreInjectedComponentData(componentsToRestore);
+        }
       } else {
         // Queue content to be set after editor initialization
         this.pendingContent = this._content;
+        this.pendingInjectedComponents = componentsToRestore || null;
       }
     }
   }
@@ -1226,9 +1687,15 @@ export class BlogComposeComponent
   }
 
   private emitChange(): void {
+    // Persist a storage-safe version of the content that includes injected component state.
+    const contentForStorage = this.addInjectedComponentsMeta(
+      this.content,
+      this.getActiveComponents()
+    );
+
     const value = {
       title: this.title,
-      content: this.content,
+      content: contentForStorage, // Use the version with embedded meta
       links: this.links,
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(),

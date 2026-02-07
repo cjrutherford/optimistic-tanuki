@@ -104,7 +104,12 @@
       />
       
       @if (editor) {
-      <div class="editor-container">
+      <div class="editor-container"
+           [class.dragover]="isDragOver"
+           (dragenter)="handleDragEnter($event)"
+           (dragover)="handleDragOver($event)"
+           (dragleave)="handleDragLeave($event)"
+           (drop)="handleDrop($event)">
         <tiptap-editor
           [editor]="editor"
           [(ngModel)]="content"

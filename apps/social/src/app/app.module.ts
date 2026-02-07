@@ -12,11 +12,13 @@ import { Comment } from '../entities/comment.entity';
 import { Vote } from '../entities/vote.entity';
 import { Attachment } from '../entities/attachment.entity';
 import { Link } from '../entities/link.entity';
+import { SocialComponent } from '../entities/social-component.entity';
 import { VoteService } from './services/vote.service';
 import { PostService } from './services/post.service';
 import { LinkService } from './services/link.service';
 import { CommentService } from './services/comment.service';
 import { AttachmentService } from './services/attachment.service';
+import { SocialComponentService } from './services/social-component.service';
 import FollowEntity from '../entities/Follow.entity';
 import FollowService from './services/follow.service';
 
@@ -39,6 +41,7 @@ import FollowService from './services/follow.service';
     CommentService,
     AttachmentService,
     FollowService,
+    SocialComponentService,
     {
       provide: getRepositoryToken(Post),
       useFactory: (ds: DataSource) => ds.getRepository(Post),
@@ -67,6 +70,11 @@ import FollowService from './services/follow.service';
     {
       provide: getRepositoryToken(FollowEntity),
       useFactory: (ds: DataSource) => ds.getRepository(FollowEntity),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(SocialComponent),
+      useFactory: (ds: DataSource) => ds.getRepository(SocialComponent),
       inject: ['SOCIAL_CONNECTION'],
     },
   ],

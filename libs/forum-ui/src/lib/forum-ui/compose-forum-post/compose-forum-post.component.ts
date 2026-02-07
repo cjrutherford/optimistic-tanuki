@@ -24,6 +24,7 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent, SelectComponent } from '@optimistic-tanuki/form-ui';
 import { RichTextToolbarComponent } from '@optimistic-tanuki/social-ui';
 import { Themeable, ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
 
 import { TopicDto, ThreadDto } from '../models';
 
@@ -67,11 +68,13 @@ export class ComposeForumPostComponent
   @Input() availableThreads: ThreadDto[] = [];
   @Input() preselectedTopicId?: string;
   @Input() preselectedThreadId?: string;
+  @Input() profileId?: string; // Profile ID for asset uploads
   @Output() postSubmitted = new EventEmitter<ForumPostData>();
   @Output() topicCreated = new EventEmitter<string>();
   @Output() threadCreated = new EventEmitter<{ title: string; topicId: string }>();
 
   override readonly themeService: ThemeService = inject(ThemeService);
+  private imageUploadService = inject(ImageUploadService);
 
   editor: Editor | null = null;
   content = '';
@@ -81,6 +84,7 @@ export class ComposeForumPostComponent
   newThreadTitle = '';
   tags: string[] = [];
   newTag = '';
+  isDragOver = false;
   
   showNewTopicInput = false;
   showNewThreadInput = false;
@@ -223,16 +227,95 @@ export class ComposeForumPostComponent
     }
 
     const file = input.files[0];
-    const reader = new FileReader();
 
-    reader.onload = () => {
-      const base64Src = reader.result as string;
-      if (base64Src && this.editor) {
-        this.editor.chain().focus().setImage({ src: base64Src }).run();
+    // Check if profileId is available
+    if (!this.profileId) {
+      console.error('Profile ID is required for image upload');
+      alert('Unable to upload image: User profile not found');
+      input.value = '';
+      return;
+    }
+
+    try {
+      // Upload to Assets service
+      const assetUrl = await this.imageUploadService.uploadFile(
+        file,
+        this.profileId,
+        `forum-image-${Date.now()}`
+      );
+
+      if (assetUrl && this.editor) {
+        this.editor.chain().focus().setImage({ src: assetUrl }).run();
       }
-    };
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      input.value = '';
+    }
+  }
 
-    reader.readAsDataURL(file);
+  handleDragEnter(e: DragEvent): void {
+    e.preventDefault();
+    // Only show drag overlay if files are being dragged
+    const hasFiles = e.dataTransfer?.types?.includes('Files');
+    if (!hasFiles) return;
+    this.isDragOver = true;
+  }
+
+  handleDragOver(e: DragEvent): void {
+    e.preventDefault();
+    // Only show drag overlay if files are being dragged
+    const hasFiles = e.dataTransfer?.types?.includes('Files');
+    if (!hasFiles) return;
+    this.isDragOver = true;
+  }
+
+  handleDragLeave(e: DragEvent): void {
+    e.preventDefault();
+    this.isDragOver = false;
+  }
+
+  async handleDrop(e: DragEvent): Promise<void> {
+    e.preventDefault();
+    this.isDragOver = false;
+
+    if (!e.dataTransfer?.files.length) return;
+
+    // Check if profileId is available
+    if (!this.profileId) {
+      console.error('Profile ID is required for image upload');
+      alert('Unable to upload image: User profile not found');
+      return;
+    }
+
+    const files = Array.from(e.dataTransfer.files);
+    
+    // Filter for image files only
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+      alert('Please drop image files only');
+      return;
+    }
+
+    // Upload each image file to Assets service
+    for (const file of imageFiles) {
+      try {
+        const assetUrl = await this.imageUploadService.uploadFile(
+          file,
+          this.profileId,
+          `forum-drag-drop-${Date.now()}`
+        );
+
+        if (assetUrl && this.editor) {
+          this.editor.chain().focus().setImage({ src: assetUrl }).run();
+        }
+      } catch (error) {
+        console.error('Error uploading dropped file:', error);
+        alert(`Failed to upload ${file.name}. Please try again.`);
+      }
+    }
   }
 
   onSubmit(): void {

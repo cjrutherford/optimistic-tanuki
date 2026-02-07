@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { PropertyEditorComponent, PropertyDefinition } from './property-editor.component';
-import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
+import { PropertyEditorComponent } from './property-editor.component';
+import { InjectedComponentInstance, PropertyDefinition } from '../interfaces/component-injection.interface';
 import { Component, Input, Output, EventEmitter, forwardRef } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';

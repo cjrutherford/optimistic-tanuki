@@ -28,6 +28,50 @@ form {
     border-color: var(--local-accent, var(--accent));
     box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
   }
+
+  /* Resizable Image Styles */
+  .resizable-image-wrapper {
+    position: relative;
+    display: inline-block;
+    margin: 0.5rem 0;
+    
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .resize-handle {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 12px;
+      height: 12px;
+      background: var(--local-accent, var(--accent, #007acc));
+      border: 2px solid white;
+      border-radius: 2px;
+      cursor: nwse-resize;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: auto;
+    }
+
+    &:hover .resize-handle {
+      opacity: 1;
+    }
+  }
+
+  .resizable-image-wrapper.resizable-image-selected {
+    img {
+      box-shadow: 0 0 0 3px var(--local-accent, var(--accent, #007acc));
+    }
+
+    .resize-handle {
+      opacity: 1;
+    }
+  }
 }
 
 .content {

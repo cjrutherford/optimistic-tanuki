@@ -1,9 +1,10 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 
 import { PostService } from './services/post.service';
 import { AttachmentService } from './services/attachment.service';
 import { CommentService } from './services/comment.service';
 import { VoteService } from './services/vote.service';
+import { SocialComponentService } from './services/social-component.service';
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import {
   AttachmentCommands,
@@ -12,6 +13,7 @@ import {
   PostCommands,
   VoteCommands,
   FollowCommands,
+  SocialComponentCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateAttachmentDto,
@@ -28,6 +30,9 @@ import {
   UpdateFollowDto,
   UpdateLinkDto,
   UpdatePostDto,
+  CreateSocialComponentDto,
+  UpdateSocialComponentDto,
+  SocialComponentQueryDto,
 } from '@optimistic-tanuki/models';
 import { postSearchDtoToFindManyOptions } from '../entities/post.entity';
 import { transformSearchCommentDtoToFindOptions } from '../entities/comment.entity';
@@ -37,12 +42,14 @@ import FollowService from './services/follow.service';
 
 @Controller()
 export class AppController {
+  private readonly logger = new Logger('SocialAppController');
   constructor(
     private readonly postService: PostService,
     private readonly voteService: VoteService,
     private readonly attachmentService: AttachmentService,
     private readonly commentService: CommentService,
-    private readonly followService: FollowService
+    private readonly followService: FollowService,
+    private readonly socialComponentService: SocialComponentService
   ) {}
 
   @MessagePattern({ cmd: PostCommands.CREATE })
@@ -295,5 +302,101 @@ export class AppController {
   @MessagePattern({ cmd: FollowCommands.GET_FOLLOWING_COUNT })
   async getFollowingCount(@Payload() data: QueryFollowsDto) {
     return await this.followService.getFollowingCount(data.followerId);
+  }
+
+  // Social Component endpoints
+  @MessagePattern({ cmd: SocialComponentCommands.CREATE })
+  async createSocialComponent(
+    @Payload() createComponentDto: CreateSocialComponentDto
+  ) {
+    this.logger.log(`CREATE social component postId=${createComponentDto.postId} instanceId=${createComponentDto.instanceId}`);
+    try {
+      const res = await this.socialComponentService.create(createComponentDto);
+      this.logger.log(`CREATED social component id=${res.id}`);
+      return res;
+    } catch (e) {
+      this.logger.error(`CREATE social component failed: ${e?.message || e}`);
+      throw e;
+    }
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.FIND_BY_POST })
+  async getComponentsForPost(@Payload('postId') postId: string) {
+    this.logger.log(`FIND_BY_POST social postId=${postId}`);
+    try {
+      const comps = await this.socialComponentService.findByPostId(postId);
+      this.logger.log(`FIND_BY_POST social found=${comps.length}`);
+      return comps;
+    } catch (e) {
+      this.logger.error(`FIND_BY_POST social failed: ${e?.message || e}`);
+      throw e;
+    }
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.FIND })
+  async findOneSocialComponent(@Payload('id') id: string) {
+    this.logger.log(`FIND social id=${id}`);
+    try {
+      const comp = await this.socialComponentService.findOne(id);
+      this.logger.log(`FIND social found=${!!comp}`);
+      return comp;
+    } catch (e) {
+      this.logger.error(`FIND social failed: ${e?.message || e}`);
+      throw e;
+    }
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.UPDATE })
+  async updateSocialComponent(
+    @Payload() data: { id: string; dto: UpdateSocialComponentDto }
+  ) {
+    this.logger.log(`UPDATE social id=${data.id}`);
+    try {
+      const res = await this.socialComponentService.update(data.id, data.dto);
+      this.logger.log(`UPDATED social id=${res.id}`);
+      return res;
+    } catch (e) {
+      this.logger.error(`UPDATE social failed id=${data.id}: ${e?.message || e}`);
+      throw e;
+    }
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.DELETE })
+  async deleteSocialComponent(@Payload('id') id: string) {
+    this.logger.log(`DELETE social id=${id}`);
+    try {
+      const res = await this.socialComponentService.remove(id);
+      this.logger.log(`DELETED social id=${id}`);
+      return res;
+    } catch (e) {
+      this.logger.error(`DELETE social failed id=${id}: ${e?.message || e}`);
+      throw e;
+    }
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.DELETE_BY_POST })
+  async deleteComponentsByPost(@Payload('postId') postId: string) {
+    this.logger.log(`DELETE_BY_POST social postId=${postId}`);
+    try {
+      const res = await this.socialComponentService.removeByPostId(postId);
+      this.logger.log(`DELETED_BY_POST social postId=${postId}`);
+      return res;
+    } catch (e) {
+      this.logger.error(`DELETE_BY_POST social failed postId=${postId}: ${e?.message || e}`);
+      throw e;
+    }
+  }
+
+  @MessagePattern({ cmd: SocialComponentCommands.FIND_BY_QUERY })
+  async findComponentsByQuery(@Payload() query: SocialComponentQueryDto) {
+    this.logger.log(`FIND_BY_QUERY social keys=${Object.keys(query || {}).join(',')}`);
+    try {
+      const comps = await this.socialComponentService.findByQuery(query);
+      this.logger.log(`FIND_BY_QUERY social found=${comps.length}`);
+      return comps;
+    } catch (e) {
+      this.logger.error(`FIND_BY_QUERY social failed: ${e?.message || e}`);
+      throw e;
+    }
   }
 }

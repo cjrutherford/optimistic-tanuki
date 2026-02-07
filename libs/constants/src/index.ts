@@ -12,6 +12,7 @@ export {
   VoteCommands,
   LinkCommands,
   FollowCommands,
+  SocialComponentCommands,
   SocialRealtimeCommands,
 } from './lib/libs/social';
 
@@ -38,6 +39,7 @@ export * from './lib/libs/common';
 
 export {
   BlogCommands,
+  BlogComponentCommands,
   ContactCommands,
   EventCommands,
   PostCommands as BlogPostCommands,

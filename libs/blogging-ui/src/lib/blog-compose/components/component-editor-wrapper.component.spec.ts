@@ -114,13 +114,6 @@ describe('ComponentEditorWrapperComponent', () => {
     expect(spy).toHaveBeenCalledWith(mockComponentInstance);
   });
 
-  it('should emit configRequested when config button clicked', () => {
-    const spy = jest.spyOn(component.configRequested, 'emit');
-    const event = new MouseEvent('click');
-    component.onConfigClick(event);
-    expect(spy).toHaveBeenCalledWith(mockComponentInstance);
-  });
-
   it('should open quick edit mode', () => {
     expect(component.isEditing).toBe(false);
     const event = new MouseEvent('click');

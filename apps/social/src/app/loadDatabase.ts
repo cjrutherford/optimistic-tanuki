@@ -5,11 +5,12 @@ import { Post } from '../entities/post.entity';
 import { Vote } from '../entities/vote.entity';
 import { Link } from '../entities/link.entity';
 import { Comment } from '../entities/comment.entity';
+import { SocialComponent } from '../entities/social-component.entity';
 import FollowEntity from '../entities/Follow.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
-  const entities = [Attachment, Comment, Post, Vote, Link, FollowEntity];
+  const entities = [Attachment, Comment, Post, Vote, Link, FollowEntity, SocialComponent];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',
     host: database.host,

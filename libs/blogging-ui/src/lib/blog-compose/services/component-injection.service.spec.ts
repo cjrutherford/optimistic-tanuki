@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ComponentInjectionService } from './component-injection.service';
 import { Component, ComponentRef, ViewContainerRef, ViewRef, EventEmitter } from '@angular/core';
-import { ComponentWrapperComponent } from '../components/component-wrapper.component';
+import { ComponentEditorWrapperComponent } from '../components/component-editor-wrapper.component';
 import { InjectableComponent, InjectedComponentInstance } from '../interfaces/component-injection.interface';
 
 // Helper to replace jasmine.createSpyObj
@@ -53,13 +53,16 @@ describe('ComponentInjectionService', () => {
     componentRefSpy.hostView = {} as ViewRef;
 
     // Mock wrapper instance events
-    wrapperInstanceSpy = createSpyObj('ComponentWrapperComponent', []);
+    wrapperInstanceSpy = createSpyObj('ComponentEditorWrapperComponent', []);
     wrapperInstanceSpy.editRequested = new EventEmitter();
     wrapperInstanceSpy.deleteRequested = new EventEmitter();
-    wrapperInstanceSpy.moveUpRequested = new EventEmitter();
-    wrapperInstanceSpy.moveDownRequested = new EventEmitter();
+    wrapperInstanceSpy.duplicateRequested = new EventEmitter();
+    wrapperInstanceSpy.configRequested = new EventEmitter();
     wrapperInstanceSpy.selectionChanged = new EventEmitter();
+    wrapperInstanceSpy.propertiesChanged = new EventEmitter();
     wrapperInstanceSpy.componentInstance = undefined;
+    wrapperInstanceSpy.componentDef = undefined;
+    wrapperInstanceSpy.componentData = {};
 
     // Mock ComponentRef for the wrapper
     wrapperRefSpy = createSpyObj('ComponentRef', ['destroy']);
@@ -70,7 +73,7 @@ describe('ComponentInjectionService', () => {
     
     // Setup default createComponent behavior
     viewContainerRefSpy.createComponent.mockImplementation((componentType: any) => {
-        if (componentType === ComponentWrapperComponent) {
+        if (componentType === ComponentEditorWrapperComponent) {
             return wrapperRefSpy;
         }
         return componentRefSpy;
@@ -277,9 +280,10 @@ describe('ComponentInjectionService', () => {
         const callbacks = {
             onEdit: jest.fn(),
             onDelete: jest.fn(),
-            onMoveUp: jest.fn(),
-            onMoveDown: jest.fn(),
-            onSelection: jest.fn()
+            onDuplicate: jest.fn(),
+            onConfig: jest.fn(),
+            onSelection: jest.fn(),
+            onPropertiesChanged: jest.fn()
         };
         
         service.setWrapperCallbacks(callbacks);
@@ -295,14 +299,17 @@ describe('ComponentInjectionService', () => {
         wrapperInstanceSpy.deleteRequested.emit({} as any);
         expect(callbacks.onDelete).toHaveBeenCalled();
         
-        wrapperInstanceSpy.moveUpRequested.emit({} as any);
-        expect(callbacks.onMoveUp).toHaveBeenCalled();
+        wrapperInstanceSpy.duplicateRequested.emit({} as any);
+        expect(callbacks.onDuplicate).toHaveBeenCalled();
         
-        wrapperInstanceSpy.moveDownRequested.emit({} as any);
-        expect(callbacks.onMoveDown).toHaveBeenCalled();
+        wrapperInstanceSpy.configRequested.emit({} as any);
+        expect(callbacks.onConfig).toHaveBeenCalled();
         
         wrapperInstanceSpy.selectionChanged.emit({} as any);
         expect(callbacks.onSelection).toHaveBeenCalled();
+        
+        wrapperInstanceSpy.propertiesChanged.emit({ instance: {} as any, data: {} });
+        expect(callbacks.onPropertiesChanged).toHaveBeenCalled();
     });
   });
 });

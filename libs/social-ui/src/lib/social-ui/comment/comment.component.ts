@@ -25,6 +25,7 @@ import DOMPurify from 'dompurify';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { RichTextToolbarComponent } from '../compose/components/rich-text-toolbar.component';
 import { ImageUploadCallback } from '..';
+import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
 
 @Component({
   selector: 'lib-comment',
@@ -56,12 +57,14 @@ export class CommentComponent
 {
   @Output() commentAdded: EventEmitter<string> = new EventEmitter<string>();
   @Input() imageUploadCallback?: ImageUploadCallback;
+  @Input() profileId?: string; // Profile ID for asset uploads
   @ViewChild('commentDialog') commentDialog!: TemplateRef<HTMLElement>;
   comment = '';
   accentShade!: string;
   editor: Editor | null = null;
 
   private dialog = inject(MatDialog);
+  private imageUploadService = inject(ImageUploadService);
 
   constructor() {
     super();
@@ -126,35 +129,55 @@ export class CommentComponent
     }
 
     const file = input.files[0];
-    const reader = new FileReader();
 
-    reader.onload = async () => {
-      const base64Src = reader.result as string;
-
-      if (this.imageUploadCallback && base64Src) {
-        try {
-          // Upload to asset service and get public URL
-          const fileName = file.name || `image_${Date.now()}`;
-          const assetUrl = await this.imageUploadCallback(base64Src, fileName);
-
-          // Insert the image with the asset URL
-          if (this.editor) {
-            this.editor.chain().focus().setImage({ src: assetUrl }).run();
-          }
-        } catch (error) {
-          console.error('Failed to upload image:', error);
-          // Fallback to base64 if upload fails
-          if (this.editor) {
-            this.editor.chain().focus().setImage({ src: base64Src }).run();
+    // If custom callback is provided, use it
+    if (this.imageUploadCallback) {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Src = reader.result as string;
+        if (base64Src) {
+          try {
+            const fileName = file.name || `image_${Date.now()}`;
+            const assetUrl = await this.imageUploadCallback!(base64Src, fileName);
+            if (this.editor) {
+              this.editor.chain().focus().setImage({ src: assetUrl }).run();
+            }
+          } catch (error) {
+            console.error('Failed to upload image:', error);
+            // Fallback to base64 if upload fails
+            if (this.editor) {
+              this.editor.chain().focus().setImage({ src: base64Src }).run();
+            }
           }
         }
-      } else if (base64Src && this.editor) {
-        // No upload callback, use base64
-        this.editor.chain().focus().setImage({ src: base64Src }).run();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Use ImageUploadService directly
+      if (!this.profileId) {
+        console.error('Profile ID is required for image upload');
+        alert('Unable to upload image: User profile not found');
+        input.value = '';
+        return;
       }
-    };
 
-    reader.readAsDataURL(file);
+      try {
+        const assetUrl = await this.imageUploadService.uploadFile(
+          file,
+          this.profileId,
+          `comment-image-${Date.now()}`
+        );
+
+        if (this.editor) {
+          this.editor.chain().focus().setImage({ src: assetUrl }).run();
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        alert('Failed to upload image. Please try again.');
+      } finally {
+        input.value = '';
+      }
+    }
   }
 
   override applyTheme(colors: ThemeColors) {

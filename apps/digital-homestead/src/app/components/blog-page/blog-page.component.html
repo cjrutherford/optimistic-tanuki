@@ -52,127 +52,113 @@
         <p>Loading...</p>
       </div>
       } @else {
-      <!-- View Mode: Show selected post or welcome message -->
-      @if (mode() === 'view') { @if (selectedPost()) {
-      <!-- Draft indicator banner -->
-      @if (isSelectedPostDraft()) {
-      <div class="draft-banner">
-        <span class="draft-icon">📝</span>
-        <span class="draft-text"
-          >This post is a draft and is not published yet.</span
-        >
-        @if (isPostOwner() && canEdit()) {
-        <otui-button (action)="publishDraft()">Publish Now</otui-button>
+        @if (mode() === 'view') {
+          @if (selectedPost()) {
+            @if (isSelectedPostDraft()) {
+            <div class="draft-banner">
+              <span class="draft-icon">📝</span>
+              <span class="draft-text">This post is a draft and is not published yet.</span>
+              @if (isPostOwner() && canEdit()) {
+              <otui-button (action)="publishDraft()">Publish Now</otui-button>
+              }
+            </div>
+            }
+
+            <div class="view-actions">
+              @if (canEdit() && isPostOwner()) {
+              <otui-button (action)="editPost(selectedPost()!)">Edit Post</otui-button>
+              }
+              @if (canEdit()) {
+              <otui-button (action)="toggleThemeDesigner()" [attr.aria-expanded]="showThemeDesigner()">
+                {{ showThemeDesigner() ? 'Hide' : 'Show' }} Theme Designer
+              </otui-button>
+              }
+            </div>
+
+            @if (showThemeDesigner() && canEdit()) {
+            <div class="theme-designer-section">
+              <lib-theme-designer></lib-theme-designer>
+            </div>
+            }
+
+            <dh-blog-viewer
+              [title]="selectedPost()!.title"
+              [content]="selectedPost()!.content"
+              [authorId]="selectedPost()!.authorId"
+              [createdAt]="selectedPost()!.createdAt"
+              [postId]="selectedPost()!.id"
+            ></dh-blog-viewer>
+
+            <div class="post-metadata">
+              @if (selectedPost()!.publishedAt) {
+              <p class="published-date">Published: {{ formatDate(selectedPost()!.publishedAt) }}</p>
+              }
+              @if (selectedPost()!.updatedAt) {
+              <p class="updated-date">Last updated: {{ formatDate(selectedPost()!.updatedAt) }}</p>
+              }
+            </div>
+          } @else {
+            <div class="welcome-message">
+              <h1>Welcome to the Blog</h1>
+              <p>Select a post from the sidebar to read, or</p>
+              @if (!isAuthenticated()) {
+              <p><a routerLink="/login">Sign in</a> to create new posts.</p>
+              } @else if (!hasFullAccess()) {
+              <p>You have read-only access. Contact the site owner for editing permissions.</p>
+              } @else {
+              <otui-button (action)="startCreatePost()">Create a New Post</otui-button>
+              }
+            </div>
+
+            @if (posts().length > 0) {
+              @for (post of posts(); track post.id) {
+              <dh-blog-viewer
+                [title]="post.title"
+                [content]="post.content"
+                [authorId]="post.authorId"
+                [createdAt]="post.createdAt"
+                [postId]="post.id"
+              ></dh-blog-viewer>
+              }
+            }
+          }
         }
-      </div>
+
+        @if (mode() === 'create' || mode() === 'edit') {
+          @if (canEdit()) {
+          <div class="editor-header">
+            <h1>{{ mode() === 'create' ? 'Create a New Blog Post' : 'Edit Blog Post' }}</h1>
+            <p>Use the component injection system to add custom components to your blog post.</p>
+            @if (mode() === 'edit' && isSelectedPostDraft()) {
+            <div class="edit-draft-notice">
+              <span class="draft-icon">📝</span>
+              <span>You are editing a draft. Choose to save as draft or publish when ready.</span>
+            </div>
+            }
+          </div>
+
+          <lib-blog-compose
+            #blogCompose
+            [ngModel]="editorData()"
+            (ngModelChange)="onEditorChange($event)"
+            (postSubmitted)="onPostSubmitted($event)"
+            [profileId]="profileId()"
+          ></lib-blog-compose>
+
+          <div class="editor-actions">
+            <otui-button (action)="cancelEdit()">Cancel</otui-button>
+            <otui-button (action)="saveAsDraft()">Save as Draft</otui-button>
+            <otui-button (action)="publishPost()">{{ mode() === 'edit' && !isSelectedPostDraft() ? 'Update & Publish' : 'Publish' }}</otui-button>
+          </div>
+          } @else {
+          <div class="access-denied">
+            <h2>Access Denied</h2>
+            <p>You do not have permission to create or edit blog posts.</p>
+            <otui-button (action)="cancelEdit()">Go Back</otui-button>
+          </div>
+          }
+        }
       }
-
-      <div class="view-actions">
-        @if (canEdit() && isPostOwner()) {
-        <otui-button (action)="editPost(selectedPost()!)"
-          >Edit Post</otui-button
-        >
-        } @if (canEdit()) {
-        <otui-button
-          (action)="toggleThemeDesigner()"
-          [attr.aria-expanded]="showThemeDesigner()"
-        >
-          {{ showThemeDesigner() ? 'Hide' : 'Show' }} Theme Designer
-        </otui-button>
-        }
-      </div>
-
-      <!-- Theme Designer (only visible to users with blog editing permissions) -->
-      @if (showThemeDesigner() && canEdit()) {
-      <div class="theme-designer-section">
-        <lib-theme-designer></lib-theme-designer>
-      </div>
-      }
-
-      <dh-blog-viewer
-        [title]="selectedPost()!.title"
-        [content]="selectedPost()!.content"
-        [authorId]="selectedPost()!.authorId"
-        [createdAt]="selectedPost()!.createdAt"
-      >
-      </dh-blog-viewer>
-
-      <!-- Post metadata -->
-      <div class="post-metadata">
-        @if (selectedPost()!.publishedAt) {
-        <p class="published-date">
-          Published: {{ formatDate(selectedPost()!.publishedAt) }}
-        </p>
-        }
-        <p class="updated-date">
-          Last updated: {{ formatDate(selectedPost()!.updatedAt) }}
-        </p>
-      </div>
-      } @else {
-      <div class="welcome-message">
-        <h1>Welcome to the Blog</h1>
-        <p>Select a post from the sidebar to read, or</p>
-        @if (!isAuthenticated()) {
-        <p><a routerLink="/login">Sign in</a> to create new posts.</p>
-        } @else if (!hasFullAccess()) {
-        <p>
-          You have read-only access. Contact the site owner for editing
-          permissions.
-        </p>
-        } @else {
-        <otui-button (action)="startCreatePost()"
-          >Create a New Post</otui-button
-        >
-        }
-      </div>
-      } }
-
-      <!-- Create/Edit Mode (only shown if user has permission) -->
-      @if (mode() === 'create' || mode() === 'edit') { @if (canEdit()) {
-      <div class="editor-header">
-        <h1>
-          {{
-            mode() === 'create' ? 'Create a New Blog Post' : 'Edit Blog Post'
-          }}
-        </h1>
-        <p>
-          Use the component injection system to add custom components to your
-          blog post.
-        </p>
-        @if (mode() === 'edit' && isSelectedPostDraft()) {
-        <div class="edit-draft-notice">
-          <span class="draft-icon">📝</span>
-          <span
-            >You are editing a draft. Choose to save as draft or publish when
-            ready.</span
-          >
-        </div>
-        }
-      </div>
-
-      <lib-blog-compose
-        #blogCompose
-        [ngModel]="editorData()"
-        (postSubmitted)="onPostSubmitted($event)"
-      >
-      </lib-blog-compose>
-
-      <div class="editor-actions">
-        <otui-button (action)="cancelEdit()">Cancel</otui-button>
-        <otui-button (action)="saveAsDraft()">Save as Draft</otui-button>
-        <otui-button (action)="publishPost()">{{
-          mode() === 'edit' && !isSelectedPostDraft()
-            ? 'Update & Publish'
-            : 'Publish'
-        }}</otui-button>
-      </div>
-      } @else {
-      <div class="access-denied">
-        <h2>Access Denied</h2>
-        <p>You do not have permission to create or edit blog posts.</p>
-        <otui-button (action)="cancelEdit()">Go Back</otui-button>
-      </div>
-      } } }
     </otui-card>
   </div>
 </div>

@@ -21,7 +21,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
-import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
+import { 
+  CreateAttachmentDto
+} from '@optimistic-tanuki/ui-models';
+import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 import {
   ThemeService,
   ThemeColors,
@@ -64,7 +67,7 @@ import {
   InjectedComponentInstance,
   ComponentInjectionAPI,
 } from './interfaces/component-injection.interface';
-import { ImageUploadService } from './services/image-upload.service';
+import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
 
 import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
 
@@ -73,7 +76,8 @@ export interface PostData {
   content: string;
   links: { url: string }[];
   attachments: CreateAttachmentDto[];
-  injectedComponents?: InjectedComponentInstance[];
+  injectedComponents?: InjectedComponentInstance[]; // Old format (backward compat)
+  injectedComponentsNew?: InjectedComponentData[]; // New format for DB persistence
   themeConfig?: PostThemeConfig;
 }
 
@@ -109,9 +113,9 @@ export interface ImageUploadCallback {
 })
 export class ComposeComponent
   extends Themeable
-  implements OnDestroy, AfterViewInit, ComponentInjectionAPI
-{
+  implements OnDestroy, AfterViewInit, ComponentInjectionAPI {
   @Input() title = '';
+  @Input() profileId?: string; // Profile ID for asset uploads
   @Input() attachments: CreateAttachmentDto[] = [];
   @Input() links: { url: string }[] = [];
   @Input() imageUploadCallback?: ImageUploadCallback;
@@ -150,7 +154,7 @@ export class ComposeComponent
   isPropertyEditorVisible = false;
   selectedComponentInstance: InjectedComponentInstance | null = null;
   selectedComponentProperties: PropertyDefinition[] = [];
-  
+
   // Post theme configuration properties
   isThemeConfigVisible = false;
   postTheme: 'light' | 'dark' = 'light';
@@ -479,23 +483,54 @@ export class ComposeComponent
     this.selectedComponentProperties = [];
   }
 
-  onFileSelected(event: Event): void {
+  async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) {
       return;
     }
 
     const file = input.files[0];
-    const reader = new FileReader();
 
-    reader.onload = () => {
-      const base64Src = reader.result as string;
-      if (base64Src) {
-        this.editor?.chain().focus().setImage({ src: base64Src }).run();
+    try {
+      // If custom callback is provided, use it
+      if (this.imageUploadCallback) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const base64Src = reader.result as string;
+            if (base64Src && this.imageUploadCallback) {
+              const uploadedUrl = await this.imageUploadCallback(base64Src, file.name);
+              this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
+            }
+          } catch (error) {
+            console.error('Error in image upload callback:', error);
+            alert('Failed to upload image. Please try again.');
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Upload to Assets service (requires profileId)
+        if (!this.profileId) {
+          console.error('Profile ID is required for image upload');
+          alert('Unable to upload image: User profile not found');
+          input.value = '';
+          return;
+        }
+
+        const assetUrl = await this.imageUploadService.uploadFile(
+          file,
+          this.profileId,
+          `social-image-${Date.now()}`
+        );
+
+        this.editor?.chain().focus().setImage({ src: assetUrl }).run();
       }
-    };
-
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      input.value = '';
+    }
   }
 
   onToolbarComponentsClick(): void {
@@ -581,23 +616,89 @@ export class ComposeComponent
     this.isDragOver = false;
   }
 
-  handleDrop(e: DragEvent): void {
+  async handleDrop(e: DragEvent): Promise<void> {
     e.preventDefault();
     this.isDragOver = false;
 
     if (!e.dataTransfer?.files.length) return;
 
     const files = Array.from(e.dataTransfer.files);
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event: ProgressEvent<FileReader>) => {
-        const base64Src = event.target?.result as string;
-        if (base64Src) {
-          this.editor?.chain().focus().setImage({ src: base64Src }).run();
+
+    // Filter for image files only
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      alert('Please drop image files only');
+      return;
+    }
+
+    // Upload each image file to Assets service
+    for (const file of imageFiles) {
+      try {
+        // If custom callback is provided, use it
+        if (this.imageUploadCallback) {
+          const reader = new FileReader();
+          reader.onload = async (event: ProgressEvent<FileReader>) => {
+            try {
+              const base64Src = event.target?.result as string;
+              if (base64Src) {
+                const uploadedUrl = await this.imageUploadCallback!(base64Src, file.name);
+                this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
+              }
+            } catch (error) {
+              console.error('Error in image upload callback:', error);
+              alert(`Failed to upload ${file.name}. Please try again.`);
+            }
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // Upload to Assets service (requires profileId)
+          if (!this.profileId) {
+            console.error('Profile ID is required for image upload');
+            alert('Unable to upload image: User profile not found');
+            return;
+          }
+
+          const assetUrl = await this.imageUploadService.uploadFile(
+            file,
+            this.profileId,
+            `social-drag-drop-${Date.now()}`
+          );
+
+          this.editor?.chain().focus().setImage({ src: assetUrl }).run();
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('Error uploading dropped file:', error);
+        alert(`Failed to upload ${file.name}. Please try again.`);
+      }
+    }
+  }
+
+  /**
+   * Extract injected components from editor for database persistence
+   * Traverses the editor document and collects all component nodes
+   */
+  getInjectedComponentsNew(): InjectedComponentData[] {
+    const components: InjectedComponentData[] = [];
+    
+    if (!this.editor) {
+      return components;
+    }
+
+    this.editor.state.doc.descendants((node: any) => {
+      if (node.type.name === 'socialComposeComponent' || 
+          node.type.name === 'angularComponent') {
+        components.push({
+          instanceId: node.attrs['instanceId'],
+          componentType: node.attrs['componentId'],
+          componentData: node.attrs['data'] || {},
+          position: components.length
+        });
+      }
     });
+    
+    console.log('[SocialCompose] Extracted components:', components);
+    return components;
   }
 
   async onPostSubmit(): Promise<void> {
@@ -637,12 +738,16 @@ export class ComposeComponent
       }
     }
 
+    // Extract components in new format for database persistence
+    const componentsNewFormat = this.getInjectedComponentsNew();
+
     this.postSubmitted.emit({
       title: this.title,
       content: finalContent,
       links: this.links,
       attachments: this.attachments,
-      injectedComponents: this.getActiveComponents(),
+      injectedComponents: this.getActiveComponents(), // Old format (backward compat)
+      injectedComponentsNew: componentsNewFormat, // New format for DB
       themeConfig: {
         theme: this.postTheme,
         accentColor: this.postAccentColor,
