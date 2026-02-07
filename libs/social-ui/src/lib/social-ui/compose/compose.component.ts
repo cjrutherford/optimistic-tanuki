@@ -22,9 +22,9 @@ import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { 
-  CreateAttachmentDto,
-  InjectedComponentData,
+  CreateAttachmentDto
 } from '@optimistic-tanuki/ui-models';
+import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 import {
   ThemeService,
   ThemeColors,
@@ -685,13 +685,13 @@ export class ComposeComponent
       return components;
     }
 
-    this.editor.state.doc.descendants((node) => {
+    this.editor.state.doc.descendants((node: any) => {
       if (node.type.name === 'socialComposeComponent' || 
           node.type.name === 'angularComponent') {
         components.push({
-          instanceId: node.attrs.instanceId,
-          componentType: node.attrs.componentId,
-          componentData: node.attrs.data || {},
+          instanceId: node.attrs['instanceId'],
+          componentType: node.attrs['componentId'],
+          componentData: node.attrs['data'] || {},
           position: components.length
         });
       }

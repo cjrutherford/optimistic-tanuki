@@ -48,7 +48,7 @@ export class BlogService {
    * Update an existing blog post
    */
   updatePost(id: string, data: UpdateBlogPostDto): Observable<BlogPostDto> {
-    return this.http.put<BlogPostDto>(`/api/post/${id}`, data);
+    return this.http.patch<BlogPostDto>(`/api/post/${id}`, data);
   }
 
   /**

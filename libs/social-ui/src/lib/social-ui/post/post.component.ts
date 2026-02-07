@@ -1,8 +1,8 @@
-import { 
-  Component, 
-  EventEmitter, 
-  Input, 
-  Output, 
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
   ViewChild,
   ViewContainerRef,
   ElementRef,
@@ -19,17 +19,17 @@ import {
   CardComponent,
   GridComponent,
   TileComponent,
-  CalloutBoxComponent,
-  CodeSnippetComponent,
-  VideoPlayerComponent,
-  ImageGalleryComponent,
-  QuoteBlockComponent,
-  TimelineComponent,
-  StatsDisplayComponent,
-  PricingTableComponent,
-  TestimonialComponent,
-  FaqItemComponent,
-  SocialShareComponent,
+  // CalloutBoxComponent,
+  // CodeSnippetComponent,
+  // VideoPlayerComponent,
+  // ImageGalleryComponent,
+  // QuoteBlockComponent,
+  // TimelineComponent,
+  // StatsDisplayComponent,
+  // PricingTableComponent,
+  // TestimonialComponent,
+  // FaqItemComponent,
+  // SocialShareComponent,
   AccordionComponent,
   ModalComponent,
   HeroSectionComponent,
@@ -43,8 +43,8 @@ import {
   AttachmentDto,
   PostDto,
   CreateCommentDto,
-  SocialComponentDto,
 } from '../../models';
+import { SocialComponentDto } from '@optimistic-tanuki/ui-models';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { LinkType } from '../link/link.component';
 import { ImageUploadCallback } from '..';
@@ -52,17 +52,17 @@ import { SocialComponentPersistenceService } from '../../services/social-compone
 
 // Component map for dynamic reconstruction
 const COMPONENT_MAP: Record<string, any> = {
-  'callout-box': CalloutBoxComponent,
-  'code-snippet': CodeSnippetComponent,
-  'video-player': VideoPlayerComponent,
-  'image-gallery': ImageGalleryComponent,
-  'quote-block': QuoteBlockComponent,
-  'timeline': TimelineComponent,
-  'stats-display': StatsDisplayComponent,
-  'pricing-table': PricingTableComponent,
-  'testimonial': TestimonialComponent,
-  'faq-item': FaqItemComponent,
-  'social-share': SocialShareComponent,
+  // 'callout-box': CalloutBoxComponent,
+  // 'code-snippet': CodeSnippetComponent,
+  // 'video-player': VideoPlayerComponent,
+  // 'image-gallery': ImageGalleryComponent,
+  // 'quote-block': QuoteBlockComponent,
+  // 'timeline': TimelineComponent,
+  // 'stats-display': StatsDisplayComponent,
+  // 'pricing-table': PricingTableComponent,
+  // 'testimonial': TestimonialComponent,
+  // 'faq-item': FaqItemComponent,
+  // 'social-share': SocialShareComponent,
   'button': ButtonComponent,
   'card': CardComponent,
   'accordion': AccordionComponent,
@@ -205,7 +205,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
         .toPromise();
       this.storedComponents = components || [];
       console.log('[PostComponent] Loaded components:', this.storedComponents);
-      
+
       // Reconstruct components after data is loaded
       setTimeout(() => this.reconstructComponents(), 0);
     } catch (error) {
@@ -269,7 +269,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     // Create component with stored data
     const componentRef = this.contentContainer!.createComponent(ComponentClass);
-    
+
     // Apply stored component data
     const instance = componentRef.instance as any;
     Object.keys(storedComponent.componentData).forEach(key => {
@@ -277,14 +277,14 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
         instance[key] = storedComponent.componentData[key];
       }
     });
-    
+
     componentRef.changeDetectorRef.detectChanges();
     this.componentRefs.push(componentRef);
-    
+
     // Replace placeholder with component
     node.innerHTML = '';
     node.appendChild(componentRef.location.nativeElement);
-    
+
     console.log(`[PostComponent] Component created: ${storedComponent.componentType} (${storedComponent.instanceId})`);
   }
 

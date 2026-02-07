@@ -4,6 +4,7 @@ export * from './lib/blog-post/card.component';
 export * from './lib/author-profile/author-profile.component';
 export * from './lib/contact-form/contact-form.component';
 export * from './lib/featured-posts/featured-posts.component';
+export * from './lib/newsletter-signup/newsletter-signup.component';
 
 // Blog compose component and related exports
 export * from './lib/blog-compose/blog-compose.component';

@@ -22,10 +22,9 @@ import {
 } from '@optimistic-tanuki/social-ui';
 import { 
   CreateAttachmentDto,
-  CreateSocialComponentDto,
-  SocialComponentCommands,
-  InjectedComponentData,
+  CreateSocialComponentDto
 } from '@optimistic-tanuki/ui-models';
+import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
@@ -312,10 +311,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       
       try {
         await firstValueFrom(
-          this.http.post(this.gatewayUrl, {
-            cmd: SocialComponentCommands.CREATE,
-            data: dto,
-          })
+          this.http.post(`${this.gatewayUrl}/component`, dto)
         );
         console.log(`[Feed] Component saved: ${component.instanceId} (${component.componentType})`);
       } catch (error) {

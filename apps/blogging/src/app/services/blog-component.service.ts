@@ -46,7 +46,11 @@ export class BlogComponentService {
       });
 
       if (existingComponent) {
-        throw new BadRequestException('Component instance ID already exists for this post');
+        // Upsert behavior: update existing component data and position instead of erroring
+        existingComponent.componentData = createComponentDto.componentData;
+        existingComponent.position = createComponentDto.position;
+        const savedExisting = await this.blogComponentRepository.save(existingComponent);
+        return this.mapToDto(savedExisting);
       }
 
       const component = this.blogComponentRepository.create(createComponentDto);

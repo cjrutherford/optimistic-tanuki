@@ -57,10 +57,6 @@ declare module '@tiptap/core' {
        * Remove a component
        */
       removeComponent: (instanceId: string) => ReturnType;
-      /**
-       * Get all injected components
-       */
-      getInjectedComponents: () => InjectedComponentData[];
     };
   }
 }
@@ -91,16 +87,16 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
         default: null,
         parseHTML: (element) => element.getAttribute('data-instance-id'),
         renderHTML: (attributes) => {
-          if (!attributes.instanceId) return {};
-          return { 'data-instance-id': attributes.instanceId };
+          if (!attributes['instanceId']) return {};
+          return { 'data-instance-id': attributes['instanceId'] };
         },
       },
       componentType: {
         default: null,
         parseHTML: (element) => element.getAttribute('data-component-type'),
         renderHTML: (attributes) => {
-          if (!attributes.componentType) return {};
-          return { 'data-component-type': attributes.componentType };
+          if (!attributes['componentType']) return {};
+          return { 'data-component-type': attributes['componentType'] };
         },
       },
       data: {
@@ -115,10 +111,10 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
           }
         },
         renderHTML: (attributes) => {
-          if (!attributes.data || Object.keys(attributes.data).length === 0) {
+          if (!attributes['data'] || Object.keys(attributes['data']).length === 0) {
             return {};
           }
-          return { 'data-component-data': JSON.stringify(attributes.data) };
+          return { 'data-component-data': JSON.stringify(attributes['data']) };
         },
       },
     };
@@ -142,7 +138,7 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
       [
         'div',
         { class: 'component-placeholder' },
-        `Component: ${node.attrs.componentType || 'Unknown'} (${node.attrs.instanceId || 'no-id'
+        `Component: ${node.attrs['componentType'] || 'Unknown'} (${node.attrs['instanceId'] || 'no-id'
         })`,
       ],
     ];
@@ -169,14 +165,14 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
             const { doc } = state;
             let updated = false;
 
-            doc.descendants((node, pos) => {
+            doc.descendants((node: any, pos: number) => {
               if (
                 node.type.name === this.name &&
-                node.attrs.instanceId === options.instanceId
+                node.attrs['instanceId'] === options.instanceId
               ) {
                 tr.setNodeMarkup(pos, undefined, {
                   ...node.attrs,
-                  data: { ...node.attrs.data, ...options.data },
+                  data: { ...node.attrs['data'], ...options.data },
                 });
                 updated = true;
               }
@@ -195,10 +191,10 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
             const { doc } = state;
             let removed = false;
 
-            doc.descendants((node, pos) => {
+            doc.descendants((node: any, pos: number) => {
               if (
                 node.type.name === this.name &&
-                node.attrs.instanceId === instanceId
+                node.attrs['instanceId'] === instanceId
               ) {
                 tr.delete(pos, pos + node.nodeSize);
                 removed = true;
@@ -212,25 +208,6 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
             return removed;
           },
 
-      getInjectedComponents:
-        () =>
-          ({ state }) => {
-            const components: InjectedComponentData[] = [];
-            const { doc } = state;
-
-            doc.descendants((node, pos) => {
-              if (node.type.name === this.name) {
-                components.push({
-                  instanceId: node.attrs.instanceId,
-                  componentType: node.attrs.componentType,
-                  componentData: node.attrs.data,
-                  position: pos,
-                });
-              }
-            });
-
-            return components;
-          },
     };
   },
 
@@ -247,12 +224,12 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
           apply(tr, value, oldState, newState) {
             // Extract components from new state
             const components: InjectedComponentData[] = [];
-            newState.doc.descendants((node, pos) => {
+            newState.doc.descendants((node: any, pos: number) => {
               if (node.type.name === 'injectedComponent') {
                 components.push({
-                  instanceId: node.attrs.instanceId,
-                  componentType: node.attrs.componentType,
-                  componentData: node.attrs.data,
+                  instanceId: node.attrs['instanceId'],
+                  componentType: node.attrs['componentType'],
+                  componentData: node.attrs['data'],
                   position: pos,
                 });
               }

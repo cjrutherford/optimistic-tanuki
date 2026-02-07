@@ -44,7 +44,7 @@ export class BlogComponentController {
   }
 
   @Post('')
-  @RequirePermissions('blog:post:create')
+  @RequirePermissions('blog.post.create')
   async createBlogComponent(
     @Body() createComponentDto: CreateBlogComponentDto,
     @User() user: UserDetails
@@ -102,7 +102,7 @@ export class BlogComponentController {
   }
 
   @Put(':id')
-  @RequirePermissions('blog:post:update')
+  @RequirePermissions('blog.post.update')
   async updateBlogComponent(
     @Param('id') id: string,
     @Body() updateComponentDto: UpdateBlogComponentDto,
@@ -126,7 +126,7 @@ export class BlogComponentController {
   }
 
   @Delete(':id')
-  @RequirePermissions('blog:post:delete')
+  @RequirePermissions('blog.post.delete')
   async deleteBlogComponent(
     @Param('id') id: string,
     @User() user: UserDetails
@@ -146,7 +146,7 @@ export class BlogComponentController {
   }
 
   @Delete('post/:postId')
-  @RequirePermissions('blog:post:delete')
+  @RequirePermissions('blog.post.delete')
   async deleteComponentsByPost(
     @Param('postId') postId: string,
     @User() user: UserDetails

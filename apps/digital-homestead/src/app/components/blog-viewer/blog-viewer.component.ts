@@ -27,7 +27,7 @@ import {
   HeroSectionComponent,
   ContentSectionComponent,
 } from '@optimistic-tanuki/common-ui';
-import { CalloutBoxComponent, CodeSnippetComponent, ImageGalleryComponent, InjectedComponentInstance, ComponentPersistenceService } from '@optimistic-tanuki/blogging-ui';
+import { CalloutBoxComponent, CodeSnippetComponent, ImageGalleryComponent, InjectedComponentInstance, ComponentPersistenceService, HeroComponent, FeaturedPostsComponent, NewsletterSignupComponent } from '@optimistic-tanuki/blogging-ui';
 import { BlogService } from '../../blog.service';
 import { BlogComponentDto } from '@optimistic-tanuki/ui-models';
 
@@ -44,12 +44,17 @@ const COMPONENT_MAP: Record<string, any> = {
   // 'testimonial': TestimonialComponent,
   // 'faq-item': FaqItemComponent,
   // 'social-share': SocialShareComponent,
-  'button': ButtonComponent,
-  'card': CardComponent,
-  'accordion': AccordionComponent,
-  'modal': ModalComponent,
-  'hero-section': HeroSectionComponent,
-  'content-section': ContentSectionComponent,
+  // Common UI component ids used by composer
+  'common-button': ButtonComponent,
+  'common-card': CardComponent,
+  'common-accordion': AccordionComponent,
+  'common-modal': ModalComponent,
+  'common-hero-section': HeroSectionComponent,
+  'common-content-section': ContentSectionComponent,
+  // Blogging UI components
+  'hero': HeroComponent,
+  'featured-posts': FeaturedPostsComponent,
+  'newsletter-signup': NewsletterSignupComponent,
 };
 
 @Component({
@@ -65,15 +70,10 @@ const COMPONENT_MAP: Record<string, any> = {
     ContentSectionComponent,
     CalloutBoxComponent,
     CodeSnippetComponent,
-    // VideoPlayerComponent,
     ImageGalleryComponent,
-    // QuoteBlockComponent,
-    // TimelineComponent,
-    // StatsDisplayComponent,
-    // PricingTableComponent,
-    // TestimonialComponent,
-    // FaqItemComponent,
-    // SocialShareComponent,
+    HeroComponent,
+    FeaturedPostsComponent,
+    NewsletterSignupComponent,
   ],
   template: `
     <article class="blog-viewer" *ngIf="!loading()">
@@ -269,7 +269,7 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
 
   ngOnInit() {
     this.loading.set(true);
-    this.sanitizedContent = DOMPurify.sanitize(this.content);
+    this.sanitizedContent = this.sanitizeContent(this.content);
     this.loadComponentData();
   }
 
@@ -280,7 +280,7 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['content']) {
-      this.sanitizedContent = DOMPurify.sanitize(this.content);
+      this.sanitizedContent = this.sanitizeContent(this.content);
       // If postId changed, reload component data
       if (changes['postId']) {
         this.loadComponentData();
@@ -327,6 +327,18 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
   /**
    * Reconstruct Angular components using stored database data
    */
+  private sanitizeContent(html: string): string {
+    return DOMPurify.sanitize(html, {
+      ADD_ATTR: [
+        'data-angular-component',
+        'data-component-id',
+        'data-instance-id',
+        'data-component-data',
+        'data-component-def'
+      ],
+    });
+  }
+
   private reconstructComponents(): void {
     if (!this.contentElement || !this.contentContainer) {
       return;
@@ -337,9 +349,24 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
     this.componentRefs = [];
 
     // Find all component nodes in the content
-    const componentNodes = this.contentElement.nativeElement.querySelectorAll(
-      '[data-angular-component]'
-    );
+    const componentNodes = this.contentElement.nativeElement.querySelectorAll('[data-angular-component]');
+    console.log('[BlogViewer] reconstructComponents: nodes=', componentNodes.length, 'stored=', this.storedComponents.length);
+
+    // Fallback: if no nodes in HTML but we have stored components, render them at the end
+    if (componentNodes.length === 0 && this.storedComponents.length > 0) {
+      this.storedComponents.forEach((comp) => {
+        const placeholder = document.createElement('div');
+        placeholder.setAttribute('data-angular-component', '');
+        placeholder.classList.add('angular-component-node');
+        this.contentElement!.nativeElement.appendChild(placeholder);
+        try {
+          this.createComponentFromStoredData(placeholder, comp);
+        } catch (e) {
+          console.error('[BlogViewer] Fallback render failed', e, comp);
+        }
+      });
+      return;
+    }
 
     componentNodes.forEach((node: Element) => {
       try {
@@ -390,9 +417,8 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
     componentRef.changeDetectorRef.detectChanges();
     this.componentRefs.push(componentRef);
     
-    // Replace placeholder with component
-    node.innerHTML = '';
-    node.appendChild(componentRef.location.nativeElement);
+    // Replace entire placeholder node with the component host element for correct positioning
+    node.replaceWith(componentRef.location.nativeElement);
   }
 
   /**
@@ -437,9 +463,8 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
     // Store reference for cleanup
     this.componentRefs.push(componentRef);
 
-    // Replace placeholder with actual component
-    node.innerHTML = '';
-    node.appendChild(componentRef.location.nativeElement);
+    // Replace entire placeholder node with the component host element
+    node.replaceWith(componentRef.location.nativeElement);
   }
 
   /**

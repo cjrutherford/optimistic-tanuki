@@ -25,11 +25,11 @@ import {
   BlogPostDto,
   CreateBlogPostDto,
   UpdateBlogPostDto,
-  CreateBlogComponentDto,
-  BlogComponentCommands,
+  CreateBlogComponentDto
 } from '@optimistic-tanuki/ui-models';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
-import { PostThemeConfig, InjectedComponentData } from '@optimistic-tanuki/ui-models';
+import { PostThemeConfig } from '@optimistic-tanuki/ui-models';
+import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
@@ -79,7 +79,7 @@ export class BlogPageComponent implements OnDestroy {
   private readonly http = inject(HttpClient);
 
   // Gateway URL for RPC calls
-  private readonly gatewayUrl = 'http://localhost:3000'; // TODO: Use environment config
+  private readonly gatewayUrl = '/api'; // Use gateway proxy path
 
   // Auto-save subject
   private readonly editorChange$ = new Subject<PostData>();
@@ -217,26 +217,20 @@ export class BlogPageComponent implements OnDestroy {
    */
   private handleAutoSave(data: PostData): void {
     const postId = this.currentPostId();
+    // Only auto-save when authenticated, with edit rights, and owner of the post
+    if (!this.isAuthenticated() || !this.canEdit() || !this.isPostOwner()) {
+      return;
+    }
     // Verify we have a post ID and components to save
     if (postId && this.hasInjectedComponents(data.content)) {
       const components = this.componentPersistence.extractComponentsFromContent(data.content);
-      
+
       if (components.length > 0) {
         console.log('Auto-saving components...', components.length);
-        // We use the same service method which handles updates/creations
-        // Ideally we should differentiate between inserting vs updating specific components
-        // For now, we reuse the batch save approach which is robust but maybe not optimal for single changes
-        
-        // Strategy: First delete old components then save new ones to ensure sync
-        // In a more optimized version we would track diffs
-        this.componentPersistence.deleteComponentsByPost(postId).subscribe({
-          next: () => {
-            this.componentPersistence.saveComponents(postId, components).subscribe({
-              next: () => console.log('Auto-save complete'),
-              error: (err) => console.error('Auto-save failed', err)
-            });
-          },
-          error: (err) => console.error('Auto-save cleanup failed', err)
+        // Strategy: Upsert only during auto-save to avoid permission issues with DELETE
+        this.componentPersistence.saveComponents(postId, components).subscribe({
+          next: () => console.log('Auto-save complete'),
+          error: (err) => console.error('Auto-save failed', err)
         });
       }
     }
@@ -276,7 +270,7 @@ export class BlogPageComponent implements OnDestroy {
     }).subscribe({
       next: ({ post, components }) => {
         this.selectedPost.set(post);
-        
+
         // Map stored components to InjectedComponentInstance format expected by editor
         const injectedComponents = components.map(comp => ({
           instanceId: comp.instanceId,
@@ -331,11 +325,11 @@ export class BlogPageComponent implements OnDestroy {
     }
 
     this.loading.set(true);
-    
+
     // Create a draft post immediately
     const createData: CreateBlogPostDto = {
       title: 'Untitled Draft',
-      content: '',
+      content: '<p>this is sample content</p>',
       authorId,
       isDraft: true
     };
@@ -345,7 +339,7 @@ export class BlogPageComponent implements OnDestroy {
         this.loading.set(false);
         this.selectedPost.set(post);
         this.addPostToList(post);
-        
+
         // Setup editor with the new draft
         this.editorData.set({
           title: post.title,
@@ -354,10 +348,10 @@ export class BlogPageComponent implements OnDestroy {
           attachments: [],
           themeConfig: post.themeConfig
         });
-        
+
         // Set mode to edit since we now have a real post ID
         this.mode.set('edit');
-        
+
         // Navigate to the new post URL
         this.router.navigate(['/blog', post.id]);
       },
@@ -719,14 +713,13 @@ export class BlogPageComponent implements OnDestroy {
    */
   private handlePostCreateSuccess(createdPost: any, finalAction: SaveAction): void {
     if (finalAction === 'publish') {
-      // Publish the draft
+      // Publish the draft and then view
       this.blogService.publishPost(createdPost.id).subscribe({
         next: (publishedPost) => {
           this.loading.set(false);
           this.selectedPost.set(publishedPost);
           this.addPostToList(publishedPost);
           this.mode.set('view');
-
           if (publishedPost.id) {
             this.router.navigate(['/blog', publishedPost.id]);
           }
@@ -735,25 +728,19 @@ export class BlogPageComponent implements OnDestroy {
           this.error.set('Post created but failed to publish: ' + err.message);
           this.loading.set(false);
           console.error('Error publishing post:', err);
-          // Still show the draft post
+          // Stay on draft in edit mode
           this.selectedPost.set(createdPost);
           this.addPostToList(createdPost);
-          this.mode.set('view');
-          if (createdPost.id) {
-            this.router.navigate(['/blog', createdPost.id]);
-          }
+          this.mode.set('edit');
         }
       });
     } else {
-      // Keep as draft
+      // Keep as draft and continue editing
       this.loading.set(false);
       this.selectedPost.set(createdPost);
       this.addPostToList(createdPost);
-      this.mode.set('view');
-
-      if (createdPost.id) {
-        this.router.navigate(['/blog', createdPost.id]);
-      }
+      this.mode.set('edit');
+      // Do not navigate away; let the editor remain open
     }
   }
 
@@ -811,7 +798,7 @@ export class BlogPageComponent implements OnDestroy {
       if (postData.injectedComponentsNew) {
         // Delete old components first
         await this.deleteComponentsByPostId(postId);
-        
+
         // Save new components
         if (postData.injectedComponentsNew.length > 0) {
           await this.saveComponentsNew(postId, postData.injectedComponentsNew);
@@ -839,7 +826,7 @@ export class BlogPageComponent implements OnDestroy {
    */
   private async saveComponentsNew(blogPostId: string, components: InjectedComponentData[]): Promise<void> {
     console.log('[BlogPage] Saving components:', components);
-    
+
     for (const component of components) {
       const dto: CreateBlogComponentDto = {
         blogPostId,
@@ -851,10 +838,7 @@ export class BlogPageComponent implements OnDestroy {
 
       try {
         await firstValueFrom(
-          this.http.post(`${this.gatewayUrl}/blogging`, {
-            cmd: BlogComponentCommands.CREATE,
-            data: dto,
-          })
+          this.http.post(`${this.gatewayUrl}/blog-components`, dto)
         );
         console.log('[BlogPage] Component saved:', component.instanceId);
       } catch (error) {
@@ -870,10 +854,7 @@ export class BlogPageComponent implements OnDestroy {
   private async deleteComponentsByPostId(blogPostId: string): Promise<void> {
     try {
       await firstValueFrom(
-        this.http.post(`${this.gatewayUrl}/blogging`, {
-          cmd: BlogComponentCommands.DELETE_BY_POST,
-          data: { blogPostId },
-        })
+        this.http.delete(`${this.gatewayUrl}/blog-components/post/${blogPostId}`)
       );
       console.log('[BlogPage] Components deleted for post:', blogPostId);
     } catch (error) {

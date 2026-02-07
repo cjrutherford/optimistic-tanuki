@@ -4,7 +4,6 @@ import { Observable, forkJoin } from 'rxjs';
 import { 
   SocialComponentDto, 
   CreateSocialComponentDto, 
-  SocialComponentCommands,
   UpdateSocialComponentDto 
 } from '@optimistic-tanuki/ui-models';
 
@@ -20,7 +19,7 @@ export interface ComponentExtractionResult {
   providedIn: 'root'
 })
 export class SocialComponentPersistenceService {
-  private readonly gatewayUrl = 'http://localhost:3000/social';
+  private readonly gatewayUrl = 'http://localhost:3000/social-components';
   
   constructor(private http: HttpClient) {}
 
@@ -83,10 +82,7 @@ export class SocialComponentPersistenceService {
         position: comp.position
       };
 
-      return this.http.post<SocialComponentDto>(this.gatewayUrl, {
-        cmd: SocialComponentCommands.CREATE,
-        data: createDto
-      });
+      return this.http.post<SocialComponentDto>(`${this.gatewayUrl}`, createDto);
     });
     
     return forkJoin(saveRequests);
@@ -96,10 +92,7 @@ export class SocialComponentPersistenceService {
    * Gets stored components for a social post using RPC
    */
   getComponentsForPost(postId: string): Observable<SocialComponentDto[]> {
-    return this.http.post<SocialComponentDto[]>(this.gatewayUrl, {
-      cmd: SocialComponentCommands.FIND_BY_POST,
-      data: { postId }
-    });
+    return this.http.get<SocialComponentDto[]>(`${this.gatewayUrl}/post/${postId}`);
   }
 
   /**
@@ -111,30 +104,21 @@ export class SocialComponentPersistenceService {
       ...(position !== undefined && { position })
     };
 
-    return this.http.post<SocialComponentDto>(this.gatewayUrl, {
-      cmd: SocialComponentCommands.UPDATE,
-      data: { id: componentId, ...updateDto }
-    });
+    return this.http.put<SocialComponentDto>(`${this.gatewayUrl}/${componentId}`, updateDto);
   }
 
   /**
    * Deletes a component from the database using RPC
    */
   deleteComponent(componentId: string): Observable<void> {
-    return this.http.post<void>(this.gatewayUrl, {
-      cmd: SocialComponentCommands.DELETE,
-      data: { id: componentId }
-    });
+    return this.http.delete<void>(`${this.gatewayUrl}/${componentId}`);
   }
 
   /**
    * Deletes all components for a post using RPC
    */
   deleteComponentsByPost(postId: string): Observable<void> {
-    return this.http.post<void>(this.gatewayUrl, {
-      cmd: SocialComponentCommands.DELETE_BY_POST,
-      data: { postId }
-    });
+    return this.http.delete<void>(`${this.gatewayUrl}/post/${postId}`);
   }
 
   /**

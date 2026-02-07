@@ -87,7 +87,7 @@ import { BlogComposeComponentNode } from './extensions/blog-compose-component.ex
 import { ResizableImage } from './extensions/resizable-image.extension';
 
 // Image Upload Service
-import { ImageUploadService, InjectedComponentData } from '@optimistic-tanuki/compose-lib';
+import { ImageUploadService, InjectedComponentData, ComponentInjection } from '@optimistic-tanuki/compose-lib';
 
 import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
 
@@ -313,6 +313,8 @@ export class BlogComposeComponent
           TableRow,
           TableHeader,
           TableCell,
+          // Inline Component Injection extension (new persistence-friendly format)
+          ComponentInjection.configure({}),
           // Angular Component rendering extension
           BlogComposeComponentNode.configure({
             renderer: (
@@ -349,6 +351,9 @@ export class BlogComposeComponent
           this.pendingInjectedComponents = null;
         }
       }
+
+      // Fallback reconstruction: ensure placeholders render wrappers on load
+      this.reconstructEditorComponents();
 
       this.editor.view.dom.addEventListener('contextmenu', (event) => {
         event.preventDefault();
@@ -1141,9 +1146,9 @@ export class BlogComposeComponent
       // Check for both old and new component node types
       if (node.type.name === 'blogComposeComponent' || node.type.name === 'angularComponent') {
         components.push({
-          instanceId: node.attrs.instanceId,
-          componentType: node.attrs.componentId,
-          componentData: node.attrs.data || {},
+          instanceId: node.attrs['instanceId'],
+          componentType: node.attrs['componentId'],
+          componentData: node.attrs['data'] || {},
           position: components.length
         });
       }
@@ -1173,6 +1178,28 @@ export class BlogComposeComponent
     if (fileInput) {
       fileInput.click();
     }
+  }
+
+  // Ensure editor reconstructs any placeholders present in DOM
+  private reconstructEditorComponents(): void {
+    const root = this.editor?.view?.dom as HTMLElement | undefined;
+    if (!root) return;
+    const nodes = root.querySelectorAll('[data-angular-component]');
+    nodes.forEach((node) => {
+      const el = node as HTMLElement;
+      const instanceId = el.getAttribute('data-instance-id');
+      const componentId = el.getAttribute('data-component-id');
+      const dataStr = el.getAttribute('data-component-data');
+      if (!instanceId || !componentId) return;
+      if (this.componentInjectionService.getInstance(instanceId)) return;
+      let data: Record<string, any> = {};
+      try { data = dataStr ? JSON.parse(dataStr) : {}; } catch {}
+      try {
+        this.componentInjectionService.renderComponentInto(componentId, instanceId, data, el);
+      } catch (e) {
+        console.warn('[BlogCompose] Failed to reconstruct component', componentId, instanceId, e);
+      }
+    });
   }
 
   async onFileSelected(event: Event): Promise<void> {
@@ -1535,24 +1562,32 @@ export class BlogComposeComponent
   private restoreInjectedComponentData(components: any[]): void {
     if (!components || !components.length) return;
 
-    // We schedule this to run after the current stack, 
-    // to allow Tiptap's synchronous rendering to complete first (if called immediately after setContent).
+    // We schedule this to run after the current stack,
     setTimeout(() => {
       components.forEach(comp => {
-        // Only restore if the component ID and instance ID are valid
-        if (comp && comp.instanceId && comp.data) {
+        if (comp && comp.instanceId) {
           try {
-            // 1. Ensure service has the latest data
-            // Note: updateComponent throws if instance not found, so we should check first
-            if (this.componentInjectionService.getInstance(comp.instanceId)) {
+            // Ensure wrapper exists; if not, render into existing placeholder
+            const placeholder = this.editor?.view?.dom?.querySelector(`[data-angular-component][data-instance-id="${comp.instanceId}"]`) as HTMLElement | null;
+            if (placeholder && !this.componentInjectionService.getInstance(comp.instanceId)) {
+              const componentId = placeholder.getAttribute('data-component-id') || comp.componentId || comp.componentType;
+              if (componentId) {
+                this.componentInjectionService.renderComponentInto(componentId, comp.instanceId, comp.data || {}, placeholder);
+              }
+            }
+
+            // Update service instance if present
+            if (this.componentInjectionService.getInstance(comp.instanceId) && comp.data) {
               this.componentInjectionService.updateComponent(comp.instanceId, comp.data);
             }
 
-            // 2. Ensure Tiptap node has the latest data
-            this.editor?.commands.updateAngularComponent({
-              instanceId: comp.instanceId,
-              data: comp.data
-            });
+            // Update TipTap node data
+            if (comp.data) {
+              this.editor?.commands.updateAngularComponent({
+                instanceId: comp.instanceId,
+                data: comp.data
+              });
+            }
           } catch (e) {
             console.warn('[BlogCompose] Failed to restore component data', comp.instanceId, e);
           }
