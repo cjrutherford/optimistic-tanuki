@@ -87,7 +87,7 @@ import { BlogComposeComponentNode } from './extensions/blog-compose-component.ex
 import { ResizableImage } from './extensions/resizable-image.extension';
 
 // Image Upload Service
-import { ImageUploadService, ComponentInjection, InjectedComponentData } from '@optimistic-tanuki/compose-lib';
+import { ImageUploadService, InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 
 import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
 
@@ -266,9 +266,6 @@ export class BlogComposeComponent
   private pendingContent: string | null = null;
   private pendingInjectedComponents: any[] | null = null;
   private componentInjectionService = inject(ComponentInjectionService);
-  
-  // Track components from new extension
-  private currentComponents: InjectedComponentData[] = [];
 
   constructor() {
     super();
@@ -316,19 +313,7 @@ export class BlogComposeComponent
           TableRow,
           TableHeader,
           TableCell,
-          // New simplified ComponentInjection extension
-          ComponentInjection.configure({
-            onComponentsChanged: (components) => {
-              this.handleComponentsChanged(components);
-            },
-            onComponentClick: (instanceId) => {
-              this.handleComponentClick(instanceId);
-            },
-            onComponentEdit: (instanceId, data) => {
-              this.handleComponentEdit(instanceId, data);
-            }
-          }),
-          // Keep old extension temporarily for compatibility
+          // Angular Component rendering extension
           BlogComposeComponentNode.configure({
             renderer: (
               componentId: string,
@@ -389,26 +374,6 @@ export class BlogComposeComponent
 
   override ngOnDestroy(): void {
     this.editor?.destroy();
-  }
-
-  // ComponentInjection extension event handlers
-  private handleComponentsChanged(components: InjectedComponentData[]): void {
-    this.currentComponents = components;
-    console.log('[BlogCompose] Components changed:', components);
-  }
-
-  private handleComponentClick(instanceId: string): void {
-    console.log('[BlogCompose] Component clicked:', instanceId);
-    // Find the component data
-    const component = this.currentComponents.find(c => c.instanceId === instanceId);
-    if (component) {
-      // Could trigger selection or editing UI here
-    }
-  }
-
-  private handleComponentEdit(instanceId: string, data: Record<string, any>): void {
-    console.log('[BlogCompose] Component edit requested:', instanceId, data);
-    // Could open property editor here
   }
 
   // Component injection system initialization
