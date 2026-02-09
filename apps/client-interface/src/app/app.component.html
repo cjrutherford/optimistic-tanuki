@@ -1,7 +1,4 @@
-<div
-  class="container"
-  [ngStyle]="{ background: backgroundGradient, color: foreground }"
->
+<div class="container">
   <otui-app-bar
     appTitle="Optimistic Tanuki"
     logoSrc="assets/tanuki.jpg"
@@ -20,7 +17,7 @@
   >
   </otui-nav-sidebar>
 
-  <div class="content">
+  <main class="content">
     <router-outlet></router-outlet>
-  </div>
+  </main>
 </div>

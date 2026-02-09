@@ -27,7 +27,14 @@
       .time {
         font-size: 1.25rem;
         font-weight: 600;
-        font-family: 'Courier New', monospace;
+        font-family: var(
+          --font-mono,
+          'Fira Code',
+          'SF Mono',
+          Monaco,
+          'Courier New',
+          monospace
+        );
         color: var(--text-primary, #333);
       }
     }

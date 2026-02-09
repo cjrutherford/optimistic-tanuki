@@ -1,10 +1,11 @@
 import { Component, Input } from '@angular/core';
 
 import { ChatContact } from '../../chat-ui.component';
+import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 
 @Component({
   selector: 'lib-participants',
-  imports: [],
+  imports: [ProfilePhotoComponent],
   templateUrl: './participants.component.html',
   styleUrls: ['./participants.component.scss'],
 })

@@ -1,13 +1,35 @@
 <div
   *ngFor="let section of sections; let i = index"
-  tabindex="0"
+  [attr.id]="section.id ? `accordion-${section.id}` : null"
   class="accordion-section"
   [ngClass]="[variant, size]"
+  [attr.aria-label]="ariaLabel"
+  [attr.role]="getContainerAria().role"
+  [attr.aria-multiselectable]="getContainerAria().ariaMultiSelectable"
 >
-  <h3 (click)="toggleSection(i)" (keypress)="toggleSection(i)" tabindex="1">
+  <h3
+    (click)="toggleSection(i)"
+    (keypress)="toggleSection(i)"
+    [attr.id]="`accordion-header-${i}`"
+    [attr.role]="getSectionAria(i).role"
+    [attr.aria-expanded]="getSectionAria(i).ariaExpanded"
+    [attr.aria-controls]="getSectionAria(i).ariaControls"
+    [attr.tabindex]="getSectionAria(i).tabIndex"
+    [attr.aria-label]="getSectionAria(i).ariaLabel"
+    [ngClass]="{
+      'accordion-header': true,
+      expanded: isSectionExpanded(i),
+      disabled: section.disabled
+    }"
+  >
     {{ section.heading }}
   </h3>
-  <div class="accordion-content" *ngIf="expandedIndex === i">
+  <div
+    class="accordion-content"
+    *ngIf="isSectionExpanded(i)"
+    [attr.id]="`accordion-section-${i}`"
+    [attr.aria-labelledby]="`accordion-header-${i}`"
+  >
     <ng-container *ngIf="section.content; else projectedContent">
       <p>{{ section.content }}</p>
     </ng-container>
@@ -15,7 +37,10 @@
       <ng-content select="[accordion-content-{{ i }}]"></ng-content>
     </ng-template>
     <ng-container *ngIf="section.subItems && section.subItems.length > 0">
-      <otui-accordion [sections]="section.subItems"></otui-accordion>
+      <otui-accordion
+        [sections]="section.subItems"
+        (sectionToggle)="onNestedToggle($event)"
+      ></otui-accordion>
     </ng-container>
   </div>
 </div>

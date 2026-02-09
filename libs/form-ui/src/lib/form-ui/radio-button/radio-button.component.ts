@@ -12,6 +12,9 @@ import { FormsModule } from '@angular/forms';
 export class RadioButtonComponent {
   @Input() options: { label: string; value: number | string }[] = [];
   @Input() layout: 'vertical' | 'horizontal' | 'grid' = 'vertical';
+  @Input() label = '';
+  @Input() disabled = false;
+  @Input() errorMessage = '';
   @Output() selectedValue = new EventEmitter<number | string>();
   @Input() selected!: number | string;
 

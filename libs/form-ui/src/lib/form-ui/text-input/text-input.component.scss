@@ -1,42 +1,70 @@
-.text-input-container {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  gap: 1rem;
-  margin-top: 10px;
-  user-select: none;
+@use '../../styles/mixins' as *;
+
+// Form field container with label positioning variants
+.form-field {
+  @include form-field;
+
+  // Label positioning variants
+  &.label-left {
+    flex-direction: row;
+    align-items: center;
+
+    .form-label {
+      margin-bottom: 0;
+      margin-right: var(--spacing-sm, 8px);
+      white-space: nowrap;
+    }
+  }
+
+  &.label-right {
+    flex-direction: row-reverse;
+    align-items: center;
+
+    .form-label {
+      margin-bottom: 0;
+      margin-left: var(--spacing-sm, 8px);
+      white-space: nowrap;
+    }
+  }
+
+  &.label-bottom {
+    flex-direction: column-reverse;
+
+    .form-label {
+      margin-bottom: 0;
+      margin-top: var(--spacing-xs, 4px);
+    }
+  }
+
+  @include mobile {
+    &.label-left,
+    &.label-right {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .form-label {
+        margin: 0 0 var(--spacing-xs, 4px) 0;
+      }
+    }
+  }
 }
 
-.text-input-container.top {
-  flex-direction: column;
+// Form label
+.form-label {
+  @include form-label;
 }
 
-.text-input-container.left {
-  flex-direction: row;
+// Text input control
+.form-control {
+  @include form-control-base;
+
+  // Error state
+  &.has-error {
+    @include form-control-error;
+  }
 }
 
-.text-input-container.right {
-  flex-direction: row-reverse;
-}
-
-.text-input-container.bottom {
-  flex-direction: column-reverse;
-}
-
-.text-input-container input {
-  height: 20px;
-  width: 99%;
-  margin: 10px;
-  padding: 5px;
-  border: 2px solid var(--accent);
-  color: var(--foreground);
-  border: 2px solid var(--border-color);
-  box-shadow: 0 0 2px 1px var(--complement);
-  border-radius: 4px;
-  background-color: var(--accent);
-}
-
-.text-input-container input:focus {
-  border-color: var(--border-color);
-  box-shadow: 0 0 5px 4px var(--complement);
+// Error message
+.error-message {
+  @include form-error-message;
 }

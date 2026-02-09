@@ -64,9 +64,15 @@ export class TextAreaComponent
     }
   }
   @Input() label = '';
+  @Input() placeholder = '';
+  @Input() rows = 4;
+  @Input() disabled = false;
+  @Input() hasError = false;
+  @Input() errorMessage = '';
   @Output() valueChange = new EventEmitter<string>();
 
   value = '';
+  inputId = `text-area-${Math.random().toString(36).substr(2, 9)}`;
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   onChange?: (value: string) => void = () => {};
   // eslint-disable-next-line @typescript-eslint/no-empty-function

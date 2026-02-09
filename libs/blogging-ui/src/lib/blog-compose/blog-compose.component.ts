@@ -87,9 +87,16 @@ import { BlogComposeComponentNode } from './extensions/blog-compose-component.ex
 import { ResizableImage } from './extensions/resizable-image.extension';
 
 // Image Upload Service
-import { ImageUploadService, InjectedComponentData, ComponentInjection } from '@optimistic-tanuki/compose-lib';
+import {
+  ImageUploadService,
+  InjectedComponentData,
+  ComponentInjection,
+} from '@optimistic-tanuki/compose-lib';
 
-import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
+import {
+  PostThemeConfig,
+  DEFAULT_POST_THEME,
+} from '@optimistic-tanuki/ui-models';
 
 interface PostData {
   title: string;
@@ -183,10 +190,11 @@ interface PostData {
 export class BlogComposeComponent
   extends Themeable
   implements
-  OnDestroy,
-  AfterViewInit,
-  ComponentInjectionAPI,
-  ControlValueAccessor {
+    OnDestroy,
+    AfterViewInit,
+    ComponentInjectionAPI,
+    ControlValueAccessor
+{
   @Input() profileId?: string; // Profile ID for asset uploads
   @Output() postSubmitted: EventEmitter<PostData> =
     new EventEmitter<PostData>();
@@ -214,8 +222,8 @@ export class BlogComposeComponent
   private _content = '';
 
   // ControlValueAccessor callbacks
-  onChange: (value: any) => void = () => { };
-  onTouched: () => void = () => { };
+  onChange: (value: any) => void = () => {};
+  onTouched: () => void = () => {};
   isDisabled = false;
 
   get title(): string {
@@ -270,8 +278,6 @@ export class BlogComposeComponent
   constructor() {
     super();
   }
-
-
 
   @HostListener('document:click')
   onDocumentClick(): void {
@@ -959,20 +965,20 @@ export class BlogComposeComponent
     console.log('[BlogCompose] Component edit requested', {
       instanceId: instance.instanceId,
       componentDefId: instance.componentDef.id,
-      currentData: instance.data
+      currentData: instance.data,
     });
     this.selectedComponentInstance = instance;
     this.selectedComponentProperties = instance.componentDef.properties || [];
     this.isPropertyEditorVisible = true;
     console.log('[BlogCompose] Property editor opened', {
-      propertyCount: this.selectedComponentProperties.length
+      propertyCount: this.selectedComponentProperties.length,
     });
   }
 
   onComponentDelete(instance: InjectedComponentInstance): void {
     console.log('[BlogCompose] Component delete requested', {
       instanceId: instance.instanceId,
-      componentDefId: instance.componentDef.id
+      componentDefId: instance.componentDef.id,
     });
 
     this.componentInjectionService.removeComponent(instance.instanceId);
@@ -984,44 +990,57 @@ export class BlogComposeComponent
     }
 
     console.log('[BlogCompose] Component deleted successfully', {
-      instanceId: instance.instanceId
+      instanceId: instance.instanceId,
     });
   }
 
   onComponentMoveUp(instance: InjectedComponentInstance): void {
-    const activeComponents = this.componentInjectionService.getActiveComponents();
-    const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+    const activeComponents =
+      this.componentInjectionService.getActiveComponents();
+    const currentIndex = activeComponents.findIndex(
+      (c) => c.instanceId === instance.instanceId
+    );
 
     console.log('[BlogCompose] Component move up requested', {
       instanceId: instance.instanceId,
       currentIndex,
-      canMoveUp: currentIndex > 0
+      canMoveUp: currentIndex > 0,
     });
 
     if (currentIndex > 0) {
-      this.componentInjectionService.moveComponent(instance.instanceId, currentIndex - 1);
+      this.componentInjectionService.moveComponent(
+        instance.instanceId,
+        currentIndex - 1
+      );
       console.log('[BlogCompose] Component moved up', {
         instanceId: instance.instanceId,
-        newIndex: currentIndex - 1
+        newIndex: currentIndex - 1,
       });
     }
   }
 
   onComponentMoveDown(instance: InjectedComponentInstance): void {
-    const activeComponents = this.componentInjectionService.getActiveComponents();
-    const currentIndex = activeComponents.findIndex(c => c.instanceId === instance.instanceId);
+    const activeComponents =
+      this.componentInjectionService.getActiveComponents();
+    const currentIndex = activeComponents.findIndex(
+      (c) => c.instanceId === instance.instanceId
+    );
 
     console.log('[BlogCompose] Component move down requested', {
       instanceId: instance.instanceId,
       currentIndex,
-      canMoveDown: currentIndex >= 0 && currentIndex < activeComponents.length - 1
+      canMoveDown:
+        currentIndex >= 0 && currentIndex < activeComponents.length - 1,
     });
 
     if (currentIndex >= 0 && currentIndex < activeComponents.length - 1) {
-      this.componentInjectionService.moveComponent(instance.instanceId, currentIndex + 1);
+      this.componentInjectionService.moveComponent(
+        instance.instanceId,
+        currentIndex + 1
+      );
       console.log('[BlogCompose] Component moved down', {
         instanceId: instance.instanceId,
-        newIndex: currentIndex + 1
+        newIndex: currentIndex + 1,
       });
     }
   }
@@ -1029,7 +1048,7 @@ export class BlogComposeComponent
   onComponentSelection(instance: InjectedComponentInstance): void {
     console.log('[BlogCompose] Component selected', {
       instanceId: instance.instanceId,
-      componentDefId: instance.componentDef.id
+      componentDefId: instance.componentDef.id,
     });
     this.selectedComponentInstance = instance;
   }
@@ -1038,7 +1057,7 @@ export class BlogComposeComponent
     console.log('[BlogCompose] Component duplicate requested', {
       instanceId: instance.instanceId,
       componentDefId: instance.componentDef.id,
-      data: instance.data
+      data: instance.data,
     });
 
     // Create a duplicate of the component with the same data
@@ -1050,26 +1069,32 @@ export class BlogComposeComponent
     );
 
     console.log('[BlogCompose] Component duplicated successfully', {
-      originalInstanceId: instance.instanceId
+      originalInstanceId: instance.instanceId,
     });
   }
 
   onComponentConfig(instance: InjectedComponentInstance): void {
     console.log('[BlogCompose] Component config requested', {
       instanceId: instance.instanceId,
-      componentDefId: instance.componentDef.id
+      componentDefId: instance.componentDef.id,
     });
     // Open property editor for configuration (same as edit)
     this.onComponentEdit(instance);
   }
 
-  onComponentPropertiesChanged(data: { instance: InjectedComponentInstance; data: Record<string, any> }): void {
-    console.log('[BlogCompose] Component properties changed (from inline edit)', {
-      instanceId: data.instance.instanceId,
-      componentDefId: data.instance.componentDef.id,
-      oldData: data.instance.data,
-      newData: data.data
-    });
+  onComponentPropertiesChanged(data: {
+    instance: InjectedComponentInstance;
+    data: Record<string, any>;
+  }): void {
+    console.log(
+      '[BlogCompose] Component properties changed (from inline edit)',
+      {
+        instanceId: data.instance.instanceId,
+        componentDefId: data.instance.componentDef.id,
+        oldData: data.instance.data,
+        newData: data.data,
+      }
+    );
 
     // Update component properties from inline quick edit
     this.componentInjectionService.updateComponent(
@@ -1086,7 +1111,7 @@ export class BlogComposeComponent
     this.emitChange();
 
     console.log('[BlogCompose] Component properties updated successfully', {
-      instanceId: data.instance.instanceId
+      instanceId: data.instance.instanceId,
     });
   }
 
@@ -1115,7 +1140,10 @@ export class BlogComposeComponent
   }
 
   // Additional API methods required by interface
-  injectComponent(componentId: string, data?: any): Promise<InjectedComponentInstance> {
+  injectComponent(
+    componentId: string,
+    data?: any
+  ): Promise<InjectedComponentInstance> {
     // This method delegates to the new implementation that interacts with the service
     return this.onComponentSelected({ id: componentId, data } as any);
   }
@@ -1137,23 +1165,27 @@ export class BlogComposeComponent
   getInjectedComponentsNew(): InjectedComponentData[] {
     // Extract components from the editor document using new format
     const components: InjectedComponentData[] = [];
-    
+
     if (!this.editor) {
       return components;
     }
 
     this.editor.state.doc.descendants((node) => {
-      // Check for both old and new component node types
-      if (node.type.name === 'blogComposeComponent' || node.type.name === 'angularComponent') {
+      // Check for all component node types (for cross-compatibility)
+      if (
+        node.type.name === 'blogComposeComponent' ||
+        node.type.name === 'socialComposeComponent' ||
+        node.type.name === 'angularComponent'
+      ) {
         components.push({
           instanceId: node.attrs['instanceId'],
           componentType: node.attrs['componentId'],
           componentData: node.attrs['data'] || {},
-          position: components.length
+          position: components.length,
         });
       }
     });
-    
+
     console.log('[BlogCompose] Extracted components (new format):', components);
     return components;
   }
@@ -1193,11 +1225,23 @@ export class BlogComposeComponent
       if (!instanceId || !componentId) return;
       if (this.componentInjectionService.getInstance(instanceId)) return;
       let data: Record<string, any> = {};
-      try { data = dataStr ? JSON.parse(dataStr) : {}; } catch {}
       try {
-        this.componentInjectionService.renderComponentInto(componentId, instanceId, data, el);
+        data = dataStr ? JSON.parse(dataStr) : {};
+      } catch {}
+      try {
+        this.componentInjectionService.renderComponentInto(
+          componentId,
+          instanceId,
+          data,
+          el
+        );
       } catch (e) {
-        console.warn('[BlogCompose] Failed to reconstruct component', componentId, instanceId, e);
+        console.warn(
+          '[BlogCompose] Failed to reconstruct component',
+          componentId,
+          instanceId,
+          e
+        );
       }
     });
   }
@@ -1236,10 +1280,14 @@ export class BlogComposeComponent
       // Load the image to get its natural dimensions
       const img = new Image();
       img.onload = () => {
-        this.editor.chain().focus().setImage({
-          src: assetUrl, // Use asset URL instead of base64
-          width: defaultWidth, // numeric value, not string
-        }).run();
+        this.editor
+          .chain()
+          .focus()
+          .setImage({
+            src: assetUrl, // Use asset URL instead of base64
+            width: defaultWidth, // numeric value, not string
+          })
+          .run();
       };
       img.src = assetUrl;
     } catch (error) {
@@ -1271,12 +1319,21 @@ export class BlogComposeComponent
   }
 
   // Injection Logic
-  async onComponentSelected(component: InjectableComponent): Promise<InjectedComponentInstance> {
-    const realComponent = this.getRegisteredComponents().find(c => c.id === component.id) || component;
+  async onComponentSelected(
+    component: InjectableComponent
+  ): Promise<InjectedComponentInstance> {
+    const realComponent =
+      this.getRegisteredComponents().find((c) => c.id === component.id) ||
+      component;
 
-    const instanceId = `${realComponent.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const instanceId = `${realComponent.id}-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
 
-    const instanceData = { ...(component.data || {}), ...(realComponent.data || {}) };
+    const instanceData = {
+      ...(component.data || {}),
+      ...(realComponent.data || {}),
+    };
 
     // Use NEW ComponentInjection extension
     this.editor.commands.insertComponent({
@@ -1296,7 +1353,8 @@ export class BlogComposeComponent
     // Move cursor to a new paragraph after the inserted component
     // This allows users to immediately continue typing or insert another component
     if (this.editor?.state?.selection) {
-      this.editor.chain()
+      this.editor
+        .chain()
         .insertContentAt(this.editor.state.selection.to, { type: 'paragraph' })
         .focus()
         .run();
@@ -1306,16 +1364,17 @@ export class BlogComposeComponent
     this.isComponentSelectorVisible = false;
 
     // Return a temporary promise/placeholder
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       setTimeout(() => {
         const instance = this.componentInjectionService.getInstance(instanceId);
         if (instance) resolve(instance);
-        else resolve({
-          instanceId,
-          componentDef: realComponent,
-          componentRef: {} as any,
-          data: instanceData
-        });
+        else
+          resolve({
+            instanceId,
+            componentDef: realComponent,
+            componentRef: {} as any,
+            data: instanceData,
+          });
       }, 50);
     });
   }
@@ -1357,7 +1416,7 @@ export class BlogComposeComponent
     const files = Array.from(e.dataTransfer.files);
 
     // Filter for image files only
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'));
 
     if (imageFiles.length === 0) {
       alert('Please drop image files only');
@@ -1382,10 +1441,14 @@ export class BlogComposeComponent
         const defaultWidth = Math.floor(editorWidth * 0.95);
 
         // Insert the image with asset URL
-        this.editor.chain().focus().setImage({
-          src: assetUrl,
-          width: defaultWidth, // numeric value, not string
-        }).run();
+        this.editor
+          .chain()
+          .focus()
+          .setImage({
+            src: assetUrl,
+            width: defaultWidth, // numeric value, not string
+          })
+          .run();
       } catch (error) {
         console.error('Error uploading dropped file:', error);
         alert(`Failed to upload ${file.name}. Please try again.`);
@@ -1436,15 +1499,19 @@ export class BlogComposeComponent
 
     if (Array.isArray(obj)) {
       return obj
-        .map(item => this.safeCycleBreaker(item, seen))
-        .filter(item => item !== undefined);
+        .map((item) => this.safeCycleBreaker(item, seen))
+        .filter((item) => item !== undefined);
     }
 
     const result: any = {};
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         // Exclude specific known dangerous keys
-        if (key === 'componentRef' || key === '_innerComponentRef' || key === 'viewContainerRef') {
+        if (
+          key === 'componentRef' ||
+          key === '_innerComponentRef' ||
+          key === 'viewContainerRef'
+        ) {
           continue;
         }
 
@@ -1458,12 +1525,16 @@ export class BlogComposeComponent
     return result;
   }
 
-  private addInjectedComponentsMeta(html: string, injectedComponents: unknown): string {
+  private addInjectedComponentsMeta(
+    html: string,
+    injectedComponents: unknown
+  ): string {
     const safeHtml = html ?? '';
 
     // Avoid bloating output if there are no injected components.
-    const hasComponents =
-      Array.isArray(injectedComponents) ? injectedComponents.length > 0 : !!injectedComponents;
+    const hasComponents = Array.isArray(injectedComponents)
+      ? injectedComponents.length > 0
+      : !!injectedComponents;
     if (!hasComponents) {
       // Still strip any stale meta so the stored HTML stays clean.
       return this.stripInjectedComponentsMeta(safeHtml).html;
@@ -1477,10 +1548,10 @@ export class BlogComposeComponent
         return {
           instanceId: comp.instanceId,
           componentDef: {
-            id: comp?.componentDef?.id
+            id: comp?.componentDef?.id,
           },
           data: this.safeCycleBreaker(comp.data),
-          position: comp.position
+          position: comp.position,
         };
       });
     }
@@ -1497,11 +1568,16 @@ export class BlogComposeComponent
 
     // Remove any existing meta nodes to prevent duplicates.
     doc
-      .querySelectorAll(`span[${BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR}]`)
+      .querySelectorAll(
+        `span[${BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR}]`
+      )
       .forEach((n) => n.remove());
 
     const meta = doc.createElement('span');
-    meta.setAttribute(BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR, encoded);
+    meta.setAttribute(
+      BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR,
+      encoded
+    );
     // Ensure it stays non-visible even if style attributes are stripped.
     meta.setAttribute('hidden', '');
     meta.setAttribute('aria-hidden', 'true');
@@ -1511,7 +1587,10 @@ export class BlogComposeComponent
     return doc.body.innerHTML;
   }
 
-  private stripInjectedComponentsMeta(html: string): { html: string; injectedComponents?: unknown } {
+  private stripInjectedComponentsMeta(html: string): {
+    html: string;
+    injectedComponents?: unknown;
+  } {
     const safeHtml = html ?? '';
     const doc = new DOMParser().parseFromString(safeHtml, 'text/html');
 
@@ -1521,11 +1600,16 @@ export class BlogComposeComponent
 
     let injectedComponents: unknown | undefined;
 
-    const encoded = meta?.getAttribute(BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR);
+    const encoded = meta?.getAttribute(
+      BlogComposeComponent.INJECTED_COMPONENTS_META_ATTR
+    );
     if (encoded) {
       try {
         const decoded = this.base64UrlDecodeUtf8(encoded);
-        const parsed = JSON.parse(decoded) as { v?: number; injectedComponents?: unknown };
+        const parsed = JSON.parse(decoded) as {
+          v?: number;
+          injectedComponents?: unknown;
+        };
         if (parsed && parsed.v === 1) {
           injectedComponents = parsed.injectedComponents;
         }
@@ -1564,32 +1648,55 @@ export class BlogComposeComponent
 
     // We schedule this to run after the current stack,
     setTimeout(() => {
-      components.forEach(comp => {
+      components.forEach((comp) => {
         if (comp && comp.instanceId) {
           try {
             // Ensure wrapper exists; if not, render into existing placeholder
-            const placeholder = this.editor?.view?.dom?.querySelector(`[data-angular-component][data-instance-id="${comp.instanceId}"]`) as HTMLElement | null;
-            if (placeholder && !this.componentInjectionService.getInstance(comp.instanceId)) {
-              const componentId = placeholder.getAttribute('data-component-id') || comp.componentId || comp.componentType;
+            const placeholder = this.editor?.view?.dom?.querySelector(
+              `[data-angular-component][data-instance-id="${comp.instanceId}"]`
+            ) as HTMLElement | null;
+            if (
+              placeholder &&
+              !this.componentInjectionService.getInstance(comp.instanceId)
+            ) {
+              const componentId =
+                placeholder.getAttribute('data-component-id') ||
+                comp.componentId ||
+                comp.componentType;
               if (componentId) {
-                this.componentInjectionService.renderComponentInto(componentId, comp.instanceId, comp.data || {}, placeholder);
+                this.componentInjectionService.renderComponentInto(
+                  componentId,
+                  comp.instanceId,
+                  comp.data || {},
+                  placeholder
+                );
               }
             }
 
             // Update service instance if present
-            if (this.componentInjectionService.getInstance(comp.instanceId) && comp.data) {
-              this.componentInjectionService.updateComponent(comp.instanceId, comp.data);
+            if (
+              this.componentInjectionService.getInstance(comp.instanceId) &&
+              comp.data
+            ) {
+              this.componentInjectionService.updateComponent(
+                comp.instanceId,
+                comp.data
+              );
             }
 
             // Update TipTap node data
             if (comp.data) {
               this.editor?.commands.updateAngularComponent({
                 instanceId: comp.instanceId,
-                data: comp.data
+                data: comp.data,
               });
             }
           } catch (e) {
-            console.warn('[BlogCompose] Failed to restore component data', comp.instanceId, e);
+            console.warn(
+              '[BlogCompose] Failed to restore component data',
+              comp.instanceId,
+              e
+            );
           }
         }
       });
@@ -1606,7 +1713,10 @@ export class BlogComposeComponent
 
     // Extract components in new format for database persistence
     const componentsNewFormat = this.getInjectedComponentsNew();
-    console.log('[BlogCompose] Emitting post with components:', componentsNewFormat);
+    console.log(
+      '[BlogCompose] Emitting post with components:',
+      componentsNewFormat
+    );
 
     this.postSubmitted.emit({
       title: this.title,
@@ -1623,7 +1733,6 @@ export class BlogComposeComponent
   }
 
   // ControlValueAccessor implementation
-
 
   writeValue(value: any): void {
     if (value && typeof value === 'object') {
@@ -1650,7 +1759,8 @@ export class BlogComposeComponent
       // Load post theme configuration
       if (value.themeConfig) {
         this.postTheme = value.themeConfig.theme || DEFAULT_POST_THEME.theme;
-        this.postAccentColor = value.themeConfig.accentColor || DEFAULT_POST_THEME.accentColor;
+        this.postAccentColor =
+          value.themeConfig.accentColor || DEFAULT_POST_THEME.accentColor;
       } else {
         this.postTheme = DEFAULT_POST_THEME.theme;
         this.postAccentColor = DEFAULT_POST_THEME.accentColor;

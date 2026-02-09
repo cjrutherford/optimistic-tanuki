@@ -5,6 +5,7 @@ import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 
 import { AssetController } from '../controllers/asset.controller';
 import { PalettesController } from '../controllers/palettes.controller';
+import { PersonalitiesController } from '../controllers/personalities.controller';
 import { AuthGuard } from '../auth/auth.guard';
 import { AuthenticationController } from '../controllers/authentication/authentication.controller';
 import { JwtService } from '@nestjs/jwt';
@@ -63,6 +64,7 @@ import { SocialComponentController } from '../controllers/social/social-componen
   ],
   controllers: [
     PalettesController,
+    PersonalitiesController,
     AuthenticationController,
     ProfileController,
     SocialController,
@@ -301,9 +303,8 @@ import { SocialComponentController } from '../controllers/social/social-componen
     {
       provide: ServiceTokens.FORUM_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.forum'
-        );
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.forum');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

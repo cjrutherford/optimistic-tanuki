@@ -1,31 +1,48 @@
 <div class="settings-container">
   <div class="settings-header">
     <h1>{{ title }}</h1>
-    <p>Personalize your experience</p>
+    <p>Personalize your experience with custom themes and profile settings</p>
   </div>
 
-  <div
-    class="profile-section"
-    (click)="openProfileEditor()"
-    style="cursor: pointer"
-  >
-    <lib-banner
-      (click)="openProfileEditor()"
-      [profileName]="profileName"
-      [profileImage]="profileImage"
-      [backgroundImage]="backgroundImage"
-    ></lib-banner>
-    <p class="hint">Click the banner to edit your profile</p>
-  </div>
+  <div class="settings-content">
+    <!-- Profile Section -->
+    <section class="settings-section">
+      <h2>Profile</h2>
+      <div
+        class="profile-card"
+        (click)="openProfileEditor()"
+        (keyup.enter)="openProfileEditor()"
+        tabindex="0"
+        role="button"
+        aria-label="Edit profile"
+      >
+        <lib-banner
+          [profileName]="profileName"
+          [profileImage]="profileImage"
+          [backgroundImage]="backgroundImage"
+        ></lib-banner>
+        <div class="profile-overlay">
+          <span class="profile-hint">Click to edit profile</span>
+        </div>
+      </div>
+    </section>
 
-  <div class="controls">
-    <otui-button (click)="toggleThemeDesigner()"
-      >{{ showThemeDesigner ? 'Hide' : 'Show' }} Theme Designer</otui-button
-    >
-  </div>
+    <!-- Theme Section -->
+    <section class="settings-section">
+      <h2>Theme & Appearance</h2>
+      <div class="theme-controls">
+        <otui-button
+          [variant]="showThemeDesigner ? 'primary' : 'outlined'"
+          (click)="toggleThemeDesigner()"
+        >
+          {{ showThemeDesigner ? 'Hide' : 'Customize' }} Theme
+        </otui-button>
+      </div>
 
-  <div *ngIf="showThemeDesigner" class="theme-designer">
-    <lib-theme-designer></lib-theme-designer>
+      <div *ngIf="showThemeDesigner" class="theme-designer-wrapper">
+        <lib-theme-designer></lib-theme-designer>
+      </div>
+    </section>
   </div>
 
   <lib-profile-editor

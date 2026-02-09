@@ -1,14 +1,18 @@
-import { Component, EventEmitter, inject, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  HostListener,
+  inject,
+  Output,
+} from '@angular/core';
 
-import { QuillModule } from 'ngx-quill';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
-import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { FormsModule } from '@angular/forms';
 import TurndownService from 'turndown';
 
 @Component({
   selector: 'lib-compose-chat',
-  imports: [FormsModule, QuillModule, ButtonComponent],
+  imports: [FormsModule],
   providers: [],
   templateUrl: './compose-chat.component.html',
   styleUrl: './compose-chat.component.scss',
@@ -26,10 +30,15 @@ export class ComposeChatComponent extends Themeable {
   @Output() messageSubmitted: EventEmitter<string> = new EventEmitter<string>();
   content = '';
 
+  localAccent = 'var(--accent, #3f51b5)';
+  localbackground = 'var(--background, #ffffff)';
+
   override applyTheme(colors: ThemeColors): void {
     this.background = `radial-gradient(ellipse, ${colors.background}, ${colors.accent})`;
     this.foreground = colors.foreground;
     this.accent = colors.accent;
+    this.localAccent = colors.accent;
+    this.localbackground = colors.background;
     this.complement = colors.complementary;
     if (this.theme === 'dark') {
       this.borderGradient = colors.accentGradients['dark'];
@@ -41,6 +50,8 @@ export class ComposeChatComponent extends Themeable {
   }
 
   submitMessage() {
+    if (!this.content.trim()) return;
+
     const turndownService = new TurndownService();
     let markdown = turndownService.turndown(this.content);
     markdown = markdown.replace(
@@ -51,7 +62,14 @@ export class ComposeChatComponent extends Themeable {
     this.content = '';
   }
 
-  onContentChanged(event: any) {
-    this.content = event.html;
+  onContentChanged(event: Event) {
+    const target = event.target as HTMLTextAreaElement;
+    this.content = target.value;
+  }
+
+  @HostListener('keydown.ctrl.enter')
+  @HostListener('keydown.meta.enter')
+  onCtrlEnter(): void {
+    this.submitMessage();
   }
 }

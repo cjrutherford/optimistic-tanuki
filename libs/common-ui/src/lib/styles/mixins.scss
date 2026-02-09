@@ -337,3 +337,632 @@
     grid-template-columns: repeat($columns, 1fr);
   }
 }
+
+// ============================================
+// Phase 5.1: Accessibility - Reduced Motion
+// ============================================
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+// Apply reduced motion to animated mixins
+@mixin animated-gradient($duration: 8s, $size: 200%) {
+  background-size: $size $size;
+  animation: gradient-shift $duration infinite ease;
+
+  @include reduced-motion {
+    animation: none;
+  }
+}
+
+@mixin pulse-animation(
+  $duration: 16s,
+  $colors: (
+    var(--accent),
+    var(--complement),
+  )
+) {
+  --pulse-color-1: #{list.nth($colors, 1)};
+  --pulse-color-2: #{list.nth($colors, 2)};
+  animation: pulse-halo $duration infinite ease;
+
+  @include reduced-motion {
+    animation: none;
+  }
+}
+
+// ============================================
+// Phase 5.3: Responsive Breakpoint Mixins
+// ============================================
+
+@mixin mobile {
+  @media (max-width: 640px) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: 641px) and (max-width: 1024px) {
+    @content;
+  }
+}
+
+@mixin tablet-up {
+  @media (min-width: 641px) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: 1025px) {
+    @content;
+  }
+}
+
+@mixin large-desktop {
+  @media (min-width: 1440px) {
+    @content;
+  }
+}
+
+// ============================================
+// Phase 6.2: Container Query Mixins
+// ============================================
+
+@mixin container-query($min-width) {
+  @container (min-width: #{$min-width}) {
+    @content;
+  }
+}
+
+@mixin container-query-max($max-width) {
+  @container (max-width: #{$max-width}) {
+    @content;
+  }
+}
+
+// Container size variants
+@mixin container-sm {
+  @include container-query(320px) {
+    @content;
+  }
+}
+
+@mixin container-md {
+  @include container-query(640px) {
+    @content;
+  }
+}
+
+@mixin container-lg {
+  @include container-query(1024px) {
+    @content;
+  }
+}
+
+// ============================================
+// Component Standardization Mixins
+// ============================================
+
+// Standard component base with theme awareness
+@mixin component-base {
+  font-family: var(
+    --font-body,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif
+  );
+  color: var(--local-foreground, var(--foreground, #212529));
+  background: var(--local-background, var(--background, #ffffff));
+  @include transition-base(all, var(--local-transition-duration, 0.15s));
+
+  @include reduced-motion {
+    transition: none;
+  }
+}
+
+// Focus management for accessibility
+@mixin focus-visible-ring($color: var(--accent, #3f51b5), $offset: 2px) {
+  &:focus-visible {
+    outline: 2px solid #{$color};
+    outline-offset: #{$offset};
+  }
+
+  &:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+// Component variant wrapper
+@mixin variant-wrapper {
+  &.variant-default {
+    // Base styles - override in component
+  }
+
+  &.variant-glass {
+    @include glass-morphism(10px, 0.2, 0.3, var(--border-radius-md, 8px));
+  }
+
+  &.variant-gradient {
+    background: var(
+      --local-background-gradient,
+      var(
+        --gradient-primary,
+        linear-gradient(
+          135deg,
+          var(--accent, #3f51b5),
+          var(--complement, #c0af4b)
+        )
+      )
+    );
+  }
+
+  &.variant-electric {
+    @include electric-border-effect(
+      var(--local-complement, var(--complement, #c0af4b))
+    );
+  }
+
+  &.variant-outlined {
+    background: transparent;
+    border: 2px solid var(--local-border-color, var(--complement, #c0af4b));
+  }
+}
+
+// Disabled state
+@mixin disabled-state {
+  &.disabled,
+  &[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+// Loading state overlay
+@mixin loading-overlay($bg-opacity: 0.7) {
+  position: relative;
+
+  &.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(var(--background-rgb, 255, 255, 255), $bg-opacity);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+}
+
+// Responsive text sizing
+@mixin responsive-text($min: 0.875rem, $max: 1.25rem) {
+  font-size: clamp($min, 0.5vw + 0.75rem, $max);
+}
+
+// Semantic container queries
+@mixin component-container($name) {
+  container-type: inline-size;
+  container-name: #{$name};
+}
+
+// Table-specific mixins
+@mixin table-base {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body, system-ui, sans-serif);
+
+  th,
+  td {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    text-align: left;
+    border-bottom: 1px solid
+      var(--local-border-color, var(--complement, #c0af4b));
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--local-foreground, var(--foreground, #212529));
+    background: var(--local-accent, var(--accent, #3f51b5));
+    color: var(--local-background, var(--background, #ffffff));
+  }
+
+  tbody tr {
+    @include transition-base(background-color, 0.15s);
+
+    &:hover {
+      background: var(--local-accent-shade-lighten-90, rgba(63, 81, 181, 0.1));
+    }
+  }
+}
+
+@mixin table-striped {
+  tbody tr:nth-child(even) {
+    background: var(--local-background-shade-lighten-95, rgba(0, 0, 0, 0.02));
+  }
+}
+
+@mixin table-compact {
+  th,
+  td {
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  }
+}
+
+// Modal-specific mixins
+@mixin modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-index-modal, 1050);
+  @include flex-center;
+
+  @include reduced-motion {
+    backdrop-filter: none;
+  }
+}
+
+@mixin modal-container($size: 'md') {
+  background: var(--local-background, var(--background, #ffffff));
+  border-radius: var(--border-radius-lg, 8px);
+  box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+
+  // Size variants
+  @if $size == 'sm' {
+    max-width: 400px;
+    width: 90%;
+  } @else if $size == 'md' {
+    max-width: 600px;
+    width: 90%;
+  } @else if $size == 'lg' {
+    max-width: 900px;
+    width: 95%;
+  } @else if $size == 'xl' {
+    max-width: 1200px;
+    width: 95%;
+  } @else if $size == 'full' {
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+}
+
+// Notification-specific mixins
+@mixin notification-base {
+  padding: var(--spacing-md, 16px);
+  border-radius: var(--border-radius-md, 8px);
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+  @include flex-between;
+  gap: var(--spacing-sm, 8px);
+  max-width: 400px;
+
+  @include reduced-motion {
+    transition: none;
+  }
+}
+
+@mixin notification-type($type) {
+  @if $type == 'info' {
+    background: var(--local-accent-shade-lighten-90, #e3f2fd);
+    border-left: 4px solid var(--local-accent, #2196f3);
+    color: var(--local-foreground, #0d47a1);
+  } @else if $type == 'success' {
+    background: var(--local-success-shade-lighten-90, #e8f5e9);
+    border-left: 4px solid var(--local-success, #4caf50);
+    color: var(--local-foreground, #1b5e20);
+  } @else if $type == 'warning' {
+    background: var(--local-warning-shade-lighten-90, #fff3e0);
+    border-left: 4px solid var(--local-warning, #ff9800);
+    color: var(--local-foreground, #e65100);
+  } @else if $type == 'error' {
+    background: var(--local-danger-shade-lighten-90, #ffebee);
+    border-left: 4px solid var(--local-danger, #f44336);
+    color: var(--local-foreground, #b71c1c);
+  }
+}
+
+// Accordion-specific mixins
+@mixin accordion-item {
+  border-bottom: 1px solid var(--local-border-color, var(--complement, #c0af4b));
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+@mixin accordion-header {
+  @include flex-between;
+  padding: var(--spacing-md, 16px);
+  cursor: pointer;
+  background: var(--local-background, var(--background, #ffffff));
+  color: var(--local-foreground, var(--foreground, #212529));
+  font-weight: 500;
+  @include transition-base(background-color, 0.15s);
+  @include focus-visible-ring;
+
+  &:hover {
+    background: var(--local-accent-shade-lighten-95, rgba(63, 81, 181, 0.05));
+  }
+
+  &[aria-expanded='true'] {
+    background: var(--local-accent-shade-lighten-90, rgba(63, 81, 181, 0.1));
+  }
+}
+
+@mixin accordion-panel {
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+
+  @include reduced-motion {
+    transition: none;
+  }
+
+  &[aria-hidden='true'] {
+    max-height: 0;
+    padding: 0 var(--spacing-md, 16px);
+  }
+
+  &[aria-hidden='false'] {
+    max-height: 1000px; // Adjust based on content
+    padding: var(--spacing-md, 16px);
+  }
+}
+
+// Pagination-specific mixins
+@mixin pagination-base {
+  @include flex-center;
+  gap: var(--spacing-xs, 4px);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+@mixin pagination-item {
+  button {
+    @include flex-center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 var(--spacing-sm, 8px);
+    border: 1px solid var(--local-border-color, var(--complement, #c0af4b));
+    background: var(--local-background, var(--background, #ffffff));
+    color: var(--local-foreground, var(--foreground, #212529));
+    border-radius: var(--border-radius-sm, 4px);
+    cursor: pointer;
+    @include transition-base(all, 0.15s);
+    @include focus-visible-ring;
+
+    &:hover:not(:disabled) {
+      background: var(--local-accent-shade-lighten-95, rgba(63, 81, 181, 0.05));
+      border-color: var(--local-accent, var(--accent, #3f51b5));
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &[aria-current='page'] {
+      background: var(--local-accent, var(--accent, #3f51b5));
+      border-color: var(--local-accent, var(--accent, #3f51b5));
+      color: var(--local-background, var(--background, #ffffff));
+    }
+  }
+}
+
+// List-specific mixins
+@mixin list-base {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    padding: var(--spacing-sm, 8px) 0;
+    border-bottom: 1px solid
+      var(--local-border-color, var(--complement, #c0af4b));
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+@mixin list-bullet($bullet: '•') {
+  li {
+    position: relative;
+    padding-left: var(--spacing-lg, 24px);
+
+    &::before {
+      content: #{$bullet};
+      position: absolute;
+      left: 0;
+      color: var(--local-accent, var(--accent, #3f51b5));
+    }
+  }
+}
+
+@mixin list-numbered {
+  counter-reset: list-item;
+
+  li {
+    counter-increment: list-item;
+    position: relative;
+    padding-left: var(--spacing-lg, 24px);
+
+    &::before {
+      content: counter(list-item) '.';
+      position: absolute;
+      left: 0;
+      color: var(--local-accent, var(--accent, #3f51b5));
+      font-weight: 500;
+    }
+  }
+}
+
+// Spinner/Loading mixins
+@mixin spinner-base($size: 40px) {
+  width: $size;
+  height: $size;
+  position: relative;
+
+  @include reduced-motion {
+    animation: none;
+  }
+}
+
+@mixin spinner-circle($color: var(--accent, #3f51b5)) {
+  border: 3px solid var(--local-background-shade-lighten-90, rgba(0, 0, 0, 0.1));
+  border-top-color: #{$color};
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @include reduced-motion {
+    animation: none;
+    border-top-color: transparent;
+    background: #{$color};
+    opacity: 0.5;
+  }
+}
+
+// Breadcrumb mixins
+@mixin breadcrumb-base {
+  @include flex-center;
+  gap: var(--spacing-xs, 4px);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+@mixin breadcrumb-item {
+  @include flex-center;
+  gap: var(--spacing-xs, 4px);
+
+  a {
+    color: var(--local-accent, var(--accent, #3f51b5));
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &[aria-current='page'] {
+      color: var(--local-foreground, var(--foreground, #212529));
+      font-weight: 500;
+      pointer-events: none;
+    }
+  }
+}
+
+// Hero section mixins
+@mixin hero-base($min-height: 60vh) {
+  width: 100%;
+  min-height: $min-height;
+  position: relative;
+  @include flex-center;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@mixin hero-overlay($opacity: 0.4) {
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, $opacity);
+    z-index: 1;
+  }
+}
+
+// Content section mixins
+@mixin content-section($max-width: 1200px) {
+  width: 100%;
+  max-width: $max-width;
+  margin: 0 auto;
+  padding: var(--spacing-lg, 24px);
+}
+
+// Tile mixins
+@mixin tile-base {
+  padding: var(--spacing-md, 16px);
+  border-radius: var(--border-radius-md, 8px);
+  background: var(--local-background, var(--background, #ffffff));
+  border: 1px solid var(--local-border-color, var(--complement, #c0af4b));
+  @include transition-base(all, 0.15s);
+  @include focus-visible-ring;
+
+  &:hover {
+    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    transform: translateY(-2px);
+
+    @include reduced-motion {
+      transform: none;
+    }
+  }
+
+  &.selected {
+    border-color: var(--local-accent, var(--accent, #3f51b5));
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.2);
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+// Grid/Flex layout mixins
+@mixin layout-gap($size: 'md') {
+  $gap: var(--spacing-md, 16px);
+
+  @if $size == 'none' {
+    $gap: 0;
+  } @else if $size == 'xs' {
+    $gap: var(--spacing-xs, 4px);
+  } @else if $size == 'sm' {
+    $gap: var(--spacing-sm, 8px);
+  } @else if $size == 'lg' {
+    $gap: var(--spacing-lg, 24px);
+  } @else if $size == 'xl' {
+    $gap: var(--spacing-xl, 32px);
+  }
+
+  gap: $gap;
+}
+
+// Profile block mixins
+@mixin profile-block-horizontal {
+  @include flex-center;
+  gap: var(--spacing-md, 16px);
+
+  @include mobile {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+@mixin profile-block-vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+  text-align: center;
+}

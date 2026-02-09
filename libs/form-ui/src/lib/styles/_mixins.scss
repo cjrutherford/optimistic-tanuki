@@ -1,0 +1,214 @@
+// Form UI Mixins
+// Shared mixins for all form components in the form-ui library
+
+// ============================================
+// Utility Mixins (copied for self-containment)
+// ============================================
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+@mixin mobile {
+  @media (max-width: 640px) {
+    @content;
+  }
+}
+
+// ============================================
+// Form Component Mixins
+// ============================================
+
+// Base form control styles
+@mixin form-control-base {
+  width: 100%;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  font-family: var(
+    --font-body,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif
+  );
+  font-size: var(--font-size-base, 1rem);
+  color: var(--foreground, #212529);
+  background-color: var(--background, #ffffff);
+  border: 1px solid var(--complement, #c0af4b);
+  border-radius: var(--border-radius-md, 4px);
+  outline: none;
+  transition: all 0.15s ease-in-out;
+
+  @include reduced-motion {
+    transition: none;
+  }
+
+  &:focus {
+    border-color: var(--accent, #3f51b5);
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent, #3f51b5);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--background-shade-lighten-90, #f5f5f5);
+  }
+
+  &::placeholder {
+    color: var(--foreground-muted, #6c757d);
+    opacity: 0.7;
+  }
+}
+
+// Form control error state
+@mixin form-control-error {
+  border-color: var(--danger, #f44336);
+  box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+
+  &:focus {
+    border-color: var(--danger, #f44336);
+    box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.2);
+  }
+}
+
+// Form field container
+@mixin form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs, 4px);
+  width: 100%;
+}
+
+// Form label
+@mixin form-label {
+  font-family: var(
+    --font-body,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif
+  );
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--foreground, #212529);
+  margin-bottom: var(--spacing-xs, 4px);
+}
+
+// Error message
+@mixin form-error-message {
+  font-family: var(
+    --font-body,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif
+  );
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--danger, #f44336);
+  margin-top: var(--spacing-xs, 4px);
+}
+
+// Select dropdown arrow
+@mixin form-select-arrow($color: var(--foreground, #212529)) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23666' stroke-width='2' d='M1 4l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-sm, 8px) center;
+  background-size: 12px;
+  padding-right: var(--spacing-xl, 32px);
+  appearance: none;
+  cursor: pointer;
+}
+
+// Checkbox/Radio custom styles
+@mixin form-check-base {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  gap: var(--spacing-sm, 8px);
+
+  input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+  }
+}
+
+// Checkbox custom box
+@mixin form-checkbox-box($size: 20px) {
+  width: $size;
+  height: $size;
+  background-color: var(--background, #ffffff);
+  border: 2px solid var(--complement, #c0af4b);
+  border-radius: var(--border-radius-sm, 2px);
+  transition: all 0.15s ease-in-out;
+
+  @include reduced-motion {
+    transition: none;
+  }
+
+  &:hover {
+    border-color: var(--accent, #3f51b5);
+  }
+}
+
+// Checkbox checkmark
+@mixin form-checkbox-checkmark {
+  content: '';
+  position: absolute;
+  display: none;
+  left: 50%;
+  top: 45%;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+// Radio custom circle
+@mixin form-radio-circle($size: 20px) {
+  width: $size;
+  height: $size;
+  background-color: var(--background, #ffffff);
+  border: 2px solid var(--complement, #c0af4b);
+  border-radius: 50%;
+  transition: all 0.15s ease-in-out;
+
+  @include reduced-motion {
+    transition: none;
+  }
+
+  &:hover {
+    border-color: var(--accent, #3f51b5);
+  }
+}
+
+// Radio inner dot
+@mixin form-radio-dot {
+  content: '';
+  position: absolute;
+  display: none;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background-color: var(--accent, #3f51b5);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}

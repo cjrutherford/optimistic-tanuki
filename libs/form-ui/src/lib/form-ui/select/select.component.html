@@ -1,7 +1,18 @@
-<select [(ngModel)]="value" (ngModelChange)="onChange($event); onTouched()">
-  @for (option of options; track option) {
-  <option [value]="option.value">
-    {{ option.label }}
-  </option>
+<div class="form-field">
+  <select
+    class="form-control form-control-select"
+    [(ngModel)]="value"
+    (ngModelChange)="onChange($event); onTouched()"
+    [disabled]="disabled"
+    [class.has-error]="hasError"
+  >
+    @for (option of options; track option) {
+    <option [value]="option.value">
+      {{ option.label }}
+    </option>
+    }
+  </select>
+  @if (errorMessage) {
+  <span class="error-message">{{ errorMessage }}</span>
   }
-</select>
+</div>

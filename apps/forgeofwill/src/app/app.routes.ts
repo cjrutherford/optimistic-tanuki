@@ -10,7 +10,7 @@ const forumPermissionResolver = async () => {
   const startsWith = 'forum.';
   const permissions = await permissionsService.searchPermissions(startsWith);
   return permissions;
-}
+};
 
 const forumIsLoggedInResolver: ResolveFn<boolean> = () => {
   const authState = inject(AuthStateService);
@@ -22,10 +22,17 @@ const forumUserIdResolver: ResolveFn<string> = () => {
   return authState.getDecodedTokenValue()?.userId || '';
 };
 
-
 export const appRoutes: Route[] = [
   {
     path: '',
+    loadComponent: () =>
+      import('./pages/landing/landing.component').then(
+        (m) => m.LandingComponent
+      ),
+    title: 'Forge of Will - Welcome',
+  },
+  {
+    path: 'projects',
     loadComponent: () =>
       import('./pages/projects/projects.component').then(
         (m) => m.ProjectsComponent
@@ -35,9 +42,15 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'forum',
-    loadChildren: () => import('@optimistic-tanuki/forum-ui').then(m => m.provideForumRoutes(forumPermissionResolver, forumIsLoggedInResolver, forumUserIdResolver)),
+    loadChildren: () =>
+      import('@optimistic-tanuki/forum-ui').then((m) =>
+        m.provideForumRoutes(
+          forumPermissionResolver,
+          forumIsLoggedInResolver,
+          forumUserIdResolver
+        )
+      ),
   },
-  // profile route removed; profile editing is available from Settings
   {
     path: 'settings',
     loadComponent: () =>

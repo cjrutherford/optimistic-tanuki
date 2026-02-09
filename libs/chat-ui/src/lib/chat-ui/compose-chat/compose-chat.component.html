@@ -1,15 +1,40 @@
 <div class="compose-editor-container">
-  <quill-editor
-    [(ngModel)]="content"
-    [modules]="{
-      toolbar: [['bold', 'italic', 'underline'], ['link']]
-    }"
-    (onContentChanged)="onContentChanged($event)"
-    [style.background]="background"
-    [style.color]="foreground"
-    [style.borderColor]="borderColor"
-  ></quill-editor>
-  <otui-button (click)="submitMessage()" [style.background]="accent">
-    Send
-  </otui-button>
+  <div class="compose-toolbar">
+    <button type="button" class="toolbar-btn" title="Bold">
+      <span class="icon">B</span>
+    </button>
+    <button type="button" class="toolbar-btn" title="Italic">
+      <span class="icon italic">I</span>
+    </button>
+    <button type="button" class="toolbar-btn" title="Underline">
+      <span class="icon underline">U</span>
+    </button>
+    <div class="toolbar-divider"></div>
+    <button type="button" class="toolbar-btn" title="Attach file">
+      <span class="icon">📎</span>
+    </button>
+    <button type="button" class="toolbar-btn" title="Emoji">
+      <span class="icon">😊</span>
+    </button>
+  </div>
+  <div class="compose-input-wrapper">
+    <textarea
+      [(ngModel)]="content"
+      (input)="onContentChanged($event)"
+      placeholder="Type a message..."
+      class="compose-textarea"
+      rows="1"
+    ></textarea>
+  </div>
+  <div class="compose-actions">
+    <button
+      type="button"
+      class="send-button"
+      [disabled]="!content.trim()"
+      (click)="submitMessage()"
+      title="Send message (Ctrl+Enter)"
+    >
+      <span class="send-icon">➤</span>
+    </button>
+  </div>
 </div>

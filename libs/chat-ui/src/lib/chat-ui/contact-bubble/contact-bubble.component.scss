@@ -9,52 +9,64 @@
   box-shadow: var(--shadow-elevation-1);
   cursor: pointer;
   transition: background-color 0.3s ease;
+  border: none;
 
   &:hover {
     background-color: var(--color-hover-background);
   }
 
-  .avatar {
+  .contact-avatars {
+    position: relative;
+  }
+
+  .contact-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    margin-right: 12px;
     object-fit: cover;
   }
 
-  .name {
-    font-size: 8px;
-    font-weight: bold;
-    color: var(--color-text-primary);
-  }
-}
-
-.contact-popup {
-  position: absolute;
-  top: 0;
-  right: 100%;
-  transform: translateX(-8px); // slight gap from parent
-  background: var(--background);
-  border-radius: 8px;
-  padding: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  border: 1px solid var(--border-color);
-  z-index: 10;
-  white-space: nowrap;
-
-  .contact-name {
+  .contact-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-background);
+    border: 2px solid var(--border-color);
+    color: var(--foreground);
     font-size: 12px;
-    font-weight: bold;
-    color: var(--foreground);
+    font-weight: 600;
   }
 
-  .contact-last-message {
-    font-size: 12px;
-    color: var(--foreground);
-  }
+  .contact-popup {
+    position: absolute;
+    top: 0;
+    right: 100%;
+    transform: translateX(-8px); // slight gap from parent
+    background: var(--background);
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--border-color);
+    z-index: 10;
+    white-space: nowrap;
+    margin-right: 8px;
 
-  .contact-last-message-time {
-    font-size: 8px;
-    color: var(--foreground);
+    .contact-name {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--foreground);
+      margin-bottom: 4px;
+    }
+
+    .contact-last-message {
+      font-size: 11px;
+      color: var(--foreground);
+      margin-bottom: 2px;
+    }
+
+    .contact-last-message-time {
+      font-size: 10px;
+      color: var(--foreground);
+    }
   }
 }

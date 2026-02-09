@@ -120,7 +120,7 @@
 :deep(.tiptap-editor-styles) {
   flex: 1;
   min-height: 200px;
-  
+
   .prosemirror-editor {
     min-height: 200px;
     max-height: 400px;
@@ -138,21 +138,27 @@
 
     p {
       margin: 0 0 0.5rem 0;
-      
+
       &:last-child {
         margin-bottom: 0;
       }
     }
 
-    h1, h2, h3, h4, h5, h6 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
       margin: 1rem 0 0.5rem 0;
-      
+
       &:first-child {
         margin-top: 0;
       }
     }
 
-    ul, ol {
+    ul,
+    ol {
       margin: 0.5rem 0;
       padding-left: 1.5rem;
     }
@@ -168,7 +174,14 @@
       background-color: var(--accent-shade, rgba(0, 122, 204, 0.1));
       padding: 0.125rem 0.25rem;
       border-radius: 3px;
-      font-family: 'Monaco', 'Consolas', monospace;
+      font-family: var(
+        --font-mono,
+        'Fira Code',
+        'SF Mono',
+        Monaco,
+        'Courier New',
+        monospace
+      );
     }
 
     pre {
@@ -176,7 +189,7 @@
       padding: 1rem;
       border-radius: 4px;
       overflow-x: auto;
-      
+
       code {
         background: none;
         padding: 0;
@@ -198,10 +211,10 @@
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .form-actions {
     justify-content: stretch;
-    
+
     otui-button {
       width: 100%;
     }

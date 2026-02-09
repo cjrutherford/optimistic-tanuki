@@ -318,6 +318,72 @@ export class ProfileController {
     return this.client.send({ cmd: ProfileCommands.Delete }, id);
   }
 
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get profiles by IDs' })
+  @ApiResponse({
+    status: 200,
+    description: 'The profiles have been successfully retrieved.',
+  })
+  @ApiResponse({ status: 404, description: 'Profiles not found.' })
+  @Post('by-ids')
+  async getProfilesByIds(
+    @Body() body: { ids: string[] },
+    @AppScope() appScope: string
+  ) {
+    if (!body.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+      return [];
+    }
+    try {
+      const profiles: ProfileDto[] = await firstValueFrom(
+        this.client.send({ cmd: ProfileCommands.GetAll }, {})
+      );
+      const filteredProfiles = profiles.filter(
+        (p) =>
+          body.ids.includes(p.id) &&
+          (p.appScope === 'global' || p.appScope === appScope)
+      );
+
+      // For any missing profiles, back-fill with AI persona if available
+      const missingIds = body.ids.filter(
+        (id) => !filteredProfiles.some((p) => p.id === id)
+      );
+      const backfilledProfiles: ProfileDto[] = [];
+
+      for (const id of missingIds) {
+        try {
+          const telos: PersonaTelosDto = await firstValueFrom(
+            this.telosDocsClient.send(
+              { cmd: PersonaTelosCommands.FIND_ONE },
+              { id }
+            )
+          );
+          if (telos) {
+            backfilledProfiles.push({
+              id: telos.id,
+              userId: telos.id,
+              profileName: telos.name,
+              avatarUrl: `assets/${telos.name}-avatar.png`,
+              email: `${telos.name}@optimisitic-tanuki.com`,
+              bio: '',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              appScope: appScope === 'owner-console' ? 'global' : appScope,
+            });
+          }
+        } catch {
+          // Silently skip missing personas
+        }
+      }
+
+      return [...filteredProfiles, ...backfilledProfiles];
+    } catch (error) {
+      this.l.error(`Error retrieving profiles by IDs: ${body.ids}`, error);
+      throw new RpcException(
+        `Failed to retrieve profiles: ${error.message || error}`
+      );
+    }
+  }
+
   // Removed unused project/goal endpoint stubs to reduce commented-out scaffolding. See git history if needed.
 
   @UseGuards(AuthGuard)

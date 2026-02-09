@@ -1,26 +1,261 @@
+<!-- ARIA Live Region for Screen Readers -->
+@if (isSingleMode && notification) {
 <div
-  class="notification-icon"
-  tabindex="0"
-  (keypress)="toggleMenu()"
-  (click)="toggleMenu()"
+  class="notification-toast"
+  [class]="'notification-' + (notification.type || type)"
+  [class.closable]="closable && notification.closable !== false"
+  [class]="'animation-' + animation"
+  role="alert"
+  [attr.aria-live]="ariaLive"
+  [attr.aria-label]="ariaLabel || getTypeLabel(notification.type || type)"
+  [attr.data-notification-id]="notification.id"
 >
-  <otui-button tabIndex="1" class="unread-count">{{ unreadCount }}</otui-button>
+  <!-- Icon -->
+  @if (showIcon) {
+  <span class="notification-icon" aria-hidden="true">
+    {{ notification.icon || getTypeIcon(notification.type || type) }}
+  </span>
+  }
+
+  <!-- Content -->
+  <div class="notification-content">
+    @if (notification.title) {
+    <h4 class="notification-title">{{ notification.title }}</h4>
+    }
+    <p class="notification-message">{{ notification.message }}</p>
+
+    <!-- Actions -->
+    @if (notification.actions && notification.actions.length > 0) {
+    <div class="notification-actions">
+      @for (action of notification.actions; track $index; let i = $index) {
+      <button
+        type="button"
+        class="action-button"
+        [class]="'action-' + (action.variant || 'secondary')"
+        (click)="onActionClick(notification, i)"
+      >
+        {{ action.label }}
+      </button>
+      }
+    </div>
+    }
+  </div>
+
+  <!-- Close Button -->
+  @if (closable && notification.closable !== false) {
+  <button
+    type="button"
+    class="notification-close"
+    (click)="dismissNotification(notification.id)"
+    [attr.aria-label]="
+      'Dismiss ' + getTypeLabel(notification.type || type) + ' notification'
+    "
+  >
+    <span aria-hidden="true">&times;</span>
+  </button>
+  }
+
+  <!-- Progress Bar for Auto-Dismiss -->
+  @if (showProgress && (notification.autoDismiss || autoDismiss) > 0 &&
+  closable) {
+  <div
+    class="notification-progress"
+    [style.animation-duration.ms]="notification.autoDismiss || autoDismiss"
+  ></div>
+  }
 </div>
-<div class="notification-menu" *ngIf="menuVisible">
-  <ul>
-    <li *ngFor="let notification of notifications">
-      <div [ngClass]="notification.variant">
-        <p>{{ notification.message }}</p>
-        <div class="actions">
-          <button
-            *ngFor="let action of notification.actions"
-            (click)="action.callback()"
-          >
-            {{ action.label }}
-          </button>
-          <button (click)="clearNotification(notification.id)">Clear</button>
-        </div>
+}
+
+<!-- Notification Bell with Dropdown (Multiple Notifications) -->
+@if (!isSingleMode && showBell) {
+<div class="notification-bell-container" [class]="'position-' + position">
+  <!-- Bell Icon -->
+  <button
+    type="button"
+    class="notification-bell"
+    (click)="toggleMenu()"
+    [attr.aria-label]="
+      hasUnread
+        ? unreadCount + ' unread notifications'
+        : 'No unread notifications'
+    "
+    [attr.aria-expanded]="menuVisible"
+    aria-haspopup="true"
+  >
+    <span class="bell-icon" aria-hidden="true">🔔</span>
+    @if (showUnreadCount && hasUnread) {
+    <span class="unread-badge" aria-hidden="true">{{ unreadCount }}</span>
+    }
+  </button>
+
+  <!-- Notification Dropdown -->
+  @if (menuVisible) {
+  <div
+    class="notification-dropdown"
+    role="menu"
+    [attr.aria-label]="'Notifications'"
+    (clickOutside)="menuVisible = false"
+  >
+    <!-- Header -->
+    <div class="dropdown-header">
+      <h3>Notifications</h3>
+      @if (notifications.length > 0) {
+      <div class="header-actions">
+        <button type="button" class="text-button" (click)="markAllAsRead()">
+          Mark all read
+        </button>
+        <button type="button" class="text-button" (click)="dismissAll()">
+          Clear all
+        </button>
       </div>
-    </li>
-  </ul>
+      }
+    </div>
+
+    <!-- Notification List -->
+    @if (notifications.length === 0) {
+    <div class="empty-state">
+      <p>No notifications</p>
+    </div>
+    } @else {
+    <ul class="notification-list" role="none">
+      @for (notification of notifications; track trackById) {
+      <li
+        class="notification-item"
+        [class]="'type-' + (notification.type || 'neutral')"
+        [class.unread]="!notification.read"
+        role="menuitem"
+      >
+        <!-- Icon -->
+        <span class="item-icon" aria-hidden="true">
+          {{ notification.icon || getTypeIcon(notification.type || 'neutral') }}
+        </span>
+
+        <!-- Content -->
+        <div class="item-content">
+          @if (notification.title) {
+          <h4 class="item-title">{{ notification.title }}</h4>
+          }
+          <p class="item-message">{{ notification.message }}</p>
+
+          <!-- Actions -->
+          @if (notification.actions && notification.actions.length > 0) {
+          <div class="item-actions">
+            @for (action of notification.actions; track $index; let i = $index)
+            {
+            <button
+              type="button"
+              class="item-action-button"
+              (click)="onActionClick(notification, i)"
+            >
+              {{ action.label }}
+            </button>
+            }
+          </div>
+          }
+        </div>
+
+        <!-- Dismiss -->
+        <button
+          type="button"
+          class="item-dismiss"
+          (click)="
+            dismissNotification(notification.id); $event.stopPropagation()
+          "
+          [attr.aria-label]="'Dismiss notification'"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+
+        <!-- Mark as Read Button (for unread) -->
+        @if (!notification.read) {
+        <button
+          type="button"
+          class="mark-read-button"
+          (click)="markAsRead(notification.id); $event.stopPropagation()"
+          [attr.aria-label]="'Mark as read'"
+        >
+          <span aria-hidden="true">&#10003;</span>
+        </button>
+        }
+      </li>
+      }
+    </ul>
+    }
+  </div>
+  }
 </div>
+}
+
+<!-- Toast Container for Multiple Notifications (No Bell) -->
+@if (!isSingleMode && !showBell && notifications.length > 0) {
+<div
+  class="notification-toast-container"
+  [class]="'position-' + position"
+  role="region"
+  [attr.aria-label]="ariaLabel || 'Notifications'"
+  aria-live="polite"
+>
+  @for (notification of visibleNotifications; track trackById) {
+  <div
+    class="notification-toast"
+    [class]="'notification-' + (notification.type || 'neutral')"
+    [class.closable]="closable && notification.closable !== false"
+    [class]="'animation-' + animation"
+    role="alert"
+    [attr.data-notification-id]="notification.id"
+  >
+    <!-- Icon -->
+    @if (showIcon) {
+    <span class="notification-icon" aria-hidden="true">
+      {{ notification.icon || getTypeIcon(notification.type || 'neutral') }}
+    </span>
+    }
+
+    <!-- Content -->
+    <div class="notification-content">
+      @if (notification.title) {
+      <h4 class="notification-title">{{ notification.title }}</h4>
+      }
+      <p class="notification-message">{{ notification.message }}</p>
+
+      <!-- Actions -->
+      @if (notification.actions && notification.actions.length > 0) {
+      <div class="notification-actions">
+        @for (action of notification.actions; track $index; let i = $index) {
+        <button
+          type="button"
+          class="action-button"
+          [class]="'action-' + (action.variant || 'secondary')"
+          (click)="onActionClick(notification, i)"
+        >
+          {{ action.label }}
+        </button>
+        }
+      </div>
+      }
+    </div>
+
+    <!-- Close Button -->
+    @if (closable && notification.closable !== false) {
+    <button
+      type="button"
+      class="notification-close"
+      (click)="dismissNotification(notification.id)"
+      [attr.aria-label]="'Dismiss notification'"
+    >
+      <span aria-hidden="true">&times;</span>
+    </button>
+    }
+
+    <!-- Progress Bar -->
+    @if (showProgress && (notification.autoDismiss || autoDismiss) > 0 &&
+    closable) {
+    <div
+      class="notification-progress"
+      [style.animation-duration.ms]="notification.autoDismiss || autoDismiss"
+    ></div>
+    }
+  </div>
+  }
+</div>
+}

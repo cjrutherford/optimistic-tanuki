@@ -10,4 +10,5 @@ import { Component, Input } from '@angular/core';
 export class ProfilePhotoComponent {
   @Input() src = '';
   @Input() alt = '';
+  @Input() size = 32;
 }

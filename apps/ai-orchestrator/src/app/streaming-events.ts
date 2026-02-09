@@ -12,6 +12,30 @@ export enum StreamingEventType {
   MESSAGE = 'message',
   CHUNK = 'chunk',
   FINAL_RESPONSE = 'final_response',
+  RESPONSE_START = 'response_start',
+  WORKFLOW_START = 'workflow_start',
+  WORKFLOW_END = 'workflow_end',
+}
+
+export interface StreamingEvent {
+  type: StreamingEventType;
+  content: any;
+  timestamp?: Date;
+}
+
+export interface WorkflowEvent extends StreamingEvent {
+  type: StreamingEventType.WORKFLOW_START | StreamingEventType.WORKFLOW_END;
+  content: {
+    phase: 'thinking' | 'tool_execution' | 'response_generation' | 'complete';
+    description: string;
+  };
+}
+
+export interface ResponseStartEvent extends StreamingEvent {
+  type: StreamingEventType.RESPONSE_START;
+  content: {
+    mode: 'conversational' | 'tool_calling' | 'hybrid';
+  };
 }
 
 export interface StreamingEvent {

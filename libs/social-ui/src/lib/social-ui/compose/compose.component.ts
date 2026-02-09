@@ -10,9 +10,16 @@ import {
   AfterViewInit,
   ViewContainerRef,
   ComponentRef,
+  forwardRef,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  ControlValueAccessor,
+  NG_VALUE_ACCESSOR,
+} from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,10 +28,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
-import { 
-  CreateAttachmentDto
-} from '@optimistic-tanuki/ui-models';
-import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
+import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
+import {
+  InjectedComponentData,
+  ComponentInjection,
+} from '@optimistic-tanuki/compose-lib';
 import {
   ThemeService,
   ThemeColors,
@@ -39,7 +47,7 @@ import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { TiptapEditorDirective } from 'ngx-tiptap';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
+import { ResizableImage } from './extensions/resizable-image.extension';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { Table } from '@tiptap/extension-table';
@@ -53,10 +61,7 @@ import DOMPurify from 'dompurify';
 import { ComponentInjectionService } from './services/component-injection.service';
 import { SocialComposeComponentNode } from './extensions/social-compose-component.extension';
 import { ComponentSelectorComponent } from './components/component-selector.component';
-import {
-  PropertyEditorComponent,
-  PropertyDefinition,
-} from './components/property-editor.component';
+import { PropertyDefinition } from './components/property-editor.component';
 import { RichTextToolbarComponent } from './components/rich-text-toolbar.component';
 import { COMPONENT_PROPERTY_DEFINITIONS } from './configs/component-properties.config';
 import { CalloutBoxComponent } from './components/example-components/callout-box.component';
@@ -69,7 +74,10 @@ import {
 } from './interfaces/component-injection.interface';
 import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
 
-import { PostThemeConfig, DEFAULT_POST_THEME } from '@optimistic-tanuki/ui-models';
+import {
+  PostThemeConfig,
+  DEFAULT_POST_THEME,
+} from '@optimistic-tanuki/ui-models';
 
 export interface PostData {
   title: string;
@@ -101,7 +109,6 @@ export interface ImageUploadCallback {
     MatTooltipModule,
     TiptapEditorDirective,
     ComponentSelectorComponent,
-    PropertyEditorComponent,
     RichTextToolbarComponent,
     CardComponent,
     TextInputComponent,
@@ -109,11 +116,24 @@ export interface ImageUploadCallback {
   ],
   templateUrl: './compose.component.html',
   styleUrls: ['./compose.component.scss'],
-  providers: [ComponentInjectionService, ImageUploadService],
+  providers: [
+    ComponentInjectionService,
+    ImageUploadService,
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => ComposeComponent),
+      multi: true,
+    },
+  ],
 })
 export class ComposeComponent
   extends Themeable
-  implements OnDestroy, AfterViewInit, ComponentInjectionAPI {
+  implements
+    OnDestroy,
+    AfterViewInit,
+    ComponentInjectionAPI,
+    ControlValueAccessor
+{
   @Input() title = '';
   @Input() profileId?: string; // Profile ID for asset uploads
   @Input() attachments: CreateAttachmentDto[] = [];
@@ -150,11 +170,6 @@ export class ComposeComponent
   registeredComponents: InjectableComponent[] = [];
   activeComponents = new Map<string, InjectedComponentInstance>();
 
-  // Property editing properties
-  isPropertyEditorVisible = false;
-  selectedComponentInstance: InjectedComponentInstance | null = null;
-  selectedComponentProperties: PropertyDefinition[] = [];
-
   // Post theme configuration properties
   isThemeConfigVisible = false;
   postTheme: 'light' | 'dark' = 'light';
@@ -163,8 +178,19 @@ export class ComposeComponent
   private componentInjectionService = inject(ComponentInjectionService);
   private dialog = inject(MatDialog);
   private imageUploadService = inject(ImageUploadService);
+  private cdr = inject(ChangeDetectorRef);
 
   private _content = '';
+  private _title = '';
+
+  // ControlValueAccessor callbacks
+  onChange: (value: any) => void = () => {};
+  onTouched: () => void = () => {};
+  isDisabled = false;
+
+  // Flag to track if there's pending content to set after editor init
+  private pendingContent: string | null = null;
+  private pendingInjectedComponents: any[] | null = null;
 
   @Input()
   get content(): string {
@@ -186,13 +212,16 @@ export class ComposeComponent
   ngAfterViewInit(): void {
     this.componentInjectionService.setViewContainer(this.componentContainer);
 
-    // Set up callbacks for component wrapper events
+    // Set up callbacks for component wrapper events (matching blog-compose pattern)
     this.componentInjectionService.setWrapperCallbacks({
       onEdit: (instance) => this.onComponentEdit(instance),
       onDelete: (instance) => this.onComponentDelete(instance),
       onMoveUp: (instance) => this.onComponentMoveUp(instance),
       onMoveDown: (instance) => this.onComponentMoveDown(instance),
       onSelection: (instance) => this.onComponentSelection(instance),
+      onDuplicate: (instance) => this.onComponentDuplicate(instance),
+      onConfig: (instance) => this.onComponentConfig(instance),
+      onPropertiesChanged: (data) => this.onComponentPropertiesChanged(data),
     });
 
     this.initializeDefaultComponents();
@@ -200,7 +229,7 @@ export class ComposeComponent
     this.editor = new Editor({
       extensions: [
         StarterKit,
-        Image,
+        ResizableImage,
         Subscript,
         Superscript,
         Underline,
@@ -213,16 +242,11 @@ export class ComposeComponent
         TableRow,
         TableHeader,
         TableCell,
+        // Inline Component Injection extension (new persistence-friendly format)
+        ComponentInjection.configure({}),
+        // Angular Component rendering extension with nodeView
         SocialComposeComponentNode.configure({
-          onComponentClick: (componentId: string, instanceId: string) => {
-            this.onInlineComponentClick(componentId, instanceId);
-          },
-          onComponentDelete: (instanceId: string) => {
-            this.onInlineComponentDelete(instanceId);
-          },
-          onComponentEdit: (instanceId: string) => {
-            this.onInlineComponentEdit(instanceId);
-          },
+          disableDefaultControls: true, // Use wrapper controls instead of decoration-based controls
           renderer: (
             componentId: string,
             instanceId: string,
@@ -246,15 +270,31 @@ export class ComposeComponent
       content: this._content,
     });
 
+    // Apply pending content if writeValue was called before editor init
+    if (this.pendingContent !== null) {
+      this.editor.commands.setContent(this.pendingContent);
+      this.pendingContent = null;
+
+      if (this.pendingInjectedComponents) {
+        this.restoreInjectedComponentData(this.pendingInjectedComponents);
+        this.pendingInjectedComponents = null;
+      }
+    }
+
     // Listen for content changes
     this.editor.on('update', () => {
       if (this.editor) {
         const newContent = this.editor.getHTML();
         if (this._content !== newContent) {
           this._content = this.sanitize(newContent);
+          this.emitChange();
         }
       }
     });
+
+    if (this.cdr) {
+      this.cdr.detectChanges();
+    }
   }
 
   override ngOnDestroy(): void {
@@ -346,7 +386,14 @@ export class ComposeComponent
       .toString(36)
       .substring(2, 9)}`;
 
-    // Insert into TipTap editor
+    // Use NEW ComponentInjection extension (for future persistence format)
+    this.editor?.commands.insertComponent({
+      instanceId,
+      componentType: componentId,
+      data: data || component.data || {},
+    });
+
+    // Also use OLD system for Angular component rendering with nodeView (temporary during migration)
     this.editor?.commands.insertAngularComponent({
       componentId,
       instanceId,
@@ -365,7 +412,12 @@ export class ComposeComponent
   }
 
   updateComponent(instanceId: string, data: Record<string, unknown>): void {
-    this.editor?.commands.updateAngularComponent({
+    // Update both extensions during migration
+    this.editor?.commands.updateComponent?.({
+      instanceId,
+      data,
+    });
+    this.editor?.commands.updateAngularComponent?.({
       instanceId,
       data,
     });
@@ -401,20 +453,18 @@ export class ComposeComponent
     this.isComponentSelectorVisible = false;
   }
 
-  // Property editing methods
+  // Component action handlers (called by ComponentWrapper inline editing)
   onComponentEdit(instance: InjectedComponentInstance): void {
-    this.selectedComponentInstance = instance;
-    this.selectedComponentProperties =
-      COMPONENT_PROPERTY_DEFINITIONS[instance.componentDef.id] || [];
-    this.isPropertyEditorVisible = true;
+    // Edit is now handled inline by ComponentWrapper
+    // This method is called when the edit button is clicked in the wrapper
+    console.log('[Compose] Edit component:', instance.instanceId);
   }
 
   onComponentDelete(instance: InjectedComponentInstance): void {
-    this.editor?.commands.removeAngularComponent(instance.instanceId);
+    // Remove from both extensions during migration
+    this.editor?.commands.removeComponent?.(instance.instanceId);
+    this.editor?.commands.removeAngularComponent?.(instance.instanceId);
     this.removeComponent(instance.instanceId);
-    if (this.selectedComponentInstance?.instanceId === instance.instanceId) {
-      this.selectedComponentInstance = null;
-    }
   }
 
   onComponentMoveUp(instance: InjectedComponentInstance): void {
@@ -438,49 +488,38 @@ export class ComposeComponent
   }
 
   onComponentSelection(instance: InjectedComponentInstance): void {
-    this.selectedComponentInstance = instance;
+    // Selection is handled by the ComponentWrapper
+    console.log('[Compose] Component selected:', instance.instanceId);
   }
 
-  onPropertiesUpdated(updatedData: Record<string, unknown>): void {
-    if (this.selectedComponentInstance) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const innerComponentRef = (this.selectedComponentInstance.data as any)[
-        '_innerComponentRef'
-      ];
-
-      if (innerComponentRef) {
-        Object.keys(updatedData).forEach((key) => {
-          if (
-            key !== '_innerComponentRef' &&
-            innerComponentRef.instance &&
-            innerComponentRef.instance[key] !== undefined
-          ) {
-            innerComponentRef.instance[key] = updatedData[key];
-          }
-        });
-        if (innerComponentRef.changeDetectorRef) {
-          innerComponentRef.changeDetectorRef.detectChanges();
-        }
-      }
-
-      this.updateComponent(
-        this.selectedComponentInstance.instanceId,
-        updatedData
-      );
-
-      this.editor?.commands.updateAngularComponent({
-        instanceId: this.selectedComponentInstance.instanceId,
-        data: updatedData,
+  onComponentDuplicate(instance: InjectedComponentInstance): void {
+    // Duplicate the component
+    console.log('[Compose] Duplicate component:', instance.instanceId);
+    const component = this.getRegisteredComponents().find(
+      (c) => c.id === instance.componentDef.id
+    );
+    if (component) {
+      this.onComponentSelected(component).then(() => {
+        console.log('[Compose] Component duplicated successfully');
       });
-
-      this.hidePropertyEditor();
     }
   }
 
-  hidePropertyEditor(): void {
-    this.isPropertyEditorVisible = false;
-    this.selectedComponentInstance = null;
-    this.selectedComponentProperties = [];
+  onComponentConfig(instance: InjectedComponentInstance): void {
+    // Open configuration for the component
+    console.log('[Compose] Config component:', instance.instanceId);
+    this.onComponentEdit(instance);
+  }
+
+  onComponentPropertiesChanged(event: {
+    instance: InjectedComponentInstance;
+    data: Record<string, unknown>;
+  }): void {
+    // Update component data from inline editor (updates both extensions)
+    this.updateComponent(event.instance.instanceId, event.data);
+
+    // Emit change for form integration
+    this.emitChange();
   }
 
   async onFileSelected(event: Event): Promise<void> {
@@ -499,7 +538,10 @@ export class ComposeComponent
           try {
             const base64Src = reader.result as string;
             if (base64Src && this.imageUploadCallback) {
-              const uploadedUrl = await this.imageUploadCallback(base64Src, file.name);
+              const uploadedUrl = await this.imageUploadCallback(
+                base64Src,
+                file.name
+              );
               this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
             }
           } catch (error) {
@@ -555,7 +597,9 @@ export class ComposeComponent
   }
 
   onInlineComponentDelete(instanceId: string): void {
-    this.editor?.commands.removeAngularComponent(instanceId);
+    // Remove from both extensions during migration
+    this.editor?.commands.removeComponent?.(instanceId);
+    this.editor?.commands.removeAngularComponent?.(instanceId);
     this.removeComponent(instanceId);
   }
 
@@ -574,12 +618,31 @@ export class ComposeComponent
         .toString(36)
         .substring(2, 9)}`;
 
+      // Use NEW ComponentInjection extension (for future persistence format)
+      this.editor?.commands.insertComponent({
+        instanceId,
+        componentType: component.id,
+        data: component.data || {},
+      });
+
+      // Also use OLD system for Angular component rendering with nodeView (temporary during migration)
       this.editor?.commands.insertAngularComponent({
         componentId: component.id,
-        instanceId: instanceId,
+        instanceId,
         data: component.data || {},
         componentDef: component,
       });
+
+      // Move cursor to a new paragraph after the inserted component
+      if (this.editor?.state?.selection) {
+        this.editor
+          .chain()
+          .insertContentAt(this.editor.state.selection.to, {
+            type: 'paragraph',
+          })
+          .focus()
+          .run();
+      }
 
       const mockComponentRef = {
         instance: component.data || {},
@@ -596,6 +659,9 @@ export class ComposeComponent
 
       this.activeComponents.set(instanceId, injectedInstance);
       this.hideComponentSelector();
+
+      // Emit change for form integration
+      this.emitChange();
     } catch (error) {
       console.error('Error injecting component:', error);
     }
@@ -625,7 +691,7 @@ export class ComposeComponent
     const files = Array.from(e.dataTransfer.files);
 
     // Filter for image files only
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'));
 
     if (imageFiles.length === 0) {
       alert('Please drop image files only');
@@ -642,8 +708,15 @@ export class ComposeComponent
             try {
               const base64Src = event.target?.result as string;
               if (base64Src) {
-                const uploadedUrl = await this.imageUploadCallback!(base64Src, file.name);
-                this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
+                const uploadedUrl = await this.imageUploadCallback!(
+                  base64Src,
+                  file.name
+                );
+                this.editor
+                  ?.chain()
+                  .focus()
+                  .setImage({ src: uploadedUrl })
+                  .run();
               }
             } catch (error) {
               console.error('Error in image upload callback:', error);
@@ -680,23 +753,27 @@ export class ComposeComponent
    */
   getInjectedComponentsNew(): InjectedComponentData[] {
     const components: InjectedComponentData[] = [];
-    
+
     if (!this.editor) {
       return components;
     }
 
     this.editor.state.doc.descendants((node: any) => {
-      if (node.type.name === 'socialComposeComponent' || 
-          node.type.name === 'angularComponent') {
+      // Check for all component node types (for cross-compatibility)
+      if (
+        node.type.name === 'socialComposeComponent' ||
+        node.type.name === 'blogComposeComponent' ||
+        node.type.name === 'angularComponent'
+      ) {
         components.push({
           instanceId: node.attrs['instanceId'],
           componentType: node.attrs['componentId'],
           componentData: node.attrs['data'] || {},
-          position: components.length
+          position: components.length,
         });
       }
     });
-    
+
     console.log('[SocialCompose] Extracted components:', components);
     return components;
   }
@@ -741,6 +818,8 @@ export class ComposeComponent
     // Extract components in new format for database persistence
     const componentsNewFormat = this.getInjectedComponentsNew();
 
+    // DO NOT reset the editor state - keep it open for continued editing
+    // This fixes the glitch where the editor closes on initial save
     this.postSubmitted.emit({
       title: this.title,
       content: finalContent,
@@ -753,14 +832,27 @@ export class ComposeComponent
         accentColor: this.postAccentColor,
       },
     });
+  }
 
+  /**
+   * Reset the editor to initial state
+   * Call this explicitly when you want to clear the editor (e.g., after successful post creation with component persistence)
+   */
+  resetEditor(): void {
+    this._title = '';
     this.title = '';
-    this.content = '';
+    this._content = '';
     this.links = [];
     this.attachments = [];
-    // Reset theme to defaults
+    this.activeComponents.clear();
     this.postTheme = DEFAULT_POST_THEME.theme;
     this.postAccentColor = DEFAULT_POST_THEME.accentColor;
+
+    if (this.editor) {
+      this.editor.commands.setContent('');
+      this.editor.commands.focus();
+    }
+    this.emitChange();
   }
 
   toggleThemeConfig(): void {
@@ -804,5 +896,234 @@ export class ComposeComponent
       this.borderGradient = colors.accentGradients['light'];
       this.borderColor = colors.complementaryShades[2][1];
     }
+  }
+
+  // ==================== ControlValueAccessor Implementation ====================
+
+  writeValue(value: any): void {
+    if (value && typeof value === 'object') {
+      let componentsToRestore = value.injectedComponents;
+
+      // Normalize content coming back from DB
+      if (value.content && typeof value.content === 'string') {
+        const extracted = this.stripInjectedComponentsMeta(value.content);
+        this._content = extracted.html;
+
+        // Use components from meta if available
+        if (extracted.injectedComponents) {
+          componentsToRestore = extracted.injectedComponents;
+        }
+      } else {
+        this._content = value.content || '';
+      }
+
+      this._title = value.title || '';
+      this.title = this._title; // Update the input property
+      this.links = value.links || [];
+      this.attachments = value.attachments || [];
+
+      // Load post theme configuration
+      if (value.themeConfig) {
+        this.postTheme = value.themeConfig.theme || DEFAULT_POST_THEME.theme;
+        this.postAccentColor =
+          value.themeConfig.accentColor || DEFAULT_POST_THEME.accentColor;
+      }
+
+      // Update editor content if editor is available, otherwise queue it
+      if (this.editor) {
+        this.editor.commands.setContent(this._content);
+        this.pendingContent = null;
+        if (componentsToRestore) {
+          this.restoreInjectedComponentData(componentsToRestore);
+        }
+      } else {
+        // Queue content to be set after editor initialization
+        this.pendingContent = this._content;
+        this.pendingInjectedComponents = componentsToRestore || null;
+      }
+    }
+  }
+
+  registerOnChange(fn: any): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: any): void {
+    this.onTouched = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    this.isDisabled = isDisabled;
+    if (this.editor) {
+      this.editor.setEditable(!isDisabled);
+    }
+  }
+
+  private emitChange(): void {
+    const contentForStorage = this.addInjectedComponentsMeta(
+      this.content,
+      this.getActiveComponents()
+    );
+
+    const value = {
+      title: this.title,
+      content: contentForStorage,
+      links: this.links,
+      attachments: this.attachments,
+      injectedComponents: this.getActiveComponents(),
+      injectedComponentsNew: this.getInjectedComponentsNew(),
+      themeConfig: {
+        theme: this.postTheme,
+        accentColor: this.postAccentColor,
+      },
+    };
+    this.onChange(value);
+    this.onTouched();
+  }
+
+  // ==================== Component Persistence Helpers ====================
+
+  private restoreInjectedComponentData(components: any[]): void {
+    if (!components || !components.length) return;
+
+    setTimeout(() => {
+      components.forEach((comp) => {
+        if (comp && comp.instanceId) {
+          try {
+            // Ensure wrapper exists; if not, render into existing placeholder
+            const placeholder = this.editor?.view?.dom?.querySelector(
+              `[data-angular-component][data-instance-id="${comp.instanceId}"]`
+            ) as HTMLElement | null;
+            if (
+              placeholder &&
+              !this.componentInjectionService.getInstance(comp.instanceId)
+            ) {
+              const componentId =
+                placeholder.getAttribute('data-component-id') ||
+                comp.componentId ||
+                comp.componentType;
+              if (componentId) {
+                this.componentInjectionService.renderComponentInto(
+                  componentId,
+                  comp.instanceId,
+                  comp.data || {},
+                  placeholder
+                );
+              }
+            }
+
+            // Update service instance if present
+            if (
+              this.componentInjectionService.getInstance(comp.instanceId) &&
+              comp.data
+            ) {
+              this.componentInjectionService.updateComponent(
+                comp.instanceId,
+                comp.data
+              );
+            }
+
+            // Update TipTap node data in both extensions during migration
+            if (comp.data) {
+              this.editor?.commands.updateComponent?.({
+                instanceId: comp.instanceId,
+                data: comp.data,
+              });
+              this.editor?.commands.updateAngularComponent?.({
+                instanceId: comp.instanceId,
+                data: comp.data,
+              });
+            }
+          } catch (e) {
+            console.warn(
+              '[SocialCompose] Failed to restore component data',
+              comp.instanceId,
+              e
+            );
+          }
+        }
+      });
+    }, 0);
+  }
+
+  private addInjectedComponentsMeta(
+    content: string,
+    components: InjectedComponentInstance[]
+  ): string {
+    if (!components || components.length === 0) return content;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, 'text/html');
+
+    components.forEach((comp) => {
+      const placeholders = doc.querySelectorAll(
+        `[data-angular-component][data-instance-id="${comp.instanceId}"]`
+      );
+      placeholders.forEach((placeholder) => {
+        // Store component data as base64 encoded JSON in data attribute
+        const dataStr = JSON.stringify(comp.data || {});
+        const base64Data = this.base64UrlEncodeUtf8(dataStr);
+        placeholder.setAttribute('data-component-data-base64', base64Data);
+      });
+    });
+
+    return doc.documentElement.innerHTML;
+  }
+
+  private stripInjectedComponentsMeta(content: string): {
+    html: string;
+    injectedComponents?: any[];
+  } {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, 'text/html');
+    const components: any[] = [];
+
+    const placeholders = doc.querySelectorAll('[data-angular-component]');
+    placeholders.forEach((placeholder) => {
+      const base64Data = placeholder.getAttribute('data-component-data-base64');
+      if (base64Data) {
+        try {
+          const dataStr = this.base64UrlDecodeUtf8(base64Data);
+          const data = JSON.parse(dataStr);
+          const instanceId = placeholder.getAttribute('data-instance-id');
+          const componentId = placeholder.getAttribute('data-component-id');
+          if (instanceId && componentId) {
+            components.push({
+              instanceId,
+              componentId,
+              data,
+            });
+          }
+          // Clean the attribute after extraction
+          placeholder.removeAttribute('data-component-data-base64');
+        } catch (e) {
+          console.warn('[SocialCompose] Failed to decode component data', e);
+        }
+      }
+    });
+
+    return {
+      html: doc.documentElement.innerHTML,
+      injectedComponents: components.length > 0 ? components : undefined,
+    };
+  }
+
+  private base64UrlEncodeUtf8(value: string): string {
+    const utf8Bytes = new TextEncoder().encode(value);
+    let binary = '';
+    utf8Bytes.forEach((b) => (binary += String.fromCharCode(b)));
+    return btoa(binary)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  }
+
+  private base64UrlDecodeUtf8(value: string): string {
+    let b64 = value.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4 !== 0) b64 += '=';
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
   }
 }

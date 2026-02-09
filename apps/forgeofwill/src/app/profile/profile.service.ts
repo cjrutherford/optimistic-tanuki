@@ -20,6 +20,13 @@ export class ProfileService {
   allProfiles = signal<ProfileDto[]>([]);
   currentUserProfile = signal<ProfileDto | null>(null);
 
+  // Client-side cache for profiles with TTL
+  private profileCache = new Map<
+    string,
+    { profile: ProfileDto; timestamp: number }
+  >();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   /** The app scope identifier for this application */
   private readonly appScope = 'forgeofwill';
 
@@ -27,6 +34,93 @@ export class ProfileService {
     private readonly http: HttpClient,
     private readonly authState: AuthStateService
   ) {}
+
+  /**
+   * Get a profile from cache or fetch it
+   */
+  async getProfileByIdCached(id: string): Promise<ProfileDto | null> {
+    // Check cache first
+    const cached = this.profileCache.get(id);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached.profile;
+    }
+
+    try {
+      const profile = await firstValueFrom(
+        this.http.get<ProfileDto>(`/api/profile/${id}`)
+      );
+      this.profileCache.set(id, { profile, timestamp: Date.now() });
+      return profile;
+    } catch (error) {
+      console.warn(`Failed to fetch profile ${id}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get multiple profiles by IDs with caching
+   */
+  async getProfilesByIds(ids: string[]): Promise<ProfileDto[]> {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+
+    const profiles: ProfileDto[] = [];
+    const missingIds: string[] = [];
+
+    // Check cache first
+    for (const id of ids) {
+      const cached = this.profileCache.get(id);
+      if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+        profiles.push(cached.profile);
+      } else {
+        missingIds.push(id);
+      }
+    }
+
+    // Fetch missing profiles from API
+    if (missingIds.length > 0) {
+      try {
+        const fetchedProfiles = await firstValueFrom(
+          this.http.post<ProfileDto[]>('/api/profile/by-ids', {
+            ids: missingIds,
+          })
+        );
+
+        // Cache the fetched profiles
+        for (const profile of fetchedProfiles) {
+          this.profileCache.set(profile.id, { profile, timestamp: Date.now() });
+          profiles.push(profile);
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch profiles by IDs:`, error);
+        // Return cached profiles only
+      }
+    }
+
+    return profiles;
+  }
+
+  /**
+   * Get or fetch a single profile
+   */
+  async getOrFetchProfile(id: string): Promise<ProfileDto | null> {
+    return this.getProfileByIdCached(id);
+  }
+
+  /**
+   * Clear the profile cache
+   */
+  clearCache(): void {
+    this.profileCache.clear();
+  }
+
+  /**
+   * Invalidate a specific profile in cache
+   */
+  invalidateCache(id: string): void {
+    this.profileCache.delete(id);
+  }
 
   selectProfile(_p: ProfileDto) {
     console.log('Selecting profile:', _p);

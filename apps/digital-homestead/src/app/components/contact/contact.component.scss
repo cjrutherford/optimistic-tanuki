@@ -1,71 +1,164 @@
 .section-container {
-  margin: 20px auto;
-  text-align: center;
-  padding: 2rem;
-  background-color: rgba(33, 33, 33, 0.15);
-  border: 1px solid #eee;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(33, 33, 33, 0.15);
-  .heading-container {
-    width: 90%;
-    background: var(--heading-gradient);
-    color: var(--foreground);
-    margin: 40px auto;
-    padding: 40px;
-    border-radius: 8px;
-  }
-  form {
-    display: flex;
-    flex-direction: column;
-    margin: 0 auto;
-    padding: 30px;
-    border-radius: 10px;
-    gap: 1rem;
-    width: 60%;
-    background: rgba(22, 22, 22, 0.1);
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      text-align: left;
-      input,
-      textarea {
-        padding: 10px;
-        border: none;
-        border-radius: 5px;
-        font-size: 16px;
-      }
-    }
-    .action {
-      display: flex;
-      flex-direction: row-reverse;
-      justify-content: flex-start;
-      align-items: center;
-    }
-  }
-}
-.row {
-  .form-group {
-    width: 100%;
-    text-align: left;
-  }
-  width: 100%;
-  justify-content: stretch;
-  align-items: center;
-  gap: 40px;
-  flex-direction: row;
-  display: flex;
+  padding: var(--spacing-xl) 0;
+  position: relative;
 }
 
-@media screen and (max-width: 768px) {
-  .row {
+.heading-container {
+  margin: 0 auto var(--spacing-lg);
+  text-align: center;
+  width: 90%;
+  max-width: 800px;
+  background: var(--heading-gradient);
+  color: var(--background);
+  padding: var(--spacing-lg);
+  border-radius: 12px;
+}
+
+.heading-container h2 {
+  margin-bottom: var(--spacing-sm);
+}
+
+.heading-container p {
+  margin-bottom: var(--spacing-sm);
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.contact-form-container {
+  margin: var(--spacing-md) auto;
+  width: 90%;
+  max-width: 600px;
+}
+
+.contact-form {
+  background: white;
+  border-radius: 8px;
+  padding: var(--spacing-md);
+  box-shadow: 0 4px 12px var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.contact-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-sm);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 600;
+  color: var(--primary);
+  font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 2px solid #e1e8ed;
+  border-radius: 6px;
+  font-size: clamp(0.9rem, 1.5vw, 1rem);
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+  margin-top: var(--spacing-md);
+}
+
+.cta-button {
+  background: var(--gradient);
+  color: white;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: 50px;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(142, 68, 173, 0.3);
+  border: none;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(142, 68, 173, 0.4);
+  background: linear-gradient(135deg, #9b59b6 0%, #3498db 100%);
+}
+
+@media (max-width: 768px) {
+  .section-container {
+    padding: var(--spacing-lg) 0;
+  }
+
+  .contact-form-container {
+    width: 95%;
+  }
+
+  .contact-form {
+    padding: var(--spacing-sm);
+  }
+
+  .form-actions {
     flex-direction: column;
     align-items: center;
-    gap: 20px;
   }
+
+  .cta-button {
+    width: 100%;
+    max-width: 250px;
+  }
+
+  .heading-container {
+    padding: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
   .section-container {
-    form {
-      width: 90%;
-    }
+    padding: var(--spacing-md) 0;
+  }
+
+  .contact-form {
+    padding: var(--spacing-xs);
+  }
+
+  .heading-container {
+    padding: var(--spacing-sm);
+    width: 95%;
+  }
+
+  .form-group textarea {
+    min-height: 80px;
   }
 }

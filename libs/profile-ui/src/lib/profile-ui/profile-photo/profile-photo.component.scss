@@ -1,8 +1,11 @@
 .profile-photo {
   border-radius: 50%;
-  border: 6px solid var(--accent-shade-darken-30);
+  border: 2px solid var(--accent, #3f51b5);
+  width: var(--size, 32px);
+  height: var(--size, 32px);
   max-height: 150px;
   max-width: 150px;
+  object-fit: cover;
   transition: transform 0.3s ease;
 
   &:hover {

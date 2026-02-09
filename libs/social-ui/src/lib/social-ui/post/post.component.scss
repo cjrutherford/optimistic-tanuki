@@ -1,64 +1,158 @@
+/* Responsive post component with personality support */
 .post-container {
-  margin: 20px;
-  padding: 20px;
   width: 100%;
-  .post-header {
+  box-sizing: border-box;
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif);
+
+  ::ng-deep .post-header {
     display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 10px;
-    .title {
-      font-weight: bold;
+    flex-direction: column;
+    gap: var(--spacing-xs, 4px);
+    padding-bottom: var(--spacing-sm, 8px);
+    border-bottom: 1px solid var(--border);
+
+    .post-profile {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm, 8px);
     }
+
+    .title {
+      font-weight: 600;
+      font-size: var(--font-size-xl, 1.25rem);
+      color: var(--foreground);
+      font-family: var(--font-heading, var(--font-body));
+      line-height: 1.3;
+    }
+
     .subtitle {
-      font-size: 0.9em;
-      color: var(--foreground-color);
+      font-size: var(--font-size-sm, 0.875rem);
+      color: var(--muted);
     }
   }
 
   .content {
-    margin-top: 10px;
-    font-size: 1.2em;
-    color: var(--foreground-color);
-    line-height: 1.5;
+    margin-top: var(--spacing-sm, 8px);
+    font-size: var(--font-size-base, 1rem);
+    color: var(--foreground);
+    line-height: 1.6;
     word-break: break-word;
     display: grid;
+    gap: var(--spacing-md, 16px);
+
+    /* Mobile-first: Single column layout */
+    grid-template-areas:
+      'content'
+      'attachment'
+      'link'
+      'actions';
+    grid-template-columns: 1fr;
+
+    .post-content {
+      grid-area: content;
+      padding: var(--spacing-sm, 8px) 0;
+
+      /* Rich text content styling */
+      ::ng-deep {
+        p {
+          margin: 0 0 var(--spacing-sm, 8px) 0;
+        }
+
+        img {
+          max-width: 100%;
+          height: auto;
+          border-radius: var(--border-radius-md, 8px);
+        }
+
+        a {
+          color: var(--accent);
+          text-decoration: none;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+
+    .post-attachment {
+      grid-area: attachment;
+
+      h3 {
+        font-size: var(--font-size-sm, 0.875rem);
+        color: var(--muted);
+        margin: 0 0 var(--spacing-xs, 4px) 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        border-radius: var(--border-radius-md, 8px);
+      }
+    }
+
+    .post-link {
+      grid-area: link;
+
+      h3 {
+        font-size: var(--font-size-sm, 0.875rem);
+        color: var(--muted);
+        margin: 0 0 var(--spacing-xs, 4px) 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        transition: color 0.15s ease-in-out;
+
+        &:hover {
+          text-decoration: underline;
+          color: var(--secondary);
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
+          border-radius: var(--border-radius-sm, 4px);
+        }
+      }
+    }
+
+    .actions {
+      grid-area: actions;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      gap: var(--spacing-sm, 8px);
+      flex-wrap: wrap;
+      padding-top: var(--spacing-sm, 8px);
+      border-top: 1px solid var(--border);
+    }
+  }
+}
+
+/* Tablet: Two column layout for attachment and link */
+@media (min-width: 641px) {
+  .post-container .content {
+    grid-template-areas:
+      'content content'
+      'attachment link'
+      'actions actions';
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Desktop: Original four column layout */
+@media (min-width: 1025px) {
+  .post-container .content {
     grid-template-areas:
       'content content content content'
       'attachment attachment link link'
       'actions actions actions actions';
-    .post-content {
-      grid-area: content;
-      margin: 10px 0;
-      padding-bottom: 30px;
-      border-bottom: 2px solid var(--accent-shade-darken-50);
-    }
-    .post-attachment {
-      grid-area: attachment;
-      margin: 10px 0;
-      img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 10px;
-      }
-    }
-    .post-link {
-      grid-area: link;
-      margin: 10px 0;
-      a {
-        color: var(--link-color);
-        text-decoration: none;
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-    }
-    .actions {
-      grid-area: actions;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-    }
+    grid-template-columns: repeat(4, 1fr);
   }
 }

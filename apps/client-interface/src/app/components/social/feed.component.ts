@@ -7,10 +7,12 @@ import {
   inject,
 } from '@angular/core';
 
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
+import {
+  ButtonComponent,
+  SpinnerComponent,
+} from '@optimistic-tanuki/common-ui';
 import {
   PostDto,
   ComposeComponent,
@@ -20,9 +22,9 @@ import {
   PostData,
   ImageUploadCallback,
 } from '@optimistic-tanuki/social-ui';
-import { 
+import {
   CreateAttachmentDto,
-  CreateSocialComponentDto
+  CreateSocialComponentDto,
 } from '@optimistic-tanuki/ui-models';
 import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -43,8 +45,8 @@ import { HttpClient } from '@angular/common/http';
   selector: 'app-feed',
   standalone: true,
   imports: [
-    MatCardModule,
-    MatButtonModule,
+    ButtonComponent,
+    SpinnerComponent,
     MatInputModule,
     MatIconModule,
     ComposeComponent,
@@ -234,24 +236,27 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   async createdPost(postData: PostData) {
     console.log('[Feed] create called with postData:', postData);
-    const { title, content, attachments, links, injectedComponentsNew } = postData;
+    const { title, content, attachments, links, injectedComponentsNew } =
+      postData;
     const currentProfile = this.profileService.currentUserProfile();
     if (!currentProfile) {
       console.error('No current profile found');
       return;
     }
-    
+
     const finalPost: CreatePostDto = {
       title,
       content,
       profileId: currentProfile.id,
     };
-    
+
+    let newPost: PostDto | null = null;
+
     try {
       // 1. Create post
-      const newPost = await firstValueFrom(this.postService.createPost(finalPost));
+      newPost = await firstValueFrom(this.postService.createPost(finalPost));
       console.log('[Feed] Post created:', newPost.id);
-      
+
       // 2. Create attachments
       if (attachments && attachments.length > 0) {
         for (const attachment of attachments) {
@@ -263,13 +268,29 @@ export class FeedComponent implements OnInit, OnDestroy {
         }
         console.log(`[Feed] ${attachments.length} attachments created`);
       }
-      
+
       // 3. Create components (NEW)
-      if (injectedComponentsNew && injectedComponentsNew.length > 0) {
+      if (
+        injectedComponentsNew &&
+        injectedComponentsNew.length > 0 &&
+        newPost
+      ) {
         console.log(`[Feed] Saving ${injectedComponentsNew.length} components`);
-        await this.saveComponents(newPost.id, injectedComponentsNew);
+        try {
+          await this.saveComponents(newPost.id, injectedComponentsNew);
+        } catch (componentError) {
+          // ROLLBACK: Component save failed, delete the post
+          console.error(
+            '[Feed] Component save failed, rolling back post:',
+            componentError
+          );
+          await this.rollbackPost(newPost.id);
+          throw new Error(
+            'Failed to save post components. Post has been removed.'
+          );
+        }
       }
-      
+
       // 4. Update UI
       // Ensure profile is in map for the new post
       if (!this.profiles()[currentProfile.id]) {
@@ -282,15 +303,34 @@ export class FeedComponent implements OnInit, OnDestroy {
           },
         }));
       }
-      if (!this.posts().some((p) => p.id === newPost.id)) {
-        this.posts.update((posts) => [newPost, ...posts]);
+      if (newPost) {
+        const newPostId = newPost.id;
+        if (!this.posts().some((p) => p.id === newPostId)) {
+          this.posts.update((posts) => [newPost!, ...posts]);
+        }
       }
       console.log('[Feed] Post added to feed');
     } catch (error) {
       console.error('[Feed] Failed to create post:', error);
+      // Re-throw to let the compose component handle the error display
+      throw error;
     }
   }
-  
+
+  /**
+   * Rollback a post creation by deleting the post and all its data
+   */
+  private async rollbackPost(postId: string): Promise<void> {
+    console.log('[Feed] Rolling back post:', postId);
+    try {
+      await firstValueFrom(this.postService.deletePost(postId));
+      console.log('[Feed] Post rolled back successfully:', postId);
+    } catch (rollbackError) {
+      console.error('[Feed] Failed to rollback post:', rollbackError);
+      // Log the error but don't throw - we've done our best to clean up
+    }
+  }
+
   /**
    * Save injected components to the database via RPC
    */
@@ -298,8 +338,10 @@ export class FeedComponent implements OnInit, OnDestroy {
     postId: string,
     components: InjectedComponentData[]
   ): Promise<void> {
-    console.log(`[Feed] Saving ${components.length} components for post ${postId}`);
-    
+    console.log(
+      `[Feed] Saving ${components.length} components for post ${postId}`
+    );
+
     for (const component of components) {
       const dto: CreateSocialComponentDto = {
         postId,
@@ -308,14 +350,19 @@ export class FeedComponent implements OnInit, OnDestroy {
         componentData: component.componentData,
         position: component.position || 0,
       };
-      
+
       try {
         await firstValueFrom(
           this.http.post(`${this.gatewayUrl}/component`, dto)
         );
-        console.log(`[Feed] Component saved: ${component.instanceId} (${component.componentType})`);
+        console.log(
+          `[Feed] Component saved: ${component.instanceId} (${component.componentType})`
+        );
       } catch (error) {
-        console.error(`[Feed] Failed to save component ${component.instanceId}:`, error);
+        console.error(
+          `[Feed] Failed to save component ${component.instanceId}:`,
+          error
+        );
         // Continue with other components even if one fails
       }
     }

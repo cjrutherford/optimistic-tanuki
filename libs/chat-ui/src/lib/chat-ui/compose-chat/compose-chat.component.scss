@@ -1,51 +1,135 @@
-@keyframes pulse-halo {
-  0% {
-    /* Halved blur and spread, using solid colors */
-    box-shadow: 2px 4px 7.5px 2.5px var(--accent),
-      -2px -4px 7.5px 2.5px var(--complement) !important;
-  }
-  50% {
-    /* Halved offsets, blur, and spread; swapped colors */
-    box-shadow: 3px 5px 8px 5px var(--complement),
-      -3px -5px 8px 5px var(--accent) !important;
-  }
-  100% {
-    /* Return to initial state */
-    box-shadow: 2px 4px 7.5px 2.5px var(--accent),
-      -2px -4px 7.5px 2.5px var(--complement) !important;
-  }
-}
 .compose-editor-container {
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
-  height: 100%;
-  border: 1px solid;
-  border-radius: 8px;
-  padding: 8px;
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius, 12px);
+  overflow: hidden;
+  transition: border-color var(--transition-duration, 150ms) ease;
+
+  &:focus-within {
+    border-color: var(--accent);
+  }
 }
 
-::ng-deep .ql-toolbar {
-  background: var(--background-color, #007bff);
-  border-radius: 8px 8px 0 0;
-  color: var(--foreground-color, #737373ff);
-  button {
-    color: var(--foreground, #737373ff);
-    background: var(--background-color, #007bff);
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    cursor: pointer;
+.compose-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border-color);
+}
 
-    &:hover {
-      box-shadow: 0 2px 8px 0 var(--accent);
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms ease;
+
+  &:hover {
+    background: var(--complement-transparent);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  .icon {
+    font-size: 12px;
+    font-weight: 600;
+
+    &.italic {
+      font-style: italic;
+    }
+
+    &.underline {
+      text-decoration: underline;
     }
   }
 }
 
-::ng-deep .ql-container {
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  margin: 0 4px;
+}
+
+.compose-input-wrapper {
+  flex: 1;
+  padding: 8px 12px;
+}
+
+.compose-textarea {
   width: 100%;
-  background: var(--background, #fff);
-  color: var(--foreground, #737373ff);
-  border-radius: 0 0 8px 8px;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  resize: none;
+  font-family: var(--font-body, inherit);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  min-height: 24px;
+  max-height: 120px;
+
+  &::placeholder {
+    color: var(--foreground);
+    opacity: 0.5;
+  }
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.compose-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px 12px;
+  background: var(--background);
+  border-top: 1px solid var(--border-color);
+}
+
+.send-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 150ms ease;
+
+  &:disabled {
+    background: var(--foreground);
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled) {
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  .send-icon {
+    font-size: 14px;
+  }
 }

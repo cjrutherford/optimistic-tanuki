@@ -1,36 +1,35 @@
-<div class="tasks-container">
-  <div class="task-list">
+<otui-grid [columns]="2" [gap]="'1em'">
+  <otui-tile>
     <h2>Tasks</h2>
-    <div class="tab-group">
-      @for (task of tasks; track task) {
-      <button
-        class="tab-label"
-        [class.active]="selectedTask && selectedTask.id === task.id"
-        (click)="selectTask(task)"
-      >
-        {{ task.title }}
-      </button>
-      }
-    </div>
-  </div>
+    @for (task of tasks; track task) {
+    <otui-button
+      [variant]="
+        selectedTask && selectedTask.id === task.id ? 'primary' : 'text'
+      "
+      (action)="selectTask(task)"
+    >
+      {{ task.title }}
+    </otui-button>
+    }
+  </otui-tile>
   @if (selectedTask) {
-  <div class="task-details">
-    <div class="card">
-      <div class="card-title">Details</div>
-      <div>{{ selectedTask.description }}</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Timers</div>
+  <otui-tile>
+    <otui-card>
+      <h3>Details</h3>
+      <p>{{ selectedTask.description }}</p>
+    </otui-card>
+    <otui-card>
+      <h3>Timers</h3>
       @for (timer of filteredTimers; track timer) {
-      <div class="list-item">{{ timer.description }} - {{ timer.status }}</div>
+      <div>{{ timer.description }} - {{ timer.status }}</div>
       }
-    </div>
-    <div class="card">
-      <div class="card-title">Notes</div>
+    </otui-card>
+    <otui-card>
+      <h3>Notes</h3>
       @for (note of filteredNotes; track note) {
-      <div class="list-item">{{ note.title }} - {{ note.status }}</div>
+      <div>{{ note.title }} - {{ note.status }}</div>
       }
-    </div>
-  </div>
+    </otui-card>
+  </otui-tile>
   }
-</div>
+</otui-grid>
