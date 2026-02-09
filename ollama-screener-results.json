@@ -1,0 +1,941 @@
+{
+  "timestamp": "2026-02-09T01:38:05.476Z",
+  "hardware": {
+    "gpus": [],
+    "ollamaHost": "192.168.50.14",
+    "ollamaPort": 11434
+  },
+  "screenedModels": [
+    {
+      "name": "qwen2.5:3b",
+      "parameterSizeB": 3100000000,
+      "quantization": "UNKNOWN",
+      "estimatedVRAMMB": 1479,
+      "totalVRAMMB": 2247,
+      "fitScore": 61,
+      "suitability": [
+        "light"
+      ]
+    },
+    {
+      "name": "llama3.2:latest",
+      "parameterSizeB": 3200000000,
+      "quantization": "UNKNOWN",
+      "estimatedVRAMMB": 1526,
+      "totalVRAMMB": 2294,
+      "fitScore": 61,
+      "suitability": [
+        "light"
+      ]
+    },
+    {
+      "name": "qwen:latest",
+      "parameterSizeB": 4000000000,
+      "quantization": "UNKNOWN",
+      "estimatedVRAMMB": 1908,
+      "totalVRAMMB": 2676,
+      "fitScore": 59,
+      "suitability": [
+        "light"
+      ]
+    },
+    {
+      "name": "nemotron-mini:4b",
+      "parameterSizeB": 4200000000,
+      "quantization": "UNKNOWN",
+      "estimatedVRAMMB": 2003,
+      "totalVRAMMB": 2771,
+      "fitScore": 58,
+      "suitability": [
+        "light"
+      ]
+    },
+    {
+      "name": "gemma3:4b",
+      "parameterSizeB": 4300000000,
+      "quantization": "UNKNOWN",
+      "estimatedVRAMMB": 2051,
+      "totalVRAMMB": 2819,
+      "fitScore": 58,
+      "suitability": [
+        "light"
+      ]
+    },
+    {
+      "name": "gemma3:latest",
+      "parameterSizeB": 4300000000,
+      "quantization": "UNKNOWN",
+      "estimatedVRAMMB": 2051,
+      "totalVRAMMB": 2819,
+      "fitScore": 58,
+      "suitability": [
+        "light"
+      ]
+    },
+    {
+      "name": "deepseek-r1:8b",
+      "parameterSizeB": 8199999999.999999,
+      "quantization": "UNKNOWN",
+      "estimatedVRAMMB": 3911,
+      "totalVRAMMB": 4679,
+      "fitScore": 46,
+      "suitability": [
+        "cpu_fallback"
+      ]
+    },
+    {
+      "name": "bjoernb/deepseek-r1-8b:latest",
+      "parameterSizeB": 8199999999.999999,
+      "quantization": "UNKNOWN",
+      "estimatedVRAMMB": 3911,
+      "totalVRAMMB": 4679,
+      "fitScore": 46,
+      "suitability": [
+        "cpu_fallback"
+      ]
+    },
+    {
+      "name": "deepseek-r1:latest",
+      "parameterSizeB": 8199999999.999999,
+      "quantization": "UNKNOWN",
+      "estimatedVRAMMB": 3911,
+      "totalVRAMMB": 4679,
+      "fitScore": 46,
+      "suitability": [
+        "cpu_fallback"
+      ]
+    },
+    {
+      "name": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "parameterSizeB": 12200000000,
+      "quantization": "Q3_K_M",
+      "estimatedVRAMMB": 5585,
+      "totalVRAMMB": 6353,
+      "fitScore": 35,
+      "suitability": [
+        "cpu_fallback"
+      ]
+    },
+    {
+      "name": "phi3:14b-medium-128k-instruct-q2_K",
+      "parameterSizeB": 14000000000,
+      "quantization": "Q2_K",
+      "estimatedVRAMMB": 4674,
+      "totalVRAMMB": 5442,
+      "fitScore": 34,
+      "suitability": [
+        "cpu_fallback"
+      ]
+    },
+    {
+      "name": "qwen2.5:14b-instruct-q3_K_S",
+      "parameterSizeB": 14800000000,
+      "quantization": "Q3_K_S",
+      "estimatedVRAMMB": 5929,
+      "totalVRAMMB": 6697,
+      "fitScore": 30,
+      "suitability": [
+        "cpu_fallback"
+      ]
+    }
+  ],
+  "benchmarks": [
+    {
+      "model": "qwen2.5:3b",
+      "useCase": "workflow_control",
+      "scenario": "Simple Greeting Detection",
+      "success": true,
+      "tps": 13.7,
+      "latencyMs": 3287,
+      "responseLength": 45,
+      "validationDetails": {
+        "success": true,
+        "detected": "conversational"
+      }
+    },
+    {
+      "model": "qwen2.5:3b",
+      "useCase": "workflow_control",
+      "scenario": "Action Request Detection",
+      "success": true,
+      "tps": 36.5,
+      "latencyMs": 1508,
+      "responseLength": 55,
+      "validationDetails": {
+        "success": true,
+        "detected": "tool_calling"
+      }
+    },
+    {
+      "model": "qwen2.5:3b",
+      "useCase": "tool_calling",
+      "scenario": "Function Call Format",
+      "success": true,
+      "tps": 48.8,
+      "latencyMs": 1638,
+      "responseLength": 80,
+      "validationDetails": {
+        "success": true,
+        "hasToolCall": true
+      }
+    },
+    {
+      "model": "qwen2.5:3b",
+      "useCase": "tool_calling",
+      "scenario": "JSON Object Generation",
+      "success": true,
+      "tps": 43.8,
+      "latencyMs": 1461,
+      "responseLength": 64,
+      "validationDetails": {
+        "success": true,
+        "isJson": true
+      }
+    },
+    {
+      "model": "qwen2.5:3b",
+      "useCase": "conversational",
+      "scenario": "Natural Response",
+      "success": true,
+      "tps": 136.2,
+      "latencyMs": 6322,
+      "responseLength": 861,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 861
+      }
+    },
+    {
+      "model": "qwen2.5:3b",
+      "useCase": "conversational",
+      "scenario": "Creative Explanation",
+      "success": true,
+      "tps": 145.3,
+      "latencyMs": 24675,
+      "responseLength": 3586,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 3586
+      }
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "workflow_control",
+      "scenario": "Simple Greeting Detection",
+      "success": true,
+      "tps": 12,
+      "latencyMs": 3749,
+      "responseLength": 45,
+      "validationDetails": {
+        "success": true,
+        "detected": "conversational"
+      }
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "workflow_control",
+      "scenario": "Action Request Detection",
+      "success": false,
+      "tps": 30.2,
+      "latencyMs": 1194,
+      "responseLength": 36,
+      "validationDetails": {
+        "success": false,
+        "detected": "unknown"
+      }
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "tool_calling",
+      "scenario": "Function Call Format",
+      "success": true,
+      "tps": 45.8,
+      "latencyMs": 1614,
+      "responseLength": 74,
+      "validationDetails": {
+        "success": true,
+        "hasToolCall": true
+      }
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "tool_calling",
+      "scenario": "JSON Object Generation",
+      "success": true,
+      "tps": 85,
+      "latencyMs": 17548,
+      "responseLength": 1491,
+      "validationDetails": {
+        "success": true,
+        "isJson": true
+      }
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "conversational",
+      "scenario": "Natural Response",
+      "success": true,
+      "tps": 111.8,
+      "latencyMs": 5293,
+      "responseLength": 592,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 592
+      }
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "conversational",
+      "scenario": "Creative Explanation",
+      "success": true,
+      "tps": 129,
+      "latencyMs": 29696,
+      "responseLength": 3832,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 3832
+      }
+    },
+    {
+      "model": "qwen:latest",
+      "useCase": "workflow_control",
+      "scenario": "Simple Greeting Detection",
+      "success": true,
+      "tps": 10.2,
+      "latencyMs": 4502,
+      "responseLength": 46,
+      "validationDetails": {
+        "success": true,
+        "detected": "conversational"
+      }
+    },
+    {
+      "model": "qwen:latest",
+      "useCase": "workflow_control",
+      "scenario": "Action Request Detection",
+      "success": false,
+      "tps": 52.4,
+      "latencyMs": 2272,
+      "responseLength": 119,
+      "validationDetails": {
+        "success": false,
+        "detected": "unknown"
+      }
+    },
+    {
+      "model": "qwen:latest",
+      "useCase": "tool_calling",
+      "scenario": "Function Call Format",
+      "success": false,
+      "tps": 83,
+      "latencyMs": 4905,
+      "responseLength": 407,
+      "validationDetails": {
+        "success": false,
+        "hasToolCall": false
+      }
+    },
+    {
+      "model": "qwen:latest",
+      "useCase": "tool_calling",
+      "scenario": "JSON Object Generation",
+      "success": true,
+      "tps": 55.2,
+      "latencyMs": 9718,
+      "responseLength": 536,
+      "validationDetails": {
+        "success": true,
+        "isJson": true
+      }
+    },
+    {
+      "model": "qwen:latest",
+      "useCase": "conversational",
+      "scenario": "Natural Response",
+      "success": true,
+      "tps": 79.2,
+      "latencyMs": 2424,
+      "responseLength": 192,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 192
+      }
+    },
+    {
+      "model": "qwen:latest",
+      "useCase": "conversational",
+      "scenario": "Creative Explanation",
+      "success": true,
+      "tps": 116.4,
+      "latencyMs": 4544,
+      "responseLength": 529,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 529
+      }
+    },
+    {
+      "model": "nemotron-mini:4b",
+      "useCase": "workflow_control",
+      "scenario": "Simple Greeting Detection",
+      "success": true,
+      "tps": 12,
+      "latencyMs": 4431,
+      "responseLength": 53,
+      "validationDetails": {
+        "success": true,
+        "detected": "conversational"
+      }
+    },
+    {
+      "model": "nemotron-mini:4b",
+      "useCase": "workflow_control",
+      "scenario": "Action Request Detection",
+      "success": true,
+      "tps": 47.4,
+      "latencyMs": 2088,
+      "responseLength": 99,
+      "validationDetails": {
+        "success": true,
+        "detected": "tool_calling"
+      }
+    },
+    {
+      "model": "nemotron-mini:4b",
+      "useCase": "tool_calling",
+      "scenario": "Function Call Format",
+      "success": true,
+      "tps": 32.2,
+      "latencyMs": 1771,
+      "responseLength": 57,
+      "validationDetails": {
+        "success": true,
+        "hasToolCall": true
+      }
+    },
+    {
+      "model": "nemotron-mini:4b",
+      "useCase": "tool_calling",
+      "scenario": "JSON Object Generation",
+      "success": true,
+      "tps": 30.6,
+      "latencyMs": 2356,
+      "responseLength": 72,
+      "validationDetails": {
+        "success": true,
+        "isJson": true
+      }
+    },
+    {
+      "model": "nemotron-mini:4b",
+      "useCase": "conversational",
+      "scenario": "Natural Response",
+      "success": true,
+      "tps": 116.1,
+      "latencyMs": 5632,
+      "responseLength": 654,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 654
+      }
+    },
+    {
+      "model": "nemotron-mini:4b",
+      "useCase": "conversational",
+      "scenario": "Creative Explanation",
+      "success": true,
+      "tps": 116,
+      "latencyMs": 16900,
+      "responseLength": 1961,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 1961
+      }
+    },
+    {
+      "model": "gemma3:4b",
+      "useCase": "workflow_control",
+      "scenario": "Simple Greeting Detection",
+      "success": true,
+      "tps": 12.2,
+      "latencyMs": 4751,
+      "responseLength": 58,
+      "validationDetails": {
+        "success": true,
+        "detected": "conversational"
+      }
+    },
+    {
+      "model": "gemma3:4b",
+      "useCase": "workflow_control",
+      "scenario": "Action Request Detection",
+      "success": true,
+      "tps": 25.7,
+      "latencyMs": 1943,
+      "responseLength": 50,
+      "validationDetails": {
+        "success": true,
+        "detected": "tool_calling"
+      }
+    },
+    {
+      "model": "gemma3:4b",
+      "useCase": "tool_calling",
+      "scenario": "Function Call Format",
+      "success": true,
+      "tps": 37,
+      "latencyMs": 2323,
+      "responseLength": 86,
+      "validationDetails": {
+        "success": true,
+        "hasToolCall": true
+      }
+    },
+    {
+      "model": "gemma3:4b",
+      "useCase": "tool_calling",
+      "scenario": "JSON Object Generation",
+      "success": true,
+      "tps": 30,
+      "latencyMs": 2868,
+      "responseLength": 86,
+      "validationDetails": {
+        "success": true,
+        "isJson": true
+      }
+    },
+    {
+      "model": "gemma3:4b",
+      "useCase": "conversational",
+      "scenario": "Natural Response",
+      "success": true,
+      "tps": 101.3,
+      "latencyMs": 6031,
+      "responseLength": 611,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 611
+      }
+    },
+    {
+      "model": "gemma3:4b",
+      "useCase": "conversational",
+      "scenario": "Creative Explanation",
+      "success": true,
+      "tps": 80.9,
+      "latencyMs": 47405,
+      "responseLength": 3833,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 3833
+      }
+    },
+    {
+      "model": "gemma3:latest",
+      "useCase": "workflow_control",
+      "scenario": "Simple Greeting Detection",
+      "success": true,
+      "tps": 23.5,
+      "latencyMs": 2463,
+      "responseLength": 58,
+      "validationDetails": {
+        "success": true,
+        "detected": "conversational"
+      }
+    },
+    {
+      "model": "gemma3:latest",
+      "useCase": "workflow_control",
+      "scenario": "Action Request Detection",
+      "success": true,
+      "tps": 25.7,
+      "latencyMs": 1947,
+      "responseLength": 50,
+      "validationDetails": {
+        "success": true,
+        "detected": "tool_calling"
+      }
+    },
+    {
+      "model": "gemma3:latest",
+      "useCase": "tool_calling",
+      "scenario": "Function Call Format",
+      "success": true,
+      "tps": 36.5,
+      "latencyMs": 2357,
+      "responseLength": 86,
+      "validationDetails": {
+        "success": true,
+        "hasToolCall": true
+      }
+    },
+    {
+      "model": "gemma3:latest",
+      "useCase": "tool_calling",
+      "scenario": "JSON Object Generation",
+      "success": true,
+      "tps": 30,
+      "latencyMs": 2868,
+      "responseLength": 86,
+      "validationDetails": {
+        "success": true,
+        "isJson": true
+      }
+    },
+    {
+      "model": "gemma3:latest",
+      "useCase": "conversational",
+      "scenario": "Natural Response",
+      "success": true,
+      "tps": 92.4,
+      "latencyMs": 7578,
+      "responseLength": 700,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 700
+      }
+    },
+    {
+      "model": "gemma3:latest",
+      "useCase": "conversational",
+      "scenario": "Creative Explanation",
+      "success": true,
+      "tps": 80.5,
+      "latencyMs": 50895,
+      "responseLength": 4097,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 4097
+      }
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "workflow_control",
+      "scenario": "Simple Greeting Detection",
+      "success": true,
+      "tps": 2.3,
+      "latencyMs": 20172,
+      "responseLength": 46,
+      "validationDetails": {
+        "success": true,
+        "detected": "conversational"
+      }
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "workflow_control",
+      "scenario": "Action Request Detection",
+      "success": true,
+      "tps": 1.5,
+      "latencyMs": 22629,
+      "responseLength": 34,
+      "validationDetails": {
+        "success": true,
+        "detected": "tool_calling"
+      }
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "tool_calling",
+      "scenario": "Function Call Format",
+      "success": true,
+      "tps": 4.4,
+      "latencyMs": 22938,
+      "responseLength": 100,
+      "validationDetails": {
+        "success": true,
+        "hasToolCall": true
+      }
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "tool_calling",
+      "scenario": "JSON Object Generation",
+      "success": true,
+      "tps": 0.7,
+      "latencyMs": 119705,
+      "responseLength": 83,
+      "validationDetails": {
+        "success": true,
+        "isJson": true
+      }
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "conversational",
+      "scenario": "Natural Response",
+      "success": true,
+      "tps": 13.7,
+      "latencyMs": 34810,
+      "responseLength": 477,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 477
+      }
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "conversational",
+      "scenario": "Creative Explanation",
+      "success": true,
+      "tps": 33.5,
+      "latencyMs": 163676,
+      "responseLength": 5475,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 5475
+      }
+    },
+    {
+      "model": "bjoernb/deepseek-r1-8b:latest",
+      "useCase": "workflow_control",
+      "scenario": "Simple Greeting Detection",
+      "success": true,
+      "tps": 41.7,
+      "latencyMs": 38879,
+      "responseLength": 1623,
+      "validationDetails": {
+        "success": true,
+        "detected": "conversational"
+      }
+    },
+    {
+      "model": "bjoernb/deepseek-r1-8b:latest",
+      "useCase": "workflow_control",
+      "scenario": "Action Request Detection",
+      "success": true,
+      "tps": 44.2,
+      "latencyMs": 36348,
+      "responseLength": 1606,
+      "validationDetails": {
+        "success": true,
+        "detected": "tool_calling"
+      }
+    },
+    {
+      "model": "bjoernb/deepseek-r1-8b:latest",
+      "useCase": "tool_calling",
+      "scenario": "Function Call Format",
+      "success": false,
+      "tps": 39.7,
+      "latencyMs": 11067,
+      "responseLength": 439,
+      "validationDetails": {
+        "success": false,
+        "hasToolCall": false
+      }
+    },
+    {
+      "model": "bjoernb/deepseek-r1-8b:latest",
+      "useCase": "tool_calling",
+      "scenario": "JSON Object Generation",
+      "success": true,
+      "tps": 42.6,
+      "latencyMs": 50272,
+      "responseLength": 2141,
+      "validationDetails": {
+        "success": true,
+        "isJson": true
+      }
+    },
+    {
+      "model": "bjoernb/deepseek-r1-8b:latest",
+      "useCase": "conversational",
+      "scenario": "Natural Response",
+      "success": false,
+      "tps": 40.9,
+      "latencyMs": 634891,
+      "responseLength": 25992,
+      "validationDetails": {
+        "success": false,
+        "responseLength": 25992
+      }
+    },
+    {
+      "model": "bjoernb/deepseek-r1-8b:latest",
+      "useCase": "conversational",
+      "scenario": "Creative Explanation",
+      "success": true,
+      "tps": 51.8,
+      "latencyMs": 129331,
+      "responseLength": 6700,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 6700
+      }
+    },
+    {
+      "model": "deepseek-r1:latest",
+      "useCase": "workflow_control",
+      "scenario": "Simple Greeting Detection",
+      "success": true,
+      "tps": 1.5,
+      "latencyMs": 31337,
+      "responseLength": 46,
+      "validationDetails": {
+        "success": true,
+        "detected": "conversational"
+      }
+    },
+    {
+      "model": "deepseek-r1:latest",
+      "useCase": "workflow_control",
+      "scenario": "Action Request Detection",
+      "success": true,
+      "tps": 1.1,
+      "latencyMs": 29590,
+      "responseLength": 34,
+      "validationDetails": {
+        "success": true,
+        "detected": "tool_calling"
+      }
+    },
+    {
+      "model": "deepseek-r1:latest",
+      "useCase": "tool_calling",
+      "scenario": "Function Call Format",
+      "success": true,
+      "tps": 4.4,
+      "latencyMs": 22733,
+      "responseLength": 100,
+      "validationDetails": {
+        "success": true,
+        "hasToolCall": true
+      }
+    },
+    {
+      "model": "deepseek-r1:latest",
+      "useCase": "tool_calling",
+      "scenario": "JSON Object Generation",
+      "success": true,
+      "tps": 1.8,
+      "latencyMs": 38503,
+      "responseLength": 71,
+      "validationDetails": {
+        "success": true,
+        "isJson": true
+      }
+    },
+    {
+      "model": "deepseek-r1:latest",
+      "useCase": "conversational",
+      "scenario": "Natural Response",
+      "success": true,
+      "tps": 16.7,
+      "latencyMs": 50297,
+      "responseLength": 841,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 841
+      }
+    },
+    {
+      "model": "deepseek-r1:latest",
+      "useCase": "conversational",
+      "scenario": "Creative Explanation",
+      "success": true,
+      "tps": 34.6,
+      "latencyMs": 169147,
+      "responseLength": 5849,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 5849
+      }
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "workflow_control",
+      "scenario": "Simple Greeting Detection",
+      "success": true,
+      "tps": 4.4,
+      "latencyMs": 10545,
+      "responseLength": 46,
+      "validationDetails": {
+        "success": true,
+        "detected": "conversational"
+      }
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "workflow_control",
+      "scenario": "Action Request Detection",
+      "success": true,
+      "tps": 22.3,
+      "latencyMs": 9010,
+      "responseLength": 201,
+      "validationDetails": {
+        "success": true,
+        "detected": "tool_calling"
+      }
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "tool_calling",
+      "scenario": "Function Call Format",
+      "success": true,
+      "tps": 15,
+      "latencyMs": 4919,
+      "responseLength": 74,
+      "validationDetails": {
+        "success": true,
+        "hasToolCall": true
+      }
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "tool_calling",
+      "scenario": "JSON Object Generation",
+      "success": true,
+      "tps": 12.4,
+      "latencyMs": 5557,
+      "responseLength": 69,
+      "validationDetails": {
+        "success": true,
+        "isJson": true
+      }
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "conversational",
+      "scenario": "Natural Response",
+      "success": true,
+      "tps": 38.8,
+      "latencyMs": 10213,
+      "responseLength": 396,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 396
+      }
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "conversational",
+      "scenario": "Creative Explanation",
+      "success": true,
+      "tps": 41.7,
+      "latencyMs": 71882,
+      "responseLength": 3001,
+      "validationDetails": {
+        "success": true,
+        "responseLength": 3001
+      }
+    }
+  ],
+  "recommendations": {
+    "workflow_control": [
+      "bjoernb/deepseek-r1-8b:latest",
+      "nemotron-mini:4b",
+      "qwen2.5:3b"
+    ],
+    "tool_calling": [
+      "llama3.2:latest",
+      "qwen2.5:3b",
+      "gemma3:4b"
+    ],
+    "conversational": [
+      "qwen2.5:3b",
+      "llama3.2:latest",
+      "nemotron-mini:4b"
+    ]
+  }
+}

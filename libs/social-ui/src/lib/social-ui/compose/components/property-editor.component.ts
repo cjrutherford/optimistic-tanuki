@@ -19,6 +19,9 @@ export interface PropertyDefinition {
   description?: string;
   defaultValue?: unknown;
   options?: { label: string; value: unknown }[];
+  placeholder?: string;
+  isOutput?: boolean;
+  editable?: boolean;
 }
 
 @Component({

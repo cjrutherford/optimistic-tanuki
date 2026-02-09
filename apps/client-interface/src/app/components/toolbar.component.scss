@@ -1,18 +1,48 @@
-.nav-button {
-  background: var(--background-color) !important;
-  color: var(--foreground-color);
-  // border: 1px solid var(--accent-color);
-}
-mat-toolbar > * {
-  background-color: var(--background-color);
-  color: var(--foreground-color);
-  // border: 1px solid var(--accent-color);
-  a {
-    color: var(--foreground-color);
-  }
-}
 .toolbar {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  background: var(--surface, var(--background));
+  border-bottom: 1px solid var(--border);
+  gap: var(--spacing-md, 16px);
+}
+
+.toolbar-branding {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+}
+
+.nav-button {
+  background: transparent !important;
+  padding: 0;
+  border: none;
+
+  &:hover {
+    background: var(--muted) !important;
+  }
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-md, 8px);
+  object-fit: cover;
+}
+
+.brand-title {
+  margin: 0;
+  font-family: var(--font-heading, var(--font-body));
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: 600;
+  color: var(--foreground);
+  letter-spacing: -0.02em;
 }

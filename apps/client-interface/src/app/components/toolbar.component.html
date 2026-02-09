@@ -1,12 +1,12 @@
-<mat-toolbar [ngStyle]="themeStyles" class="toolbar">
-  <button class="nav-button" mat-raised-button (click)="emit()">
-    <img src="assets/tanuki.jpg" alt="" width="50px" />
-  </button>
-  <span class="spacer"></span>
-  <span class="spacer"></span>
-  <h4>Optomistic Tanuki</h4>
-  <span class="spacer"></span>
-  <span class="spacer"></span>
-  <lib-theme-toggle></lib-theme-toggle>
-  <app-user></app-user>
-</mat-toolbar>
+<div class="toolbar">
+  <div class="toolbar-branding">
+    <otui-button variant="rounded" class="nav-button" (action)="emit()">
+      <img src="assets/tanuki.jpg" alt="Optimistic Tanuki" class="brand-logo" />
+    </otui-button>
+    <h4 class="brand-title">Optimistic Tanuki</h4>
+  </div>
+  <div class="toolbar-actions">
+    <lib-theme-toggle></lib-theme-toggle>
+    <app-user></app-user>
+  </div>
+</div>

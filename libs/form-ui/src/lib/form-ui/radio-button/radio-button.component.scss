@@ -1,65 +1,194 @@
-.vertical {
+@use '../../styles/mixins' as *;
+
+// Form field container
+.form-field {
+  @include form-field;
+}
+
+// Radio group specific
+.form-radio-group {
+  gap: var(--spacing-sm, 8px);
+
+  &.layout-horizontal {
+    .radio-options {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+
+  &.layout-grid {
+    .radio-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--spacing-sm, 8px);
+    }
+  }
+}
+
+// Form label
+.form-label {
+  @include form-label;
+}
+
+// Radio options container
+.radio-options {
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-sm, 8px);
 }
 
-.horizontal {
+// Radio wrapper
+.form-radio {
+  @include form-check-base;
+
+  // Custom radio circle
+  .radio-mark {
+    @include form-radio-circle;
+    position: relative;
+
+    &:after {
+      @include form-radio-dot;
+    }
+  }
+
+  // Dot display when checked
+  input:checked ~ .radio-mark {
+    border-color: var(--accent, #3f51b5);
+
+    &:after {
+      display: block;
+    }
+  }
+
+  // Focus state
+  input:focus-visible ~ .radio-mark {
+    outline: 2px solid var(--accent, #3f51b5);
+    outline-offset: 2px;
+  }
+
+  // Disabled state
+  input:disabled ~ .radio-mark {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  // Label text
+  .form-check-label {
+    font-family: var(
+      --font-body,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      sans-serif
+    );
+    font-size: var(--font-size-base, 1rem);
+    color: var(--foreground, #212529);
+  }
+
+  // Disabled label
+  input:disabled ~ .form-check-label {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Error message
+.error-message {
+  @include form-error-message;
+}
+
+// Radio group specific
+.form-radio-group {
+  gap: var(--spacing-sm, 8px);
+
+  &.layout-horizontal {
+    .radio-options {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+
+  &.layout-grid {
+    .radio-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--spacing-sm, 8px);
+    }
+  }
+}
+
+// Form label
+.form-label {
+  @include form-label;
+}
+
+// Radio options container
+.radio-options {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  gap: var(--spacing-sm, 8px);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 10px;
+// Radio wrapper
+.form-radio {
+  @include form-check-base;
+
+  // Custom radio circle
+  .radio-mark {
+    @include form-radio-circle;
+    position: relative;
+
+    &:after {
+      @include form-radio-dot;
+    }
+  }
+
+  // Dot display when checked
+  input:checked ~ .radio-mark {
+    border-color: var(--accent, #3f51b5);
+
+    &:after {
+      display: block;
+    }
+  }
+
+  // Focus state
+  input:focus-visible ~ .radio-mark {
+    outline: 2px solid var(--accent, #3f51b5);
+    outline-offset: 2px;
+  }
+
+  // Disabled state
+  input:disabled ~ .radio-mark {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  // Label text
+  .form-check-label {
+    font-family: var(
+      --font-body,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      sans-serif
+    );
+    font-size: var(--font-size-base, 1rem);
+    color: var(--foreground, #212529);
+  }
+
+  // Disabled label
+  input:disabled ~ .form-check-label {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
-.radio-container {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-}
-
-.radio-container input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 20px;
-  width: 20px;
-}
-
-.radio-mark {
-  position: relative;
-  height: 20px;
-  width: 20px;
-  background-color: var(--accent-shade-lighten-30);
-  border: 1px solid #ccc;
-  border-radius: 50%;
-  margin-right: 10px;
-}
-
-.radio-container input:checked ~ .radio-mark {
-  background-color: var(--accent-shade-darken-10);
-  box-shadow: 0 0 5px 8px var(--accent-shade-darken-30);
-}
-
-.radio-mark:after {
-  content: '';
-  position: absolute;
-  display: none;
-}
-
-.radio-container input:checked ~ .radio-mark:after {
-  display: block;
-}
-
-.radio-container .radio-mark:after {
-  left: 50%;
-  top: 50%;
-  width: 10px;
-  height: 10px;
-  background: white;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+// Error message
+.error-message {
+  @include form-error-message;
 }

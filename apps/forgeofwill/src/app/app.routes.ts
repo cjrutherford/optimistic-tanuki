@@ -27,6 +27,14 @@ export const appRoutes: Route[] = [
   {
     path: '',
     loadComponent: () =>
+      import('./pages/landing/landing.component').then(
+        (m) => m.LandingComponent
+      ),
+    title: 'Forge of Will - Welcome',
+  },
+  {
+    path: 'projects',
+    loadComponent: () =>
       import('./pages/projects/projects.component').then(
         (m) => m.ProjectsComponent
       ),
@@ -44,7 +52,6 @@ export const appRoutes: Route[] = [
         )
       ),
   },
-  // profile route removed; profile editing is available from Settings
   {
     path: 'settings',
     loadComponent: () =>

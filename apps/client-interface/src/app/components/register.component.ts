@@ -1,15 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
 
-import {
-  ReactiveFormsModule,
-  FormGroup,
-  FormBuilder,
-  Validators,
-} from '@angular/forms';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { Router } from '@angular/router';
 import {
   RegisterRequest,
@@ -29,13 +20,7 @@ import { HttpClient } from '@angular/common/http';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatInputModule,
-    MatButtonModule,
-    MatCardModule,
-    RegisterBlockComponent,
-  ],
+  imports: [RegisterBlockComponent],
   providers: [AuthenticationService],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
@@ -68,13 +53,6 @@ export class RegisterComponent implements OnInit {
     } catch (e) {
       console.log('OAuth config not loaded from server, using defaults');
     }
-  }
-
-  // Custom validator to check if password and confirmPassword match
-  passwordMatchValidator(form: FormGroup) {
-    const password = form.get('password')?.value;
-    const confirmPassword = form.get('confirmPassword')?.value;
-    return password === confirmPassword ? null : { mismatch: true };
   }
 
   onSubmit($event: RegisterSubmitType) {

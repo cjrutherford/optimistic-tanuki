@@ -17,8 +17,9 @@ import { CommonModule } from '@angular/common';
 import { MessageListComponent } from './message-list/message-list.component';
 import { ParticipantsComponent } from './participants/participants.component';
 import { ComposeChatComponent } from '../compose-chat/compose-chat.component';
+import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { Themeable, ThemeColors, hexToRgb } from '@optimistic-tanuki/theme-lib';
-import { GradientBuilder } from '@optimistic-tanuki/common-ui'
+import { GradientBuilder } from '@optimistic-tanuki/common-ui';
 
 export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
 
@@ -30,6 +31,7 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
     MessageListComponent,
     ParticipantsComponent,
     ComposeChatComponent,
+    ProfilePhotoComponent,
   ],
   templateUrl: './chat-window.component.html',
   styleUrls: ['./chat-window.component.scss'],
@@ -115,6 +117,8 @@ export class ChatWindowComponent
     this.scrollToBottom();
   }
   override applyTheme(colors: ThemeColors): void {
+    const accentRgb = hexToRgb(colors.accent);
+    const complementRgb = hexToRgb(colors.complementary);
     // Use standardized color assignments with design tokens
     this.themeColors = colors;
     this.background = colors.background;
@@ -122,8 +126,8 @@ export class ChatWindowComponent
     this.accent = colors.accent;
     this.complement = colors.complementary;
     this.borderColor = colors.accent;
-    this.accentTransparent = `rgba(${hexToRgb(colors.accent)}, 0.5)`;
-    this.complementTransparent = `rgba(${hexToRgb(colors.complementary)}, 0.5)`;
+    this.accentTransparent = `rgba(${accentRgb?.r || 0}, ${accentRgb?.g || 0}, ${accentRgb?.b || 0}, 0.5)`;
+    this.complementTransparent = `rgba(${complementRgb?.r || 0}, ${complementRgb?.g || 0}, ${complementRgb?.b || 0}, 0.5)`;
     this.borderGradient = new GradientBuilder()
       .setType('linear')
       .setOptions({
@@ -145,6 +149,11 @@ export class ChatWindowComponent
     this.windowState = 'hidden';
     this.windowStateChange.emit(this.windowState);
   }
+
+  trackById(index: number, contact: ChatContact): string {
+    return contact.id;
+  }
+
   private scrollToBottom() {
     if (this.chatWindowContent) {
       const element = this.chatWindowContent.nativeElement;

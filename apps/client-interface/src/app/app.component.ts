@@ -9,7 +9,7 @@ import {
   Inject,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { NavigationEnd, RouterModule } from '@angular/router';
 import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { Observable, Subscription, filter } from 'rxjs';
 import { map, shareReplay, startWith } from 'rxjs/operators';
@@ -19,6 +19,7 @@ import {
   NavSidebarComponent,
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
+import { Router } from '@angular/router';
 import { ProfileService } from './profile.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
@@ -30,15 +31,9 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
   imports: [CommonModule, RouterModule, AppBarComponent, NavSidebarComponent],
 })
 export class AppComponent implements OnInit, OnDestroy {
-  background!: string;
-  foreground!: string;
-  accent!: string;
-  backgroundGradient!: string;
-
   themeName = signal('light-theme');
   themeService = inject(ThemeService);
   urlSub!: Subscription;
-  themeSub!: Subscription;
 
   public authState = inject(AuthStateService);
   public profileService = inject(ProfileService);
@@ -46,8 +41,9 @@ export class AppComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
-    @Inject(PLATFORM_ID) private platformId: object // Injected PLATFORM_ID
+    @Inject(PLATFORM_ID) private platformId: object
   ) {}
+
   title = 'client-interface';
   isNavExpanded = signal(false);
   isAuthenticated = signal(false);
@@ -60,14 +56,6 @@ export class AppComponent implements OnInit, OnDestroy {
       map((event: NavigationEnd) => event.urlAfterRedirects),
       startWith(this.router.url)
     );
-
-    // this.urlSub = this.router.events.subscribe((event) => {
-    //   if (event instanceof NavigationEnd && this.router.url !== '/') {
-    //     if (!this.authState.isAuthenticated) {
-    //       this.router.navigate(['/login']);
-    //     }
-    //   }
-    // });
 
     this.authState.isAuthenticated$.subscribe({
       next: (isAuthenticated) => {
@@ -84,33 +72,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.updateNavItems();
     });
 
-    // Initialize theme - only in browser to avoid SSR issues
-    if (isPlatformBrowser(this.platformId)) {
-      // Check if there's a stored palette preference, otherwise use default
-      const currentPalette = this.themeService.getCurrentPalette();
-      if (!currentPalette) {
-        // Set default palette for client-interface
-        this.themeService.setPalette('Ocean Breeze');
-      }
-      // Apply stored or default theme mode
-      this.themeService.setTheme(this.themeService.getTheme());
-    }
-
-    this.themeSub = this.themeService.themeColors$.subscribe(
-      (theme: ThemeColors | undefined) => {
-        if (!theme || !isPlatformBrowser(this.platformId)) return;
-        this.themeName.set(this.themeService.getTheme());
-        this.background = theme.background;
-        this.foreground = theme.foreground;
-        this.accent = theme.accent;
-        this.backgroundGradient = theme.accentGradients['light'];
-      }
-    );
+    // Theme is now automatically initialized by ThemeService with CSS variables
+    console.log('[AppComponent] Theme initialized via ThemeService');
   }
+
   ngOnDestroy() {
-    if (this.themeSub) {
-      this.themeSub.unsubscribe();
-    }
     if (this.urlSub) {
       this.urlSub.unsubscribe();
     }
@@ -159,6 +125,27 @@ export class AppComponent implements OnInit, OnDestroy {
         {
           label: 'Register',
           action: () => this.navigateTo('/register'),
+          isActive: currentUrl === '/register',
+        },
+        {
+          label: 'Feed',
+          action: () => this.navigateTo('/feed'),
+          isActive: currentUrl === '/feed',
+        },
+        {
+          label: 'Tasks',
+          action: () => this.navigateTo('/tasks'),
+          isActive: currentUrl === '/tasks',
+        },
+        {
+          label: 'Forum',
+          action: () => this.navigateTo('/forum'),
+          isActive: currentUrl.startsWith('/forum'),
+        },
+        {
+          label: 'Settings',
+          action: () => this.navigateTo('/settings'),
+          isActive: currentUrl === '/settings',
         },
       ]);
     }

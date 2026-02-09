@@ -62,3 +62,6 @@ storybook-static
 .gemini/
 .github/skills/
 .opencode/
+/FEATURES_BREAKDOWN.md
+.agents/
+frontend-design

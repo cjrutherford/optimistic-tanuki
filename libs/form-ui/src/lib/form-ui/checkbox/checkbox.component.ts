@@ -1,4 +1,10 @@
-import { Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  forwardRef,
+} from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
@@ -26,9 +32,14 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
     '[style.--local-transition-duration]': 'transitionDuration',
   },
 })
-export class CheckboxComponent extends Themeable implements ControlValueAccessor {
+export class CheckboxComponent
+  extends Themeable
+  implements ControlValueAccessor
+{
   @Input() value = false;
   @Input() label = '';
+  @Input() disabled = false;
+  @Input() errorMessage = '';
   @Output() changeEvent: EventEmitter<boolean> = new EventEmitter<boolean>();
 
   onChange: any = () => {};

@@ -1,21 +1,46 @@
 <div class="message-list">
   @for (message of messages; track message; let i = $index) {
-  <div class="message">
-    <div class="profile">
-      <img
-        src="{{ getContact(message.senderId)?.avatarUrl }}"
-        alt="{{ getContact(message.senderId)?.name }}'s avatar"
-        class="avatar"
-      />
-      <span class="sender"
-        >{{ getContact(message.senderId)?.name || message.senderId }}:</span
-      >
+  <div
+    class="message"
+    [ngClass]="{
+      'message-received': isReceived(message.senderId),
+      'message-sent': isSent(message.senderId),
+      'first-in-group': isFirstInGroup(messages, i),
+      'last-in-group': isLastInGroup(messages, i)
+    }"
+  >
+    <div class="message-avatar" *ngIf="isFirstInGroup(messages, i)">
+      <lib-profile-photo
+        [src]="
+          getContact(message.senderId)?.avatarUrl ||
+          getContact(message.senderId)?.profilePic ||
+          ''
+        "
+        [alt]="(getContact(message.senderId)?.name || 'Unknown') + ' avatar'"
+        [size]="32"
+      ></lib-profile-photo>
     </div>
-    <span
-      class="text"
-      [class.sender]="i === messages.length - 1"
-      [innerHTML]="getMessageHtml(message.content)"
-    ></span>
+    <div class="message-bubble">
+      <div class="message-content">
+        <span class="message-sender-name" *ngIf="isFirstInGroup(messages, i)">
+          {{ getContact(message.senderId)?.name || 'Unknown' }}
+        </span>
+        <span class="message-text">
+          {{ getMessageContent(message.content) }}
+        </span>
+        <div class="message-footer">
+          <span class="message-timestamp">
+            {{ message.timestamp | date : 'shortTime' }}
+          </span>
+          <span class="message-status" *ngIf="isSent(message.senderId)">
+            <span
+              class="status-icon"
+              [ngClass]="getMessageStatusClass(message)"
+            ></span>
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
   }
 </div>

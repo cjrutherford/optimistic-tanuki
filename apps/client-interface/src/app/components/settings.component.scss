@@ -1,22 +1,115 @@
 .settings-container {
   width: 100%;
   min-height: 100vh;
-  padding: 2rem;
-  background: var(--background, #ffffff);
+  padding: var(--spacing-xl, 32px);
+  background: var(--background);
+  color: var(--foreground);
+}
 
-  .settings-header {
-    max-width: 1200px;
-    margin: 0 auto 2rem;
+.settings-header {
+  max-width: 1200px;
+  margin: 0 auto var(--spacing-xl, 32px);
+  text-align: center;
 
-    h1 {
-      font-size: 2rem;
-      color: var(--foreground, #212121);
-      margin-bottom: 0.5rem;
+  h1 {
+    font-family: var(--font-heading, var(--font-body));
+    font-size: var(--font-size-xxl, 2rem);
+    font-weight: 600;
+    color: var(--foreground);
+    margin: 0 0 var(--spacing-sm, 8px) 0;
+  }
+
+  p {
+    font-size: var(--font-size-base, 1rem);
+    color: var(--muted);
+    margin: 0;
+  }
+}
+
+.settings-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl, 32px);
+}
+
+.settings-section {
+  h2 {
+    font-family: var(--font-heading, var(--font-body));
+    font-size: var(--font-size-xl, 1.25rem);
+    font-weight: 600;
+    color: var(--foreground);
+    margin: 0 0 var(--spacing-md, 16px) 0;
+    padding-bottom: var(--spacing-sm, 8px);
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+.profile-card {
+  position: relative;
+  cursor: pointer;
+  border-radius: var(--border-radius-lg, 12px);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+
+    .profile-overlay {
+      opacity: 1;
     }
+  }
+}
 
-    p {
-      font-size: 1rem;
-      color: var(--foreground-secondary, #666666);
-    }
+.profile-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.profile-hint {
+  color: white;
+  font-weight: 500;
+  font-size: var(--font-size-lg, 1.125rem);
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  background: var(--accent);
+  border-radius: var(--border-radius-md, 8px);
+}
+
+.theme-controls {
+  display: flex;
+  gap: var(--spacing-sm, 8px);
+  margin-bottom: var(--spacing-md, 16px);
+}
+
+.theme-designer-wrapper {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-container {
+    padding: var(--spacing-md, 16px);
+  }
+
+  .settings-header h1 {
+    font-size: var(--font-size-xl, 1.25rem);
   }
 }

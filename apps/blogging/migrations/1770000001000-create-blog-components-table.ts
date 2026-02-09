@@ -1,9 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateBlogComponentsTable1770000001000
-  implements MigrationInterface
-{
-  name = 'CreateBlogComponentsTable1770000001000';
+export class CreateBlogComponentsTable1764861381332
+  implements MigrationInterface {
+  name = 'CreateBlogComponentsTable1764861381332';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`

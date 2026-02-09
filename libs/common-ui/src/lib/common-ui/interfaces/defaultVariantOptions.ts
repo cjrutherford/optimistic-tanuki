@@ -1,4 +1,4 @@
-import { ThemeColors, generateColorShades } from '@optimistic-tanuki/theme-lib';
+import { generateColorShades, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { VariantOptions, VariantType } from './variantable.interface';
 import {
   GradientBuilder,

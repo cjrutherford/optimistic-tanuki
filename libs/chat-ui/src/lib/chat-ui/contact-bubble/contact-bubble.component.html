@@ -1,41 +1,45 @@
 <div
   class="contact-bubble"
+  tabindex="0"
   (mouseenter)="showPopup.set(true)"
   (mouseout)="showPopup.set(false)"
   (blur)="showPopup.set(false)"
+  (click)="onClick()"
+  (keydown.enter)="onClick()"
+  (keydown.space)="onClick(); $event.preventDefault()"
 >
-  <otui-button [variant]="'rounded'">
-    <div class="contact-avatars">
-      @for(contact of contacts.slice(0,3); track contact.id; let i = $index) {
-      <lib-profile-photo
-        class="contact-avatar"
-        [src]="contact.avatarUrl"
-        [alt]="contact.name"
-        [ngStyle]="{
-                        'z-index': contacts.length - i,
-                        'margin-left': i > 0 ? '-20px' : '0',
-                        'margin-right': i < 2 ? '-20px' : '0',
-                    }"
-      ></lib-profile-photo>
-      } @if(contacts.length > 3) {
-      <div
-        class="contact-avatar contact-more"
-        [ngStyle]="{
-                        'z-index': 1,
-                        'margin-left': '-20px',
-                        'margin-right': '-20px',
-                    }"
-      >
-        +{{ contacts.length - 3 }}
-      </div>
-      }
+  <div class="contact-avatars">
+    @for(contact of contacts.slice(0,3); track contact.id; let i = $index) {
+    <lib-profile-photo
+      class="contact-avatar"
+      src="contact.avatarUrl"
+      alt="contact.name"
+      [ngStyle]="{
+                      'z-index': contacts.length - i,
+                      'margin-left': i > 0 ? '-20px' : '0',
+                      'margin-right': i < 2 ? '-20px' : '0',
+                  }"
+    ></lib-profile-photo>
+    } @if(contacts.length > 3) {
+    <div
+      class="contact-avatar contact-more"
+      [ngStyle]="{
+                      'z-index': 1,
+                      'margin-left': '-20px',
+                      'margin-right': '-20px',
+                  }"
+    >
+      +{{ contacts.length - 3 }}
     </div>
-    <!-- @if (showPopup()) {
-            <div class="contact-popup">
-                <div class="contact-name">{{ contact.name }}</div>
-                <div class="contact-last-message">{{ contact.lastMessage }}</div>
-                <div class="contact-last-message-time">{{ contact.lastMessageTime }}</div>
-            </div>
-        } -->
-  </otui-button>
+    }
+  </div>
+  <div class="contact-popup" *ngIf="showPopup()">
+    <div class="contact-name">{{ contacts[0]?.name }}</div>
+    <div class="contact-last-message">
+      {{ contacts[0]?.lastMessage || 'No messages yet' }}
+    </div>
+    <div class="contact-last-message-time">
+      {{ contacts[0]?.lastMessageTime | date : 'shortTime' }}
+    </div>
+  </div>
 </div>

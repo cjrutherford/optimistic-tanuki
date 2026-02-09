@@ -7,10 +7,7 @@
   background-repeat: no-repeat;
   position: relative;
 
-  @include hero-overlay(
-    var(--overlay-opacity, 0.4),
-    var(--overlay-color, #000)
-  );
+  @include hero-overlay(var(--overlay-opacity, 0.4));
 
   &.centered {
     @include flex-center;

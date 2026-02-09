@@ -1,7 +1,7 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { ChatContact } from '../chat-ui.component';
 
@@ -36,7 +36,7 @@ export interface Contact {
  */
 @Component({
   selector: 'lib-contact-bubble',
-  imports: [CommonModule, ButtonComponent, ProfilePhotoComponent],
+  imports: [CommonModule, DatePipe, ButtonComponent, ProfilePhotoComponent],
   templateUrl: './contact-bubble.component.html',
   styleUrl: './contact-bubble.component.scss',
 })
@@ -63,4 +63,13 @@ export class ContactBubbleComponent {
    * Signal to control the visibility of a popup.
    */
   showPopup = signal<boolean>(false);
+
+  /**
+   * Emits when the contact bubble is clicked.
+   */
+  @Output() clicked = new EventEmitter<void>();
+
+  onClick() {
+    this.clicked.emit();
+  }
 }

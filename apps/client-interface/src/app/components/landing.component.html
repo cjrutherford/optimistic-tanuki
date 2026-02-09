@@ -1,31 +1,98 @@
 <div class="landing-page">
-  <otui-heading
-    [text]="'Welcome to Optimistic Tanuki'"
-    [size]="'2em'"
-  ></otui-heading>
-  <otui-heading
-    [text]="'A mindful social media experience'"
-    [size]="'1.5em'"
-  ></otui-heading>
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="hero-logo">
+        <img
+          src="assets/tanuki.jpg"
+          alt="Optimistic Tanuki"
+          class="logo-image"
+        />
+      </div>
+      <h1 class="hero-title">Welcome to Optimistic Tanuki</h1>
+      <p class="hero-subtitle">
+        A mindful social media experience built for meaningful connections
+      </p>
+      <div class="hero-actions">
+        <otui-button variant="primary" (action)="navigateToLogin()"
+          >Get Started</otui-button
+        >
+        <otui-button variant="outlined" (action)="scrollToFeatures()"
+          >Learn More</otui-button
+        >
+      </div>
+    </div>
+  </section>
 
-  <otui-grid [columns]="3" [rows]="1">
-    <otui-tile>
-      <otui-card>
+  <section class="features-section" id="features">
+    <h2 class="section-title">Social & Community Features</h2>
+    <div class="features-grid">
+      <otui-card class="feature-card">
+        <div class="feature-icon">💬</div>
         <h3>Mindful Posting</h3>
-        <p>Encouraging thoughtful and balanced interactions.</p>
+        <p>
+          Create rich, thoughtful content with our advanced editor. Share ideas,
+          stories, and moments with your community using text, images, and
+          interactive components.
+        </p>
       </otui-card>
-    </otui-tile>
-    <otui-tile>
-      <otui-card>
-        <h3>Supportive Community</h3>
-        <p>Fostering uplifting and supportive connections.</p>
+
+      <otui-card class="feature-card">
+        <div class="feature-icon">🤝</div>
+        <h3>Community Engagement</h3>
+        <p>
+          Connect with like-minded individuals through follows, comments, and
+          reactions. Build your network and engage in meaningful discussions.
+        </p>
       </otui-card>
-    </otui-tile>
-    <otui-tile>
-      <otui-card>
-        <h3>Rich Features</h3>
-        <otui-list [items]="featureItems" [type]="'block-list'"></otui-list>
+
+      <otui-card class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <h3>Personalized Experience</h3>
+        <p>
+          Customize your interface with personality-driven themes. Choose from
+          various design aesthetics that match your style and preferences.
+        </p>
       </otui-card>
-    </otui-tile>
-  </otui-grid>
+
+      <otui-card class="feature-card">
+        <div class="feature-icon">📸</div>
+        <h3>Media Sharing</h3>
+        <p>
+          Share photos, galleries, and rich media content. Our platform supports
+          various attachment types to make your posts visually engaging.
+        </p>
+      </otui-card>
+
+      <otui-card class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>Privacy First</h3>
+        <p>
+          Control who sees your content with granular privacy settings. Choose
+          between public and following-only feeds.
+        </p>
+      </otui-card>
+
+      <otui-card class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Real-time Updates</h3>
+        <p>
+          Stay connected with real-time notifications and live updates. Never
+          miss important interactions from your community.
+        </p>
+      </otui-card>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <div class="cta-content">
+      <h2>Ready to Join?</h2>
+      <p>
+        Start your journey with Optimistic Tanuki today and be part of a
+        supportive, mindful community.
+      </p>
+      <otui-button variant="primary" size="lg" (action)="navigateToRegister()"
+        >Create Account</otui-button
+      >
+    </div>
+  </section>
 </div>

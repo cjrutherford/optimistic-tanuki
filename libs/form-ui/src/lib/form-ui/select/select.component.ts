@@ -38,6 +38,9 @@ export class SelectComponent extends Themeable implements ControlValueAccessor {
     { value: 'option2', label: 'Option 2' },
     { value: 'option3', label: 'Option 3' },
   ];
+  @Input() disabled = false;
+  @Input() hasError = false;
+  @Input() errorMessage = '';
 
   override applyTheme(colors: ThemeColors): void {
     // Use standardized color assignments with design tokens

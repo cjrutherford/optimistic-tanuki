@@ -1,6 +1,27 @@
-.active {
-  box-shadow: 2px 2px 2px 0 var(--success-shade-darken-50);
-  font-size: 30px;
-  color: var(--success-shade-darken-50);
-  background-color: var(--success-shade-lighten-50);
+/* Vote component styling with theme support */
+.vote-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif);
+}
+
+.vote-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px) !important;
+  min-width: auto !important;
+  min-height: 32px !important;
+
+  &.active {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+}
+
+.vote-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
 }

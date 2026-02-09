@@ -1,4 +1,4 @@
-<div style="margin-left: 16px; margin-right: 16px">
+<div class="projects-container">
   <lib-project-selector
     [projects]="projects()"
     (projectSelected)="onProjectSelected($event)"
@@ -6,12 +6,16 @@
     (editProject)="onEditProject($event)"
     (deleteProject)="onDeleteProject()"
   ></lib-project-selector>
-  @if(selectedProject()) {
 
-  <otui-card>
-    <h2>Project Overview {{ selectedProject()!.name }}</h2>
+  @if(selectedProject()) {
+  <otui-card class="project-details">
+    <h2 class="project-title">
+      Project Overview: {{ selectedProject()!.name }}
+    </h2>
+
     <div class="column-container">
-      <div class="row-container">
+      <!-- Summary Blocks -->
+      <div class="row-container summary-row">
         <lib-summary-block
           title="Unresolved Tasks"
           [count]="taskCount()"
@@ -33,9 +37,10 @@
           (onClick)="showDetails('mindmap')"
         ></lib-summary-block>
       </div>
+
       @if (detailsShown()) {
-      <div class="row-container">
-        <otui-tile class="parent-container">
+      <div class="row-container details-row">
+        <otui-tile class="parent-container details-tile">
           @if (shownDetails() === 'tasks') {
           <!-- Task View Selector -->
           <div class="view-selector">
@@ -43,31 +48,21 @@
             <div class="view-buttons">
               <otui-button
                 (click)="setTaskViewMode('list')"
-                [style]="
-                  taskViewMode() === 'list'
-                    ? 'background: var(--accent);'
-                    : 'background: var(--background-secondary);'
-                "
+                [variant]="taskViewMode() === 'list' ? 'primary' : 'outlined'"
               >
                 List View
               </otui-button>
               <otui-button
                 (click)="setTaskViewMode('calendar')"
-                [style]="
-                  taskViewMode() === 'calendar'
-                    ? 'background: var(--accent);'
-                    : 'background: var(--background-secondary);'
+                [variant]="
+                  taskViewMode() === 'calendar' ? 'primary' : 'outlined'
                 "
               >
                 Calendar View
               </otui-button>
               <otui-button
                 (click)="setTaskViewMode('kanban')"
-                [style]="
-                  taskViewMode() === 'kanban'
-                    ? 'background: var(--accent);'
-                    : 'background: var(--background-secondary);'
-                "
+                [variant]="taskViewMode() === 'kanban' ? 'primary' : 'outlined'"
               >
                 Kanban View
               </otui-button>
@@ -77,92 +72,107 @@
           <!-- Task Views -->
           @if (taskViewMode() === 'list') {
           <lib-ag-tasks-table
+            class="full-size-table"
             (deleteTask)="onDeleteTask($event)"
             (editTask)="onEditTask($event)"
             (createTask)="onCreateTask($event)"
             (startTimer)="onStartTimer($event)"
             (stopTimer)="onStopTimer($event)"
             [tasks]="selectedProject()!.tasks"
-            style="width: 100%; height: 100%"
           ></lib-ag-tasks-table>
           } @else if (taskViewMode() === 'calendar') {
           <lib-task-calendar
+            class="full-size-table"
             (deleteTask)="onDeleteTask($event)"
             (editTask)="onEditTask($event)"
             (createTask)="onCreateTask($event)"
             [tasks]="selectedProject()!.tasks"
-            style="width: 100%; height: 100%"
           ></lib-task-calendar>
           } @else if (taskViewMode() === 'kanban') {
           <lib-task-kanban
+            class="full-size-table"
             (deleteTask)="onDeleteTask($event)"
             (editTask)="onEditTask($event)"
             (createTask)="onCreateTask($event)"
             [tasks]="selectedProject()!.tasks"
-            style="width: 100%; height: 100%"
           ></lib-task-kanban>
           } } @else if (shownDetails() === 'risks') {
           <lib-ag-risks-table
+            class="full-size-table"
             (createRisk)="onCreateRisk($event)"
             (editRisk)="onEditRisk($event)"
             (deleteRisk)="onDeleteRisk($event)"
             [risks]="selectedProject()!.risks"
-            style="width: 100%; height: 100%"
           ></lib-ag-risks-table>
           } @else if (shownDetails() === 'changes') {
           <lib-ag-changes-table
+            class="full-size-table"
             (createChange)="onCreateChange($event)"
             (editChange)="onEditChange($event)"
             (deleteChange)="onDeleteChange($event)"
             [changes]="selectedProject()!.changes"
-            style="width: 100%; height: 100%"
           ></lib-ag-changes-table>
           } @else if (shownDetails() === 'mindmap') {
           <lib-mind-map
+            class="mind-map-view"
             [tasks]="selectedProject()!.tasks"
             [risks]="selectedProject()!.risks"
             [changes]="selectedProject()!.changes"
             [projectId]="selectedProject()!.id"
-            style="width: 100%; height: 600px; display: block"
           ></lib-mind-map>
           }
-          <otui-button (click)="hideDetails()" class="close-button"
-            >X</otui-button
-          >
+          <otui-button (click)="hideDetails()" class="close-button">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              width="16"
+              height="16"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </otui-button>
         </otui-tile>
       </div>
       }
+
+      <!-- AI Summary -->
       <div class="row-container">
-        <otui-tile style="grid-column: span 3">
+        <otui-tile class="ai-summary-tile">
           <h3>AI Project Summary</h3>
           <p>An Overview of the project provided by your AI Project Manager.</p>
         </otui-tile>
       </div>
+
+      <!-- Project Journal -->
       <div class="row-container">
-        <otui-tile style="grid-column: span 3; grid-row: span 3">
+        <otui-tile class="journal-tile">
           <h3>Project Journal</h3>
           <p>Recent updates and notes about the project.</p>
           <lib-ag-project-journal-table
+            class="full-size-table"
             (createJournalEntry)="onCreateJournalEntry($event)"
             (editJournalEntry)="onUpdateJournalEntry($event)"
             (deleteJournalEntry)="onDeleteJournalEntry($event)"
-            style="width: 100%; height: 100%"
             [journals]="selectedProject()!.journalEntries"
           ></lib-ag-project-journal-table>
         </otui-tile>
       </div>
     </div>
   </otui-card>
-
-  <!-- <lib-project-overview
-          [project]="selectedProject()!"
-        >
-        </lib-project-overview> -->
   } @else {
   <div class="no-project">
     <otui-glass-container>
-      <otui-card>
-        No project selected. Please select or create a project to view details.
+      <otui-card class="no-project-card">
+        <div class="no-project-content">
+          <h3>No Project Selected</h3>
+          <p>Please select or create a project to view details.</p>
+          <otui-button variant="primary" (action)="onCreateProject()"
+            >Create New Project</otui-button
+          >
+        </div>
       </otui-card>
     </otui-glass-container>
   </div>
@@ -171,14 +181,19 @@
 
 @if(showCreateModal()) {
 <otui-modal
-  [title]="'Create Project'"
-  (closeModal)="showCreateModal.set(false)"
+  [heading]="'Create Project'"
+  (close)="showCreateModal.set(false)"
+  [visible]="showCreateModal()"
 >
   <lib-project-form (submitEvent)="onProjectCreated($event)">
   </lib-project-form>
 </otui-modal>
 } @if(showEditModal() && selectedProject() !== undefined) {
-<otui-modal [title]="'Edit Project'" (closeModal)="showEditModal.set(false)">
+<otui-modal
+  [heading]="'Edit Project'"
+  (close)="showEditModal.set(false)"
+  [visible]="showEditModal()"
+>
   <lib-project-form
     [project]="selectedProject()"
     (submitEvent)="onProjectUpdated($event)"

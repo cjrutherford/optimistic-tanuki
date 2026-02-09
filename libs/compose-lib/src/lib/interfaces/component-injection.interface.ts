@@ -38,6 +38,25 @@ export interface InjectableComponent {
    * Icon identifier for UI display
    */
   icon?: string;
+
+  /**
+   * Editable properties for the component
+   */
+  properties?: PropertyDefinition[];
+}
+
+/**
+ * Property definition for component configuration
+ */
+export interface PropertyDefinition {
+  key: string;
+  type: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'url' | 'select';
+  label: string;
+  description?: string;
+  defaultValue?: unknown;
+  options?: { label: string; value: unknown }[];
+  isOutput?: boolean;
+  outputSchema?: unknown;
 }
 
 /**

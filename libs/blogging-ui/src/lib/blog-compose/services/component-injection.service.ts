@@ -10,7 +10,7 @@ import {
   ComponentInjectionEvent,
   ComponentInjectionAPI,
 } from '../interfaces/component-injection.interface';
-import { ComponentEditorWrapperComponent } from '../components/component-editor-wrapper.component';
+import { ComponentEditorWrapperComponent } from '@optimistic-tanuki/compose-lib';
 
 @Injectable({
   providedIn: 'root',
@@ -28,7 +28,10 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
   private onSelectionCallback?: (instance: InjectedComponentInstance) => void;
   private onDuplicateCallback?: (instance: InjectedComponentInstance) => void;
   private onConfigCallback?: (instance: InjectedComponentInstance) => void;
-  private onPropertiesChangedCallback?: (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => void;
+  private onPropertiesChangedCallback?: (data: {
+    instance: InjectedComponentInstance;
+    data: Record<string, unknown>;
+  }) => void;
 
   /**
    * Event emitter for component injection events
@@ -54,7 +57,10 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     onSelection?: (instance: InjectedComponentInstance) => void;
     onDuplicate?: (instance: InjectedComponentInstance) => void;
     onConfig?: (instance: InjectedComponentInstance) => void;
-    onPropertiesChanged?: (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => void;
+    onPropertiesChanged?: (data: {
+      instance: InjectedComponentInstance;
+      data: Record<string, unknown>;
+    }) => void;
   }): void {
     this.onEditCallback = callbacks.onEdit;
     this.onDeleteCallback = callbacks.onDelete;
@@ -128,11 +134,12 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       .substring(2, 9)}`;
 
     // Create wrapper component
-    const wrapperRef = position !== undefined ? this.viewContainer.createComponent(
-      ComponentEditorWrapperComponent, { index: position }
-    ) : this.viewContainer.createComponent(
-      ComponentEditorWrapperComponent
-    );
+    const wrapperRef =
+      position !== undefined
+        ? this.viewContainer.createComponent(ComponentEditorWrapperComponent, {
+            index: position,
+          })
+        : this.viewContainer.createComponent(ComponentEditorWrapperComponent);
 
     // Create instance object
     const instance: InjectedComponentInstance = {
@@ -140,13 +147,19 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       componentDef,
       componentRef: wrapperRef, // Store wrapper ref as main ref
       position: position !== undefined ? { index: position } : undefined,
-      data: { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) },
+      data: {
+        ...((componentDef.data as Record<string, unknown>) || {}),
+        ...((data as Record<string, unknown>) || {}),
+      },
     };
 
     // Configure wrapper component - it will create the inner component itself
     wrapperRef.instance.componentInstance = instance;
     wrapperRef.instance.componentDef = componentDef;
-    wrapperRef.instance.componentData = { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) };
+    wrapperRef.instance.componentData = {
+      ...((componentDef.data as Record<string, unknown>) || {}),
+      ...((data as Record<string, unknown>) || {}),
+    };
 
     // Set up wrapper event handlers
     wrapperRef.instance.deleteRequested.subscribe(
@@ -168,7 +181,10 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     );
 
     wrapperRef.instance.propertiesChanged.subscribe(
-      (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => {
+      (data: {
+        instance: InjectedComponentInstance;
+        data: Record<string, unknown>;
+      }) => {
         this.onPropertiesChangedCallback?.(data);
       }
     );
@@ -213,13 +229,19 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       instanceId,
       componentDef,
       componentRef: wrapperRef, // Store wrapper ref as main ref
-      data: { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) },
+      data: {
+        ...((componentDef.data as Record<string, unknown>) || {}),
+        ...((data as Record<string, unknown>) || {}),
+      },
     };
 
     // Configure wrapper component - it will create the inner component itself
     wrapperRef.instance.componentInstance = instance;
     wrapperRef.instance.componentDef = componentDef;
-    wrapperRef.instance.componentData = { ...(componentDef.data as Record<string, unknown> || {}), ...(data as Record<string, unknown> || {}) };
+    wrapperRef.instance.componentData = {
+      ...((componentDef.data as Record<string, unknown>) || {}),
+      ...((data as Record<string, unknown>) || {}),
+    };
 
     // Set up wrapper event handlers
     wrapperRef.instance.deleteRequested.subscribe(
@@ -241,7 +263,10 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     );
 
     wrapperRef.instance.propertiesChanged.subscribe(
-      (data: { instance: InjectedComponentInstance; data: Record<string, unknown> }) => {
+      (data: {
+        instance: InjectedComponentInstance;
+        data: Record<string, unknown>;
+      }) => {
         this.onPropertiesChangedCallback?.(data);
       }
     );
@@ -298,10 +323,14 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
     const dataToMerge = data as Record<string, unknown>;
 
     // Update instance data
-    instance.data = { ...(instance.data as Record<string, unknown>), ...dataToMerge };
+    instance.data = {
+      ...(instance.data as Record<string, unknown>),
+      ...dataToMerge,
+    };
 
     // Update wrapper component's data
-    const wrapperInstance = instance.componentRef.instance as ComponentEditorWrapperComponent;
+    const wrapperInstance = instance.componentRef
+      .instance as ComponentEditorWrapperComponent;
     if (wrapperInstance) {
       // Use the public updateComponentData method if available
       if (typeof wrapperInstance.updateComponentData === 'function') {
@@ -309,7 +338,10 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
       } else {
         // Fallback to direct property update
         if (wrapperInstance.componentData) {
-          wrapperInstance.componentData = { ...wrapperInstance.componentData, ...dataToMerge };
+          wrapperInstance.componentData = {
+            ...wrapperInstance.componentData,
+            ...dataToMerge,
+          };
         }
       }
     }

@@ -1,55 +1,256 @@
-<div class="table-row" [ngStyle]="tableStyles">
-  @for (cell of cells; track cell; let i = $index) { @if (cell.isBadge) {
-  <div class="table-cell badge-cell" [ngStyle]="cell.customStyles">
-    @if (isTemplateRef(cell.value)) {
-    <ng-container [ngTemplateOutlet]="cellTemplates[i]"></ng-container>
-    } @else {
-    {{ cell.value }}
+<!-- Table Container with overflow handling -->
+<div class="table-container" [class.sticky-header]="stickyHeader">
+  <table
+    class="otui-table"
+    [attr.aria-label]="ariaLabel"
+    [attr.aria-labelledby]="ariaLabelledBy"
+    [attr.aria-describedby]="ariaDescribedBy"
+    role="table"
+  >
+    <!-- Caption for accessibility -->
+    @if (caption) {
+    <caption>
+      {{
+        caption
+      }}
+    </caption>
     }
-  </div>
-  } @else if (!cell.isSpacer) {
-  <div class="table-cell" [ngStyle]="cell.customStyles">
-    @if (isTemplateRef(cell.value)) {
-    <ng-container [ngTemplateOutlet]="cellTemplates[i]"></ng-container>
-    } @else { @if (cell.heading) {
-    <div class="table-head">
-      {{ cell.heading }}
-    </div>
-    }
-    <div
-      class="table-value"
-      [ngClass]="{
-        overflowable: cell.isOverflowable && !rowExpanded,
-        'row-expanded': rowExpanded && cell.isOverflowable
-      }"
-    >
+
+    <!-- Table Header -->
+    <thead role="rowgroup">
+      <tr role="row">
+        <!-- Select All Checkbox -->
+        @if (selectable) {
+        <th
+          role="columnheader"
+          scope="col"
+          class="table-cell table-cell-checkbox"
+        >
+          <input
+            type="checkbox"
+            [checked]="areAllSelected()"
+            (change)="toggleAllSelection()"
+            [attr.aria-label]="'Select all rows'"
+          />
+        </th>
+        }
+
+        <!-- Column Headers -->
+        @for (column of columns; track column.key) {
+        <th
+          role="columnheader"
+          scope="col"
+          [style.width]="column.width"
+          [class.sortable]="sortable && column.sortable"
+          [class.sorted]="currentSort?.column === column.key"
+          [attr.aria-sort]="
+            currentSort?.column === column.key
+              ? currentSort?.direction === 'asc'
+                ? 'ascending'
+                : 'descending'
+              : null
+          "
+        >
+          @if (sortable && column.sortable) {
+          <button
+            class="sort-button"
+            (click)="handleSort(column)"
+            [attr.aria-label]="
+              'Sort by ' +
+              column.header +
+              ', ' +
+              (currentSort?.column === column.key
+                ? currentSort?.direction === 'asc'
+                  ? 'sorted ascending'
+                  : 'sorted descending'
+                : 'not sorted')
+            "
+          >
+            <span>{{ column.header }}</span>
+            <span class="sort-indicator" aria-hidden="true">{{
+              getSortIndicator(column)
+            }}</span>
+          </button>
+          } @else {
+          <span>{{ column.header }}</span>
+          }
+        </th>
+        }
+
+        <!-- Actions Column -->
+        @if (actions.length > 0) {
+        <th
+          role="columnheader"
+          scope="col"
+          class="table-cell table-cell-actions"
+        >
+          Actions
+        </th>
+        }
+      </tr>
+    </thead>
+
+    <!-- Table Body -->
+    <tbody role="rowgroup">
+      @if (data.length === 0) {
+      <tr role="row" class="empty-row">
+        <td
+          [attr.colspan]="
+            columns.length + (selectable ? 1 : 0) + (actions.length > 0 ? 1 : 0)
+          "
+          role="cell"
+          class="empty-cell"
+        >
+          {{ emptyMessage }}
+        </td>
+      </tr>
+      } @else { @for (row of data; track row; let rowIndex = $index) {
+      <tr
+        role="row"
+        [class.selected]="isRowSelected(row)"
+        [class.hoverable]="hoverable"
+        (click)="handleRowClick(row, rowIndex)"
+        tabindex="0"
+        (keydown.enter)="handleRowClick(row, rowIndex)"
+      >
+        <!-- Row Selection Checkbox -->
+        @if (selectable) {
+        <td role="cell" class="table-cell table-cell-checkbox">
+          <input
+            type="checkbox"
+            [checked]="isRowSelected(row)"
+            (change)="toggleRowSelection(row)"
+            (click)="$event.stopPropagation()"
+            [attr.aria-label]="'Select row ' + (rowIndex + 1)"
+          />
+        </td>
+        }
+
+        <!-- Row Cells -->
+        @for (column of columns; track column.key) {
+        <td
+          role="cell"
+          [class.text-center]="column.align === 'center'"
+          [class.text-right]="column.align === 'right'"
+        >
+          @if (column.template) {
+          <!-- Custom Template -->
+          <ng-container
+            *ngTemplateOutlet="
+              column.template;
+              context: {
+                $implicit: row[column.key],
+                row: row,
+                column: column,
+                index: rowIndex
+              }
+            "
+          ></ng-container>
+          } @else if (column.type === 'badge') {
+          <!-- Badge Type -->
+          <span class="badge">{{ row[column.key] }}</span>
+          } @else {
+          <!-- Text Type -->
+          {{ row[column.key] }}
+          }
+        </td>
+        }
+
+        <!-- Actions Cell -->
+        @if (actions.length > 0) {
+        <td role="cell" class="table-cell table-cell-actions">
+          <div class="actions-container">
+            @for (action of actions; track action.label) {
+            <button
+              type="button"
+              class="action-button"
+              [class]="'action-' + (action.variant || 'secondary')"
+              (click)="
+                executeAction(action, row, rowIndex); $event.stopPropagation()
+              "
+              [disabled]="isActionDisabled(action, row)"
+              [attr.aria-label]="action.label"
+            >
+              @if (action.icon) {
+              <span class="action-icon" aria-hidden="true">{{
+                action.icon
+              }}</span>
+              }
+              <span>{{ action.label }}</span>
+            </button>
+            }
+          </div>
+        </td>
+        }
+      </tr>
+      } }
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== LEGACY SINGLE-ROW MODE (Backward Compatibility) ==================== -->
+@if (_legacyCells.length > 0 && data.length === 0) {
+<div class="legacy-table-row" [class.expanded]="rowExpanded">
+  <div class="table-row" role="row">
+    @for (cell of _legacyCells; track $index; let i = $index) { @if
+    (cell.isSpacer) {
+    <div class="spacer-cell" role="cell"></div>
+    } @else if (cell.isBadge) {
+    <div class="table-cell badge-cell" role="cell">
       {{ cell.value }}
     </div>
-    }
-  </div>
-  } @else {
-  <div class="table-spacer"></div>
-  } } @if (rowActions) {
-  <div class="table-cell actions-cell flex-row-actions">
-    @if (showActionsSplit) { @for (action of rowActions; track action) {
-    <otui-button (click)="executeAction(action)">
-      {{ action.title }}
-    </otui-button>
-    } } @else {
-    <otui-button (click)="toggleActions()">Actions</otui-button>
-    @if (showActions) {
-    <div class="actions-list popover">
-      @for (action of rowActions; track action) {
-      <otui-button (click)="executeAction(action)">
-        {{ action.title }}
-      </otui-button>
-      }
+    } @else {
+    <div
+      class="table-cell"
+      [class.overflowable]="cell.isOverflowable"
+      [class.expanded]="rowExpanded"
+      role="cell"
+    >
+      @if (cellTemplates[i]) {
+      <ng-container *ngTemplateOutlet="cellTemplates[i]!"></ng-container>
+      } @else {
+      <span class="table-head">{{ cell.heading }}:</span>
+      <span
+        class="table-value"
+        [class.overflowable]="cell.isOverflowable"
+        [class.expanded]="rowExpanded"
+      >
+        {{ cell.value }}
+      </span>
+      @if (cell.isOverflowable && !rowExpanded) {
+      <button class="expand-btn" (click)="toggleRowExpansion()">...</button>
+      } }
     </div>
     } }
+
+    <!-- Legacy Actions -->
+    @if (_legacyRowActions && _legacyRowActions.length > 0) {
+    <div
+      class="actions-cell"
+      [class.flex-row-actions]="!showActionsSplit"
+      role="cell"
+    >
+      @if (showActionsSplit) {
+      <button (click)="toggleActions()">Actions ▼</button>
+      @if (showActions) {
+      <div class="popover">
+        @for (action of _legacyRowActions; track action.title) {
+        <button (click)="executeLegacyAction(action)">
+          {{ action.title }}
+        </button>
+        }
+      </div>
+      } } @else {
+      <div class="actions-list">
+        @for (action of _legacyRowActions; track action.title) {
+        <button (click)="executeLegacyAction(action)">
+          {{ action.title }}
+        </button>
+        }
+      </div>
+      }
+    </div>
+    }
   </div>
-  } @if (hasOverflowableCells) {
-  <otui-button class="expand-btn" type="button" (click)="toggleRowExpansion()">
-    {{ rowExpanded ? '⬆️' : '⬇️' }}
-  </otui-button>
-  }
 </div>
+}

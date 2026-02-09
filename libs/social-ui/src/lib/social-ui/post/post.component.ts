@@ -19,22 +19,16 @@ import {
   CardComponent,
   GridComponent,
   TileComponent,
-  // CalloutBoxComponent,
-  // CodeSnippetComponent,
-  // VideoPlayerComponent,
-  // ImageGalleryComponent,
-  // QuoteBlockComponent,
-  // TimelineComponent,
-  // StatsDisplayComponent,
-  // PricingTableComponent,
-  // TestimonialComponent,
-  // FaqItemComponent,
-  // SocialShareComponent,
   AccordionComponent,
   ModalComponent,
   HeroSectionComponent,
   ContentSectionComponent,
 } from '@optimistic-tanuki/common-ui';
+import {
+  CalloutBoxComponent,
+  CodeSnippetComponent,
+  ImageGalleryComponent,
+} from '@optimistic-tanuki/compose-lib';
 import { VoteComponent } from '../vote/vote.component';
 import { CommentComponent } from '../comment/comment.component';
 import { CommentListComponent } from '../comment/comment-list/comment-list.component';
@@ -52,21 +46,15 @@ import { SocialComponentPersistenceService } from '../../services/social-compone
 
 // Component map for dynamic reconstruction
 const COMPONENT_MAP: Record<string, any> = {
-  // 'callout-box': CalloutBoxComponent,
-  // 'code-snippet': CodeSnippetComponent,
-  // 'video-player': VideoPlayerComponent,
-  // 'image-gallery': ImageGalleryComponent,
-  // 'quote-block': QuoteBlockComponent,
-  // 'timeline': TimelineComponent,
-  // 'stats-display': StatsDisplayComponent,
-  // 'pricing-table': PricingTableComponent,
-  // 'testimonial': TestimonialComponent,
-  // 'faq-item': FaqItemComponent,
-  // 'social-share': SocialShareComponent,
-  'button': ButtonComponent,
-  'card': CardComponent,
-  'accordion': AccordionComponent,
-  'modal': ModalComponent,
+  // Social UI example components from compose-lib
+  'callout-box': CalloutBoxComponent,
+  'code-snippet': CodeSnippetComponent,
+  'image-gallery': ImageGalleryComponent,
+  // Common UI components
+  button: ButtonComponent,
+  card: CardComponent,
+  accordion: AccordionComponent,
+  modal: ModalComponent,
   'hero-section': HeroSectionComponent,
   'content-section': ContentSectionComponent,
 };
@@ -125,7 +113,9 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   contentElement?: ElementRef<HTMLElement>;
 
   // Services and state
-  private readonly componentPersistence = inject(SocialComponentPersistenceService);
+  private readonly componentPersistence = inject(
+    SocialComponentPersistenceService
+  );
   private storedComponents: SocialComponentDto[] = [];
   private componentRefs: ComponentRef<any>[] = [];
 
@@ -186,7 +176,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   ngOnDestroy() {
     // Clean up component references
-    this.componentRefs.forEach(ref => ref.destroy());
+    this.componentRefs.forEach((ref) => ref.destroy());
     this.componentRefs = [];
   }
 
@@ -225,7 +215,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     // Clean up existing component refs
-    this.componentRefs.forEach(ref => ref.destroy());
+    this.componentRefs.forEach((ref) => ref.destroy());
     this.componentRefs = [];
 
     // Find all component nodes in the content
@@ -237,21 +227,34 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
       try {
         const instanceId = node.getAttribute('data-instance-id');
         if (!instanceId) {
-          console.warn('[PostComponent] Component node missing data-instance-id:', node);
+          console.warn(
+            '[PostComponent] Component node missing data-instance-id:',
+            node
+          );
           return;
         }
 
         // Find stored data for this component
-        const storedComponent = this.storedComponents.find(c => c.instanceId === instanceId);
+        const storedComponent = this.storedComponents.find(
+          (c) => c.instanceId === instanceId
+        );
         if (storedComponent) {
           // Use stored component data
-          this.createComponentFromStoredData(node as HTMLElement, storedComponent);
+          this.createComponentFromStoredData(
+            node as HTMLElement,
+            storedComponent
+          );
         } else {
-          console.warn(`[PostComponent] No stored data for component: ${instanceId}`);
+          console.warn(
+            `[PostComponent] No stored data for component: ${instanceId}`
+          );
         }
-
       } catch (error) {
-        console.error('[PostComponent] Error reconstructing component:', error, node);
+        console.error(
+          '[PostComponent] Error reconstructing component:',
+          error,
+          node
+        );
       }
     });
   }
@@ -259,10 +262,15 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   /**
    * Create component using stored database data
    */
-  private createComponentFromStoredData(node: HTMLElement, storedComponent: SocialComponentDto): void {
+  private createComponentFromStoredData(
+    node: HTMLElement,
+    storedComponent: SocialComponentDto
+  ): void {
     const ComponentClass = COMPONENT_MAP[storedComponent.componentType];
     if (!ComponentClass) {
-      console.warn(`[PostComponent] Component not found in map: ${storedComponent.componentType}`);
+      console.warn(
+        `[PostComponent] Component not found in map: ${storedComponent.componentType}`
+      );
       this.showComponentPlaceholder(node, storedComponent.componentType);
       return;
     }
@@ -272,7 +280,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     // Apply stored component data
     const instance = componentRef.instance as any;
-    Object.keys(storedComponent.componentData).forEach(key => {
+    Object.keys(storedComponent.componentData).forEach((key) => {
       if (instance[key] !== undefined) {
         instance[key] = storedComponent.componentData[key];
       }
@@ -285,13 +293,18 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
     node.innerHTML = '';
     node.appendChild(componentRef.location.nativeElement);
 
-    console.log(`[PostComponent] Component created: ${storedComponent.componentType} (${storedComponent.instanceId})`);
+    console.log(
+      `[PostComponent] Component created: ${storedComponent.componentType} (${storedComponent.instanceId})`
+    );
   }
 
   /**
    * Show placeholder for unknown component types
    */
-  private showComponentPlaceholder(node: HTMLElement, componentType: string): void {
+  private showComponentPlaceholder(
+    node: HTMLElement,
+    componentType: string
+  ): void {
     node.innerHTML = `
       <div class="component-placeholder" style="padding: 1rem; border: 1px dashed #ccc; border-radius: 4px; text-align: center; color: #666; background: #f9f9f9;">
         <strong>${componentType}</strong>

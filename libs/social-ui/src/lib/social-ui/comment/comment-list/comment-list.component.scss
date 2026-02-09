@@ -1,0 +1,42 @@
+/* Comment list container with theme support */
+.comments-container {
+  width: 100%;
+}
+
+.comment {
+  padding: var(--spacing-md, 16px);
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif);
+
+  .comment-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    margin-bottom: var(--spacing-sm, 8px);
+    padding-bottom: var(--spacing-xs, 4px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .comment-author {
+    font-weight: 600;
+    color: var(--foreground);
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .comment-content {
+    color: var(--foreground);
+    line-height: 1.6;
+    font-size: var(--font-size-base, 1rem);
+
+    ::ng-deep {
+      p {
+        margin: 0 0 var(--spacing-sm, 8px) 0;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        border-radius: var(--border-radius-sm, 4px);
+      }
+    }
+  }
+}

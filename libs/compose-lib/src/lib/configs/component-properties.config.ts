@@ -1,4 +1,4 @@
-import { PropertyDefinition } from '../components/property-editor.component';
+import { PropertyDefinition } from '../interfaces/component-injection.interface';
 
 /**
  * Component Property Definitions for Social Components

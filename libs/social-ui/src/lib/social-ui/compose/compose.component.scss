@@ -1,106 +1,107 @@
 // Import Angular Component Node styles
 @use './extensions/angular-component-node.styles.scss';
 
+.compose-card {
+  width: 100%;
+  padding: var(--spacing-md, 16px);
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 8px);
+  }
+
+  label {
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
 .theme-config-panel {
-  margin-bottom: 1rem;
-  border: 1px solid var(--local-border-color);
-  border-radius: 8px;
+  margin-bottom: var(--spacing-md, 16px);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md, 8px);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface);
 }
 
 .theme-config-header {
-  padding: 0.75rem 1rem;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--surface);
   font-weight: 500;
+  color: var(--foreground);
+
+  &:hover {
+    background: var(--background);
+  }
 }
 
 .theme-config-content {
-  padding: 1rem;
+  padding: var(--spacing-md, 16px);
   display: flex;
-  gap: 2rem;
-  align-items: center;
+  gap: var(--spacing-lg, 24px);
+  align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-xs, 4px);
+
+  .label {
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 500;
+    color: var(--muted);
+  }
 }
 
 .theme-toggles {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-xs, 4px);
 }
 
 input[type='color'] {
-  width: 50px;
-  height: 30px;
-  border: none;
-  border-radius: 4px;
+  width: 48px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm, 4px);
   cursor: pointer;
-}
-
-h3 {
-  margin: var(--spacing-sm, 8px);
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
+  background: var(--background);
 }
 
 .tiptap-editor-styles ::ng-deep .ProseMirror {
-  border: 2px solid var(--local-complement, var(--complement));
-  background: var(--local-background-gradient, var(--background-gradient));
-  color: var(--local-foreground, var(--foreground));
-  font-family: 'Roboto', sans-serif;
-  border-radius: var(--border-radius-lg, 8px);
-  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+  border: 2px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif);
+  border-radius: var(--border-radius-md, 8px);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.1));
   min-height: 200px;
   padding: var(--spacing-md, 16px);
   transition: all 0.15s ease-in-out;
 
-  &:focus {
+  &:focus-within {
     outline: none;
-    border-color: var(--local-accent, var(--accent));
-    box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
   }
-}
 
-.content {
-  width: calc(100% - var(--spacing-sm, 8px));
-  margin: var(--spacing-xs, 4px) var(--spacing-xs, 4px) var(--spacing-md, 16px)
-    var(--spacing-xs, 4px);
-  display: block;
-  flex-grow: 1;
-  overflow-y: auto;
-  min-height: 300px;
-  box-shadow: inset 2px 2px 4px 6px var(--accent),
-    inset -2px -2px 4px 6px var(--complement);
-  border-radius: var(--border-radius-lg, 8px);
-  background: var(--local-background-gradient, var(--background-gradient));
-}
+  p {
+    margin: 0 0 var(--spacing-sm, 8px) 0;
+  }
 
-button {
-  margin: var(--spacing-sm, 8px);
-  margin-left: var(--spacing-md, 16px);
-}
-
-.editor-wrapper {
-  position: relative;
-  border: 2px dashed transparent;
-  transition: border-color 0.15s ease-in-out;
-
-  &.dragover {
-    border-color: var(--local-complement, var(--complement));
-    background-color: rgba(0, 0, 0, 0.1);
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius-md, 8px);
   }
 }
 
@@ -120,44 +121,63 @@ button {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--local-background-gradient, var(--background-gradient));
-      color: var(--local-foreground, var(--foreground));
-      padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-      border-radius: var(--border-radius-lg, 8px);
+      background: var(--surface);
+      color: var(--foreground);
+      padding: var(--spacing-md, 16px);
+      border-radius: var(--border-radius-md, 8px);
       box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
       z-index: var(--z-index-overlay, 1080);
       font-size: var(--font-size-lg, 1.125rem);
-      font-weight: bold;
-      animation: pulse 12s infinite;
+      font-weight: 600;
+      border: 2px dashed var(--accent);
     }
-    border-color: var(--local-complement, var(--complement));
-    background-color: rgba(0, 0, 0, 0.1);
+    border-color: var(--accent);
+    background-color: var(--surface);
   }
 }
 
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 5px var(--local-accent, var(--accent));
-    background: radial-gradient(
-      circle,
-      var(--local-accent, var(--accent)) 20%,
-      var(--local-complement, var(--complement))
-    );
+// Resizable Image Styles
+:host ::ng-deep {
+  .resizable-image-wrapper {
+    position: relative;
+    display: inline-block;
+    margin: var(--spacing-xs, 4px) 0;
+
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      cursor: pointer;
+      border-radius: var(--border-radius-sm, 4px);
+    }
   }
-  40% {
-    box-shadow: 0 0 15px var(--local-accent, var(--accent));
-    background: radial-gradient(
-      circle,
-      var(--local-accent, var(--accent)) 60%,
-      var(--local-complement, var(--complement))
-    );
+
+  .resizable-image-selected {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+
+    .resize-handle {
+      display: block !important;
+    }
   }
-  100% {
-    box-shadow: 0 0 5px var(--local-accent, var(--accent));
-    background: radial-gradient(
-      circle,
-      var(--local-accent, var(--accent)) 20%,
-      var(--local-complement, var(--complement))
-    );
+
+  .resize-handle {
+    display: none;
+    position: absolute;
+    bottom: -8px;
+    right: -8px;
+    width: 16px;
+    height: 16px;
+    background: var(--accent);
+    border: 2px solid var(--background);
+    border-radius: var(--border-radius-full, 50%);
+    cursor: se-resize;
+    box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.2));
+    z-index: var(--z-index-base, 1);
+
+    &:hover {
+      background: var(--primary-7);
+      transform: scale(1.1);
+    }
   }
 }
