@@ -38,6 +38,7 @@ import { ForumController } from '../controllers/forum/forum.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { OAuthController } from '../controllers/oauth/oauth.controller';
 import { VideosController } from '../controllers/videos/videos.controller';
+import { WellnessController } from '../controllers/wellness/wellness.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -86,6 +87,7 @@ import { VideosController } from '../controllers/videos/videos.controller';
     ForumController,
     OAuthController,
     VideosController,
+    WellnessController,
   ],
   providers: [
     {
@@ -325,6 +327,21 @@ import { VideosController } from '../controllers/videos/videos.controller';
         const serviceConfig = configService.get<TcpServiceConfig>(
           'services.videos'
         );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.WELLNESS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.wellness');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

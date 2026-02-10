@@ -74,6 +74,9 @@ services:
     name: videos
     transport: TCP
     host: ot_videos
+  wellness:
+    name: wellness
+    host: ot_wellness
     port: 3016
 auth:
   jwtSecret: |

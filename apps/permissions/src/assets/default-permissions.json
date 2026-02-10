@@ -69,6 +69,16 @@
       "name": "forum",
       "description": "Forum discussion platform",
       "active": true
+    },
+    {
+      "name": "D6",
+      "description": "D6 Wellness Tracker application",
+      "active": true
+    },
+    {
+      "name": "wellness",
+      "description": "Wellness microservice",
+      "active": true
     }
   ],
   "roles": [
@@ -231,6 +241,16 @@
       "name": "store_customer",
       "description": "Customer of the store",
       "appScope": "store"
+    },
+    {
+      "name": "d6_user",
+      "description": "Standard user for D6 wellness tracker",
+      "appScope": "D6"
+    },
+    {
+      "name": "d6_admin",
+      "description": "Administrator for D6 wellness tracker",
+      "appScope": "D6"
     }
   ],
   "permissions": [
@@ -1577,6 +1597,70 @@
       "action": "update",
       "targetId": null,
       "appScope": "store"
+    },
+    {
+      "name": "daily-four.create",
+      "description": "Create Daily Four entries",
+      "resource": "daily-four",
+      "action": "create",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-four.read",
+      "description": "Read Daily Four entries",
+      "resource": "daily-four",
+      "action": "read",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-four.update",
+      "description": "Update Daily Four entries",
+      "resource": "daily-four",
+      "action": "update",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-four.delete",
+      "description": "Delete Daily Four entries",
+      "resource": "daily-four",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-six.create",
+      "description": "Create Daily Six entries",
+      "resource": "daily-six",
+      "action": "create",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-six.read",
+      "description": "Read Daily Six entries",
+      "resource": "daily-six",
+      "action": "read",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-six.update",
+      "description": "Update Daily Six entries",
+      "resource": "daily-six",
+      "action": "update",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-six.delete",
+      "description": "Delete Daily Six entries",
+      "resource": "daily-six",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "D6"
     }
   ],
   "role_permissions": [
@@ -3518,6 +3602,86 @@
       "role": "store_customer",
       "permission": "order.read",
       "permissionAppScope": "store"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-four.create",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-four.read",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-four.update",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-four.delete",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-six.create",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-six.read",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-six.update",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-six.delete",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-four.create",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-four.read",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-four.update",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-four.delete",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-six.create",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-six.read",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-six.update",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-six.delete",
+      "permissionAppScope": "D6"
     }
   ]
 }

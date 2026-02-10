@@ -195,6 +195,8 @@ services:
         condition: service_started
       blogging:
         condition: service_started
+      wellness:
+        condition: service_started
 
   profile:
     container_name: ot_profile
@@ -271,116 +273,53 @@ services:
       postgres:
         condition: service_healthy
 
-  forum:
-    container_name: ot_forum
+  wellness:
+    container_name: ot_wellness
     build:
       context: .
-      dockerfile: ./apps/forum/Dockerfile
+      dockerfile: ./apps/wellness/Dockerfile
     volumes:
-      - ./dist/apps/forum:/usr/src/app
-      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+      - ./dist/apps/wellness:/usr/src/app
+      - /usr/src/app/node_modules
     command:
       [
         'dumb-init',
         'nodemon',
         '--exec',
-        'node --inspect=0.0.0.0:9245',
+        'node --inspect=0.0.0.0:9206',
         '-L',
         'main.js',
       ]
     ports:
-      - '9245:9245'
-    environment:
-      - NODE_ENV=development
-    depends_on: # Added
-      postgres:
-        condition: service_healthy
-
-  chat-collector:
-    container_name: ot_chat_collector
-    build:
-      context: .
-      dockerfile: ./apps/chat-collector/Dockerfile
-    volumes:
-      - ./dist/apps/chat-collector:/usr/src/app
-      - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command:
-      [
-        'dumb-init',
-        'nodemon',
-        '--exec',
-        'node --inspect=0.0.0.0:9233',
-        '-L',
-        'main.js',
-      ]
-    ports:
-      - '9233:9233'
-    environment:
-      - NODE_ENV=development
-    depends_on: # Added
-      postgres:
-        condition: service_healthy
-
-  # tasks:
-  #   container_name: ot_tasks
-  #   build:
-  #     context: .
-  #     dockerfile: ./apps/tasks/Dockerfile
-  #   volumes:
-  #     - ./dist/apps/tasks:/usr/src/app
-  #     - /usr/src/app/node_modules # Ensures node_modules from the image are used
-  #   command: ["dumb-init", "nodemon", "-L", "main.js"]
-  #   environment:
-  #     - NODE_ENV=development
-  #   depends_on: # Added
-  #     postgres:
-  #       condition: service_healthy
-
-  assets:
-    container_name: ot_assets
-    build:
-      context: .
-      dockerfile: ./apps/assets/Dockerfile
-    volumes:
-      - ./dist/apps/assets:/usr/src/app
-      - /usr/src/app/node_modules # Ensures node_modules from the image are used
-      - asset-data:/usr/src/app/storage
-    command:
-      [
-        'dumb-init',
-        'nodemon',
-        '--exec',
-        'node --inspect=0.0.0.0:9244',
-        '-L',
-        'main.js',
-      ]
-    ports:
-      - '9244:9244'
+      - '9206:9206'
     environment:
       - NODE_ENV=development
     depends_on:
       postgres:
         condition: service_healthy
-
-  blogging:
-    container_name: ot_blogging
+  d6:
+    container_name: ot_d6
     build:
       context: .
-      dockerfile: ./apps/blogging/Dockerfile
+      dockerfile: ./apps/d6/Dockerfile
     volumes:
-      - ./dist/apps/blogging:/usr/src/app
-      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+      - ./apps/d6:/app/apps/d6
+      - ./libs:/app/libs
+      - ./dist/apps/d6:/app/dist/apps/d6
+      - /usr/src/app/node_modules
+    ports:
+      - '8086:4000'
+      - '9246:9246'
     command:
       [
         'dumb-init',
         'nodemon',
         '--exec',
-        'node --inspect=0.0.0.0:9235',
+        'node',
+        '--inspect=0.0.0.0:9207',
         '-L',
-        'main.js',
+        '/app/dist/apps/d6/server/server.mjs',
       ]
-    ports:
-      - '9235:9235'
     environment:
       - NODE_ENV=development
     depends_on:
