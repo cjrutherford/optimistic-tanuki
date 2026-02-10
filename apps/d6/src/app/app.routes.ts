@@ -11,6 +11,13 @@ export const appRoutes: Routes = [
       ),
   },
   {
+    path: 'about',
+    loadComponent: () =>
+      import('./components/about/about.component').then(
+        (m) => m.AboutComponent
+      ),
+  },
+  {
     path: 'dashboard',
     loadComponent: () =>
       import('./components/dashboard/dashboard.component').then(
@@ -31,6 +38,22 @@ export const appRoutes: Routes = [
     loadComponent: () =>
       import('./components/daily-six/daily-six.component').then(
         (m) => m.DailySixComponent
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
+    path: 'feed',
+    loadComponent: () =>
+      import('./components/feed/feed.component').then(
+        (m) => m.FeedComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'profile',
+    loadComponent: () =>
+      import('./components/profile-page/profile-page.component').then(
+        (m) => m.ProfilePageComponent
       ),
     canActivate: [AuthGuard, ProfileGuard],
   },

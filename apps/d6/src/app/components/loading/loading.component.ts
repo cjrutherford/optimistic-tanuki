@@ -1,67 +1,83 @@
 import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { SpinnerComponent } from '@optimistic-tanuki/common-ui';
 import { AuthenticationService } from '../../services/authentication.service';
 import { AuthStateService } from '../../services/auth-state.service';
 
 @Component({
   selector: 'app-loading',
   standalone: true,
+  imports: [CommonModule, SpinnerComponent],
   template: `
     <div class="loading-container">
       <div class="loading-content">
         <h1 class="app-title">D6</h1>
         <p class="app-tagline">Your Wellness Journey</p>
-        <div class="loading-spinner"></div>
+        <otui-spinner [styleType]="'circle'" class="large-spinner">
+        </otui-spinner>
         <p class="loading-text">Loading...</p>
       </div>
     </div>
   `,
-  styles: [`
-    .loading-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
+  styles: [
+    `
+      :host {
+        display: block;
+      }
 
-    .loading-content {
-      text-align: center;
-      color: white;
-    }
+      .loading-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: var(--background, #ffffff);
+      }
 
-    .app-title {
-      font-size: 4rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      letter-spacing: 0.1em;
-    }
+      .loading-content {
+        text-align: center;
+        color: var(--foreground, #212121);
+      }
 
-    .app-tagline {
-      font-size: 1.25rem;
-      opacity: 0.9;
-      margin-bottom: 2rem;
-    }
+      .app-title {
+        font-size: 4rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.1em;
+        background: linear-gradient(
+          135deg,
+          var(--primary, #4f46e5) 0%,
+          var(--accent, #764ba2) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
 
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      margin: 0 auto 1rem;
-      animation: spin 1s linear infinite;
-    }
+      .app-tagline {
+        font-size: 1.25rem;
+        opacity: 0.8;
+        margin-bottom: 2rem;
+        color: var(--muted, #6b7280);
+      }
 
-    .loading-text {
-      font-size: 0.875rem;
-      opacity: 0.7;
-    }
+      .loading-text {
+        font-size: 0.875rem;
+        opacity: 0.6;
+        margin-top: 1rem;
+        color: var(--muted, #6b7280);
+      }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  `]
+      .large-spinner {
+        --spinner-size: 64px;
+      }
+
+      otui-spinner {
+        margin: 0 auto;
+        --spinner-color: var(--primary, #4f46e5);
+      }
+    `,
+  ],
 })
 export class LoadingComponent {
   private readonly router = inject(Router);

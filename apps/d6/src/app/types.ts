@@ -1,16 +1,9 @@
 import { InjectionToken } from '@angular/core';
+import type {
+  LoginRequest,
+  RegisterRequest,
+} from '@optimistic-tanuki/ui-models';
 
-export interface LoginRequest {
-  login: string;
-  password: string;
-  loginType?: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  confirmPassword?: string;
-  registerType?: string;
-}
+export { LoginRequest, RegisterRequest };
 
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
