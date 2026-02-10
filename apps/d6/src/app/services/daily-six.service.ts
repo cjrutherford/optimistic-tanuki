@@ -8,6 +8,7 @@ export interface DailySixEntry {
   affirmation: string;
   judgement: string;
   nonJudgement: string;
+  plannedPleasurable: string;
   mindfulActivity: string;
   gratitude: string;
   public: boolean;
@@ -18,12 +19,13 @@ export interface CreateDailySixDto {
   affirmation: string;
   judgement: string;
   nonJudgement: string;
+  plannedPleasurable: string;
   mindfulActivity: string;
   gratitude: string;
   public?: boolean;
 }
 
-export interface UpdateDailySixDto extends Partial<CreateDailySixDto> {}
+export type UpdateDailySixDto = Partial<CreateDailySixDto>;
 
 @Injectable({ providedIn: 'root' })
 export class DailySixService {

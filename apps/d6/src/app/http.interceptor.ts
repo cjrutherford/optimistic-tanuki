@@ -9,7 +9,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = authStateService.getToken();
 
-  const appScope = 'd6';
+  const appScope = 'D6';
 
   const clonedRequest = req.clone({
     setHeaders: {
