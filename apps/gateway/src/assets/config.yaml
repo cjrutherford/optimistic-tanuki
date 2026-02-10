@@ -70,6 +70,10 @@ services:
     transport: TCP
     host: ot_forum
     port: 3015
+  wellness:
+    name: wellness
+    host: ot_wellness
+    port: 3016
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

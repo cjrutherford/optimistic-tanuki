@@ -24,6 +24,7 @@ SERVICES=(
   "social:3003:9003"
   "tasks:3004:9004"
   "assets:3005:9005"
+  "wellness:3006:9006"
 )
 
 mkdir -p "$LOGDIR"

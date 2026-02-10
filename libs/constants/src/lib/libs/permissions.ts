@@ -52,6 +52,8 @@ export const ALL_APP_SCOPES = [
   'store',
   'store-client',
   'forum',
+  'D6',
+  'wellness',
 ] as const;
 
 export type AppScopeName = (typeof ALL_APP_SCOPES)[number];

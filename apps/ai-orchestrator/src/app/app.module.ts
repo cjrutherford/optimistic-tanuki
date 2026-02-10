@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { WellnessController } from './wellness.controller';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { loadConfig } from './config';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { ServiceTokens, WellnessCommands } from '@optimistic-tanuki/constants';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { ToolsService } from './tools.service';
@@ -20,6 +21,7 @@ import { PromptTemplateService } from './prompt-template.service';
 import { SystemPromptBuilder } from './system-prompt-builder.service';
 import { ToolValidationService } from './tool-validation.service';
 import { ToolFactory } from './tool-factory.service';
+import { WellnessPromptService } from './wellness-prompt.service';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { RateLimitGuard } from './guards/rate-limit.guard';
@@ -31,14 +33,8 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
       load: [loadConfig],
     }),
     HttpModule,
-    // ThrottlerModule.forRoot([
-    //   {
-    //     ttl: 60000, // 60 seconds
-    //     limit: 10,  // 10 requests per profile per 60 seconds
-    //   },
-    // ]),
   ],
-  controllers: [AppController],
+  controllers: [AppController, WellnessController],
   providers: [
     AppService,
     ToolsService,
@@ -50,6 +46,7 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     SystemPromptBuilder,
     ToolValidationService,
     ToolFactory,
+    WellnessPromptService,
     LangChainService,
     ContextStorageService,
     LangGraphService,

@@ -36,6 +36,7 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
+import { WellnessController } from '../controllers/wellness/wellness.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -82,6 +83,7 @@ import { SocialComponentController } from '../controllers/social/social-componen
     StoreController,
     AppConfigController,
     ForumController,
+    WellnessController,
   ],
   providers: [
     {
@@ -305,6 +307,21 @@ import { SocialComponentController } from '../controllers/social/social-componen
       useFactory: (configService: ConfigService) => {
         const serviceConfig =
           configService.get<TcpServiceConfig>('services.forum');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.WELLNESS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.wellness');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {
