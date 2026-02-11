@@ -39,12 +39,12 @@
   --font-body: 'Space Grotesk', 'Exo 2', sans-serif;
 
   // Spacing
-  --space-xs: 0.5rem;
-  --space-sm: 1rem;
-  --space-md: 1.5rem;
-  --space-lg: 2.5rem;
-  --space-xl: 4rem;
-  --space-xxl: 6rem;
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2.5rem;
+  --spacing-xl: 4rem;
+  --spacing-xxl: 6rem;
 }
 
 // ============================================================================
@@ -368,18 +368,18 @@
   z-index: 2;
   width: 100%;
   max-width: 1400px;
-  padding: var(--space-xl) var(--space-lg);
+  padding: var(--spacing-xl) var(--spacing-lg);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-xl);
+  gap: var(--spacing-xl);
 }
 
 // Brand mark
 .brand-mark {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--spacing-sm);
   animation: fade-in-down 1s ease-out;
 
   .anvil-icon {
@@ -426,13 +426,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-lg);
+  gap: var(--spacing-lg);
 }
 
 .hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--spacing-xs);
   padding: 0.6rem 1.2rem;
   background: rgba(255, 107, 53, 0.1);
   border: 1px solid rgba(255, 107, 53, 0.3);
@@ -519,7 +519,7 @@
 // Hero Actions
 .hero-actions {
   display: flex;
-  gap: var(--space-sm);
+  gap: var(--spacing-sm);
   flex-wrap: wrap;
   justify-content: center;
   animation: fade-in-up 0.8s ease-out 0.8s both;
@@ -614,9 +614,9 @@
 .forge-stats {
   display: flex;
   justify-content: center;
-  gap: var(--space-xl);
+  gap: var(--spacing-xl);
   flex-wrap: wrap;
-  margin-top: var(--space-md);
+  margin-top: var(--spacing-md);
 }
 
 .stat-item {
@@ -682,14 +682,14 @@
 .forge-features {
   width: 100%;
   max-width: 1200px;
-  margin-top: var(--space-xl);
-  margin-bottom: var(--space-xl)
+  margin-top: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl)
 }
 
 .features-orbit {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-lg);
+  gap: var(--spacing-lg);
   justify-items: center;
 }
 
@@ -704,7 +704,7 @@
   );
   border: 1px solid var(--forge-border);
   border-radius: 16px;
-  padding: var(--space-md);
+  padding: var(--spacing-md);
   backdrop-filter: blur(10px);
   animation: crystal-float 8s ease-in-out infinite;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -784,13 +784,13 @@
 .face-front {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--spacing-xs);
 }
 
 .crystal-icon {
   font-size: 2.5rem;
   line-height: 1;
-  margin-bottom: var(--space-xs);
+  margin-bottom: var(--spacing-xs);
   filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
 }
 
@@ -918,7 +918,7 @@
 .trust-divider {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--spacing-sm);
   margin-bottom: var(--spacing-md);
 
   .divider-line {
@@ -1040,7 +1040,7 @@
   }
 
   .trust-glyphs {
-    gap: var(--space-sm);
+    gap: var(--spacing-sm);
   }
 }
 

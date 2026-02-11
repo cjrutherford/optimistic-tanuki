@@ -7,6 +7,7 @@ import FollowService from './services/follow.service';
 import { PostService } from './services/post.service';
 import { RpcException } from '@nestjs/microservices';
 import { VoteService } from './services/vote.service';
+import { SocialComponentService } from './services/social-component.service';
 
 describe('AppController', () => {
   let controller: AppController;
@@ -15,6 +16,7 @@ describe('AppController', () => {
   let attachmentService: jest.Mocked<AttachmentService>;
   let commentService: jest.Mocked<CommentService>;
   let followService: jest.Mocked<FollowService>;
+  let socialComponentService: jest.Mocked<SocialComponentService>;
 
   beforeEach(async () => {
     postService = {
@@ -57,6 +59,14 @@ describe('AppController', () => {
       getFollowerCount: jest.fn(),
       getFollowingCount: jest.fn(),
     } as any;
+    socialComponentService = {
+      create: jest.fn(),
+      findAll: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+      findByType: jest.fn(),
+    } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
@@ -66,6 +76,7 @@ describe('AppController', () => {
         { provide: AttachmentService, useValue: attachmentService },
         { provide: CommentService, useValue: commentService },
         { provide: FollowService, useValue: followService },
+        { provide: SocialComponentService, useValue: socialComponentService },
       ],
     }).compile();
 

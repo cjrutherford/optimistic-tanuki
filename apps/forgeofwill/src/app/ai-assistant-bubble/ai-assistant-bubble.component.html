@@ -4,6 +4,9 @@
   aria-label="Open AI Assistant Chat"
   title="Chat with AI Assistant"
 >
+  @if (userAvatarUrl) {
+  <img [src]="userAvatarUrl" alt="User Avatar" class="user-avatar" />
+  } @else {
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="32"
@@ -22,7 +25,7 @@
     <circle cx="15" cy="10" r="1"></circle>
     <path d="M9 14a3 3 0 0 0 6 0"></path>
   </svg>
-  @if (unreadCount() > 0) {
+  } @if (unreadCount() > 0) {
   <span class="badge">{{ unreadCount() }}</span>
   }
 </button>

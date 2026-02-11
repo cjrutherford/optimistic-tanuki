@@ -1,6 +1,7 @@
-import { Component, AfterViewInit } from '@angular/core';
+import { Component, AfterViewInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'app-landing',
@@ -10,7 +11,11 @@ import { Router } from '@angular/router';
   styleUrls: ['./landing.component.scss'],
 })
 export class LandingComponent implements AfterViewInit {
-  constructor(private router: Router) {}
+  private router = inject(Router);
+  private themeService = inject(ThemeService);
+
+  heroGradient = '';
+  buttonGradient = '';
 
   features = [
     {
@@ -59,21 +64,25 @@ export class LandingComponent implements AfterViewInit {
   ];
 
   ngAfterViewInit() {
+    this.updateGradients();
     this.initParticleField();
   }
 
-  private initParticleField() {
+  private updateGradients(): void {
+    this.heroGradient = this.themeService.getHeaderGradient();
+    this.buttonGradient = this.themeService.getButtonGradient('primary');
+  }
+
+  private initParticleField(): void {
     const particleContainer = document.getElementById('particles');
     if (!particleContainer) return;
 
-    // Create floating ember particles
     const particleCount = 25;
 
     for (let i = 0; i < particleCount; i++) {
       const particle = document.createElement('div');
       particle.className = 'ember-particle';
 
-      // Random positioning and sizing
       const size = Math.random() * 3 + 1;
       const x = Math.random() * 100;
       const y = Math.random() * 100;
@@ -84,7 +93,7 @@ export class LandingComponent implements AfterViewInit {
         position: absolute;
         width: ${size}px;
         height: ${size}px;
-        background: radial-gradient(circle, var(--forge-ember), transparent);
+        background: radial-gradient(circle, var(--accent), transparent);
         border-radius: 50%;
         left: ${x}%;
         top: ${y}%;
@@ -96,7 +105,6 @@ export class LandingComponent implements AfterViewInit {
       particleContainer.appendChild(particle);
     }
 
-    // Add ember animation keyframes if not present
     if (!document.getElementById('ember-styles')) {
       const style = document.createElement('style');
       style.id = 'ember-styles';
@@ -107,21 +115,15 @@ export class LandingComponent implements AfterViewInit {
             opacity: 0.3;
           }
           25% {
-            transform: translate(${Math.random() * 100 - 50}px, -${
-        Math.random() * 50 + 20
-      }px) scale(1.2);
+            transform: translate(30px, -30px) scale(1.2);
             opacity: 0.6;
           }
           50% {
-            transform: translate(${Math.random() * 100 - 50}px, -${
-        Math.random() * 100 + 50
-      }px) scale(0.8);
+            transform: translate(-20px, -50px) scale(0.8);
             opacity: 0.2;
           }
           75% {
-            transform: translate(${Math.random() * 50 - 25}px, -${
-        Math.random() * 50 + 30
-      }px) scale(1);
+            transform: translate(20px, -30px) scale(1);
             opacity: 0.4;
           }
         }

@@ -246,7 +246,7 @@ export class LangChainAgentService {
           userId: profile.id,
           conversationId,
         },
-        recursionLimit: 15, // Prevent infinite loops
+        recursionLimit: 15,
       });
       this.logger.log('Agent stream created, starting iteration...');
 
@@ -256,13 +256,59 @@ export class LangChainAgentService {
         input: unknown;
         output: unknown;
       }> = [];
+      const allMessages: BaseMessage[] = [];
 
       this.logger.log('Starting agent stream loop...');
       for await (const chunk of stream) {
         this.logger.debug('Agent stream chunk received');
-        finalState = chunk;
-        const messages = chunk.messages || [];
-        const lastMessage = messages[messages.length - 1];
+
+        // LangGraph returns tuples when using multiple stream modes: [mode, data]
+        // Example: ['values', { messages: [...] }] or ['messages', AIMessageChunk(...)]
+        let stateChunk: any;
+        let messageChunk: any;
+        let streamMode: string | null = null;
+
+        if (Array.isArray(chunk) && chunk.length === 2) {
+          // Tuple format: [mode, data]
+          streamMode = chunk[0];
+          stateChunk = chunk[1];
+          this.logger.debug(`Stream mode: ${streamMode}`);
+
+          if (streamMode === 'values') {
+            // Full state with messages array
+            finalState = stateChunk;
+            const messages = stateChunk.messages || [];
+            allMessages.push(...messages);
+            this.logger.debug(
+              `Values mode - messages count: ${messages.length}`
+            );
+          } else if (streamMode === 'messages') {
+            // Individual message chunk
+            messageChunk = stateChunk;
+            allMessages.push(messageChunk);
+            this.logger.debug(
+              `Messages mode - message type: ${messageChunk._getType?.() || typeof messageChunk
+              }`
+            );
+          }
+        } else if (chunk && typeof chunk === 'object') {
+          // Single object format (single stream mode)
+          stateChunk = chunk;
+          if (chunk.messages) {
+            finalState = chunk;
+            allMessages.push(...chunk.messages);
+            this.logger.debug(
+              `Single mode - messages: ${chunk.messages.length}`
+            );
+          }
+        } else {
+          this.logger.debug(`Unexpected chunk type: ${typeof chunk}`);
+        }
+
+        // Process message chunk for tool calls and thinking tokens
+        const lastMessage =
+          messageChunk ||
+          finalState?.messages?.[finalState.messages.length - 1];
 
         if (lastMessage) {
           if (lastMessage.content && typeof lastMessage.content === 'string') {
@@ -285,16 +331,19 @@ export class LangChainAgentService {
           }
 
           // Check for tool outputs (ToolMessage)
-          if (lastMessage._getType() === 'tool') {
+          if (
+            lastMessage._getType?.() === 'tool' ||
+            lastMessage.type === 'tool'
+          ) {
             this.logger.log(
-              `Agent received tool output for: ${lastMessage.name}`
+              `Agent received tool output for: ${lastMessage.name || 'unknown'}`
             );
             await emitToolEnd(lastMessage.name, lastMessage.content);
 
             // Store for result
             toolCalls.push({
               tool: lastMessage.name || 'unknown',
-              input: {}, // We'd need to look back to find input, skipping for now or we can track it
+              input: {},
               output: lastMessage.content,
             });
           }
@@ -302,12 +351,24 @@ export class LangChainAgentService {
       }
 
       this.logger.log('Agent stream loop complete');
+      this.logger.debug(`Total messages accumulated: ${allMessages.length}`);
+      console.dir(allMessages, { depth: null });
 
-      // Extract final response
-      const messages = finalState?.messages || [];
-      const lastMessage = messages[messages.length - 1];
+      // Extract final response from accumulated messages
+      const finalMessages = finalState?.messages || allMessages;
+      const lastMessage = finalMessages[finalMessages.length - 1];
       const output = lastMessage?.content || '';
-      this.logger.log(`Extracted output: ${output?.substring(0, 100)}...`);
+      this.logger.log(
+        `Extracted output: ${output?.substring(0, 100) || '(empty)'}...`
+      );
+      this.logger.debug(
+        `Final message type: ${lastMessage?._getType?.() || lastMessage?.type || 'unknown'
+        }`
+      );
+      this.logger.debug(
+        `Final message has tool_calls: ${!!(lastMessage as any)?.tool_calls
+          ?.length}`
+      );
 
       const hasToolCalls = (lastMessage as any)?.tool_calls?.length > 0;
 
@@ -327,11 +388,11 @@ export class LangChainAgentService {
         output: unknown;
       }> = [];
 
-      for (let i = 0; i < messages.length; i++) {
-        const msg = messages[i];
+      for (let i = 0; i < finalMessages.length; i++) {
+        const msg = finalMessages[i];
         if (msg.tool_calls && msg.tool_calls.length > 0) {
           for (const toolCall of msg.tool_calls) {
-            const toolOutputMsg = messages.find(
+            const toolOutputMsg = finalMessages.find(
               (m: any) => m.tool_call_id === toolCall.id
             );
 
@@ -392,10 +453,9 @@ export class LangChainAgentService {
 
             // Update output to reflect the action taken
             return {
-              output: `I've executed the ${
-                manualToolCall.name
-              } tool. Result: ${JSON.stringify(result.result)}`,
-              intermediateSteps: messages.map((msg: any) => ({
+              output: `I've executed the ${manualToolCall.name
+                } tool. Result: ${JSON.stringify(result.result)}`,
+              intermediateSteps: finalMessages.map((msg: any) => ({
                 action: msg.tool_calls?.[0]?.name || 'response',
                 observation: msg.content || '',
               })),
@@ -413,7 +473,7 @@ export class LangChainAgentService {
 
       return {
         output: cleanedOutput,
-        intermediateSteps: messages.map((msg: any) => ({
+        intermediateSteps: finalMessages.map((msg: any) => ({
           action: msg.tool_calls?.[0]?.name || 'response',
           observation: msg.content || '',
         })),

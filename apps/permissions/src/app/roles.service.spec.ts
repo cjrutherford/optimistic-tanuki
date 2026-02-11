@@ -118,6 +118,46 @@ describe('RolesService', () => {
       const result = await service.getRole('1');
       expect(result).toEqual(role);
     });
+
+    it('should return null if role not found', async () => {
+      jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(null);
+      const result = await service.getRole('nonexistent');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getRoleByName', () => {
+    it('should return a role by name', async () => {
+      const role = new Role();
+      getMany.mockResolvedValue([role]);
+
+      const result = await service.getRoleByName('admin');
+      expect(result).toEqual(role);
+      expect(where).toHaveBeenCalledWith('role.name = :name', {
+        name: 'admin',
+      });
+    });
+
+    it('should return a role by name with appScope', async () => {
+      const role = new Role();
+      getMany.mockResolvedValue([role]);
+
+      const result = await service.getRoleByName('admin', 'app1');
+      expect(result).toEqual(role);
+      expect(where).toHaveBeenCalledWith('role.name = :name', {
+        name: 'admin',
+      });
+      expect(andWhere).toHaveBeenCalledWith('appScope.name = :appScope', {
+        appScope: 'app1',
+      });
+    });
+
+    it('should return null if role not found by name', async () => {
+      getMany.mockResolvedValue([]);
+
+      const result = await service.getRoleByName('nonexistent');
+      expect(result).toBeUndefined();
+    });
   });
 
   describe('getAllRoles', () => {

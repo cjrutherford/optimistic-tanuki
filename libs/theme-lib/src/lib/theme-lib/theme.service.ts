@@ -53,6 +53,7 @@ import {
   getPersonalityGradients,
   generateGradientVariables,
 } from './personality-gradients';
+import { GradientFactory } from './gradient-factory';
 
 /**
  * Extended saved theme data including personality
@@ -114,7 +115,8 @@ export class ThemeService {
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: object,
-    private fontLoadingService: FontLoadingService
+    private fontLoadingService: FontLoadingService,
+    private gradientFactory: GradientFactory
   ) {
     if (isPlatformBrowser(this.platformId)) {
       // Initialize theme asynchronously but don't block
@@ -416,6 +418,130 @@ export class ThemeService {
       return 'dark';
     }
     return 'light';
+  }
+
+  // ==================== GRADIENT API ====================
+
+  /**
+   * Get button gradient for current personality
+   */
+  getButtonGradient(
+    variant: 'primary' | 'secondary' | 'outlined' = 'primary'
+  ): string {
+    const colors = this.getCurrentColors();
+    const personalityId = this.currentPersonality?.id || 'classic';
+    return this.gradientFactory.createButtonGradient(
+      colors,
+      personalityId,
+      variant
+    );
+  }
+
+  /**
+   * Get card gradient for current personality
+   */
+  getCardGradient(
+    variant: 'elevated' | 'glass' | 'flat' | 'gradient' = 'flat'
+  ): string {
+    const colors = this.getCurrentColors();
+    const personalityId = this.currentPersonality?.id || 'classic';
+    return this.gradientFactory.createCardGradient(
+      colors,
+      personalityId,
+      variant
+    );
+  }
+
+  /**
+   * Get header gradient for current personality
+   */
+  getHeaderGradient(): string {
+    const colors = this.getCurrentColors();
+    const personalityId = this.currentPersonality?.id || 'classic';
+    return this.gradientFactory.createHeaderGradient(colors, personalityId);
+  }
+
+  /**
+   * Get background gradient for current personality
+   */
+  getBackgroundGradient(): string {
+    const colors = this.getCurrentColors();
+    const personalityId = this.currentPersonality?.id || 'classic';
+    return this.gradientFactory.createBackgroundGradient(colors, personalityId);
+  }
+
+  /**
+   * Get border gradient for current personality
+   */
+  getBorderGradient(): string {
+    const colors = this.getCurrentColors();
+    const personalityId = this.currentPersonality?.id || 'classic';
+    return this.gradientFactory.createBorderGradient(colors, personalityId);
+  }
+
+  /**
+   * Get current theme colors (handles both legacy and personality colors)
+   */
+  private getCurrentColors(): ThemeColors {
+    const currentColors = this.themeColors.getValue();
+    if (currentColors) {
+      return currentColors;
+    }
+    // Fallback to default colors
+    return {
+      background: '#ffffff',
+      foreground: '#0f172a',
+      accent: '#3f51b5',
+      accentShades: [],
+      accentGradients: {},
+      complementary: '#ff4081',
+      complementaryShades: [],
+      complementaryGradients: {},
+      tertiary: '#00bcd4',
+      tertiaryShades: [],
+      tertiaryGradients: {},
+      success: '#4caf50',
+      successShades: [],
+      successGradients: {},
+      danger: '#f44336',
+      dangerShades: [],
+      dangerGradients: {},
+      warning: '#ff9800',
+      warningShades: [],
+      warningGradients: {},
+    };
+  }
+
+  /**
+   * Get current personality animation settings
+   */
+  getAnimationSettings(): {
+    prefersAnimation: boolean;
+    duration: string;
+    easing: string;
+  } {
+    const personality = this.currentPersonality;
+    if (personality) {
+      return {
+        prefersAnimation: personality.animations.prefersReducedMotion
+          ? false
+          : true,
+        duration: personality.animations.duration.normal,
+        easing: personality.animations.easing,
+      };
+    }
+    return {
+      prefersAnimation: true,
+      duration: '300ms',
+      easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    };
+  }
+
+  /**
+   * Get gradient strategy for a specific personality
+   */
+  getGradientStrategy(personalityId: string) {
+    return this.gradientFactory.getStrategy(personalityId);
   }
 
   // ==================== PRIVATE METHODS ====================
