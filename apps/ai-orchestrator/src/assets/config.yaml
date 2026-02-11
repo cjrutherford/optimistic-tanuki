@@ -26,7 +26,7 @@ toolSources:
   gateway: http://gateway:3000/api/mcp
 models:
   workflow_control:
-    name: 'qwen2.5:3b'
+    name: 'llama3.2:3b'
     description: 'Fast model for detecting if a prompt requires tool calling'
     temperature: 0.3
     pullOnStartup: true

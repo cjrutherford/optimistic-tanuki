@@ -19,6 +19,8 @@ import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
+declare const Chart: any;
+
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
@@ -190,6 +192,7 @@ interface ValidationResult {
   details: Record<string, any>;
   retryable?: boolean;
   suggestion?: string;
+  scoreExplanation?: string;
 }
 
 interface ContextWindowTestResult {
@@ -651,7 +654,7 @@ const TEST_SUITES: TestSuite[] = [
         systemPrompt: buildFirstMessagePrompt(PATRICIA),
         userPrompt: 'Hello',
         temperature: 0.7,
-        validate: (response: string) => {
+        validate: (response: any) => {
           const lower = response.toLowerCase();
 
           // Check key requirements
@@ -701,7 +704,7 @@ const TEST_SUITES: TestSuite[] = [
         systemPrompt: buildFirstMessagePrompt(ALEX),
         userPrompt: 'Hi there!',
         temperature: 0.7,
-        validate: (response: string) => {
+        validate: (response: any) => {
           const lower = response.toLowerCase();
 
           const introducesSelf =
@@ -728,6 +731,186 @@ const TEST_SUITES: TestSuite[] = [
               explainsPurpose,
               asksEngagement,
               warmTone,
+              responsePreview: response.substring(0, 150),
+              scoreExplanation: `Score ${score}/100: ${
+                introducesSelf
+                  ? '+20 (self-introduction)'
+                  : '-20 (no self-introduction)'
+              } ${
+                noToolCalls
+                  ? '+20 (no tool calls)'
+                  : '-20 (called tools prematurely)'
+              } ${
+                explainsPurpose
+                  ? '+20 (explains purpose)'
+                  : '-20 (unclear purpose)'
+              } ${
+                asksEngagement
+                  ? '+20 (asks engagement question)'
+                  : '-20 (no engagement question)'
+              } ${warmTone ? '+20 (warm tone)' : '-20 (tone issues)'}`,
+            },
+          };
+        },
+      },
+      {
+        name: 'Welcome Message Self-Evaluation',
+        useCase: 'first_message',
+        systemPrompt: `You are ${
+          PATRICIA.name
+        }, an AI assistant embodying the following TELOS:
+
+## Core Objective
+${PATRICIA.coreObjective}
+
+## Goals
+${PATRICIA.goals.join(', ')}
+
+## Skills
+${PATRICIA.skills.join(', ')}
+
+## Strengths
+${PATRICIA.strengths.join(', ')}
+
+## Limitations
+${PATRICIA.limitations.join(', ')}
+
+## Your Task
+Generate a welcome message for a new user who just said "Hello". 
+Your welcome message should:
+1. Introduce yourself by name and role
+2. Explain what you can help with (projects, tasks, tracking)
+3. Ask an engaging question to encourage the user
+4. NOT call any tools or functions on the first message
+5. Be warm, professional, and concise (under 500 characters)
+
+After generating your welcome message, you will evaluate it objectively.`,
+        userPrompt: `First, generate your welcome message.
+Then, evaluate your own message using these criteria (rate 0-10 each):
+1. Warmth & Friendliness
+2. Clarity of Purpose
+3. Persona Alignment (does it reflect your TELOS?)
+4. Engagement Quality
+5. First Message Compliance (no tools called)
+6. Overall Effectiveness
+
+Provide your response in this JSON format:
+{
+  "welcomeMessage": "your generated welcome message here",
+  "evaluation": {
+    "warmth": 0-10,
+    "clarity": 0-10,
+    "persona": 0-10,
+    "engagement": 0-10,
+    "compliance": 0-10,
+    "overall": 0-10,
+    "strengths": ["strength 1", "strength 2"],
+    "weaknesses": ["weakness 1", "weakness 2"]
+  }
+}`,
+        temperature: 0.4,
+        validate: (response: any) => {
+          const responseStr = Array.isArray(response)
+            ? response[response.length - 1]
+            : response;
+
+          const welcomeMatch =
+            responseStr.match(/"welcomeMessage"?:\s*"([\s\S]*?)"/) ||
+            responseStr.match(
+              /welcomeMessage["']?\s*[:=]\s*["']([\s\S]*?)["']/
+            ) ||
+            responseStr.match(/["'](Hi|Hello|Welcome)[\s\S]*?["']/);
+          const welcomeMessage = welcomeMatch
+            ? welcomeMatch[1] || welcomeMatch[0]
+            : '';
+
+          const warmthMatch = responseStr.match(/"warmth"?:\s*(\d+)/i);
+          const clarityMatch = responseStr.match(/"clarity"?:\s*(\d+)/i);
+          const personaMatch = responseStr.match(/"persona"?:\s*(\d+)/i);
+          const engagementMatch = responseStr.match(/"engagement"?:\s*(\d+)/i);
+          const complianceMatch = responseStr.match(/"compliance"?:\s*(\d+)/i);
+          const overallMatch = responseStr.match(/"overall"?:\s*(\d+)/i);
+
+          const warmth = warmthMatch ? parseInt(warmthMatch[1]) : -1;
+          const clarity = clarityMatch ? parseInt(clarityMatch[1]) : -1;
+          const persona = personaMatch ? parseInt(personaMatch[1]) : -1;
+          const engagement = engagementMatch
+            ? parseInt(engagementMatch[1])
+            : -1;
+          const compliance = complianceMatch
+            ? parseInt(complianceMatch[1])
+            : -1;
+          const overall = overallMatch ? parseInt(overallMatch[1]) : -1;
+
+          const hasAllScores =
+            warmth >= 0 &&
+            clarity >= 0 &&
+            persona >= 0 &&
+            engagement >= 0 &&
+            compliance >= 0 &&
+            overall >= 0;
+          const validScores =
+            hasAllScores &&
+            warmth <= 10 &&
+            clarity <= 10 &&
+            persona <= 10 &&
+            engagement <= 10 &&
+            compliance <= 10 &&
+            overall <= 10;
+
+          let score = 0;
+          let breakdown = '';
+
+          if (validScores) {
+            const calculatedTotal =
+              warmth + clarity + persona + engagement + compliance + overall;
+            score = Math.min(100, Math.round((calculatedTotal / 60) * 100));
+            breakdown = `warmth=${warmth}, clarity=${clarity}, persona=${persona}, engagement=${engagement}, compliance=${compliance}, overall=${overall}`;
+          } else if (hasAllScores && warmth <= 60) {
+            const totalFromIndividual =
+              warmth + clarity + persona + engagement + compliance + overall;
+            score = Math.min(100, Math.round((totalFromIndividual / 60) * 100));
+            breakdown = `totalFromIndividual=${totalFromIndividual}`;
+          } else {
+            const totalMatch =
+              responseStr.match(/"totalScore"?:\s*(\d+)/i) ||
+              responseStr.match(/total.*?(\d+)/i) ||
+              responseStr.match(/score.*?(\d+)/i);
+            const extractedTotal = totalMatch ? parseInt(totalMatch[1]) : 0;
+            if (extractedTotal > 0 && extractedTotal <= 60) {
+              score = Math.min(100, Math.round((extractedTotal / 60) * 100));
+              breakdown = `extractedTotal=${extractedTotal}`;
+            } else {
+              score = hasAllScores ? 50 : 0;
+              breakdown = hasAllScores
+                ? 'scores provided but invalid format'
+                : 'no valid evaluation found';
+            }
+          }
+
+          return {
+            success: score >= 50,
+            score,
+            details: {
+              welcomeMessage: welcomeMessage?.substring(0, 200) || 'Not found',
+              warmth,
+              clarity,
+              persona,
+              engagement,
+              compliance,
+              overall,
+              validScores,
+              breakdown,
+              responsePreview: responseStr.substring(0, 400),
+              scoreExplanation: `Score ${score}/100: ${
+                validScores
+                  ? '+' + (score - 50) + ' (detailed: ' + breakdown + ')'
+                  : '+' + (score - 50) + ' (' + breakdown + ')'
+              } - ${score >= 50 ? 'PASS' : 'FAIL'}${
+                !validScores && !hasAllScores
+                  ? '. Model response: ' + responseStr.substring(0, 200)
+                  : ''
+              }`,
             },
           };
         },
@@ -761,26 +944,75 @@ const TEST_SUITES: TestSuite[] = [
             expectedContext: ['Website Redesign'],
           },
         ],
-        validate: (responses: string[]) => {
-          // Check if model maintained context across turns
-          const turn2MaintainsContext =
-            responses[1]?.toLowerCase().includes('website') ||
-            responses[1]?.toLowerCase().includes('project');
-          const turn3MaintainsContext =
-            responses[2]?.toLowerCase().includes('website') ||
-            responses[2]?.toLowerCase().includes('project');
+        validate: (responses: any, context?: any) => {
+          const turns = context?.turns || [
+            { expectedContext: ['Website Redesign'] },
+            { expectedContext: ['Website Redesign'] },
+            { expectedContext: ['Website Redesign'] },
+          ];
 
-          const score =
-            (turn2MaintainsContext ? 50 : 0) + (turn3MaintainsContext ? 50 : 0);
+          const turn2Ctx = turns[1]?.expectedContext || ['Website Redesign'];
+          const turn3Ctx = turns[2]?.expectedContext || ['Website Redesign'];
+
+          const turn2Response = (responses[1] || '').toLowerCase();
+          const turn3Response = (responses[2] || '').toLowerCase();
+
+          let turn2Matches = 0;
+          let turn3Matches = 0;
+
+          for (const term of turn2Ctx) {
+            if (term && turn2Response.includes(term.toLowerCase())) {
+              turn2Matches++;
+            }
+          }
+
+          for (const term of turn3Ctx) {
+            if (term && turn3Response.includes(term.toLowerCase())) {
+              turn3Matches++;
+            }
+          }
+
+          const turn2Score =
+            turn2Ctx.length > 0
+              ? Math.min(50, Math.round((turn2Matches / turn2Ctx.length) * 50))
+              : 50;
+          const turn3Score =
+            turn3Ctx.length > 0
+              ? Math.min(50, Math.round((turn3Matches / turn3Ctx.length) * 50))
+              : 50;
+
+          const score = turn2Score + turn3Score;
 
           return {
             success: score >= 80,
             score,
             details: {
               turnCount: responses.length,
-              turn2MaintainsContext,
-              turn3MaintainsContext,
-              responses: responses.map((r) => r.substring(0, 100)),
+              turn2Matches,
+              turn2Expected: turn2Ctx,
+              turn2Actual: turn2Response.substring(0, 100),
+              turn3Matches,
+              turn3Expected: turn3Ctx,
+              turn3Actual: turn3Response.substring(0, 100),
+              responses: responses.map(
+                (r: string) => r?.substring(0, 100) || ''
+              ),
+              scoreExplanation: `Score ${score}/100: turn2=${turn2Score}/50 (matched ${turn2Matches}/${
+                turn2Ctx.length
+              }: ${turn2Ctx.join(
+                ', '
+              )}), turn3=${turn3Score}/50 (matched ${turn3Matches}/${
+                turn3Ctx.length
+              }: ${turn3Ctx.join(', ')}). ${
+                score < 80
+                  ? 'FAIL. Actual responses: ' +
+                    responses
+                      .map(
+                        (r: string) => '"' + (r || '').substring(0, 80) + '"'
+                      )
+                      .join(' | ')
+                  : 'PASS'
+              }`,
             },
           };
         },
@@ -807,27 +1039,62 @@ const TEST_SUITES: TestSuite[] = [
             expectedContext: ['Fix login bug', 'high priority'],
           },
         ],
-        validate: (responses: string[]) => {
-          // Check context retention in final turn
-          const finalResponse = responses[3]?.toLowerCase() || '';
-          const remembersTask =
-            finalResponse.includes('login') ||
-            finalResponse.includes('bug') ||
-            finalResponse.includes('fix');
-          const remembersPriority =
-            finalResponse.includes('high') ||
-            finalResponse.includes('priority');
+        validate: (responses: any, context?: any) => {
+          const turns = context?.turns || [
+            { expectedContext: [] },
+            { expectedContext: ['Fix login bug'] },
+            { expectedContext: ['Fix login bug', 'high'] },
+            { expectedContext: ['Fix login bug', 'high priority'] },
+          ];
 
-          const score = (remembersTask ? 60 : 0) + (remembersPriority ? 40 : 0);
+          const finalCtx = turns[3]?.expectedContext || [
+            'Fix login bug',
+            'high priority',
+          ];
+          const finalResponse = (responses[3] || '').toLowerCase();
+
+          let matches = 0;
+          for (const term of finalCtx) {
+            if (term && finalResponse.includes(term.toLowerCase())) {
+              matches++;
+            }
+          }
+
+          const score =
+            finalCtx.length > 0
+              ? Math.min(100, Math.round((matches / finalCtx.length) * 100))
+              : 100;
 
           return {
             success: score >= 80,
             score,
             details: {
               turnCount: responses.length,
-              remembersTask,
-              remembersPriority,
-              finalResponse: responses[3]?.substring(0, 150),
+              matches,
+              expected: finalCtx,
+              actual: finalResponse.substring(0, 150),
+              allResponses: responses.map(
+                (r: string) => r?.substring(0, 100) || ''
+              ),
+              scoreExplanation: `Score ${score}/100: matched ${matches}/${
+                finalCtx.length
+              } expected context terms: [${finalCtx.join(', ')}]. ${
+                score < 80
+                  ? 'FAIL. Actual final response: "' +
+                    (responses[3] || 'EMPTY').substring(0, 150) +
+                    '" | All responses: ' +
+                    responses
+                      .map(
+                        (r: string, i: number) =>
+                          'T' +
+                          (i + 1) +
+                          '="' +
+                          (r || '').substring(0, 50) +
+                          '"'
+                      )
+                      .join(' | ')
+                  : 'PASS'
+              }`,
             },
           };
         },
@@ -861,33 +1128,64 @@ const TEST_SUITES: TestSuite[] = [
             expectedContext: ['Alpha', 'Beta', 'website', 'mobile'],
           },
         ],
-        validate: (responses: string[]) => {
-          // Check if final response references both projects
-          const finalResponse = responses[4]?.toLowerCase() || '';
-          const mentionsAlpha =
-            finalResponse.includes('alpha') ||
-            finalResponse.includes('website');
-          const mentionsBeta =
-            finalResponse.includes('beta') || finalResponse.includes('mobile');
-          const providesGuidance =
-            finalResponse.includes('recommend') ||
-            finalResponse.includes('suggest') ||
-            finalResponse.includes('depends') ||
-            finalResponse.includes('consider');
+        validate: (responses: any, context?: any) => {
+          const turns = context?.turns || [
+            { expectedContext: [] },
+            { expectedContext: ['Alpha', 'Beta'] },
+            { expectedContext: ['Alpha', 'website'] },
+            { expectedContext: ['Beta', 'mobile app'] },
+            { expectedContext: ['Alpha', 'Beta', 'website', 'mobile'] },
+          ];
 
-          const score =
-            (mentionsAlpha ? 30 : 0) +
-            (mentionsBeta ? 30 : 0) +
-            (providesGuidance ? 40 : 0);
+          const finalCtx = turns[4]?.expectedContext || [
+            'Alpha',
+            'Beta',
+            'website',
+            'mobile',
+          ];
+          const finalResponse = (responses[4] || '').toLowerCase();
+
+          let matches = 0;
+          for (const term of finalCtx) {
+            if (term && finalResponse.includes(term.toLowerCase())) {
+              matches++;
+            }
+          }
+
+          const score = Math.min(
+            100,
+            Math.round((matches / finalCtx.length) * 100)
+          );
 
           return {
             success: score >= 70,
             score,
             details: {
-              mentionsAlpha,
-              mentionsBeta,
-              providesGuidance,
-              finalResponse: responses[4]?.substring(0, 200),
+              matches,
+              expected: finalCtx,
+              actual: finalResponse.substring(0, 200),
+              allResponses: responses.map(
+                (r: string) => r?.substring(0, 100) || ''
+              ),
+              scoreExplanation: `Score ${score}/100: matched ${matches}/${
+                finalCtx.length
+              } expected terms: [${finalCtx.join(', ')}]. ${
+                score < 70
+                  ? 'FAIL. Final response: "' +
+                    (responses[4] || 'EMPTY').substring(0, 200) +
+                    '" | All: ' +
+                    responses
+                      .map(
+                        (r: string, i: number) =>
+                          'T' +
+                          (i + 1) +
+                          '="' +
+                          (r || '').substring(0, 40) +
+                          '"'
+                      )
+                      .join(' | ')
+                  : 'PASS'
+              }`,
             },
           };
         },
@@ -898,6 +1196,83 @@ const TEST_SUITES: TestSuite[] = [
 
 // Add remaining test suites (Workflow Detection, Tool Call Construction, etc.)
 // ... [Previous test suites from original file] ...
+
+// ============================================================================
+// SCORE EXPLANATION HELPER
+// ============================================================================
+
+function generateScoreExplanation(
+  score: number,
+  details: Record<string, any>
+): string {
+  const scoreStr = `${score}/100`;
+  const status = score >= 80 ? 'PASS' : score >= 50 ? 'PARTIAL' : 'FAIL';
+
+  const factors: string[] = [];
+
+  if (details.introducesSelf !== undefined) {
+    factors.push(
+      details.introducesSelf
+        ? '+20 (self-introduction)'
+        : '-20 (no self-introduction)'
+    );
+  }
+  if (details.noToolCalls !== undefined) {
+    factors.push(
+      details.noToolCalls
+        ? '+20 (no premature tool calls)'
+        : '-20 (premature tool calls)'
+    );
+  }
+  if (details.explainsPurpose !== undefined) {
+    factors.push(
+      details.explainsPurpose
+        ? '+20 (explains purpose)'
+        : '-20 (unclear purpose)'
+    );
+  }
+  if (details.asksEngagement !== undefined) {
+    factors.push(
+      details.asksEngagement
+        ? '+20 (asks engagement question)'
+        : '-20 (no engagement question)'
+    );
+  }
+  if (details.warmTone !== undefined) {
+    factors.push(details.warmTone ? '+20 (warm tone)' : '-20 (tone issues)');
+  }
+  if (details.turn2MaintainsContext !== undefined) {
+    factors.push(
+      details.turn2MaintainsContext
+        ? '+50 (context turn 2)'
+        : '-50 (lost context turn 2)'
+    );
+  }
+  if (details.turn3MaintainsContext !== undefined) {
+    factors.push(
+      details.turn3MaintainsContext
+        ? '+50 (context turn 3)'
+        : '-50 (lost context turn 3)'
+    );
+  }
+  if (details.hasSelfEvaluation !== undefined) {
+    factors.push(
+      details.hasSelfEvaluation
+        ? '+50 (self-evaluation)'
+        : '-50 (no self-evaluation)'
+    );
+  }
+  if (details.extractedScore > 0) {
+    factors.push(
+      `+${details.extractedScore / 2} (self-rated: ${
+        details.extractedScore
+      }/60)`
+    );
+  }
+
+  const factorsStr = factors.length > 0 ? ' ' + factors.join(' ') : '';
+  return `Score ${scoreStr}: ${status}${factorsStr}`;
+}
 
 // ============================================================================
 // THOUGHT PROCESS EXTRACTION
@@ -1305,7 +1680,13 @@ async function runScenario(
       tokenMetrics,
       thoughtMetrics,
       responseLength: content.length,
-      validationDetails: validation.details,
+      validationDetails: {
+        ...validation.details,
+        score: validation.score,
+        scoreExplanation:
+          validation.scoreExplanation ||
+          generateScoreExplanation(validation.score, validation.details),
+      },
       timestamp: new Date().toISOString(),
       attemptNumber: attempt,
       selfCorrected: attempt > 1,
@@ -1446,8 +1827,8 @@ async function runMultiTurnScenario(
 
     const totalLatency = Date.now() - startTime;
 
-    // Validate all responses together
-    const validation = scenario.validate(responses);
+    // Validate all responses together with turn context
+    const validation = scenario.validate(responses, { turns });
 
     if (config.debug) {
       logger.logMessageFlow(messageFlow);
@@ -1472,6 +1853,13 @@ async function runMultiTurnScenario(
         ...validation.details,
         turnCount: responses.length,
         responses: responses.map((r) => r.substring(0, 100)),
+        score: validation.score,
+        scoreExplanation:
+          validation.scoreExplanation ||
+          generateScoreExplanation(validation.score, {
+            ...validation.details,
+            turnCount: responses.length,
+          }),
       },
       timestamp: new Date().toISOString(),
       attemptNumber: 1,
@@ -1794,9 +2182,21 @@ async function main() {
             ? COLORS.green + '✓' + COLORS.reset
             : COLORS.red + '✗' + COLORS.reset;
 
+          const score = result.validationDetails?.score ?? 0;
+          const scoreExplanation =
+            result.validationDetails?.scoreExplanation ||
+            'No explanation available';
+
+          logger.info(`${COLORS.bright}${scenario.name}${COLORS.reset}`);
           logger.info(
-            `      ${status} Score: ${result.validationDetails.score || 0}/100`
+            `  ${status} Score: ${COLORS.bright}${score}/100${COLORS.reset}`
           );
+          // Log the detailed score explanation
+          if (config.verbose || score < 100) {
+            logger.info(
+              `    ${COLORS.cyan}→${COLORS.reset} ${scoreExplanation}`
+            );
+          }
         }
       }
     }
@@ -1833,16 +2233,523 @@ async function main() {
 
   logger.section('Complete');
   logger.success('Model screening and benchmarking finished successfully!');
-  logger.info(`Results saved to: ${COLORS.bright}${outputPath}${COLORS.reset}`);
+
+  const modelRankings = calculateModelRankings(allResults, screened);
+  printModelSummary(modelRankings, logger);
+
+  const outputData = {
+    timestamp: new Date().toISOString(),
+    screenedModels: screened,
+    benchmarkResults: allResults,
+    contextWindowResults,
+    modelRankings,
+  };
+
+  fs.writeFileSync(outputPath, JSON.stringify(outputData, null, 2));
+  logger.info('Results saved to: ' + COLORS.bright + outputPath + COLORS.reset);
+
+  if (config.saveGraphs && allResults.length > 0) {
+    const graphPath = outputPath.replace('.json', '-graphs.html');
+    generateBenchmarkGraphs(allResults, modelRankings, graphPath);
+  }
 
   if (config.debug) {
     logger.info(
-      `Debug logs saved to: ${COLORS.bright}${outputPath.replace(
-        '.json',
-        '.log'
-      )}${COLORS.reset}`
+      'Debug logs saved to: ' +
+        COLORS.bright +
+        outputPath.replace('.json', '.log') +
+        COLORS.reset
     );
   }
+}
+
+interface ModelRanking {
+  name: string;
+  overallScore: number;
+  successRate: number;
+  avgLatency: number;
+  scenarioScores: Record<string, number>;
+  strengths: string[];
+  weaknesses: string[];
+  fitScore: number;
+  recommendation: string;
+}
+
+function calculateModelRankings(
+  results: DetailedBenchmarkResult[],
+  screened: ScreenedModel[]
+): ModelRanking[] {
+  const models = Array.from(new Set(results.map((r) => r.model)));
+
+  const modelFitScores: Record<string, number> = {};
+  for (const m of screened) {
+    modelFitScores[m.name] = m.fitScore;
+  }
+
+  return models
+    .map((model) => {
+      const modelResults = results.filter((r) => r.model === model);
+      const scores = modelResults.map((r) => r.validationDetails?.score ?? 0);
+      const avgScore =
+        scores.length > 0
+          ? scores.reduce((a, b) => a + b, 0) / scores.length
+          : 0;
+      const successCount = modelResults.filter((r) => r.success).length;
+      const successRate =
+        modelResults.length > 0
+          ? (successCount / modelResults.length) * 100
+          : 0;
+      const avgLatency =
+        modelResults.length > 0
+          ? modelResults.reduce((a, b) => a + b.latencyMs, 0) /
+            modelResults.length
+          : 0;
+
+      const scenarioScores: Record<string, number> = {};
+      const scenarioLatencies: Record<string, number[]> = {};
+      for (const r of modelResults) {
+        scenarioScores[r.scenario] = r.validationDetails?.score ?? 0;
+        if (!scenarioLatencies[r.scenario]) scenarioLatencies[r.scenario] = [];
+        scenarioLatencies[r.scenario].push(r.latencyMs);
+      }
+
+      const strengths: string[] = [];
+      const weaknesses: string[] = [];
+      for (const [scenario, score] of Object.entries(scenarioScores)) {
+        if (score >= 80) {
+          strengths.push(scenario.substring(0, 30));
+        } else if (score < 50) {
+          weaknesses.push(scenario.substring(0, 30) + ' (' + score + ')');
+        }
+      }
+
+      let recommendation = '';
+      if (avgScore >= 80 && successRate >= 80) {
+        recommendation = 'EXCELLENT - Recommended for production use';
+      } else if (avgScore >= 60 && successRate >= 60) {
+        recommendation = 'GOOD - Suitable for most use cases';
+      } else if (avgScore >= 40 || successRate >= 50) {
+        recommendation = 'ACCEPTABLE - May need human oversight';
+      } else {
+        recommendation = 'NOT RECOMMENDED - Consider alternatives';
+      }
+
+      return {
+        name: model,
+        overallScore: Math.round(avgScore),
+        successRate: Math.round(successRate),
+        avgLatency: Math.round(avgLatency),
+        scenarioScores,
+        strengths: strengths.slice(0, 5),
+        weaknesses: weaknesses.slice(0, 5),
+        fitScore: modelFitScores[model] || 0,
+        recommendation,
+      };
+    })
+    .sort((a, b) => b.overallScore - a.overallScore);
+}
+
+function printModelSummary(rankings: ModelRanking[], logger: Logger): void {
+  logger.section('Model Rankings');
+
+  console.log(
+    '\n' +
+      COLORS.bright +
+      COLORS.cyan +
+      '═══════════════════════════════════════════════════════════════════' +
+      COLORS.reset
+  );
+  console.log(
+    COLORS.bright +
+      COLORS.cyan +
+      '                     MODEL BENCHMARK SUMMARY' +
+      COLORS.reset
+  );
+  console.log(
+    COLORS.bright +
+      COLORS.cyan +
+      '═══════════════════════════════════════════════════════════════════' +
+      COLORS.reset +
+      '\n'
+  );
+
+  const best = rankings[0];
+  console.log(
+    COLORS.green +
+      '★ BEST MODEL: ' +
+      COLORS.reset +
+      COLORS.bright +
+      best.name +
+      COLORS.reset
+  );
+  console.log(
+    '   Score: ' + COLORS.bright + best.overallScore + '/100' + COLORS.reset
+  );
+  console.log(
+    '   Success Rate: ' + COLORS.bright + best.successRate + '%' + COLORS.reset
+  );
+  console.log(
+    '   Avg Latency: ' + COLORS.bright + best.avgLatency + 'ms' + COLORS.reset
+  );
+  console.log(
+    '   Recommendation: ' +
+      COLORS.bright +
+      best.recommendation +
+      COLORS.reset +
+      '\n'
+  );
+
+  console.log(COLORS.bright + 'Full Rankings:' + COLORS.reset);
+  console.log('─'.repeat(80));
+
+  const rankWidth = 4;
+  const nameWidth = 40;
+  const scoreWidth = 8;
+  const rateWidth = 10;
+  const latWidth = 10;
+
+  console.log(
+    COLORS.gray +
+      'RANK'.padEnd(rankWidth) +
+      'MODEL'.padEnd(nameWidth) +
+      'SCORE'.padEnd(scoreWidth) +
+      'SUCCESS'.padEnd(rateWidth) +
+      'LATENCY'.padEnd(latWidth) +
+      'RECOMMENDATION' +
+      COLORS.reset
+  );
+
+  for (let i = 0; i < rankings.length; i++) {
+    const r = rankings[i];
+    const rank = '#' + (i + 1);
+    const scoreColor =
+      r.overallScore >= 80
+        ? COLORS.green
+        : r.overallScore >= 50
+        ? COLORS.yellow
+        : COLORS.red;
+    const rateColor =
+      r.successRate >= 80
+        ? COLORS.green
+        : r.successRate >= 50
+        ? COLORS.yellow
+        : COLORS.red;
+
+    let recText = r.recommendation;
+    if (recText.includes('EXCELLENT')) recText = '★★★★★';
+    else if (recText.includes('GOOD')) recText = '★★★★☆';
+    else if (recText.includes('ACCEPTABLE')) recText = '★★★☆☆';
+    else recText = '★★☆☆☆';
+
+    const row =
+      COLORS.bright +
+      rank.padEnd(rankWidth) +
+      COLORS.reset +
+      r.name.substring(0, nameWidth - 1).padEnd(nameWidth) +
+      scoreColor +
+      String(r.overallScore).padEnd(scoreWidth) +
+      COLORS.reset +
+      rateColor +
+      String(r.successRate) +
+      '%'.padEnd(rateWidth) +
+      COLORS.reset +
+      COLORS.cyan +
+      String(r.avgLatency) +
+      'ms'.padEnd(latWidth) +
+      COLORS.reset +
+      scoreColor +
+      recText +
+      COLORS.reset;
+
+    console.log(row);
+
+    if (r.strengths.length > 0) {
+      console.log(
+        '    ' +
+          COLORS.green +
+          '✓ ' +
+          COLORS.reset +
+          r.strengths.slice(0, 2).join(', ')
+      );
+    }
+    if (r.weaknesses.length > 0) {
+      console.log(
+        '    ' +
+          COLORS.red +
+          '✗ ' +
+          COLORS.reset +
+          r.weaknesses.slice(0, 2).join(', ')
+      );
+    }
+  }
+
+  console.log('─'.repeat(80) + '\n');
+
+  const top3 = rankings.slice(0, 3);
+  if (top3.length > 1) {
+    console.log(COLORS.bright + 'Quick Comparison:' + COLORS.reset);
+    for (const r of top3) {
+      console.log(
+        '  ' +
+          r.name +
+          ': ' +
+          r.overallScore +
+          '/100 (' +
+          r.successRate +
+          '% success, ' +
+          r.avgLatency +
+          'ms avg)'
+      );
+    }
+  }
+}
+
+function generateBenchmarkGraphs(
+  results: DetailedBenchmarkResult[],
+  rankings: ModelRanking[],
+  outputPath: string
+): void {
+  const models = Array.from(new Set(results.map((r) => r.model)));
+  const scenarios = Array.from(new Set(results.map((r) => r.scenario)));
+
+  const modelData: Record<
+    string,
+    { scores: Record<string, number>; avgLatency: number }
+  > = {};
+  for (const model of models) {
+    modelData[model] = { scores: {}, avgLatency: 0 };
+  }
+
+  let totalLatencyByModel: Record<string, number> = {};
+  let countByModel: Record<string, number> = {};
+
+  for (const result of results) {
+    const score = result.validationDetails?.score ?? 0;
+    modelData[result.model].scores[result.scenario] = score;
+    totalLatencyByModel[result.model] =
+      (totalLatencyByModel[result.model] || 0) + result.latencyMs;
+    countByModel[result.model] = (countByModel[result.model] || 0) + 1;
+  }
+
+  for (const model of models) {
+    modelData[model].avgLatency =
+      countByModel[model] > 0
+        ? Math.round(totalLatencyByModel[model] / countByModel[model])
+        : 0;
+  }
+
+  const avgScores = models.map((m) => {
+    const scores = Object.values(modelData[m].scores);
+    return scores.length > 0
+      ? scores.reduce((a, b) => a + b, 0) / scores.length
+      : 0;
+  });
+
+  const maxScore = Math.max(...avgScores, 100);
+
+  const scenariosChart = scenarios
+    .map((name, i) => {
+      const heights = models.map((m) => {
+        const score = modelData[m].scores[name] ?? 0;
+        return Math.round((score / 100) * 200);
+      });
+      return (
+        '{ name: "' +
+        name.substring(0, 25) +
+        '", scores: [' +
+        heights.join(', ') +
+        '] }'
+      );
+    })
+    .join(',\n      ');
+
+  const timestamp = new Date().toISOString();
+
+  const rankingTable = rankings
+    .map((r, i) => {
+      const scoreColor =
+        r.overallScore >= 80
+          ? '#00ff88'
+          : r.overallScore >= 50
+          ? '#ffaa00'
+          : '#ff4444';
+      const stars = r.recommendation.includes('EXCELLENT')
+        ? '★★★★★'
+        : r.recommendation.includes('GOOD')
+        ? '★★★★☆'
+        : r.recommendation.includes('ACCEPTABLE')
+        ? '★★★☆☆'
+        : '★★☆☆☆';
+      return (
+        '<tr style="border-bottom: 1px solid #333;">' +
+        '<td style="padding: 10px; font-weight: bold; color: #00d9ff;">#' +
+        (i + 1) +
+        '</td>' +
+        '<td style="padding: 10px;">' +
+        r.name +
+        '</td>' +
+        '<td style="padding: 10px; color: ' +
+        scoreColor +
+        '; font-weight: bold;">' +
+        r.overallScore +
+        '/100</td>' +
+        '<td style="padding: 10px;">' +
+        r.successRate +
+        '%</td>' +
+        '<td style="padding: 10px;">' +
+        r.avgLatency +
+        'ms</td>' +
+        '<td style="padding: 10px;">' +
+        stars +
+        '</td>' +
+        '</tr>'
+      );
+    })
+    .join('');
+
+  const modelCards = rankings
+    .map((r, i) => {
+      const scoreColor =
+        r.overallScore >= 80
+          ? '#00ff88'
+          : r.overallScore >= 50
+          ? '#ffaa00'
+          : '#ff4444';
+      const strengths =
+        r.strengths.length > 0
+          ? '<div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> ' +
+            r.strengths.join(', ') +
+            '</div>'
+          : '';
+      const weaknesses =
+        r.weaknesses.length > 0
+          ? '<div style="margin-top: 5px;"><strong style="color: #ff4444;">✗ Weaknesses:</strong> ' +
+            r.weaknesses.join(', ') +
+            '</div>'
+          : '';
+
+      return (
+        '<div class="model-card" style="border-left: 4px solid ' +
+        scoreColor +
+        ';">' +
+        '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+        '<h3 style="margin: 0; color: #00d9ff;">#' +
+        (i + 1) +
+        ' ' +
+        r.name +
+        '</h3>' +
+        '<span style="font-size: 24px; color: ' +
+        scoreColor +
+        ';">' +
+        r.overallScore +
+        '/100</span></div>' +
+        '<p><strong>Success Rate:</strong> ' +
+        r.successRate +
+        '% | <strong>Avg Latency:</strong> ' +
+        r.avgLatency +
+        'ms</p>' +
+        '<p><strong>Recommendation:</strong> ' +
+        r.recommendation +
+        '</p>' +
+        strengths +
+        weaknesses +
+        '</div>'
+      );
+    })
+    .join('');
+
+  const html =
+    '<!DOCTYPE html>\n' +
+    '<html lang="en">\n' +
+    '<head>\n' +
+    '  <meta charset="UTF-8">\n' +
+    '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+    '  <title>Model Benchmark Results</title>\n' +
+    '  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>\n' +
+    '  <style>\n' +
+    '    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #1a1a2e; color: #eee; }\n' +
+    '    h1 { color: #00d9ff; }\n' +
+    '    h2 { color: #00ff88; margin-top: 30px; }\n' +
+    '    h3 { color: #00d9ff; }\n' +
+    '    .chart-container { background: #16213e; padding: 20px; border-radius: 10px; margin: 20px 0; }\n' +
+    '    table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #16213e; }\n' +
+    '    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }\n' +
+    '    th { background: #0f3460; color: #00d9ff; }\n' +
+    '    .score-100 { color: #00ff88; }\n' +
+    '    .score-50 { color: #ffaa00; }\n' +
+    '    .score-0 { color: #ff4444; }\n' +
+    '    .model-card { background: #16213e; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #00d9ff; }\n' +
+    '    .winner { border: 2px solid #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }\n' +
+    '  </style>\n' +
+    '</head>\n' +
+    '<body>\n' +
+    '  <h1>Model Benchmark Results</h1>\n' +
+    '  <p>Generated: ' +
+    timestamp +
+    '</p>\n' +
+    '  <div class="chart-container">\n' +
+    '    <h2>🏆 Model Rankings</h2>\n' +
+    '    <table><thead><tr><th>Rank</th><th>Model</th><th>Score</th><th>Success</th><th>Latency</th><th>Rating</th></tr></thead><tbody>' +
+    rankingTable +
+    '</tbody></table>\n' +
+    '  </div>\n' +
+    '  <div class="chart-container">\n' +
+    '    <h2>Overall Model Scores</h2>\n' +
+    '    <canvas id="overallChart"></canvas>\n' +
+    '  </div>\n' +
+    '  <div class="chart-container">\n' +
+    '    <h2>Scores by Scenario</h2>\n' +
+    '    <canvas id="scenarioChart"></canvas>\n' +
+    '  </div>\n' +
+    '  <div class="chart-container">\n' +
+    '    <h2>Average Latency by Model (ms)</h2>\n' +
+    '    <canvas id="latencyChart"></canvas>\n' +
+    '  </div>\n' +
+    '  <h2>Detailed Results</h2>\n' +
+    modelCards +
+    '  <script>\n' +
+    '    var models = ' +
+    JSON.stringify(
+      rankings.map((r) => '#' + (rankings.indexOf(r) + 1) + ' ' + r.name)
+    ) +
+    ';\n' +
+    '    var avgScores = ' +
+    JSON.stringify(rankings.map((r) => r.overallScore)) +
+    ';\n' +
+    '    var avgLatencies = ' +
+    JSON.stringify(rankings.map((r) => r.avgLatency)) +
+    ';\n' +
+    '    var scenarioData = [\n      ' +
+    scenariosChart +
+    '\n    ];\n' +
+    '    var chartColors = avgScores.map(function(s) { return s >= 80 ? "#00ff88" : s >= 50 ? "#ffaa00" : "#ff4444"; });\n' +
+    '    new Chart(document.getElementById("overallChart"), {\n' +
+    '      type: "bar",\n' +
+    '      data: {\n' +
+    '        labels: models,\n' +
+    '        datasets: [{ label: "Average Score", data: avgScores, backgroundColor: chartColors }]\n' +
+    '      },\n' +
+    '      options: { scales: { y: { max: 100 } } }\n' +
+    '    });\n' +
+    '    var scenarioDatasets = scenarioData.map(function(s, i) {\n' +
+    '      return { label: s.name, data: s.scores, backgroundColor: "hsl(" + (i * 360 / scenarioData.length) + ", 70%, 50%)" };\n' +
+    '    });\n' +
+    '    new Chart(document.getElementById("scenarioChart"), {\n' +
+    '      type: "bar",\n' +
+    '      data: { labels: models, datasets: scenarioDatasets },\n' +
+    '      options: { scales: { y: { max: 100 } }, indexAxis: "y" }\n' +
+    '    });\n' +
+    '    new Chart(document.getElementById("latencyChart"), {\n' +
+    '      type: "bar",\n' +
+    '      data: { labels: models, datasets: [{ label: "Avg Latency (ms)", data: avgLatencies, backgroundColor: "#00d9ff" }] }\n' +
+    '    });\n' +
+    '  <' +
+    '/script>\n' +
+    '</body>\n' +
+    '</html>';
+
+  fs.writeFileSync(outputPath, html);
+  console.log('Graphs saved to: ' + outputPath);
 }
 
 // Run main
