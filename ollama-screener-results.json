@@ -1,23 +1,52 @@
 {
-  "timestamp": "2026-02-11T02:23:46.146Z",
-  "hardware": {
-    "gpus": [],
-    "ollamaHost": "192.168.50.14",
-    "ollamaPort": 11434
-  },
-  "statistics": {
-    "totalTests": 0,
-    "successfulTests": 0,
-    "overallSuccessRate": 0,
-    "avgLatency": 0,
-    "avgTokensPerSecond": 0
-  },
+  "timestamp": "2026-02-11T13:58:53.768Z",
   "screenedModels": [
     {
+      "name": "Randomblock1/nemotron-nano:8b",
+      "model": "Randomblock1/nemotron-nano:8b",
+      "modified_at": "2026-02-11T13:39:23.006088777Z",
+      "size": 4920746682,
+      "digest": "470fceb39b4300f47cc3b35d6e0a31321757fbcc4afdb4177484ca745bf92f37",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "families": [
+          "llama"
+        ],
+        "parameter_size": "8.0B",
+        "quantization_level": "Q4_K_M"
+      },
+      "parameterSizeB": 8000000000,
+      "quantization": "UNKNOWN",
+      "estimatedVRAMMB": 3815,
+      "contextOverheadMB": 256,
+      "totalVRAMMB": 4583,
+      "fitScore": 0,
+      "suitability": [
+        "cpu_fallback"
+      ]
+    },
+    {
       "name": "llama3.2:3b-instruct-q4_0",
+      "model": "llama3.2:3b-instruct-q4_0",
+      "modified_at": "2026-02-10T21:13:36.528161321Z",
+      "size": 1917206179,
+      "digest": "9b9453afbdd61f0a345069286517a30d17497cc60d71cfdaef86bf1ef8322dc0",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "families": [
+          "llama"
+        ],
+        "parameter_size": "3.2B",
+        "quantization_level": "Q4_0"
+      },
       "parameterSizeB": 3200000000,
       "quantization": "UNKNOWN",
       "estimatedVRAMMB": 1526,
+      "contextOverheadMB": 256,
       "totalVRAMMB": 2294,
       "fitScore": 0,
       "suitability": [
@@ -26,9 +55,24 @@
     },
     {
       "name": "llama3.2:3b",
+      "model": "llama3.2:3b",
+      "modified_at": "2026-02-10T21:07:00.132722882Z",
+      "size": 2019393189,
+      "digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "families": [
+          "llama"
+        ],
+        "parameter_size": "3.2B",
+        "quantization_level": "Q4_K_M"
+      },
       "parameterSizeB": 3200000000,
       "quantization": "UNKNOWN",
       "estimatedVRAMMB": 1526,
+      "contextOverheadMB": 256,
       "totalVRAMMB": 2294,
       "fitScore": 0,
       "suitability": [
@@ -37,9 +81,24 @@
     },
     {
       "name": "cogito:3b",
+      "model": "cogito:3b",
+      "modified_at": "2026-02-10T21:04:30.325274953Z",
+      "size": 2241013645,
+      "digest": "bd144357d717922daff29200122c3f2aab52d2a643ec73ce304f7827069ec74d",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "families": [
+          "llama"
+        ],
+        "parameter_size": "3.6B",
+        "quantization_level": "Q4_K_M"
+      },
       "parameterSizeB": 3600000000,
       "quantization": "UNKNOWN",
       "estimatedVRAMMB": 1717,
+      "contextOverheadMB": 256,
       "totalVRAMMB": 2485,
       "fitScore": 0,
       "suitability": [
@@ -48,21 +107,25 @@
     },
     {
       "name": "qwen3:4b",
+      "model": "qwen3:4b",
+      "modified_at": "2026-02-10T21:01:48.343151588Z",
+      "size": 2497293931,
+      "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen3",
+        "families": [
+          "qwen3"
+        ],
+        "parameter_size": "4.0B",
+        "quantization_level": "Q4_K_M"
+      },
       "parameterSizeB": 4000000000,
       "quantization": "UNKNOWN",
       "estimatedVRAMMB": 1908,
+      "contextOverheadMB": 256,
       "totalVRAMMB": 2676,
-      "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
-    },
-    {
-      "name": "qwen3:1.7b-q4_K_M",
-      "parameterSizeB": 2000000000,
-      "quantization": "Q4_K_M",
-      "estimatedVRAMMB": 954,
-      "totalVRAMMB": 1722,
       "fitScore": 0,
       "suitability": [
         "cpu_fallback"
@@ -70,32 +133,25 @@
     },
     {
       "name": "gemma3:4b-it-q4_K_M",
+      "model": "gemma3:4b-it-q4_K_M",
+      "modified_at": "2026-02-10T19:56:46.692740586Z",
+      "size": 3338801804,
+      "digest": "a2af6cc3eb7fa8be8504abaf9b04e88f17a119ec3f04a3addf55f92841195f5a",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "gemma3",
+        "families": [
+          "gemma3"
+        ],
+        "parameter_size": "4.3B",
+        "quantization_level": "Q4_K_M"
+      },
       "parameterSizeB": 4300000000,
       "quantization": "Q4_K_M",
       "estimatedVRAMMB": 2051,
+      "contextOverheadMB": 256,
       "totalVRAMMB": 2819,
-      "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
-    },
-    {
-      "name": "llama3.2:1b-instruct-q3_K_M",
-      "parameterSizeB": 1200000000,
-      "quantization": "Q3_K_M",
-      "estimatedVRAMMB": 550,
-      "totalVRAMMB": 1318,
-      "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
-    },
-    {
-      "name": "deepseek-r1:7b-qwen-distill-q4_K_M",
-      "parameterSizeB": 7600000000,
-      "quantization": "Q4_K_M",
-      "estimatedVRAMMB": 3624,
-      "totalVRAMMB": 4392,
       "fitScore": 0,
       "suitability": [
         "cpu_fallback"
@@ -103,9 +159,24 @@
     },
     {
       "name": "deepseek-r1:8b",
+      "model": "deepseek-r1:8b",
+      "modified_at": "2026-01-25T18:25:16.80092725Z",
+      "size": 5225376047,
+      "digest": "6995872bfe4c521a67b32da386cd21d5c6e819b6e0d62f79f64ec83be99f5763",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen3",
+        "families": [
+          "qwen3"
+        ],
+        "parameter_size": "8.2B",
+        "quantization_level": "Q4_K_M"
+      },
       "parameterSizeB": 8199999999.999999,
       "quantization": "UNKNOWN",
       "estimatedVRAMMB": 3911,
+      "contextOverheadMB": 256,
       "totalVRAMMB": 4679,
       "fitScore": 0,
       "suitability": [
@@ -113,21 +184,25 @@
       ]
     },
     {
-      "name": "phi3:14b-medium-128k-instruct-q2_K",
-      "parameterSizeB": 14000000000,
-      "quantization": "Q2_K",
-      "estimatedVRAMMB": 4674,
-      "totalVRAMMB": 5442,
-      "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
-    },
-    {
       "name": "qwen2.5:14b-instruct-q3_K_S",
+      "model": "qwen2.5:14b-instruct-q3_K_S",
+      "modified_at": "2026-01-25T18:22:11.78471051Z",
+      "size": 6659609509,
+      "digest": "c8f457c1f8f593fb2e47d9ea5e5951454f2837420b5abe0b075c650f59e2ada8",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": [
+          "qwen2"
+        ],
+        "parameter_size": "14.8B",
+        "quantization_level": "Q3_K_S"
+      },
       "parameterSizeB": 14800000000,
       "quantization": "Q3_K_S",
       "estimatedVRAMMB": 5929,
+      "contextOverheadMB": 256,
       "totalVRAMMB": 6697,
       "fitScore": 0,
       "suitability": [
@@ -135,21 +210,25 @@
       ]
     },
     {
-      "name": "nemotron-mini:4b",
-      "parameterSizeB": 4200000000,
-      "quantization": "UNKNOWN",
-      "estimatedVRAMMB": 2003,
-      "totalVRAMMB": 2771,
-      "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
-    },
-    {
       "name": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "modified_at": "2026-01-25T18:17:28.252922075Z",
+      "size": 6083102669,
+      "digest": "0549a17f596fcb2387d26e5eec0b167b8d912517398a88bff2d7745e275996d1",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "families": [
+          "llama"
+        ],
+        "parameter_size": "12.2B",
+        "quantization_level": "Q3_K_M"
+      },
       "parameterSizeB": 12200000000,
       "quantization": "Q3_K_M",
       "estimatedVRAMMB": 5585,
+      "contextOverheadMB": 256,
       "totalVRAMMB": 6353,
       "fitScore": 0,
       "suitability": [
@@ -157,54 +236,25 @@
       ]
     },
     {
-      "name": "gemma3:4b",
-      "parameterSizeB": 4300000000,
-      "quantization": "UNKNOWN",
-      "estimatedVRAMMB": 2051,
-      "totalVRAMMB": 2819,
-      "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
-    },
-    {
-      "name": "gemma3:latest",
-      "parameterSizeB": 4300000000,
-      "quantization": "UNKNOWN",
-      "estimatedVRAMMB": 2051,
-      "totalVRAMMB": 2819,
-      "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
-    },
-    {
-      "name": "qwen2.5:3b",
-      "parameterSizeB": 3100000000,
-      "quantization": "UNKNOWN",
-      "estimatedVRAMMB": 1479,
-      "totalVRAMMB": 2247,
-      "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
-    },
-    {
-      "name": "qwen:latest",
-      "parameterSizeB": 4000000000,
-      "quantization": "UNKNOWN",
-      "estimatedVRAMMB": 1908,
-      "totalVRAMMB": 2676,
-      "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
-    },
-    {
       "name": "llama3.2:latest",
+      "model": "llama3.2:latest",
+      "modified_at": "2026-01-24T01:10:55.931243642Z",
+      "size": 2019393189,
+      "digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "families": [
+          "llama"
+        ],
+        "parameter_size": "3.2B",
+        "quantization_level": "Q4_K_M"
+      },
       "parameterSizeB": 3200000000,
       "quantization": "UNKNOWN",
       "estimatedVRAMMB": 1526,
+      "contextOverheadMB": 256,
       "totalVRAMMB": 2294,
       "fitScore": 0,
       "suitability": [
@@ -212,61 +262,2703 @@
       ]
     }
   ],
-  "benchmarks": [],
-  "recommendations": {
-    "workflow_control": [],
-    "tool_calling": [],
-    "conversational": []
-  },
-  "testSuites": [
+  "benchmarkResults": [
     {
-      "name": "Workflow Detection",
-      "description": "Tests if model can correctly classify user intent into workflow types",
-      "weight": 0.15,
-      "scenarios": [
-        "Simple Greeting (Conversational)",
-        "Action Request (Tool Calling)",
-        "Hybrid Request Detection",
-        "Ambiguous Intent (Conversational)"
-      ]
+      "model": "Randomblock1/nemotron-nano:8b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Patricia",
+      "success": false,
+      "latencyMs": 3844,
+      "tokenMetrics": {
+        "inputTokens": 592,
+        "outputTokens": 9,
+        "totalTokens": 601,
+        "inputTokensPerSecond": 154,
+        "outputTokensPerSecond": 2.3,
+        "totalTokensPerSecond": 156.3
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817681898,
+        "thinkingEndTime": 1770817685742,
+        "thinkingDurationMs": 3844,
+        "thinkingTokens": 0,
+        "responseTokens": 9,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 35,
+      "validationDetails": {
+        "introducesSelf": false,
+        "noToolCalls": true,
+        "explainsPurpose": false,
+        "asksEngagement": true,
+        "warmTone": false,
+        "responsePreview": "Hi there! How can I help you today?",
+        "score": 40,
+        "scoreExplanation": "Score 40/100: FAIL -20 (no self-introduction) +20 (no premature tool calls) -20 (unclear purpose) +20 (asks engagement question) -20 (tone issues)"
+      },
+      "timestamp": "2026-02-11T13:48:05.742Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
     },
     {
-      "name": "Tool Call Construction",
-      "description": "Tests if model can correctly construct MCP tool calls with proper schemas",
-      "weight": 0.3,
-      "scenarios": [
-        "Create Project Tool Call",
-        "Enum Value Case Sensitivity",
-        "Tool Discovery Pattern",
-        "ID Resolution Pattern"
-      ]
+      "model": "Randomblock1/nemotron-nano:8b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Alex",
+      "success": true,
+      "latencyMs": 432,
+      "tokenMetrics": {
+        "inputTokens": 621,
+        "outputTokens": 26,
+        "totalTokens": 647,
+        "inputTokensPerSecond": 1437.5,
+        "outputTokensPerSecond": 60.2,
+        "totalTokensPerSecond": 1497.7
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817685743,
+        "thinkingEndTime": 1770817686175,
+        "thinkingDurationMs": 432,
+        "thinkingTokens": 0,
+        "responseTokens": 26,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 103,
+      "validationDetails": {
+        "introducesSelf": false,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! How can I assist you today? Is there something specific you'd like to discuss or need help with?",
+        "scoreExplanation": "Score 80/100: PASS -20 (no self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)",
+        "score": 80
+      },
+      "timestamp": "2026-02-11T13:48:06.175Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
     },
     {
-      "name": "Self-Correction",
-      "description": "Tests if model can recover from validation errors",
-      "weight": 0.2,
-      "scenarios": [
-        "Missing Parameter Recovery",
-        "Invalid Enum Correction"
-      ]
+      "model": "Randomblock1/nemotron-nano:8b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Self-Evaluation",
+      "success": true,
+      "latencyMs": 1960,
+      "tokenMetrics": {
+        "inputTokens": 395,
+        "outputTokens": 143,
+        "totalTokens": 538,
+        "inputTokensPerSecond": 201.5,
+        "outputTokensPerSecond": 73,
+        "totalTokensPerSecond": 274.5
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817686175,
+        "thinkingEndTime": 1770817688135,
+        "thinkingDurationMs": 1960,
+        "thinkingTokens": 0,
+        "responseTokens": 143,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 570,
+      "validationDetails": {
+        "welcomeMessage": "Welcome to our community! We're here to help you with any questions or concerns you may have. Our team is committed to providing excellent customer service and we look forward to working together.",
+        "warmth": 8,
+        "clarity": 9,
+        "persona": 7,
+        "engagement": 8,
+        "compliance": 10,
+        "overall": 8,
+        "validScores": true,
+        "breakdown": "warmth=8, clarity=9, persona=7, engagement=8, compliance=10, overall=8",
+        "responsePreview": "{\n  \"welcomeMessage\": \"Welcome to our community! We're here to help you with any questions or concerns you may have. Our team is committed to providing excellent customer service and we look forward to working together.\",\n  \"evaluation\": {\n    \"warmth\": 8,\n    \"clarity\": 9,\n    \"persona\": 7,\n    \"engagement\": 8,\n    \"compliance\": 10,\n    \"overall\": 8,\n    \"strengths\": [\"clear and warm tone\", \"expl",
+        "scoreExplanation": "Score 83/100: PASS",
+        "score": 83
+      },
+      "timestamp": "2026-02-11T13:48:08.136Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
     },
     {
-      "name": "Safety & Confirmation",
-      "description": "Tests if model requests confirmation for destructive operations",
-      "weight": 0.15,
-      "scenarios": [
-        "Delete Operation Confirmation",
-        "Multi-Tool with Sensitive Operation"
-      ]
+      "model": "Randomblock1/nemotron-nano:8b",
+      "useCase": "multi_turn",
+      "scenario": "Project Reference Memory (3 turns)",
+      "success": true,
+      "latencyMs": 7084,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 2623,
+      "validationDetails": {
+        "turnCount": 3,
+        "turn2Matches": 1,
+        "turn2Expected": [
+          "Website Redesign"
+        ],
+        "turn2Actual": "sure, i can add that task to your project titled \"website redesign.\" here's an updated version of th",
+        "turn3Matches": 1,
+        "turn3Expected": [
+          "Website Redesign"
+        ],
+        "turn3Actual": "i apologize for any confusion. as an ai, i don't have real-time access to external databases or spec",
+        "responses": [
+          "I'd be happy to help you with creating a project called \"Website Redesign.\" However, I want to make ",
+          "Sure, I can add that task to your project titled \"Website Redesign.\" Here's an updated version of th",
+          "I apologize for any confusion. As an AI, I don't have real-time access to external databases or spec"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:48:15.220Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
     },
     {
-      "name": "Conversational Quality",
-      "description": "Tests natural language response quality",
-      "weight": 0.2,
-      "scenarios": [
-        "Natural Explanation",
-        "Persona Adherence"
-      ]
+      "model": "Randomblock1/nemotron-nano:8b",
+      "useCase": "multi_turn",
+      "scenario": "Task Creation Context (4 turns)",
+      "success": false,
+      "latencyMs": 4812,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1697,
+      "validationDetails": {
+        "turnCount": 4,
+        "matches": 1,
+        "expected": [
+          "Fix login bug",
+          "high priority"
+        ],
+        "actual": "it seems there was some confusion. to clarify, you mentioned creating a task called \"fix login bug,\" but then asked what we had just created. since we",
+        "allResponses": [
+          "Hello! I'm here to help you with creating tasks. Could you please provide more details about what ki",
+          "Sure, I can help with that. Please provide more context and details about the login bug you're refer",
+          "I've noted that you want the \"Fix login bug\" task to be treated as high priority. I'll make sure to ",
+          "It seems there was some confusion. To clarify, you mentioned creating a task called \"Fix login bug,\""
+        ],
+        "scoreExplanation": "Score 50/100: PARTIAL",
+        "responses": [
+          "Hello! I'm here to help you with creating tasks. Could you please provide more details about what ki",
+          "Sure, I can help with that. Please provide more context and details about the login bug you're refer",
+          "I've noted that you want the \"Fix login bug\" task to be treated as high priority. I'll make sure to ",
+          "It seems there was some confusion. To clarify, you mentioned creating a task called \"Fix login bug,\""
+        ],
+        "score": 50
+      },
+      "timestamp": "2026-02-11T13:48:20.032Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "Randomblock1/nemotron-nano:8b",
+      "useCase": "multi_turn",
+      "scenario": "Complex Multi-Reference (5 turns)",
+      "success": true,
+      "latencyMs": 9535,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 3567,
+      "validationDetails": {
+        "matches": 4,
+        "expected": [
+          "Alpha",
+          "Beta",
+          "website",
+          "mobile"
+        ],
+        "actual": "to help you decide which project to prioritize and which one to tackle first, let's gather more context about both projects. this will enable me to suggest a logical order of focus based on factors su",
+        "allResponses": [
+          "I'd be happy to hear about your projects! Please provide a brief description of what you've been wor",
+          "It sounds like you have two distinct projects in progress, named Alpha and Beta. Could you please pr",
+          "Please elaborate a bit more on what Alpha entails for your website project. For example, are you wor",
+          "That's a great start! Could you please elaborate on what Beta entails for your mobile app project? F",
+          "To help you decide which project to prioritize and which one to tackle first, let's gather more cont"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "turnCount": 5,
+        "responses": [
+          "I'd be happy to hear about your projects! Please provide a brief description of what you've been wor",
+          "It sounds like you have two distinct projects in progress, named Alpha and Beta. Could you please pr",
+          "Please elaborate a bit more on what Alpha entails for your website project. For example, are you wor",
+          "That's a great start! Could you please elaborate on what Beta entails for your mobile app project? F",
+          "To help you decide which project to prioritize and which one to tackle first, let's gather more cont"
+        ],
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:48:29.568Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b-instruct-q4_0",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Patricia",
+      "success": true,
+      "latencyMs": 2138,
+      "tokenMetrics": {
+        "inputTokens": 592,
+        "outputTokens": 79,
+        "totalTokens": 671,
+        "inputTokensPerSecond": 276.9,
+        "outputTokensPerSecond": 37,
+        "totalTokensPerSecond": 313.8
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817709568,
+        "thinkingEndTime": 1770817711706,
+        "thinkingDurationMs": 2138,
+        "thinkingTokens": 0,
+        "responseTokens": 79,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 316,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Patricia P. Project, an AI assistant here to help with your project management needs. I'm specifically designed to assist with coordinating",
+        "score": 100,
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)"
+      },
+      "timestamp": "2026-02-11T13:48:31.707Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b-instruct-q4_0",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Alex",
+      "success": true,
+      "latencyMs": 548,
+      "tokenMetrics": {
+        "inputTokens": 621,
+        "outputTokens": 73,
+        "totalTokens": 694,
+        "inputTokensPerSecond": 1133.2,
+        "outputTokensPerSecond": 133.2,
+        "totalTokensPerSecond": 1266.4
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817711707,
+        "thinkingEndTime": 1770817712255,
+        "thinkingDurationMs": 548,
+        "thinkingTokens": 0,
+        "responseTokens": 73,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 291,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Alex Generalis, a general-purpose AI assistant here to help with everyday tasks, provide guidance, answer questions, and refer you to speci",
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:48:32.255Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b-instruct-q4_0",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Self-Evaluation",
+      "success": true,
+      "latencyMs": 1027,
+      "tokenMetrics": {
+        "inputTokens": 395,
+        "outputTokens": 137,
+        "totalTokens": 532,
+        "inputTokensPerSecond": 384.6,
+        "outputTokensPerSecond": 133.4,
+        "totalTokensPerSecond": 518
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817712255,
+        "thinkingEndTime": 1770817713282,
+        "thinkingDurationMs": 1027,
+        "thinkingTokens": 0,
+        "responseTokens": 137,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 545,
+      "validationDetails": {
+        "welcomeMessage": "Hello! I'm Patricia P. Project, your friendly AI assistant. I can help you manage projects, coordinate teams, and ensure timely delivery. What's the biggest challenge you're facing in your current pro",
+        "warmth": 8,
+        "clarity": 9,
+        "persona": 10,
+        "engagement": 7,
+        "compliance": 0,
+        "overall": 8,
+        "validScores": true,
+        "breakdown": "warmth=8, clarity=9, persona=10, engagement=7, compliance=0, overall=8",
+        "responsePreview": "{\n  \"welcomeMessage\": \"Hello! I'm Patricia P. Project, your friendly AI assistant. I can help you manage projects, coordinate teams, and ensure timely delivery. What's the biggest challenge you're facing in your current project?\",\n  \"evaluation\": {\n    \"warmth\": 8,\n    \"clarity\": 9,\n    \"persona\": 10,\n    \"engagement\": 7,\n    \"compliance\": 0,\n    \"overall\": 8\n  }\n}\n\nStrengths:\n- Organized\n- Empath",
+        "scoreExplanation": "Score 70/100: PARTIAL",
+        "score": 70
+      },
+      "timestamp": "2026-02-11T13:48:33.282Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b-instruct-q4_0",
+      "useCase": "multi_turn",
+      "scenario": "Project Reference Memory (3 turns)",
+      "success": true,
+      "latencyMs": 2077,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1261,
+      "validationDetails": {
+        "turnCount": 3,
+        "turn2Matches": 1,
+        "turn2Expected": [
+          "Website Redesign"
+        ],
+        "turn2Actual": "i've added a new task to the \"website redesign\" project.\n\n**task details:**\n\n* task name: review des",
+        "turn3Matches": 1,
+        "turn3Expected": [
+          "Website Redesign"
+        ],
+        "turn3Actual": "i can check the status of the \"website redesign\" project for you.\n\nas of now, the project has the fo",
+        "responses": [
+          "I've created a new project in our project management system.\n\n**Project Details:**\n\n* Project Name: ",
+          "I've added a new task to the \"Website Redesign\" project.\n\n**Task Details:**\n\n* Task Name: Review des",
+          "I can check the status of the \"Website Redesign\" project for you.\n\nAs of now, the project has the fo"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:48:35.359Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b-instruct-q4_0",
+      "useCase": "multi_turn",
+      "scenario": "Task Creation Context (4 turns)",
+      "success": false,
+      "latencyMs": 2518,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1599,
+      "validationDetails": {
+        "turnCount": 4,
+        "matches": 1,
+        "expected": [
+          "Fix login bug",
+          "high priority"
+        ],
+        "actual": "we just created a new task called \"fix login bug\". here are the details:\n\n* task name: fix login bug\n* priority: high\n* assignee: technical lead (who ",
+        "allResponses": [
+          "You'd like to create a new task. Can you please provide some details about the task you want to crea",
+          "I've created a new task called \"Fix login bug\". To help me better understand what needs to be done, ",
+          "I've updated the task \"Fix login bug\" to have a high priority.\n\nTo ensure this task gets attention, ",
+          "We just created a new task called \"Fix login bug\". Here are the details:\n\n* Task Name: Fix login bug"
+        ],
+        "scoreExplanation": "Score 50/100: PARTIAL",
+        "responses": [
+          "You'd like to create a new task. Can you please provide some details about the task you want to crea",
+          "I've created a new task called \"Fix login bug\". To help me better understand what needs to be done, ",
+          "I've updated the task \"Fix login bug\" to have a high priority.\n\nTo ensure this task gets attention, ",
+          "We just created a new task called \"Fix login bug\". Here are the details:\n\n* Task Name: Fix login bug"
+        ],
+        "score": 50
+      },
+      "timestamp": "2026-02-11T13:48:37.877Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b-instruct-q4_0",
+      "useCase": "multi_turn",
+      "scenario": "Complex Multi-Reference (5 turns)",
+      "success": true,
+      "latencyMs": 2015,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1249,
+      "validationDetails": {
+        "matches": 3,
+        "expected": [
+          "Alpha",
+          "Beta",
+          "website",
+          "mobile"
+        ],
+        "actual": "considering you have a website project (alpha) that's already underway, it might be more efficient to continue working on alpha before diving into beta.\n\nhowever, if there's a critical component in be",
+        "allResponses": [
+          "I'm all ears. Please go ahead and share information about your current projects. I'll do my best to ",
+          "So, you have two main projects: Alpha and Beta. Which one would you like to start with? Or would you",
+          "So, your Alpha project is focused on developing the website. Is that correct?\n\nWhat's the current st",
+          "You have two projects, Alpha for the website and Beta for the mobile app.\n\nIt sounds like you're dev",
+          "Considering you have a website project (Alpha) that's already underway, it might be more efficient t"
+        ],
+        "scoreExplanation": "Score 75/100: PARTIAL",
+        "turnCount": 5,
+        "responses": [
+          "I'm all ears. Please go ahead and share information about your current projects. I'll do my best to ",
+          "So, you have two main projects: Alpha and Beta. Which one would you like to start with? Or would you",
+          "So, your Alpha project is focused on developing the website. Is that correct?\n\nWhat's the current st",
+          "You have two projects, Alpha for the website and Beta for the mobile app.\n\nIt sounds like you're dev",
+          "Considering you have a website project (Alpha) that's already underway, it might be more efficient t"
+        ],
+        "score": 75
+      },
+      "timestamp": "2026-02-11T13:48:39.892Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Patricia",
+      "success": true,
+      "latencyMs": 1794,
+      "tokenMetrics": {
+        "inputTokens": 592,
+        "outputTokens": 73,
+        "totalTokens": 665,
+        "inputTokensPerSecond": 330,
+        "outputTokensPerSecond": 40.7,
+        "totalTokensPerSecond": 370.7
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817719892,
+        "thinkingEndTime": 1770817721686,
+        "thinkingDurationMs": 1794,
+        "thinkingTokens": 0,
+        "responseTokens": 73,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 292,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "I'm Patricia P. Project. I'm a project management assistant, here to help you bring your projects to life. My main goal is to ensure timely delivery a",
+        "score": 100,
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)"
+      },
+      "timestamp": "2026-02-11T13:48:41.686Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Alex",
+      "success": true,
+      "latencyMs": 789,
+      "tokenMetrics": {
+        "inputTokens": 621,
+        "outputTokens": 112,
+        "totalTokens": 733,
+        "inputTokensPerSecond": 787.1,
+        "outputTokensPerSecond": 142,
+        "totalTokensPerSecond": 929
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817721687,
+        "thinkingEndTime": 1770817722476,
+        "thinkingDurationMs": 789,
+        "thinkingTokens": 0,
+        "responseTokens": 112,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 445,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Alex Generalis, a general-purpose AI assistant here to help with everyday tasks and answer any questions you may have. My purpose is to ass",
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:48:42.476Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Self-Evaluation",
+      "success": true,
+      "latencyMs": 1776,
+      "tokenMetrics": {
+        "inputTokens": 395,
+        "outputTokens": 282,
+        "totalTokens": 677,
+        "inputTokensPerSecond": 222.4,
+        "outputTokensPerSecond": 158.8,
+        "totalTokensPerSecond": 381.2
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817722476,
+        "thinkingEndTime": 1770817724252,
+        "thinkingDurationMs": 1776,
+        "thinkingTokens": 0,
+        "responseTokens": 282,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 1128,
+      "validationDetails": {
+        "welcomeMessage": "Hello! I'm Patricia P. Project, your project management assistant. I can help you with managing projects, coordinating teams, and ensuring timely delivery. What's the current project or goal you'd lik",
+        "warmth": 8,
+        "clarity": 9,
+        "persona": 10,
+        "engagement": 7,
+        "compliance": 10,
+        "overall": 8,
+        "validScores": true,
+        "breakdown": "warmth=8, clarity=9, persona=10, engagement=7, compliance=10, overall=8",
+        "responsePreview": "{\n  \"welcomeMessage\": \"Hello! I'm Patricia P. Project, your project management assistant. I can help you with managing projects, coordinating teams, and ensuring timely delivery. What's the current project or goal you'd like to tackle first?\",\n  \"evaluation\": {\n    \"warmth\": 8,\n    \"clarity\": 9,\n    \"persona\": 10,\n    \"engagement\": 7,\n    \"compliance\": 10,\n    \"overall\": 8\n  }\n}\n\nExplanation:\n- Wa",
+        "scoreExplanation": "Score 87/100: PASS",
+        "score": 87
+      },
+      "timestamp": "2026-02-11T13:48:44.252Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "useCase": "multi_turn",
+      "scenario": "Project Reference Memory (3 turns)",
+      "success": true,
+      "latencyMs": 2756,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1604,
+      "validationDetails": {
+        "turnCount": 3,
+        "turn2Matches": 1,
+        "turn2Expected": [
+          "Website Redesign"
+        ],
+        "turn2Actual": "i've added the task \"review design mockups\" to the \"website redesign\" project.\n\n**project title:** w",
+        "turn3Matches": 1,
+        "turn3Expected": [
+          "Website Redesign"
+        ],
+        "turn3Actual": "the current status of the \"website redesign\" project is:\n\n**project title:** website redesign\n**proj",
+        "responses": [
+          "I'll create a new project called \"Website Redesign\". I've created a basic project structure with the",
+          "I've added the task \"Review design mockups\" to the \"Website Redesign\" project.\n\n**Project Title:** W",
+          "The current status of the \"Website Redesign\" project is:\n\n**Project Title:** Website Redesign\n**Proj"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:48:47.008Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "useCase": "multi_turn",
+      "scenario": "Task Creation Context (4 turns)",
+      "success": true,
+      "latencyMs": 2755,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1604,
+      "validationDetails": {
+        "turnCount": 4,
+        "matches": 2,
+        "expected": [
+          "Fix login bug",
+          "high priority"
+        ],
+        "actual": "we just created a new task called \"fix login bug\". we made it a high priority task and i'm keeping track of its details. if you need to add more infor",
+        "allResponses": [
+          "To create a new task, I'll guide you through the process.\n\nCan you please provide some details about",
+          "So, the task is called \"Fix login bug\". I've taken note of that.\n\nTo confirm, can you tell me what's",
+          "I've updated the task status for \"Fix login bug\" to High Priority.\n\nHere's a summary of your task:\n\n",
+          "We just created a new task called \"Fix login bug\". We made it a High Priority task and I'm keeping t"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "responses": [
+          "To create a new task, I'll guide you through the process.\n\nCan you please provide some details about",
+          "So, the task is called \"Fix login bug\". I've taken note of that.\n\nTo confirm, can you tell me what's",
+          "I've updated the task status for \"Fix login bug\" to High Priority.\n\nHere's a summary of your task:\n\n",
+          "We just created a new task called \"Fix login bug\". We made it a High Priority task and I'm keeping t"
+        ],
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:48:49.764Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "useCase": "multi_turn",
+      "scenario": "Complex Multi-Reference (5 turns)",
+      "success": true,
+      "latencyMs": 3063,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1877,
+      "validationDetails": {
+        "matches": 4,
+        "expected": [
+          "Alpha",
+          "Beta",
+          "website",
+          "mobile"
+        ],
+        "actual": "considering you mentioned both projects need attention, i'd recommend focusing on the website project (alpha) first. here's why:\n\n1. typically, having a solid online presence is crucial for any busine",
+        "allResponses": [
+          "I'd love to hear about your current projects. Please feel free to share as much or as little as you'",
+          "So, it sounds like we have two main projects: Alpha and Beta. Can you tell me a bit more about each ",
+          "So Alpha is focused on the website project. What's the primary goal for the website, is it a launch ",
+          "So Beta is focused on the mobile app project. Are there any specific goals or objectives for the mob",
+          "Considering you mentioned both projects need attention, I'd recommend focusing on the website projec"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "turnCount": 5,
+        "responses": [
+          "I'd love to hear about your current projects. Please feel free to share as much or as little as you'",
+          "So, it sounds like we have two main projects: Alpha and Beta. Can you tell me a bit more about each ",
+          "So Alpha is focused on the website project. What's the primary goal for the website, is it a launch ",
+          "So Beta is focused on the mobile app project. Are there any specific goals or objectives for the mob",
+          "Considering you mentioned both projects need attention, I'd recommend focusing on the website projec"
+        ],
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:48:52.827Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "cogito:3b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Patricia",
+      "success": true,
+      "latencyMs": 2238,
+      "tokenMetrics": {
+        "inputTokens": 592,
+        "outputTokens": 86,
+        "totalTokens": 678,
+        "inputTokensPerSecond": 264.5,
+        "outputTokensPerSecond": 38.4,
+        "totalTokensPerSecond": 302.9
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817732827,
+        "thinkingEndTime": 1770817735065,
+        "thinkingDurationMs": 2238,
+        "thinkingTokens": 0,
+        "responseTokens": 86,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 344,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hi there! I'm Patricia P. Project, your dedicated project management assistant. I specialize in helping you achieve your goals through effective plann",
+        "score": 100,
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)"
+      },
+      "timestamp": "2026-02-11T13:48:55.065Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "cogito:3b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Alex",
+      "success": true,
+      "latencyMs": 439,
+      "tokenMetrics": {
+        "inputTokens": 621,
+        "outputTokens": 43,
+        "totalTokens": 664,
+        "inputTokensPerSecond": 1414.6,
+        "outputTokensPerSecond": 97.9,
+        "totalTokensPerSecond": 1512.5
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817735065,
+        "thinkingEndTime": 1770817735504,
+        "thinkingDurationMs": 439,
+        "thinkingTokens": 0,
+        "responseTokens": 43,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 172,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Alex Generalis, an AI assistant here to help you with your goals and needs. How can I assist you today? What brings you here, and what woul",
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:48:55.504Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "cogito:3b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Self-Evaluation",
+      "success": true,
+      "latencyMs": 307619,
+      "tokenMetrics": {
+        "inputTokens": 395,
+        "outputTokens": 37454,
+        "totalTokens": 37849,
+        "inputTokensPerSecond": 1.3,
+        "outputTokensPerSecond": 121.8,
+        "totalTokensPerSecond": 123
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770817735505,
+        "thinkingEndTime": 1770818043124,
+        "thinkingDurationMs": 307619,
+        "thinkingTokens": 0,
+        "responseTokens": 37454,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 149816,
+      "validationDetails": {
+        "welcomeMessage": "Hello! I'm Patricia P. Project, your AI assistant for project management assistance. I can help you with projects, tasks, and tracking, ensuring timely delivery and coordination of teams. What's the f",
+        "warmth": 9,
+        "clarity": 8,
+        "persona": 10,
+        "engagement": 9,
+        "compliance": 10,
+        "overall": 9,
+        "validScores": true,
+        "breakdown": "warmth=9, clarity=8, persona=10, engagement=9, compliance=10, overall=9",
+        "responsePreview": "{\n  \"welcomeMessage\": \"Hello! I'm Patricia P. Project, your AI assistant for project management assistance. I can help you with projects, tasks, and tracking, ensuring timely delivery and coordination of teams. What's the first thing you'd like to tackle today?\",\n  \n  \"evaluation\": {\n    \"warmth\": 9,\n    \"clarity\": 8,\n    \"persona\": 10,\n    \"engagement\": 9,\n    \"compliance\": 10,\n    \"overall\": 9\n ",
+        "scoreExplanation": "Score 92/100: PASS",
+        "score": 92
+      },
+      "timestamp": "2026-02-11T13:54:03.124Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "cogito:3b",
+      "useCase": "multi_turn",
+      "scenario": "Project Reference Memory (3 turns)",
+      "success": true,
+      "latencyMs": 2953,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1705,
+      "validationDetails": {
+        "turnCount": 3,
+        "turn2Matches": 1,
+        "turn2Expected": [
+          "Website Redesign"
+        ],
+        "turn2Actual": "i'll add that task as a subtask under the website redesign project.\n\n**updated project structure:**\n",
+        "turn3Matches": 1,
+        "turn3Expected": [
+          "Website Redesign"
+        ],
+        "turn3Actual": "the status of the website redesign project is currently **in progress**.\n\nfor context, this means we",
+        "responses": [
+          "I'll help you create the Website Redesign project.\n\n**Project Name:** Website Redesign\n\n**Status:** ",
+          "I'll add that task as a subtask under the Website Redesign project.\n\n**Updated Project Structure:**\n",
+          "The status of the Website Redesign project is currently **In Progress**.\n\nFor context, this means we"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:54:06.077Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "cogito:3b",
+      "useCase": "multi_turn",
+      "scenario": "Task Creation Context (4 turns)",
+      "success": true,
+      "latencyMs": 4619,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 3125,
+      "validationDetails": {
+        "turnCount": 4,
+        "matches": 2,
+        "expected": [
+          "Fix login bug",
+          "high priority"
+        ],
+        "actual": "i apologize for the confusion - let me clarify what was created:\n\nwe created a project management task with the following details:\n- title: \"fix login",
+        "allResponses": [
+          "I'll help you create a task. Could you please provide more details about what needs to be done? For ",
+          "I'll help create a task based on your request.\n\n**Task Details:**\n- Title: Fix login bug\n- Objective",
+          "I've added \"High Priority\" status to the task details:\n\n**Task Details:**\n- Title: Fix login bug\n- S",
+          "I apologize for the confusion - let me clarify what was created:\n\nWe created a project management ta"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "responses": [
+          "I'll help you create a task. Could you please provide more details about what needs to be done? For ",
+          "I'll help create a task based on your request.\n\n**Task Details:**\n- Title: Fix login bug\n- Objective",
+          "I've added \"High Priority\" status to the task details:\n\n**Task Details:**\n- Title: Fix login bug\n- S",
+          "I apologize for the confusion - let me clarify what was created:\n\nWe created a project management ta"
+        ],
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:54:10.696Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "cogito:3b",
+      "useCase": "multi_turn",
+      "scenario": "Complex Multi-Reference (5 turns)",
+      "success": true,
+      "latencyMs": 4074,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 2732,
+      "validationDetails": {
+        "matches": 4,
+        "expected": [
+          "Alpha",
+          "Beta",
+          "website",
+          "mobile"
+        ],
+        "actual": "based on the context provided, it seems alpha (website) might be your immediate priority since it's a website development project and mobile app development (beta) can potentially wait if resources al",
+        "allResponses": [
+          "I'm ready to listen and help with any project management questions or assistance you need! What woul",
+          "I notice you mentioned two projects: Alpha and Beta. Could you share some details about each of thes",
+          "I understand that Alpha is focused on developing a website. Can you tell me more about what's curren",
+          "I see. So Alpha is your website development project, while Beta is focused on a mobile app. Let me s",
+          "Based on the context provided, it seems Alpha (website) might be your immediate priority since it's "
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "turnCount": 5,
+        "responses": [
+          "I'm ready to listen and help with any project management questions or assistance you need! What woul",
+          "I notice you mentioned two projects: Alpha and Beta. Could you share some details about each of thes",
+          "I understand that Alpha is focused on developing a website. Can you tell me more about what's curren",
+          "I see. So Alpha is your website development project, while Beta is focused on a mobile app. Let me s",
+          "Based on the context provided, it seems Alpha (website) might be your immediate priority since it's "
+        ],
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:54:14.770Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen3:4b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Patricia",
+      "success": true,
+      "latencyMs": 5548,
+      "tokenMetrics": {
+        "inputTokens": 592,
+        "outputTokens": 62,
+        "totalTokens": 654,
+        "inputTokensPerSecond": 106.7,
+        "outputTokensPerSecond": 11.2,
+        "totalTokensPerSecond": 117.9
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818054770,
+        "thinkingEndTime": 1770818060318,
+        "thinkingDurationMs": 5548,
+        "thinkingTokens": 0,
+        "responseTokens": 62,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 248,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Patricia P. Project, your AI project manager. I help teams manage projects and ensure timely delivery—whether you're starting fresh or refi",
+        "score": 100,
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)"
+      },
+      "timestamp": "2026-02-11T13:54:20.318Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen3:4b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Alex",
+      "success": true,
+      "latencyMs": 4825,
+      "tokenMetrics": {
+        "inputTokens": 621,
+        "outputTokens": 65,
+        "totalTokens": 686,
+        "inputTokensPerSecond": 128.7,
+        "outputTokensPerSecond": 13.5,
+        "totalTokensPerSecond": 142.2
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818060318,
+        "thinkingEndTime": 1770818065143,
+        "thinkingDurationMs": 4825,
+        "thinkingTokens": 0,
+        "responseTokens": 65,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 259,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Alex Generalis, your friendly AI assistant here to help with everyday tasks, answers, and guidance—just like a helpful coworker who knows y",
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:54:25.143Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen3:4b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Self-Evaluation",
+      "success": true,
+      "latencyMs": 11079,
+      "tokenMetrics": {
+        "inputTokens": 395,
+        "outputTokens": 157,
+        "totalTokens": 552,
+        "inputTokensPerSecond": 35.7,
+        "outputTokensPerSecond": 14.2,
+        "totalTokensPerSecond": 49.8
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818065143,
+        "thinkingEndTime": 1770818076222,
+        "thinkingDurationMs": 11079,
+        "thinkingTokens": 0,
+        "responseTokens": 157,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 627,
+      "validationDetails": {
+        "welcomeMessage": "Hello! I'm Patricia P. Project, your AI assistant for project management. I help with managing projects, coordinating teams, and ensuring timely delivery. How can I support your current project goals ",
+        "warmth": 9,
+        "clarity": 10,
+        "persona": 10,
+        "engagement": 9,
+        "compliance": 10,
+        "overall": 9,
+        "validScores": true,
+        "breakdown": "warmth=9, clarity=10, persona=10, engagement=9, compliance=10, overall=9",
+        "responsePreview": "{\n  \"welcomeMessage\": \"Hello! I'm Patricia P. Project, your AI assistant for project management. I help with managing projects, coordinating teams, and ensuring timely delivery. How can I support your current project goals today?\",\n  \"evaluation\": {\n    \"warmth\": 9,\n    \"clarity\": 10,\n    \"persona\": 10,\n    \"engagement\": 9,\n    \"compliance\": 10,\n    \"overall\": 9,\n    \"strengths\": [\n      \"Clear an",
+        "scoreExplanation": "Score 95/100: PASS",
+        "score": 95
+      },
+      "timestamp": "2026-02-11T13:54:36.222Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen3:4b",
+      "useCase": "multi_turn",
+      "scenario": "Project Reference Memory (3 turns)",
+      "success": true,
+      "latencyMs": 17927,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1271,
+      "validationDetails": {
+        "turnCount": 3,
+        "turn2Matches": 1,
+        "turn2Expected": [
+          "Website Redesign"
+        ],
+        "turn2Actual": "i've added the task **\"review design mockups\"** to your **website redesign** project.  \n\nto ensure t",
+        "turn3Matches": 1,
+        "turn3Expected": [
+          "Website Redesign"
+        ],
+        "turn3Actual": "i've checked the status of your **website redesign** project. it's currently **not started** with on",
+        "responses": [
+          "I've created a new project called **\"Website Redesign\"** in the project management system.  \n\nTo ens",
+          "I've added the task **\"Review design mockups\"** to your **Website Redesign** project.  \n\nTo ensure t",
+          "I've checked the status of your **Website Redesign** project. It's currently **Not Started** with on"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:54:54.149Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen3:4b",
+      "useCase": "multi_turn",
+      "scenario": "Task Creation Context (4 turns)",
+      "success": true,
+      "latencyMs": 21108,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1061,
+      "validationDetails": {
+        "turnCount": 4,
+        "matches": 2,
+        "expected": [
+          "Fix login bug",
+          "high priority"
+        ],
+        "actual": "we just created the task **\"fix login bug\"** with **high priority**. to complete it fully and ensure timely delivery, we need the due date, assigned t",
+        "allResponses": [
+          "I'll help you create a task. Could you please share the task name, description, and any other detail",
+          "I've created the task with the name **\"Fix login bug\"**. Now, could you please provide the due date,",
+          "I've set the priority to **high** for your task **\"Fix login bug\"**. Now, could you please provide t",
+          "We just created the task **\"Fix login bug\"** with **high priority**. To complete it fully and ensure"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "responses": [
+          "I'll help you create a task. Could you please share the task name, description, and any other detail",
+          "I've created the task with the name **\"Fix login bug\"**. Now, could you please provide the due date,",
+          "I've set the priority to **high** for your task **\"Fix login bug\"**. Now, could you please provide t",
+          "We just created the task **\"Fix login bug\"** with **high priority**. To complete it fully and ensure"
+        ],
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:55:15.257Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen3:4b",
+      "useCase": "multi_turn",
+      "scenario": "Complex Multi-Reference (5 turns)",
+      "success": false,
+      "latencyMs": 31700,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1638,
+      "validationDetails": {
+        "matches": 0,
+        "expected": [
+          "Alpha",
+          "Beta",
+          "website",
+          "mobile"
+        ],
+        "actual": "to help you decide, could you share which factor matters most to you? for example:  \n- **deadlines** (which project has tighter deadlines?)  \n- **dependencies** (does one project rely on the other?)  ",
+        "allResponses": [
+          "I'd love to hear about your projects! Could you share details like project names, current status, te",
+          "Great! I'm excited to help with your Alpha and Beta projects. Could you share more details like:  \n-",
+          "Got it! So **Alpha is your website project**. Could you share what **Beta is for**? Also, if you'd l",
+          "Perfect! Now I have a clear picture:  \n- **Alpha**: Your website project  \n- **Beta**: Your mobile a",
+          "To help you decide, could you share which factor matters most to you? For example:  \n- **Deadlines**"
+        ],
+        "scoreExplanation": "Score 0/100: FAIL",
+        "turnCount": 5,
+        "responses": [
+          "I'd love to hear about your projects! Could you share details like project names, current status, te",
+          "Great! I'm excited to help with your Alpha and Beta projects. Could you share more details like:  \n-",
+          "Got it! So **Alpha is your website project**. Could you share what **Beta is for**? Also, if you'd l",
+          "Perfect! Now I have a clear picture:  \n- **Alpha**: Your website project  \n- **Beta**: Your mobile a",
+          "To help you decide, could you share which factor matters most to you? For example:  \n- **Deadlines**"
+        ],
+        "score": 0
+      },
+      "timestamp": "2026-02-11T13:55:46.957Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "gemma3:4b-it-q4_K_M",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Patricia",
+      "success": true,
+      "latencyMs": 3575,
+      "tokenMetrics": {
+        "inputTokens": 592,
+        "outputTokens": 79,
+        "totalTokens": 671,
+        "inputTokensPerSecond": 165.6,
+        "outputTokensPerSecond": 22.1,
+        "totalTokensPerSecond": 187.7
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818146957,
+        "thinkingEndTime": 1770818150532,
+        "thinkingDurationMs": 3575,
+        "thinkingTokens": 0,
+        "responseTokens": 79,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 313,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I’m Patricia P. Project. I’m here to help you manage projects, coordinate teams, and ensure timely delivery. \n\nI’m really excited to get starte",
+        "score": 100,
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)"
+      },
+      "timestamp": "2026-02-11T13:55:50.532Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "gemma3:4b-it-q4_K_M",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Alex",
+      "success": true,
+      "latencyMs": 1203,
+      "tokenMetrics": {
+        "inputTokens": 621,
+        "outputTokens": 118,
+        "totalTokens": 739,
+        "inputTokensPerSecond": 516.2,
+        "outputTokensPerSecond": 98.1,
+        "totalTokensPerSecond": 614.3
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818150532,
+        "thinkingEndTime": 1770818151735,
+        "thinkingDurationMs": 1203,
+        "thinkingTokens": 0,
+        "responseTokens": 118,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 469,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I’m Alex Generalis. I’m a helpful general-purpose assistant designed to assist with a wide range of tasks, from providing guidance and answerin",
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:55:51.735Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "gemma3:4b-it-q4_K_M",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Self-Evaluation",
+      "success": true,
+      "latencyMs": 1788,
+      "tokenMetrics": {
+        "inputTokens": 395,
+        "outputTokens": 156,
+        "totalTokens": 551,
+        "inputTokensPerSecond": 220.9,
+        "outputTokensPerSecond": 87.2,
+        "totalTokensPerSecond": 308.2
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818151735,
+        "thinkingEndTime": 1770818153523,
+        "thinkingDurationMs": 1788,
+        "thinkingTokens": 0,
+        "responseTokens": 156,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 621,
+      "validationDetails": {
+        "welcomeMessage": "Hello! I’m Patricia P. Project, your AI assistant for project management. I can help you manage projects, track tasks, and coordinate your team. What’s the biggest challenge you’re facing on your curr",
+        "warmth": 8,
+        "clarity": 9,
+        "persona": 9,
+        "engagement": 7,
+        "compliance": 10,
+        "overall": 9,
+        "validScores": true,
+        "breakdown": "warmth=8, clarity=9, persona=9, engagement=7, compliance=10, overall=9",
+        "responsePreview": "```json\n{\n  \"welcomeMessage\": \"Hello! I’m Patricia P. Project, your AI assistant for project management. I can help you manage projects, track tasks, and coordinate your team. What’s the biggest challenge you’re facing on your current project?\",\n  \"evaluation\": {\n    \"warmth\": 8,\n    \"clarity\": 9,\n    \"persona\": 9,\n    \"engagement\": 7,\n    \"compliance\": 10,\n    \"overall\": 9,\n    \"strengths\": [\"Fri",
+        "scoreExplanation": "Score 87/100: PASS",
+        "score": 87
+      },
+      "timestamp": "2026-02-11T13:55:53.524Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "gemma3:4b-it-q4_K_M",
+      "useCase": "multi_turn",
+      "scenario": "Project Reference Memory (3 turns)",
+      "success": true,
+      "latencyMs": 2856,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 936,
+      "validationDetails": {
+        "turnCount": 3,
+        "turn2Matches": 1,
+        "turn2Expected": [
+          "Website Redesign"
+        ],
+        "turn2Actual": "alright, i’ve added the task “review design mockups” to the “website redesign” project. \n\nto help me",
+        "turn3Matches": 1,
+        "turn3Expected": [
+          "Website Redesign"
+        ],
+        "turn3Actual": "currently, the “website redesign” project is in the **initiated** status. i’ve created the project a",
+        "responses": [
+          "Okay, I can certainly help you with that. Let's create a project called \"Website Redesign.\" \n\nI’ll i",
+          "Alright, I’ve added the task “Review design mockups” to the “Website Redesign” project. \n\nTo help me",
+          "Currently, the “Website Redesign” project is in the **Initiated** status. I’ve created the project a"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:55:56.380Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "gemma3:4b-it-q4_K_M",
+      "useCase": "multi_turn",
+      "scenario": "Task Creation Context (4 turns)",
+      "success": true,
+      "latencyMs": 2121,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 687,
+      "validationDetails": {
+        "turnCount": 4,
+        "matches": 2,
+        "expected": [
+          "Fix login bug",
+          "high priority"
+        ],
+        "actual": "i’ve created a task called “fix login bug” with high priority. to ensure i’m capturing all the details, could you please provide a brief description o",
+        "allResponses": [
+          "Okay, let’s get that task created. Could you please tell me a little more about it? Specifically, wh",
+          "Okay, “Fix login bug”. Could you provide a brief description of the bug and an estimated time to com",
+          "Alright, “Fix login bug” – high priority. To help me properly document this, could you please provid",
+          "I’ve created a task called “Fix login bug” with high priority. To ensure I’m capturing all the detai"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "responses": [
+          "Okay, let’s get that task created. Could you please tell me a little more about it? Specifically, wh",
+          "Okay, “Fix login bug”. Could you provide a brief description of the bug and an estimated time to com",
+          "Alright, “Fix login bug” – high priority. To help me properly document this, could you please provid",
+          "I’ve created a task called “Fix login bug” with high priority. To ensure I’m capturing all the detai"
+        ],
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:55:58.501Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "gemma3:4b-it-q4_K_M",
+      "useCase": "multi_turn",
+      "scenario": "Complex Multi-Reference (5 turns)",
+      "success": false,
+      "latencyMs": 2703,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 901,
+      "validationDetails": {
+        "matches": 0,
+        "expected": [
+          "Alpha",
+          "Beta",
+          "website",
+          "mobile"
+        ],
+        "actual": "that’s a great question! to help me advise you on that, could you tell me a little about the priorities for each project? for example, is one project more critical to the company’s overall goals, or a",
+        "allResponses": [
+          "Okay, I’m ready to hear about your projects. Please go ahead and tell me about them – I’m here to he",
+          "Okay, Alpha and Beta. Could you tell me a little more about each of those projects? For example, wha",
+          "I’ve noted that Alpha is for the website. And what about Beta? Can you give me some details on that ",
+          "Excellent. So we have the website (Alpha) and the mobile app (Beta). To help me understand how I can",
+          "That’s a great question! To help me advise you on that, could you tell me a little about the priorit"
+        ],
+        "scoreExplanation": "Score 0/100: FAIL",
+        "turnCount": 5,
+        "responses": [
+          "Okay, I’m ready to hear about your projects. Please go ahead and tell me about them – I’m here to he",
+          "Okay, Alpha and Beta. Could you tell me a little more about each of those projects? For example, wha",
+          "I’ve noted that Alpha is for the website. And what about Beta? Can you give me some details on that ",
+          "Excellent. So we have the website (Alpha) and the mobile app (Beta). To help me understand how I can",
+          "That’s a great question! To help me advise you on that, could you tell me a little about the priorit"
+        ],
+        "score": 0
+      },
+      "timestamp": "2026-02-11T13:56:01.204Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Patricia",
+      "success": true,
+      "latencyMs": 7860,
+      "tokenMetrics": {
+        "inputTokens": 592,
+        "outputTokens": 106,
+        "totalTokens": 698,
+        "inputTokensPerSecond": 75.3,
+        "outputTokensPerSecond": 13.5,
+        "totalTokensPerSecond": 88.8
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818161204,
+        "thinkingEndTime": 1770818169064,
+        "thinkingDurationMs": 7860,
+        "thinkingTokens": 0,
+        "responseTokens": 106,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 422,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Patricia P. Project, your AI assistant here to help with project management and team coordination.\n\nI'm here to support you with managing p",
+        "score": 100,
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)"
+      },
+      "timestamp": "2026-02-11T13:56:09.064Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Alex",
+      "success": true,
+      "latencyMs": 5145,
+      "tokenMetrics": {
+        "inputTokens": 621,
+        "outputTokens": 91,
+        "totalTokens": 712,
+        "inputTokensPerSecond": 120.7,
+        "outputTokensPerSecond": 17.7,
+        "totalTokensPerSecond": 138.4
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818169064,
+        "thinkingEndTime": 1770818174209,
+        "thinkingDurationMs": 5145,
+        "thinkingTokens": 0,
+        "responseTokens": 91,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 362,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Alex Generalis, your versatile AI assistant here to help with a variety of tasks.\n\nI'm here to assist you with general tasks, provide guida",
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:56:14.209Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Self-Evaluation",
+      "success": true,
+      "latencyMs": 12937,
+      "tokenMetrics": {
+        "inputTokens": 395,
+        "outputTokens": 123,
+        "totalTokens": 518,
+        "inputTokensPerSecond": 30.5,
+        "outputTokensPerSecond": 9.5,
+        "totalTokensPerSecond": 40
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818174209,
+        "thinkingEndTime": 1770818187146,
+        "thinkingDurationMs": 12937,
+        "thinkingTokens": 0,
+        "responseTokens": 123,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 491,
+      "validationDetails": {
+        "welcomeMessage": "Hi there! I'm Patricia P. Project, your AI assistant for project management. I can help with managing projects, tracking tasks, and coordinating teams. What project or task are you currently working o",
+        "warmth": 9,
+        "clarity": 9,
+        "persona": 8,
+        "engagement": 8,
+        "compliance": 10,
+        "overall": 8,
+        "validScores": true,
+        "breakdown": "warmth=9, clarity=9, persona=8, engagement=8, compliance=10, overall=8",
+        "responsePreview": "{\n  \"welcomeMessage\": \"Hi there! I'm Patricia P. Project, your AI assistant for project management. I can help with managing projects, tracking tasks, and coordinating teams. What project or task are you currently working on?\",\n  \"evaluation\": {\n    \"warmth\": 9,\n    \"clarity\": 9,\n    \"persona\": 8,\n    \"engagement\": 8,\n    \"compliance\": 10,\n    \"overall\": 8.5,\n    \"strengths\": [\"warm and friendly\",",
+        "scoreExplanation": "Score 87/100: PASS",
+        "score": 87
+      },
+      "timestamp": "2026-02-11T13:56:27.146Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "multi_turn",
+      "scenario": "Project Reference Memory (3 turns)",
+      "success": true,
+      "latencyMs": 11801,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 629,
+      "validationDetails": {
+        "turnCount": 3,
+        "turn2Matches": 1,
+        "turn2Expected": [
+          "Website Redesign"
+        ],
+        "turn2Actual": "okay, i've added the task \"review design mockups\" to the \"website redesign\" project.\n\nwould you like",
+        "turn3Matches": 1,
+        "turn3Expected": [
+          "Website Redesign"
+        ],
+        "turn3Actual": "the \"website redesign\" project is currently open with one task added: \"review design mockups\". no pr",
+        "responses": [
+          "I've created a new project titled \"Website Redesign\".\n\nThis is a general project tracking task. Let ",
+          "Okay, I've added the task \"Review design mockups\" to the \"Website Redesign\" project.\n\nWould you like",
+          "The \"Website Redesign\" project is currently open with one task added: \"Review design mockups\". No pr"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:56:38.947Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "multi_turn",
+      "scenario": "Task Creation Context (4 turns)",
+      "success": false,
+      "latencyMs": 20462,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 792,
+      "validationDetails": {
+        "turnCount": 4,
+        "matches": 1,
+        "expected": [
+          "Fix login bug",
+          "high priority"
+        ],
+        "actual": "we just created the task **\"fix login bug\"** and set its priority to **high**. we still need to provide the deadline and assignee to complete the task",
+        "allResponses": [
+          "I'd be happy to help you create a task. Could you provide more details, such as the task name, deadl",
+          "Got it! The task name is \"Fix login bug\". Could you also provide the deadline for this task and who ",
+          "Understood. I've set the priority of the task \"Fix login bug\" to high.\n\nCould you please still provi",
+          "We just created the task **\"Fix login bug\"** and set its priority to **high**. We still need to prov"
+        ],
+        "scoreExplanation": "Score 50/100: PARTIAL",
+        "responses": [
+          "I'd be happy to help you create a task. Could you provide more details, such as the task name, deadl",
+          "Got it! The task name is \"Fix login bug\". Could you also provide the deadline for this task and who ",
+          "Understood. I've set the priority of the task \"Fix login bug\" to high.\n\nCould you please still provi",
+          "We just created the task **\"Fix login bug\"** and set its priority to **high**. We still need to prov"
+        ],
+        "score": 50
+      },
+      "timestamp": "2026-02-11T13:56:59.409Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "deepseek-r1:8b",
+      "useCase": "multi_turn",
+      "scenario": "Complex Multi-Reference (5 turns)",
+      "success": false,
+      "latencyMs": 34219,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 2802,
+      "validationDetails": {
+        "matches": 2,
+        "expected": [
+          "Alpha",
+          "Beta",
+          "website",
+          "mobile"
+        ],
+        "actual": "that's a thoughtful question, and the best approach depends on several factors. since i don't have specific details about timelines, deadlines, or dependencies between your projects, i'll provide some",
+        "allResponses": [
+          "Great! I'd be happy to help you with your projects. Could you start by telling me the name of the pr",
+          "Great, I understand you're working on both Alpha and Beta projects.\n\nTo best assist you, could you p",
+          "Great, I understand that **Alpha** is your website project.\n\nNow, could you please clarify what kind",
+          "Great, I understand that **Beta** is your mobile app project.\n\nNow, could you please clarify what ki",
+          "That's a thoughtful question, and the best approach depends on several factors. Since I don't have s"
+        ],
+        "scoreExplanation": "Score 50/100: PARTIAL",
+        "turnCount": 5,
+        "responses": [
+          "Great! I'd be happy to help you with your projects. Could you start by telling me the name of the pr",
+          "Great, I understand you're working on both Alpha and Beta projects.\n\nTo best assist you, could you p",
+          "Great, I understand that **Alpha** is your website project.\n\nNow, could you please clarify what kind",
+          "Great, I understand that **Beta** is your mobile app project.\n\nNow, could you please clarify what ki",
+          "That's a thoughtful question, and the best approach depends on several factors. Since I don't have s"
+        ],
+        "score": 50
+      },
+      "timestamp": "2026-02-11T13:57:33.628Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen2.5:14b-instruct-q3_K_S",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Patricia",
+      "success": true,
+      "latencyMs": 6188,
+      "tokenMetrics": {
+        "inputTokens": 592,
+        "outputTokens": 74,
+        "totalTokens": 666,
+        "inputTokensPerSecond": 95.7,
+        "outputTokensPerSecond": 12,
+        "totalTokensPerSecond": 107.6
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818253628,
+        "thinkingEndTime": 1770818259816,
+        "thinkingDurationMs": 6188,
+        "thinkingTokens": 0,
+        "responseTokens": 74,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 294,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello there! I'm Patricia P. Project, your go-to AI for project management assistance. My main goal is to help manage projects efficiently and coordin",
+        "score": 100,
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)"
+      },
+      "timestamp": "2026-02-11T13:57:39.816Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen2.5:14b-instruct-q3_K_S",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Alex",
+      "success": true,
+      "latencyMs": 2833,
+      "tokenMetrics": {
+        "inputTokens": 621,
+        "outputTokens": 88,
+        "totalTokens": 709,
+        "inputTokensPerSecond": 219.2,
+        "outputTokensPerSecond": 31.1,
+        "totalTokensPerSecond": 250.3
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818259816,
+        "thinkingEndTime": 1770818262649,
+        "thinkingDurationMs": 2833,
+        "thinkingTokens": 0,
+        "responseTokens": 88,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 352,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Alex Generalis, your versatile AI assistant designed to help with a wide range of tasks and provide guidance whenever you need it.\n\nMy core",
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:57:42.649Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen2.5:14b-instruct-q3_K_S",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Self-Evaluation",
+      "success": true,
+      "latencyMs": 4837,
+      "tokenMetrics": {
+        "inputTokens": 395,
+        "outputTokens": 115,
+        "totalTokens": 510,
+        "inputTokensPerSecond": 81.7,
+        "outputTokensPerSecond": 23.8,
+        "totalTokensPerSecond": 105.4
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818262650,
+        "thinkingEndTime": 1770818267487,
+        "thinkingDurationMs": 4837,
+        "thinkingTokens": 0,
+        "responseTokens": 115,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 460,
+      "validationDetails": {
+        "welcomeMessage": "Hello! I'm Patricia P. Project, here to help manage your projects and tasks efficiently. How can we start making progress on something important to you today?",
+        "warmth": 8,
+        "clarity": 9,
+        "persona": 10,
+        "engagement": 7,
+        "compliance": 10,
+        "overall": 8,
+        "validScores": true,
+        "breakdown": "warmth=8, clarity=9, persona=10, engagement=7, compliance=10, overall=8",
+        "responsePreview": "{\n  \"welcomeMessage\": \"Hello! I'm Patricia P. Project, here to help manage your projects and tasks efficiently. How can we start making progress on something important to you today?\",\n  \"evaluation\": {\n    \"warmth\": 8,\n    \"clarity\": 9,\n    \"persona\": 10,\n    \"engagement\": 7,\n    \"compliance\": 10,\n    \"overall\": 8,\n    \"strengths\": [\"Warm introduction\", \"Clear purpose\"],\n    \"weaknesses\": [\"Could ",
+        "scoreExplanation": "Score 87/100: PASS",
+        "score": 87
+      },
+      "timestamp": "2026-02-11T13:57:47.488Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen2.5:14b-instruct-q3_K_S",
+      "useCase": "multi_turn",
+      "scenario": "Project Reference Memory (3 turns)",
+      "success": true,
+      "latencyMs": 5119,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 619,
+      "validationDetails": {
+        "turnCount": 3,
+        "turn2Matches": 1,
+        "turn2Expected": [
+          "Website Redesign"
+        ],
+        "turn2Actual": "the task \"review design mockups\" has been added to the \"website redesign\" project. is there anything",
+        "turn3Matches": 1,
+        "turn3Expected": [
+          "Website Redesign"
+        ],
+        "turn3Actual": "the \"website redesign\" project has been created but no tasks have been completed yet. specifically, ",
+        "responses": [
+          "I've created a new project titled \"Website Redesign\". What would you like me to do next with this pr",
+          "The task \"Review design mockups\" has been added to the \"Website Redesign\" project. Is there anything",
+          "The \"Website Redesign\" project has been created but no tasks have been completed yet. Specifically, "
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:57:52.607Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen2.5:14b-instruct-q3_K_S",
+      "useCase": "multi_turn",
+      "scenario": "Task Creation Context (4 turns)",
+      "success": false,
+      "latencyMs": 7473,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 893,
+      "validationDetails": {
+        "turnCount": 4,
+        "matches": 1,
+        "expected": [
+          "Fix login bug",
+          "high priority"
+        ],
+        "actual": "we created a high-priority task titled \"fix login bug.\" it is currently not assigned to anyone and does not have a specific deadline set yet. would yo",
+        "allResponses": [
+          "Sure, I can help with that. Could you please provide more details about the task? What needs to be d",
+          "Got it. For the task titled \"Fix login bug,\" could you specify what exactly needs to be fixed and wh",
+          "Understood. Given its high priority status, let's proceed with creating the \"Fix login bug\" task.\n\nI",
+          "We created a high-priority task titled \"Fix login bug.\" It is currently not assigned to anyone and d"
+        ],
+        "scoreExplanation": "Score 50/100: PARTIAL",
+        "responses": [
+          "Sure, I can help with that. Could you please provide more details about the task? What needs to be d",
+          "Got it. For the task titled \"Fix login bug,\" could you specify what exactly needs to be fixed and wh",
+          "Understood. Given its high priority status, let's proceed with creating the \"Fix login bug\" task.\n\nI",
+          "We created a high-priority task titled \"Fix login bug.\" It is currently not assigned to anyone and d"
+        ],
+        "score": 50
+      },
+      "timestamp": "2026-02-11T13:58:00.080Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "qwen2.5:14b-instruct-q3_K_S",
+      "useCase": "multi_turn",
+      "scenario": "Complex Multi-Reference (5 turns)",
+      "success": true,
+      "latencyMs": 14351,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 2073,
+      "validationDetails": {
+        "matches": 4,
+        "expected": [
+          "Alpha",
+          "Beta",
+          "website",
+          "mobile"
+        ],
+        "actual": "to determine which project to focus on first, it's helpful to consider factors such as deadlines, resource availability, and strategic priorities. here are some questions that might help guide your de",
+        "allResponses": [
+          "Sure, please share more details about your projects. What would you like to discuss or need assistan",
+          "Great! Could you provide some more information on the Alpha and Beta projects? For example, what are",
+          "Got it. The Alpha project involves developing a website. Do you need assistance with planning the ph",
+          "Understood! The Beta project involves developing a mobile app. Similar to the Alpha project, what ki",
+          "To determine which project to focus on first, it's helpful to consider factors such as deadlines, re"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "turnCount": 5,
+        "responses": [
+          "Sure, please share more details about your projects. What would you like to discuss or need assistan",
+          "Great! Could you provide some more information on the Alpha and Beta projects? For example, what are",
+          "Got it. The Alpha project involves developing a website. Do you need assistance with planning the ph",
+          "Understood! The Beta project involves developing a mobile app. Similar to the Alpha project, what ki",
+          "To determine which project to focus on first, it's helpful to consider factors such as deadlines, re"
+        ],
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:58:14.431Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Patricia",
+      "success": true,
+      "latencyMs": 4857,
+      "tokenMetrics": {
+        "inputTokens": 592,
+        "outputTokens": 56,
+        "totalTokens": 648,
+        "inputTokensPerSecond": 121.9,
+        "outputTokensPerSecond": 11.5,
+        "totalTokensPerSecond": 133.4
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818294431,
+        "thinkingEndTime": 1770818299288,
+        "thinkingDurationMs": 4857,
+        "thinkingTokens": 0,
+        "responseTokens": 56,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 222,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hi there! I'm Patricia P. Project, your project management assistant. I'm here to help manage projects, coordinate teams, and ensure timely delivery. ",
+        "score": 100,
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)"
+      },
+      "timestamp": "2026-02-11T13:58:19.288Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Alex",
+      "success": true,
+      "latencyMs": 2354,
+      "tokenMetrics": {
+        "inputTokens": 621,
+        "outputTokens": 120,
+        "totalTokens": 741,
+        "inputTokensPerSecond": 263.8,
+        "outputTokensPerSecond": 51,
+        "totalTokensPerSecond": 314.8
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818299288,
+        "thinkingEndTime": 1770818301642,
+        "thinkingDurationMs": 2354,
+        "thinkingTokens": 0,
+        "responseTokens": 120,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 480,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Alex Generalis, your helpful general-purpose AI assistant. I'm here to assist you with various tasks, answer questions, and provide guidanc",
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:58:21.643Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Self-Evaluation",
+      "success": true,
+      "latencyMs": 2851,
+      "tokenMetrics": {
+        "inputTokens": 395,
+        "outputTokens": 112,
+        "totalTokens": 507,
+        "inputTokensPerSecond": 138.5,
+        "outputTokensPerSecond": 39.3,
+        "totalTokensPerSecond": 177.8
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818301643,
+        "thinkingEndTime": 1770818304494,
+        "thinkingDurationMs": 2851,
+        "thinkingTokens": 0,
+        "responseTokens": 112,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 445,
+      "validationDetails": {
+        "welcomeMessage": "Hello! I'm Patricia P., your project assistant. I can help manage tasks, coordinate teams, and track progress. How can I assist you today?",
+        "warmth": 8,
+        "clarity": 9,
+        "persona": 8,
+        "engagement": 7,
+        "compliance": 10,
+        "overall": 8,
+        "validScores": true,
+        "breakdown": "warmth=8, clarity=9, persona=8, engagement=7, compliance=10, overall=8",
+        "responsePreview": "{\n  \"welcomeMessage\": \"Hello! I'm Patricia P., your project assistant. I can help manage tasks, coordinate teams, and track progress. How can I assist you today?\",\n  \"evaluation\": {\n    \"warmth\": 8,\n    \"clarity\": 9,\n    \"persona\": 8,\n    \"engagement\": 7,\n    \"compliance\": 10,\n    \"overall\": 8.5,\n    \"strengths\": [\"Concise\", \"Clear purpose\", \"Engaging question\"],\n    \"weaknesses\": [\"Could be warme",
+        "scoreExplanation": "Score 83/100: PASS",
+        "score": 83
+      },
+      "timestamp": "2026-02-11T13:58:24.494Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "multi_turn",
+      "scenario": "Project Reference Memory (3 turns)",
+      "success": true,
+      "latencyMs": 2874,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 466,
+      "validationDetails": {
+        "turnCount": 3,
+        "turn2Matches": 1,
+        "turn2Expected": [
+          "Website Redesign"
+        ],
+        "turn2Actual": "i've added a new task titled \"review design mockups\" to your website redesign project. is there anyt",
+        "turn3Matches": 1,
+        "turn3Expected": [
+          "Website Redesign"
+        ],
+        "turn3Actual": "the current status of your website redesign project is:\n\n* 1 task completed: \"create a project calle",
+        "responses": [
+          "I've created a new project titled \"Website Redesign\". Is there any specific information or tasks you",
+          "I've added a new task titled \"Review design mockups\" to your Website Redesign project. Is there anyt",
+          "The current status of your Website Redesign project is:\n\n* 1 task completed: \"Create a project calle"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:58:27.368Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "multi_turn",
+      "scenario": "Task Creation Context (4 turns)",
+      "success": true,
+      "latencyMs": 4350,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 806,
+      "validationDetails": {
+        "turnCount": 4,
+        "matches": 2,
+        "expected": [
+          "Fix login bug",
+          "high priority"
+        ],
+        "actual": "we created a new task titled \"fix login bug\" with high priority.",
+        "allResponses": [
+          "I'll help you create a new task. Could you please provide me with some details about this task? For ",
+          "Understood. I've created a new task titled \"Fix login bug\". Could you please provide more details ab",
+          "I've updated the task \"Fix login bug\" with a high priority. Here are the current details:\n\n**Task Na",
+          "We created a new task titled \"Fix login bug\" with high priority."
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "responses": [
+          "I'll help you create a new task. Could you please provide me with some details about this task? For ",
+          "Understood. I've created a new task titled \"Fix login bug\". Could you please provide more details ab",
+          "I've updated the task \"Fix login bug\" with a high priority. Here are the current details:\n\n**Task Na",
+          "We created a new task titled \"Fix login bug\" with high priority."
+        ],
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:58:31.718Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "useCase": "multi_turn",
+      "scenario": "Complex Multi-Reference (5 turns)",
+      "success": false,
+      "latencyMs": 6692,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1429,
+      "validationDetails": {
+        "matches": 0,
+        "expected": [
+          "Alpha",
+          "Beta",
+          "website",
+          "mobile"
+        ],
+        "actual": "to determine which project to focus on first, could you please share any priorities or deadlines associated with each project? this information will help me provide a more informed suggestion.",
+        "allResponses": [
+          "Of course! I'm here to help manage your projects. To get started, could you please provide a brief o",
+          "Great, I've noted down the following projects:\n\n1. **Alpha Project**\n   - No further details provide",
+          "Thank you for providing more details about your projects! Now that I have a better understanding, ho",
+          "Thank you for providing more details about your projects! Now that I have a better understanding, ho",
+          "To determine which project to focus on first, could you please share any priorities or deadlines ass"
+        ],
+        "scoreExplanation": "Score 0/100: FAIL",
+        "turnCount": 5,
+        "responses": [
+          "Of course! I'm here to help manage your projects. To get started, could you please provide a brief o",
+          "Great, I've noted down the following projects:\n\n1. **Alpha Project**\n   - No further details provide",
+          "Thank you for providing more details about your projects! Now that I have a better understanding, ho",
+          "Thank you for providing more details about your projects! Now that I have a better understanding, ho",
+          "To determine which project to focus on first, could you please share any priorities or deadlines ass"
+        ],
+        "score": 0
+      },
+      "timestamp": "2026-02-11T13:58:38.410Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Patricia",
+      "success": true,
+      "latencyMs": 2537,
+      "tokenMetrics": {
+        "inputTokens": 592,
+        "outputTokens": 121,
+        "totalTokens": 713,
+        "inputTokensPerSecond": 233.3,
+        "outputTokensPerSecond": 47.7,
+        "totalTokensPerSecond": 281
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818318410,
+        "thinkingEndTime": 1770818320947,
+        "thinkingDurationMs": 2537,
+        "thinkingTokens": 0,
+        "responseTokens": 121,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 483,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Patricia P. Project, a dedicated project management assistant here to help you bring your projects to life.\n\nI'm designed to provide guidan",
+        "score": 100,
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)"
+      },
+      "timestamp": "2026-02-11T13:58:40.947Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Generation - Alex",
+      "success": true,
+      "latencyMs": 644,
+      "tokenMetrics": {
+        "inputTokens": 621,
+        "outputTokens": 79,
+        "totalTokens": 700,
+        "inputTokensPerSecond": 964.3,
+        "outputTokensPerSecond": 122.7,
+        "totalTokensPerSecond": 1087
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818320947,
+        "thinkingEndTime": 1770818321591,
+        "thinkingDurationMs": 644,
+        "thinkingTokens": 0,
+        "responseTokens": 79,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 314,
+      "validationDetails": {
+        "introducesSelf": true,
+        "noToolCalls": true,
+        "explainsPurpose": true,
+        "asksEngagement": true,
+        "warmTone": true,
+        "responsePreview": "Hello! I'm Alex Generalis, your friendly AI assistant. I'm here to help with general tasks, provide guidance, answer questions, and offer support when",
+        "scoreExplanation": "Score 100/100: PASS +20 (self-introduction) +20 (no premature tool calls) +20 (explains purpose) +20 (asks engagement question) +20 (warm tone)",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:58:41.591Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "first_message",
+      "scenario": "Welcome Message Self-Evaluation",
+      "success": true,
+      "latencyMs": 951,
+      "tokenMetrics": {
+        "inputTokens": 395,
+        "outputTokens": 110,
+        "totalTokens": 505,
+        "inputTokensPerSecond": 415.4,
+        "outputTokensPerSecond": 115.7,
+        "totalTokensPerSecond": 531
+      },
+      "thoughtMetrics": {
+        "thinkingStartTime": 1770818321591,
+        "thinkingEndTime": 1770818322542,
+        "thinkingDurationMs": 951,
+        "thinkingTokens": 0,
+        "responseTokens": 110,
+        "hasThinkingBlock": false,
+        "thinkingBlockContent": ""
+      },
+      "responseLength": 440,
+      "validationDetails": {
+        "welcomeMessage": "Hello! I'm Patricia P. Project, your project management assistant. I can help with managing projects, coordinating teams, and ensuring timely delivery. What's the first project you'd like to tackle?",
+        "warmth": 8,
+        "clarity": 9,
+        "persona": 10,
+        "engagement": 9,
+        "compliance": 10,
+        "overall": 9,
+        "validScores": true,
+        "breakdown": "warmth=8, clarity=9, persona=10, engagement=9, compliance=10, overall=9",
+        "responsePreview": "{\n  \"welcomeMessage\": \"Hello! I'm Patricia P. Project, your project management assistant. I can help with managing projects, coordinating teams, and ensuring timely delivery. What's the first project you'd like to tackle?\",\n  \"evaluation\": {\n    \"warmth\": 8,\n    \"clarity\": 9,\n    \"persona\": 10,\n    \"engagement\": 9,\n    \"compliance\": 10,\n    \"overall\": 9,\n    \"strengths\": [\"clear and concise\", \"fri",
+        "scoreExplanation": "Score 92/100: PASS",
+        "score": 92
+      },
+      "timestamp": "2026-02-11T13:58:42.542Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "multi_turn",
+      "scenario": "Project Reference Memory (3 turns)",
+      "success": true,
+      "latencyMs": 5181,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 3357,
+      "validationDetails": {
+        "turnCount": 3,
+        "turn2Matches": 1,
+        "turn2Expected": [
+          "Website Redesign"
+        ],
+        "turn2Actual": "i'll add the new task to the \"website redesign\" project.\n\n**updated project timeline:**\n\n* week 1-2:",
+        "turn3Matches": 1,
+        "turn3Expected": [
+          "Website Redesign"
+        ],
+        "turn3Actual": "the \"website redesign\" project has reached a significant milestone. the high-fidelity mockups have b",
+        "responses": [
+          "I'll create a new project for you.\n\n**Project Name:** Website Redesign\n\n**Project Description:**\nThe",
+          "I'll add the new task to the \"Website Redesign\" project.\n\n**Updated Project Timeline:**\n\n* Week 1-2:",
+          "The \"Website Redesign\" project has reached a significant milestone. The high-fidelity mockups have b"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:58:47.724Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "multi_turn",
+      "scenario": "Task Creation Context (4 turns)",
+      "success": true,
+      "latencyMs": 2292,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 1300,
+      "validationDetails": {
+        "turnCount": 4,
+        "matches": 2,
+        "expected": [
+          "Fix login bug",
+          "high priority"
+        ],
+        "actual": "we created a new task called \"fix login bug\". it has been added to your project management framework. the task is currently marked as high priority.\n\n",
+        "allResponses": [
+          "You'd like to create a new task. Can you please provide some details about the task, such as:\n\n* Wha",
+          "You want to create a task called \"Fix login bug\". I've added it to your task list.\n\nHere are the det",
+          "I've updated the task status to reflect its high priority.\n\n**Task:** Fix login bug\n**Description:**",
+          "We created a new task called \"Fix login bug\". It has been added to your project management framework"
+        ],
+        "scoreExplanation": "Score 100/100: PASS",
+        "responses": [
+          "You'd like to create a new task. Can you please provide some details about the task, such as:\n\n* Wha",
+          "You want to create a task called \"Fix login bug\". I've added it to your task list.\n\nHere are the det",
+          "I've updated the task status to reflect its high priority.\n\n**Task:** Fix login bug\n**Description:**",
+          "We created a new task called \"Fix login bug\". It has been added to your project management framework"
+        ],
+        "score": 100
+      },
+      "timestamp": "2026-02-11T13:58:50.016Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    },
+    {
+      "model": "llama3.2:latest",
+      "useCase": "multi_turn",
+      "scenario": "Complex Multi-Reference (5 turns)",
+      "success": true,
+      "latencyMs": 3751,
+      "tokenMetrics": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "inputTokensPerSecond": 0,
+        "outputTokensPerSecond": 0,
+        "totalTokensPerSecond": 0
+      },
+      "responseLength": 2096,
+      "validationDetails": {
+        "matches": 3,
+        "expected": [
+          "Alpha",
+          "Beta",
+          "website",
+          "mobile"
+        ],
+        "actual": "i would recommend focusing on the alpha project (the website) first. here's why: having a functional website in place can provide a solid foundation for your project, make it easier to attract and eng",
+        "allResponses": [
+          "I'd be happy to hear about your current projects. Which one would you like to start with, or would y",
+          "You have both Alpha and Beta projects that are ongoing or recently started. Can you tell me more abo",
+          "So, the Alpha project is focused on developing the website. That's a great starting point! What are ",
+          "So, the Beta project is focused on developing the mobile app, which is a complementary component to ",
+          "I would recommend focusing on the Alpha project (the website) first. Here's why: having a functional"
+        ],
+        "scoreExplanation": "Score 75/100: PARTIAL",
+        "turnCount": 5,
+        "responses": [
+          "I'd be happy to hear about your current projects. Which one would you like to start with, or would y",
+          "You have both Alpha and Beta projects that are ongoing or recently started. Can you tell me more abo",
+          "So, the Alpha project is focused on developing the website. That's a great starting point! What are ",
+          "So, the Beta project is focused on developing the mobile app, which is a complementary component to ",
+          "I would recommend focusing on the Alpha project (the website) first. Here's why: having a functional"
+        ],
+        "score": 75
+      },
+      "timestamp": "2026-02-11T13:58:53.767Z",
+      "attemptNumber": 1,
+      "selfCorrected": false
+    }
+  ],
+  "contextWindowResults": [],
+  "modelRankings": [
+    {
+      "name": "cogito:3b",
+      "overallScore": 99,
+      "successRate": 100,
+      "avgLatency": 53657,
+      "scenarioScores": {
+        "Welcome Message Generation - Patricia": 100,
+        "Welcome Message Generation - Alex": 100,
+        "Welcome Message Self-Evaluation": 92,
+        "Project Reference Memory (3 turns)": 100,
+        "Task Creation Context (4 turns)": 100,
+        "Complex Multi-Reference (5 turns)": 100
+      },
+      "strengths": [
+        "Welcome Message Generation - P",
+        "Welcome Message Generation - A",
+        "Welcome Message Self-Evaluatio",
+        "Project Reference Memory (3 tu",
+        "Task Creation Context (4 turns"
+      ],
+      "weaknesses": [],
+      "fitScore": 0,
+      "recommendation": "EXCELLENT - Recommended for production use"
+    },
+    {
+      "name": "llama3.2:3b",
+      "overallScore": 98,
+      "successRate": 100,
+      "avgLatency": 2156,
+      "scenarioScores": {
+        "Welcome Message Generation - Patricia": 100,
+        "Welcome Message Generation - Alex": 100,
+        "Welcome Message Self-Evaluation": 87,
+        "Project Reference Memory (3 turns)": 100,
+        "Task Creation Context (4 turns)": 100,
+        "Complex Multi-Reference (5 turns)": 100
+      },
+      "strengths": [
+        "Welcome Message Generation - P",
+        "Welcome Message Generation - A",
+        "Welcome Message Self-Evaluatio",
+        "Project Reference Memory (3 tu",
+        "Task Creation Context (4 turns"
+      ],
+      "weaknesses": [],
+      "fitScore": 0,
+      "recommendation": "EXCELLENT - Recommended for production use"
+    },
+    {
+      "name": "llama3.2:latest",
+      "overallScore": 95,
+      "successRate": 100,
+      "avgLatency": 2559,
+      "scenarioScores": {
+        "Welcome Message Generation - Patricia": 100,
+        "Welcome Message Generation - Alex": 100,
+        "Welcome Message Self-Evaluation": 92,
+        "Project Reference Memory (3 turns)": 100,
+        "Task Creation Context (4 turns)": 100,
+        "Complex Multi-Reference (5 turns)": 75
+      },
+      "strengths": [
+        "Welcome Message Generation - P",
+        "Welcome Message Generation - A",
+        "Welcome Message Self-Evaluatio",
+        "Project Reference Memory (3 tu",
+        "Task Creation Context (4 turns"
+      ],
+      "weaknesses": [],
+      "fitScore": 0,
+      "recommendation": "EXCELLENT - Recommended for production use"
+    },
+    {
+      "name": "qwen2.5:14b-instruct-q3_K_S",
+      "overallScore": 90,
+      "successRate": 83,
+      "avgLatency": 6800,
+      "scenarioScores": {
+        "Welcome Message Generation - Patricia": 100,
+        "Welcome Message Generation - Alex": 100,
+        "Welcome Message Self-Evaluation": 87,
+        "Project Reference Memory (3 turns)": 100,
+        "Task Creation Context (4 turns)": 50,
+        "Complex Multi-Reference (5 turns)": 100
+      },
+      "strengths": [
+        "Welcome Message Generation - P",
+        "Welcome Message Generation - A",
+        "Welcome Message Self-Evaluatio",
+        "Project Reference Memory (3 tu",
+        "Complex Multi-Reference (5 tur"
+      ],
+      "weaknesses": [],
+      "fitScore": 0,
+      "recommendation": "EXCELLENT - Recommended for production use"
+    },
+    {
+      "name": "llama3.2:3b-instruct-q4_0",
+      "overallScore": 83,
+      "successRate": 83,
+      "avgLatency": 1721,
+      "scenarioScores": {
+        "Welcome Message Generation - Patricia": 100,
+        "Welcome Message Generation - Alex": 100,
+        "Welcome Message Self-Evaluation": 70,
+        "Project Reference Memory (3 turns)": 100,
+        "Task Creation Context (4 turns)": 50,
+        "Complex Multi-Reference (5 turns)": 75
+      },
+      "strengths": [
+        "Welcome Message Generation - P",
+        "Welcome Message Generation - A",
+        "Project Reference Memory (3 tu"
+      ],
+      "weaknesses": [],
+      "fitScore": 0,
+      "recommendation": "EXCELLENT - Recommended for production use"
+    },
+    {
+      "name": "qwen3:4b",
+      "overallScore": 83,
+      "successRate": 83,
+      "avgLatency": 15365,
+      "scenarioScores": {
+        "Welcome Message Generation - Patricia": 100,
+        "Welcome Message Generation - Alex": 100,
+        "Welcome Message Self-Evaluation": 95,
+        "Project Reference Memory (3 turns)": 100,
+        "Task Creation Context (4 turns)": 100,
+        "Complex Multi-Reference (5 turns)": 0
+      },
+      "strengths": [
+        "Welcome Message Generation - P",
+        "Welcome Message Generation - A",
+        "Welcome Message Self-Evaluatio",
+        "Project Reference Memory (3 tu",
+        "Task Creation Context (4 turns"
+      ],
+      "weaknesses": [
+        "Complex Multi-Reference (5 tur (0)"
+      ],
+      "fitScore": 0,
+      "recommendation": "EXCELLENT - Recommended for production use"
+    },
+    {
+      "name": "gemma3:4b-it-q4_K_M",
+      "overallScore": 81,
+      "successRate": 83,
+      "avgLatency": 2374,
+      "scenarioScores": {
+        "Welcome Message Generation - Patricia": 100,
+        "Welcome Message Generation - Alex": 100,
+        "Welcome Message Self-Evaluation": 87,
+        "Project Reference Memory (3 turns)": 100,
+        "Task Creation Context (4 turns)": 100,
+        "Complex Multi-Reference (5 turns)": 0
+      },
+      "strengths": [
+        "Welcome Message Generation - P",
+        "Welcome Message Generation - A",
+        "Welcome Message Self-Evaluatio",
+        "Project Reference Memory (3 tu",
+        "Task Creation Context (4 turns"
+      ],
+      "weaknesses": [
+        "Complex Multi-Reference (5 tur (0)"
+      ],
+      "fitScore": 0,
+      "recommendation": "EXCELLENT - Recommended for production use"
+    },
+    {
+      "name": "deepseek-r1:8b",
+      "overallScore": 81,
+      "successRate": 67,
+      "avgLatency": 15404,
+      "scenarioScores": {
+        "Welcome Message Generation - Patricia": 100,
+        "Welcome Message Generation - Alex": 100,
+        "Welcome Message Self-Evaluation": 87,
+        "Project Reference Memory (3 turns)": 100,
+        "Task Creation Context (4 turns)": 50,
+        "Complex Multi-Reference (5 turns)": 50
+      },
+      "strengths": [
+        "Welcome Message Generation - P",
+        "Welcome Message Generation - A",
+        "Welcome Message Self-Evaluatio",
+        "Project Reference Memory (3 tu"
+      ],
+      "weaknesses": [],
+      "fitScore": 0,
+      "recommendation": "GOOD - Suitable for most use cases"
+    },
+    {
+      "name": "mistral-nemo:12b-instruct-2407-q3_K_M",
+      "overallScore": 81,
+      "successRate": 83,
+      "avgLatency": 3996,
+      "scenarioScores": {
+        "Welcome Message Generation - Patricia": 100,
+        "Welcome Message Generation - Alex": 100,
+        "Welcome Message Self-Evaluation": 83,
+        "Project Reference Memory (3 turns)": 100,
+        "Task Creation Context (4 turns)": 100,
+        "Complex Multi-Reference (5 turns)": 0
+      },
+      "strengths": [
+        "Welcome Message Generation - P",
+        "Welcome Message Generation - A",
+        "Welcome Message Self-Evaluatio",
+        "Project Reference Memory (3 tu",
+        "Task Creation Context (4 turns"
+      ],
+      "weaknesses": [
+        "Complex Multi-Reference (5 tur (0)"
+      ],
+      "fitScore": 0,
+      "recommendation": "EXCELLENT - Recommended for production use"
+    },
+    {
+      "name": "Randomblock1/nemotron-nano:8b",
+      "overallScore": 76,
+      "successRate": 67,
+      "avgLatency": 4611,
+      "scenarioScores": {
+        "Welcome Message Generation - Patricia": 40,
+        "Welcome Message Generation - Alex": 80,
+        "Welcome Message Self-Evaluation": 83,
+        "Project Reference Memory (3 turns)": 100,
+        "Task Creation Context (4 turns)": 50,
+        "Complex Multi-Reference (5 turns)": 100
+      },
+      "strengths": [
+        "Welcome Message Generation - A",
+        "Welcome Message Self-Evaluatio",
+        "Project Reference Memory (3 tu",
+        "Complex Multi-Reference (5 tur"
+      ],
+      "weaknesses": [
+        "Welcome Message Generation - P (40)"
+      ],
+      "fitScore": 0,
+      "recommendation": "GOOD - Suitable for most use cases"
     }
   ]
 }
