@@ -206,7 +206,8 @@ export class RedisCheckpointer implements OnModuleInit, OnModuleDestroy {
       const checkpoints: Checkpoint[] = [];
       // Use SCAN instead of KEYS to avoid blocking Redis on large keyspaces
       for await (const key of this.client.scanIterator({ MATCH: pattern })) {
-        const data = await this.client.get(key as string);
+        const keyStr = String(key);
+        const data = await this.client.get(keyStr);
         if (data) {
           const parsed: RedisCheckpoint =
             typeof data === 'string' ? JSON.parse(data) : (data as RedisCheckpoint);
