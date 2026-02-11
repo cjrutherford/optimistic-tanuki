@@ -20,4 +20,12 @@ export default {
   ],
   collectCoverage: true,
   coverageReporters: ['json-summary', 'text'],
+    coverageThreshold: {
+    global: {
+      branches: 45,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+  },
 };

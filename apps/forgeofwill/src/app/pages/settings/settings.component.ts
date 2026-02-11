@@ -1,6 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
+import {
+  ThemeDesignerComponent,
+  PersonalitySelectorComponent,
+} from '@optimistic-tanuki/theme-ui';
 import {
   BannerComponent,
   ProfileEditorComponent,
@@ -13,12 +16,14 @@ import {
   ProfileDto,
   UpdateProfileDto,
 } from '@optimistic-tanuki/ui-models';
+import { ThemeService, Personality } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'app-settings',
   imports: [
     CommonModule,
     ThemeDesignerComponent,
+    PersonalitySelectorComponent,
     BannerComponent,
     ProfileEditorComponent,
     ButtonComponent,
@@ -37,10 +42,20 @@ export class SettingsComponent {
   backgroundImage = '';
   profile = signal<ProfileDto | null>(null);
 
-  constructor(
-    private profileService: ProfileService,
-    private auth: AuthStateService
-  ) {}
+  currentPersonalityId = signal<string>('bold');
+
+  private themeService = inject(ThemeService);
+  private profileService = inject(ProfileService);
+  private auth = inject(AuthStateService);
+
+  constructor() {
+    this.loadCurrentPersonality();
+  }
+
+  private loadCurrentPersonality(): void {
+    const config = this.themeService.getPersonalityConfig();
+    this.currentPersonalityId.set(config.personalityId);
+  }
 
   ngOnInit() {
     const p = this.profileService.getCurrentUserProfile();
@@ -65,6 +80,10 @@ export class SettingsComponent {
 
   toggleThemeDesigner() {
     this.showThemeDesigner = !this.showThemeDesigner;
+  }
+
+  onPersonalitySelected(personality: Personality): void {
+    this.currentPersonalityId.set(personality.id);
   }
 
   openProfileEditor() {

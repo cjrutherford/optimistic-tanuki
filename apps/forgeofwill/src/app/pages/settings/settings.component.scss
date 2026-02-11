@@ -19,4 +19,44 @@
       color: var(--foreground-secondary, #666666);
     }
   }
+
+  .settings-section {
+    max-width: 1200px;
+    margin: 0 auto 2rem;
+
+    h2 {
+      font-size: 1.5rem;
+      color: var(--foreground, #212121);
+      margin-bottom: 0.5rem;
+    }
+
+    .section-description {
+      font-size: 0.95rem;
+      color: var(--muted, #666666);
+      margin-bottom: 1.5rem;
+      max-width: 800px;
+    }
+  }
+
+  .profile-section {
+    max-width: 1200px;
+    margin: 0 auto 2rem;
+
+    .hint {
+      font-size: 0.85rem;
+      color: var(--muted, #666666);
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+  }
+
+  .controls {
+    max-width: 1200px;
+    margin: 0 auto 1rem;
+  }
+
+  .theme-designer {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
 }

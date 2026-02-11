@@ -3,7 +3,7 @@
     appTitle="Forge of Will"
     logoSrc="android-chrome-192x192.png"
     logoAlt="Forge of Will Logo"
-    [showThemeToggle]="false"
+    [showThemeToggle]="true"
     [useTile]="false"
     (menuToggle)="showModal()"
   >
@@ -24,6 +24,7 @@
   @if (isAuthenticated() && selectedProfile()) {
   <app-chat [externalMessages]="newPersonaMessages()"></app-chat>
   <app-ai-assistant-bubble
+    [userProfile]="selectedProfile()"
     (personaSelected)="onPersonaSelected($event)"
   ></app-ai-assistant-bubble>
   }

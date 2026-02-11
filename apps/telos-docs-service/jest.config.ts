@@ -7,4 +7,12 @@ export default {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/apps/telos-docs-service',
+    coverageThreshold: {
+    global: {
+      branches: 20,
+      functions: 85,
+      lines: 85,
+      statements: 85,
+    },
+  },
 };

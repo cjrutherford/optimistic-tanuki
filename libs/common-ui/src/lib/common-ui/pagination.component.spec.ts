@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { PaginationComponent } from './pagination.component';
 
 describe('PaginationComponent', () => {
@@ -20,192 +19,136 @@ describe('PaginationComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should set complement style variable based on theme colors for light theme', () => {
-    const mockColors = {
-      background: '#fff',
-      accent: '#f00',
-      foreground: '#000',
-      complementary: '#0f0',
-      complementaryGradients: {
-        dark: 'linear-gradient(#0f0, #000)',
-        light: 'linear-gradient(#0f0, #000)',
-      },
-      accentGradients: {
-        light: 'linear-gradient(#f00, #fff)',
-        dark: 'linear-gradient(#f00, #fff)',
-      },
-      complementaryShades: [
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-      ],
-    } as any;
-
-    component.theme = 'light';
-    component.applyTheme(mockColors);
-
-    expect(component.complement).toBe('#0f0');
-    expect(component.borderGradient).toBe('linear-gradient(#f00, #fff)');
-    expect(component.borderColor).toBe(mockColors.complementaryShades[2][1]);
-  });
-
-  it('should set complement style variable based on theme colors for dark theme', () => {
-    const mockColors = {
-      background: '#fff',
-      accent: '#f00',
-      foreground: '#000',
-      complementary: '#0f0',
-      complementaryGradients: {
-        dark: 'linear-gradient(#0f0, #000)',
-        light: 'linear-gradient(#0f0, #000)',
-      },
-      accentGradients: {
-        light: 'linear-gradient(#f00, #fff)',
-        dark: 'linear-gradient(#f00, #fff)',
-      },
-      complementaryShades: [
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-      ],
-    } as any;
-
-    component.theme = 'dark';
-    component.applyTheme(mockColors);
-
-    expect(component.complement).toBe('#0f0');
-    expect(component.borderGradient).toBe('linear-gradient(#0f0, #000)');
-    expect(component.borderColor).toBe(mockColors.complementaryShades[6][1]);
-  });
-
-  it('should set complement style variable based on theme colors for dark theme', () => {
-    const mockColors = {
-      background: '#fff',
-      accent: '#f00',
-      foreground: '#000',
-      complementary: '#0f0',
-      complementaryGradients: {
-        dark: 'linear-gradient(#0f0, #000)',
-        light: 'linear-gradient(#0f0, #000)',
-      },
-      accentGradients: {
-        light: 'linear-gradient(#f00, #fff)',
-        dark: 'linear-gradient(#f00, #fff)',
-      },
-      complementaryShades: [
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-        [null, '#0f0'],
-      ],
-    } as any;
-
-    component.theme = 'dark';
-    component.applyTheme(mockColors);
-
-    expect(component.complement).toBe('#0f0');
-    expect(component.borderGradient).toBe('linear-gradient(#0f0, #000)');
-    expect(component.borderColor).toBe(mockColors.complementaryShades[6][1]);
-  });
-
-  it('should initialize with default pages', () => {
-    component.totalPages = 10;
+  it('should calculate total pages correctly', () => {
+    component.totalItems = 100;
+    component.itemsPerPage = 10;
     component.currentPage = 1;
-    component.maxVisiblePages = 5;
     component.ngOnInit();
-    expect(component.pages()).toEqual([1, 2, 3, 4, 5]);
-    expect(component.showStartEllipsis()).toBe(false);
-    expect(component.showEndEllipsis()).toBe(true);
+    fixture.detectChanges();
+
+    expect(component.totalPagesCount).toBe(10);
   });
 
-  // it('should update pages when currentPage changes', () => {
-  //   component.totalPages = 10;
-  //   component.maxVisiblePages = 5;
-  //   component.currentPage = 6;
-  //   component.updatePageList();
-  //   expect(component.pages()).toEqual([4,5,6,7,8]);
-  //   expect(component.showStartEllipsis()).toBe(true);
-  //   expect(component.showEndEllipsis()).toBe(true);
-  // });
-
-  it('should show ellipsis correctly at the start and end', () => {
-    component.totalPages = 10;
-    component.maxVisiblePages = 5;
-    component.currentPage = 10;
-    component.updatePageList();
-    expect(component.pages()).toEqual([6, 7, 8, 9, 10]);
-    expect(component.showStartEllipsis()).toBe(true);
-    expect(component.showEndEllipsis()).toBe(false);
-  });
-
-  it('should handle onPageClick', () => {
-    component.totalPages = 10;
-    component.maxVisiblePages = 5;
-    component.onPageClick(7);
-    expect(component.currentPage).toBe(7);
-    expect(component.pages()).toContain(7);
-  });
-
-  it('should handle onFirstPageClick', () => {
-    component.totalPages = 10;
-    component.maxVisiblePages = 5;
-    component.currentPage = 5;
-    component.onFirstPageClick();
-    expect(component.currentPage).toBe(1);
-    expect(component.pages()).toEqual([1, 2, 3, 4, 5]);
-  });
-
-  it('should handle onLastPageClick', () => {
-    component.totalPages = 10;
-    component.maxVisiblePages = 5;
+  it('should emit page change event on page click', () => {
+    const pageChangeSpy = jest.spyOn(component.pageChange, 'emit');
+    component.totalItems = 100;
+    component.itemsPerPage = 10;
     component.currentPage = 1;
-    component.onLastPageClick();
-    expect(component.currentPage).toBe(10);
-    expect(component.pages()).toEqual([6, 7, 8, 9, 10]);
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    component.onPageClick(5);
+    expect(pageChangeSpy).toHaveBeenCalledWith(5);
+    expect(component.currentPage).toBe(5);
   });
 
-  it('should handle onNextPageClick', () => {
-    component.totalPages = 10;
-    component.maxVisiblePages = 5;
+  it('should handle previous page click', () => {
+    component.totalItems = 100;
+    component.itemsPerPage = 10;
     component.currentPage = 5;
-    component.onNextPageClick();
-    expect(component.currentPage).toBe(6);
-    expect(component.pages()).toContain(6);
-  });
+    component.ngOnInit();
+    fixture.detectChanges();
 
-  it('should not increment currentPage past totalPages in onNextPageClick', () => {
-    component.totalPages = 10;
-    component.maxVisiblePages = 5;
-    component.currentPage = 10;
-    component.onNextPageClick();
-    expect(component.currentPage).toBe(10);
-  });
-
-  it('should handle onPreviousPageClick', () => {
-    component.totalPages = 10;
-    component.maxVisiblePages = 5;
-    component.currentPage = 5;
     component.onPreviousPageClick();
     expect(component.currentPage).toBe(4);
-    expect(component.pages()).toContain(4);
   });
 
-  it('should not decrement currentPage below 1 in onPreviousPageClick', () => {
-    component.totalPages = 10;
-    component.maxVisiblePages = 5;
+  it('should handle next page click', () => {
+    component.totalItems = 100;
+    component.itemsPerPage = 10;
+    component.currentPage = 5;
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    component.onNextPageClick();
+    expect(component.currentPage).toBe(6);
+  });
+
+  it('should not go below page 1 on previous', () => {
+    component.totalItems = 100;
+    component.itemsPerPage = 10;
     component.currentPage = 1;
+    component.ngOnInit();
+    fixture.detectChanges();
+
     component.onPreviousPageClick();
     expect(component.currentPage).toBe(1);
+  });
+
+  it('should not exceed total pages on next', () => {
+    component.totalItems = 50;
+    component.itemsPerPage = 10;
+    component.currentPage = 5;
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    component.onNextPageClick();
+    expect(component.currentPage).toBe(5);
+  });
+
+  it('should handle first page click', () => {
+    const pageChangeSpy = jest.spyOn(component.pageChange, 'emit');
+    component.totalItems = 100;
+    component.itemsPerPage = 10;
+    component.currentPage = 5;
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    component.onFirstPageClick();
+    expect(component.currentPage).toBe(1);
+    expect(pageChangeSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('should handle last page click', () => {
+    const pageChangeSpy = jest.spyOn(component.pageChange, 'emit');
+    component.totalItems = 100;
+    component.itemsPerPage = 10;
+    component.currentPage = 1;
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    component.onLastPageClick();
+    expect(component.currentPage).toBe(10);
+    expect(pageChangeSpy).toHaveBeenCalledWith(10);
+  });
+
+  it('should handle keyboard navigation', () => {
+    component.totalItems = 100;
+    component.itemsPerPage = 10;
+    component.currentPage = 5;
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    const prevEvent = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
+    component.onPaginationKeydown(prevEvent);
+    expect(component.currentPage).toBe(4);
+
+    const nextEvent = new KeyboardEvent('keydown', { key: 'ArrowRight' });
+    component.onPaginationKeydown(nextEvent);
+    expect(component.currentPage).toBe(5);
+  });
+
+  it('should handle home key', () => {
+    component.totalItems = 100;
+    component.itemsPerPage = 10;
+    component.currentPage = 5;
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    const homeEvent = new KeyboardEvent('keydown', { key: 'Home' });
+    component.onPaginationKeydown(homeEvent);
+    expect(component.currentPage).toBe(1);
+  });
+
+  it('should handle end key', () => {
+    component.totalItems = 100;
+    component.itemsPerPage = 10;
+    component.currentPage = 5;
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    const endEvent = new KeyboardEvent('keydown', { key: 'End' });
+    component.onPaginationKeydown(endEvent);
+    expect(component.currentPage).toBe(10);
   });
 });

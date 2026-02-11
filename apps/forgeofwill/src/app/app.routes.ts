@@ -1,6 +1,7 @@
 import { Route, ResolveFn } from '@angular/router';
 import { AuthenticationGuard } from './authentication.guard';
 import { ProfileGuard } from './profile.guard';
+import { AlreadyAuthenticatedGuard } from './already-authenticated.guard';
 import { inject } from '@angular/core';
 import { UserPermissionsService } from './user-permissions.service';
 import { AuthStateService } from './auth-state.service';
@@ -52,6 +53,11 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'profile',
+    redirectTo: 'settings',
+    pathMatch: 'full',
+  },
+  {
     path: 'settings',
     loadComponent: () =>
       import('./pages/settings/settings.component').then(
@@ -65,6 +71,7 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/login/login.component').then((m) => m.LoginComponent),
     title: 'Login',
+    canActivate: [AlreadyAuthenticatedGuard],
   },
   {
     path: 'register',
@@ -73,6 +80,7 @@ export const appRoutes: Route[] = [
         (m) => m.RegisterComponent
       ),
     title: 'Register',
+    canActivate: [AlreadyAuthenticatedGuard],
   },
   {
     path: '**',

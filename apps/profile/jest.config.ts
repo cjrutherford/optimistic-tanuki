@@ -9,7 +9,7 @@ export default {
   coverageDirectory: '../../coverage/apps/profile',
   coverageThreshold: {
     global: {
-      branches: 50,
+      branches: 80,
       functions: 80,
       lines: 80,
       statements: 80,
