@@ -5,7 +5,7 @@
  * Compatible with LangGraph's checkpointer pattern.
  */
 
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, RedisClientType } from 'redis';
 
@@ -42,15 +42,28 @@ export interface CheckpointConfig {
 }
 
 @Injectable()
-export class RedisCheckpointer implements OnModuleDestroy {
+export class RedisCheckpointer implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisCheckpointer.name);
   private client: RedisClientType;
   private readonly keyPrefix = 'langgraph:checkpoint:';
   private readonly defaultTTL = 7 * 24 * 60 * 60; // 7 days in seconds
   private isConnected = false;
+  private initPromise: Promise<void> | null = null;
 
-  constructor(private readonly configService: ConfigService) {
-    this.initializeRedis();
+  constructor(private readonly configService: ConfigService) {}
+
+  async onModuleInit() {
+    this.initPromise = this.initializeRedis();
+    await this.initPromise;
+  }
+
+  private async ensureConnected(): Promise<void> {
+    if (this.initPromise) {
+      await this.initPromise;
+    }
+    if (!this.isConnected) {
+      throw new Error('Redis not connected');
+    }
   }
 
   private async initializeRedis(): Promise<void> {
@@ -100,10 +113,7 @@ export class RedisCheckpointer implements OnModuleDestroy {
    * Get a checkpoint from Redis
    */
   async get(config: CheckpointConfig): Promise<Checkpoint | undefined> {
-    if (!this.isConnected) {
-      this.logger.warn('Redis not connected, cannot get checkpoint');
-      return undefined;
-    }
+    await this.ensureConnected();
 
     try {
       const threadId = config.configurable.thread_id;
@@ -140,10 +150,7 @@ export class RedisCheckpointer implements OnModuleDestroy {
     checkpoint: Checkpoint,
     metadata: CheckpointMetadata
   ): Promise<CheckpointConfig> {
-    if (!this.isConnected) {
-      this.logger.warn('Redis not connected, cannot save checkpoint');
-      return config;
-    }
+    await this.ensureConnected();
 
     try {
       const threadId = config.configurable.thread_id;
@@ -186,9 +193,7 @@ export class RedisCheckpointer implements OnModuleDestroy {
    * List checkpoints for a thread
    */
   async list(config: CheckpointConfig): Promise<Checkpoint[]> {
-    if (!this.isConnected) {
-      return [];
-    }
+    await this.ensureConnected();
 
     try {
       const threadId = config.configurable.thread_id;
@@ -197,13 +202,14 @@ export class RedisCheckpointer implements OnModuleDestroy {
       }
 
       const pattern = `${this.keyPrefix}${threadId}:*`;
-      const keys = await this.client.keys(pattern);
 
       const checkpoints: Checkpoint[] = [];
-      for (const key of keys) {
-        const data = await this.client.get(key);
+      // Use SCAN instead of KEYS to avoid blocking Redis on large keyspaces
+      for await (const key of this.client.scanIterator({ MATCH: pattern })) {
+        const data = await this.client.get(key as string);
         if (data) {
-          const parsed: RedisCheckpoint = typeof data === 'string' ? JSON.parse(data) : data as RedisCheckpoint;
+          const parsed: RedisCheckpoint =
+            typeof data === 'string' ? JSON.parse(data) : (data as RedisCheckpoint);
           checkpoints.push(parsed.checkpoint);
         }
       }
@@ -219,9 +225,7 @@ export class RedisCheckpointer implements OnModuleDestroy {
    * Delete a checkpoint
    */
   async delete(config: CheckpointConfig): Promise<void> {
-    if (!this.isConnected) {
-      return;
-    }
+    await this.ensureConnected();
 
     try {
       const threadId = config.configurable.thread_id;

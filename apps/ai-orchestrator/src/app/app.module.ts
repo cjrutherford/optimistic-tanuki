@@ -22,9 +22,6 @@ import { SystemPromptBuilder } from './system-prompt-builder.service';
 import { ToolValidationService } from './tool-validation.service';
 import { ToolFactory } from './tool-factory.service';
 import { WellnessPromptService } from './wellness-prompt.service';
-import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
-import { RateLimitGuard } from './guards/rate-limit.guard';
 
 // New refactored services
 import { ModelManager } from './models/model-manager.service';
@@ -66,10 +63,6 @@ import { RedisCheckpointer } from './conversation/redis-checkpointer';
     DataTracker,
     ConversationService,
     RedisCheckpointer,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: RateLimitGuard,
-    // },
     {
       provide: 'ai-enabled-apps',
       useFactory: (config: ConfigService) => {

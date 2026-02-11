@@ -6,10 +6,7 @@
 
 import {
   BaseMessage,
-  HumanMessage,
   AIMessage,
-  ToolMessage,
-  SystemMessage,
 } from '@langchain/core/messages';
 // Define local interfaces to avoid circular imports
 export interface IntentClassification {

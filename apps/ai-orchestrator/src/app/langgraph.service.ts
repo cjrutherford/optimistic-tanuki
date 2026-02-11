@@ -264,7 +264,7 @@ export class LangGraphService {
         const conversationResult = await this.langchain.executeConversation(
           persona,
           profile,
-          result.chatHistory.slice(0, -1),
+          result.chatHistory,
           this.normalizeContent(messages[messages.length - 1]?.content),
           conversationId,
           onProgress

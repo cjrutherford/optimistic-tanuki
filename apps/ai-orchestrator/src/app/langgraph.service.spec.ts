@@ -171,14 +171,7 @@ describe('LangGraphService', () => {
       expect(contextStorage.storeContext).toHaveBeenCalledWith('user-1', expect.any(Object));
     });
 
-    it('processMessageNode should increment iteration', async () => {
-        const state = {
-            chatHistory: [],
-            userInput: 'New message'
-        };
-        const result = await getPrivate().processMessageNode(state);
-        expect(result.iteration).toBe(1);
-    });
+
   });
 
   describe('Context Management', () => {

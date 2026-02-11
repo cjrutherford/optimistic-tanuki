@@ -4,13 +4,13 @@ export default async function () {
   const host = process.env.HOST ?? 'localhost';
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  console.log("\nWaiting for : to be open...\n");
+  console.log(`\nWaiting for ${host}:${port} to be open...\n`);
 
   try {
     await waitForPortOpen(port, { host, retries: 60, retryDelay: 2000 });
-    console.log("\n: is open!\n");
+    console.log(`\n${host}:${port} is open!\n`);
   } catch (err) {
-    console.error("\nTimed out waiting for : to be open.\n");
+    console.error(`\nTimed out waiting for ${host}:${port} to be open.\n`);
     throw err;
   }
 
