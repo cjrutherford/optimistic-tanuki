@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 
-import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
+import { LoginBlockComponent, OAuthProviderEvent } from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 import { AuthStateService } from '../../auth-state.service';
 
@@ -25,6 +25,7 @@ const LOGIN_HERO_IMAGE = 'assets/digital-independence.png';
         [heroSrc]="heroImage"
         heroAlt="Digital Homestead"
         (submitEvent)="onLogin($event)"
+        (oauthProviderSelected)="onOAuthProvider($event)"
       ></lib-login-block>
 
       <div class="footer-links">
@@ -102,5 +103,10 @@ export class LoginPageComponent {
       this.error =
         err?.message || 'Login failed. Please check your credentials.';
     }
+  }
+
+  onOAuthProvider(event: OAuthProviderEvent): void {
+    console.log('OAuth provider selected:', event.provider);
+    this.error = `OAuth login with ${event.provider} is not yet configured. Please use email/password login.`;
   }
 }
