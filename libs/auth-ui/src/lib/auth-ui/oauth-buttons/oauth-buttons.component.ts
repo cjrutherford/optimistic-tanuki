@@ -10,6 +10,8 @@ export interface OAuthProviderEvent {
   provider: 'google' | 'github' | 'microsoft' | 'facebook' | 'x';
 }
 
+const VALID_PROVIDERS = ['google', 'github', 'microsoft', 'facebook', 'x'] as const;
+
 @Component({
   selector: 'lib-oauth-buttons',
   standalone: true,
@@ -35,11 +37,11 @@ export class OAuthButtonsComponent extends Themeable {
   @Output() providerSelected = new EventEmitter<OAuthProviderEvent>();
 
   providers = [
-    { id: 'google', label: 'Google', icon: '🔵' },
-    { id: 'github', label: 'GitHub', icon: '⚫' },
-    { id: 'microsoft', label: 'Microsoft', icon: '🟦' },
-    { id: 'facebook', label: 'Facebook', icon: '🔷' },
-    { id: 'x', label: 'X', icon: '✖' },
+    { id: 'google', label: 'Google', ariaLabel: 'Sign in with Google' },
+    { id: 'github', label: 'GitHub', ariaLabel: 'Sign in with GitHub' },
+    { id: 'microsoft', label: 'Microsoft', ariaLabel: 'Sign in with Microsoft' },
+    { id: 'facebook', label: 'Facebook', ariaLabel: 'Sign in with Facebook' },
+    { id: 'x', label: 'X', ariaLabel: 'Sign in with X' },
   ];
 
   override applyTheme(colors: ThemeColors): void {
@@ -56,8 +58,10 @@ export class OAuthButtonsComponent extends Themeable {
   }
 
   onProviderClick(providerId: string) {
-    this.providerSelected.emit({
-      provider: providerId as OAuthProviderEvent['provider'],
-    });
+    if (VALID_PROVIDERS.includes(providerId as typeof VALID_PROVIDERS[number])) {
+      this.providerSelected.emit({
+        provider: providerId as OAuthProviderEvent['provider'],
+      });
+    }
   }
 }

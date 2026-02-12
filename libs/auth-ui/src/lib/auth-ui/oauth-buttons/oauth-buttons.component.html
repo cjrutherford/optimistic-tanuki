@@ -8,9 +8,9 @@
     <otui-button
       *ngFor="let provider of visibleProviders"
       variant="outlined"
+      [attr.aria-label]="provider.ariaLabel"
       (action)="onProviderClick(provider.id)"
     >
-      <span class="provider-icon">{{ provider.icon }}</span>
       {{ provider.label }}
     </otui-button>
   </div>

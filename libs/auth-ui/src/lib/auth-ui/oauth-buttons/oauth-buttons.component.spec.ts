@@ -169,4 +169,10 @@ describe('OAuthButtonsComponent', () => {
   it('should have showDivider true by default', () => {
     expect(component.showDivider).toBe(true);
   });
+
+  it('should not emit for invalid provider ids', () => {
+    jest.spyOn(component.providerSelected, 'emit');
+    component.onProviderClick('invalid-provider');
+    expect(component.providerSelected.emit).not.toHaveBeenCalled();
+  });
 });
