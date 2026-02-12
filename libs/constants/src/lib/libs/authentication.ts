@@ -21,6 +21,12 @@ const AuthCommands = {
   GetOAuthConfig: 'GetOAuthConfig',
   // Invalidate a token on logout. Payload: { token }
   Logout: 'Logout',
+  // OAuth commands for social login and account linking
+  OAuthLogin: 'OAuthLogin',
+  OAuthCallback: 'OAuthCallback',
+  LinkProvider: 'LinkProvider',
+  UnlinkProvider: 'UnlinkProvider',
+  GetLinkedProviders: 'GetLinkedProviders',
 };
 
 export default AuthCommands;

@@ -71,6 +71,7 @@ import {
 } from '../controllers/registry/registry.controller';
 import { DEFAULT_NAVIGATION_LINKS } from '@optimistic-tanuki/app-registry-backend';
 import { loadConfiguredRegistry } from '../controllers/registry/registry.config';
+import { OAuthController } from '../controllers/oauth/oauth.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -138,6 +139,7 @@ import { loadConfiguredRegistry } from '../controllers/registry/registry.config'
     LeadsController,
     HardwareController,
     RegistryController,
+    OAuthController,
   ],
   providers: [
     {
