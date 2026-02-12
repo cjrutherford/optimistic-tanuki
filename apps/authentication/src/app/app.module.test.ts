@@ -4,11 +4,13 @@ import { AppModule } from './app.module';
 import loadConfig from '../config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { OAuthService } from './oauth.service';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
+import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 jest.mock('../config', () => {
@@ -63,12 +65,16 @@ describe('AppModule', () => {
       })
       .overrideProvider(AppService)
       .useValue({}) // Mock AppService
+      .overrideProvider(OAuthService)
+      .useValue({}) // Mock OAuthService
       .overrideProvider(getRepositoryToken(UserEntity))
       .useValue({ target: UserEntity })
       .overrideProvider(getRepositoryToken(TokenEntity))
       .useValue({ target: TokenEntity })
       .overrideProvider(getRepositoryToken(KeyDatum))
       .useValue({ target: KeyDatum })
+      .overrideProvider(getRepositoryToken(OAuthProviderEntity))
+      .useValue({ target: OAuthProviderEntity })
       .overrideProvider('AUTHENTICATION_CONNECTION')
       .useValue({
         // Mock DatabaseModule
@@ -124,5 +130,13 @@ describe('AppModule', () => {
     const keyDataRepository = appModule.get(getRepositoryToken(KeyDatum));
     expect(keyDataRepository).toBeDefined();
     expect(keyDataRepository.target).toBe(KeyDatum);
+  });
+
+  it('should provide OAuthProvider repository', () => {
+    const oauthRepository = appModule.get(
+      getRepositoryToken(OAuthProviderEntity)
+    );
+    expect(oauthRepository).toBeDefined();
+    expect(oauthRepository.target).toBe(OAuthProviderEntity);
   });
 });
