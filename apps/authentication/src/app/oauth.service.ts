@@ -228,9 +228,8 @@ export class OAuthService {
     };
     await this.tokenRepo.save(ntk);
 
-    // Remove sensitive fields
-    delete user.password;
-    delete user.keyData;
+    // Return sanitized user data without sensitive fields
+    const { password, keyData, ...sanitizedUser } = user;
 
     return { message: 'OAuth login successful', code: 0, data: { newToken: tk } };
   }
