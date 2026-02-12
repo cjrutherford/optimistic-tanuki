@@ -23,4 +23,24 @@ describe('AuthCommands', () => {
   it('should have a ValidateTotp command', () => {
     expect(AuthCommands.ValidateTotp).toBe('ValidateTotp');
   });
+
+  it('should have an OAuthLogin command', () => {
+    expect(AuthCommands.OAuthLogin).toBe('OAuthLogin');
+  });
+
+  it('should have an OAuthCallback command', () => {
+    expect(AuthCommands.OAuthCallback).toBe('OAuthCallback');
+  });
+
+  it('should have a LinkProvider command', () => {
+    expect(AuthCommands.LinkProvider).toBe('LinkProvider');
+  });
+
+  it('should have an UnlinkProvider command', () => {
+    expect(AuthCommands.UnlinkProvider).toBe('UnlinkProvider');
+  });
+
+  it('should have a GetLinkedProviders command', () => {
+    expect(AuthCommands.GetLinkedProviders).toBe('GetLinkedProviders');
+  });
 });

@@ -4,3 +4,6 @@ export { ResetPasswordRequest } from './ResetPasswordRequest';
 export { EnableMultiFactorRequest } from './EnableMultiFactorRequest';
 export { ValidateTokenRequest } from './validateToken.request';
 export { UserContext } from './user-context';
+export { OAuthProvider, OAuthCallbackRequest } from './OAuthCallbackRequest';
+export { LinkProviderRequest } from './LinkProviderRequest';
+export { UnlinkProviderRequest } from './UnlinkProviderRequest';

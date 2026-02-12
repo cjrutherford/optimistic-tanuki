@@ -14,8 +14,10 @@ import loadConfig from '../config';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { UserEntity } from '../user/entities/user.entity';
+import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { OAuthService } from './oauth.service';
 import { KeyService } from './key.service';
 import loadDatabase from './loadDatabase';
 import { JwtService } from '@nestjs/jwt';
@@ -43,6 +45,7 @@ import { JwtService } from '@nestjs/jwt';
       inject: [ConfigService],
     },
     AppService,
+    OAuthService,
     SaltedHashService,
     KeyService,
     AsymmetricService,
@@ -69,6 +72,11 @@ import { JwtService } from '@nestjs/jwt';
     {
       provide: getRepositoryToken(KeyDatum),
       useFactory: (ds: DataSource) => ds.getRepository(KeyDatum),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(OAuthProviderEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(OAuthProviderEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
     },
   ],

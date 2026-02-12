@@ -2,11 +2,15 @@ import { Controller, Get, Logger } from '@nestjs/common';
 import { AuthCommands } from '@optimistic-tanuki/constants';
 import { validateRequiredFields } from '@optimistic-tanuki/database';
 import { AppService } from './app.service';
+import { OAuthService } from './oauth.service';
 import {
   EnableMultiFactorRequest,
+  LinkProviderRequest,
   LoginRequest,
+  OAuthCallbackRequest,
   RegisterRequest,
   ResetPasswordRequest,
+  UnlinkProviderRequest,
   ValidateTokenRequest,
 } from '@optimistic-tanuki/models';
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
@@ -15,6 +19,7 @@ import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 export class AppController {
   constructor(
     private readonly appService: AppService,
+    private readonly oauthService: OAuthService,
     private readonly l: Logger
   ) {}
 
@@ -207,6 +212,103 @@ export class AppController {
       if (e instanceof RpcException) {
         throw e;
       }
+      throw new RpcException(e);
+    }
+  }
+
+  @MessagePattern({ cmd: AuthCommands.OAuthLogin })
+  async oauthLogin(
+    @Payload()
+    data: OAuthCallbackRequest & {
+      providerUserId: string;
+      email: string;
+      displayName: string;
+      accessToken?: string;
+      refreshToken?: string;
+      profileId?: string;
+    }
+  ) {
+    try {
+      const missingFields = validateRequiredFields(data, [
+        'provider',
+        'providerUserId',
+      ]);
+      if (missingFields.length > 0) {
+        throw new RpcException(
+          `Missing required fields: ${missingFields.join(' ')}`
+        );
+      }
+      return await this.oauthService.oauthLogin(
+        data.provider,
+        data.providerUserId,
+        data.email,
+        data.displayName,
+        data.accessToken,
+        data.refreshToken,
+        data.profileId
+      );
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e);
+    }
+  }
+
+  @MessagePattern({ cmd: AuthCommands.LinkProvider })
+  async linkProvider(@Payload() data: LinkProviderRequest) {
+    try {
+      const missingFields = validateRequiredFields<LinkProviderRequest>(data, [
+        'userId',
+        'provider',
+        'providerUserId',
+      ]);
+      if (missingFields.length > 0) {
+        throw new RpcException(
+          `Missing required fields: ${missingFields.join(' ')}`
+        );
+      }
+      return await this.oauthService.linkProvider(
+        data.userId,
+        data.provider,
+        data.providerUserId,
+        data.accessToken,
+        data.refreshToken,
+        data.providerEmail,
+        data.providerDisplayName
+      );
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e);
+    }
+  }
+
+  @MessagePattern({ cmd: AuthCommands.UnlinkProvider })
+  async unlinkProvider(@Payload() data: UnlinkProviderRequest) {
+    try {
+      const missingFields = validateRequiredFields<UnlinkProviderRequest>(
+        data,
+        ['userId', 'provider']
+      );
+      if (missingFields.length > 0) {
+        throw new RpcException(
+          `Missing required fields: ${missingFields.join(' ')}`
+        );
+      }
+      return await this.oauthService.unlinkProvider(data.userId, data.provider);
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e);
+    }
+  }
+
+  @MessagePattern({ cmd: AuthCommands.GetLinkedProviders })
+  async getLinkedProviders(@Payload() data: { userId: string }) {
+    try {
+      if (!data.userId) {
+        throw new RpcException('userId is required');
+      }
+      return await this.oauthService.getLinkedProviders(data.userId);
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
       throw new RpcException(e);
     }
   }

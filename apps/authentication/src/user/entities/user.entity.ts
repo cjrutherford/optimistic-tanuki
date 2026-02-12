@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { KeyDatum as KeyDataEntity } from '../../key-data/entities';
 import { TokenEntity } from '../../tokens/entities';
+import { OAuthProviderEntity } from '../../oauth-providers/entities/oauth-provider.entity';
 import { v4 as uuidv4 } from 'uuid';
 import { IsObject } from 'class-validator';
 
@@ -44,4 +45,7 @@ export class UserEntity {
   @JoinColumn()
   @IsObject()
   keyData: KeyDataEntity;
+
+  @OneToMany(() => OAuthProviderEntity, (op) => op.user)
+  oauthProviders: OAuthProviderEntity[];
 }

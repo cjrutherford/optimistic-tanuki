@@ -35,6 +35,7 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
+import { OAuthController } from '../controllers/oauth/oauth.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -80,6 +81,7 @@ import { SocialComponentController } from '../controllers/social/social-componen
     StoreController,
     AppConfigController,
     ForumController,
+    OAuthController,
   ],
   providers: [
     {
