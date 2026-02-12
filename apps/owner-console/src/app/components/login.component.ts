@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
+import { LoginBlockComponent, OAuthProviderEvent } from '@optimistic-tanuki/auth-ui';
 import { AuthService } from '../services/auth.service';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 
@@ -19,6 +19,7 @@ import { LoginType } from '@optimistic-tanuki/ui-models';
         "
         [heroAlt]="'Owner Console'"
         (submitEvent)="onLogin($event)"
+        (oauthProviderSelected)="onOAuthProvider($event)"
       ></lib-login-block>
       <div class="register-link">
         <a routerLink="/register">Don't have an account? Register as Owner</a>
@@ -81,5 +82,10 @@ export class LoginComponent {
         this.error = err.error?.message || 'Login failed. Please try again.';
       },
     });
+  }
+
+  onOAuthProvider(event: OAuthProviderEvent): void {
+    console.log('OAuth provider selected:', event.provider);
+    this.error = `OAuth login with ${event.provider} is not yet configured. Please use email/password login.`;
   }
 }

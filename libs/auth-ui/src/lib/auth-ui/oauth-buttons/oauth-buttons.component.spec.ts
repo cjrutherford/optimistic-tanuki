@@ -1,12 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { LoginBlockComponent } from './login-block.component';
+import { OAuthButtonsComponent, OAuthProviderEvent } from './oauth-buttons.component';
 import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { of } from 'rxjs';
-import { ReactiveFormsModule } from '@angular/forms';
 
-describe('LoginBlockComponent', () => {
-  let component: LoginBlockComponent;
-  let fixture: ComponentFixture<LoginBlockComponent>;
+describe('OAuthButtonsComponent', () => {
+  let component: OAuthButtonsComponent;
+  let fixture: ComponentFixture<OAuthButtonsComponent>;
   let themeServiceMock: any;
 
   beforeEach(async () => {
@@ -127,11 +126,11 @@ describe('LoginBlockComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [LoginBlockComponent, ReactiveFormsModule],
+      imports: [OAuthButtonsComponent],
       providers: [{ provide: ThemeService, useValue: themeServiceMock }],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(LoginBlockComponent);
+    fixture = TestBed.createComponent(OAuthButtonsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -140,58 +139,34 @@ describe('LoginBlockComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should apply dark theme colors when theme is dark', () => {
-    themeServiceMock.getTheme = () => 'dark';
-    component.ngOnInit();
-    fixture.detectChanges();
-    expect(component.borderGradient).toBe('dark-gradient');
+  it('should show all providers by default', () => {
+    expect(component.visibleProviders.length).toBe(5);
   });
 
-  it('should apply light theme colors when theme is not dark', () => {
-    themeServiceMock.getTheme = () => 'light';
-    component.ngOnInit();
-    fixture.detectChanges();
-    expect(component.borderGradient).toBe('light-gradient');
+  it('should filter providers by enabledProviders input', () => {
+    component.enabledProviders = ['google', 'github'];
+    expect(component.visibleProviders.length).toBe(2);
+    expect(component.visibleProviders[0].id).toBe('google');
+    expect(component.visibleProviders[1].id).toBe('github');
   });
 
-  it('should emit submitEvent on onSubmit', () => {
-    jest.spyOn(component.submitEvent, 'emit');
-    component.loginForm.setValue({
-      email: 'test@example.com',
-      password: 'password',
-    });
-    component.onSubmit();
-    expect(component.submitEvent.emit).toHaveBeenCalledWith({
-      email: 'test@example.com',
-      password: 'password',
-    });
-  });
-
-  it('should log onFormChange', () => {
-    const consoleSpy = jest.spyOn(console, 'log');
-    component.onFormChange('test');
-    expect(consoleSpy).toHaveBeenCalledWith('test');
-  });
-
-  it('should have showOAuth true by default', () => {
-    expect(component.showOAuth).toBe(true);
-  });
-
-  it('should have all providers enabled by default', () => {
-    expect(component.enabledOAuthProviders).toEqual([
-      'google',
-      'github',
-      'microsoft',
-      'facebook',
-      'x',
-    ]);
-  });
-
-  it('should emit oauthProviderSelected on onOAuthProvider', () => {
-    jest.spyOn(component.oauthProviderSelected, 'emit');
-    component.onOAuthProvider({ provider: 'google' });
-    expect(component.oauthProviderSelected.emit).toHaveBeenCalledWith({
+  it('should emit providerSelected event on provider click', () => {
+    jest.spyOn(component.providerSelected, 'emit');
+    component.onProviderClick('google');
+    expect(component.providerSelected.emit).toHaveBeenCalledWith({
       provider: 'google',
     });
+  });
+
+  it('should emit correct provider for github', () => {
+    jest.spyOn(component.providerSelected, 'emit');
+    component.onProviderClick('github');
+    expect(component.providerSelected.emit).toHaveBeenCalledWith({
+      provider: 'github',
+    });
+  });
+
+  it('should have showDivider true by default', () => {
+    expect(component.showDivider).toBe(true);
   });
 });

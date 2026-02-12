@@ -8,7 +8,7 @@ import { AuthStateService } from '../state/auth-state.service';
 import { Subscription, filter } from 'rxjs';
 import { inject } from '@angular/core';
 import { MessageService } from '@optimistic-tanuki/message-ui';
-import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
+import { LoginBlockComponent, OAuthProviderEvent } from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from '../profile.service';
 
@@ -103,5 +103,13 @@ export class LoginComponent implements OnDestroy {
     } catch (err) {
       console.error(err);
     }
+  }
+
+  onOAuthProvider(event: OAuthProviderEvent) {
+    console.log('OAuth provider selected:', event.provider);
+    this.messageService.addMessage({
+      content: `OAuth login with ${event.provider} is not yet configured. Please use email/password login.`,
+      type: 'warning',
+    });
   }
 }

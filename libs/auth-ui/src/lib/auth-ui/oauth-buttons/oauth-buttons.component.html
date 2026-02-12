@@ -1,0 +1,17 @@
+<div class="oauth-buttons-container">
+  <div class="divider" *ngIf="showDivider">
+    <span class="divider-line"></span>
+    <span class="divider-text">or sign in with</span>
+    <span class="divider-line"></span>
+  </div>
+  <div class="provider-buttons">
+    <otui-button
+      *ngFor="let provider of visibleProviders"
+      variant="outlined"
+      (action)="onProviderClick(provider.id)"
+    >
+      <span class="provider-icon">{{ provider.icon }}</span>
+      {{ provider.label }}
+    </otui-button>
+  </div>
+</div>

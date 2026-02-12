@@ -20,6 +20,11 @@
             ></lib-text-input>
             <otui-button type="submit">Login</otui-button>
           </form>
+          <lib-oauth-buttons
+            *ngIf="showOAuth"
+            [enabledProviders]="enabledOAuthProviders"
+            (providerSelected)="onOAuthProvider($event)"
+          ></lib-oauth-buttons>
         </div>
       </div>
     </div>
