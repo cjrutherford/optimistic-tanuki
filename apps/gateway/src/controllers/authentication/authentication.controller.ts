@@ -320,6 +320,24 @@ export class AuthenticationController {
     }
   }
 
+  @Post('send-mfa-setup-email')
+  @ApiOperation({ summary: 'Send MFA setup confirmation email' })
+  @ApiResponse({ status: 201, description: 'MFA setup email sent.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async sendMfaSetupEmail(@Body() data: { userId: string }) {
+    try {
+      return await firstValueFrom(
+        this.authClient.send({ cmd: AuthCommands.SendMfaSetupEmail }, data)
+      );
+    } catch (error) {
+      this.logger.error('Error in sendMfaSetupEmail:', error?.message || error);
+      throw new HttpException(
+        `Send MFA setup email failed: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
   private async getOrCreateAppScopedProfile(
     user: UserDetails,
     targetAppId: string
@@ -378,5 +396,31 @@ export class AuthenticationController {
 
     await this.roleInit.processNow(roleInitOptions);
     return createdProfile;
+  }
+
+  @Post('send-mfa-verification-email')
+  @ApiOperation({ summary: 'Send MFA verification notification email' })
+  @ApiResponse({ status: 201, description: 'MFA verification email sent.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async sendMfaVerificationEmail(
+    @Body() data: { userId: string; action: string }
+  ) {
+    try {
+      return await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.SendMfaVerificationEmail },
+          data
+        )
+      );
+    } catch (error) {
+      this.logger.error(
+        'Error in sendMfaVerificationEmail:',
+        error?.message || error
+      );
+      throw new HttpException(
+        `Send MFA verification email failed: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 }
