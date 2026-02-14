@@ -323,11 +323,12 @@ export class AppService {
       await this.userRepo.update(userId, { totpSecret: newSecret });
 
       // Send MFA setup confirmation email
+      const safeName = validator.escape(existingUser.firstName || '');
       await this.emailService.sendEmail({
         to: existingUser.email,
         subject: 'Multi-Factor Authentication Enabled',
-        text: `Hello ${existingUser.firstName},\n\nMulti-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.\n\nIf you did not initiate this, please contact support immediately.`,
-        html: `<h2>MFA Enabled</h2><p>Hello ${existingUser.firstName},</p><p>Multi-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.</p><p>If you did not initiate this, please contact support immediately.</p>`,
+        text: `Hello ${existingUser.firstName || ''},\n\nMulti-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.\n\nIf you did not initiate this, please contact support immediately.`,
+        html: `<h2>MFA Enabled</h2><p>Hello ${safeName},</p><p>Multi-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.</p><p>If you did not initiate this, please contact support immediately.</p>`,
       });
 
       return {
@@ -362,11 +363,13 @@ export class AppService {
       const user = await this.userRepo.findOne({ where: { id: userId } });
       if (!user) throw new RpcException('User not found');
 
+      const safeName = validator.escape(user.firstName || '');
+
       const result = await this.emailService.sendEmail({
         to: user.email,
         subject: 'Multi-Factor Authentication Setup',
-        text: `Hello ${user.firstName},\n\nA request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.\n\nIf you did not request this, please secure your account immediately.`,
-        html: `<h2>MFA Setup Requested</h2><p>Hello ${user.firstName},</p><p>A request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.</p><p>If you did not request this, please secure your account immediately.</p>`,
+        text: `Hello ${user.firstName || ''},\n\nA request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.\n\nIf you did not request this, please secure your account immediately.`,
+        html: `<h2>MFA Setup Requested</h2><p>Hello ${safeName},</p><p>A request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.</p><p>If you did not request this, please secure your account immediately.</p>`,
       });
 
       return { message: 'MFA setup email sent', code: 0, data: { sent: result.success } };
@@ -381,11 +384,14 @@ export class AppService {
       const user = await this.userRepo.findOne({ where: { id: userId } });
       if (!user) throw new RpcException('User not found');
 
+      const safeAction = validator.escape(action);
+      const safeName = validator.escape(user.firstName || '');
+
       const result = await this.emailService.sendEmail({
         to: user.email,
         subject: 'Security Alert: MFA Verification',
-        text: `Hello ${user.firstName},\n\nA multi-factor authentication verification was performed on your account for: ${action}.\n\nIf this was not you, please change your password immediately.`,
-        html: `<h2>Security Alert</h2><p>Hello ${user.firstName},</p><p>A multi-factor authentication verification was performed on your account for: <strong>${action}</strong>.</p><p>If this was not you, please change your password immediately.</p>`,
+        text: `Hello ${user.firstName || ''},\n\nA multi-factor authentication verification was performed on your account for: ${action}.\n\nIf this was not you, please change your password immediately.`,
+        html: `<h2>Security Alert</h2><p>Hello ${safeName},</p><p>A multi-factor authentication verification was performed on your account for: <strong>${safeAction}</strong>.</p><p>If this was not you, please change your password immediately.</p>`,
       });
 
       return { message: 'MFA verification email sent', code: 0, data: { sent: result.success } };
