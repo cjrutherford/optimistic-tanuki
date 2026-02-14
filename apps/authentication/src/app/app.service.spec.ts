@@ -11,6 +11,7 @@ import { Logger } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { SaltedHashService } from '@optimistic-tanuki/encryption';
+import { EmailService } from '@optimistic-tanuki/email';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -103,6 +104,13 @@ describe('AppService', () => {
               userId: 'someUserId',
               email: 'test@example.com',
             }),
+          },
+        },
+        {
+          provide: EmailService,
+          useValue: {
+            sendEmail: jest.fn().mockResolvedValue({ success: true, messageId: 'test-msg-1' }),
+            verifyConnection: jest.fn().mockResolvedValue(true),
           },
         },
       ],
