@@ -7,6 +7,11 @@ import {
   SaltedHashService,
 } from '@optimistic-tanuki/encryption';
 import { LoggerModule } from '@optimistic-tanuki/logger';
+import {
+  EmailModule,
+  ConsoleEmailProvider,
+  SmtpEmailProvider,
+} from '@optimistic-tanuki/email';
 import * as jwt from 'jsonwebtoken';
 import { authenticator } from 'otplib';
 import { DataSource } from 'typeorm';
@@ -14,8 +19,10 @@ import loadConfig from '../config';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { UserEntity } from '../user/entities/user.entity';
+import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { OAuthService } from './oauth.service';
 import { KeyService } from './key.service';
 import loadDatabase from './loadDatabase';
 import { JwtService } from '@nestjs/jwt';
@@ -31,6 +38,32 @@ import { JwtService } from '@nestjs/jwt';
       factory: loadDatabase,
     }),
     LoggerModule,
+    EmailModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const smtpHost = config.get<string>('SMTP_HOST');
+        if (smtpHost) {
+          return {
+            providers: [
+              new SmtpEmailProvider({
+                host: smtpHost,
+                port: config.get<number>('SMTP_PORT') || 587,
+                secure: config.get<boolean>('SMTP_SECURE') || false,
+                auth: {
+                  user: config.get<string>('SMTP_USER') || '',
+                  pass: config.get<string>('SMTP_PASS') || '',
+                },
+                defaultFrom:
+                  config.get<string>('SMTP_FROM') ||
+                  'noreply@optimistic-tanuki.dev',
+              }),
+            ],
+          };
+        }
+        // Default to console provider for development
+        return { providers: [new ConsoleEmailProvider()] };
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [
@@ -43,6 +76,7 @@ import { JwtService } from '@nestjs/jwt';
       inject: [ConfigService],
     },
     AppService,
+    OAuthService,
     SaltedHashService,
     KeyService,
     AsymmetricService,
@@ -69,6 +103,11 @@ import { JwtService } from '@nestjs/jwt';
     {
       provide: getRepositoryToken(KeyDatum),
       useFactory: (ds: DataSource) => ds.getRepository(KeyDatum),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(OAuthProviderEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(OAuthProviderEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
     },
   ],

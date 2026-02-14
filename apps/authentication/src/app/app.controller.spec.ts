@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { OAuthService } from './oauth.service';
 import { RpcException } from '@nestjs/microservices';
 import {
   EnableMultiFactorRequest,
@@ -14,6 +15,7 @@ import { Logger } from '@nestjs/common';
 describe('AppController', () => {
   let appController: AppController;
   let appService: AppService;
+  let oauthService: OAuthService;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
@@ -31,11 +33,21 @@ describe('AppController', () => {
             validateTotp: jest.fn(),
           },
         },
+        {
+          provide: OAuthService,
+          useValue: {
+            oauthLogin: jest.fn(),
+            linkProvider: jest.fn(),
+            unlinkProvider: jest.fn(),
+            getLinkedProviders: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     appController = app.get<AppController>(AppController);
     appService = app.get<AppService>(AppService);
+    oauthService = app.get<OAuthService>(OAuthService);
   });
 
   describe('login', () => {
@@ -381,6 +393,141 @@ describe('AppController', () => {
       ).rejects.toThrow(
         new RpcException('Missing required fields: userId token')
       );
+    });
+  });
+
+  describe('oauthLogin', () => {
+    it('should call oauthService.oauthLogin with correct parameters', async () => {
+      (oauthService.oauthLogin as jest.Mock).mockResolvedValue({
+        message: 'OAuth login successful',
+        code: 0,
+        data: { newToken: 'token' },
+      });
+      const oauthRequest = {
+        provider: 'google',
+        code: 'auth-code',
+        providerUserId: 'google-123',
+        email: 'test@example.com',
+        displayName: 'Test User',
+      };
+      const response = await appController.oauthLogin(oauthRequest as any);
+      expect(oauthService.oauthLogin).toHaveBeenCalledWith(
+        'google',
+        'google-123',
+        'test@example.com',
+        'Test User',
+        undefined,
+        undefined,
+        undefined
+      );
+      expect(response).toEqual({
+        message: 'OAuth login successful',
+        code: 0,
+        data: { newToken: 'token' },
+      });
+    });
+
+    it('should throw RpcException if missing required fields', async () => {
+      const oauthRequest = {
+        provider: '',
+        code: 'auth-code',
+        providerUserId: 'google-123',
+        email: 'test@example.com',
+        displayName: 'Test User',
+      };
+      await expect(
+        appController.oauthLogin(oauthRequest as any)
+      ).rejects.toThrow(RpcException);
+    });
+  });
+
+  describe('linkProvider', () => {
+    it('should call oauthService.linkProvider with correct parameters', async () => {
+      (oauthService.linkProvider as jest.Mock).mockResolvedValue({
+        message: 'Provider google linked successfully',
+        code: 0,
+      });
+      const linkRequest = {
+        userId: 'user-1',
+        provider: 'google',
+        providerUserId: 'google-123',
+      };
+      const response = await appController.linkProvider(linkRequest as any);
+      expect(oauthService.linkProvider).toHaveBeenCalledWith(
+        'user-1',
+        'google',
+        'google-123',
+        undefined,
+        undefined,
+        undefined,
+        undefined
+      );
+      expect(response).toEqual({
+        message: 'Provider google linked successfully',
+        code: 0,
+      });
+    });
+
+    it('should throw RpcException if missing required fields', async () => {
+      const linkRequest = {
+        userId: '',
+        provider: 'google',
+        providerUserId: 'google-123',
+      };
+      await expect(
+        appController.linkProvider(linkRequest as any)
+      ).rejects.toThrow(RpcException);
+    });
+  });
+
+  describe('unlinkProvider', () => {
+    it('should call oauthService.unlinkProvider with correct parameters', async () => {
+      (oauthService.unlinkProvider as jest.Mock).mockResolvedValue({
+        message: 'Provider google unlinked successfully',
+        code: 0,
+      });
+      const unlinkRequest = { userId: 'user-1', provider: 'google' };
+      const response = await appController.unlinkProvider(unlinkRequest as any);
+      expect(oauthService.unlinkProvider).toHaveBeenCalledWith(
+        'user-1',
+        'google'
+      );
+      expect(response).toEqual({
+        message: 'Provider google unlinked successfully',
+        code: 0,
+      });
+    });
+
+    it('should throw RpcException if missing required fields', async () => {
+      const unlinkRequest = { userId: '', provider: 'google' };
+      await expect(
+        appController.unlinkProvider(unlinkRequest as any)
+      ).rejects.toThrow(RpcException);
+    });
+  });
+
+  describe('getLinkedProviders', () => {
+    it('should call oauthService.getLinkedProviders with correct parameters', async () => {
+      (oauthService.getLinkedProviders as jest.Mock).mockResolvedValue({
+        message: 'Linked providers retrieved',
+        code: 0,
+        data: [{ provider: 'google', providerEmail: 'test@gmail.com' }],
+      });
+      const response = await appController.getLinkedProviders({
+        userId: 'user-1',
+      });
+      expect(oauthService.getLinkedProviders).toHaveBeenCalledWith('user-1');
+      expect(response).toEqual({
+        message: 'Linked providers retrieved',
+        code: 0,
+        data: [{ provider: 'google', providerEmail: 'test@gmail.com' }],
+      });
+    });
+
+    it('should throw RpcException if userId is missing', async () => {
+      await expect(
+        appController.getLinkedProviders({ userId: '' })
+      ).rejects.toThrow(RpcException);
     });
   });
 });

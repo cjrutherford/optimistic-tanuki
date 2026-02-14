@@ -4,7 +4,7 @@ import { AuthenticationService } from '../../authentication.service';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
 import { Component } from '@angular/core';
-import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
+import { LoginBlockComponent, OAuthProviderEvent } from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from '../../profile/profile.service';
 import { Router } from '@angular/router';
@@ -82,5 +82,13 @@ export class LoginComponent {
         console.error('Login failed:', error);
       });
     // ...existing code...
+  }
+
+  onOAuthProvider(event: OAuthProviderEvent) {
+    console.log('OAuth provider selected:', event.provider);
+    this.messageService.addMessage({
+      content: `OAuth login with ${event.provider} is not yet configured. Please use email/password login.`,
+      type: 'warning',
+    });
   }
 }

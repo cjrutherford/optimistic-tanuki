@@ -6,6 +6,7 @@ import { UserEntity } from '../user/entities/user.entity';
 import { Repository } from 'typeorm';
 import validator from 'validator';
 import { SaltedHashService } from '@optimistic-tanuki/encryption';
+import { EmailService } from '@optimistic-tanuki/email';
 import { RpcException } from '@nestjs/microservices';
 import * as jwt from 'jsonwebtoken';
 import * as qrcode from 'qrcode';
@@ -30,7 +31,8 @@ export class AppService {
     private readonly keyService: KeyService,
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     @Inject('totp') private readonly totp: typeof authenticator,
-    private readonly jsonWebToken: JwtService
+    private readonly jsonWebToken: JwtService,
+    private readonly emailService: EmailService
   ) {}
 
   async getUserIdFromEmail(email: string): Promise<string> {
@@ -319,6 +321,16 @@ export class AppService {
       if (existingUser.totpSecret)
         throw new RpcException('TOTP already set up');
       await this.userRepo.update(userId, { totpSecret: newSecret });
+
+      // Send MFA setup confirmation email
+      const safeName = validator.escape(existingUser.firstName || '');
+      await this.emailService.sendEmail({
+        to: existingUser.email,
+        subject: 'Multi-Factor Authentication Enabled',
+        text: `Hello ${existingUser.firstName || ''},\n\nMulti-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.\n\nIf you did not initiate this, please contact support immediately.`,
+        html: `<h2>MFA Enabled</h2><p>Hello ${safeName},</p><p>Multi-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.</p><p>If you did not initiate this, please contact support immediately.</p>`,
+      });
+
       return {
         message: 'TOTP setup successful',
         code: 0,
@@ -344,6 +356,49 @@ export class AppService {
       throw new RpcException('Invalid TOTP token');
     }
     return { message: 'TOTP token is valid', code: 0 };
+  }
+
+  async sendMfaSetupEmail(userId: string) {
+    try {
+      const user = await this.userRepo.findOne({ where: { id: userId } });
+      if (!user) throw new RpcException('User not found');
+
+      const safeName = validator.escape(user.firstName || '');
+
+      const result = await this.emailService.sendEmail({
+        to: user.email,
+        subject: 'Multi-Factor Authentication Setup',
+        text: `Hello ${user.firstName || ''},\n\nA request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.\n\nIf you did not request this, please secure your account immediately.`,
+        html: `<h2>MFA Setup Requested</h2><p>Hello ${safeName},</p><p>A request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.</p><p>If you did not request this, please secure your account immediately.</p>`,
+      });
+
+      return { message: 'MFA setup email sent', code: 0, data: { sent: result.success } };
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e.message || e);
+    }
+  }
+
+  async sendMfaVerificationEmail(userId: string, action: string) {
+    try {
+      const user = await this.userRepo.findOne({ where: { id: userId } });
+      if (!user) throw new RpcException('User not found');
+
+      const safeAction = validator.escape(action);
+      const safeName = validator.escape(user.firstName || '');
+
+      const result = await this.emailService.sendEmail({
+        to: user.email,
+        subject: 'Security Alert: MFA Verification',
+        text: `Hello ${user.firstName || ''},\n\nA multi-factor authentication verification was performed on your account for: ${action}.\n\nIf this was not you, please change your password immediately.`,
+        html: `<h2>Security Alert</h2><p>Hello ${safeName},</p><p>A multi-factor authentication verification was performed on your account for: <strong>${safeAction}</strong>.</p><p>If this was not you, please change your password immediately.</p>`,
+      });
+
+      return { message: 'MFA verification email sent', code: 0, data: { sent: result.success } };
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e.message || e);
+    }
   }
 
   async issueToken(userId: string, profileId?: string) {
