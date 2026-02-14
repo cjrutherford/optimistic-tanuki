@@ -43,4 +43,12 @@ describe('AuthCommands', () => {
   it('should have a GetLinkedProviders command', () => {
     expect(AuthCommands.GetLinkedProviders).toBe('GetLinkedProviders');
   });
+
+  it('should have a SendMfaSetupEmail command', () => {
+    expect(AuthCommands.SendMfaSetupEmail).toBe('SendMfaSetupEmail');
+  });
+
+  it('should have a SendMfaVerificationEmail command', () => {
+    expect(AuthCommands.SendMfaVerificationEmail).toBe('SendMfaVerificationEmail');
+  });
 });

@@ -14,6 +14,9 @@ const AuthCommands = {
   LinkProvider: 'LinkProvider',
   UnlinkProvider: 'UnlinkProvider',
   GetLinkedProviders: 'GetLinkedProviders',
+  // Email commands for MFA verification
+  SendMfaSetupEmail: 'SendMfaSetupEmail',
+  SendMfaVerificationEmail: 'SendMfaVerificationEmail',
 };
 
 export default AuthCommands;

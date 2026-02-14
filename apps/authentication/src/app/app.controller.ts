@@ -312,4 +312,41 @@ export class AppController {
       throw new RpcException(e);
     }
   }
+
+  @MessagePattern({ cmd: AuthCommands.SendMfaSetupEmail })
+  async sendMfaSetupEmail(@Payload() data: { userId: string }) {
+    try {
+      if (!data.userId) {
+        throw new RpcException('userId is required');
+      }
+      return await this.appService.sendMfaSetupEmail(data.userId);
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e);
+    }
+  }
+
+  @MessagePattern({ cmd: AuthCommands.SendMfaVerificationEmail })
+  async sendMfaVerificationEmail(
+    @Payload() data: { userId: string; action: string }
+  ) {
+    try {
+      const missingFields = validateRequiredFields<{
+        userId: string;
+        action: string;
+      }>(data, ['userId', 'action']);
+      if (missingFields.length > 0) {
+        throw new RpcException(
+          `Missing required fields: ${missingFields.join(' ')}`
+        );
+      }
+      return await this.appService.sendMfaVerificationEmail(
+        data.userId,
+        data.action
+      );
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e);
+    }
+  }
 }
