@@ -40,6 +40,7 @@ import { AssetService } from '../../asset.service';
 import { CreateAssetDto, FollowDto } from '@optimistic-tanuki/ui-models';
 import { FollowService } from '../../follow.service';
 import { HttpClient } from '@angular/common/http';
+import { CommunityService } from '../../community.service';
 
 @Component({
   selector: 'app-feed',
@@ -66,6 +67,7 @@ import { HttpClient } from '@angular/common/http';
 })
 export class FeedComponent implements OnInit, OnDestroy {
   posts = signal<PostDto[]>([]);
+  loading = signal(true);
   followingIds = new Set<string>();
   themeStyles!: {
     backgroundColor: string;
@@ -115,6 +117,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   socialWebSocketService = inject(SocialWebSocketService);
   assetService = inject(AssetService);
   followService = inject(FollowService);
+  communityService = inject(CommunityService);
   private readonly http = inject(HttpClient);
   private readonly gatewayUrl = 'http://localhost:3000/social';
 
@@ -161,6 +164,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         .subscribe((posts) => {
           console.log('Received posts from WebSocket:', posts.length);
           this.posts.set(posts);
+          this.loading.set(false);
           this.loadProfiles(posts);
         });
 
@@ -176,6 +180,7 @@ export class FeedComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this.destroy$))
             .subscribe((posts) => {
               this.posts.set(posts);
+              this.loading.set(false);
               this.loadProfiles(posts);
             });
         }
@@ -186,7 +191,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
   profiles = signal<{ [key: string]: PostProfileStub }>({});
 
-  currentFeed: 'public' | 'following' = 'public';
+  currentFeed: 'public' | 'following' | 'communities' = 'public';
 
   private loadFollowing(profileId: string) {
     this.followService.getFollowing(profileId).subscribe({
@@ -493,7 +498,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   loadPublicFeed() {
     this.currentFeed = 'public';
     this.postService
-      .getPosts({ visibility: 'public' })
+      .searchPosts({ visibility: 'public', communityId: null as any })
       .subscribe((posts: PostDto[]) => {
         this.posts.set(posts);
         this.loadProfiles(posts);
@@ -513,6 +518,38 @@ export class FeedComponent implements OnInit, OnDestroy {
         this.posts.set(posts);
         this.loadProfiles(posts);
       });
+  }
+
+  loadCommunitiesFeed() {
+    this.currentFeed = 'communities';
+    this.loading.set(true);
+
+    this.communityService.getUserCommunities().subscribe({
+      next: (communities) => {
+        const communityIds = communities.map((c) => c.id);
+        if (communityIds.length === 0) {
+          this.posts.set([]);
+          this.loading.set(false);
+          return;
+        }
+
+        this.postService.getPostsByCommunityIds(communityIds).subscribe({
+          next: (posts) => {
+            this.posts.set(posts);
+            this.loadProfiles(posts);
+            this.loading.set(false);
+          },
+          error: (err) => {
+            console.error('Failed to load community posts:', err);
+            this.loading.set(false);
+          },
+        });
+      },
+      error: (err) => {
+        console.error('Failed to load user communities:', err);
+        this.loading.set(false);
+      },
+    });
   }
 
   private getFileExtensionFromDataUrl(

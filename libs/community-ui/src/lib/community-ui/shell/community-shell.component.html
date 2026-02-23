@@ -1,0 +1,44 @@
+<div class="community-shell">
+  <header class="community-header">
+    <h1>Communities</h1>
+    <p class="subtitle">Find, create, and manage your communities</p>
+  </header>
+
+  <nav class="community-nav">
+    <button
+      class="nav-tab"
+      [class.active]="activeTab() === 'find'"
+      (click)="onFindCommunities()"
+    >
+      Find Communities
+    </button>
+    <button
+      class="nav-tab"
+      [class.active]="activeTab() === 'create'"
+      (click)="onCreateCommunity()"
+    >
+      Create Community
+    </button>
+    <button
+      class="nav-tab"
+      [class.active]="activeTab() === 'manage'"
+      (click)="onManageGroups()"
+    >
+      My Groups
+    </button>
+  </nav>
+
+  <main class="community-content">
+    <router-outlet></router-outlet>
+  </main>
+
+  @if (error()) {
+  <div class="error-message">
+    {{ error() }}
+  </div>
+  } @if (loading()) {
+  <div class="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+  }
+</div>

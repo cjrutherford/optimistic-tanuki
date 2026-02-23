@@ -79,6 +79,11 @@
       "name": "wellness",
       "description": "Wellness microservice",
       "active": true
+    },
+    {
+      "name": "community",
+      "description": "Community/Groups feature",
+      "active": true
     }
   ],
   "roles": [
@@ -251,6 +256,21 @@
       "name": "d6_admin",
       "description": "Administrator for D6 wellness tracker",
       "appScope": "D6"
+    },
+    {
+      "name": "community_standard_user",
+      "description": "Standard user for community features",
+      "appScope": "community"
+    },
+    {
+      "name": "community_owner",
+      "description": "Owner of a community",
+      "appScope": "community"
+    },
+    {
+      "name": "community_manager",
+      "description": "Manager of a community",
+      "appScope": "community"
     }
   ],
   "permissions": [
@@ -1661,6 +1681,94 @@
       "action": "delete",
       "targetId": null,
       "appScope": "D6"
+    },
+    {
+      "name": "community.create",
+      "description": "Create a community",
+      "resource": "community",
+      "action": "create",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.read",
+      "description": "View communities",
+      "resource": "community",
+      "action": "read",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.update",
+      "description": "Update community",
+      "resource": "community",
+      "action": "update",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.delete",
+      "description": "Delete community",
+      "resource": "community",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.join",
+      "description": "Join community",
+      "resource": "community",
+      "action": "join",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.leave",
+      "description": "Leave community",
+      "resource": "community",
+      "action": "leave",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.member.approve",
+      "description": "Approve community member",
+      "resource": "community",
+      "action": "member.approve",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.member.reject",
+      "description": "Reject community member",
+      "resource": "community",
+      "action": "member.reject",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.member.remove",
+      "description": "Remove community member",
+      "resource": "community",
+      "action": "member.remove",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.invite",
+      "description": "Invite users to community",
+      "resource": "community",
+      "action": "invite",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.manage",
+      "description": "Manage a specific community",
+      "resource": "community",
+      "action": "manage",
+      "targetId": null,
+      "appScope": "community"
     }
   ],
   "role_permissions": [
@@ -1738,6 +1846,66 @@
       "role": "client_asset_manager",
       "permission": "asset.delete",
       "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.create",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.read",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.update",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.delete",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.invite",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.manage",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.manage",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.read",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.invite",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.member.approve",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.member.reject",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.member.remove",
+      "permissionAppScope": "community"
     },
     {
       "role": "forgeofwill_planner",
@@ -2418,7 +2586,8 @@
       "role": "forum_moderator",
       "permission": "forum.topic.create",
       "permissionAppScope": "forum"
-    },    {
+    },
+    {
       "role": "forum_moderator",
       "permission": "forum.topic.create",
       "permissionAppScope": "client-interface"
@@ -3682,6 +3851,61 @@
       "role": "d6_admin",
       "permission": "daily-six.delete",
       "permissionAppScope": "D6"
+    },
+    {
+      "role": "community_standard_user",
+      "permission": "community.read",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_standard_user",
+      "permission": "community.join",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_standard_user",
+      "permission": "community.leave",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.read",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.create",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.update",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.delete",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.member.approve",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.member.reject",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.member.remove",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.invite",
+      "permissionAppScope": "community"
     }
   ]
 }

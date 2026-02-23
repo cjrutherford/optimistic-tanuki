@@ -131,6 +131,12 @@ export class PermissionsGuard implements CanActivate {
 
     const { permissions } = requirement;
 
+    // Extract targetId from route params (e.g., community ID from :id param)
+    const targetId = request.params?.id || null;
+    if (targetId) {
+      this.logger.debug(`Extracted targetId from route params: ${targetId}`);
+    }
+
     // First, try to authorize with global scope permissions (if user has global profile)
     if (checkGlobalFirst && globalScope) {
       let allGlobalPermissionsGranted = true;
@@ -154,6 +160,7 @@ export class PermissionsGuard implements CanActivate {
                 permission,
                 profileAppScope: 'global',
                 appScopeId: globalScope.id,
+                targetId,
               }
             )
           );
@@ -211,7 +218,8 @@ export class PermissionsGuard implements CanActivate {
               permission,
               profileAppScope: appScopeName,
               appScopeId: appScope.id,
-              checkGlobalFallback: true, // Enable global fallback for app-scope checks
+              checkGlobalFallback: true,
+              targetId,
             }
           )
         );

@@ -18,6 +18,8 @@ COPY . .
 FROM base AS runner
 WORKDIR /app
 
+RUN apk add --no-cache dumb-init && npm i -g nodemon
+
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
@@ -31,4 +33,4 @@ USER nestjs
 
 EXPOSE 3006
 
-CMD ["node", "main"]
+CMD ["node", "wellness/main.js"]

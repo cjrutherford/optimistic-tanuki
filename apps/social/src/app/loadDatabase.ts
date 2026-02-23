@@ -7,10 +7,24 @@ import { Link } from '../entities/link.entity';
 import { Comment } from '../entities/comment.entity';
 import { SocialComponent } from '../entities/social-component.entity';
 import FollowEntity from '../entities/Follow.entity';
+import { Community } from '../entities/community.entity';
+import { CommunityMember, CommunityMemberRole } from '../entities/community-member.entity';
+import { CommunityInvite } from '../entities/community-invite.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
-  const entities = [Attachment, Comment, Post, Vote, Link, FollowEntity, SocialComponent];
+  const entities = [
+    Attachment,
+    Comment,
+    Post,
+    Vote,
+    Link,
+    FollowEntity,
+    SocialComponent,
+    Community,
+    CommunityMember,
+    CommunityInvite
+  ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',
     host: database.host,

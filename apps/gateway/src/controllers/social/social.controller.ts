@@ -18,6 +18,7 @@ import {
   PostCommands,
   ServiceTokens,
   VoteCommands,
+  CommunityCommands,
 } from '@optimistic-tanuki/constants';
 import { SocialGateway } from '../../app/social-gateway/social.gateway';
 import {
@@ -42,6 +43,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
+import { AppScope } from '../../decorators/appscope.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
@@ -251,6 +253,40 @@ export class SocialController {
   }
 
   @UseGuards(AuthGuard)
+  @ApiTags('feed')
+  @ApiOperation({ summary: 'Get personalized feed' })
+  @ApiResponse({
+    status: 200,
+    description: 'The feed has been successfully retrieved.',
+    type: [PostDto],
+  })
+  @Get('feed')
+  async getFeed(
+    @User() user: UserDetails,
+    @AppScope() appScope: string,
+    @Query('includePublic') includePublic?: string,
+    @Query('includeFollowing') includeFollowing?: string,
+    @Query('includeCommunities') includeCommunities?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string
+  ): Promise<PostDto[]> {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.GET_FEED },
+        {
+          userId: user.userId,
+          appScope,
+          includePublic: includePublic !== 'false',
+          includeFollowing: includeFollowing === 'true',
+          includeCommunities: includeCommunities !== 'false',
+          limit: limit ? parseInt(limit, 10) : undefined,
+          offset: offset ? parseInt(offset, 10) : undefined,
+        }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
   @ApiTags('comment')
   @ApiOperation({ summary: 'Search for comments' })
   @ApiResponse({
@@ -299,12 +335,13 @@ export class SocialController {
   @RequirePermissions('social.post.update')
   async updatePost(
     @Param('id') id: string,
+    @User() user: UserDetails,
     @Body() updatePostDto: UpdatePostDto
   ): Promise<PostDto> {
     const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.UPDATE },
-        { id, data: updatePostDto }
+        { id, data: updatePostDto, userId: user.userId }
       )
     );
 
@@ -373,9 +410,15 @@ export class SocialController {
     description: 'The post has been successfully deleted.',
   })
   @Delete('post/:id')
-  async deletePost(@Param('id') id: string): Promise<void> {
+  async deletePost(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<void> {
     const result = await firstValueFrom(
-      this.socialClient.send({ cmd: PostCommands.DELETE }, { id })
+      this.socialClient.send(
+        { cmd: PostCommands.DELETE },
+        { id, userId: user.userId }
+      )
     );
 
     // Broadcast post deleted event via WebSocket

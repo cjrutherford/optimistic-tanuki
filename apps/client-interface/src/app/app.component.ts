@@ -42,7 +42,7 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: object
-  ) {}
+  ) { }
 
   title = 'client-interface';
   isNavExpanded = signal(false);
@@ -101,9 +101,9 @@ export class AppComponent implements OnInit, OnDestroy {
           isActive: currentUrl === '/feed',
         },
         {
-          label: 'Tasks',
-          action: () => this.navigateTo('/tasks'),
-          isActive: currentUrl === '/tasks',
+          label: 'Communities',
+          action: () => this.navigateTo('/communities'),
+          isActive: currentUrl.startsWith('/communities'),
         },
         {
           label: 'Forum',
@@ -126,26 +126,6 @@ export class AppComponent implements OnInit, OnDestroy {
           label: 'Register',
           action: () => this.navigateTo('/register'),
           isActive: currentUrl === '/register',
-        },
-        {
-          label: 'Feed',
-          action: () => this.navigateTo('/feed'),
-          isActive: currentUrl === '/feed',
-        },
-        {
-          label: 'Tasks',
-          action: () => this.navigateTo('/tasks'),
-          isActive: currentUrl === '/tasks',
-        },
-        {
-          label: 'Forum',
-          action: () => this.navigateTo('/forum'),
-          isActive: currentUrl.startsWith('/forum'),
-        },
-        {
-          label: 'Settings',
-          action: () => this.navigateTo('/settings'),
-          isActive: currentUrl === '/settings',
         },
       ]);
     }

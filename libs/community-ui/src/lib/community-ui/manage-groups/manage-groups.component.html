@@ -1,0 +1,84 @@
+<div class="manage-groups">
+  <div class="header">
+    <h2>My Groups</h2>
+    <p>Communities you own or are a member of</p>
+  </div>
+
+  @if (loading()) {
+  <div class="loading">
+    <div class="spinner"></div>
+  </div>
+  } @if (error()) {
+  <div class="error-message">
+    {{ error() }}
+  </div>
+  }
+
+  <div class="groups-list">
+    @for (community of ownedCommunities(); track community.id) {
+    <otui-card class="group-card">
+      <div class="card-content">
+        <div class="group-info">
+          <div class="group-header">
+            <h3>{{ community.name }}</h3>
+            @if (community.isPrivate) {
+            <span class="private-badge">Private</span>
+            }
+          </div>
+          <p class="description">{{ community.description }}</p>
+
+          <div class="stats">
+            <span class="stat">
+              <strong>{{ community.memberCount }}</strong> members
+            </span>
+            <span class="stat">
+              <strong>{{ community.joinPolicy }}</strong>
+            </span>
+          </div>
+
+          @if (community.tags?.length) {
+          <div class="tags">
+            @for (tag of community.tags; track tag.id) {
+            <span class="tag">{{ tag.name }}</span>
+            }
+          </div>
+          }
+        </div>
+
+        <div class="card-actions">
+          <otui-button
+            variant="secondary"
+            [routerLink]="['/communities', community.id, 'posts']"
+          >
+            View Posts
+          </otui-button>
+          @if (isOwner(community)) {
+          <otui-button
+            variant="primary"
+            [routerLink]="['/communities/manage', community.id, 'members']"
+          >
+            Manage Members
+          </otui-button>
+          <otui-button variant="danger" (action)="deleteCommunity(community)">
+            Delete
+          </otui-button>
+          } @else {
+          <otui-button variant="danger" (action)="leaveCommunity(community)">
+            Leave
+          </otui-button>
+          }
+        </div>
+      </div>
+    </otui-card>
+    }
+  </div>
+
+  @if (!loading() && ownedCommunities().length === 0) {
+  <div class="empty-state">
+    <p>You don't have any communities yet.</p>
+    <otui-button variant="primary" routerLink="/communities/create">
+      Create Your First Community
+    </otui-button>
+  </div>
+  }
+</div>

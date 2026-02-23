@@ -36,6 +36,7 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
+import { CommunityController } from '../controllers/social/community/community.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { WellnessController } from '../controllers/wellness/wellness.controller'
     ProfileController,
     SocialController,
     SocialComponentController,
+    CommunityController,
     FollowController,
     AssetController,
     ProjectPlanningController,

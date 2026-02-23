@@ -12,9 +12,15 @@
     >
       Following Feed
     </otui-button>
+    <otui-button
+      [variant]="currentFeed === 'communities' ? 'primary' : 'outlined'"
+      (action)="loadCommunitiesFeed()"
+    >
+      My Communities
+    </otui-button>
   </div>
 
-  @if (posts().length === 0) {
+  @if (loading()) {
   <div class="feed-loading">
     <otui-spinner></otui-spinner>
     <p>Loading posts...</p>

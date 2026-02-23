@@ -72,6 +72,24 @@ export class RolesController {
     return await this.rolesService.unassignRole(data.assignmentId);
   }
 
+  @MessagePattern({ cmd: 'Unassign:Role:ByTarget' })
+  async unassignRoleByTarget(
+    @Payload()
+    data: {
+      profileId: string;
+      roleId: string;
+      appScopeId: string;
+      targetId: string;
+    }
+  ) {
+    return await this.rolesService.unassignRoleByTarget(
+      data.profileId,
+      data.roleId,
+      data.appScopeId,
+      data.targetId
+    );
+  }
+
   @MessagePattern({ cmd: RoleCommands.GetUserRoles })
   async getUserRoles(
     @Payload() data: { profileId: string; appScope?: string }

@@ -6,6 +6,7 @@ export interface CreatePostDto {
   content: string;
   attachments?: string[];
   profileId: string;
+  communityId?: string;
 }
 
 export interface PostDto {
@@ -15,6 +16,7 @@ export interface PostDto {
   attachments?: AttachmentDto[];
   userId: string;
   profileId: string;
+  communityId?: string;
   createdAt: Date;
   links?: { url: string }[];
   comments?: CommentDto[];
@@ -31,6 +33,9 @@ export interface SearchPostDto {
   content?: string;
   userId?: string;
   profileId?: string;
+  communityId?: string;
+  communityIds?: string[];
+  visibility?: 'public' | 'followers';
 }
 
 export interface SearchPostOptions {

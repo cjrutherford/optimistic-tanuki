@@ -15,9 +15,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   let appScope = 'client-interface';
   const url = req.url || '';
 
-  if (url.includes('/api/social')) {
-    appScope = 'social';
-  } else if (url.includes('/api/blog')) {
+  if (url.includes('/api/blog')) {
     appScope = 'blogging';
   } else if (url.includes('/api/project')) {
     appScope = 'project-planning';
@@ -34,6 +32,8 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(clonedRequest).pipe(
     catchError((error) => {
+      // Only logout on 401 (Unauthorized - token expired/invalid)
+      // Do NOT logout on 403 (Forbidden - permission denied)
       if (error.status === 401) {
         authStateService.logout();
         router.navigate(['/login']);

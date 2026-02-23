@@ -15,9 +15,24 @@ export { UpdateLinkDto } from './updatelink.dto';
 export { UpdatePostDto } from './updatepost.dto';
 export { UpdateVoteDto } from './updatevote.dto';
 export { VoteDto } from './vote.dto';
-export { 
-  SocialComponentDto, 
-  CreateSocialComponentDto, 
+export {
+  SocialComponentDto,
+  CreateSocialComponentDto,
   UpdateSocialComponentDto,
-  SocialComponentQueryDto 
+  SocialComponentQueryDto,
 } from './social-component';
+export {
+  CommunityDto,
+  CreateCommunityDto,
+  UpdateCommunityDto,
+  SearchCommunityDto,
+  CommunityMemberDto,
+  JoinCommunityDto,
+  InviteToCommunityDto,
+  CommunityInviteDto,
+  CommunityFeedOptions,
+  CommunityTag,
+  CommunityMembershipStatus,
+  CommunityMemberRole,
+  CommunityJoinPolicy,
+} from './community.dto';

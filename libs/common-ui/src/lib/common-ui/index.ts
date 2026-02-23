@@ -34,3 +34,11 @@ export { ContentSectionComponent } from './content-section/content-section.compo
 
 // Export interfaces
 export type { ListItem } from './interfaces/component.interface';
+
+// Export themeable base classes
+export {
+  Variantable,
+  type VariantOptions,
+  type VariantType,
+} from './interfaces/variantable.interface';
+export { getDefaultVariantOptions } from './interfaces/defaultVariantOptions';

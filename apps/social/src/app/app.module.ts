@@ -13,12 +13,16 @@ import { Vote } from '../entities/vote.entity';
 import { Attachment } from '../entities/attachment.entity';
 import { Link } from '../entities/link.entity';
 import { SocialComponent } from '../entities/social-component.entity';
+import { Community } from '../entities/community.entity';
+import { CommunityMember } from '../entities/community-member.entity';
+import { CommunityInvite } from '../entities/community-invite.entity';
 import { VoteService } from './services/vote.service';
 import { PostService } from './services/post.service';
 import { LinkService } from './services/link.service';
 import { CommentService } from './services/comment.service';
 import { AttachmentService } from './services/attachment.service';
 import { SocialComponentService } from './services/social-component.service';
+import { CommunityService } from './services/community.service';
 import FollowEntity from '../entities/Follow.entity';
 import FollowService from './services/follow.service';
 
@@ -42,6 +46,7 @@ import FollowService from './services/follow.service';
     AttachmentService,
     FollowService,
     SocialComponentService,
+    CommunityService,
     {
       provide: getRepositoryToken(Post),
       useFactory: (ds: DataSource) => ds.getRepository(Post),
@@ -75,6 +80,21 @@ import FollowService from './services/follow.service';
     {
       provide: getRepositoryToken(SocialComponent),
       useFactory: (ds: DataSource) => ds.getRepository(SocialComponent),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(Community),
+      useFactory: (ds: DataSource) => ds.getRepository(Community),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(CommunityMember),
+      useFactory: (ds: DataSource) => ds.getRepository(CommunityMember),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(CommunityInvite),
+      useFactory: (ds: DataSource) => ds.getRepository(CommunityInvite),
       inject: ['SOCIAL_CONNECTION'],
     },
   ],
