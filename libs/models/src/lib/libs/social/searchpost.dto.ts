@@ -107,6 +107,20 @@ export class SearchPostDto {
   @IsOptional()
   @IsString()
   visibility?: 'public' | 'followers';
+
+  @ApiPropertyOptional({
+    description: 'Community ID to filter posts',
+  })
+  @IsOptional()
+  @IsUUID()
+  communityId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Community IDs to filter posts (multiple communities)',
+  })
+  @IsOptional()
+  @IsUUID(undefined, { each: true })
+  communityIds?: string[];
 }
 
 export class SearchPostOptions {

@@ -217,14 +217,35 @@ export class ProfileController {
   @Get()
   getAllProfiles(
     @User() user: UserDetails,
-    @Param('query') query: Partial<ProfileDto>
+    @Param('query') query: Partial<ProfileDto>,
+    @AppScope() appScope: string
   ) {
     this.l.debug(`User payload: ${JSON.stringify(user)}`);
-    this.l.log(`Fetching all profiles for user: ${user.userId}`);
-    return this.client.send(
-      { cmd: ProfileCommands.GetAll },
-      { where: { userId: user.userId, ...query } }
+    const isOwnerConsole = appScope === 'owner-console';
+    this.l.log(
+      `Fetching ${isOwnerConsole ? 'all' : ''} profiles for user: ${
+        user.userId
+      } (appScope: ${appScope})`
     );
+    const where = isOwnerConsole
+      ? { ...query }
+      : { userId: user.userId, ...query };
+    return this.client.send({ cmd: ProfileCommands.GetAll }, { where });
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'The current user profile has been successfully retrieved.',
+  })
+  @ApiResponse({ status: 404, description: 'Profile not found.' })
+  @Get('me')
+  async getCurrentProfile(@User() user: UserDetails) {
+    if (!user.profileId) {
+      throw new RpcException('No profile associated with this user');
+    }
+    return this.getProfileById(user.profileId, 'social');
   }
 
   @UseGuards(AuthGuard)
@@ -234,8 +255,8 @@ export class ProfileController {
     description: 'The profile has been successfully retrieved.',
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
-  @Get(':id')
-  async getProfile(@Param('id') id: string, @AppScope() appScope: string) {
+  @Get('by-id/:id')
+  async getProfileById(@Param('id') id: string, @AppScope() appScope: string) {
     try {
       const profile: ProfileDto = await firstValueFrom(
         this.client.send({ cmd: ProfileCommands.Get }, { id })
@@ -284,6 +305,21 @@ export class ProfileController {
         `Failed to retrieve profile with ID ${id}: ${error.message || error}`
       );
     }
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get a profile by ID (legacy)' })
+  @ApiResponse({
+    status: 200,
+    description: 'The profile has been successfully retrieved.',
+  })
+  @ApiResponse({ status: 404, description: 'Profile not found.' })
+  @Get(':id')
+  async getProfileLegacy(
+    @Param('id') id: string,
+    @AppScope() appScope: string
+  ) {
+    return this.getProfileById(id, appScope);
   }
 
   @UseGuards(AuthGuard)

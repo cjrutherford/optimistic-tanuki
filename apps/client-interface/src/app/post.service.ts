@@ -76,4 +76,50 @@ export class PostService {
       throw new Error('Profile ID is required for followers visibility');
     }
   }
+
+  getFeed(options?: {
+    includePublic?: boolean;
+    includeFollowing?: boolean;
+    includeCommunities?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Observable<PostDto[]> {
+    const params = new URLSearchParams();
+    if (options?.includePublic !== undefined) {
+      params.set('includePublic', options.includePublic.toString());
+    }
+    if (options?.includeFollowing !== undefined) {
+      params.set('includeFollowing', options.includeFollowing.toString());
+    }
+    if (options?.includeCommunities !== undefined) {
+      params.set('includeCommunities', options.includeCommunities.toString());
+    }
+    if (options?.limit) {
+      params.set('limit', options.limit.toString());
+    }
+    if (options?.offset) {
+      params.set('offset', options.offset.toString());
+    }
+    const queryString = params.toString();
+    const url = queryString
+      ? `${this.baseApiUrl}/social/feed?${queryString}`
+      : `${this.baseApiUrl}/social/feed`;
+    return this.http.get<PostDto[]>(url);
+  }
+
+  getPostsByCommunityIds(communityIds: string[]): Observable<PostDto[]> {
+    if (!communityIds || communityIds.length === 0) {
+      return new Observable((subscriber) => subscriber.next([]));
+    }
+    return this.http.post<PostDto[]>(`${this.baseUrl}/find`, {
+      criteria: {
+        communityIds,
+      },
+      opts: {
+        orderBy: 'createdAt',
+        orderDirection: 'desc',
+        limit: 50,
+      },
+    });
+  }
 }

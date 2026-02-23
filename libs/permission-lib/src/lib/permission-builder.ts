@@ -59,12 +59,19 @@ export const OWNER_PERMISSION_ACTIONS = [
 const ALL_OWNER_ROLES: { [key: string]: string[] } = {
   global: ['owner', 'forum_moderator'],
   'digital-homestead': ['digital_homesteader', 'forum_moderator'],
-  'client-interface': ['client_profile_owner', 'client_asset_manager', 'forum_moderator'],
+  'client-interface': [
+    'client_profile_owner',
+    'client_asset_manager',
+    'forum_moderator',
+  ],
   forgeofwill: ['forgeofwill_planner', 'forum_moderator'],
   blogging: ['blog_author'],
   assets: ['asset_owner'],
   social: ['social_user'],
-  'christopherrutherford-net': ['christopherrutherford_owner_user', 'forum_moderator'],
+  'christopherrutherford-net': [
+    'christopherrutherford_owner_user',
+    'forum_moderator',
+  ],
   'owner-console': ['owner_console_owner', 'forum_moderator'],
   store: ['store_manager'],
 };
@@ -235,8 +242,60 @@ export class RoleInitBuilder {
         this.assignRoleToProfile('digital_follower');
         return this;
       case 'client-interface':
+        this.addPermission(
+          'community.create',
+          'community',
+          'create',
+          'Create community',
+          undefined,
+          'client-interface'
+        );
+        this.addPermission(
+          'community.read',
+          'community',
+          'read',
+          'Read community',
+          undefined,
+          'client-interface'
+        );
+        this.addPermission(
+          'community.update',
+          'community',
+          'update',
+          'Update community',
+          undefined,
+          'client-interface'
+        );
+        this.addPermission(
+          'community.delete',
+          'community',
+          'delete',
+          'Delete community',
+          undefined,
+          'client-interface'
+        );
+        this.addPermission(
+          'community.invite',
+          'community',
+          'invite',
+          'Invite to community',
+          undefined,
+          'client-interface'
+        );
+        this.addRole(
+          'community_owner',
+          'Community owner with full control over community features',
+          [
+            'community.create',
+            'community.read',
+            'community.update',
+            'community.delete',
+            'community.invite',
+          ]
+        );
         this.assignRoleToProfile('client_interface_user');
-        this.assignRoleToProfile('forum_user')
+        this.assignRoleToProfile('forum_user');
+        this.assignRoleToProfile('community_owner');
         return this;
       case 'christopherrutherford-net':
         this.assignRoleToProfile('christopherrutherford_standard_user');

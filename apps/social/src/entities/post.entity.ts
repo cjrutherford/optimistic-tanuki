@@ -66,6 +66,9 @@ export class Post {
 
   @Column({ type: 'varchar', default: 'public' })
   visibility: 'public' | 'followers';
+
+  @Column({ type: 'uuid', nullable: true })
+  communityId: string | null;
 }
 
 export function postSearchDtoToFindManyOptions(
@@ -104,6 +107,18 @@ export function postSearchDtoToFindManyOptions(
 
   if (searchDto?.visibility) {
     where.visibility = searchDto.visibility;
+  }
+
+  if (searchDto?.communityId) {
+    where.communityId = searchDto.communityId;
+  }
+
+  if (searchDto?.communityId === null) {
+    where.communityId = null;
+  }
+
+  if (searchDto?.communityIds && searchDto.communityIds.length > 0) {
+    where.communityId = In(searchDto.communityIds);
   }
 
   searchOptions.where = where;

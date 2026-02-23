@@ -53,4 +53,12 @@ export class CreatePostDto {
   @IsOptional()
   @IsString()
   appScope?: string;
+
+  @ApiProperty({
+    description: 'Community ID for community posts',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  communityId?: string;
 }

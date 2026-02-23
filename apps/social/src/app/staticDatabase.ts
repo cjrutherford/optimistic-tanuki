@@ -9,6 +9,9 @@ import { Attachment } from '../entities/attachment.entity';
 import { Link } from '../entities/link.entity';
 import FollowEntity from '../entities/Follow.entity';
 import { SocialComponent } from '../entities/social-component.entity';
+import { Community } from '../entities/community.entity';
+import { CommunityMember } from '../entities/community-member.entity';
+import { CommunityInvite } from '../entities/community-invite.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -37,6 +40,9 @@ const entities = [
   Link,
   FollowEntity,
   SocialComponent,
+  Community,
+  CommunityMember,
+  CommunityInvite,
 ];
 
 const staticSource = new DataSource({

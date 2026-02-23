@@ -1,0 +1,102 @@
+.community-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.community-header {
+  margin-bottom: 2rem;
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: var(--local-foreground);
+  }
+
+  .subtitle {
+    font-size: 1.1rem;
+    color: var(--local-complement);
+    margin: 0;
+  }
+}
+
+.community-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--local-border-color);
+  padding-bottom: 0;
+}
+
+.nav-tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--local-complement);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--local-foreground);
+  }
+
+  &.active {
+    color: var(--local-accent);
+    box-shadow: 4px 0 0 var(--local-border-gradient) inset;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--local-accent);
+    }
+  }
+}
+
+.community-content {
+  min-height: 400px;
+}
+
+.error-message {
+  padding: 1rem;
+  background: var(--local-complement);
+  color: var(--local-foreground);
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--local-background);
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--local-border-color);
+    border-top-color: var(--local-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

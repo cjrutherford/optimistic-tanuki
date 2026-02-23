@@ -480,4 +480,31 @@ export class AppService {
 
     return result;
   }
+
+  async logout(token: string) {
+    try {
+      this.l.debug(`Logging out token`);
+
+      // Find the token in the database
+      const storedToken = await this.tokenRepo.findOne({
+        where: { tokenData: token },
+      });
+
+      if (!storedToken) {
+        this.l.debug('Token not found in database, may already be invalidated');
+        return { message: 'Logged out', code: 0 };
+      }
+
+      // Revoke the token
+      storedToken.revoked = true;
+      await this.tokenRepo.save(storedToken);
+
+      this.l.debug('Token revoked successfully');
+      return { message: 'Logged out', code: 0 };
+    } catch (e) {
+      console.error('Error logging out:', e);
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e.message || e);
+    }
+  }
 }

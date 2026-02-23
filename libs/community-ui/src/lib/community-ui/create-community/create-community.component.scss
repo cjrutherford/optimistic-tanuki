@@ -1,0 +1,48 @@
+.create-community {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.card-header {
+  margin-bottom: 2rem;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--local-foreground);
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: var(--local-complement);
+    margin: 0;
+  }
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.help-text {
+  font-size: 0.85rem;
+  color: var(--local-complement);
+  margin-top: 0.5rem;
+}
+
+.error-message {
+  padding: 1rem;
+  background: var(--local-complement);
+  color: var(--local-foreground);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--local-border-color);
+}

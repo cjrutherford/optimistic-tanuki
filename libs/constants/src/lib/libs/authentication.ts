@@ -19,6 +19,8 @@ const AuthCommands = {
   SendMfaVerificationEmail: 'SendMfaVerificationEmail',
   // Returns sanitized public OAuth config for a given domain (no secrets)
   GetOAuthConfig: 'GetOAuthConfig',
+  // Invalidate a token on logout. Payload: { token }
+  Logout: 'Logout',
 };
 
 export default AuthCommands;

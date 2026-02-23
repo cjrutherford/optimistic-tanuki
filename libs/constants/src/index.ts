@@ -14,6 +14,7 @@ export {
   FollowCommands,
   SocialComponentCommands,
   SocialRealtimeCommands,
+  CommunityCommands,
 } from './lib/libs/social';
 
 export { TasksCommands, TimersCommands, NotesCommands } from './lib/libs/tasks';
@@ -75,11 +76,6 @@ export {
 } from './lib/libs/forum';
 
 export { VideoCommands } from './lib/libs/videos';
-export {
-  WellnessCommands,
-} from './lib/libs/wellness';
+export { WellnessCommands } from './lib/libs/wellness';
 
-export {
-  WellnessAiCommands,
-} from './lib/libs/ai-orchestration';
-
+export { WellnessAiCommands } from './lib/libs/ai-orchestration';

@@ -1,0 +1,53 @@
+<div class="community-posts">
+  <header class="community-header">
+    @if (community()) {
+    <h2>{{ community()?.name }}</h2>
+    <p class="description">{{ community()?.description }}</p>
+    }
+  </header>
+
+  <nav class="posts-nav">
+    <button
+      class="nav-tab"
+      [class.active]="activeTab() === 'posts'"
+      (click)="setActiveTab('posts')"
+    >
+      Posts
+    </button>
+    <button
+      class="nav-tab"
+      [class.active]="activeTab() === 'create'"
+      (click)="setActiveTab('create')"
+    >
+      Create Post
+    </button>
+  </nav>
+
+  <main class="posts-content">
+    @if (loading()) {
+    <div class="loading">Loading posts...</div>
+    } @else if (error()) {
+    <div class="error-message">{{ error() }}</div>
+    } @else { @if (activeTab() === 'create') {
+    <div class="create-post">
+      <lib-social-compose
+        [title]="'Create Post'"
+        (postSubmitted)="createdPost($event)"
+      ></lib-social-compose>
+    </div>
+    } @if (activeTab() === 'posts') {
+    <div class="posts-list">
+      @for (post of posts(); track post.id) {
+      <lib-post
+        [content]="post"
+        [profile]="profiles()[post.profileId]"
+      ></lib-post>
+      } @empty {
+      <div class="no-posts">
+        <p>No posts yet. Be the first to create one!</p>
+      </div>
+      }
+    </div>
+    } }
+  </main>
+</div>

@@ -1,0 +1,155 @@
+<div class="find-communities">
+  <div class="search-section">
+    <lib-text-input
+      [formControl]="searchControl"
+      label="Search Communities"
+      placeholder="Search by name or description..."
+    >
+    </lib-text-input>
+  </div>
+
+  <div class="view-toggle">
+    <button
+      class="toggle-btn"
+      [class.active]="displayMode() === 'all'"
+      (click)="setDisplayMode('all')"
+    >
+      All Communities
+    </button>
+    <button
+      class="toggle-btn"
+      [class.active]="displayMode() === 'top'"
+      (click)="setDisplayMode('top')"
+    >
+      Top Active
+    </button>
+  </div>
+
+  @if (loading()) {
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>Loading communities...</p>
+  </div>
+  } @if (error()) {
+  <div class="error-message">
+    {{ error() }}
+  </div>
+  }
+
+  <div class="communities-grid">
+    @if (displayMode() === 'top') { @for (community of topActiveCommunities();
+    track community.id) {
+    <otui-card class="community-card">
+      <div class="card-content">
+        <h3>{{ community.name }}</h3>
+        <p class="description">{{ community.description }}</p>
+
+        <div class="stats">
+          <span class="stat">
+            <strong>{{ community.memberCount }}</strong> members
+          </span>
+          @if (community.activityScore > 0) {
+          <span class="stat activity">
+            <strong>{{ community.activityScore }}</strong> activity score
+          </span>
+          }
+        </div>
+
+        @if (community.tags?.length) {
+        <div class="tags">
+          @for (tag of community.tags; track tag.id) {
+          <span class="tag">{{ tag.name }}</span>
+          }
+        </div>
+        }
+
+        <div class="card-actions">
+          @switch (getMembershipStatus(community.id)) { @case ('member') {
+          <otui-button
+            variant="secondary"
+            [routerLink]="['/communities', community.id, 'posts']"
+            >View Posts</otui-button
+          >
+          <otui-button
+            variant="secondary"
+            [routerLink]="['/communities/manage', community.id, 'members']"
+            >Manage</otui-button
+          >
+          } @case ('pending') {
+          <otui-button variant="secondary" [disabled]="true"
+            >Pending</otui-button
+          >
+          } @default {
+          <otui-button variant="primary" (action)="joinCommunity(community)"
+            >Join</otui-button
+          >
+          } }
+        </div>
+      </div>
+    </otui-card>
+    } } @else { @for (community of communities(); track community.id) {
+    <otui-card class="community-card">
+      <div class="card-content">
+        <div class="card-header-row">
+          <h3>{{ community.name }}</h3>
+          @if (community.isPrivate) {
+          <span class="private-badge">Private</span>
+          }
+        </div>
+        <p class="description">{{ community.description }}</p>
+
+        <div class="stats">
+          <span class="stat">
+            <strong>{{ community.memberCount }}</strong> members
+          </span>
+          <span class="stat">
+            <strong>{{ community.joinPolicy }}</strong>
+          </span>
+        </div>
+
+        @if (community.tags?.length) {
+        <div class="tags">
+          @for (tag of community.tags; track tag.id) {
+          <span class="tag">{{ tag.name }}</span>
+          }
+        </div>
+        }
+
+        <div class="card-actions">
+          @switch (getMembershipStatus(community.id)) { @case ('member') {
+          <otui-button
+            variant="secondary"
+            [routerLink]="['/communities', community.id, 'posts']"
+            >View Posts</otui-button
+          >
+          <otui-button
+            variant="secondary"
+            [routerLink]="['/communities/manage', community.id, 'members']"
+            >Manage</otui-button
+          >
+          } @case ('pending') {
+          <otui-button variant="secondary" [disabled]="true"
+            >Pending</otui-button
+          >
+          } @default {
+          <otui-button variant="primary" (action)="joinCommunity(community)"
+            >Join</otui-button
+          >
+          } }
+        </div>
+      </div>
+    </otui-card>
+    } }
+  </div>
+
+  @if (!loading() && communities().length === 0 && displayMode() === 'all') {
+  <div class="empty-state">
+    <p>No communities found. Try a different search or create one!</p>
+  </div>
+  } @if (!loading() && topActiveCommunities().length === 0 && displayMode() ===
+  'top') {
+  <div class="empty-state">
+    <p>No active communities at the moment.</p>
+  </div>
+  }
+</div>

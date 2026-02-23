@@ -75,8 +75,7 @@ export class AuthenticationController {
         )
       );
       this.logger.debug(
-        `loginUser found ${
-          profiles?.length || 0
+        `loginUser found ${profiles?.length || 0
         } profile(s) for userId=${userId}`
       );
 
@@ -246,7 +245,7 @@ export class AuthenticationController {
       }
       return result;
     } catch (error) {
-      this.logger.error('Error in registerUser:', error?.message || error);
+      this.logger.error('Error in registerUser:', error?.message || JSON.stringify(error));
       throw new HttpException(
         `Registration failed: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -368,6 +367,25 @@ export class AuthenticationController {
       );
       throw new HttpException(
         `Send MFA verification email failed: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('logout')
+  @ApiOperation({ summary: 'Logout a user and invalidate token' })
+  @ApiResponse({ status: 201, description: 'User logged out successfully.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async logoutUser(@Body() data: { token: string }) {
+    try {
+      this.logger.debug('logoutUser called');
+      return await firstValueFrom(
+        this.authClient.send({ cmd: AuthCommands.Logout }, data)
+      );
+    } catch (error) {
+      console.error('Error in logoutUser:', error);
+      throw new HttpException(
+        `Logout failed: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

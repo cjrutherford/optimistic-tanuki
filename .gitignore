@@ -66,3 +66,5 @@ storybook-static
 .agents/
 frontend-design
 .opencode
+.codex
+.kilo/

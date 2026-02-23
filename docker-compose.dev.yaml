@@ -288,7 +288,7 @@ services:
         '--exec',
         'node --inspect=0.0.0.0:9206',
         '-L',
-        'main.js',
+        'wellness/main.js',
       ]
     ports:
       - '9206:9206'

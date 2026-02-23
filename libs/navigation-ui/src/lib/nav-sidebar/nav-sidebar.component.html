@@ -6,13 +6,11 @@
 >
   <otui-card>
     <div class="nav-links">
-      <otui-button
-        *ngFor="let item of navItems; track: index"
-        [variant]="getVariant(item)"
-        (action)="onNavItemClick(item)"
-      >
+      @for (item of navItems; track item.label) {
+      <otui-button [variant]="getVariant(item)" (action)="onNavItemClick(item)">
         {{ item.label }}
       </otui-button>
+      }
     </div>
   </otui-card>
 </otui-modal>
