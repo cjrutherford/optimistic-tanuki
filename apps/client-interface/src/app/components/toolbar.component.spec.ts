@@ -2,7 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ToolbarComponent } from './toolbar.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { Subject } from 'rxjs';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('ToolbarComponent', () => {
@@ -13,13 +14,20 @@ describe('ToolbarComponent', () => {
   beforeEach(async () => {
     const themeServiceStub = {
       themeColors$: new Subject(),
-      getTheme: jest.fn(),
+      generatedTheme$: new Subject(),
+      personality$: new Subject(),
+      getTheme: jest.fn().mockReturnValue('light'),
       getAccentColor: jest.fn(),
+      getCurrentPersonality: jest
+        .fn()
+        .mockReturnValue({ id: 'default', name: 'Default' }),
     };
 
     TestBed.configureTestingModule({
-      imports: [ToolbarComponent, HttpClientTestingModule],
+      imports: [ToolbarComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: ThemeService, useValue: themeServiceStub },
         { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
       ],

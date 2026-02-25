@@ -2,32 +2,34 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class TopicDto {
   @ApiProperty({ description: 'The unique identifier of the topic' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'The title of the topic' })
-  title: string;
+  title!: string;
 
   @ApiProperty({ description: 'The description of the topic' })
-  description: string;
+  description!: string;
 
   @ApiProperty({ description: 'The ID of the user who created the topic' })
-  userId: string;
+  userId!: string;
 
-  @ApiProperty({ description: 'The ID of the profile associated with the topic' })
-  profileId: string;
+  @ApiProperty({
+    description: 'The ID of the profile associated with the topic',
+  })
+  profileId!: string;
 
   @ApiProperty({ description: 'The date the topic was created' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({ description: 'The date the topic was last updated' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @ApiProperty({ description: 'Visibility of the topic' })
-  visibility: 'public' | 'private';
+  visibility!: 'public' | 'private';
 
   @ApiProperty({ description: 'Whether the topic is pinned' })
-  isPinned: boolean;
+  isPinned!: boolean;
 
   @ApiProperty({ description: 'Whether the topic is locked' })
-  isLocked: boolean;
+  isLocked!: boolean;
 }

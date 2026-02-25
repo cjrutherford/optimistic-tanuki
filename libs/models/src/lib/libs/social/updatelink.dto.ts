@@ -8,5 +8,5 @@ export class UpdateLinkDto {
   })
   @IsUrl({}, { message: 'Must be a valid URL' })
   @MaxLength(2048)
-  url: string;
+  url!: string;
 }

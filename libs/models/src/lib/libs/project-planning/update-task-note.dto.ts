@@ -6,7 +6,7 @@ import { IsUUID, IsOptional, IsBoolean, IsDateString } from 'class-validator';
 export class UpdateTaskNoteDto extends PartialType(CreateTaskNoteDto) {
   @ApiProperty({ description: 'Note ID' })
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional({ description: 'User who last updated the note' })
   @IsOptional()
@@ -18,12 +18,12 @@ export class QueryTaskNoteDto extends PartialType(CreateTaskNoteDto) {
   @ApiPropertyOptional({ description: 'Filter by task ID' })
   @IsOptional()
   @IsUUID()
-  taskId?: string;
+  override taskId?: string;
 
   @ApiPropertyOptional({ description: 'Filter by profile ID' })
   @IsOptional()
   @IsUUID()
-  profileId?: string;
+  override profileId?: string;
 
   @ApiPropertyOptional({ description: 'Updated by user ID' })
   @IsOptional()

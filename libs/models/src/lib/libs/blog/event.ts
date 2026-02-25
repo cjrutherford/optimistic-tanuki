@@ -13,31 +13,31 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class EventDto {
   @ApiProperty({ description: 'Event ID' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'Event name' })
-  name: string;
+  name!: string;
 
   @ApiProperty({ description: 'Event description' })
-  description: string;
+  description!: string;
 
   @ApiProperty({ description: 'Event location' })
-  location: string;
+  location!: string;
 
   @ApiProperty({ description: 'Event start time' })
-  startTime: Date;
+  startTime!: Date;
 
   @ApiProperty({ description: 'Event end time' })
-  endTime: Date;
+  endTime!: Date;
 
   @ApiProperty({ description: 'Organizer ID' })
-  organizerId: string;
+  organizerId!: string;
 
   @ApiProperty({ description: 'Created timestamp' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({ description: 'Updated timestamp' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export class CreateEventDto {
@@ -45,7 +45,7 @@ export class CreateEventDto {
   @IsString()
   @MinLength(3)
   @MaxLength(200)
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'Event description',
@@ -54,13 +54,13 @@ export class CreateEventDto {
   @IsString()
   @MinLength(10)
   @MaxLength(5000)
-  description: string;
+  description!: string;
 
   @ApiProperty({ description: 'Event location', example: 'San Francisco, CA' })
   @IsString()
   @MinLength(3)
   @MaxLength(500)
-  location: string;
+  location!: string;
 
   @ApiProperty({
     description: 'Event start time',
@@ -68,7 +68,7 @@ export class CreateEventDto {
   })
   @IsDate()
   @Type(() => Date)
-  startTime: Date;
+  startTime!: Date;
 
   @ApiProperty({
     description: 'Event end time',
@@ -76,12 +76,12 @@ export class CreateEventDto {
   })
   @IsDate()
   @Type(() => Date)
-  endTime: Date;
+  endTime!: Date;
 
   @ApiProperty({ description: 'Organizer ID' })
   @IsString()
   @IsUUID()
-  organizerId: string;
+  organizerId!: string;
 }
 
 export class UpdateEventDto {

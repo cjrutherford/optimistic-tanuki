@@ -12,25 +12,25 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ContactDto {
   @ApiProperty({ description: 'Contact ID' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'Contact name' })
-  name: string;
+  name!: string;
 
   @ApiProperty({ description: 'Contact message' })
-  message: string;
+  message!: string;
 
   @ApiProperty({ description: 'Contact email' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ description: 'Contact phone', required: false })
   phone?: string;
 
   @ApiProperty({ description: 'Created timestamp' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({ description: 'Updated timestamp' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export class CreateContactDto {
@@ -38,7 +38,7 @@ export class CreateContactDto {
   @IsString()
   @MinLength(2)
   @MaxLength(100)
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'Contact message',
@@ -47,12 +47,12 @@ export class CreateContactDto {
   @IsString()
   @MinLength(10)
   @MaxLength(5000)
-  message: string;
+  message!: string;
 
   @ApiProperty({ description: 'Contact email', example: 'john@example.com' })
   @IsEmail()
   @MaxLength(255)
-  email: string;
+  email!: string;
 
   @ApiProperty({
     description: 'Contact phone',
@@ -62,7 +62,7 @@ export class CreateContactDto {
   @IsOptional()
   @IsString()
   @MaxLength(20)
-  phone: string;
+  phone!: string;
 }
 
 export class UpdateContactDto {

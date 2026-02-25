@@ -33,69 +33,69 @@ export enum CommunityJoinPolicy {
 export class CommunityTag {
   @ApiProperty()
   @IsString()
-  id: string;
+  id!: string;
 
   @ApiProperty()
   @IsString()
-  name: string;
+  name!: string;
 }
 
 export class CommunityDto {
   @ApiProperty()
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiProperty()
   @IsString()
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @ApiProperty()
   @IsString()
   @MaxLength(2000)
-  description: string;
+  description!: string;
 
   @ApiProperty()
   @IsString()
-  ownerId: string;
+  ownerId!: string;
 
   @ApiProperty()
   @IsString()
-  ownerProfileId: string;
+  ownerProfileId!: string;
 
   @ApiProperty()
   @IsString()
-  appScope: string;
+  appScope!: string;
 
   @ApiProperty()
   @IsBoolean()
-  isPrivate: boolean;
+  isPrivate!: boolean;
 
   @ApiProperty({ enum: CommunityJoinPolicy })
   @IsEnum(CommunityJoinPolicy)
-  joinPolicy: CommunityJoinPolicy;
+  joinPolicy!: CommunityJoinPolicy;
 
   @ApiProperty({ type: [CommunityTag] })
   @IsArray()
-  tags: CommunityTag[];
+  tags!: CommunityTag[];
 
   @ApiProperty()
-  memberCount: number;
-
-  @ApiProperty()
-  @IsDateString()
-  createdAt: Date;
+  memberCount!: number;
 
   @ApiProperty()
   @IsDateString()
-  updatedAt: Date;
+  createdAt!: Date;
+
+  @ApiProperty()
+  @IsDateString()
+  updatedAt!: Date;
 }
 
 export class CreateCommunityDto {
   @ApiProperty()
   @IsString()
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -207,37 +207,37 @@ export class SearchCommunityDto {
 export class CommunityMemberDto {
   @ApiProperty()
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiProperty()
   @IsUUID()
-  communityId: string;
+  communityId!: string;
 
   @ApiProperty()
   @IsString()
-  userId: string;
+  userId!: string;
 
   @ApiProperty()
   @IsString()
-  profileId: string;
+  profileId!: string;
 
   @ApiProperty({ enum: CommunityMemberRole })
   @IsEnum(CommunityMemberRole)
-  role: CommunityMemberRole;
+  role!: CommunityMemberRole;
 
   @ApiProperty({ enum: CommunityMembershipStatus })
   @IsEnum(CommunityMembershipStatus)
-  status: CommunityMembershipStatus;
+  status!: CommunityMembershipStatus;
 
   @ApiProperty()
   @IsDateString()
-  joinedAt: Date;
+  joinedAt!: Date;
 }
 
 export class JoinCommunityDto {
   @ApiProperty()
   @IsUUID()
-  communityId: string;
+  communityId!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -253,37 +253,37 @@ export class JoinCommunityDto {
 export class InviteToCommunityDto {
   @ApiProperty()
   @IsUUID()
-  communityId: string;
+  communityId!: string;
 
   @ApiProperty()
   @IsString()
-  inviteeUserId: string;
+  inviteeUserId!: string;
 }
 
 export class CommunityInviteDto {
   @ApiProperty()
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiProperty()
   @IsUUID()
-  communityId: string;
+  communityId!: string;
 
   @ApiProperty()
   @IsString()
-  inviterId: string;
+  inviterId!: string;
 
   @ApiProperty()
   @IsString()
-  inviteeId: string;
+  inviteeId!: string;
 
   @ApiProperty({ enum: CommunityMembershipStatus })
   @IsEnum(CommunityMembershipStatus)
-  status: CommunityMembershipStatus;
+  status!: CommunityMembershipStatus;
 
   @ApiProperty()
   @IsDateString()
-  createdAt: Date;
+  createdAt!: Date;
 }
 
 export class CommunityFeedOptions {

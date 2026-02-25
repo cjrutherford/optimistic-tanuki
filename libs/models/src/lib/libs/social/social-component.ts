@@ -12,56 +12,56 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class SocialComponentDto {
   @ApiProperty({ description: 'Component ID' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'Social Post ID' })
-  postId: string;
+  postId!: string;
 
   @ApiProperty({ description: 'Instance ID of the component' })
-  instanceId: string;
+  instanceId!: string;
 
   @ApiProperty({ description: 'Type of component' })
-  componentType: string;
+  componentType!: string;
 
   @ApiProperty({ description: 'Component configuration data' })
-  componentData: Record<string, any>;
+  componentData!: Record<string, any>;
 
   @ApiProperty({ description: 'Position of component in post' })
-  position: number;
+  position!: number;
 
   @ApiProperty({ description: 'Created timestamp' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({ description: 'Updated timestamp' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export class CreateSocialComponentDto {
   @ApiProperty({ description: 'Social Post ID' })
   @IsString()
   @IsUUID()
-  postId: string;
+  postId!: string;
 
   @ApiProperty({ description: 'Instance ID of the component' })
   @IsString()
   @MinLength(1)
   @MaxLength(255)
-  instanceId: string;
+  instanceId!: string;
 
   @ApiProperty({ description: 'Type of component' })
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  componentType: string;
+  componentType!: string;
 
   @ApiProperty({ description: 'Component configuration data' })
   @IsObject()
-  componentData: Record<string, any>;
+  componentData!: Record<string, any>;
 
   @ApiProperty({ description: 'Position of component in post' })
   @IsNumber()
   @Min(0)
-  position: number;
+  position!: number;
 }
 
 export class UpdateSocialComponentDto {
@@ -70,7 +70,10 @@ export class UpdateSocialComponentDto {
   @IsObject()
   componentData?: Record<string, any>;
 
-  @ApiProperty({ description: 'Position of component in post', required: false })
+  @ApiProperty({
+    description: 'Position of component in post',
+    required: false,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)

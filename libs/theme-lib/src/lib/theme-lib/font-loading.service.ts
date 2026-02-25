@@ -8,7 +8,7 @@ import {
   Personality,
   PersonalityFonts,
   FontConfig,
-} from './personality.interface';
+} from '@optimistic-tanuki/theme-models';
 
 /**
  * Font loading status

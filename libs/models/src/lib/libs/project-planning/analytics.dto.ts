@@ -3,50 +3,50 @@ import { IsUUID, IsOptional, IsArray, IsDateString } from 'class-validator';
 
 export class TaskAnalyticsDto {
   @ApiProperty({ description: 'Task ID' })
-  taskId: string;
+  taskId!: string;
 
   @ApiProperty({ description: 'Task title' })
-  taskTitle: string;
+  taskTitle!: string;
 
   @ApiProperty({ description: 'Total time spent in seconds' })
-  totalTimeSeconds: number;
+  totalTimeSeconds!: number;
 
   @ApiProperty({ description: 'Number of time entries' })
-  entryCount: number;
+  entryCount!: number;
 
   @ApiProperty({ description: 'Tags associated with the task' })
-  tags: string[];
+  tags!: string[];
 }
 
 export class ProjectAnalyticsDto {
   @ApiProperty({ description: 'Project ID' })
-  projectId: string;
+  projectId!: string;
 
   @ApiProperty({ description: 'Project name' })
-  projectName: string;
+  projectName!: string;
 
   @ApiProperty({ description: 'Total time spent in seconds' })
-  totalTimeSeconds: number;
+  totalTimeSeconds!: number;
 
   @ApiProperty({ description: 'Number of tasks' })
-  taskCount: number;
+  taskCount!: number;
 
   @ApiProperty({ description: 'Task breakdown by time' })
-  tasks: TaskAnalyticsDto[];
+  tasks!: TaskAnalyticsDto[];
 }
 
 export class TagAnalyticsDto {
   @ApiProperty({ description: 'Tag ID' })
-  tagId: string;
+  tagId!: string;
 
   @ApiProperty({ description: 'Tag name' })
-  tagName: string;
+  tagName!: string;
 
   @ApiProperty({ description: 'Total time spent in seconds' })
-  totalTimeSeconds: number;
+  totalTimeSeconds!: number;
 
   @ApiProperty({ description: 'Number of tasks with this tag' })
-  taskCount: number;
+  taskCount!: number;
 }
 
 export class QueryAnalyticsDto {

@@ -1,14 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsString, IsUUID, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsBoolean,
+  IsString,
+  IsUUID,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 
 export class CreateTopicDto {
   @IsString()
   @ApiProperty({ description: 'The title of the topic' })
-  title: string;
+  title!: string;
 
   @IsString()
   @ApiProperty({ description: 'The description of the topic' })
-  description: string;
+  description!: string;
 
   @IsUUID()
   @ApiProperty({ description: 'The ID of the user creating the topic' })
@@ -16,7 +22,7 @@ export class CreateTopicDto {
 
   @IsUUID()
   @ApiProperty({ description: 'The ID of the profile creating the topic' })
-  profileId: string;
+  profileId!: string;
 
   @IsString()
   @IsEnum(['public', 'private'])

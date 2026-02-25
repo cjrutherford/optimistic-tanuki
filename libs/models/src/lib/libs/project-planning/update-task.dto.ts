@@ -13,7 +13,7 @@ import {
 export class UpdateTaskDto extends PartialType(CreateTaskDto) {
   @ApiProperty({ description: 'The unique identifier of the task' })
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional({ description: 'User assigned to the task' })
   @IsOptional()
@@ -39,7 +39,7 @@ export class UpdateTaskDto extends PartialType(CreateTaskDto) {
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
-  tagIds?: string[];
+  override tagIds?: string[];
 }
 
 export class QueryTaskDto extends PartialType(CreateTaskDto) {
@@ -74,5 +74,5 @@ export class QueryTaskDto extends PartialType(CreateTaskDto) {
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
-  tagIds?: string[];
+  override tagIds?: string[];
 }

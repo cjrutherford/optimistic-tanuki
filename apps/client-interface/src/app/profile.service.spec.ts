@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ProfileService } from './profile.service';
 import { AuthStateService } from './state/auth-state.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
@@ -10,12 +11,17 @@ describe('ProfileService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
+      imports: [],
       providers: [
         ProfileService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: AuthStateService,
-          useValue: { getDecodedTokenValue: jest.fn() },
+          useValue: {
+            getDecodedTokenValue: jest.fn(),
+            getPersistedSelectedProfile: jest.fn().mockReturnValue(null),
+          },
         },
         { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
       ],

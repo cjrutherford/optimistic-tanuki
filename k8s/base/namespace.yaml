@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: optimistic-tanuki
+  labels:
+    app.kubernetes.io/name: optimistic-tanuki
+    app.kubernetes.io/part-of: optimistic-tanuki

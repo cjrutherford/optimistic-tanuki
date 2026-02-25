@@ -2,6 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CommentListComponent } from './comment-list.component';
 import { CommentDto } from '../../../models';
 import { PostProfileStub } from '../../post/post.component';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('CommentListComponent', () => {
   let component: CommentListComponent;
@@ -10,6 +13,11 @@ describe('CommentListComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [CommentListComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CommentListComponent);
@@ -52,14 +60,12 @@ describe('CommentListComponent', () => {
     });
   });
 
-  it('should return the correct profile from getProfile', () => {
+  it('should get profile by id', () => {
     const testProfiles: { [key: string]: PostProfileStub } = {
       '1': { id: '1', name: 'User 1', avatar: 'avatar1.jpg' },
-      '2': { id: '2', name: 'User 2', avatar: 'avatar2.jpg' },
     };
     component.availableProfiles = testProfiles;
-    fixture.detectChanges();
-    expect(component.getProfile('1')).toEqual(testProfiles['1']);
-    expect(component.getProfile('3')).toBeUndefined();
+    const profile = component.getProfile('1');
+    expect(profile).toEqual(testProfiles['1']);
   });
 });

@@ -14,7 +14,7 @@ export class CreateDonationDto {
   userId?: string;
   @ApiProperty({ description: 'Amount of the dontation' })
   @IsNumber()
-  amount: number;
+  amount!: number;
   @ApiProperty({ description: 'Currency of the donation', required: false })
   @IsOptional()
   @IsString()

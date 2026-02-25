@@ -14,7 +14,7 @@ export class CreateProjectJournalDto {
   })
   @IsString()
   @IsUUID()
-  profileId: string;
+  profileId!: string;
 
   @ApiProperty({
     type: String,
@@ -22,13 +22,13 @@ export class CreateProjectJournalDto {
   })
   @IsString()
   @IsUUID()
-  projectId: string;
+  projectId!: string;
 
   @ApiProperty({ type: String, description: 'Content of the journal entry' })
   @IsString()
   @MinLength(10)
   @MaxLength(10000)
-  content: string;
+  content!: string;
 
   @ApiProperty({
     type: String,

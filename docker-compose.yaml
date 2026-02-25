@@ -250,6 +250,8 @@ services:
       dockerfile: ./apps/assets/Dockerfile
     ports:
       - '3005:3005'
+    volumes:
+      - assets_storage:/usr/src/app/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -446,3 +448,4 @@ services:
 
 volumes:
   postgres_data:
+  assets_storage:

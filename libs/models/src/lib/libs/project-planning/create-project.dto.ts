@@ -23,12 +23,12 @@ export class CreateProjectDto {
   @ApiProperty({ type: String, description: 'Owner ID of the project' })
   @IsString()
   @IsUUID()
-  owner: string;
+  owner!: string;
 
   @ApiProperty({ type: String, description: 'Creator ID of the project' })
   @IsString()
   @IsUUID()
-  createdBy: string;
+  createdBy!: string;
 
   @ApiProperty({
     type: [String],
@@ -37,7 +37,7 @@ export class CreateProjectDto {
   })
   @IsArray()
   @IsUUID('4', { each: true })
-  members: string[];
+  members!: string[];
 
   @ApiProperty({
     type: String,
@@ -47,7 +47,7 @@ export class CreateProjectDto {
   @IsString()
   @MinLength(3)
   @MaxLength(200)
-  name: string;
+  name!: string;
 
   @ApiProperty({
     type: String,
@@ -57,7 +57,7 @@ export class CreateProjectDto {
   @IsString()
   @MinLength(10)
   @MaxLength(5000)
-  description: string;
+  description!: string;
 
   @ApiProperty({
     type: Date,
@@ -66,7 +66,7 @@ export class CreateProjectDto {
   })
   @IsDate()
   @Type(() => Date)
-  startDate: Date;
+  startDate!: Date;
 
   @ApiProperty({
     type: Date,
@@ -87,7 +87,7 @@ export class CreateProjectDto {
   })
   @IsString()
   @MaxLength(50)
-  status: string;
+  status!: string;
 
   @ApiProperty({
     description: 'App scope for the project',

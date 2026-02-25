@@ -4,7 +4,7 @@
  */
 
 import { hexToRgb } from './color-utils';
-import { ColorHarmonyType } from './personality.interface';
+import { ColorHarmonyType } from '@optimistic-tanuki/theme-models';
 
 /**
  * RGB color representation
@@ -490,9 +490,9 @@ export function generateThemeResponsiveColors(
       mode === 'light'
         ? params.neutralSaturation
         : Math.min(
-            100,
-            params.neutralSaturation + params.darkModeSaturationBoost
-          ),
+          100,
+          params.neutralSaturation + params.darkModeSaturationBoost
+        ),
     l: baseLuminosity,
   };
   const background = rgbToHex(hslToRgb(backgroundHsl));
