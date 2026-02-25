@@ -10,4 +10,7 @@ resources:
   - seaweedfs.yaml
   - gateway.yaml
   - assets.yaml
+  - services/
+  - clients/
+  - ingress.yaml
   - ../secrets/secrets.yaml
