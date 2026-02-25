@@ -567,6 +567,22 @@ export class AppController {
     return { success: true };
   }
 
+  @MessagePattern({ cmd: 'GET_COMMUNITY_CHAT_ROOM' })
+  async getCommunityChatRoom(@Payload() data: { communityId: string }) {
+    return await this.communityService.getCommunityChatRoom(data.communityId);
+  }
+
+  @MessagePattern({ cmd: 'SET_COMMUNITY_CHAT_ROOM' })
+  async setCommunityChatRoom(
+    @Payload() data: { communityId: string; chatRoomId: string }
+  ) {
+    await this.communityService.setCommunityChatRoom(
+      data.communityId,
+      data.chatRoomId
+    );
+    return { success: true };
+  }
+
   @MessagePattern({ cmd: CommunityCommands.GET_FEED })
   async getCommunityFeed(
     @Payload()

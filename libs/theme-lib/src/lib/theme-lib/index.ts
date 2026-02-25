@@ -31,14 +31,6 @@ export {
   type ThemeColors,
   type PaletteAnalysis,
   type PaletteMigrationResult,
-  // Personalities
-  PREDEFINED_PERSONALITIES,
-  getPersonalityById,
-  getDefaultPersonality,
-  getPersonalityIds,
-  getPersonalitiesByCategory,
-  isValidPersonalityId,
-  getPersonalityPreviewColors,
   // Color utilities
   hexToRgb,
   generateColorShades,
@@ -100,4 +92,12 @@ export * from './color-harmony';
 export * from './contrast-utils';
 export * from './palette-migration';
 export * from './personality-gradients';
-export * from './personalities';
+export {
+  PREDEFINED_PERSONALITIES,
+  getPersonalityById,
+  getDefaultPersonality,
+  getPersonalityIds,
+  getPersonalitiesByCategory,
+  isValidPersonalityId,
+  getPersonalityPreviewColors,
+} from './personalities';

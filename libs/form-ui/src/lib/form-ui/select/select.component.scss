@@ -1,22 +1,67 @@
 @use '../../styles/mixins' as *;
 
-// Form field container
+// ============================================
+// Personality-Driven Select Component
+// Adapts to application personality via CSS custom properties
+// ============================================
+
 .form-field {
-  @include form-field;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
 }
 
-// Select control - uses background-color not background to preserve arrow
 .form-control-select {
-  @include form-control-base;
-  @include form-select-arrow;
+  width: 100%;
+  padding: 12px 44px 12px 20px;
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.9375rem;
+  color: var(--foreground);
+  background: var(--surface, var(--background));
+  background-color: transparent;
+  border: var(--border-width, 0.5px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border-radius: var(--border-radius-md, 8px);
+  outline: none;
+  cursor: pointer;
+  transition: all var(--animation-duration-normal, 250ms) var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+  box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03));
+  appearance: none;
+  // Note: SVG stroke color in data URI cannot use CSS custom properties.
+  // The personality system will override this at runtime via JavaScript if needed.
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 18px;
 
-  // FIX: Use background-color instead of background shorthand
-  // This preserves the background-image arrow
-  background-color: var(--background, #ffffff);
+  @include reduced-motion {
+    transition: none;
+  }
 
-  // Firefox specific styles
+  &:focus {
+    border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+    box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03)),
+      var(--shadow-lg, 0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent));
+    background-color: var(--background);
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--primary) 50%, transparent);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--surface);
+    box-shadow: none;
+  }
+
+  // Firefox specific
   &:-moz-focusring {
     color: transparent;
+    text-shadow: 0 0 0 #000;
   }
 
   // IE/Edge specific
@@ -26,75 +71,133 @@
 
   // Option styling
   option {
-    background-color: var(--background, #ffffff);
-    color: var(--foreground, #212529);
-    font-family: var(
-      --font-body,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      sans-serif
-    );
-    font-size: var(--font-size-base, 1rem);
-    padding: var(--spacing-sm, 8px);
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body, system-ui, sans-serif);
+    font-size: 0.9375rem;
+    padding: 10px 16px;
+    border-radius: 8px;
   }
 
   // Error state
   &.has-error {
-    @include form-control-error;
+    border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+    background: color-mix(in srgb, var(--danger) 6%, var(--background));
+    box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03)),
+      0 4px 16px color-mix(in srgb, var(--danger) 10%, transparent);
+
+    &:focus {
+      box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03)),
+        0 8px 24px color-mix(in srgb, var(--danger) 15%, transparent);
+    }
+  }
+
+  // Size variants
+  &.small {
+    padding: 8px 36px 8px 16px;
+    font-size: 0.8125rem;
+    background-position: right 12px center;
+    background-size: 16px;
+  }
+
+  &.large {
+    padding: 16px 52px 16px 24px;
+    font-size: 1.0625rem;
+    background-position: right 18px center;
+    background-size: 20px;
   }
 }
 
-// Error message
 .error-message {
-  @include form-error-message;
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.75rem;
+  color: var(--danger, #dc2626);
+  margin-top: 4px;
+  padding-left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: var(--danger, #dc2626);
+    border-radius: 50%;
+  }
 }
 
-// Select control - uses background-color not background to preserve arrow
-.form-control-select {
-  @include form-control-base;
-  @include form-select-arrow;
+// Select with custom dropdown
+.select-wrapper {
+  position: relative;
 
-  // FIX: Use background-color instead of background shorthand
-  // This preserves the background-image arrow
-  background-color: var(--background, #ffffff);
-
-  // Firefox specific styles
-  &:-moz-focusring {
-    color: transparent;
+  .form-control-select {
+    cursor: pointer;
   }
 
-  // IE/Edge specific
-  &::-ms-expand {
-    display: none;
-  }
+  .select-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: var(--background);
+    border: var(--border-width, 0.5px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+    border-radius: var(--border-radius-md, 16px);
+    box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.1));
+    overflow: hidden;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all 200ms var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
 
-  // Option styling
+    &.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .select-option {
+      padding: 12px 20px;
+      font-family: var(--font-body, system-ui, sans-serif);
+      font-size: 0.9375rem;
+      color: var(--foreground);
+      cursor: pointer;
+      transition: background var(--animation-duration-fast, 150ms) ease;
+
+      &:hover {
+        background: color-mix(in srgb, var(--primary) 8%, transparent);
+      }
+
+      &.selected {
+        background: color-mix(in srgb, var(--primary) 12%, transparent);
+        color: var(--primary);
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// Multiple select
+.form-control-select[multiple] {
+  padding-right: 20px;
+  background-image: none;
+  border-radius: var(--border-radius-md, 16px);
+  overflow-y: auto;
+  max-height: 200px;
+
   option {
-    background-color: var(--background, #ffffff);
-    color: var(--foreground, #212529);
-    font-family: var(
-      --font-body,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      sans-serif
-    );
-    font-size: var(--font-size-base, 1rem);
-    padding: var(--spacing-sm, 8px);
-  }
+    padding: 10px 16px;
+    border-radius: var(--border-radius-md, 8px);
+    margin: 2px 4px;
 
-  // Error state
-  &.has-error {
-    @include form-control-error;
+    &:checked {
+      background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--primary) 15%, transparent),
+        color-mix(in srgb, var(--secondary) 15%, transparent)
+      );
+      color: var(--primary);
+    }
   }
-}
-
-// Error message
-.error-message {
-  @include form-error-message;
 }

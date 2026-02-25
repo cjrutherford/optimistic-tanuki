@@ -7,7 +7,7 @@
 .messenger-sidebar {
   width: 300px;
   background: var(--background);
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -15,8 +15,8 @@
 
 .messenger-header {
   padding: 16px 20px;
-  background: var(--border-gradient);
-  border-bottom: 1px solid var(--border-color);
+  background: var(--border-gradient, linear-gradient(135deg, color-mix(in srgb, var(--primary) 10%, var(--background)), var(--background)));
+  border-bottom: 1px solid var(--border);
   h3 {
     margin: 0;
     font-size: 1.1rem;
@@ -39,11 +39,11 @@
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: var(--complement-transparent);
+    background-color: color-mix(in srgb, var(--complement) 10%, transparent);
   }
 
   &:active {
-    background-color: var(--accent-transparent);
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
   }
 }
 

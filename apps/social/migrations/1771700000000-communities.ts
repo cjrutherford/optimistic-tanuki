@@ -1,11 +1,11 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class Communities1780000000000 implements MigrationInterface {
-  name = 'Communities1780000000000';
+export class Communities1771700000000 implements MigrationInterface {
+    name = 'Communities1771700000000';
 
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    // Create community table
-    await queryRunner.query(`
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        // Create community table
+        await queryRunner.query(`
             CREATE TABLE "community" (
                 "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
                 "name" character varying NOT NULL UNIQUE,
@@ -22,8 +22,8 @@ export class Communities1780000000000 implements MigrationInterface {
             )
         `);
 
-    // Create community_member table
-    await queryRunner.query(`
+        // Create community_member table
+        await queryRunner.query(`
             CREATE TABLE "community_member" (
                 "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
                 "communityId" uuid NOT NULL REFERENCES "community"("id") ON DELETE CASCADE,
@@ -36,8 +36,8 @@ export class Communities1780000000000 implements MigrationInterface {
             )
         `);
 
-    // Create community_invite table
-    await queryRunner.query(`
+        // Create community_invite table
+        await queryRunner.query(`
             CREATE TABLE "community_invite" (
                 "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
                 "communityId" uuid NOT NULL,
@@ -49,40 +49,40 @@ export class Communities1780000000000 implements MigrationInterface {
             )
         `);
 
-    // Add foreign key for community_invite.communityId
-    await queryRunner.query(`
+        // Add foreign key for community_invite.communityId
+        await queryRunner.query(`
             ALTER TABLE "community_invite" 
             ADD CONSTRAINT "FK_community_invite_community" 
             FOREIGN KEY ("communityId") REFERENCES "community"("id") ON DELETE CASCADE
         `);
 
-    // Add communityId to post table
-    await queryRunner.query(`
+        // Add communityId to post table
+        await queryRunner.query(`
             ALTER TABLE "post" ADD "communityId" uuid
         `);
 
-    // Add index for community posts
-    await queryRunner.query(`
+        // Add index for community posts
+        await queryRunner.query(`
             CREATE INDEX "IDX_post_communityId" ON "post" ("communityId")
         `);
 
-    // Add index for community members
-    await queryRunner.query(`
+        // Add index for community members
+        await queryRunner.query(`
             CREATE INDEX "IDX_community_member_userId" ON "community_member" ("userId")
         `);
-  }
+    }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    // Remove communityId from post
-    await queryRunner.query(`ALTER TABLE "post" DROP COLUMN "communityId"`);
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        // Remove communityId from post
+        await queryRunner.query(`ALTER TABLE "post" DROP COLUMN "communityId"`);
 
-    // Drop community_invite table
-    await queryRunner.query(`DROP TABLE "community_invite"`);
+        // Drop community_invite table
+        await queryRunner.query(`DROP TABLE "community_invite"`);
 
-    // Drop community_member table
-    await queryRunner.query(`DROP TABLE "community_member"`);
+        // Drop community_member table
+        await queryRunner.query(`DROP TABLE "community_member"`);
 
-    // Drop community table
-    await queryRunner.query(`DROP TABLE "community"`);
-  }
+        // Drop community table
+        await queryRunner.query(`DROP TABLE "community"`);
+    }
 }

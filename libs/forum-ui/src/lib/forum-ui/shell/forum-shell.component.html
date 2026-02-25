@@ -2,182 +2,174 @@
   <!-- Navigation and Header -->
   <div class="forum-header">
     @if(userHasPermission('forum.topic.create')) {
-      <otui-button (action)="showTopicModal.set(true)">Create New Topic</otui-button>
-    }
-    @if(userHasPermission('forum.thread.create')) {
-      <otui-button (action)="showThreadModal.set(true)">Create New Thread</otui-button>
+    <otui-button (action)="showTopicModal.set(true)"
+      >Create New Topic</otui-button
+    >
+    } @if(userHasPermission('forum.thread.create')) {
+    <otui-button (action)="showThreadModal.set(true)"
+      >Create New Thread</otui-button
+    >
     }
     <div class="breadcrumb">
       @if (currentThread()) {
-        <button (click)="navigateBack()" class="back-button">← Back to Topic</button>
-        <span class="separator">/</span>
-        <span class="current">{{ currentThread()!.title }}</span>
+      <button (click)="navigateBack()" class="back-button">
+        ← Back to Topic
+      </button>
+      <span class="separator">/</span>
+      <span class="current">{{ currentThread()!.title }}</span>
       } @else if (currentTopic()) {
-        <button (click)="navigateBack()" class="back-button">← Back to Forums</button>
-        <span class="separator">/</span>
-        <span class="current">{{ currentTopic()!.title }}</span>
+      <button (click)="navigateBack()" class="back-button">
+        ← Back to Forums
+      </button>
+      <span class="separator">/</span>
+      <span class="current">{{ currentTopic()!.title }}</span>
       } @else {
-        <span class="current">Forum Topics</span>
+      <span class="current">Forum Topics</span>
       }
     </div>
-    
+
     @if (isLoggedIn()) {
-      <otui-button 
-        variant="primary" 
-        (action)="toggleComposer()"
-        class="new-post-button"
-      >
-        @if (showComposer()) {
-          Cancel
-        } @else {
-          New Post
-        }
-      </otui-button>
+    <otui-button
+      variant="primary"
+      (action)="toggleComposer()"
+      class="new-post-button"
+    >
+      @if (showComposer()) { Cancel } @else { New Post }
+    </otui-button>
     }
   </div>
 
   <!-- Error Message -->
   @if (error()) {
-    <otui-card class="error-message">
-      {{ error() }}
-    </otui-card>
+  <otui-card class="error-message">
+    {{ error() }}
+  </otui-card>
   }
 
   <!-- Loading State -->
   @if (loading()) {
-    <otui-card class="loading">
-      Loading...
-    </otui-card>
+  <otui-card class="loading"> Loading... </otui-card>
   }
 
   <!-- Compose Form -->
   @if (showComposer()) {
-    <div class="composer-container">
-      <lib-compose-forum-post
-        [availableTopics]="topics()"
-        [availableThreads]="threads()"
-        [preselectedTopicId]="currentTopic()?.id"
-        [preselectedThreadId]="currentThread()?.id"
-        (postSubmitted)="onPostSubmitted($event)"
-        (topicCreated)="onTopicCreated($event)"
-        (threadCreated)="onThreadCreated($event)"
-      ></lib-compose-forum-post>
-    </div>
+  <div class="composer-container">
+    <lib-compose-forum-post
+      [availableTopics]="topics()"
+      [availableThreads]="threads()"
+      [preselectedTopicId]="currentTopic()?.id"
+      [preselectedThreadId]="currentThread()?.id"
+      (postSubmitted)="onPostSubmitted($event)"
+      (topicCreated)="onTopicCreated($event)"
+      (threadCreated)="onThreadCreated($event)"
+    ></lib-compose-forum-post>
+  </div>
+  } @if (showTopicModal()) {
+  <otui-modal [visible]="showTopicModal()" (closeModal)="onCancelTopic()">
+    <lib-create-topic
+      (create)="onCreateTopic($event)"
+      (cancelTopic)="onCancelTopic()"
+    ></lib-create-topic>
+  </otui-modal>
+  } @if (showThreadModal()) {
+  <otui-modal [visible]="showThreadModal()" (closeModal)="onCancelThread()">
+    <lib-create-thread
+      [topics]="topics()"
+      (create)="onCreateThread($event)"
+      (cancelThread)="onCancelThread()"
+    ></lib-create-thread>
+  </otui-modal>
   }
-
-  @if (showTopicModal()) {
-    <otui-modal (closeModal)="onCancelTopic()">
-      <lib-create-topic
-        (create)="onCreateTopic($event)"
-        (cancelTopic)="onCancelTopic()"
-      ></lib-create-topic>
-    </otui-modal>
-  }
-  @if (showThreadModal()) {
-    <otui-modal (closeModal)="onCancelThread()">
-      <lib-create-thread
-        [topics]="topics()"
-        (create)="onCreateThread($event)"
-        (cancelThread)="onCancelThread()"
-      ></lib-create-thread>
-    </otui-modal>
-  }
-
 
   <!-- Main Content -->
   <div class="forum-content">
-    
     <!-- Topics View (default) -->
     @if (!currentTopic() && !currentThread()) {
-      <div class="topics-grid">
-        @for (topic of topics(); track topic.id) {
-          <otui-card class="topic-card" (click)="onTopicClick(topic)">
-            <h3>{{ topic.title }}</h3>
-            <p>{{ topic.description }}</p>
-            <div class="topic-meta">
-              <span>Created: {{ topic.createdAt | date }}</span>
-              @if (topic.isPinned) {
-                <span class="badge pinned">📌 Pinned</span>
-              }
-              @if (topic.isLocked) {
-                <span class="badge locked">🔒 Locked</span>
-              }
-            </div>
-          </otui-card>
-        }
-      </div>
-      
-      @if (topics().length === 0 && !loading()) {
-        <otui-card class="empty-state">
-          <p>No topics found. Be the first to create one!</p>
-          
-        </otui-card>
+    <div class="topics-grid">
+      @for (topic of topics(); track topic.id) {
+      <otui-card class="topic-card" (click)="onTopicClick(topic)">
+        <h3>{{ topic.title }}</h3>
+        <p>{{ topic.description }}</p>
+        <div class="topic-meta">
+          <span>Created: {{ topic.createdAt | date }}</span>
+          @if (topic.isPinned) {
+          <span class="badge pinned">📌 Pinned</span>
+          } @if (topic.isLocked) {
+          <span class="badge locked">🔒 Locked</span>
+          }
+        </div>
+      </otui-card>
       }
-    }
+    </div>
+
+    @if (topics().length === 0 && !loading()) {
+    <otui-card class="empty-state">
+      <p>No topics found. Be the first to create one!</p>
+    </otui-card>
+    } }
 
     <!-- Threads View (when topic selected) -->
     @if (currentTopic() && !currentThread()) {
-      <div class="topic-detail">
-        <otui-card class="topic-header">
-          <h2>{{ currentTopic()!.title }}</h2>
-          <p>{{ currentTopic()!.description }}</p>
+    <div class="topic-detail">
+      <otui-card class="topic-header">
+        <h2>{{ currentTopic()!.title }}</h2>
+        <p>{{ currentTopic()!.description }}</p>
+      </otui-card>
+
+      <div class="threads-list">
+        @for (thread of threads(); track thread.id) {
+        <otui-card class="thread-card" (click)="onThreadClick(thread)">
+          <div class="thread-header">
+            <h4>{{ thread.title }}</h4>
+            <div class="thread-meta">
+              <span>{{ thread.viewCount }} views</span>
+              @if (thread.isPinned) {
+              <span class="badge pinned">📌</span>
+              } @if (thread.isLocked) {
+              <span class="badge locked">🔒</span>
+              }
+            </div>
+          </div>
+          <p>{{ thread.description }}</p>
+          <div class="thread-footer">
+            <span>Created: {{ thread.createdAt | date }}</span>
+          </div>
         </otui-card>
-        
-        <div class="threads-list">
-          @for (thread of threads(); track thread.id) {
-            <otui-card class="thread-card" (click)="onThreadClick(thread)">
-              <div class="thread-header">
-                <h4>{{ thread.title }}</h4>
-                <div class="thread-meta">
-                  <span>{{ thread.viewCount }} views</span>
-                  @if (thread.isPinned) {
-                    <span class="badge pinned">📌</span>
-                  }
-                  @if (thread.isLocked) {
-                    <span class="badge locked">🔒</span>
-                  }
-                </div>
-              </div>
-              <p>{{ thread.description }}</p>
-              <div class="thread-footer">
-                <span>Created: {{ thread.createdAt | date }}</span>
-              </div>
-            </otui-card>
-          }
-        </div>
-        
-        @if (threads().length === 0 && !loading()) {
-          <otui-card class="empty-state">
-            <p>No threads in this topic yet. Create the first one!</p>
-          </otui-card>
         }
       </div>
+
+      @if (threads().length === 0 && !loading()) {
+      <otui-card class="empty-state">
+        <p>No threads in this topic yet. Create the first one!</p>
+      </otui-card>
+      }
+    </div>
     }
 
     <!-- Posts View (when thread selected) -->
     @if (currentThread()) {
-      <div class="thread-detail">
-        <otui-card class="thread-header">
-          <h2>{{ currentThread()!.title }}</h2>
-          <p>{{ currentThread()!.description }}</p>
-          <div class="thread-info">
-            <span>{{ posts().length }} posts</span>
-            <span>{{ currentThread()!.viewCount }} views</span>
-          </div>
-        </otui-card>
-        
-        <div class="posts-list">
-          @for (post of posts(); track post.id) {
-            <lib-forum-post [post]="post"></lib-forum-post>
-          }
+    <div class="thread-detail">
+      <otui-card class="thread-header">
+        <h2>{{ currentThread()!.title }}</h2>
+        <p>{{ currentThread()!.description }}</p>
+        <div class="thread-info">
+          <span>{{ posts().length }} posts</span>
+          <span>{{ currentThread()!.viewCount }} views</span>
         </div>
-        
-        @if (posts().length === 0 && !loading()) {
-          <otui-card class="empty-state">
-            <p>No posts in this thread yet. Be the first to post!</p>
-          </otui-card>
+      </otui-card>
+
+      <div class="posts-list">
+        @for (post of posts(); track post.id) {
+        <lib-forum-post [post]="post"></lib-forum-post>
         }
       </div>
+
+      @if (posts().length === 0 && !loading()) {
+      <otui-card class="empty-state">
+        <p>No posts in this thread yet. Be the first to post!</p>
+      </otui-card>
+      }
+    </div>
     }
   </div>
 </div>

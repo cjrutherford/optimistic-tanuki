@@ -17,18 +17,6 @@ export function provideCommunityRoutes(
       },
       children: [
         {
-          path: ':communityId/posts',
-          resolve: {
-            userValidPermissions: permissionsResolver,
-            userLoggedIn: isLoggedInResolver,
-            currentUserId: userIdResolver,
-          },
-          loadComponent: () =>
-            import('./community-posts/community-posts.component').then(
-              (m) => m.CommunityPostsComponent
-            ),
-        },
-        {
           path: '',
           loadComponent: () =>
             import('./find-communities/find-communities.component').then(
@@ -74,6 +62,35 @@ export function provideCommunityRoutes(
           loadComponent: () =>
             import('./manage-members/manage-members.component').then(
               (m) => m.ManageMembersComponent
+            ),
+        },
+        {
+          path: ':communityId',
+          redirectTo: ':communityId/posts',
+          pathMatch: 'full',
+        },
+        {
+          path: ':communityId/posts',
+          resolve: {
+            userValidPermissions: permissionsResolver,
+            userLoggedIn: isLoggedInResolver,
+            currentUserId: userIdResolver,
+          },
+          loadComponent: () =>
+            import('./community-posts/community-posts.component').then(
+              (m) => m.CommunityPostsComponent
+            ),
+        },
+        {
+          path: ':communityId/chat',
+          resolve: {
+            userValidPermissions: permissionsResolver,
+            userLoggedIn: isLoggedInResolver,
+            currentUserId: userIdResolver,
+          },
+          loadComponent: () =>
+            import('./community-chat/community-chat.component').then(
+              (m) => m.CommunityChatComponent
             ),
         },
       ],

@@ -5,9 +5,19 @@
       <lib-profile-photo
         [src]="profile.avatar"
         [alt]="profile.name"
+        [profileId]="profile.id"
+        [enableChat]="true"
+        (startChat)="startChat.emit($event)"
       ></lib-profile-photo>
-      {{ profile.name }}
-      @if (canFollow) {
+      <span class="profile-name">{{ profile.name }}</span>
+      @if (communityInfo) {
+      <span class="community-badge">
+        @if (communityInfo.logoUrl) {
+        <img [src]="communityInfo.logoUrl" alt="" class="community-logo" />
+        }
+        <span class="community-name">{{ communityInfo.name }}</span>
+      </span>
+      } @if (canFollow) {
       <otui-button
         size="sm"
         [variant]="isFollowing ? 'warning' : 'primary'"
@@ -22,7 +32,11 @@
     <div class="subtitle">{{ content.createdAt | date }}</div>
   </div>
   <div class="content">
-    <div class="post-content" #contentContainer [innerHTML]="content.content"></div>
+    <div
+      class="post-content"
+      #contentContainer
+      [innerHTML]="content.content"
+    ></div>
     @if (attachments.length > 0) {
     <div class="post-attachment">
       <h3>Attachments</h3>
@@ -55,7 +69,7 @@
       <otui-button variant="danger" (action)="onDelete()">Delete</otui-button>
       }
       <lib-vote></lib-vote>
-      <lib-comment 
+      <lib-comment
         (commentAdded)="onCommentAdd($event)"
         [imageUploadCallback]="imageUploadCallback"
       ></lib-comment>

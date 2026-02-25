@@ -1,8 +1,19 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Conversation, Message, MessageType } from './entities';
-import { Any, ArrayContains, Repository } from 'typeorm';
+import {
+  Conversation,
+  ConversationType,
+  Message,
+  MessageType,
+} from './entities';
+import { Any, ArrayContains, Repository, IsNull } from 'typeorm';
 import { ChatMessage } from '@optimistic-tanuki/models';
 
 @Injectable()
@@ -55,6 +66,31 @@ export class AppService {
     return conversation;
   }
 
+  async postMessageHttp(data: {
+    conversationId: string;
+    content: string;
+    senderId: string;
+    recipientIds: string[];
+  }): Promise<Message> {
+    const message = this.messageRepository.create({
+      senderId: data.senderId,
+      recipients: data.recipientIds,
+      content: data.content,
+      type: MessageType.CHAT,
+    });
+    await this.messageRepository.save(message);
+
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: data.conversationId },
+    });
+    if (conversation) {
+      conversation.updatedAt = new Date();
+      await this.conversationRepository.save(conversation);
+    }
+
+    return message;
+  }
+
   async getConversations(profileId: string): Promise<Conversation[]> {
     this.l.log(`Retrieving conversations for profile ID: ${profileId}`);
     const conversations = await this.conversationRepository.find({
@@ -80,11 +116,115 @@ export class AppService {
     return updatedConversations;
   }
 
+  async getConversationsHttp(profileId: string): Promise<Conversation[]> {
+    const conversations = await this.conversationRepository.find({
+      where: {
+        participants: ArrayContains([profileId]),
+        isDeleted: false,
+      },
+      order: { updatedAt: 'DESC' },
+    });
+    return conversations;
+  }
+
   async getConversation(conversationId: string): Promise<Conversation | null> {
     this.l.log(`Retrieving conversation for ID: ${conversationId}`);
     return await this.conversationRepository.findOne({
       where: { id: conversationId },
       relations: ['messages'],
     });
+  }
+
+  async getConversationHttp(conversationId: string): Promise<Conversation> {
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: conversationId, isDeleted: false },
+    });
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+    return conversation;
+  }
+
+  async getMessages(conversationId: string): Promise<Message[]> {
+    return await this.messageRepository.find({
+      where: { conversation: { id: conversationId } },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async createDirectChat(participantIds: string[]): Promise<Conversation> {
+    const sortedIds = [...participantIds].sort();
+
+    const existing = await this.conversationRepository.findOne({
+      where: {
+        type: ConversationType.DIRECT,
+        participants: ArrayContains(sortedIds),
+        isDeleted: false,
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    const conversation = this.conversationRepository.create({
+      title: 'Direct Chat',
+      type: ConversationType.DIRECT,
+      participants: sortedIds,
+    });
+    return await this.conversationRepository.save(conversation);
+  }
+
+  async getOrCreateDirectChat(participantIds: string[]): Promise<Conversation> {
+    return await this.createDirectChat(participantIds);
+  }
+
+  async createCommunityChat(
+    communityId: string,
+    ownerId: string,
+    name?: string
+  ): Promise<Conversation> {
+    const existing = await this.conversationRepository.findOne({
+      where: {
+        type: ConversationType.COMMUNITY,
+        communityId,
+        isDeleted: false,
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    const conversation = this.conversationRepository.create({
+      title: name || 'Community Chat',
+      type: ConversationType.COMMUNITY,
+      communityId,
+      ownerId,
+      participants: [],
+    });
+    return await this.conversationRepository.save(conversation);
+  }
+
+  async deleteConversation(
+    conversationId: string,
+    userId: string
+  ): Promise<void> {
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: conversationId },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    if (conversation.ownerId && conversation.ownerId !== userId) {
+      throw new ForbiddenException(
+        'Only the owner can delete this conversation'
+      );
+    }
+
+    conversation.isDeleted = true;
+    await this.conversationRepository.save(conversation);
   }
 }

@@ -101,6 +101,14 @@ export const appRoutes: Route[] = [
     canActivate: [AuthGuard], // Protect the settings route
   },
   {
+    path: 'messages',
+    loadComponent: () =>
+      import('./components/messages.component').then(
+        (m) => m.MessagesComponent
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
     path: '**',
     redirectTo: 'feed',
   },

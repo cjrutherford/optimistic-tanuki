@@ -1,34 +1,113 @@
+:host {
+  display: block;
+}
+
 .thread-header {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
+  transition: color var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
 
   h4 {
     margin: 0;
+    font-family: var(--font-heading, sans-serif);
+    color: var(--foreground);
+  }
+
+  &:hover h4 {
+    color: var(--accent);
   }
 }
 
 .thread-content {
-  margin: 0.5rem 0;
-  color: var(--on-surface);
+  margin: var(--spacing-sm) 0;
+  color: var(--foreground);
+  font-family: var(--font-body, sans-serif);
+  line-height: 1.5;
 }
 
 .thread-meta {
   display: flex;
-  gap: 1rem;
-  font-size: 0.875rem;
-  color: var(--on-surface-variant);
-  margin: 0.5rem 0;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--muted-foreground);
+  margin: var(--spacing-sm) 0;
 }
 
 .thread-actions {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: var(--border-width, 1px) solid var(--border);
 }
 
 .pinned-badge,
 .locked-badge {
-  font-size: 1rem;
+  font-size: var(--font-size-base);
+  flex-shrink: 0;
+}
+
+// ── Personality Overrides ──
+
+// Professional
+:host-context([data-personality="elegant"]) {
+  .thread-header h4 { font-style: italic; }
+}
+
+:host-context([data-personality="minimal"]) {
+  .thread-actions { border-top: none; }
+}
+
+// Creative
+:host-context([data-personality="bold"]) {
+  .thread-header h4 {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .thread-actions {
+    border-top-width: 3px;
+    border-top-color: var(--accent);
+  }
+}
+
+:host-context([data-personality="playful"]) {
+  .thread-header:hover h4 {
+    transform: translateX(4px);
+    transition: transform var(--animation-duration-fast, 150ms) cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .pinned-badge,
+  .locked-badge {
+    font-size: var(--font-size-lg);
+  }
+}
+
+:host-context([data-personality="electric"]) {
+  .thread-header:hover h4 {
+    text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+}
+
+// Casual
+:host-context([data-personality="soft"]),
+:host-context([data-personality="soft-touch"]) {
+  .thread-actions { border-top: none; }
+  .thread-header h4 { font-weight: 500; }
+}
+
+// Technical
+:host-context([data-personality="architect"]),
+:host-context([data-personality="control-center"]),
+:host-context([data-personality="foundation"]) {
+  .thread-meta {
+    font-family: var(--font-mono, monospace);
+    text-transform: uppercase;
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.04em;
+  }
+  .thread-header h4 {
+    font-family: var(--font-mono, monospace);
+  }
 }

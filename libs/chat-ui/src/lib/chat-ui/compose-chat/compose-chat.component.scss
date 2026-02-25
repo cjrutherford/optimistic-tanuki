@@ -2,13 +2,14 @@
   display: flex;
   flex-direction: column;
   background: var(--background);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius, 12px);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-lg, 12px);
   overflow: hidden;
-  transition: border-color var(--transition-duration, 150ms) ease;
+  transition: border-color var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
 
   &:focus-within {
     border-color: var(--accent);
+    box-shadow: var(--shadow-sm);
   }
 }
 
@@ -16,9 +17,9 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 8px 12px;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
   background: var(--background);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
 }
 
 .toolbar-btn {
@@ -30,12 +31,12 @@
   border: none;
   background: transparent;
   color: var(--foreground);
-  border-radius: 6px;
+  border-radius: var(--border-radius-md, 6px);
   cursor: pointer;
-  transition: all 150ms ease;
+  transition: all var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
 
   &:hover {
-    background: var(--complement-transparent);
+    background: color-mix(in srgb, var(--complement) 15%, transparent);
   }
 
   &:active {
@@ -59,7 +60,7 @@
 .toolbar-divider {
   width: 1px;
   height: 20px;
-  background: var(--border-color);
+  background: var(--border);
   margin: 0 4px;
 }
 
@@ -94,9 +95,9 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 8px 12px;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
   background: var(--background);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
 }
 
 .send-button {
@@ -107,13 +108,13 @@
   height: 36px;
   border: none;
   background: var(--accent);
-  color: white;
+  color: var(--primary-foreground);
   border-radius: 50%;
   cursor: pointer;
-  transition: all 150ms ease;
+  transition: all var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
 
   &:disabled {
-    background: var(--foreground);
+    background: var(--muted, var(--foreground));
     opacity: 0.4;
     cursor: not-allowed;
   }
@@ -121,7 +122,7 @@
   &:not(:disabled) {
     &:hover {
       transform: scale(1.05);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: var(--shadow-md);
     }
 
     &:active {

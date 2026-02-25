@@ -33,6 +33,10 @@ export interface CommunityDto {
   joinPolicy: CommunityJoinPolicy;
   tags: CommunityTag[];
   memberCount: number;
+  bannerAssetId?: string;
+  bannerUrl?: string;
+  logoAssetId?: string;
+  logoUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +47,8 @@ export interface CreateCommunityDto {
   isPrivate?: boolean;
   joinPolicy?: CommunityJoinPolicy;
   tags?: string[];
+  bannerAssetId?: string;
+  logoAssetId?: string;
 }
 
 export interface UpdateCommunityDto {
@@ -51,6 +57,8 @@ export interface UpdateCommunityDto {
   isPrivate?: boolean;
   joinPolicy?: CommunityJoinPolicy;
   tags?: string[];
+  bannerAssetId?: string;
+  logoAssetId?: string;
 }
 
 export interface SearchCommunityDto {

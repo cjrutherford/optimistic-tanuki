@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'lib-profile-photo',
@@ -11,4 +11,7 @@ export class ProfilePhotoComponent {
   @Input() src = '';
   @Input() alt = '';
   @Input() size = 32;
+  @Input() profileId = '';
+  @Input() enableChat = false;
+  @Output() startChat = new EventEmitter<string>();
 }

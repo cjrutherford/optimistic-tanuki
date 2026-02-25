@@ -54,6 +54,12 @@ import {
   generateGradientVariables,
 } from './personality-gradients';
 import { GradientFactory } from './gradient-factory';
+import {
+  LibraryPersonality,
+  getLibraryPersonality,
+  generateLibraryCSSVariables,
+  LIBRARY_PERSONALITIES,
+} from './library-personalities';
 
 /**
  * Extended saved theme data including personality
@@ -572,8 +578,8 @@ export class ThemeService {
       personality.tokens.spacingScale === 'compact'
         ? 'ease-out'
         : personality.tokens.spacingScale === 'spacious'
-        ? 'ease-in'
-        : 'ease-in-out';
+          ? 'ease-in'
+          : 'ease-in-out';
 
     const primaryShades = generatePerceptualShades(
       colors.primary,
@@ -625,11 +631,11 @@ export class ThemeService {
 
     const adjustedForeground = personality.contrast.autoAdjust
       ? ensureContrast(
-          foreground,
-          background,
-          personality.contrast.minimumRatio,
-          'auto'
-        )
+        foreground,
+        background,
+        personality.contrast.minimumRatio,
+        'auto'
+      )
       : foreground;
 
     // Build personality colors
@@ -860,15 +866,12 @@ export class ThemeService {
     return {
       none: 'none',
       sm: `0 1px 2px 0 ${shadowColor}`,
-      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${
-        4 * multiplier
-      }px -1px ${shadowColor}`,
-      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${
-        6 * multiplier
-      }px -2px ${shadowColor}`,
-      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${
-        10 * multiplier
-      }px -5px ${shadowColor}`,
+      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${4 * multiplier
+        }px -1px ${shadowColor}`,
+      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${6 * multiplier
+        }px -2px ${shadowColor}`,
+      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${10 * multiplier
+        }px -5px ${shadowColor}`,
     };
   }
 
@@ -1464,5 +1467,127 @@ export class ThemeService {
 
     localStorage.setItem('customPalettes', JSON.stringify(palettes));
     void this.updateAvailablePalettes();
+  }
+
+  // ==================== LIBRARY PERSONALITY API (DEPRECATED) ====================
+  // Library personalities have been merged into the main personality system.
+  // All UI components now use standard CSS custom properties (--primary, --font-body, etc.)
+  // set by the active application personality. These methods are retained for backward
+  // compatibility but will be removed in a future version.
+
+  /**
+   * @deprecated Library personalities are no longer separate. Use the main personality
+   * system via setPersonality() instead. Components now use CSS custom properties.
+   */
+  getLibraryPersonality(libraryId: string): LibraryPersonality {
+    console.warn(
+      `[ThemeService] getLibraryPersonality('${libraryId}') is deprecated. ` +
+      `Components now use standard CSS variables from the active personality.`
+    );
+    return getLibraryPersonality(libraryId);
+  }
+
+  /**
+   * @deprecated Library personalities are no longer separate. Use getPersonalities() instead.
+   */
+  getAllLibraryPersonalities(): LibraryPersonality[] {
+    console.warn(
+      '[ThemeService] getAllLibraryPersonalities() is deprecated. ' +
+      'Use getPersonalities() for the unified personality list.'
+    );
+    return Object.values(LIBRARY_PERSONALITIES);
+  }
+
+  /**
+   * @deprecated No longer needed. The active personality already sets all CSS variables.
+   */
+  generateLibraryVariables(libraryId: string): Record<string, string> {
+    console.warn(
+      `[ThemeService] generateLibraryVariables('${libraryId}') is deprecated. ` +
+      `CSS variables are now set by the active personality via setPersonality().`
+    );
+    const personality = getLibraryPersonality(libraryId);
+    return generateLibraryCSSVariables(personality);
+  }
+
+  /**
+   * @deprecated No longer needed. Use setPersonality() to apply the active personality's
+   * CSS variables globally. Library-specific theming is handled by the personality system.
+   */
+  applyLibraryTheme(libraryId: string): void {
+    console.warn(
+      `[ThemeService] applyLibraryTheme('${libraryId}') is deprecated. ` +
+      `Use setPersonality() instead. Components use standard CSS variables.`
+    );
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const variables = this.generateLibraryVariables(libraryId);
+    const root = document.documentElement;
+
+    Object.entries(variables).forEach(([property, value]) => {
+      const cleanProperty = property.replace('--lib-', '--');
+      root.style.setProperty(cleanProperty, value);
+    });
+
+    root.setAttribute(`data-library-personality`, libraryId);
+  }
+
+  /**
+   * @deprecated Use the CSS variable --shadow-sm/--shadow-md/--shadow-lg directly.
+   */
+  getLibraryShadow(
+    libraryId: string,
+    size: 'small' | 'medium' | 'large' | 'glow'
+  ): string {
+    const personality = getLibraryPersonality(libraryId);
+    return personality.shadows[size];
+  }
+
+  /**
+   * @deprecated Use CSS variables --border-width, --border, --border-radius-sm directly.
+   */
+  getLibraryBorder(libraryId: string): {
+    width: string;
+    style: string;
+    radius: string;
+  } {
+    const personality = getLibraryPersonality(libraryId);
+    return {
+      width: personality.borders.width,
+      style: personality.borders.style,
+      radius: personality.borders.radius,
+    };
+  }
+
+  /**
+   * @deprecated Gradients are now derived from the active personality's color tokens.
+   */
+  getLibraryGradient(
+    libraryId: string,
+    type: 'primary' | 'secondary' | 'accent' | 'surface'
+  ): string {
+    const personality = getLibraryPersonality(libraryId);
+    return personality.gradients[type];
+  }
+
+  /**
+   * @deprecated Use CSS variable --animation-duration-fast/--animation-duration-normal directly.
+   */
+  getLibraryAnimationDuration(
+    libraryId: string,
+    speed: 'instant' | 'fast' | 'normal' | 'slow'
+  ): string {
+    const personality = getLibraryPersonality(libraryId);
+    return personality.animations.duration[speed];
+  }
+
+  /**
+   * @deprecated Use CSS variable --animation-easing directly.
+   */
+  getLibraryAnimationEasing(libraryId: string): string {
+    const personality = getLibraryPersonality(libraryId);
+    return personality.animations.easing;
   }
 }

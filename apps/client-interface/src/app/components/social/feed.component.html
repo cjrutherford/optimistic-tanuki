@@ -49,6 +49,9 @@
       (followToggle)="onFollowToggle(post)"
       (newCommentAdded)="commented($event, i)"
       [imageUploadCallback]="imageUploadCallback"
+      [communityInfo]="
+        post.communityId ? communityInfo()[post.communityId] : undefined
+      "
     ></lib-post>
     }
   </div>
