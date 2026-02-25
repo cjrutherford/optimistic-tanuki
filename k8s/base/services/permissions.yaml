@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: permissions
+  namespace: optimistic-tanuki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: permissions
+  template:
+    metadata:
+      labels:
+        app: permissions
+    spec:
+      containers:
+        - name: permissions
+          image: cjrutherford/optimistic_tanuki_permissions:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3012
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3012"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: STORAGE_STRATEGY
+              value: "network"
+            - name: S3_ENDPOINT
+              value: "http://seaweedfs:8888"
+            - name: S3_BUCKET
+              value: "assets"
+          envFrom:
+            - secretRef:
+                name: optimistic-tanuki-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 3012
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3012
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: permissions
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: permissions
+  ports:
+    - port: 3012
+      targetPort: 3012
+  clusterIP: None
