@@ -1,8 +1,31 @@
 <div class="community-posts">
   <header class="community-header">
     @if (community()) {
-    <h2>{{ community()?.name }}</h2>
-    <p class="description">{{ community()?.description }}</p>
+    <div class="community-banner">
+      @if (community()?.bannerUrl) {
+      <img
+        [src]="community()?.bannerUrl"
+        alt="Community banner"
+        class="banner-image"
+      />
+      } @else {
+      <div class="banner-placeholder"></div>
+      }
+    </div>
+    <div class="community-info">
+      @if (community()?.logoUrl) {
+      <img
+        [src]="community()?.logoUrl"
+        alt="Community logo"
+        class="logo-image"
+      />
+      }
+      <div class="info-content">
+        <h2>{{ community()?.name }}</h2>
+        <p class="description">{{ community()?.description }}</p>
+        <span class="member-count">{{ community()?.memberCount }} members</span>
+      </div>
+    </div>
     }
   </header>
 
@@ -21,6 +44,7 @@
     >
       Create Post
     </button>
+    <button class="nav-tab" (click)="goToChat()">Chat</button>
   </nav>
 
   <main class="posts-content">
@@ -41,6 +65,7 @@
       <lib-post
         [content]="post"
         [profile]="profiles()[post.profileId]"
+        (startChat)="onStartChat($event)"
       ></lib-post>
       } @empty {
       <div class="no-posts">

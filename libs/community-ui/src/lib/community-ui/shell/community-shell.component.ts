@@ -15,6 +15,7 @@ import {
   ThemeVariableService,
 } from '@optimistic-tanuki/theme-lib';
 import { CommunityService } from '../services/community.service';
+import { CommunityDto } from '../models';
 
 @Component({
   selector: 'lib-community-shell',
@@ -55,6 +56,9 @@ export class CommunityShellComponent extends Variantable implements OnInit {
   error = signal<string | null>(null);
 
   activeTab = signal<'find' | 'create' | 'manage'>('find');
+  sidebarCollapsed = signal(false);
+  userCommunities = signal<CommunityDto[]>([]);
+  currentCommunityId = signal<string | null>(null);
 
   variant!: string;
   backgroundFilter!: string;
@@ -100,29 +104,53 @@ export class CommunityShellComponent extends Variantable implements OnInit {
       const path = url[0]?.path;
       if (path === 'create') {
         this.activeTab.set('create');
+        this.currentCommunityId.set(null);
       } else if (path === 'manage') {
         this.activeTab.set('manage');
-      } else if (path && /^\d+$/.test(path)) {
-        // It's a community ID (numeric) - user is viewing community posts
+        this.currentCommunityId.set(null);
+      } else if (path && /^[a-f0-9-]+$/i.test(path)) {
         this.activeTab.set('find');
+        this.currentCommunityId.set(path);
       } else {
         this.activeTab.set('find');
+        this.currentCommunityId.set(null);
       }
     });
+
+    this.loadUserCommunities();
   }
 
   onFindCommunities() {
-    this.activeTab.set('find')
+    this.activeTab.set('find');
     this.router.navigate(['/communities']);
   }
 
   onCreateCommunity() {
-    this.activeTab.set('create')
+    this.activeTab.set('create');
     this.router.navigate(['/communities/create']);
   }
 
   onManageGroups() {
-    this.activeTab.set('manage')
+    this.activeTab.set('manage');
     this.router.navigate(['/communities/manage']);
+  }
+
+  toggleSidebar() {
+    this.sidebarCollapsed.update((v) => !v);
+  }
+
+  loadUserCommunities() {
+    this.communityService
+      .getUserCommunities()
+      .then((communities) => {
+        this.userCommunities.set(communities);
+      })
+      .catch((err) => {
+        console.error('Failed to load user communities:', err);
+      });
+  }
+
+  navigateToCommunity(communityId: string) {
+    this.router.navigate(['/communities', communityId, 'posts']);
   }
 }

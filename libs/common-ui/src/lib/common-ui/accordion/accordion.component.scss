@@ -1,98 +1,206 @@
 @use '../../styles/mixins' as *;
 
-.accordion-section {
-  margin-bottom: 1rem;
-  border-radius: 8px;
-  border: var(--local-accordion-border, 1px solid transparent);
-  background: var(--local-accordion-background, transparent);
-  box-shadow: var(--local-accordion-shadow, none);
-  transition: var(--local-transition-duration, 0.3s) box-shadow, background;
+// ============================================
+// Personality-Driven Accordion
+// Uses application personality CSS variables
+// ============================================
 
-  @include component-base;
+.accordion-section {
+  margin-bottom: 0;
+  border-radius: var(--border-radius-sm, 4px);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--font-body, system-ui, sans-serif);
+
+  // Border between items
+  border-left: var(--border-width, 3px) solid var(--primary);
+  padding-left: 0;
+  margin-left: 0;
+  transition: border-color var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
+
+  &:hover {
+    border-left-color: var(--secondary);
+  }
 
   &.glass {
-    @include glass-morphism;
+    background: rgba(255, 255, 255, 0.9);
+    border-left: var(--border-width, 3px) solid var(--primary);
+    padding: 16px;
   }
 
   &.gradient {
-    background: linear-gradient(
-      120deg,
-      var(--local-accent),
-      var(--local-complement)
+    background: repeating-linear-gradient(
+      45deg,
+      var(--primary),
+      var(--primary) 10px,
+      var(--primary-shade, var(--primary)) 10px,
+      var(--primary-shade, var(--primary)) 20px
     );
-    color: var(--local-foreground);
+    color: #fff;
+    border: none;
+
+    .accordion-header {
+      background: transparent;
+      color: #fff;
+    }
+
+    .accordion-content {
+      background: rgba(0, 0, 0, 0.1);
+      color: #fff;
+    }
   }
 
   &.sm {
-    font-size: var(--font-size-sm, 0.9rem);
+    font-size: 0.75rem;
   }
 
   &.md {
-    font-size: var(--font-size-md, 1rem);
+    font-size: 0.875rem;
   }
 
   &.lg {
-    font-size: var(--font-size-lg, 1.2rem);
+    font-size: 1rem;
   }
 }
 
 .accordion-header {
   cursor: pointer;
-  padding: 10px;
+  padding: 16px 20px;
   margin: 0;
-  color: var(--local-foreground);
-  background: var(--local-accent);
-  border-radius: 8px 8px 0 0;
+  color: var(--foreground, #212121);
+  background: transparent;
+  border-radius: var(--border-radius-sm, 4px);
+  border: none;
+  border-bottom: 2px solid var(--primary);
   user-select: none;
-  transition: var(--local-transition-duration, 0.15s) background-color;
+  font-family: var(--font-heading, system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: relative;
+  transition: background-color var(--animation-duration-fast, 100ms) var(--animation-easing, ease),
+    border-color var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
+
+  // Icon - geometric square
+  &::after {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background: var(--primary);
+    transition: transform var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
+  }
 
   &:hover:not(.disabled) {
-    background: var(--local-accent);
-    filter: brightness(1.1);
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+    border-bottom-color: var(--secondary);
+
+    &::after {
+      background: var(--secondary);
+    }
   }
 
   &:focus-visible {
-    @include focus-visible-ring;
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
   }
 
   &.expanded {
-    background: var(--local-accent);
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    border-bottom-color: var(--secondary);
 
     &::after {
-      content: '−';
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--local-foreground);
-      font-size: 1.2rem;
-      transition: transform 0.2s;
+      content: '';
+      transform: translateY(-50%) rotate(45deg);
+      background: var(--secondary);
     }
   }
 
   &.disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
 
     &:hover {
-      background: var(--local-accent);
-      filter: none;
+      background: transparent;
+      border-bottom-color: var(--primary);
+
+      &::after {
+        background: var(--primary);
+      }
     }
   }
 }
 
 .accordion-content {
   overflow: hidden;
-  transition: max-height 0.3s, padding 0.3s, opacity 0.3s;
-  background: var(--local-background);
-  color: var(--local-foreground);
-  padding: 10px;
-  border-radius: 0 0 8px 8px;
+  transition: max-height var(--animation-duration-fast, 100ms) var(--animation-easing, ease), padding var(--animation-duration-fast, 100ms) var(--animation-easing, ease),
+    opacity var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
+  background: var(--background, #ffffff);
+  color: var(--foreground, #212121);
+  padding: 0 20px;
+  border: none;
+  border-left: var(--border-width, 3px) solid var(--secondary);
   max-height: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
 
   &.expanded {
     max-height: 500px;
-    padding: 15px 10px;
+    padding: 20px;
     opacity: 1;
+  }
+
+  // Content styling
+  p {
+    margin: 0 0 12px 0;
+    font-family: var(--font-body, system-ui, sans-serif);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  // Label inside content
+  .label {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--primary);
+    color: var(--primary-foreground, #fff);
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    border-radius: var(--border-radius-sm, 4px);
+  }
+}
+
+// Accordion group
+.accordion-group {
+  border: var(--border-width, 3px) solid var(--primary);
+  background: var(--background, #ffffff);
+
+  .accordion-section {
+    border-left: none;
+    margin: 0;
+    border-bottom: 2px solid var(--primary);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      border-left: none;
+      border-bottom-color: var(--secondary);
+    }
+  }
+
+  .accordion-header {
+    border-bottom: none;
   }
 }

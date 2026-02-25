@@ -100,10 +100,12 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() canFollow = false;
   @Input() isFollowing = false;
   @Input() imageUploadCallback?: ImageUploadCallback;
+  @Input() communityInfo?: { id: string; name: string; logoUrl?: string };
   @Output() newCommentAdded: EventEmitter<CreateCommentDto> =
     new EventEmitter<CreateCommentDto>();
   @Output() postDeleted = new EventEmitter<void>();
   @Output() followToggle = new EventEmitter<void>();
+  @Output() startChat = new EventEmitter<string>();
 
   // ViewChild references for component reconstruction
   @ViewChild('contentContainer', { read: ViewContainerRef })

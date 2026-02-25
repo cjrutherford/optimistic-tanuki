@@ -4,15 +4,15 @@
   align-items: center;
   flex-direction: column;
   padding: 8px;
-  border-radius: 8px;
-  background-color: var(--color-background);
-  box-shadow: var(--shadow-elevation-1);
+  border-radius: var(--border-radius-md, 8px);
+  background-color: var(--background);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color var(--animation-duration-normal, 0.3s) ease;
   border: none;
 
   &:hover {
-    background-color: var(--color-hover-background);
+    background-color: color-mix(in srgb, var(--primary) 8%, var(--background));
   }
 
   .contact-avatars {
@@ -30,8 +30,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-background);
-    border: 2px solid var(--border-color);
+    background: var(--background);
+    border: 2px solid var(--border);
     color: var(--foreground);
     font-size: 12px;
     font-weight: 600;
@@ -43,10 +43,10 @@
     right: 100%;
     transform: translateX(-8px); // slight gap from parent
     background: var(--background);
-    border-radius: 8px;
+    border-radius: var(--border-radius-md, 8px);
     padding: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md, 0 2px 8px rgba(0, 0, 0, 0.12));
+    border: 1px solid var(--border);
     z-index: 10;
     white-space: nowrap;
     margin-right: 8px;

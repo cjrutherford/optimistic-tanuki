@@ -46,6 +46,15 @@ export class Community {
   @Column({ default: 0 })
   memberCount: number;
 
+  @Column({ nullable: true })
+  bannerAssetId: string;
+
+  @Column({ nullable: true })
+  logoAssetId: string;
+
+  @Column({ nullable: true })
+  chatRoomId: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

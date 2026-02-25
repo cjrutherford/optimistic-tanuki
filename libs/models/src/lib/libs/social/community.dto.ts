@@ -118,6 +118,20 @@ export class CreateCommunityDto {
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  bannerAssetId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  logoAssetId?: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  createChatRoom = true;
 }
 
 export class UpdateCommunityDto {

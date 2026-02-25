@@ -24,6 +24,7 @@ import {
   CommunityCommands,
   ServiceTokens,
   RoleCommands,
+  ChatCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CommunityDto,
@@ -53,7 +54,9 @@ export class CommunityController {
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
-    private readonly permissionsClient: ClientProxy
+    private readonly permissionsClient: ClientProxy,
+    @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
+    private readonly chatClient: ClientProxy
   ) {}
 
   @Post()
@@ -106,6 +109,32 @@ export class CommunityController {
       this.logger.error(
         `Failed to assign community_manager role: ${err?.message || err}`
       );
+    }
+
+    try {
+      const chatRoom = await firstValueFrom(
+        this.chatClient.send(
+          { cmd: 'CREATE_COMMUNITY_CHAT' },
+          {
+            communityId: community.id,
+            ownerId: user.profileId,
+            name: community.name,
+          }
+        )
+      );
+
+      if (chatRoom && chatRoom.id) {
+        await firstValueFrom(
+          this.socialClient.send(
+            { cmd: 'SET_COMMUNITY_CHAT_ROOM' },
+            { communityId: community.id, chatRoomId: chatRoom.id }
+          )
+        );
+        community.chatRoomId = chatRoom.id;
+        this.logger.log(`Created chat room for community ${community.id}`);
+      }
+    } catch (err) {
+      this.logger.error(`Failed to create chat room: ${err?.message || err}`);
     }
 
     return community;
@@ -515,5 +544,28 @@ export class CommunityController {
     this.logger.log(
       `Revoked manager role for profile ${profileId} from community ${communityId}`
     );
+  }
+
+  @Get(':id/chat-room')
+  @ApiOperation({ summary: 'Get community chat room' })
+  @ApiResponse({
+    status: 200,
+    description: 'The community chat room',
+  })
+  async getChatRoom(
+    @Param('id') communityId: string
+  ): Promise<{ id: string } | null> {
+    try {
+      const result = await firstValueFrom(
+        this.socialClient.send(
+          { cmd: 'GET_COMMUNITY_CHAT_ROOM' },
+          { communityId }
+        )
+      );
+      return result;
+    } catch (err) {
+      this.logger.error(`Failed to get chat room: ${err}`);
+      return null;
+    }
   }
 }

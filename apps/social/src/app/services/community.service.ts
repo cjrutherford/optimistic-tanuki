@@ -58,6 +58,8 @@ export class CommunityService {
       joinPolicy: dto.joinPolicy || 'public',
       tags,
       memberCount: 1,
+      bannerAssetId: dto.bannerAssetId,
+      logoAssetId: dto.logoAssetId,
     });
 
     const saved = await this.communityRepo.save(community);
@@ -522,5 +524,22 @@ export class CommunityService {
     return await this.inviteRepo.find({
       where: { inviteeId: userId, status: CommunityMembershipStatus.PENDING },
     });
+  }
+
+  async getCommunityChatRoom(
+    communityId: string
+  ): Promise<{ id: string } | null> {
+    const community = await this.findOne(communityId);
+    if (!community || !community.chatRoomId) {
+      return null;
+    }
+    return { id: community.chatRoomId };
+  }
+
+  async setCommunityChatRoom(
+    communityId: string,
+    chatRoomId: string
+  ): Promise<void> {
+    await this.communityRepo.update(communityId, { chatRoomId });
   }
 }

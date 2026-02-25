@@ -20,7 +20,7 @@ export class CommunityService {
 
   create(dto: CreateCommunityDto): Promise<CommunityDto> {
     return this.http
-      .post<CommunityDto>(`${this.baseUrl}`, { ...dto })
+      .post<CommunityDto>(`${this.baseUrl}`, { ...dto, createChatRoom: true })
       .toPromise() as Promise<CommunityDto>;
   }
 
@@ -174,6 +174,29 @@ export class CommunityService {
         opts: { orderBy: 'createdAt', orderDirection: 'desc', limit: 50 },
       })
       .toPromise() as Promise<any[]>;
+  }
+
+  getCommunityChatRoom(communityId: string): Promise<{ id: string } | null> {
+    return this.http
+      .get<{ id: string } | null>(`${this.baseUrl}/${communityId}/chat-room`)
+      .toPromise() as Promise<{ id: string } | null>;
+  }
+
+  getCommunityById(communityId: string): Promise<any> {
+    return this.http
+      .get<any>(`${this.baseUrl}/${communityId}`)
+      .toPromise() as Promise<any>;
+  }
+
+  createCommunityChatChannel(
+    communityId: string,
+    name: string
+  ): Promise<{ id: string }> {
+    return this.http
+      .post<{ id: string }>(`${this.baseUrl}/${communityId}/chat-channels`, {
+        name,
+      })
+      .toPromise() as Promise<{ id: string }>;
   }
 
   createPost(postData: {

@@ -25,6 +25,7 @@ import {
 import {
   CreateAttachmentDto,
   CreateSocialComponentDto,
+  CommunityDto,
 } from '@optimistic-tanuki/ui-models';
 import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -69,6 +70,9 @@ export class FeedComponent implements OnInit, OnDestroy {
   posts = signal<PostDto[]>([]);
   loading = signal(true);
   followingIds = new Set<string>();
+  communityInfo = signal<{
+    [key: string]: { id: string; name: string; logoUrl?: string };
+  }>({});
   themeStyles!: {
     backgroundColor: string;
     color: string;
@@ -166,6 +170,7 @@ export class FeedComponent implements OnInit, OnDestroy {
           this.posts.set(posts);
           this.loading.set(false);
           this.loadProfiles(posts);
+          this.loadCommunityInfo(posts);
         });
 
       // Fallback to HTTP if WebSocket doesn't connect within 5 seconds
@@ -182,6 +187,7 @@ export class FeedComponent implements OnInit, OnDestroy {
               this.posts.set(posts);
               this.loading.set(false);
               this.loadProfiles(posts);
+              this.loadCommunityInfo(posts);
             });
         }
       }, 5000);
@@ -235,6 +241,36 @@ export class FeedComponent implements OnInit, OnDestroy {
             avatar: profile.profilePic,
           },
         }));
+      });
+    });
+  }
+
+  private loadCommunityInfo(posts: PostDto[]) {
+    const communityIds = [
+      ...new Set(
+        posts.map((post) => post.communityId).filter((id): id is string => !!id)
+      ),
+    ];
+    if (communityIds.length === 0) return;
+
+    communityIds.forEach((communityId) => {
+      this.communityService.getCommunity(communityId).subscribe({
+        next: (community: CommunityDto) => {
+          if (community) {
+            this.communityInfo.update((info) => ({
+              ...info,
+              [communityId]: {
+                id: community.id,
+                name: community.name,
+                logoUrl: community.logoAssetId
+                  ? `/api/asset/${community.logoAssetId}`
+                  : community.logoUrl,
+              },
+            }));
+          }
+        },
+        error: (err: any) =>
+          console.error('Failed to load community info:', err),
       });
     });
   }
@@ -502,6 +538,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       .subscribe((posts: PostDto[]) => {
         this.posts.set(posts);
         this.loadProfiles(posts);
+        this.loadCommunityInfo(posts);
       });
   }
 
@@ -517,6 +554,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       .subscribe((posts: PostDto[]) => {
         this.posts.set(posts);
         this.loadProfiles(posts);
+        this.loadCommunityInfo(posts);
       });
   }
 
@@ -537,6 +575,7 @@ export class FeedComponent implements OnInit, OnDestroy {
           next: (posts) => {
             this.posts.set(posts);
             this.loadProfiles(posts);
+            this.loadCommunityInfo(posts);
             this.loading.set(false);
           },
           error: (err) => {

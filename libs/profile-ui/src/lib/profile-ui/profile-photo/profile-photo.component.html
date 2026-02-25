@@ -2,5 +2,27 @@
   [src]="src || 'https://placehold.co/150x150/grey/white?text=Profile'"
   [alt]="alt || 'Profile Image'"
   class="profile-photo"
+  [class.clickable]="enableChat"
   [style.--size.px]="size"
+  [attr.data-profile-id]="profileId"
+  (click)="enableChat && profileId ? startChat.emit(profileId) : null"
 />
+@if (enableChat) {
+<span class="chat-indicator" title="Start chat">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path
+      d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+    ></path>
+  </svg>
+</span>
+}

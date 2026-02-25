@@ -3,17 +3,105 @@
 }
 
 .form-group {
-  margin-bottom: 1rem;
-  
+  margin-bottom: var(--spacing-md);
+
   label {
     display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
+    margin-bottom: var(--spacing-sm);
+    font-weight: 600;
+    font-family: var(--font-body, sans-serif);
+    font-size: var(--font-size-sm);
+    color: var(--foreground);
   }
+}
+
+h3 {
+  font-family: var(--font-heading, sans-serif);
+  color: var(--foreground);
+  margin: 0 0 var(--spacing-md) 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: var(--border-width, 1px) solid var(--border);
 }
 
 .actions {
   display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: var(--border-width, 1px) solid var(--border);
+}
+
+// ── Personality Overrides ──
+
+// Professional: classic, minimal, professional, elegant
+:host-context([data-personality="classic"]),
+:host-context([data-personality="minimal"]),
+:host-context([data-personality="professional"]) {
+  h3 { letter-spacing: 0.01em; }
+}
+
+:host-context([data-personality="elegant"]) {
+  h3 {
+    font-style: italic;
+    border-bottom-color: var(--accent);
+    border-bottom-width: 1px;
+  }
+}
+
+// Creative: bold, playful, electric
+:host-context([data-personality="bold"]) {
+  h3 {
+    border-bottom-width: 3px;
+    border-bottom-color: var(--accent);
+  }
+  .actions { border-top-width: 3px; border-top-color: var(--accent); }
+}
+
+:host-context([data-personality="playful"]) {
+  .form-group label {
+    color: var(--accent);
+  }
+  .actions {
+    border-top: none;
+    padding-top: var(--spacing-lg);
+  }
+}
+
+:host-context([data-personality="electric"]) {
+  h3 {
+    text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+}
+
+// Casual: soft, soft-touch
+:host-context([data-personality="soft"]),
+:host-context([data-personality="soft-touch"]) {
+  h3 {
+    border-bottom: none;
+    padding-bottom: var(--spacing-md);
+  }
+  .actions {
+    border-top: none;
+  }
+}
+
+// Technical: architect, control-center, foundation
+:host-context([data-personality="architect"]),
+:host-context([data-personality="control-center"]),
+:host-context([data-personality="foundation"]) {
+  .form-group label {
+    font-family: var(--font-mono, monospace);
+    text-transform: uppercase;
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.05em;
+  }
+  h3 {
+    font-family: var(--font-mono, monospace);
+    letter-spacing: 0.03em;
+  }
+}
+
+:host-context([data-personality="control-center"]) {
+  .form-group { margin-bottom: var(--spacing-sm); }
+  .actions { margin-top: var(--spacing-md); }
 }

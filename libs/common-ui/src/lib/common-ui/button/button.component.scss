@@ -1,16 +1,21 @@
 @use '../../styles/mixins' as *;
 
+// ============================================
+// Personality-Driven Button Component
+// Uses application personality CSS variables
+// ============================================
+
 button {
-  /* Base button styles using design tokens */
   @include flex-center;
   width: 100%;
-  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-  border: none;
-  @include border-radius-standard(var(--border-radius-md, 4px));
-  font-size: var(--font-size-base, 1rem);
+  padding: var(--spacing-md, 12px) var(--spacing-lg, 24px);
+  font-family: var(--font-body, system-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
-  @include transition-base(all, 0.15s);
-  color: var(--foreground);
+  transition: transform var(--animation-duration-fast) var(--animation-easing),
+    box-shadow var(--animation-duration-fast) var(--animation-easing);
+  border-radius: var(--border-radius-md, 4px);
 
   &:disabled {
     opacity: 0.5;
@@ -18,193 +23,210 @@ button {
   }
 
   &.primary {
-    background-color: var(--accent, #3f51b5);
-    color: var(--foreground, #fff);
-    border: 3px solid var(--complement, #c0af4b);
+    background-color: var(--primary);
+    color: var(--primary-foreground, #fff);
+    border: var(--border-width, 1px) solid var(--primary);
+    box-shadow: var(--shadow-md);
 
-    &:hover {
-      background-color: var(--accent-3, #0056b3);
-      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    &:hover:not(:disabled) {
+      background-color: var(
+        --primary-3,
+        color-mix(in srgb, var(--primary) 85%, #000)
+      );
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      box-shadow: var(--shadow-sm);
+      transform: translateY(0);
     }
 
     &:disabled {
-      background-color: var(--accent-7, #cccccc);
+      background-color: var(
+        --primary-7,
+        color-mix(in srgb, var(--primary) 30%, #fff)
+      );
+      box-shadow: none;
     }
   }
 
   &.warning {
-    background-color: var(--warning, #ffc107);
-    color: var(--foreground, #000);
-    border: 3px solid var(--warning, #e0a800);
+    background-color: var(--warning);
+    color: var(--warning-foreground, #000);
+    border: var(--border-width, 1px) solid var(--warning);
+    box-shadow: var(--shadow-md);
 
-    &:hover {
-      background-color: var(--complement, #e0a800);
-      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    &:hover:not(:disabled) {
+      background-color: color-mix(in srgb, var(--warning) 85%, #000);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      box-shadow: var(--shadow-sm);
+      transform: translateY(0);
     }
 
     &:disabled {
-      background-color: var(--warning-7, #cccccc);
+      background-color: color-mix(in srgb, var(--warning) 30%, #fff);
+      box-shadow: none;
     }
   }
 
   &.danger {
-    background-color: var(--danger, #dc3545);
-    color: var(--foreground, #fff);
+    background-color: var(--danger);
+    color: var(--danger-foreground, #fff);
+    border: var(--border-width, 1px) solid var(--danger);
+    box-shadow: var(--shadow-md);
 
-    &:hover {
-      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
-      background-color: var(--complement, #c82333);
+    &:hover:not(:disabled) {
+      background-color: color-mix(in srgb, var(--danger) 85%, #000);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      box-shadow: var(--shadow-sm);
+      transform: translateY(0);
     }
 
     &:disabled {
-      background-color: var(--danger-7, #cccccc);
+      background-color: color-mix(in srgb, var(--danger) 30%, #fff);
+      box-shadow: none;
     }
   }
 
   &.success {
-    background-color: var(--success, #28a745);
-    color: var(--foreground, #fff);
-    border: 3px solid var(--complement, #218838);
+    background-color: var(--success);
+    color: var(--success-foreground, #fff);
+    border: var(--border-width, 1px) solid var(--success);
+    box-shadow: var(--shadow-md);
 
-    &:hover {
-      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
-      background-color: var(--success-3, #218838);
+    &:hover:not(:disabled) {
+      background-color: color-mix(in srgb, var(--success) 85%, #000);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      box-shadow: var(--shadow-sm);
+      transform: translateY(0);
     }
 
     &:disabled {
-      background-color: var(--success-7, #cccccc);
+      background-color: color-mix(in srgb, var(--success) 30%, #fff);
+      box-shadow: none;
     }
   }
 
   &.secondary {
-    background-color: var(--complement, #6c757d);
-    color: var(--foreground, #fff);
-    border: 3px solid var(--accent, #5a6268);
+    background-color: var(--secondary);
+    color: var(--secondary-foreground, #fff);
+    border: var(--border-width, 1px) solid var(--secondary);
+    box-shadow: var(--shadow-md);
 
-    &:hover {
-      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
-      background-color: var(--complement-3, #5a6268);
+    &:hover:not(:disabled) {
+      background-color: color-mix(in srgb, var(--secondary) 85%, #000);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      box-shadow: var(--shadow-sm);
+      transform: translateY(0);
     }
 
     &:disabled {
-      background-color: var(--complement-7, #cccccc);
+      background-color: color-mix(in srgb, var(--secondary) 30%, #fff);
+      box-shadow: none;
     }
   }
 
   &.outlined {
     background-color: transparent;
-    border: 3px solid var(--accent, #007bff);
-    color: var(--accent, #007bff);
+    border: var(--border-width, 1px) solid var(--primary);
+    color: var(--primary);
+    box-shadow: none;
 
-    &:hover {
-      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
-      background-color: var(--accent, #007bff);
-      color: var(--foreground, #fff);
+    &:hover:not(:disabled) {
+      background-color: var(--primary);
+      color: var(--primary-foreground, #fff);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      box-shadow: var(--shadow-sm);
+      transform: translateY(0);
     }
 
     &:disabled {
-      border-color: var(--accent-3, #cccccc);
-      color: var(--accent-7, #cccccc);
+      border-color: color-mix(in srgb, var(--primary) 30%, #fff);
+      color: color-mix(in srgb, var(--primary) 30%, #fff);
     }
   }
 
   &.rounded {
-    background-color: var(--accent, #007bff);
-    color: var(--foreground, #fff);
-    border-radius: var(--border-radius-full, 50%);
-    padding: var(--spacing-xs, 4px);
+    background-color: var(--primary);
+    color: var(--primary-foreground, #fff);
+    border: var(--border-width, 1px) solid var(--primary);
+    border-radius: var(--border-radius-full, 9999px);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-sm, 8px);
 
-    &:hover {
-      background-color: var(--accent-3, #0056b3);
-      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    &:hover:not(:disabled) {
+      background-color: color-mix(in srgb, var(--primary) 85%, #000);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-1px);
     }
 
     &:disabled {
-      background-color: var(--accent-7, #cccccc);
+      background-color: color-mix(in srgb, var(--primary) 30%, #fff);
+      box-shadow: none;
     }
   }
 
   &.text {
     background-color: transparent;
-    color: var(--accent, #007bff);
+    color: var(--primary);
+    border: none;
+    box-shadow: none;
+    padding: var(--spacing-md, 12px) var(--spacing-md, 16px);
 
-    &:hover {
-      background-color: var(--accent, #0056b3);
-      color: var(--foreground, #fff);
+    &:hover:not(:disabled) {
+      background-color: var(--primary);
+      color: var(--primary-foreground, #fff);
     }
 
     &:disabled {
-      color: var(--accent-7, #cccccc);
+      color: color-mix(in srgb, var(--primary) 30%, #fff);
     }
   }
 
-  &.light-mode {
-    background-color: var(--accent-5, #b1baec);
-    color: var(--foreground, #000);
+  &.block {
+    width: 100%;
+    display: block;
+    text-align: center;
   }
 
-  &.dark-mode {
-    background-color: var(--accent-2, #313a6c);
-    color: var(--foreground, #fff);
-  }
-
-  &.primary.fast-cycle-mode {
-    background: var(--accent-gradient-fastCycle);
-    color: var(--foreground, #fff);
-  }
-
-  &.secondary.fast-cycle-mode {
-    background: var(--complement-gradient-fastCycle);
-    color: var(--foreground, #fff);
-  }
-
-  &.warning.fast-cycle-mode {
-    background: var(--warning-gradient-fastCycle);
-    color: var(--foreground, #000);
-  }
-
-  &.danger.fast-cycle-mode {
-    background: var(--danger-gradient-fastCycle);
-    color: var(--foreground, #fff);
-  }
-
-  &.success.fast-cycle-mode {
-    background: var(--success-gradient-fastCycle);
-    color: var(--foreground, #fff);
-  }
-
-  // Additional gradient variants
-  &.gradient-glow {
-    @include gradient-background(
-      'linear',
-      'to right',
-      var(--accent),
-      var(--complement)
-    );
-    @include box-shadow-glow(var(--accent), 12px, 4px);
-    border: 2px solid transparent;
+  &.small {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    font-size: 0.75rem;
+    box-shadow: var(--shadow-sm);
 
     &:hover:not(:disabled) {
-      @include box-shadow-glow(var(--complement), 16px, 6px);
+      box-shadow: var(--shadow-md);
     }
   }
 
-  &.gradient-radial {
-    @include gradient-background(
-      'radial',
-      'circle',
-      var(--accent),
-      var(--complement)
-    );
+  &.large {
+    padding: var(--spacing-md, 16px) var(--spacing-lg, 32px);
+    font-size: 1rem;
+    box-shadow: var(--shadow-lg);
 
     &:hover:not(:disabled) {
-      transform: scale(1.05);
-    }
-  }
-
-  &.glow-on-hover {
-    &:hover:not(:disabled) {
-      @include box-shadow-glow(var(--accent), 16px, 6px);
+      box-shadow: var(--shadow-xl);
     }
   }
 }

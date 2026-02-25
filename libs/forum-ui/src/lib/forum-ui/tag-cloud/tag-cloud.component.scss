@@ -1,33 +1,154 @@
+:host {
+  display: block;
+}
+
 .tag-cloud {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
 }
 
 .tag {
-    background-color: var(--surface-variant);
-    color: var(--on-surface-variant);
-    border-radius: 1rem;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+  background-color: color-mix(in srgb, var(--muted-foreground) 12%, transparent);
+  color: var(--foreground);
+  border-radius: var(--border-radius-full);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-body, sans-serif);
+  cursor: pointer;
+  transition:
+    background-color var(--animation-duration-fast, 150ms) var(--animation-easing, ease),
+    transform var(--animation-duration-fast, 150ms) var(--animation-easing, ease),
+    box-shadow var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  border: var(--border-width, 1px) solid transparent;
 
+  &:hover {
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .count {
+    font-size: var(--font-size-xs);
+    opacity: 0.7;
+    background: color-mix(in srgb, var(--foreground) 10%, transparent);
+    padding: 0 var(--spacing-xs);
+    border-radius: var(--border-radius-full);
+  }
+}
+
+// ── Personality Overrides ──
+
+// Professional
+:host-context([data-personality="classic"]),
+:host-context([data-personality="professional"]) {
+  .tag {
+    border-radius: var(--border-radius-sm);
+  }
+}
+
+:host-context([data-personality="minimal"]) {
+  .tag {
+    background-color: transparent;
+    border-color: var(--border);
+    border-radius: var(--border-radius-sm);
     &:hover {
-        background-color: var(--primary-container);
-        color: var(--on-primary-container);
-        transform: translateY(-2px);
+      border-color: var(--accent);
+      background-color: transparent;
     }
+  }
+}
 
-    .count {
-        font-size: 0.75rem;
-        opacity: 0.7;
-        background: rgba(0, 0, 0, 0.1);
-        padding: 0 0.3rem;
-        border-radius: 0.5rem;
+:host-context([data-personality="elegant"]) {
+  .tag {
+    font-style: italic;
+    border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+    background-color: transparent;
+    &:hover {
+      border-color: var(--accent);
+      background-color: color-mix(in srgb, var(--accent) 8%, transparent);
     }
+  }
+}
+
+// Creative
+:host-context([data-personality="bold"]) {
+  .tag {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-radius: var(--border-radius-sm);
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    &:hover {
+      background-color: var(--accent);
+      color: var(--primary-foreground);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+}
+
+:host-context([data-personality="playful"]) {
+  .tag {
+    border-radius: var(--border-radius-full);
+    background: var(--primary-gradient, var(--accent));
+    color: var(--primary-foreground);
+    font-weight: 600;
+    &:hover {
+      transform: translateY(-3px) rotate(-2deg);
+      box-shadow: var(--shadow-md);
+      background: var(--secondary-gradient, var(--complement));
+    }
+    .count {
+      background: color-mix(in srgb, var(--primary-foreground) 25%, transparent);
+    }
+  }
+}
+
+:host-context([data-personality="electric"]) {
+  .tag {
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    &:hover {
+      box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+  }
+}
+
+// Casual
+:host-context([data-personality="soft"]),
+:host-context([data-personality="soft-touch"]) {
+  .tag {
+    background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+    border: none;
+    &:hover {
+      background-color: color-mix(in srgb, var(--accent) 18%, transparent);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// Technical
+:host-context([data-personality="architect"]),
+:host-context([data-personality="control-center"]),
+:host-context([data-personality="foundation"]) {
+  .tag {
+    border-radius: var(--border-radius-none);
+    font-family: var(--font-mono, monospace);
+    text-transform: uppercase;
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.05em;
+    border-color: var(--border);
+    background-color: transparent;
+    &:hover {
+      background-color: var(--accent);
+      color: var(--primary-foreground);
+      border-color: var(--accent);
+    }
+  }
 }

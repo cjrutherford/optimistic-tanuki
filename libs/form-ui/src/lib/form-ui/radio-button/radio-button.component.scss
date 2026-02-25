@@ -1,13 +1,22 @@
 @use '../../styles/mixins' as *;
 
-// Form field container
+// ============================================
+// Personality-Driven Radio Button Component
+// Adapts to application personality via CSS custom properties
+// ============================================
+
 .form-field {
-  @include form-field;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
 }
 
-// Radio group specific
+// Radio group
 .form-radio-group {
-  gap: var(--spacing-sm, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 
   &.layout-horizontal {
     .radio-options {
@@ -20,71 +29,128 @@
     .radio-options {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: var(--spacing-sm, 8px);
+      gap: 12px;
     }
   }
 }
 
-// Form label
 .form-label {
-  @include form-label;
+  font-family: var(--font-heading, system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted, #6b7280);
+  margin-bottom: 6px;
+  padding-left: 4px;
 }
 
-// Radio options container
 .radio-options {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm, 8px);
+  gap: 12px;
 }
 
 // Radio wrapper
 .form-radio {
-  @include form-check-base;
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+  padding: 4px 0;
+
+  // Hide default radio
+  input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+  }
 
   // Custom radio circle
   .radio-mark {
-    @include form-radio-circle;
+    width: 22px;
+    height: 22px;
+    background: var(--surface, var(--background));
+    border: var(--border-width, 1.5px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+    border-radius: 50%;
     position: relative;
+    transition: all var(--animation-duration-normal, 250ms) var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+    box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03));
 
-    &:after {
-      @include form-radio-dot;
+    @include reduced-motion {
+      transition: none;
+    }
+
+    // Inner dot
+    &::after {
+      content: '';
+      position: absolute;
+      display: none;
+      left: 50%;
+      top: 50%;
+      width: 10px;
+      height: 10px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 40%, transparent);
+    }
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+      background: var(--background);
+      transform: scale(1.05);
     }
   }
 
-  // Dot display when checked
+  // Checked state
   input:checked ~ .radio-mark {
-    border-color: var(--accent, #3f51b5);
+    border-color: var(--primary);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 25%, transparent);
 
-    &:after {
+    &::after {
       display: block;
+    }
+
+    &:hover {
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 35%, transparent);
+      transform: scale(1.1);
     }
   }
 
   // Focus state
   input:focus-visible ~ .radio-mark {
-    outline: 2px solid var(--accent, #3f51b5);
-    outline-offset: 2px;
+    outline: 2px solid color-mix(in srgb, var(--primary) 50%, transparent);
+    outline-offset: 3px;
   }
 
   // Disabled state
   input:disabled ~ .radio-mark {
     opacity: 0.5;
     cursor: not-allowed;
+    background: var(--surface);
+    box-shadow: none;
+
+    &:hover {
+      transform: none;
+      border-color: color-mix(in srgb, var(--primary) 20%, transparent);
+    }
   }
 
   // Label text
   .form-check-label {
-    font-family: var(
-      --font-body,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      sans-serif
-    );
-    font-size: var(--font-size-base, 1rem);
-    color: var(--foreground, #212529);
+    font-family: var(--font-body, system-ui, sans-serif);
+    font-size: 0.9375rem;
+    color: var(--foreground-secondary, var(--foreground));
+    line-height: 1.5;
+    transition: color var(--animation-duration-fast, 200ms) ease;
+  }
+
+  // Label hover
+  &:hover .form-check-label {
+    color: var(--foreground);
   }
 
   // Disabled label
@@ -94,101 +160,136 @@
   }
 }
 
-// Error message
+// Error state
+.form-radio.has-error .radio-mark {
+  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+  background: color-mix(in srgb, var(--danger) 6%, var(--background));
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--danger) 70%, transparent);
+  }
+}
+
+input:checked.form-radio.has-error ~ .radio-mark {
+  border-color: var(--danger);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--danger) 30%, transparent);
+
+  &::after {
+    background: linear-gradient(135deg, var(--danger) 0%, var(--warning) 100%);
+  }
+}
+
 .error-message {
-  @include form-error-message;
-}
-
-// Radio group specific
-.form-radio-group {
-  gap: var(--spacing-sm, 8px);
-
-  &.layout-horizontal {
-    .radio-options {
-      flex-direction: row;
-      flex-wrap: wrap;
-    }
-  }
-
-  &.layout-grid {
-    .radio-options {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: var(--spacing-sm, 8px);
-    }
-  }
-}
-
-// Form label
-.form-label {
-  @include form-label;
-}
-
-// Radio options container
-.radio-options {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.75rem;
+  color: var(--danger, #dc2626);
+  margin-top: 4px;
+  padding-left: 34px;
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm, 8px);
+  align-items: center;
+  gap: 4px;
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: var(--danger, #dc2626);
+    border-radius: 50%;
+  }
 }
 
-// Radio wrapper
-.form-radio {
-  @include form-check-base;
-
-  // Custom radio circle
+// Size variants
+.form-radio.small {
   .radio-mark {
-    @include form-radio-circle;
-    position: relative;
+    width: 18px;
+    height: 18px;
 
-    &:after {
-      @include form-radio-dot;
+    &::after {
+      width: 8px;
+      height: 8px;
     }
   }
 
-  // Dot display when checked
-  input:checked ~ .radio-mark {
-    border-color: var(--accent, #3f51b5);
-
-    &:after {
-      display: block;
-    }
-  }
-
-  // Focus state
-  input:focus-visible ~ .radio-mark {
-    outline: 2px solid var(--accent, #3f51b5);
-    outline-offset: 2px;
-  }
-
-  // Disabled state
-  input:disabled ~ .radio-mark {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  // Label text
   .form-check-label {
-    font-family: var(
-      --font-body,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      sans-serif
-    );
-    font-size: var(--font-size-base, 1rem);
-    color: var(--foreground, #212529);
-  }
-
-  // Disabled label
-  input:disabled ~ .form-check-label {
-    opacity: 0.6;
-    cursor: not-allowed;
+    font-size: 0.8125rem;
   }
 }
 
-// Error message
-.error-message {
-  @include form-error-message;
+.form-radio.large {
+  .radio-mark {
+    width: 26px;
+    height: 26px;
+
+    &::after {
+      width: 12px;
+      height: 12px;
+    }
+  }
+
+  .form-check-label {
+    font-size: 1.0625rem;
+  }
+}
+
+// Radio card variant
+.form-radio.card-option {
+  padding: var(--spacing-md, 16px) var(--spacing-lg, 20px);
+  border: var(--border-width, 1.5px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border-radius: var(--border-radius-md, 16px);
+  background: var(--surface, var(--background));
+  transition: all var(--animation-duration-normal, 250ms) var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+    background: var(--background);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md, 0 4px 16px color-mix(in srgb, var(--primary) 10%, transparent));
+  }
+
+  &.selected,
+  input:checked ~ & {
+    border-color: var(--primary);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--primary) 10%, transparent) 0%,
+      color-mix(in srgb, var(--secondary) 5%, transparent) 100%
+    );
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--primary) 15%, transparent);
+
+    .radio-mark {
+      border-color: var(--primary);
+    }
+  }
+
+  .radio-mark {
+    flex-shrink: 0;
+  }
+
+  .form-check-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .label-text {
+      font-weight: 600;
+      color: var(--foreground);
+    }
+
+    .label-description {
+      font-size: 0.8125rem;
+      font-weight: 400;
+      color: var(--muted, #6b7280);
+    }
+  }
+}
+
+// Radio group with cards
+.radio-card-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+
+  .form-radio.card-option {
+    margin: 0;
+  }
 }

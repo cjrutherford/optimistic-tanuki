@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { Variantable, VariantOptions } from '@optimistic-tanuki/common-ui';
 import {
@@ -38,6 +38,7 @@ import { CommunityDto } from '../models';
 export class CommunityPostsComponent extends Variantable {
   private readonly communityService = inject(CommunityService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   community = signal<CommunityDto | null>(null);
   posts = signal<PostDto[]>([]);
@@ -45,6 +46,24 @@ export class CommunityPostsComponent extends Variantable {
   loading = signal(true);
   error = signal<string | null>(null);
   activeTab = signal<'posts' | 'create'>('posts');
+
+  setActiveTab(tab: 'posts' | 'create') {
+    this.activeTab.set(tab);
+  }
+
+  goToChat() {
+    const communityId = this.route.snapshot.paramMap.get('communityId');
+    if (communityId) {
+      this.router.navigate(['/communities', communityId, 'chat']);
+    }
+  }
+
+  onStartChat(profileId: string) {
+    if (profileId === this.currentProfileId) {
+      return;
+    }
+    this.router.navigate(['/chat/dm', profileId]);
+  }
 
   currentUserId = '';
   currentProfileId = '';
@@ -121,7 +140,20 @@ export class CommunityPostsComponent extends Variantable {
   private async loadCommunity(id: string) {
     try {
       const community = await this.communityService.findOne(id);
-      this.community.set(community);
+      if (community) {
+        const bannerUrl = community.bannerAssetId
+          ? `/api/asset/${community.bannerAssetId}`
+          : community.bannerUrl;
+        const logoUrl = community.logoAssetId
+          ? `/api/asset/${community.logoAssetId}`
+          : community.logoUrl;
+        const communityWithUrls = {
+          ...community,
+          bannerUrl,
+          logoUrl,
+        };
+        this.community.set(communityWithUrls);
+      }
     } catch (err) {
       console.error('Error loading community:', err);
       this.error.set('Failed to load community');
@@ -159,10 +191,6 @@ export class CommunityPostsComponent extends Variantable {
     } catch (err) {
       console.error('Error loading profiles:', err);
     }
-  }
-
-  setActiveTab(tab: 'posts' | 'create') {
-    this.activeTab.set(tab);
   }
 
   async createdPost(postData: PostData) {

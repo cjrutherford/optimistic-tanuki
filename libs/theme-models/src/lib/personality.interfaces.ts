@@ -257,6 +257,12 @@ export interface Personality {
   // Mobile adaptations
   mobile: MobileAdaptations;
 
+  // Optional page background SVG pattern per mode
+  pageBackground?: {
+    light: string;
+    dark: string;
+  };
+
   // Metadata
   tags: string[];
   category: 'professional' | 'creative' | 'casual' | 'technical';

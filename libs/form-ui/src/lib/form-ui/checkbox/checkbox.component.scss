@@ -1,59 +1,118 @@
 @use '../../styles/mixins' as *;
 
-// Form field container
+// ============================================
+// Personality-Driven Checkbox Component
+// Adapts to application personality via CSS custom properties
+// ============================================
+
 .form-field {
-  @include form-field;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
 }
 
-// Checkbox wrapper
 .form-check {
-  @include form-check-base;
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+  padding: 4px 0;
+
+  // Hide default checkbox
+  input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+  }
 
   // Custom checkbox box
   .checkmark {
-    @include form-checkbox-box;
+    width: 22px;
+    height: 22px;
+    background: var(--surface, var(--background));
+    border: var(--border-width, 1.5px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+    border-radius: var(--border-radius-md, 8px);
     position: relative;
+    transition: all var(--animation-duration-normal, 250ms) var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+    box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03));
 
-    &:after {
-      @include form-checkbox-checkmark;
+    @include reduced-motion {
+      transition: none;
+    }
+
+    // Checkmark icon
+    &::after {
+      content: '';
+      position: absolute;
+      display: none;
+      left: 7px;
+      top: 3px;
+      width: 6px;
+      height: 11px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+      background: var(--background);
+      transform: scale(1.05);
     }
   }
 
-  // Checkmark display when checked
+  // Checked state
   input:checked ~ .checkmark {
-    background-color: var(--accent, #3f51b5);
-    border-color: var(--accent, #3f51b5);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    border-color: var(--primary);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent);
 
-    &:after {
+    &::after {
       display: block;
+    }
+
+    &:hover {
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 40%, transparent);
+      transform: scale(1.1);
     }
   }
 
   // Focus state
   input:focus-visible ~ .checkmark {
-    outline: 2px solid var(--accent, #3f51b5);
-    outline-offset: 2px;
+    outline: 2px solid color-mix(in srgb, var(--primary) 50%, transparent);
+    outline-offset: 3px;
   }
 
   // Disabled state
   input:disabled ~ .checkmark {
     opacity: 0.5;
     cursor: not-allowed;
+    background: var(--surface);
+    box-shadow: none;
+
+    &:hover {
+      transform: none;
+      border-color: color-mix(in srgb, var(--primary) 20%, transparent);
+    }
   }
 
   // Label text
   .form-check-label {
-    font-family: var(
-      --font-body,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      sans-serif
-    );
-    font-size: var(--font-size-base, 1rem);
-    color: var(--foreground, #212529);
+    font-family: var(--font-body, system-ui, sans-serif);
+    font-size: 0.9375rem;
+    color: var(--foreground-secondary, var(--foreground));
+    line-height: 1.5;
+    transition: color var(--animation-duration-fast, 200ms) ease;
+  }
+
+  // Label hover
+  &:hover .form-check-label {
+    color: var(--foreground);
   }
 
   // Disabled label
@@ -63,70 +122,130 @@
   }
 }
 
-// Error message
-.error-message {
-  @include form-error-message;
+// Error state
+.form-check.has-error .checkmark {
+  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+  background: color-mix(in srgb, var(--danger) 6%, var(--background));
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--danger) 70%, transparent);
+  }
 }
 
-// Checkbox wrapper
-.form-check {
-  @include form-check-base;
+input:checked.form-check.has-error ~ .checkmark {
+  background: linear-gradient(135deg, var(--danger) 0%, var(--warning) 100%);
+  border-color: var(--danger);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--danger) 30%, transparent);
+}
 
-  // Custom checkbox box
+.error-message {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.75rem;
+  color: var(--danger, #dc2626);
+  margin-top: 4px;
+  padding-left: 34px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: var(--danger, #dc2626);
+    border-radius: 50%;
+  }
+}
+
+// Checkbox variants
+.form-check.switch {
   .checkmark {
-    @include form-checkbox-box;
-    position: relative;
+    width: 48px;
+    height: 26px;
+    border-radius: var(--border-radius-full, 13px);
+    background: var(--surface);
+    border-color: color-mix(in srgb, var(--primary) 20%, transparent);
 
-    &:after {
-      @include form-checkbox-checkmark;
-    }
-  }
-
-  // Checkmark display when checked
-  input:checked ~ .checkmark {
-    background-color: var(--accent, #3f51b5);
-    border-color: var(--accent, #3f51b5);
-
-    &:after {
+    &::after {
+      content: '';
+      position: absolute;
       display: block;
+      left: 3px;
+      top: 3px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transform: none;
+      border: none;
+      transition: transform 250ms var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
     }
   }
 
-  // Focus state
-  input:focus-visible ~ .checkmark {
-    outline: 2px solid var(--accent, #3f51b5);
-    outline-offset: 2px;
-  }
+  input:checked ~ .checkmark {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
 
-  // Disabled state
-  input:disabled ~ .checkmark {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  // Label text
-  .form-check-label {
-    font-family: var(
-      --font-body,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      sans-serif
-    );
-    font-size: var(--font-size-base, 1rem);
-    color: var(--foreground, #212529);
-  }
-
-  // Disabled label
-  input:disabled ~ .form-check-label {
-    opacity: 0.6;
-    cursor: not-allowed;
+    &::after {
+      transform: translateX(22px);
+    }
   }
 }
 
-// Error message
-.error-message {
-  @include form-error-message;
+.form-check.small {
+  .checkmark {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+
+    &::after {
+      left: 5px;
+      top: 2px;
+      width: 5px;
+      height: 9px;
+    }
+  }
+
+  .form-check-label {
+    font-size: 0.8125rem;
+  }
+}
+
+.form-check.large {
+  .checkmark {
+    width: 26px;
+    height: 26px;
+    border-radius: 10px;
+
+    &::after {
+      left: 9px;
+      top: 4px;
+      width: 7px;
+      height: 13px;
+    }
+  }
+
+  .form-check-label {
+    font-size: 1.0625rem;
+  }
+}
+
+// Checkbox group
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+
+  .checkbox-group-label {
+    font-family: var(--font-heading, system-ui, sans-serif);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--muted, #6b7280);
+    margin-bottom: 4px;
+  }
+
+  .form-check {
+    margin-left: 8px;
+  }
 }

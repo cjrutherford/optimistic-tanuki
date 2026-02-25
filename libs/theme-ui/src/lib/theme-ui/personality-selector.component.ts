@@ -167,42 +167,44 @@ interface PersonalityCard {
   styles: [
     `
       .personality-selector {
-        padding: 1.5rem;
+        padding: var(--spacing-lg, 1.5rem);
         max-width: 1200px;
         margin: 0 auto;
+        font-family: var(--font-body, system-ui, sans-serif);
       }
 
       .selector-header {
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: var(--spacing-xl, 2rem);
 
         h3 {
-          margin: 0 0 0.5rem;
-          font-size: 1.5rem;
+          margin: 0 0 var(--spacing-sm, 0.5rem);
+          font-family: var(--font-heading, system-ui, sans-serif);
+          font-size: var(--font-size-xl, 1.5rem);
           color: var(--foreground);
         }
 
         .subtitle {
           margin: 0;
           color: var(--muted);
-          font-size: 0.9rem;
+          font-size: var(--font-size-sm, 0.9rem);
         }
       }
 
       .personalities-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
+        gap: var(--spacing-md, 1rem);
+        margin-bottom: var(--spacing-xl, 2rem);
       }
 
       .personality-card {
         position: relative;
-        border: 2px solid var(--border);
+        border: var(--border-width, 2px) solid var(--border);
         border-radius: var(--border-radius-lg, 8px);
         overflow: hidden;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all var(--animation-duration-normal, 0.2s) var(--animation-easing, ease);
         background: var(--surface);
 
         &:hover {
@@ -214,7 +216,7 @@ interface PersonalityCard {
         &:focus {
           outline: none;
           border-color: var(--primary);
-          box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2);
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
         }
 
         &.selected {
@@ -234,40 +236,42 @@ interface PersonalityCard {
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: background 0.3s ease;
+          transition: background var(--animation-duration-normal, 0.3s) var(--animation-easing, ease);
         }
 
         .preview-elements {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: var(--spacing-md, 1rem);
         }
 
         .preview-accent {
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+          box-shadow: var(--shadow-md, 0 2px 8px rgba(0, 0, 0, 0.2));
         }
 
         .preview-text {
-          font-size: 1.5rem;
+          font-size: var(--font-size-xl, 1.5rem);
           font-weight: 600;
+          font-family: var(--font-heading, system-ui, sans-serif);
         }
       }
 
       .card-content {
-        padding: 1rem;
+        padding: var(--spacing-md, 1rem);
       }
 
       .card-header {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.5rem;
+        gap: var(--spacing-sm, 0.5rem);
+        margin-bottom: var(--spacing-sm, 0.5rem);
 
         .personality-name {
           margin: 0;
+          font-family: var(--font-heading, system-ui, sans-serif);
           font-size: 1.1rem;
           color: var(--foreground);
         }
@@ -276,15 +280,15 @@ interface PersonalityCard {
           font-size: 0.7rem;
           padding: 0.15rem 0.4rem;
           background: var(--primary);
-          color: white;
-          border-radius: 999px;
+          color: var(--primary-foreground, white);
+          border-radius: var(--border-radius-full, 999px);
           font-weight: 500;
         }
       }
 
       .personality-description {
-        margin: 0 0 0.75rem;
-        font-size: 0.85rem;
+        margin: 0 0 var(--spacing-sm, 0.75rem);
+        font-size: var(--font-size-sm, 0.85rem);
         color: var(--muted);
         line-height: 1.4;
         display: -webkit-box;
@@ -296,8 +300,8 @@ interface PersonalityCard {
       .personality-tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.25rem;
-        margin-bottom: 0.75rem;
+        gap: var(--spacing-xs, 0.25rem);
+        margin-bottom: var(--spacing-sm, 0.75rem);
 
         .tag {
           font-size: 0.7rem;
@@ -306,19 +310,21 @@ interface PersonalityCard {
           color: var(--foreground-secondary);
           border-radius: var(--border-radius-sm, 2px);
           text-transform: capitalize;
+          font-family: var(--font-body, system-ui, sans-serif);
         }
       }
 
       .personality-meta {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.75rem;
+        gap: var(--spacing-sm, 0.75rem);
         font-size: 0.75rem;
         color: var(--muted);
+        font-family: var(--font-body, system-ui, sans-serif);
 
         .meta-item {
           display: flex;
-          gap: 0.25rem;
+          gap: var(--spacing-xs, 0.25rem);
         }
 
         .meta-label {
@@ -328,12 +334,12 @@ interface PersonalityCard {
 
       .selection-indicator {
         position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
+        top: var(--spacing-sm, 0.5rem);
+        right: var(--spacing-sm, 0.5rem);
         width: 24px;
         height: 24px;
         background: var(--primary);
-        color: white;
+        color: var(--primary-foreground, white);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -348,41 +354,42 @@ interface PersonalityCard {
 
       .selected-info {
         background: var(--surface);
-        border: 1px solid var(--border);
+        border: var(--border-width, 1px) solid var(--border);
         border-radius: var(--border-radius-lg, 8px);
-        padding: 1.5rem;
+        padding: var(--spacing-lg, 1.5rem);
 
         h4 {
-          margin: 0 0 0.5rem;
+          margin: 0 0 var(--spacing-sm, 0.5rem);
+          font-family: var(--font-heading, system-ui, sans-serif);
           color: var(--foreground);
         }
 
         p {
-          margin: 0 0 1rem;
+          margin: 0 0 var(--spacing-md, 1rem);
           color: var(--muted);
         }
 
         .features-list {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: 0.5rem;
+          gap: var(--spacing-sm, 0.5rem);
         }
 
         .feature {
           display: flex;
           justify-content: space-between;
-          padding: 0.5rem;
+          padding: var(--spacing-sm, 0.5rem);
           background: var(--background);
           border-radius: var(--border-radius-md, 4px);
 
           .feature-label {
             color: var(--muted);
-            font-size: 0.85rem;
+            font-size: var(--font-size-sm, 0.85rem);
           }
 
           .feature-value {
             color: var(--foreground);
-            font-size: 0.85rem;
+            font-size: var(--font-size-sm, 0.85rem);
             font-weight: 500;
             text-transform: capitalize;
           }
@@ -411,7 +418,7 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private themeService: ThemeService) {}
+  constructor(private themeService: ThemeService) { }
 
   ngOnInit(): void {
     // Subscribe to current personality

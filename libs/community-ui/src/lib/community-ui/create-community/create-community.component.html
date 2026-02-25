@@ -51,6 +51,66 @@
         <p class="help-text">e.g., gaming, technology, music</p>
       </div>
 
+      <div class="image-uploads">
+        <div class="form-group">
+          <label class="image-label">Community Logo</label>
+          <div class="image-upload">
+            @if (logoPreview()) {
+            <div class="image-preview">
+              <img [src]="logoPreview()" alt="Logo preview" />
+              <button
+                type="button"
+                class="remove-btn"
+                (click)="logoPreview.set(null); logoAssetId.set(null)"
+              >
+                ×
+              </button>
+            </div>
+            } @else {
+            <div class="upload-placeholder">
+              <span>Click to upload logo</span>
+              <input
+                type="file"
+                accept="image/*"
+                (change)="onLogoSelect($event)"
+                class="file-input"
+              />
+            </div>
+            }
+          </div>
+          <p class="help-text">Recommended: Square image, at least 200x200px</p>
+        </div>
+
+        <div class="form-group">
+          <label class="image-label">Community Banner</label>
+          <div class="image-upload">
+            @if (bannerPreview()) {
+            <div class="image-preview banner-preview">
+              <img [src]="bannerPreview()" alt="Banner preview" />
+              <button
+                type="button"
+                class="remove-btn"
+                (click)="bannerPreview.set(null); bannerAssetId.set(null)"
+              >
+                ×
+              </button>
+            </div>
+            } @else {
+            <div class="upload-placeholder banner-placeholder">
+              <span>Click to upload banner</span>
+              <input
+                type="file"
+                accept="image/*"
+                (change)="onBannerSelect($event)"
+                class="file-input"
+              />
+            </div>
+            }
+          </div>
+          <p class="help-text">Recommended: 1200x400px or similar ratio</p>
+        </div>
+      </div>
+
       @if (error()) {
       <div class="error-message">
         {{ error() }}
@@ -61,8 +121,18 @@
         <otui-button variant="secondary" (action)="onCancel()" type="button">
           Cancel
         </otui-button>
-        <otui-button variant="primary" type="submit" [disabled]="loading()">
-          {{ loading() ? 'Creating...' : 'Create Community' }}
+        <otui-button
+          variant="primary"
+          type="submit"
+          [disabled]="loading() || uploading()"
+        >
+          {{
+            loading()
+              ? 'Creating...'
+              : uploading()
+              ? 'Uploading images...'
+              : 'Create Community'
+          }}
         </otui-button>
       </div>
     </form>
