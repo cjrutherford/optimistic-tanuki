@@ -34,7 +34,7 @@ export class CommunityService {
     dto: CreateCommunityDto,
     userId: string,
     profileId: string,
-    appScope: string = 'social'
+    appScope = 'social'
   ): Promise<Community> {
     const existing = await this.communityRepo.findOne({
       where: { name: dto.name, appScope },

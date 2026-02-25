@@ -273,7 +273,7 @@ export class ConversationService {
     toolCalls: any[],
     userId: string,
     conversationId: string,
-    enableHumanApproval: boolean = false
+    enableHumanApproval = false
   ): Promise<Array<{ tool: string; input: unknown; output: unknown }>> {
     const results: Array<{ tool: string; input: unknown; output: unknown }> =
       [];

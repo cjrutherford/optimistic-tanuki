@@ -12,7 +12,7 @@ export interface CreateDailyFourDto {
   public?: boolean;
 }
 
-export interface UpdateDailyFourDto extends Partial<CreateDailyFourDto> {}
+export type UpdateDailyFourDto = Partial<CreateDailyFourDto>
 
 @Injectable()
 export class DailyFourService {

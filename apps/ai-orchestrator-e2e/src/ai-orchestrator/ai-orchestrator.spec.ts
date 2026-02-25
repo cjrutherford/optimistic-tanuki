@@ -26,7 +26,7 @@ describe('AI Orchestrator Microservice E2E Tests', () => {
   let createdRiskId: string;
 
   // Shared history for the conversation
-  let history: any[] = [];
+  const history: any[] = [];
   const conversationId = 'e2e-test-conversation-' + Date.now();
   const projectName = 'Project Omega ' + Date.now();
 

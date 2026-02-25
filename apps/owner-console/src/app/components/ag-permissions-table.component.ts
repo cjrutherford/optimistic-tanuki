@@ -68,8 +68,8 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 })
 export class AgPermissionsTableComponent implements OnInit, OnChanges {
   @Input() permissions: PermissionDto[] = [];
-  @Input() loading: boolean = false;
-  @Input() height: string = '600px';
+  @Input() loading = false;
+  @Input() height = '600px';
   @Output() create = new EventEmitter<void>();
   @Output() edit = new EventEmitter<PermissionDto>();
   @Output() delete = new EventEmitter<PermissionDto>();

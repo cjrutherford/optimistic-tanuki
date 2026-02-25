@@ -174,7 +174,7 @@ test.describe('Digital Homestead E2E Tests', () => {
 
       // New Post button should not be visible for unauthenticated users
       const newPostButton = page.locator('text=New Post');
-      await expect(newPostButton).not.toBeVisible();
+      await expect(newPostButton).toBeHidden();
     });
 
     test('should display welcome message with sign-in link', async ({
@@ -200,7 +200,7 @@ test.describe('Digital Homestead E2E Tests', () => {
 
       // Edit Post button should not be visible for unauthenticated users
       const editButton = page.locator('text=Edit Post');
-      await expect(editButton).not.toBeVisible();
+      await expect(editButton).toBeHidden();
     });
 
     test('should navigate to login when clicking sign-in link', async ({

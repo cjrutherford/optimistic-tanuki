@@ -117,7 +117,7 @@ export class ManageMembersComponent extends Variantable implements OnInit {
       const members = await this.communityService.getMembers(this.communityId);
 
       const profileIds = [...new Set(members.map((m) => m.profileId))];
-      let profilesMap = new Map<string, any>();
+      const profilesMap = new Map<string, any>();
       if (profileIds.length > 0) {
         const profiles = await this.communityService.getProfilesByIds(
           profileIds

@@ -16,7 +16,7 @@ export class OrderManagementComponent implements OnInit {
   selectedOrder: Order | null = null;
   loading = false;
   error: string | null = null;
-  filterStatus: string = 'all';
+  filterStatus = 'all';
 
   constructor(private storeService: StoreService) {}
 

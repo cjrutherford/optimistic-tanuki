@@ -40,7 +40,7 @@ import { RiskFormComponent } from '../risk-form/risk-form.component';
 export class AgRisksTableComponent implements OnInit, OnChanges {
   // Traditional inputs/outputs for compatibility
   @Input() risks: Risk[] = [];
-  @Input() loading: boolean = false;
+  @Input() loading = false;
   @Output() createRisk = new EventEmitter<CreateRisk>();
   @Output() editRisk = new EventEmitter<Risk>();
   @Output() deleteRisk = new EventEmitter<string>();

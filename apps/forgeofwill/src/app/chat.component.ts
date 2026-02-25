@@ -12,7 +12,7 @@ import {
   OnDestroy,
   Input,
   SimpleChange,
-  SimpleChanges,
+  SimpleChanges, OnChanges,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
@@ -71,7 +71,7 @@ import { io } from 'socket.io-client';
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss',
 })
-export class ChatComponent implements OnInit, OnDestroy {
+export class ChatComponent implements OnInit, OnDestroy, OnChanges {
   @Input() externalMessages: Partial<ChatMessage>[] = [];
   socketChat?: SocketChatService | null;
   private injector = inject(EnvironmentInjector);

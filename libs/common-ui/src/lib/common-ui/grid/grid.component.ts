@@ -41,13 +41,13 @@ export class GridComponent extends Variantable implements OnInit, OnChanges {
   @Input() columns: number | 'auto-fit' = 'auto-fit';
   @Input() rows: number | 'auto' = 'auto';
   @Input() gap: string | number = 'md';
-  @Input() minColumnWidth: string = '200px';
-  @Input() maxColumnWidth: string = '1fr';
+  @Input() minColumnWidth = '200px';
+  @Input() maxColumnWidth = '1fr';
 
   // Layout Options
   @Input() layout: 'grid' | 'flex' | 'horizontal' | 'vertical' = 'grid';
   @Input() direction: 'row' | 'column' = 'row';
-  @Input() wrap: boolean = true;
+  @Input() wrap = true;
   @Input() justifyContent:
     | 'start'
     | 'center'
@@ -74,15 +74,15 @@ export class GridComponent extends Variantable implements OnInit, OnChanges {
   }
 
   // Internal state
-  currentColumns: number = 1;
-  currentRows: number = 1;
-  renderEmpty: boolean = false;
+  currentColumns = 1;
+  currentRows = 1;
+  renderEmpty = false;
 
   // Computed styles
-  gridTemplateColumns: string = '';
-  gridTemplateRows: string = '';
-  columnFraction: string = '1fr';
-  rowFraction: string = 'auto';
+  gridTemplateColumns = '';
+  gridTemplateRows = '';
+  columnFraction = '1fr';
+  rowFraction = 'auto';
 
   override ngOnInit(): void {
     this.updateGridDimensions();

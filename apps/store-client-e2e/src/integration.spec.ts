@@ -34,7 +34,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
       );
 
       // Verify error handling
-      const errorElement = await page.locator('.error, .empty-state').first();
+      const errorElement = page.locator('.error, .empty-state').first();
       if (await errorElement.isVisible({ timeout: 5000 })) {
         console.log('Error state displayed correctly');
       }

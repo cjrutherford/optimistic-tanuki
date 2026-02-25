@@ -71,10 +71,10 @@ export class AgGridUiComponent
   /** Optional loading hint; when true the AG Grid loading overlay will be shown */
   @Input() loading?: boolean = false;
   /** Height of the grid (default: 500px) */
-  @Input() height: string = '500px';
+  @Input() height = '500px';
 
   /** Width of the grid (default: 100%) */
-  @Input() width: string = '100%';
+  @Input() width = '100%';
 
   /** Grid API instance (available after grid is ready) */
   public gridApi?: GridApi;

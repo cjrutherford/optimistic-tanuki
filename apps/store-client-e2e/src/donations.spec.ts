@@ -37,8 +37,8 @@ test.describe('Store Donations E2E', () => {
 
     if (await customInput.isVisible()) {
       await customInput.fill('42.50');
-      const value = await customInput.inputValue();
-      expect(value).toBe('42.50');
+      const value = customInput;
+      await expect(value).toHaveValue('42.50');
     }
   });
 
@@ -124,7 +124,7 @@ test.describe('Store Donations E2E', () => {
 
     if (await anonymousCheckbox.isVisible()) {
       await anonymousCheckbox.check();
-      expect(await anonymousCheckbox.isChecked()).toBeTruthy();
+      await expect(anonymousCheckbox).toBeChecked();
     }
   });
 
