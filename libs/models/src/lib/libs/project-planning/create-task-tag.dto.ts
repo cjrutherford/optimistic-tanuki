@@ -15,7 +15,7 @@ export class CreateTaskTagDto {
   @IsString()
   @MinLength(1)
   @MaxLength(50)
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({
     description: 'Color for the tag (hex code)',
@@ -38,5 +38,5 @@ export class CreateTaskTagDto {
   @ApiProperty({ description: 'User who created the tag' })
   @IsString()
   @IsUUID()
-  createdBy: string;
+  createdBy!: string;
 }

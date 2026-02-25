@@ -11,16 +11,16 @@ import { Type } from 'class-transformer';
 export class CreateOrderItemDto {
   @ApiProperty({ description: 'The ID of the product' })
   @IsString()
-  productId: string;
+  productId!: string;
 
   @ApiProperty({ description: 'The quantity of the product' })
   @IsNumber()
-  quantity: number;
+  quantity!: number;
 }
 export class CreateOrderDto {
   @ApiProperty({ description: 'The ID of the user creating the order' })
   @IsString()
-  userId: string;
+  userId!: string;
 
   @ApiProperty({
     description: 'The list of items in the order',
@@ -29,7 +29,7 @@ export class CreateOrderDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
-  items: CreateOrderItemDto[];
+  items!: CreateOrderItemDto[];
 }
 
 export class UpdateOrderDto {

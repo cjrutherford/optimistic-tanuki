@@ -87,6 +87,7 @@ docker-compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml up -d
 ## Additional Notes
 
 - Refer to individual `README.md` files in `libs` and `apps` for more details on specific components.
+- Often for a feature there are markdown files that provide more detailed information on how to implement a preferred pattern, and how to integrate it with other parts of the system.
 - Use the `nx` CLI for efficient workspace management.
 
 Feel free to update this document as the project evolves!

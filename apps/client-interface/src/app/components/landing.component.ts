@@ -1,8 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  AfterViewInit,
+  inject,
+} from '@angular/core';
 import { Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 
 import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'app-landing',
@@ -12,6 +20,10 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
   styleUrls: ['./landing.component.scss'],
 })
 export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
+  private router = inject(Router);
+  private themeService = inject(ThemeService);
+  private destroy$ = new Subject<void>();
+
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D | null;
   private animationId!: number;
@@ -24,26 +36,60 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     opacity: number;
   }> = [];
 
-  constructor(private router: Router) {}
+  private currentAccentColor = '#E07A5F';
 
   ngOnInit(): void {}
 
   ngAfterViewInit(): void {
     this.initConstellation();
     this.applyThemeColors();
+    this.subscribeToThemeChanges();
   }
 
   ngOnDestroy(): void {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
     }
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private subscribeToThemeChanges(): void {
+    this.themeService.generatedTheme$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((theme) => {
+        if (theme) {
+          this.currentAccentColor = theme.colors.primary;
+          // Respect personality animation preferences
+          if (theme.personality?.animations?.prefersReducedMotion) {
+            this.disableAnimations();
+          }
+        }
+      });
+  }
+
+  private disableAnimations(): void {
+    // Stop canvas animation if reduced motion is preferred
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = 0;
+    }
+    // Add reduced-motion class to body
+    document.body.classList.add('reduced-motion');
+  }
+
+  private enableAnimations(): void {
+    if (!this.animationId && this.canvas) {
+      this.animate();
+    }
+    document.body.classList.remove('reduced-motion');
   }
 
   private applyThemeColors(): void {
-    const style = getComputedStyle(document.body);
-    const accentColor = style.getPropertyValue('--accent').trim() || '#E07A5F';
-    const backgroundColor =
-      style.getPropertyValue('--background').trim() || '#FDFCF5';
+    const root = document.documentElement;
+    const style = getComputedStyle(root);
+    this.currentAccentColor =
+      style.getPropertyValue('--accent').trim() || '#E07A5F';
 
     if (this.canvas) {
       this.canvas.style.background = 'transparent';
@@ -93,9 +139,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private animate(): void {
     if (!this.ctx || !this.canvas) return;
 
-    const style = getComputedStyle(document.body);
-    const accentColor = style.getPropertyValue('--accent').trim() || '#E07A5F';
-    const rgb = this.hexToRgb(accentColor);
+    const rgb = this.hexToRgb(this.currentAccentColor);
 
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BlogComponentController } from './blog-component.controller';
 import { BlogComponentService } from '../services/blog-component.service';
+import { SanitizationService } from '../services/sanitization.service';
 import {
   CreateBlogComponentDto,
   UpdateBlogComponentDto,
@@ -54,11 +55,21 @@ describe('BlogComponentController', () => {
           provide: BlogComponentService,
           useValue: mockService,
         },
+        {
+          provide: SanitizationService,
+          useValue: {
+            sanitizeHtml: jest
+              .fn()
+              .mockImplementation((html: string) => Promise.resolve(html)),
+          },
+        },
       ],
     }).compile();
 
     controller = module.get<BlogComponentController>(BlogComponentController);
-    service = module.get<BlogComponentService>(BlogComponentService) as jest.Mocked<BlogComponentService>;
+    service = module.get<BlogComponentService>(
+      BlogComponentService
+    ) as jest.Mocked<BlogComponentService>;
   });
 
   it('should be defined', () => {

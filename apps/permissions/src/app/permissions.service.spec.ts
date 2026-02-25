@@ -13,13 +13,13 @@ const mockPermissionsRepository = () => ({
   create: jest.fn(),
   save: jest.fn(),
   findOne: jest.fn(),
-  find: jest.fn(),
+  find: jest.fn().mockResolvedValue([]),
   update: jest.fn(),
   delete: jest.fn(),
 });
 
 const mockRoleAssignmentRepository = () => ({
-  find: jest.fn(),
+  find: jest.fn().mockResolvedValue([]),
 });
 
 describe('PermissionsService', () => {

@@ -1,51 +1,7 @@
 // ============================================================================
-// FORGE OF WILL - CYBER-SMITH LANDING PAGE
-// A fusion of medieval forge aesthetics with futuristic digital elements
+// FORGE OF WILL - CINEMATIC MOLTEN FORGE LANDING PAGE
+// A fusion of ancient blacksmithing with modern digital craftsmanship
 // ============================================================================
-
-// CSS Custom Properties for the forge theme
-:root {
-  // Molten metal palette
-  --forge-void: #0a0a0f;
-  --forge-depth: #12121a;
-  --forge-surface: #1a1a25;
-  --forge-elevation: #252535;
-
-  // Molten accents
-  --forge-ember: #ff6b35;
-  --forge-amber: #f7931e;
-  --forge-gold: #ffc107;
-  --forge-copper: #b87333;
-  --forge-bronze: #cd7f32;
-
-  // Crystalline highlights
-  --forge-cyan: #00d4ff;
-  --forge-ice: #a8e6cf;
-  --forge-electric: #7ee8fa;
-
-  // Functional colors
-  --forge-text: #f0f0f5;
-  --forge-muted: #8a8a9a;
-  --forge-dim: #5a5a6a;
-  --forge-border: rgba(255, 107, 53, 0.15);
-
-  // Glow effects
-  --glow-ember: 0 0 40px rgba(255, 107, 53, 0.4);
-  --glow-amber: 0 0 60px rgba(247, 147, 30, 0.3);
-  --glow-cyan: 0 0 30px rgba(0, 212, 255, 0.3);
-
-  // Typography
-  --font-display: 'Cinzel', 'Playfair Display', serif;
-  --font-body: 'Space Grotesk', 'Exo 2', sans-serif;
-
-  // Spacing
-  --spacing-xs: 0.5rem;
-  --spacing-sm: 1rem;
-  --spacing-md: 1.5rem;
-  --spacing-lg: 2.5rem;
-  --spacing-xl: 4rem;
-  --spacing-xxl: 6rem;
-}
 
 // ============================================================================
 // BASE LAYOUT
@@ -54,18 +10,20 @@
 .landing-page {
   min-height: 100vh;
   width: 100%;
-  background: var(--forge-void);
-  color: var(--forge-text);
-  font-family: var(--font-body);
+  background: var(--background, #0a0a0f);
+  color: var(--foreground, #f0f0f5);
+  font-family: var(--font-body, 'Crimson Pro', Georgia, serif);
   position: relative;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
+  --heat-glow: 0 0 60px
+    color-mix(in srgb, var(--primary, #ff6b35) 40%, transparent);
 }
 
 // ============================================================================
-// BACKGROUND SYSTEM
+// CINEMATIC BACKGROUND SYSTEM
 // ============================================================================
 
 .forge-background {
@@ -76,118 +34,120 @@
   overflow: hidden;
 }
 
-// Multi-layer gradient mesh
+// Volumetric gradient mesh with heat shimmer
 .gradient-mesh {
   position: absolute;
   inset: 0;
+  filter: blur(60px);
 
   .mesh-layer {
     position: absolute;
-    inset: 0;
-    opacity: 0.5;
+    inset: -20%;
+    opacity: 0.35;
     mix-blend-mode: screen;
-    filter: blur(80px);
   }
 
   .layer-1 {
     background: radial-gradient(
-      ellipse 80% 60% at 20% 30%,
-      rgba(255, 107, 53, 0.3) 0%,
-      transparent 60%
+      ellipse 100% 80% at 20% 40%,
+      var(--primary, #ff6b35) 0%,
+      transparent 55%
     );
-    animation: mesh-breathe-1 20s ease-in-out infinite;
+    animation: heat-shimmer-1 25s ease-in-out infinite;
   }
 
   .layer-2 {
     background: radial-gradient(
-      ellipse 70% 80% at 80% 70%,
-      rgba(0, 212, 255, 0.2) 0%,
+      ellipse 90% 100% at 80% 60%,
+      var(--secondary, #00d4ff) 0%,
       transparent 60%
     );
-    animation: mesh-breathe-2 25s ease-in-out infinite;
+    animation: heat-shimmer-2 30s ease-in-out infinite;
   }
 
   .layer-3 {
     background: radial-gradient(
-      ellipse 60% 50% at 50% 50%,
-      rgba(247, 147, 30, 0.15) 0%,
+      ellipse 70% 60% at 50% 30%,
+      var(--tertiary, #f7931e) 0%,
       transparent 50%
     );
-    animation: mesh-breathe-3 18s ease-in-out infinite;
+    animation: heat-shimmer-3 22s ease-in-out infinite;
   }
 
   .layer-4 {
     background: radial-gradient(
-      ellipse 100% 40% at 30% 80%,
-      rgba(184, 115, 51, 0.2) 0%,
-      transparent 50%
+      ellipse 120% 50% at 30% 80%,
+      var(--primary, #b87333) 0%,
+      transparent 55%
     );
-    animation: mesh-breathe-4 22s ease-in-out infinite;
+    animation: heat-shimmer-4 28s ease-in-out infinite;
   }
 }
 
-@keyframes mesh-breathe-1 {
+@keyframes heat-shimmer-1 {
   0%,
   100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.5;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 0.35;
   }
   33% {
-    transform: translate(30px, -20px) scale(1.1);
-    opacity: 0.6;
+    transform: translate(40px, -30px) scale(1.1) rotate(2deg);
+    opacity: 0.45;
   }
   66% {
-    transform: translate(-20px, 30px) scale(0.95);
-    opacity: 0.4;
+    transform: translate(-30px, 40px) scale(0.95) rotate(-1deg);
+    opacity: 0.3;
   }
 }
 
-@keyframes mesh-breathe-2 {
+@keyframes heat-shimmer-2 {
   0%,
   100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.4;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 0.3;
   }
   50% {
-    transform: translate(-40px, 20px) scale(1.15);
-    opacity: 0.5;
+    transform: translate(-50px, 30px) scale(1.15) rotate(-3deg);
+    opacity: 0.4;
   }
 }
 
-@keyframes mesh-breathe-3 {
+@keyframes heat-shimmer-3 {
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
   25% {
-    transform: translate(20px, 20px) scale(1.05);
+    transform: translate(30px, 30px) scale(1.05) rotate(1deg);
   }
   75% {
-    transform: translate(-20px, -20px) scale(0.95);
+    transform: translate(-20px, -30px) scale(0.95) rotate(-1deg);
   }
 }
 
-@keyframes mesh-breathe-4 {
+@keyframes heat-shimmer-4 {
   0%,
   100% {
     transform: translate(0, 0) rotate(0deg);
-    opacity: 0.3;
+    opacity: 0.25;
   }
   50% {
-    transform: translate(10px, -30px) rotate(5deg);
-    opacity: 0.4;
+    transform: translate(20px, -40px) rotate(4deg);
+    opacity: 0.35;
   }
 }
 
-// Crystalline floating orbs
+// Crystalline orbs with volumetric glow
 .crystalline-orbs {
   position: absolute;
   inset: 0;
+  perspective: 1000px;
 }
 
 .orb {
   position: absolute;
   border-radius: 50%;
+  transform-style: preserve-3d;
 
   .orb-inner {
     position: absolute;
@@ -195,106 +155,127 @@
     border-radius: 50%;
     background: radial-gradient(
       circle at 30% 30%,
-      rgba(255, 255, 255, 0.8) 0%,
-      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0.2) 40%,
       transparent 70%
     );
+    animation: inner-shimmer 8s ease-in-out infinite;
   }
 
   .orb-glow {
     position: absolute;
-    inset: -20%;
+    inset: -30%;
     border-radius: 50%;
-    filter: blur(30px);
-    opacity: 0.6;
+    filter: blur(40px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes inner-shimmer {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
   }
 }
 
 .orb-primary {
-  width: 300px;
-  height: 300px;
-  top: 10%;
-  right: 5%;
+  width: 350px;
+  height: 350px;
+  top: 8%;
+  right: 3%;
   background: radial-gradient(
-    circle at 30% 30%,
-    var(--forge-ember),
-    var(--forge-copper)
+    circle at 35% 35%,
+    var(--primary, #ff6b35),
+    var(--primary-3, #b87333)
   );
-  animation: orb-float-1 30s ease-in-out infinite;
+  animation: orb-float-1 35s ease-in-out infinite;
+  box-shadow: 0 0 120px
+      color-mix(in srgb, var(--primary, #ff6b35) 60%, transparent),
+    inset 0 0 80px rgba(255, 255, 255, 0.1);
 
   .orb-glow {
-    background: var(--forge-ember);
-    box-shadow: 0 0 100px var(--forge-ember);
+    background: var(--primary, #ff6b35);
   }
 }
 
 .orb-secondary {
-  width: 200px;
-  height: 200px;
-  bottom: 20%;
-  left: 5%;
+  width: 220px;
+  height: 220px;
+  bottom: 15%;
+  left: 3%;
   background: radial-gradient(
-    circle at 30% 30%,
-    var(--forge-cyan),
-    var(--forge-ice)
+    circle at 35% 35%,
+    var(--secondary, #00d4ff),
+    var(--secondary-3, #00a8cc)
   );
-  animation: orb-float-2 25s ease-in-out infinite;
+  animation: orb-float-2 28s ease-in-out infinite;
+  box-shadow: 0 0 100px
+      color-mix(in srgb, var(--secondary, #00d4ff) 50%, transparent),
+    inset 0 0 60px rgba(255, 255, 255, 0.1);
 
   .orb-glow {
-    background: var(--forge-cyan);
-    box-shadow: 0 0 80px var(--forge-cyan);
+    background: var(--secondary, #00d4ff);
   }
 }
 
 .orb-tertiary {
-  width: 150px;
-  height: 150px;
-  top: 50%;
-  left: 15%;
+  width: 180px;
+  height: 180px;
+  top: 45%;
+  left: 12%;
   background: radial-gradient(
-    circle at 30% 30%,
-    var(--forge-amber),
-    var(--forge-gold)
+    circle at 35% 35%,
+    var(--tertiary, #f7931e),
+    var(--warning, #ffc107)
   );
-  animation: orb-float-3 20s ease-in-out infinite;
+  animation: orb-float-3 22s ease-in-out infinite;
+  box-shadow: 0 0 80px
+      color-mix(in srgb, var(--warning, #f7931e) 50%, transparent),
+    inset 0 0 50px rgba(255, 255, 255, 0.1);
 
   .orb-glow {
-    background: var(--forge-amber);
-    box-shadow: 0 0 60px var(--forge-amber);
+    background: var(--warning, #f7931e);
   }
 }
 
 .orb-accent {
-  width: 100px;
-  height: 100px;
-  bottom: 40%;
-  right: 20%;
+  width: 120px;
+  height: 120px;
+  bottom: 35%;
+  right: 18%;
   background: radial-gradient(
-    circle at 30% 30%,
-    var(--forge-electric),
+    circle at 35% 35%,
+    var(--tertiary, #7ee8fa),
     transparent
   );
-  animation: orb-float-4 22s ease-in-out infinite;
+  animation: orb-float-4 24s ease-in-out infinite;
+  box-shadow: 0 0 60px
+      color-mix(in srgb, var(--tertiary, #7ee8fa) 50%, transparent),
+    inset 0 0 40px rgba(255, 255, 255, 0.15);
 
   .orb-glow {
-    background: var(--forge-electric);
-    box-shadow: 0 0 50px var(--forge-electric);
+    background: var(--tertiary, #7ee8fa);
   }
 }
 
 @keyframes orb-float-1 {
   0%,
   100% {
-    transform: translate(0, 0) rotate(0deg);
+    transform: translate(0, 0) rotate(0deg) rotateY(0deg);
   }
   25% {
-    transform: translate(50px, 30px) rotate(90deg);
+    transform: translate(60px, 40px) rotate(90deg) rotateY(10deg);
   }
   50% {
-    transform: translate(30px, -40px) rotate(180deg);
+    transform: translate(40px, -50px) rotate(180deg) rotateY(0deg);
   }
   75% {
-    transform: translate(-40px, 20px) rotate(270deg);
+    transform: translate(-50px, 30px) rotate(270deg) rotateY(-10deg);
   }
 }
 
@@ -304,10 +285,10 @@
     transform: translate(0, 0) rotate(0deg);
   }
   33% {
-    transform: translate(-30px, -50px) rotate(120deg);
+    transform: translate(-40px, -60px) rotate(120deg);
   }
   66% {
-    transform: translate(40px, 30px) rotate(240deg);
+    transform: translate(50px, 40px) rotate(240deg);
   }
 }
 
@@ -317,7 +298,7 @@
     transform: translate(0, 0) scale(1);
   }
   50% {
-    transform: translate(20px, -30px) scale(1.1);
+    transform: translate(30px, -40px) scale(1.1);
   }
 }
 
@@ -327,24 +308,38 @@
     transform: translate(0, 0);
   }
   50% {
-    transform: translate(-60px, 40px);
+    transform: translate(-70px, 50px);
   }
 }
 
-// Particle field
+// Particle field with heat distortion
 .particle-field {
   position: absolute;
   inset: 0;
-  opacity: 0.4;
+  opacity: 0.5;
+  --particle-color: var(--primary, #ff6b35);
 }
 
-// Noise texture overlay
+// Noise texture for grit
 .noise-overlay {
   position: absolute;
   inset: 0;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   mix-blend-mode: overlay;
+}
+
+// Vignette effect for cinematic depth
+.vignette-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 80% at 50% 50%,
+    transparent 0%,
+    transparent 50%,
+    var(--background, #0a0a0f) 100%
+  );
+  pointer-events: none;
 }
 
 // Bottom gradient fade
@@ -353,8 +348,13 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 200px;
-  background: linear-gradient(to top, var(--forge-void), transparent);
+  height: 250px;
+  background: linear-gradient(
+    to top,
+    var(--background, #0a0a0f) 0%,
+    color-mix(in srgb, var(--background, #0a0a0f) 80%, transparent) 60%,
+    transparent 100%
+  );
   pointer-events: none;
   z-index: 1;
 }
@@ -368,126 +368,124 @@
   z-index: 2;
   width: 100%;
   max-width: 1400px;
-  padding: var(--spacing-xl) var(--spacing-lg);
+  padding: var(--spacing-xl, 4rem) var(--spacing-lg, 2.5rem);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-xxl, 6rem);
 }
 
-// Brand mark
+// Brand mark with dramatic presence
 .brand-mark {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  animation: fade-in-down 1s ease-out;
+  gap: var(--spacing-sm, 1rem);
+  animation: forge-reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
   .anvil-icon {
-    width: 40px;
-    height: 40px;
-    color: var(--forge-amber);
+    width: 48px;
+    height: 48px;
+    color: var(--primary, #ff6b35);
+    filter: drop-shadow(
+      0 0 20px color-mix(in srgb, var(--primary, #ff6b35) 60%, transparent)
+    );
 
     svg {
       width: 100%;
       height: 100%;
-      filter: drop-shadow(0 0 10px rgba(247, 147, 30, 0.5));
     }
   }
 
   .brand-text {
-    font-family: var(--font-display);
-    font-size: 0.9rem;
+    font-family: var(--font-heading, 'Cinzel', serif);
+    font-size: 0.85rem;
     font-weight: 600;
-    letter-spacing: 0.3em;
-    color: var(--forge-amber);
+    letter-spacing: 0.4em;
     text-transform: uppercase;
+    color: var(--primary, #ff6b35);
+    text-shadow: 0 0 30px
+      color-mix(in srgb, var(--primary, #ff6b35) 40%, transparent);
   }
 }
 
-@keyframes fade-in-down {
+@keyframes forge-reveal {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-30px) scale(0.95);
+    filter: blur(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 
 // ============================================================================
-// HERO SECTION
+// DRAMATIC HERO SECTION
 // ============================================================================
 
 .forge-hero {
   text-align: center;
-  max-width: 900px;
-  margin-bottom: 20px;
+  max-width: 950px;
+  margin: var(--spacing-lg, 2rem) 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl, 4rem);
 }
 
 .hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: 0.6rem 1.2rem;
-  background: rgba(255, 107, 53, 0.1);
-  border: 1px solid rgba(255, 107, 53, 0.3);
+  gap: var(--spacing-xs, 0.5rem);
+  padding: 0.7rem 1.4rem;
+  background: color-mix(in srgb, var(--primary, #ff6b35) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary, #ff6b35) 40%, transparent);
   border-radius: 999px;
-  animation: fade-in-up 0.8s ease-out 0.2s both;
+  animation: forge-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 
   .badge-pulse {
-    width: 8px;
-    height: 8px;
-    background: var(--forge-ember);
+    width: 10px;
+    height: 10px;
+    background: var(--primary, #ff6b35);
     border-radius: 50%;
-    animation: pulse-glow 2s ease-in-out infinite;
-    box-shadow: 0 0 10px var(--forge-ember);
+    animation: forge-pulse 2.5s ease-in-out infinite;
+    box-shadow: 0 0 15px var(--primary, #ff6b35);
   }
 
   .badge-text {
-    font-size: 0.8rem;
+    font-family: var(--font-body, 'Crimson Pro', serif);
+    font-size: 0.75rem;
     font-weight: 500;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--forge-amber);
+    color: var(--primary, #ff6b35);
   }
 }
 
-@keyframes pulse-glow {
+@keyframes forge-pulse {
   0%,
   100% {
     opacity: 1;
     transform: scale(1);
+    box-shadow: 0 0 15px var(--primary, #ff6b35);
   }
   50% {
-    opacity: 0.6;
+    opacity: 0.7;
     transform: scale(1.2);
-  }
-}
-
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    box-shadow: 0 0 25px var(--primary, #ff6b35);
   }
 }
 
 .hero-headline {
-  font-family: var(--font-display);
-  font-size: clamp(2.5rem, 8vw, 5.5rem);
-  font-weight: 700;
-  line-height: 1.1;
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: clamp(3rem, 10vw, 6.5rem);
+  font-weight: 400;
+  line-height: 1.05;
   margin: 0;
   letter-spacing: -0.02em;
-  animation: fade-in-up 0.8s ease-out 0.4s both;
+  animation: forge-reveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
 
   .headline-line {
     display: block;
@@ -495,34 +493,37 @@
     &.accent {
       background: linear-gradient(
         135deg,
-        var(--forge-ember),
-        var(--forge-amber),
-        var(--forge-gold)
+        var(--primary, #ff6b35) 0%,
+        var(--warning, #f7931e) 50%,
+        var(--warning-4, #ffc107) 100%
       );
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      filter: drop-shadow(0 0 30px rgba(255, 107, 53, 0.3));
+      filter: drop-shadow(
+        0 0 40px color-mix(in srgb, var(--primary, #ff6b35) 25%, transparent)
+      );
     }
   }
 }
 
 .hero-lead {
-  font-size: clamp(1rem, 2.5vw, 1.35rem);
-  color: var(--forge-muted);
+  font-family: var(--font-body, 'Crimson Pro', serif);
+  font-size: clamp(1.1rem, 2.5vw, 1.45rem);
+  color: var(--muted, #a0a0b0);
   max-width: 650px;
-  line-height: 1.7;
+  line-height: 1.8;
   margin: 0;
-  animation: fade-in-up 0.8s ease-out 0.6s both;
+  animation: forge-reveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
 }
 
-// Hero Actions
+// Hero Actions with molten button effect
 .hero-actions {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md, 1.5rem);
   flex-wrap: wrap;
   justify-content: center;
-  animation: fade-in-up 0.8s ease-out 0.8s both;
+  animation: forge-reveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
 }
 
 .btn-forge {
@@ -530,16 +531,16 @@
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 2rem;
-  font-family: var(--font-body);
+  padding: 1.1rem 2.2rem;
+  font-family: var(--font-body, 'Crimson Pro', serif);
   font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-weight: 500;
+  letter-spacing: 0.03em;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
   .btn-text {
     position: relative;
@@ -547,25 +548,47 @@
   }
 
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px) scale(1.02);
   }
 
   &:active {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.98);
   }
 }
 
 .btn-primary-ember {
-  background: linear-gradient(135deg, var(--forge-ember), var(--forge-copper));
+  background: linear-gradient(
+    135deg,
+    var(--primary, #ff6b35) 0%,
+    var(--primary-3, #d4853c) 50%,
+    var(--primary-5, #b87333) 100%
+  );
   color: white;
-  box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 4px 25px
+      color-mix(in srgb, var(--primary, #ff6b35) 40%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.3) 0%,
+      transparent 50%,
+      rgba(0, 0, 0, 0.2) 100%
+    );
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
 
   .btn-spark {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     position: relative;
     z-index: 2;
-    transition: transform 0.3s ease;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
     svg {
       width: 100%;
@@ -575,21 +598,29 @@
 
   .ember-glow {
     position: absolute;
-    inset: 0;
+    inset: -2px;
     background: radial-gradient(
-      circle at center,
-      rgba(255, 255, 255, 0.3),
-      transparent
+      ellipse at center,
+      color-mix(in srgb, var(--primary, #ff6b35) 50%, transparent) 0%,
+      transparent 70%
     );
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.4s ease;
+    border-radius: 10px;
+    z-index: -1;
   }
 
   &:hover {
-    box-shadow: 0 8px 30px rgba(255, 107, 53, 0.5);
+    box-shadow: 0 8px 35px
+        color-mix(in srgb, var(--primary, #ff6b35) 60%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+
+    &::before {
+      opacity: 1;
+    }
 
     .btn-spark {
-      transform: translateX(4px);
+      transform: translateX(5px);
     }
 
     .ember-glow {
@@ -600,50 +631,56 @@
 
 .btn-secondary-smoke {
   background: transparent;
-  color: var(--forge-text);
-  border: 2px solid var(--forge-dim);
+  color: var(--foreground, #f0f0f5);
+  border: 1.5px solid
+    color-mix(in srgb, var(--foreground, #f0f0f5) 25%, transparent);
 
   &:hover {
-    border-color: var(--forge-amber);
-    color: var(--forge-amber);
-    box-shadow: 0 0 20px rgba(247, 147, 30, 0.2);
+    border-color: var(--primary, #ff6b35);
+    color: var(--primary, #ff6b35);
+    background: color-mix(in srgb, var(--primary, #ff6b35) 8%, transparent);
+    box-shadow: 0 0 30px
+      color-mix(in srgb, var(--primary, #ff6b35) 20%, transparent);
   }
 }
 
-// Stats
+// Stats with dramatic reveal
 .forge-stats {
   display: flex;
   justify-content: center;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-xl, 4rem);
   flex-wrap: wrap;
-  margin-top: var(--spacing-md);
+  margin-top: var(--spacing-lg, 2rem);
 }
 
 .stat-item {
   text-align: center;
   position: relative;
-  animation: stat-fade-in 0.6s ease-out both;
+  animation: stat-forge-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 
   .stat-value {
-    font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--forge-amber);
+    font-family: var(--font-heading, 'Cinzel', serif);
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: var(--primary, #ff6b35);
     display: block;
+    text-shadow: 0 0 20px
+      color-mix(in srgb, var(--primary, #ff6b35) 30%, transparent);
   }
 
   .stat-label {
-    font-size: 0.85rem;
-    color: var(--forge-muted);
+    font-family: var(--font-body, 'Crimson Pro', serif);
+    font-size: 0.8rem;
+    color: var(--muted, #a0a0b0);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-top: 0.25rem;
+    letter-spacing: 0.12em;
+    margin-top: 0.4rem;
     display: block;
   }
 
   .stat-line {
     position: absolute;
-    bottom: -10px;
+    bottom: -12px;
     left: 50%;
     transform: translateX(-50%);
     width: 0;
@@ -651,77 +688,126 @@
     background: linear-gradient(
       90deg,
       transparent,
-      var(--forge-ember),
+      var(--primary, #ff6b35),
       transparent
     );
-    animation: line-grow 1s ease-out 1.5s forwards;
+    animation: line-forge-grow 1s cubic-bezier(0.16, 1, 0.3, 1) 1.5s forwards;
   }
 }
 
-@keyframes stat-fade-in {
+@keyframes stat-forge-in {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
+    filter: blur(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+    filter: blur(0);
   }
 }
 
-@keyframes line-grow {
+@keyframes line-forge-grow {
   to {
-    width: 60%;
+    width: 70%;
   }
 }
 
 // ============================================================================
-// FLOATING FEATURE CRYSTALS
+// FEATURE CRYSTALS - MOLTEN EDITION
 // ============================================================================
 
 .forge-features {
   width: 100%;
-  max-width: 1200px;
-  margin-top: var(--spacing-xl);
-  margin-bottom: var(--spacing-xl)
+  max-width: 1300px;
+  margin-top: var(--spacing-xl, 4rem);
+  margin-bottom: var(--spacing-xl, 4rem);
+  position: relative;
+}
+
+// Decorative section title
+.features-title {
+  text-align: center;
+  margin-bottom: var(--spacing-xl, 4rem);
+
+  .features-label {
+    font-family: var(--font-body, 'Crimson Pro', serif);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted, #a0a0b0);
+    margin-bottom: var(--spacing-sm, 1rem);
+    display: block;
+  }
+
+  .features-heading {
+    font-family: var(--font-heading, 'Cinzel', serif);
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 400;
+    color: var(--foreground, #f0f0f5);
+    margin: 0;
+  }
 }
 
 .features-orbit {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg, 2.5rem);
   justify-items: center;
 }
 
 .feature-crystal {
   position: relative;
   width: 100%;
-  max-width: 340px;
+  max-width: 360px;
   background: linear-gradient(
-    135deg,
-    rgba(26, 26, 37, 0.8),
-    rgba(37, 37, 53, 0.6)
+    145deg,
+    color-mix(in srgb, var(--surface, #1a1a25) 90%, transparent) 0%,
+    color-mix(in srgb, var(--surface, #252535) 70%, transparent) 100%
   );
-  border: 1px solid var(--forge-border);
-  border-radius: 16px;
-  padding: var(--spacing-md);
-  backdrop-filter: blur(10px);
-  animation: crystal-float 8s ease-in-out infinite;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid color-mix(in srgb, var(--primary, #ff6b35) 20%, transparent);
+  border-radius: 20px;
+  padding: var(--spacing-lg, 2.5rem);
+  backdrop-filter: blur(12px);
+  animation: crystal-forge-float 10s ease-in-out infinite;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 50%
+    );
+    border-radius: 20px;
+    pointer-events: none;
+  }
+
   &:hover {
-    transform: translateY(-12px) scale(1.02);
-    border-color: rgba(255, 107, 53, 0.4);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4),
-      0 0 60px rgba(255, 107, 53, 0.15);
+    transform: translateY(-15px) scale(1.02);
+    border-color: color-mix(in srgb, var(--primary, #ff6b35) 50%, transparent);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5),
+      0 0 80px color-mix(in srgb, var(--primary, #ff6b35) 15%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
 
     .crystal-face-shine {
-      animation: shine-sweep 0.8s ease-out;
+      animation: shine-forge-sweep 1s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .crystal-glow {
       opacity: 1;
+    }
+
+    .crystal-icon {
+      transform: scale(1.1);
+      filter: drop-shadow(
+        0 0 20px color-mix(in srgb, var(--primary, #ff6b35) 50%, transparent)
+      );
     }
   }
 
@@ -729,46 +815,35 @@
     animation-delay: 0s;
   }
   &:nth-child(2) {
-    animation-delay: 1.3s;
+    animation-delay: 1.5s;
   }
   &:nth-child(3) {
-    animation-delay: 2.6s;
+    animation-delay: 3s;
   }
   &:nth-child(4) {
-    animation-delay: 3.9s;
+    animation-delay: 4.5s;
   }
   &:nth-child(5) {
-    animation-delay: 5.2s;
+    animation-delay: 6s;
   }
   &:nth-child(6) {
-    animation-delay: 6.5s;
+    animation-delay: 7.5s;
   }
 }
 
-.feature-crystal-large {
-  grid-column: span 1;
-  max-width: 380px;
-
-  @media (min-width: 768px) {
-    .crystal-title {
-      font-size: 1.4rem;
-    }
-  }
-}
-
-@keyframes crystal-float {
+@keyframes crystal-forge-float {
   0%,
   100% {
     transform: translateY(0) rotate(0deg);
   }
   25% {
-    transform: translateY(-10px) rotate(0.5deg);
+    transform: translateY(-12px) rotate(0.5deg);
   }
   50% {
-    transform: translateY(-5px) rotate(0deg);
+    transform: translateY(-6px) rotate(0deg);
   }
   75% {
-    transform: translateY(-15px) rotate(-0.5deg);
+    transform: translateY(-18px) rotate(-0.5deg);
   }
 }
 
@@ -784,29 +859,31 @@
 .face-front {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm, 1rem);
 }
 
 .crystal-icon {
-  font-size: 2.5rem;
+  font-size: 3rem;
   line-height: 1;
-  margin-bottom: var(--spacing-xs);
-  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+  margin-bottom: var(--spacing-xs, 0.5rem);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.15));
 }
 
 .crystal-title {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--forge-text);
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--foreground, #f0f0f5);
   margin: 0;
   letter-spacing: 0.02em;
 }
 
 .crystal-desc {
-  font-size: 0.95rem;
-  color: var(--forge-muted);
-  line-height: 1.6;
+  font-family: var(--font-body, 'Crimson Pro', serif);
+  font-size: 1rem;
+  color: var(--muted, #a0a0b0);
+  line-height: 1.7;
   margin: 0;
 }
 
@@ -816,19 +893,22 @@
   background: linear-gradient(
     105deg,
     transparent 40%,
-    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.15) 50%,
     transparent 60%
   );
   pointer-events: none;
   opacity: 0;
 }
 
-@keyframes shine-sweep {
+@keyframes shine-forge-sweep {
   0% {
     transform: translateX(-100%);
     opacity: 0;
   }
-  50% {
+  20% {
+    opacity: 1;
+  }
+  80% {
     opacity: 1;
   }
   100% {
@@ -837,7 +917,7 @@
   }
 }
 
-// Crystal edge decorations
+// Crystal edge decorations with molten metal effect
 .crystal-edges {
   position: absolute;
   inset: 0;
@@ -845,81 +925,83 @@
 
   .edge {
     position: absolute;
-    width: 20px;
-    height: 20px;
-    border-color: rgba(255, 107, 53, 0.3);
+    width: 24px;
+    height: 24px;
+    border-color: color-mix(in srgb, var(--primary, #ff6b35) 35%, transparent);
     border-style: solid;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .edge-tl {
     top: 0;
     left: 0;
     border-width: 2px 0 0 2px;
-    border-radius: 16px 0 0 0;
+    border-radius: 20px 0 0 0;
   }
 
   .edge-tr {
     top: 0;
     right: 0;
     border-width: 2px 2px 0 0;
-    border-radius: 0 16px 0 0;
+    border-radius: 0 20px 0 0;
   }
 
   .edge-bl {
     bottom: 0;
     left: 0;
     border-width: 0 0 2px 2px;
-    border-radius: 0 0 0 16px;
+    border-radius: 0 0 0 20px;
   }
 
   .edge-br {
     bottom: 0;
     right: 0;
     border-width: 0 2px 2px 0;
-    border-radius: 0 0 16px 0;
+    border-radius: 0 0 20px 0;
   }
 }
 
 .feature-crystal:hover {
   .edge {
-    border-color: var(--forge-ember);
-    box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+    border-color: var(--primary, #ff6b35);
+    box-shadow: 0 0 15px
+      color-mix(in srgb, var(--primary, #ff6b35) 60%, transparent);
   }
 }
 
 // Crystal glow effect
 .crystal-glow {
   position: absolute;
-  inset: -2px;
+  inset: -3px;
   background: radial-gradient(
     ellipse at center,
-    rgba(255, 107, 53, 0.15) 0%,
+    color-mix(in srgb, var(--primary, #ff6b35) 12%, transparent) 0%,
     transparent 70%
   );
   opacity: 0;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
-  border-radius: 18px;
+  border-radius: 22px;
   z-index: 1;
 }
 
 // ============================================================================
-// TRUST SECTION
+// TRUST SECTION - REFINED
 // ============================================================================
 
 .forge-trust {
   width: 100%;
-  max-width: 800px;
-  margin-top: var(--spacing-xl);
-  animation: fade-in-up 1s ease-out 1s both;
+  max-width: 900px;
+  margin-top: var(--spacing-xxl, 6rem);
+  margin-bottom: var(--spacing-xl, 4rem);
+  animation: forge-reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) 1.2s both;
 }
 
 .trust-divider {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
+  gap: var(--spacing-md, 1.5rem);
+  margin-bottom: var(--spacing-lg, 2rem);
 
   .divider-line {
     flex: 1;
@@ -927,16 +1009,17 @@
     background: linear-gradient(
       90deg,
       transparent,
-      var(--forge-dim),
+      color-mix(in srgb, var(--muted, #a0a0b0) 50%, transparent),
       transparent
     );
   }
 
   .divider-text {
-    font-size: 0.8rem;
-    color: var(--forge-dim);
+    font-family: var(--font-body, 'Crimson Pro', serif);
+    font-size: 0.75rem;
+    color: var(--muted, #a0a0b0);
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.2em;
     white-space: nowrap;
   }
 }
@@ -944,14 +1027,15 @@
 .trust-glyphs {
   display: flex;
   justify-content: center;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-lg, 2.5rem);
   flex-wrap: wrap;
 
   .glyph {
-    width: 40px;
-    height: 40px;
-    color: var(--forge-dim);
-    transition: all 0.3s ease;
+    width: 44px;
+    height: 44px;
+    color: var(--muted, #a0a0b0);
+    opacity: 0.6;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
     svg {
       width: 100%;
@@ -959,8 +1043,12 @@
     }
 
     &:hover {
-      color: var(--forge-amber);
-      transform: scale(1.1);
+      color: var(--primary, #ff6b35);
+      opacity: 1;
+      transform: scale(1.15) rotate(5deg);
+      filter: drop-shadow(
+        0 0 15px color-mix(in srgb, var(--primary, #ff6b35) 50%, transparent)
+      );
     }
   }
 }
@@ -971,42 +1059,47 @@
 
 @media (max-width: 1024px) {
   .features-orbit {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-md, 1.5rem);
   }
 
   .crystalline-orbs {
     .orb-primary {
-      width: 200px;
-      height: 200px;
+      width: 250px;
+      height: 250px;
     }
     .orb-secondary {
-      width: 150px;
-      height: 150px;
+      width: 180px;
+      height: 180px;
     }
     .orb-tertiary {
-      width: 100px;
-      height: 100px;
+      width: 130px;
+      height: 130px;
     }
     .orb-accent {
       display: none;
     }
   }
+
+  .hero-headline {
+    font-size: clamp(2.5rem, 8vw, 5rem);
+  }
 }
 
 @media (max-width: 768px) {
   .forge-content {
-    padding: var(--spacing-lg) var(--spacing-md);
-    gap: var(--spacing-lg);
+    padding: var(--spacing-lg, 2.5rem) var(--spacing-md, 1.5rem);
+    gap: var(--spacing-xl, 4rem);
   }
 
   .hero-headline {
-    font-size: 2rem;
+    font-size: 2.2rem;
   }
 
   .hero-actions {
     flex-direction: column;
     width: 100%;
-    max-width: 300px;
+    max-width: 320px;
 
     .btn-forge {
       width: 100%;
@@ -1015,7 +1108,7 @@
   }
 
   .forge-stats {
-    gap: var(--spacing-md);
+    gap: var(--spacing-md, 1.5rem);
 
     .stat-item {
       flex: 1;
@@ -1025,12 +1118,13 @@
 
   .features-orbit {
     grid-template-columns: 1fr;
-    max-width: 400px;
+    max-width: 420px;
   }
 
   .feature-crystal {
     max-width: 100%;
     animation: none;
+    padding: var(--spacing-md, 1.5rem);
   }
 
   .crystalline-orbs {
@@ -1040,34 +1134,50 @@
   }
 
   .trust-glyphs {
-    gap: var(--spacing-sm);
+    gap: var(--spacing-sm, 1rem);
+  }
+
+  .gradient-mesh {
+    filter: blur(40px);
   }
 }
 
 @media (max-width: 480px) {
   .brand-mark {
     .brand-text {
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
     }
   }
 
   .hero-badge {
-    padding: 0.5rem 1rem;
+    padding: 0.6rem 1.1rem;
 
     .badge-text {
       font-size: 0.7rem;
     }
   }
 
+  .hero-headline {
+    font-size: 1.8rem;
+  }
+
   .stat-item {
     .stat-value {
-      font-size: 1.5rem;
+      font-size: 1.8rem;
     }
 
     .stat-label {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
     }
+  }
+
+  .features-orbit {
+    gap: var(--spacing-sm, 1rem);
+  }
+
+  .feature-crystal {
+    padding: var(--spacing-md, 1.5rem);
   }
 }
 

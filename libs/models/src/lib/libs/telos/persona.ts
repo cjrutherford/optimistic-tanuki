@@ -115,7 +115,7 @@ export class CreatePersonaTelosDto {
 export class UpdatePersonaTelosDto extends PartialType(CreatePersonaTelosDto) {
   @ApiProperty()
   @IsUUID()
-  id: string;
+  id!: string;
 }
 
 export class QueryPersonaTelsosDto extends PartialType(PersonaTelosDto) {}

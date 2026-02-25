@@ -1,6 +1,7 @@
-import { Component, AfterViewInit, inject } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
@@ -10,12 +11,15 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.scss'],
 })
-export class LandingComponent implements AfterViewInit {
+export class LandingComponent implements AfterViewInit, OnDestroy {
   private router = inject(Router);
   private themeService = inject(ThemeService);
+  private destroy$ = new Subject<void>();
 
   heroGradient = '';
   buttonGradient = '';
+  accentColor = '';
+  secondaryColor = '';
 
   features = [
     {
@@ -66,11 +70,36 @@ export class LandingComponent implements AfterViewInit {
   ngAfterViewInit() {
     this.updateGradients();
     this.initParticleField();
+    this.subscribeToThemeChanges();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private subscribeToThemeChanges(): void {
+    this.themeService.generatedTheme$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((theme) => {
+        if (theme) {
+          this.updateGradients();
+        }
+      });
   }
 
   private updateGradients(): void {
     this.heroGradient = this.themeService.getHeaderGradient();
     this.buttonGradient = this.themeService.getButtonGradient('primary');
+
+    const theme = this.themeService['generatedTheme'].getValue();
+    if (theme) {
+      this.accentColor = theme.colors.primary;
+      this.secondaryColor = theme.colors.secondary;
+    } else {
+      this.accentColor = '#ff6b35';
+      this.secondaryColor = '#00d4ff';
+    }
   }
 
   private initParticleField(): void {

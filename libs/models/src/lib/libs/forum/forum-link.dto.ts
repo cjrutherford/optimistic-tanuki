@@ -2,10 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ForumLinkDto {
   @ApiProperty({ description: 'The unique identifier of the link' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'The URL of the link' })
-  url: string;
+  url!: string;
 
   @ApiProperty({ description: 'The title of the link', required: false })
   title?: string;
@@ -14,5 +14,5 @@ export class ForumLinkDto {
   description?: string;
 
   @ApiProperty({ description: 'The date the link was created' })
-  createdAt: Date;
+  createdAt!: Date;
 }

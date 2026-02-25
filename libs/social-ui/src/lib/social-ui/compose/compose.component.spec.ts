@@ -4,6 +4,9 @@ import { ComponentInjectionService } from './services/component-injection.servic
 import { MatDialogModule } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('ComposeComponent', () => {
   let component: ComposeComponent;
@@ -12,7 +15,13 @@ describe('ComposeComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ComposeComponent, MatDialogModule, NoopAnimationsModule],
-      providers: [ComponentInjectionService, ThemeService],
+      providers: [
+        ComponentInjectionService,
+        ThemeService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ComposeComponent);

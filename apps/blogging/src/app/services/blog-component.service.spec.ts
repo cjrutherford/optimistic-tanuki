@@ -1,4 +1,5 @@
 import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import {
   CreateBlogComponentDto,
   UpdateBlogComponentDto,
@@ -90,14 +91,16 @@ describe('BlogComponentService', () => {
     it('should throw NotFoundException when post does not exist', async () => {
       postRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createDto)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should throw BadRequestException when instance ID already exists', async () => {
       postRepo.findOne.mockResolvedValue(mockPost);
       componentRepo.findOne.mockResolvedValue(mockComponent); // Existing component
 
-      await expect(service.create(createDto)).rejects.toThrow(BadRequestException);
+      await expect(service.create(createDto)).rejects.toThrow(RpcException);
     });
   });
 
@@ -111,7 +114,7 @@ describe('BlogComponentService', () => {
       expect(result[0].blogPostId).toBe('post-1');
       expect(componentRepo.find).toHaveBeenCalledWith({
         where: { blogPostId: 'post-1' },
-        order: { position: 'ASC', createdAt: 'ASC' }
+        order: { position: 'ASC', createdAt: 'ASC' },
       });
     });
 
@@ -136,7 +139,9 @@ describe('BlogComponentService', () => {
     it('should throw NotFoundException when component not found', async () => {
       componentRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne('component-1')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('component-1')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 
@@ -160,7 +165,9 @@ describe('BlogComponentService', () => {
     it('should throw NotFoundException when component not found', async () => {
       componentRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.update('component-1', updateDto)).rejects.toThrow(NotFoundException);
+      await expect(service.update('component-1', updateDto)).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 
@@ -177,7 +184,9 @@ describe('BlogComponentService', () => {
     it('should throw NotFoundException when component not found', async () => {
       componentRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.remove('component-1')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('component-1')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 
@@ -187,7 +196,9 @@ describe('BlogComponentService', () => {
 
       await service.removeByPostId('post-1');
 
-      expect(componentRepo.delete).toHaveBeenCalledWith({ blogPostId: 'post-1' });
+      expect(componentRepo.delete).toHaveBeenCalledWith({
+        blogPostId: 'post-1',
+      });
     });
   });
 
@@ -207,7 +218,7 @@ describe('BlogComponentService', () => {
           blogPostId: 'post-1',
           componentType: 'author-profile',
         },
-        order: { position: 'ASC', createdAt: 'ASC' }
+        order: { position: 'ASC', createdAt: 'ASC' },
       });
     });
   });

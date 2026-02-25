@@ -31,8 +31,12 @@ jest.mock('@optimistic-tanuki/prompt-generation');
 
 class MockSystemPromptBuilder {
   buildSystemPrompt = jest.fn().mockResolvedValue({
-    template: { formatMessages: jest.fn().mockResolvedValue([{ content: 'System prompt' }]) },
-    variables: {}
+    template: {
+      formatMessages: jest
+        .fn()
+        .mockResolvedValue([{ content: 'System prompt' }]),
+    },
+    variables: {},
   });
 }
 
@@ -138,16 +142,33 @@ describe('AppService', () => {
         {
           provide: ToolValidationService,
           useValue: {
-            validateToolCall: jest.fn().mockReturnValue({ isValid: true, errors: [], suggestions: [] }),
-            analyzeToolCallError: jest.fn().mockReturnValue({ success: false, retryable: true, suggestedFix: 'Try again' }),
-            generateToolHelpMessage: jest.fn().mockReturnValue('Tool help message'),
+            validateToolCall: jest
+              .fn()
+              .mockReturnValue({ isValid: true, errors: [], suggestions: [] }),
+            analyzeToolCallError: jest
+              .fn()
+              .mockReturnValue({
+                success: false,
+                retryable: true,
+                suggestedFix: 'Try again',
+              }),
+            generateToolHelpMessage: jest
+              .fn()
+              .mockReturnValue('Tool help message'),
           },
         },
         {
           provide: EnhancedMCPToolExecutor,
           useValue: {
-            executeToolWithRetry: jest.fn().mockResolvedValue({ success: true, result: { message: 'success' } }),
-            executeToolWithGuidance: jest.fn().mockResolvedValue({ result: { message: 'success' } }),
+            executeToolWithRetry: jest
+              .fn()
+              .mockResolvedValue({
+                success: true,
+                result: { message: 'success' },
+              }),
+            executeToolWithGuidance: jest
+              .fn()
+              .mockResolvedValue({ result: { message: 'success' } }),
           },
         },
       ],
@@ -340,7 +361,7 @@ describe('AppService', () => {
         mockConversation.messages
       );
       expect(chatCollectorService.send).toHaveBeenCalledTimes(
-        mockAiPersonas.length
+        mockAiPersonas.length * 2
       );
       expect(result.length).toBe(mockAiPersonas.length);
       expect(result[0].content).toBe('AI response');
@@ -458,9 +479,7 @@ describe('AppService', () => {
     // };
 
     it('should successfully summarize conversation using internal summarizer', async () => {
-      const result = await service['summarizeConversation'](
-        mockMessages
-      );
+      const result = await service['summarizeConversation'](mockMessages);
       expect(result).toBe(
         'Recent conversation (last 2 messages): User: Message 1 | User: Message 2'
       );

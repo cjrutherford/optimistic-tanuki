@@ -30,28 +30,24 @@ import {
   GeneratedTheme,
   PersonalityColors,
   ContrastReport,
-} from './personality.interface';
-import {
   PREDEFINED_PERSONALITIES,
   getDefaultPersonality,
   getPersonalityById,
-} from './personalities';
-import {
   generatePersonalityColors,
   generatePerceptualShades,
   generateSemanticColors,
-  generateThemeResponsiveColors,
-  generateShadowColor,
-  generatePageBackgroundPattern,
-} from './color-harmony';
-import {
   ensureContrast,
   generateContrastReport,
   validateThemeContrast,
   getSuggestedTextColor,
-} from './contrast-utils';
+  migratePaletteToPersonality,
+} from '@optimistic-tanuki/theme-models';
+import {
+  generateThemeResponsiveColors,
+  generateShadowColor,
+  generatePageBackgroundPattern,
+} from './color-harmony';
 import { FontLoadingService } from './font-loading.service';
-import { migratePaletteToPersonality } from './palette-migration';
 import {
   getPersonalityGradients,
   generateGradientVariables,
@@ -579,8 +575,8 @@ export class ThemeService {
       personality.tokens.spacingScale === 'compact'
         ? 'ease-out'
         : personality.tokens.spacingScale === 'spacious'
-        ? 'ease-in'
-        : 'ease-in-out';
+          ? 'ease-in'
+          : 'ease-in-out';
 
     const primaryShades = generatePerceptualShades(
       colors.primary,
@@ -636,11 +632,11 @@ export class ThemeService {
     // Apply contrast adjustments to foreground
     const adjustedForeground = personality.contrast.autoAdjust
       ? ensureContrast(
-          themeColors.foreground,
-          themeColors.background,
-          personality.contrast.minimumRatio,
-          'auto'
-        )
+        themeColors.foreground,
+        themeColors.background,
+        personality.contrast.minimumRatio,
+        'auto'
+      )
       : themeColors.foreground;
 
     // Generate shadow color
@@ -891,15 +887,12 @@ export class ThemeService {
     return {
       none: 'none',
       sm: `0 1px 2px 0 ${shadowColor}`,
-      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${
-        4 * multiplier
-      }px -1px ${shadowColor}`,
-      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${
-        6 * multiplier
-      }px -2px ${shadowColor}`,
-      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${
-        10 * multiplier
-      }px -5px ${shadowColor}`,
+      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${4 * multiplier
+        }px -1px ${shadowColor}`,
+      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${6 * multiplier
+        }px -2px ${shadowColor}`,
+      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${10 * multiplier
+        }px -5px ${shadowColor}`,
     };
   }
 
@@ -1510,7 +1503,7 @@ export class ThemeService {
   getLibraryPersonality(libraryId: string): LibraryPersonality {
     console.warn(
       `[ThemeService] getLibraryPersonality('${libraryId}') is deprecated. ` +
-        `Components now use standard CSS variables from the active personality.`
+      `Components now use standard CSS variables from the active personality.`
     );
     return getLibraryPersonality(libraryId);
   }
@@ -1521,7 +1514,7 @@ export class ThemeService {
   getAllLibraryPersonalities(): LibraryPersonality[] {
     console.warn(
       '[ThemeService] getAllLibraryPersonalities() is deprecated. ' +
-        'Use getPersonalities() for the unified personality list.'
+      'Use getPersonalities() for the unified personality list.'
     );
     return Object.values(LIBRARY_PERSONALITIES);
   }
@@ -1532,7 +1525,7 @@ export class ThemeService {
   generateLibraryVariables(libraryId: string): Record<string, string> {
     console.warn(
       `[ThemeService] generateLibraryVariables('${libraryId}') is deprecated. ` +
-        `CSS variables are now set by the active personality via setPersonality().`
+      `CSS variables are now set by the active personality via setPersonality().`
     );
     const personality = getLibraryPersonality(libraryId);
     return generateLibraryCSSVariables(personality);
@@ -1545,7 +1538,7 @@ export class ThemeService {
   applyLibraryTheme(libraryId: string): void {
     console.warn(
       `[ThemeService] applyLibraryTheme('${libraryId}') is deprecated. ` +
-        `Use setPersonality() instead. Components use standard CSS variables.`
+      `Use setPersonality() instead. Components use standard CSS variables.`
     );
     if (!isPlatformBrowser(this.platformId)) {
       return;

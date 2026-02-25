@@ -31,6 +31,14 @@ export {
   type ThemeColors,
   type PaletteAnalysis,
   type PaletteMigrationResult,
+  // Personality presets and selectors
+  PREDEFINED_PERSONALITIES,
+  getPersonalityById,
+  getDefaultPersonality,
+  getPersonalityIds,
+  getPersonalitiesByCategory,
+  isValidPersonalityId,
+  getPersonalityPreviewColors,
   // Color utilities
   hexToRgb,
   generateColorShades,
@@ -83,21 +91,15 @@ export * from './theme.service';
 export * from './themeable.interface';
 export * from './theme-variable.service';
 export * from './theme-host-bindings.directive';
+export * from './storybook-theme-bridge.component';
 export * from './theme-palettes';
 export * from './design-tokens';
 export * from './theme-config';
 export * from './font-loading.service';
 export * from './gradient-factory';
-export * from './color-harmony';
-export * from './contrast-utils';
-export * from './palette-migration';
-export * from './personality-gradients';
 export {
-  PREDEFINED_PERSONALITIES,
-  getPersonalityById,
-  getDefaultPersonality,
-  getPersonalityIds,
-  getPersonalitiesByCategory,
-  isValidPersonalityId,
-  getPersonalityPreviewColors,
-} from './personalities';
+  generateThemeResponsiveColors,
+  generateShadowColor,
+  generatePageBackgroundPattern,
+} from './color-harmony';
+export * from './personality-gradients';

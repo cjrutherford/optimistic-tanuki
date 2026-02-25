@@ -6,7 +6,7 @@ import { IsUUID, IsOptional, IsEnum } from 'class-validator';
 export class UpdateChangeDto extends PartialType(CreateChangeDto) {
   @ApiProperty({ description: 'Change ID' })
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional({
     enum: ChangeResolution,

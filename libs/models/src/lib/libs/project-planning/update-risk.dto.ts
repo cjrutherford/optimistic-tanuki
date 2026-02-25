@@ -6,7 +6,7 @@ import { IsUUID, IsOptional } from 'class-validator';
 export class UpdateRiskDto extends PartialType(CreateRiskDto) {
   @ApiProperty({ description: 'Risk ID' })
   @IsUUID()
-  id: string;
+  id!: string;
 }
 
 export class QueryRiskDto extends PartialType(CreateRiskDto) {

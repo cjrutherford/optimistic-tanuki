@@ -1,10 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID, IsOptional, IsString, MaxLength, IsDate } from 'class-validator';
+import {
+  IsUUID,
+  IsOptional,
+  IsString,
+  MaxLength,
+  IsDate,
+} from 'class-validator';
 
 export class CreateTaskTimeEntryDto {
   @ApiProperty({ description: 'Task ID for the time entry' })
   @IsUUID()
-  taskId: string;
+  taskId!: string;
 
   @ApiProperty({
     description: 'Optional description for this time entry',
@@ -18,9 +24,9 @@ export class CreateTaskTimeEntryDto {
   @ApiProperty({ description: 'User who created the time entry' })
   @IsString()
   @IsUUID()
-  createdBy: string;
+  createdBy!: string;
 
   @ApiProperty({ description: 'Start time of the task time entry' })
   @IsDate()
-  startTime: Date;
+  startTime!: Date;
 }

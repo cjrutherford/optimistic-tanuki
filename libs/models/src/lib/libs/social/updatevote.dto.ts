@@ -10,5 +10,5 @@ export class UpdateVoteDto {
   @IsIn([-1, 0, 1], {
     message: 'Vote value must be -1 (downvote), 0 (unvote), or 1 (upvote)',
   })
-  value: number;
+  value!: number;
 }

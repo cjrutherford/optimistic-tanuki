@@ -4,17 +4,17 @@ import { IsString, IsDate, IsOptional } from 'class-validator';
 export class CreateSubscriptionDto {
   @ApiProperty({ description: 'The ID of the user creating the subscription' })
   @IsString()
-  userId: string;
+  userId!: string;
 
   @ApiProperty({ description: 'The ID of the product being subscribed to' })
   @IsString()
-  productId: string;
+  productId!: string;
 
   @ApiProperty({
     description: 'The subscription interval (e.g., monthly, yearly)',
   })
   @IsString()
-  interval: string;
+  interval!: string;
 
   @ApiPropertyOptional({ description: 'The start date of the subscription' })
   @IsOptional()

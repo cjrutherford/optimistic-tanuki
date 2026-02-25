@@ -13,9 +13,9 @@ Comprehensive reference for the Optimistic Tanuki theme system.
 
 ## Architecture Overview
 
-The theme system is organized into three main layers:
+The theme system is organized into four main layers:
 
-```
+```text
 ┌─────────────────────────────────────────────────┐
 │           Application Layer                      │
 │  (Components use theme via directives/services) │
@@ -32,10 +32,21 @@ The theme system is organized into three main layers:
 └─────────────────────────────────────────────────┘
                       ↓
 ┌─────────────────────────────────────────────────┐
+│           Theme Models Layer                     │
+│  (Personalities, color algorithms, migrations)  │
+└─────────────────────────────────────────────────┘
+                      ↓
+┌─────────────────────────────────────────────────┐
 │           CSS Variables Layer                    │
 │  (Applied to document.documentElement.style)    │
 └─────────────────────────────────────────────────┘
 ```
+
+### Package Ownership
+
+- `@optimistic-tanuki/theme-models` is the canonical source for personality definitions, color harmony utilities, contrast utilities, and palette migration logic.
+- `@optimistic-tanuki/theme-lib` is Angular runtime orchestration only (state, storage, variable application, directives, font loading, Storybook runtime bridge).
+- UI libraries (`theme-ui`, `common-ui`, `form-ui`, app-level UIs) consume runtime behavior through `ThemeService` and should avoid reimplementing model logic.
 
 ### Key Components
 
