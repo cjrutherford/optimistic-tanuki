@@ -34,48 +34,11 @@
         <span class="personality-icon">⚙</span>
       </button>
     </div>
-
-    <otui-modal
-      [visible]="showPersonalityPicker"
-      heading="Choose Your Style"
-      [size]="'md'"
-      [position]="'center'"
-      [closable]="true"
-      [backdrop]="true"
-      [closeOnBackdrop]="true"
-      [closeOnEscape]="true"
-      (close)="closePersonalityPicker()"
-      ariaLabel="Personality selector"
-    >
-      <div class="personality-modal-body">
-        @for (group of getGroupedPersonalities(); track group.category) {
-        <div class="personality-group">
-          <div class="personality-group-label">
-            {{ getPersonalityCategoryLabel(group.category) }}
-          </div>
-          <div class="personality-options">
-            @for (personality of group.personalities; track personality.id) {
-            <button
-              class="personality-option"
-              type="button"
-              [class.selected]="personality.id === currentPersonality?.id"
-              (click)="selectPersonality(personality)"
-            >
-              <span class="personality-name">
-                {{ personality.name }}
-                @if (personality.isClassic) {
-                <span class="classic-badge">Classic</span>
-                }
-              </span>
-              <span class="personality-desc">{{
-                personality.description
-              }}</span>
-            </button>
-            }
-          </div>
-        </div>
-        }
-      </div>
-    </otui-modal>
   </form>
 </div>
+
+<!-- CDK Overlay backdrop styling -->
+<div
+  class="cdk-overlay-backdrop personality-picker-backdrop"
+  *ngIf="showPersonalityPicker"
+></div>

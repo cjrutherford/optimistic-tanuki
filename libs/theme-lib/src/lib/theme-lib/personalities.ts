@@ -1,6 +1,16 @@
 /**
  * Predefined personality presets for the design system
  * Each personality provides a complete aesthetic configuration
+ *
+ * CONSOLIDATED: 8 distinct personalities (reduced from 12)
+ * - Classic: Swiss Design (geometric, balanced)
+ * - Minimal: Japanese Zen (extreme whitespace, hairline)
+ * - Editorial: Art Deco/Magazine (serif luxury)
+ * - Bold: Memphis Design (thick borders, vibrant)
+ * - Playful: Kawaii/Cute (pill shapes, bouncy)
+ * - Cyber: Terminal/Cyberpunk (monospace, neon)
+ * - Industrial: Brutalist (exposed structure, sharp)
+ * - Organic: Natural/Scandinavian (warm, soft, nature)
  */
 
 import {
@@ -16,15 +26,16 @@ import {
 } from './personality.interface';
 
 /**
- * Classic personality - The original design system aesthetic
- * Clean, balanced, professional with moderate spacing
+ * 1. CLASSIC - Swiss Design System
+ * Geometric clarity, grid-based, neutral
+ * Like: Swiss International Style, Braun design
  */
 export const classicPersonality: Personality = {
   id: 'classic',
   name: 'Classic',
   description:
-    'The original Optimistic Tanuki aesthetic - balanced, clean, and versatile for any application.',
-  version: '1.0.0',
+    'Swiss Design precision - geometric grids, neutral tones, mathematical clarity.',
+  version: '2.0.0',
 
   colorHarmony: {
     type: 'complementary' as ColorHarmonyType,
@@ -57,21 +68,19 @@ export const classicPersonality: Personality = {
 
   fonts: {
     body: {
-      family:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      family: '"Inter", "Helvetica Neue", system-ui, sans-serif',
       weights: [400, 500, 600, 700],
       display: 'swap',
-      preload: false,
+      preload: true,
     },
     heading: {
-      family:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      weights: [500, 600, 700],
+      family: '"Inter", "Helvetica Neue", system-ui, sans-serif',
+      weights: [500, 600, 700, 800],
       display: 'swap',
-      preload: false,
+      preload: true,
     },
     mono: {
-      family: '"SF Mono", "Monaco", "Inconsolata", "Fira Code", monospace',
+      family: '"JetBrains Mono", "SF Mono", "Fira Code", monospace',
       weights: [400, 500],
       display: 'swap',
       preload: false,
@@ -93,41 +102,23 @@ export const classicPersonality: Personality = {
 
   iconStyle: 'outlined' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#ffffff',
-        elevated: '#fafafa',
-        overlay: 'rgba(0, 0, 0, 0.5)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#171717',
-        secondary: '#525252',
-        muted: '#737373',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.1,
-      shadowColor: 'rgba(0, 0, 0, 0.1)',
-    },
-    dark: {
-      background: {
-        base: '#0a0a0a',
-        elevated: '#171717',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#1f1f1f',
-      },
-      foreground: {
-        primary: '#fafafa',
-        secondary: '#a3a3a3',
-        muted: '#737373',
-        inverted: '#171717',
-      },
-      surfaceOpacity: 0.9,
-      shadowOpacity: 0.5,
-      shadowColor: 'rgba(0, 0, 0, 0.5)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 100,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 92,
+    secondaryLuminosityOffset: 25,
+    mutedLuminosityOffset: 40,
+    neutralSaturation: 0,
+    darkModeLuminosityScale: 6,
+    darkModeSaturationBoost: 5,
+    shadowTint: 'neutral',
+    shadowOpacity: 0.1,
+    pageBackgroundOpacity: 0.1,
+  },
+
+  pageBackground: {
+    pattern: `<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect fill="none" width="8" height="8"/><circle cx="4" cy="4" r="1" fill="PLACEHOLDER" opacity="OPACITY"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
@@ -138,29 +129,30 @@ export const classicPersonality: Personality = {
     touchTargetSize: '44px',
   },
 
-  tags: ['versatile', 'balanced', 'professional', 'default'],
+  tags: ['versatile', 'balanced', 'professional', 'swiss', 'geometric'],
   category: 'professional',
   isClassic: true,
 };
 
 /**
- * Minimal personality - Clean, spacious, with ample whitespace
- * Best for: Dashboards, professional tools, content-heavy apps
+ * 2. MINIMAL - Japanese Zen Aesthetic
+ * Extreme whitespace, hairline precision, meditative calm
+ * Like: MUJI, Apple, Japanese gardens
  */
 export const minimalPersonality: Personality = {
   id: 'minimal',
   name: 'Minimal',
   description:
-    'Clean, spacious design with subtle colors and generous whitespace.',
-  version: '1.0.0',
+    'Zen-inspired emptiness - maximum whitespace, hairline borders, meditative clarity.',
+  version: '2.0.0',
 
   colorHarmony: {
     type: 'analogous' as ColorHarmonyType,
-    saturationBoost: -0.3,
-    lightnessShift: 0.1,
-    accentSaturation: 35,
-    accentLightness: 55,
-    analogousSpread: 25,
+    saturationBoost: -0.4,
+    lightnessShift: 0.15,
+    accentSaturation: 25,
+    accentLightness: 60,
+    analogousSpread: 20,
   },
 
   contrast: {
@@ -171,292 +163,35 @@ export const minimalPersonality: Personality = {
   },
 
   tokens: {
-    spacingScale: 'spacious' as SpacingScale,
-    spacingMultiplier: 1.25,
+    spacingScale: 'airy' as SpacingScale,
+    spacingMultiplier: 1.5,
     borderRadius: 'sharp' as BorderRadiusStyle,
-    borderRadiusMultiplier: 0.75,
+    borderRadiusMultiplier: 0.6,
     borderStyle: 'hairline' as BorderStyle,
     borderWidth: '0.5px',
-    shadowIntensity: 'subtle' as ShadowIntensity,
-    shadowMultiplier: 0.6,
+    shadowIntensity: 'none' as ShadowIntensity,
+    shadowMultiplier: 0,
     typography: 'clean' as TypographyStyle,
-    lineHeight: 1.6,
-    letterSpacing: '0.01em',
-  },
-
-  fonts: {
-    body: {
-      family: 'Inter, system-ui, -apple-system, sans-serif',
-      weights: [300, 400, 500, 600],
-      display: 'swap',
-      preload: true,
-    },
-    heading: {
-      family: 'Inter, system-ui, -apple-system, sans-serif',
-      weights: [400, 500, 600],
-      display: 'swap',
-      preload: true,
-    },
-    mono: {
-      family: '"JetBrains Mono", "Fira Code", monospace',
-      weights: [400, 500],
-      display: 'swap',
-      preload: false,
-    },
-  },
-
-  animations: {
-    speed: 'fast' as AnimationSpeed,
-    easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
-    duration: {
-      instant: '0ms',
-      fast: '100ms',
-      normal: '200ms',
-      slow: '350ms',
-    },
-    staggerDelay: '30ms',
-    prefersReducedMotion: true,
-  },
-
-  iconStyle: 'outlined' as IconStyle,
-
-  modes: {
-    light: {
-      background: {
-        base: '#fafafa',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.4)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#171717',
-        secondary: '#404040',
-        muted: '#737373',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.06,
-      shadowColor: 'rgba(0, 0, 0, 0.06)',
-    },
-    dark: {
-      background: {
-        base: '#050505',
-        elevated: '#0a0a0a',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#111111',
-      },
-      foreground: {
-        primary: '#fafafa',
-        secondary: '#a3a3a3',
-        muted: '#525252',
-        inverted: '#050505',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.6,
-      shadowColor: 'rgba(0, 0, 0, 0.6)',
-    },
-  },
-
-  mobile: {
-    spacingMultiplier: 0.8,
-    borderRadiusMultiplier: 0.75,
-    shadowReduction: 0.4,
-    fontScale: 0.92,
-    touchTargetSize: '48px',
-  },
-
-  tags: ['clean', 'spacious', 'elegant', 'modern'],
-  category: 'professional',
-};
-
-/**
- * Bold personality - High contrast, vibrant, makes a statement
- * Best for: Marketing sites, creative portfolios, landing pages
- */
-export const boldPersonality: Personality = {
-  id: 'bold',
-  name: 'Bold',
-  description:
-    'High contrast, vibrant accents that make a strong visual statement.',
-  version: '1.0.0',
-
-  colorHarmony: {
-    type: 'complementary' as ColorHarmonyType,
-    saturationBoost: 0.4,
-    lightnessShift: -0.05,
-    accentSaturation: 85,
-    accentLightness: 48,
-  },
-
-  contrast: {
-    minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.1,
-    autoAdjust: true,
-  },
-
-  tokens: {
-    spacingScale: 'comfortable' as SpacingScale,
-    spacingMultiplier: 1,
-    borderRadius: 'soft' as BorderRadiusStyle,
-    borderRadiusMultiplier: 1.25,
-    borderStyle: 'thick' as BorderStyle,
-    borderWidth: '2px',
-    shadowIntensity: 'dramatic' as ShadowIntensity,
-    shadowMultiplier: 1.5,
-    typography: 'friendly' as TypographyStyle,
-    lineHeight: 1.4,
-    letterSpacing: '-0.01em',
-  },
-
-  fonts: {
-    body: {
-      family: 'Poppins, system-ui, sans-serif',
-      weights: [400, 500, 600, 700],
-      display: 'swap',
-      preload: true,
-    },
-    heading: {
-      family: 'Poppins, system-ui, sans-serif',
-      weights: [600, 700, 800],
-      display: 'swap',
-      preload: true,
-    },
-    mono: {
-      family: '"Fira Code", monospace',
-      weights: [400, 500],
-      display: 'swap',
-      preload: false,
-    },
-  },
-
-  animations: {
-    speed: 'normal' as AnimationSpeed,
-    easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-    duration: {
-      instant: '0ms',
-      fast: '150ms',
-      normal: '300ms',
-      slow: '600ms',
-    },
-    staggerDelay: '75ms',
-    prefersReducedMotion: false,
-  },
-
-  iconStyle: 'filled' as IconStyle,
-
-  modes: {
-    light: {
-      background: {
-        base: '#ffffff',
-        elevated: '#fafafa',
-        overlay: 'rgba(0, 0, 0, 0.6)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#0a0a0a',
-        secondary: '#404040',
-        muted: '#666666',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.15,
-      shadowColor: 'rgba(0, 0, 0, 0.15)',
-    },
-    dark: {
-      background: {
-        base: '#0f0f0f',
-        elevated: '#1a1a1a',
-        overlay: 'rgba(0, 0, 0, 0.85)',
-        surface: '#262626',
-      },
-      foreground: {
-        primary: '#ffffff',
-        secondary: '#d4d4d4',
-        muted: '#a3a3a3',
-        inverted: '#0f0f0f',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.6,
-      shadowColor: 'rgba(0, 0, 0, 0.6)',
-    },
-  },
-
-  mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 1.1,
-    shadowReduction: 0.2,
-    fontScale: 0.98,
-    touchTargetSize: '48px',
-  },
-
-  // Bold geometric pattern for productive/action-oriented feel
-  pageBackground: {
-    light: `<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M0 20 L40 20 M20 0 L20 40" stroke="#e5e7eb" stroke-width="1" fill="none" opacity="0.6"/><circle cx="20" cy="20" r="2" fill="#d1d5db" opacity="0.4"/></pattern></defs><rect width="40" height="40" fill="url(#grid)"/></svg>`,
-    dark: `<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid-dark" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M0 20 L40 20 M20 0 L20 40" stroke="#374151" stroke-width="1" fill="none" opacity="0.4"/><circle cx="20" cy="20" r="2" fill="#4b5563" opacity="0.3"/></pattern></defs><rect width="40" height="40" fill="url(#grid-dark)"/></svg>`,
-  },
-
-  tags: ['vibrant', 'energetic', 'marketing', 'creative'],
-  category: 'creative',
-};
-
-/**
- * Soft personality - Pastel, gentle, calming aesthetic
- * Best for: Wellness apps, lifestyle, educational content
- */
-export const softPersonality: Personality = {
-  id: 'soft',
-  name: 'Soft',
-  description:
-    'Gentle pastel tones with smooth transitions and calming aesthetics.',
-  version: '1.0.0',
-
-  colorHarmony: {
-    type: 'analogous' as ColorHarmonyType,
-    saturationBoost: -0.2,
-    lightnessShift: 0.15,
-    accentSaturation: 45,
-    accentLightness: 65,
-    analogousSpread: 35,
-  },
-
-  contrast: {
-    minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.08,
-    autoAdjust: true,
-  },
-
-  tokens: {
-    spacingScale: 'airy' as SpacingScale,
-    spacingMultiplier: 1.4,
-    borderRadius: 'round' as BorderRadiusStyle,
-    borderRadiusMultiplier: 1.5,
-    borderStyle: 'thin' as BorderStyle,
-    borderWidth: '1px',
-    shadowIntensity: 'subtle' as ShadowIntensity,
-    shadowMultiplier: 0.7,
-    typography: 'elegant' as TypographyStyle,
     lineHeight: 1.7,
-    letterSpacing: '0.02em',
+    letterSpacing: '0.03em',
   },
 
   fonts: {
     body: {
-      family: '"Nunito Sans", system-ui, sans-serif',
-      weights: [300, 400, 600],
+      family: '"Sora", "Inter", system-ui, sans-serif',
+      weights: [300, 400, 500],
       display: 'swap',
       preload: true,
     },
     heading: {
-      family: 'Quicksand, system-ui, sans-serif',
-      weights: [500, 600, 700],
+      family: '"Sora", "Inter", system-ui, sans-serif',
+      weights: [300, 400, 500],
       display: 'swap',
       preload: true,
     },
     mono: {
-      family: '"Fira Code", monospace',
-      weights: [400],
+      family: '"IBM Plex Mono", "Fira Code", monospace',
+      weights: [400, 500],
       display: 'swap',
       preload: false,
     },
@@ -464,334 +199,68 @@ export const softPersonality: Personality = {
 
   animations: {
     speed: 'slow' as AnimationSpeed,
-    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
     duration: {
       instant: '0ms',
       fast: '200ms',
       normal: '400ms',
-      slow: '700ms',
+      slow: '800ms',
     },
     staggerDelay: '100ms',
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'rounded' as IconStyle,
+  iconStyle: 'outlined' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#fefdfb',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.3)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#1f2937',
-        secondary: '#4b5563',
-        muted: '#9ca3af',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.05,
-      shadowColor: 'rgba(0, 0, 0, 0.05)',
-    },
-    dark: {
-      background: {
-        base: '#1a1a2e',
-        elevated: '#16213e',
-        overlay: 'rgba(0, 0, 0, 0.7)',
-        surface: '#1f2937',
-      },
-      foreground: {
-        primary: '#f9fafb',
-        secondary: '#d1d5db',
-        muted: '#9ca3af',
-        inverted: '#1a1a2e',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.4,
-      shadowColor: 'rgba(0, 0, 0, 0.4)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 98,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 94,
+    secondaryLuminosityOffset: 25,
+    mutedLuminosityOffset: 40,
+    neutralSaturation: 5,
+    darkModeLuminosityScale: 5,
+    darkModeSaturationBoost: 5,
+    shadowTint: 'neutral',
+    shadowOpacity: 0,
+    pageBackgroundOpacity: 0.02,
+  },
+
+  pageBackground: {
+    pattern: `<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="none" width="60" height="60"/><circle cx="30" cy="30" r="0.5" fill="PLACEHOLDER" opacity="OPACITY"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 1.3,
-    shadowReduction: 0.5,
-    fontScale: 0.95,
-    touchTargetSize: '44px',
-  },
-
-  tags: ['gentle', 'calming', 'wellness', 'friendly'],
-  category: 'casual',
-};
-
-/**
- * Professional personality - Conservative, trustworthy, enterprise-ready
- * Best for: B2B applications, enterprise software, financial tools
- */
-export const professionalPersonality: Personality = {
-  id: 'professional',
-  name: 'Professional',
-  description:
-    'Conservative, trustworthy design suitable for enterprise and B2B applications.',
-  version: '1.0.0',
-
-  colorHarmony: {
-    type: 'split-complementary' as ColorHarmonyType,
-    saturationBoost: -0.1,
-    lightnessShift: 0,
-    accentSaturation: 55,
-    accentLightness: 45,
-  },
-
-  contrast: {
-    minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.03,
-    autoAdjust: true,
-  },
-
-  tokens: {
-    spacingScale: 'comfortable' as SpacingScale,
-    spacingMultiplier: 1,
-    borderRadius: 'soft' as BorderRadiusStyle,
-    borderRadiusMultiplier: 0.875,
-    borderStyle: 'thin' as BorderStyle,
-    borderWidth: '1px',
-    shadowIntensity: 'medium' as ShadowIntensity,
-    shadowMultiplier: 0.9,
-    typography: 'clean' as TypographyStyle,
-    lineHeight: 1.5,
-    letterSpacing: 'normal',
-  },
-
-  fonts: {
-    body: {
-      family: '"Source Sans Pro", system-ui, sans-serif',
-      weights: [400, 600, 700],
-      display: 'swap',
-      preload: true,
-    },
-    heading: {
-      family: '"Source Sans Pro", system-ui, sans-serif',
-      weights: [600, 700],
-      display: 'swap',
-      preload: true,
-    },
-    mono: {
-      family: '"Source Code Pro", monospace',
-      weights: [400, 600],
-      display: 'swap',
-      preload: false,
-    },
-  },
-
-  animations: {
-    speed: 'fast' as AnimationSpeed,
-    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    duration: {
-      instant: '0ms',
-      fast: '100ms',
-      normal: '200ms',
-      slow: '350ms',
-    },
-    staggerDelay: '40ms',
-    prefersReducedMotion: true,
-  },
-
-  iconStyle: 'sharp' as IconStyle,
-
-  modes: {
-    light: {
-      background: {
-        base: '#f8fafc',
-        elevated: '#ffffff',
-        overlay: 'rgba(15, 23, 42, 0.5)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#0f172a',
-        secondary: '#334155',
-        muted: '#64748b',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.08,
-      shadowColor: 'rgba(15, 23, 42, 0.08)',
-    },
-    dark: {
-      background: {
-        base: '#020617',
-        elevated: '#0f172a',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#1e293b',
-      },
-      foreground: {
-        primary: '#f8fafc',
-        secondary: '#cbd5e1',
-        muted: '#94a3b8',
-        inverted: '#020617',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.5,
-      shadowColor: 'rgba(0, 0, 0, 0.5)',
-    },
-  },
-
-  mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 0.875,
-    shadowReduction: 0.3,
-    fontScale: 0.96,
+    spacingMultiplier: 1.1,
+    borderRadiusMultiplier: 0.6,
+    shadowReduction: 1,
+    fontScale: 0.92,
     touchTargetSize: '48px',
   },
 
-  tags: ['enterprise', 'trustworthy', 'conservative', 'b2b'],
+  tags: ['zen', 'japanese', 'whitespace', 'meditative', 'clean'],
   category: 'professional',
 };
 
 /**
- * Playful personality - Energetic, varied, creative
- * Best for: Games, creative tools, youth-oriented apps
+ * 3. EDITORIAL - Art Deco Magazine
+ * Serif elegance, luxury, refined details
+ * Like: The New Yorker, high-end fashion magazines
  */
-export const playfulPersonality: Personality = {
-  id: 'playful',
-  name: 'Playful',
-  description: 'Energetic and fun with varied colors and bouncy animations.',
-  version: '1.0.0',
-
-  colorHarmony: {
-    type: 'triadic' as ColorHarmonyType,
-    saturationBoost: 0.3,
-    lightnessShift: 0.05,
-    accentSaturation: 80,
-    accentLightness: 55,
-  },
-
-  contrast: {
-    minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.12,
-    autoAdjust: true,
-  },
-
-  tokens: {
-    spacingScale: 'spacious' as SpacingScale,
-    spacingMultiplier: 1.3,
-    borderRadius: 'round' as BorderRadiusStyle,
-    borderRadiusMultiplier: 1.75,
-    borderStyle: 'thick' as BorderStyle,
-    borderWidth: '2px',
-    shadowIntensity: 'dramatic' as ShadowIntensity,
-    shadowMultiplier: 1.3,
-    typography: 'playful' as TypographyStyle,
-    lineHeight: 1.5,
-    letterSpacing: '0.01em',
-  },
-
-  fonts: {
-    body: {
-      family: '"Comic Neue", "Comic Sans MS", cursive, sans-serif',
-      weights: [400, 700],
-      display: 'swap',
-      preload: true,
-    },
-    heading: {
-      family: '"Fredoka", "Comic Neue", cursive, sans-serif',
-      weights: [400, 600, 700],
-      display: 'swap',
-      preload: true,
-    },
-    mono: {
-      family: '"Fira Code", monospace',
-      weights: [400, 600],
-      display: 'swap',
-      preload: false,
-    },
-  },
-
-  animations: {
-    speed: 'normal' as AnimationSpeed,
-    easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-    duration: {
-      instant: '0ms',
-      fast: '150ms',
-      normal: '300ms',
-      slow: '500ms',
-    },
-    staggerDelay: '80ms',
-    prefersReducedMotion: false,
-  },
-
-  iconStyle: 'two-tone' as IconStyle,
-
-  modes: {
-    light: {
-      background: {
-        base: '#fffbeb',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.4)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#1c1917',
-        secondary: '#44403c',
-        muted: '#78716c',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.12,
-      shadowColor: 'rgba(0, 0, 0, 0.12)',
-    },
-    dark: {
-      background: {
-        base: '#1c1917',
-        elevated: '#292524',
-        overlay: 'rgba(0, 0, 0, 0.75)',
-        surface: '#44403c',
-      },
-      foreground: {
-        primary: '#fafaf9',
-        secondary: '#d6d3d1',
-        muted: '#a8a29e',
-        inverted: '#1c1917',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.5,
-      shadowColor: 'rgba(0, 0, 0, 0.5)',
-    },
-  },
-
-  mobile: {
-    spacingMultiplier: 1,
-    borderRadiusMultiplier: 1.5,
-    shadowReduction: 0.15,
-    fontScale: 1,
-    touchTargetSize: '56px',
-  },
-
-  tags: ['fun', 'energetic', 'creative', 'youth'],
-  category: 'creative',
-};
-
-/**
- * Elegant personality - Sophisticated, refined, luxurious
- * Best for: Luxury brands, portfolios, premium services
- */
-export const elegantPersonality: Personality = {
-  id: 'elegant',
-  name: 'Elegant',
+export const editorialPersonality: Personality = {
+  id: 'editorial',
+  name: 'Editorial',
   description:
-    'Sophisticated and refined with serif accents and subtle luxury details.',
-  version: '1.0.0',
+    'Magazine-quality elegance - serif typography, refined details, luxurious spacing.',
+  version: '2.0.0',
 
   colorHarmony: {
     type: 'tetradic' as ColorHarmonyType,
-    saturationBoost: -0.15,
-    lightnessShift: 0.08,
-    accentSaturation: 50,
-    accentLightness: 45,
+    saturationBoost: -0.1,
+    lightnessShift: 0.05,
+    accentSaturation: 55,
+    accentLightness: 48,
   },
 
   contrast: {
@@ -803,40 +272,34 @@ export const elegantPersonality: Personality = {
 
   tokens: {
     spacingScale: 'comfortable' as SpacingScale,
-    spacingMultiplier: 1.1,
+    spacingMultiplier: 1.15,
     borderRadius: 'soft' as BorderRadiusStyle,
-    borderRadiusMultiplier: 1,
+    borderRadiusMultiplier: 1.1,
     borderStyle: 'hairline' as BorderStyle,
     borderWidth: '0.5px',
     shadowIntensity: 'subtle' as ShadowIntensity,
-    shadowMultiplier: 0.8,
+    shadowMultiplier: 0.7,
     typography: 'elegant' as TypographyStyle,
-    lineHeight: 1.65,
+    lineHeight: 1.6,
     letterSpacing: '0.02em',
   },
 
   fonts: {
     body: {
-      family: '"Cormorant Garamond", Georgia, serif',
+      family: '"Crimson Pro", "Georgia", "Times New Roman", serif',
       weights: [400, 500, 600],
       display: 'swap',
       preload: true,
     },
     heading: {
-      family: '"Playfair Display", Georgia, serif',
-      weights: [400, 600, 700],
+      family: '"Playfair Display", "Georgia", serif',
+      weights: [600, 700, 800, 900],
       display: 'swap',
       preload: true,
     },
     mono: {
       family: '"Fira Code", monospace',
       weights: [400, 500],
-      display: 'swap',
-      preload: false,
-    },
-    accent: {
-      family: '"Great Vibes", cursive',
-      weights: [400],
       display: 'swap',
       preload: false,
     },
@@ -857,78 +320,163 @@ export const elegantPersonality: Personality = {
 
   iconStyle: 'outlined' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#fafaf9',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.4)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#1c1917',
-        secondary: '#44403c',
-        muted: '#78716c',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.06,
-      shadowColor: 'rgba(0, 0, 0, 0.06)',
-    },
-    dark: {
-      background: {
-        base: '#0c0a09',
-        elevated: '#1c1917',
-        overlay: 'rgba(0, 0, 0, 0.85)',
-        surface: '#292524',
-      },
-      foreground: {
-        primary: '#fafaf9',
-        secondary: '#d6d3d1',
-        muted: '#a8a29e',
-        inverted: '#0c0a09',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.55,
-      shadowColor: 'rgba(0, 0, 0, 0.55)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 98,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 88,
+    secondaryLuminosityOffset: 25,
+    mutedLuminosityOffset: 40,
+    neutralSaturation: 8,
+    darkModeLuminosityScale: 6,
+    darkModeSaturationBoost: 5,
+    shadowTint: 'warm',
+    shadowOpacity: 0.06,
+    pageBackgroundOpacity: 0.05,
+  },
+
+  pageBackground: {
+    pattern: `<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="none" width="60" height="60"/><path d="M0 30 L60 30 M30 0 L30 60" stroke="PLACEHOLDER" stroke-width="0.5" opacity="OPACITY"/><circle cx="30" cy="30" r="2" fill="PLACEHOLDER" opacity="OPACITY"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 0.9,
-    shadowReduction: 0.35,
+    spacingMultiplier: 1,
+    borderRadiusMultiplier: 1,
+    shadowReduction: 0.4,
     fontScale: 0.94,
     touchTargetSize: '44px',
   },
 
-  // Elegant geometric lattice pattern for page background
-  pageBackground: {
-    light: `<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="lattice" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M0 15 L30 15 M15 0 L15 30" stroke="#78716c" stroke-width="0.5" fill="none" opacity="0.08"/><circle cx="15" cy="15" r="1.5" fill="#78716c" opacity="0.06"/></pattern></defs><rect width="60" height="60" fill="url(#lattice)"/></svg>`,
-    dark: `<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="lattice-dark" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M0 15 L30 15 M15 0 L15 30" stroke="#a8a29e" stroke-width="0.5" fill="none" opacity="0.05"/><circle cx="15" cy="15" r="1.5" fill="#a8a29e" opacity="0.04"/></pattern></defs><rect width="60" height="60" fill="url(#lattice-dark)"/></svg>`,
-  },
-
-  tags: ['luxury', 'sophisticated', 'premium', 'refined'],
+  tags: ['luxury', 'serif', 'magazine', 'refined', 'elegant'],
   category: 'professional',
 };
 
 /**
- * Architect Personality - Brutalist Industrial
- * Raw, structural, bold - now available as application personality
+ * 4. BOLD - Memphis Design Revival
+ * Thick strokes, vibrant contrasts, geometric chaos
+ * Like: Memphis Group, 80s postmodern, MTV
  */
-export const architectPersonality: Personality = {
-  id: 'architect',
-  name: 'Architect',
+export const boldPersonality: Personality = {
+  id: 'bold',
+  name: 'Bold',
   description:
-    'Brutalist industrial aesthetic - raw, structural, bold with monospace typography',
-  version: '1.0.0',
+    'Memphis-inspired energy - thick borders, vibrant contrasts, geometric confidence.',
+  version: '2.0.0',
 
   colorHarmony: {
-    type: 'split-complementary' as ColorHarmonyType,
-    saturationBoost: 0.15,
+    type: 'complementary' as ColorHarmonyType,
+    saturationBoost: 0.35,
     lightnessShift: -0.05,
+    accentSaturation: 90,
+    accentLightness: 52,
+  },
+
+  contrast: {
+    minimumRatio: 4.5,
+    enhancedRatio: 7,
+    backgroundOffset: 0.1,
+    autoAdjust: true,
+  },
+
+  tokens: {
+    spacingScale: 'comfortable' as SpacingScale,
+    spacingMultiplier: 1,
+    borderRadius: 'soft' as BorderRadiusStyle,
+    borderRadiusMultiplier: 1.3,
+    borderStyle: 'thick' as BorderStyle,
+    borderWidth: '3px',
+    shadowIntensity: 'dramatic' as ShadowIntensity,
+    shadowMultiplier: 1.5,
+    typography: 'friendly' as TypographyStyle,
+    lineHeight: 1.4,
+    letterSpacing: '-0.01em',
+  },
+
+  fonts: {
+    body: {
+      family: '"Space Grotesk", "Poppins", system-ui, sans-serif',
+      weights: [400, 500, 600, 700],
+      display: 'swap',
+      preload: true,
+    },
+    heading: {
+      family: '"Space Grotesk", "Poppins", system-ui, sans-serif',
+      weights: [700, 800],
+      display: 'swap',
+      preload: true,
+    },
+    mono: {
+      family: '"Space Mono", "Fira Code", monospace',
+      weights: [400, 700],
+      display: 'swap',
+      preload: false,
+    },
+  },
+
+  animations: {
+    speed: 'normal' as AnimationSpeed,
+    easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    duration: {
+      instant: '0ms',
+      fast: '150ms',
+      normal: '300ms',
+      slow: '600ms',
+    },
+    staggerDelay: '75ms',
+    prefersReducedMotion: false,
+  },
+
+  iconStyle: 'filled' as IconStyle,
+
+  colorGeneration: {
+    backgroundLuminosity: 98,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 90,
+    secondaryLuminosityOffset: 25,
+    mutedLuminosityOffset: 40,
+    neutralSaturation: 15,
+    darkModeLuminosityScale: 6,
+    darkModeSaturationBoost: 5,
+    shadowTint: 'primary-tint',
+    shadowOpacity: 0.15,
+    pageBackgroundOpacity: 0.15,
+  },
+
+  pageBackground: {
+    pattern: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect fill="none" width="40" height="40"/><circle cx="20" cy="20" r="4" fill="none" stroke="PLACEHOLDER" stroke-width="2" opacity="OPACITY"/><circle cx="20" cy="20" r="12" fill="none" stroke="PLACEHOLDER" stroke-width="1" opacity="OPACITY"/></svg>`,
+    usePrimaryTint: true,
+  },
+
+  mobile: {
+    spacingMultiplier: 0.9,
+    borderRadiusMultiplier: 1.1,
+    shadowReduction: 0.2,
+    fontScale: 0.98,
+    touchTargetSize: '48px',
+  },
+
+  tags: ['memphis', 'vibrant', 'geometric', 'thick', 'energetic'],
+  category: 'creative',
+};
+
+/**
+ * 5. PLAYFUL - Kawaii/Cute Aesthetic
+ * Pill shapes, bouncy animations, friendly warmth
+ * Like: Nintendo, Duolingo, Notion
+ */
+export const playfulPersonality: Personality = {
+  id: 'playful',
+  name: 'Playful',
+  description:
+    'Friendly and approachable - pill shapes, bouncy animations, delightful details.',
+  version: '2.0.0',
+
+  colorHarmony: {
+    type: 'triadic' as ColorHarmonyType,
+    saturationBoost: 0.2,
+    lightnessShift: 0.08,
     accentSaturation: 75,
-    accentLightness: 45,
+    accentLightness: 58,
   },
 
   contrast: {
@@ -939,10 +487,227 @@ export const architectPersonality: Personality = {
   },
 
   tokens: {
+    spacingScale: 'spacious' as SpacingScale,
+    spacingMultiplier: 1.2,
+    borderRadius: 'pill' as BorderRadiusStyle,
+    borderRadiusMultiplier: 2,
+    borderStyle: 'thick' as BorderStyle,
+    borderWidth: '2px',
+    shadowIntensity: 'medium' as ShadowIntensity,
+    shadowMultiplier: 1,
+    typography: 'playful' as TypographyStyle,
+    lineHeight: 1.55,
+    letterSpacing: '0.01em',
+  },
+
+  fonts: {
+    body: {
+      family: '"Quicksand", "Nunito", system-ui, sans-serif',
+      weights: [400, 500, 600, 700],
+      display: 'swap',
+      preload: true,
+    },
+    heading: {
+      family: '"Fredoka", "Quicksand", system-ui, sans-serif',
+      weights: [500, 600, 700],
+      display: 'swap',
+      preload: true,
+    },
+    mono: {
+      family: '"Comic Code", "Fira Code", monospace',
+      weights: [400, 500],
+      display: 'swap',
+      preload: false,
+    },
+  },
+
+  animations: {
+    speed: 'normal' as AnimationSpeed,
+    easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+    duration: {
+      instant: '0ms',
+      fast: '150ms',
+      normal: '300ms',
+      slow: '500ms',
+    },
+    staggerDelay: '80ms',
+    prefersReducedMotion: false,
+  },
+
+  iconStyle: 'rounded' as IconStyle,
+
+  colorGeneration: {
+    backgroundLuminosity: 99,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 88,
+    secondaryLuminosityOffset: 25,
+    mutedLuminosityOffset: 40,
+    neutralSaturation: 12,
+    darkModeLuminosityScale: 6,
+    darkModeSaturationBoost: 5,
+    shadowTint: 'primary-tint',
+    shadowOpacity: 0.08,
+    pageBackgroundOpacity: 0.08,
+  },
+
+  pageBackground: {
+    pattern: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect fill="none" width="24" height="24"/><circle cx="12" cy="12" r="3" fill="PLACEHOLDER" opacity="OPACITY"/></svg>`,
+    usePrimaryTint: true,
+  },
+
+  mobile: {
+    spacingMultiplier: 1.1,
+    borderRadiusMultiplier: 1.8,
+    shadowReduction: 0.2,
+    fontScale: 1,
+    touchTargetSize: '56px',
+  },
+
+  tags: ['kawaii', 'friendly', 'pill', 'rounded', 'bouncy'],
+  category: 'creative',
+};
+
+/**
+ * 6. CYBER - Terminal/Cyberpunk Aesthetic
+ * Monospace, neon glows, dark tech atmosphere
+ * Like: CRT terminals, cyberpunk games, Matrix
+ */
+export const cyberPersonality: Personality = {
+  id: 'cyber',
+  name: 'Cyber',
+  description:
+    'Terminal aesthetic - monospace typography, neon accents, tech atmosphere.',
+  version: '2.0.0',
+
+  colorHarmony: {
+    type: 'analogous' as ColorHarmonyType,
+    saturationBoost: 0.4,
+    lightnessShift: 0.1,
+    accentSaturation: 85,
+    accentLightness: 55,
+    analogousSpread: 30,
+  },
+
+  contrast: {
+    minimumRatio: 7,
+    enhancedRatio: 7,
+    backgroundOffset: 0.15,
+    autoAdjust: true,
+  },
+
+  tokens: {
+    spacingScale: 'compact' as SpacingScale,
+    spacingMultiplier: 0.9,
+    borderRadius: 'sharp' as BorderRadiusStyle,
+    borderRadiusMultiplier: 0.5,
+    borderStyle: 'thin' as BorderStyle,
+    borderWidth: '1px',
+    shadowIntensity: 'dramatic' as ShadowIntensity,
+    shadowMultiplier: 1.3,
+    typography: 'modern' as TypographyStyle,
+    lineHeight: 1.45,
+    letterSpacing: '0.03em',
+  },
+
+  fonts: {
+    body: {
+      family: '"JetBrains Mono", "IBM Plex Mono", monospace',
+      weights: [400, 500, 600],
+      display: 'swap',
+      preload: true,
+    },
+    heading: {
+      family: '"JetBrains Mono", "IBM Plex Mono", monospace',
+      weights: [700, 800],
+      display: 'swap',
+      preload: true,
+    },
+    mono: {
+      family: '"JetBrains Mono", "Fira Code", monospace',
+      weights: [400, 500, 600],
+      display: 'swap',
+      preload: true,
+    },
+  },
+
+  animations: {
+    speed: 'fast' as AnimationSpeed,
+    easing: 'steps(4, end)',
+    duration: {
+      instant: '0ms',
+      fast: '50ms',
+      normal: '100ms',
+      slow: '200ms',
+    },
+    staggerDelay: '30ms',
+    prefersReducedMotion: false,
+  },
+
+  iconStyle: 'sharp' as IconStyle,
+
+  colorGeneration: {
+    backgroundLuminosity: 98,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 92,
+    secondaryLuminosityOffset: 25,
+    mutedLuminosityOffset: 40,
+    neutralSaturation: 0,
+    darkModeLuminosityScale: 5,
+    darkModeSaturationBoost: 5,
+    shadowTint: 'cool',
+    shadowOpacity: 0.2,
+    pageBackgroundOpacity: 0.2,
+  },
+
+  pageBackground: {
+    pattern: `<svg xmlns="http://www.w3.org/2000/svg" width="2" height="4"><rect width="2" height="2" fill="PLACEHOLDER" opacity="OPACITY"/></svg>`,
+    usePrimaryTint: false,
+  },
+
+  mobile: {
+    spacingMultiplier: 0.85,
+    borderRadiusMultiplier: 0.5,
+    shadowReduction: 0.1,
+    fontScale: 0.9,
+    touchTargetSize: '44px',
+  },
+
+  tags: ['terminal', 'monospace', 'neon', 'matrix', 'cyberpunk'],
+  category: 'technical',
+};
+
+/**
+ * 7. INDUSTRIAL - Brutalist Architecture
+ * Exposed structure, raw materials, functional honesty
+ * Like: Brutalist buildings, blueprints, construction
+ */
+export const industrialPersonality: Personality = {
+  id: 'industrial',
+  name: 'Industrial',
+  description:
+    'Brutalist honesty - exposed structure, raw edges, functional power.',
+  version: '2.0.0',
+
+  colorHarmony: {
+    type: 'split-complementary' as ColorHarmonyType,
+    saturationBoost: 0.1,
+    lightnessShift: -0.1,
+    accentSaturation: 70,
+    accentLightness: 45,
+  },
+
+  contrast: {
+    minimumRatio: 4.5,
+    enhancedRatio: 7,
+    backgroundOffset: 0.1,
+    autoAdjust: true,
+  },
+
+  tokens: {
     spacingScale: 'comfortable' as SpacingScale,
     spacingMultiplier: 0.95,
     borderRadius: 'sharp' as BorderRadiusStyle,
-    borderRadiusMultiplier: 0.5,
+    borderRadiusMultiplier: 0.4,
     borderStyle: 'thick' as BorderStyle,
     borderWidth: '3px',
     shadowIntensity: 'dramatic' as ShadowIntensity,
@@ -954,19 +719,19 @@ export const architectPersonality: Personality = {
 
   fonts: {
     body: {
-      family: '"IBM Plex Mono", "Courier New", monospace',
+      family: '"Archivo", "Oswald", system-ui, sans-serif',
       weights: [400, 500, 600, 700],
       display: 'swap',
       preload: true,
     },
     heading: {
-      family: '"Oswald", "Impact", sans-serif',
-      weights: [400, 500, 600, 700],
+      family: '"Oswald", "Archivo Black", sans-serif',
+      weights: [500, 600, 700],
       display: 'swap',
       preload: true,
     },
     mono: {
-      family: '"IBM Plex Mono", monospace',
+      family: '"IBM Plex Mono", "Courier New", monospace',
       weights: [400, 500],
       display: 'swap',
       preload: true,
@@ -988,73 +753,55 @@ export const architectPersonality: Personality = {
 
   iconStyle: 'sharp' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#f5f5f5',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.7)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#1a1a1a',
-        secondary: '#404040',
-        muted: '#737373',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.2,
-      shadowColor: 'rgba(0, 0, 0, 0.2)',
-    },
-    dark: {
-      background: {
-        base: '#0d0d0d',
-        elevated: '#1a1a1a',
-        overlay: 'rgba(0, 0, 0, 0.9)',
-        surface: '#262626',
-      },
-      foreground: {
-        primary: '#f0f0f0',
-        secondary: '#a3a3a3',
-        muted: '#525252',
-        inverted: '#0d0d0d',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.6,
-      shadowColor: 'rgba(0, 0, 0, 0.6)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 96,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 90,
+    secondaryLuminosityOffset: 25,
+    mutedLuminosityOffset: 40,
+    neutralSaturation: 3,
+    darkModeLuminosityScale: 6,
+    darkModeSaturationBoost: 5,
+    shadowTint: 'neutral',
+    shadowOpacity: 0.25,
+    pageBackgroundOpacity: 0.25,
+  },
+
+  pageBackground: {
+    pattern: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect fill="none" width="20" height="20"/><path d="M0 10 L20 10 M10 0 L10 20" stroke="PLACEHOLDER" stroke-width="1" opacity="OPACITY"/><circle cx="10" cy="10" r="1.5" fill="PLACEHOLDER" opacity="OPACITY"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 0.5,
+    spacingMultiplier: 0.9,
+    borderRadiusMultiplier: 0.4,
     shadowReduction: 0.2,
     fontScale: 0.95,
     touchTargetSize: '44px',
   },
 
-  tags: ['brutalist', 'industrial', 'structural', 'bold', 'technical'],
+  tags: ['brutalist', 'industrial', 'raw', 'construction', 'grid'],
   category: 'technical',
 };
 
 /**
- * Soft Touch Personality - Organic Warm
- * Gentle, pill-shaped, soft shadows - now available as application personality
+ * 8. ORGANIC - Scandinavian/Nature Aesthetic
+ * Warm tones, soft shadows, natural inspiration
+ * Like: Scandinavian design, nature, sustainability brands
  */
-export const softTouchPersonality: Personality = {
-  id: 'soft-touch',
-  name: 'Soft Touch',
-  description:
-    'Organic warm aesthetic - gentle, pill-shaped, ultra-soft with rounded corners',
-  version: '1.0.0',
+export const organicPersonality: Personality = {
+  id: 'organic',
+  name: 'Organic',
+  description: 'Natural warmth - soft shadows, earthy tones, organic forms.',
+  version: '2.0.0',
 
   colorHarmony: {
     type: 'analogous' as ColorHarmonyType,
-    saturationBoost: -0.25,
+    saturationBoost: -0.2,
     lightnessShift: 0.12,
-    accentSaturation: 40,
-    accentLightness: 60,
-    analogousSpread: 30,
+    accentSaturation: 45,
+    accentLightness: 55,
+    analogousSpread: 35,
   },
 
   contrast: {
@@ -1065,29 +812,29 @@ export const softTouchPersonality: Personality = {
   },
 
   tokens: {
-    spacingScale: 'airy' as SpacingScale,
-    spacingMultiplier: 1.25,
+    spacingScale: 'spacious' as SpacingScale,
+    spacingMultiplier: 1.2,
     borderRadius: 'round' as BorderRadiusStyle,
-    borderRadiusMultiplier: 1.75,
+    borderRadiusMultiplier: 1.5,
     borderStyle: 'thin' as BorderStyle,
-    borderWidth: '0.5px',
+    borderWidth: '1px',
     shadowIntensity: 'subtle' as ShadowIntensity,
-    shadowMultiplier: 0.5,
+    shadowMultiplier: 0.6,
     typography: 'elegant' as TypographyStyle,
-    lineHeight: 1.7,
+    lineHeight: 1.65,
     letterSpacing: '0.01em',
   },
 
   fonts: {
     body: {
-      family: '"Nunito", system-ui, sans-serif',
-      weights: [300, 400, 500, 600],
+      family: '"Nunito Sans", "Source Sans Pro", system-ui, sans-serif',
+      weights: [300, 400, 600],
       display: 'swap',
       preload: true,
     },
     heading: {
-      family: '"Quicksand", system-ui, sans-serif',
-      weights: [400, 500, 600, 700],
+      family: '"Nunito", "Quicksand", system-ui, sans-serif',
+      weights: [600, 700, 800],
       display: 'swap',
       preload: true,
     },
@@ -1105,463 +852,58 @@ export const softTouchPersonality: Personality = {
     duration: {
       instant: '0ms',
       fast: '200ms',
-      normal: '350ms',
-      slow: '600ms',
+      normal: '400ms',
+      slow: '700ms',
     },
-    staggerDelay: '80ms',
+    staggerDelay: '90ms',
     prefersReducedMotion: true,
   },
 
   iconStyle: 'rounded' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#fdfcfb',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.25)',
-        surface: '#fff8f5',
-      },
-      foreground: {
-        primary: '#2d2d2d',
-        secondary: '#5a5a5a',
-        muted: '#9ca3af',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.04,
-      shadowColor: 'rgba(0, 0, 0, 0.04)',
-    },
-    dark: {
-      background: {
-        base: '#1a1820',
-        elevated: '#252030',
-        overlay: 'rgba(0, 0, 0, 0.75)',
-        surface: '#2d2835',
-      },
-      foreground: {
-        primary: '#f5f5f5',
-        secondary: '#c4c4c4',
-        muted: '#888888',
-        inverted: '#1a1820',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.35,
-      shadowColor: 'rgba(0, 0, 0, 0.35)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 99,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 88,
+    secondaryLuminosityOffset: 25,
+    mutedLuminosityOffset: 40,
+    neutralSaturation: 18,
+    darkModeLuminosityScale: 6,
+    darkModeSaturationBoost: 5,
+    shadowTint: 'warm',
+    shadowOpacity: 0.06,
+    pageBackgroundOpacity: 0.06,
+  },
+
+  pageBackground: {
+    pattern: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="none" width="100" height="100"/><circle cx="50" cy="50" r="40" fill="PLACEHOLDER" opacity="OPACITY"/><circle cx="20" cy="20" r="10" fill="PLACEHOLDER" opacity="OPACITY"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 1.5,
-    shadowReduction: 0.5,
+    spacingMultiplier: 1.1,
+    borderRadiusMultiplier: 1.4,
+    shadowReduction: 0.4,
     fontScale: 0.95,
     touchTargetSize: '48px',
   },
 
-  tags: ['organic', 'warm', 'gentle', 'soft', 'friendly'],
+  tags: ['scandinavian', 'nature', 'warm', 'organic', 'earthy'],
   category: 'casual',
 };
 
 /**
- * Electric Personality - Vibrant Kinetic
- * Energetic, warm colors, playful - now available as application personality
- */
-export const electricPersonality: Personality = {
-  id: 'electric',
-  name: 'Electric',
-  description:
-    'Vibrant kinetic aesthetic - energetic, warm, conversational with bold colors',
-  version: '1.0.0',
-
-  colorHarmony: {
-    type: 'triadic' as ColorHarmonyType,
-    saturationBoost: 0.35,
-    lightnessShift: 0,
-    accentSaturation: 85,
-    accentLightness: 52,
-  },
-
-  contrast: {
-    minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.1,
-    autoAdjust: true,
-  },
-
-  tokens: {
-    spacingScale: 'comfortable' as SpacingScale,
-    spacingMultiplier: 1.1,
-    borderRadius: 'soft' as BorderRadiusStyle,
-    borderRadiusMultiplier: 1.1,
-    borderStyle: 'thick' as BorderStyle,
-    borderWidth: '2px',
-    shadowIntensity: 'dramatic' as ShadowIntensity,
-    shadowMultiplier: 1.4,
-    typography: 'playful' as TypographyStyle,
-    lineHeight: 1.45,
-    letterSpacing: '0em',
-  },
-
-  fonts: {
-    body: {
-      family: '"Work Sans", system-ui, sans-serif',
-      weights: [400, 500, 600, 700],
-      display: 'swap',
-      preload: true,
-    },
-    heading: {
-      family: '"DM Serif Display", Georgia, serif',
-      weights: [400],
-      display: 'swap',
-      preload: true,
-    },
-    mono: {
-      family: '"JetBrains Mono", monospace',
-      weights: [400, 500],
-      display: 'swap',
-      preload: true,
-    },
-  },
-
-  animations: {
-    speed: 'normal' as AnimationSpeed,
-    easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-    duration: {
-      instant: '0ms',
-      fast: '100ms',
-      normal: '250ms',
-      slow: '400ms',
-    },
-    staggerDelay: '60ms',
-    prefersReducedMotion: false,
-  },
-
-  iconStyle: 'two-tone' as IconStyle,
-
-  modes: {
-    light: {
-      background: {
-        base: '#fff8f5',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.45)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#1a1a1a',
-        secondary: '#4a4a4a',
-        muted: '#787878',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.12,
-      shadowColor: 'rgba(0, 0, 0, 0.12)',
-    },
-    dark: {
-      background: {
-        base: '#1a1518',
-        elevated: '#2a2025',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#352a30',
-      },
-      foreground: {
-        primary: '#f8f5f0',
-        secondary: '#d0d0d0',
-        muted: '#909090',
-        inverted: '#1a1518',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.5,
-      shadowColor: 'rgba(0, 0, 0, 0.5)',
-    },
-  },
-
-  mobile: {
-    spacingMultiplier: 0.95,
-    borderRadiusMultiplier: 1.0,
-    shadowReduction: 0.15,
-    fontScale: 1.0,
-    touchTargetSize: '48px',
-  },
-
-  tags: ['vibrant', 'energetic', 'kinetic', 'playful', 'social'],
-  category: 'creative',
-};
-
-/**
- * Control Center Personality - Technical Dashboard
- * Precise, monospace, grid-based - now available as application personality
- */
-export const controlCenterPersonality: Personality = {
-  id: 'control-center',
-  name: 'Control Center',
-  description:
-    'Technical dashboard aesthetic - precise, monospace, grid-based with inset shadows',
-  version: '1.0.0',
-
-  colorHarmony: {
-    type: 'analogous' as ColorHarmonyType,
-    saturationBoost: -0.1,
-    lightnessShift: 0.05,
-    accentSaturation: 55,
-    accentLightness: 48,
-    analogousSpread: 20,
-  },
-
-  contrast: {
-    minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.03,
-    autoAdjust: true,
-  },
-
-  tokens: {
-    spacingScale: 'compact' as SpacingScale,
-    spacingMultiplier: 0.9,
-    borderRadius: 'sharp' as BorderRadiusStyle,
-    borderRadiusMultiplier: 0.4,
-    borderStyle: 'thin' as BorderStyle,
-    borderWidth: '1px',
-    shadowIntensity: 'medium' as ShadowIntensity,
-    shadowMultiplier: 0.7,
-    typography: 'modern' as TypographyStyle,
-    lineHeight: 1.5,
-    letterSpacing: '0.02em',
-  },
-
-  fonts: {
-    body: {
-      family: '"IBM Plex Sans", system-ui, sans-serif',
-      weights: [400, 500, 600],
-      display: 'swap',
-      preload: true,
-    },
-    heading: {
-      family: '"Space Grotesk", system-ui, sans-serif',
-      weights: [500, 600, 700],
-      display: 'swap',
-      preload: true,
-    },
-    mono: {
-      family: '"JetBrains Mono", "Fira Code", monospace',
-      weights: [400, 500],
-      display: 'swap',
-      preload: true,
-    },
-  },
-
-  animations: {
-    speed: 'fast' as AnimationSpeed,
-    easing: 'steps(3, end)',
-    duration: {
-      instant: '0ms',
-      fast: '50ms',
-      normal: '100ms',
-      slow: '200ms',
-    },
-    staggerDelay: '15ms',
-    prefersReducedMotion: true,
-  },
-
-  iconStyle: 'outlined' as IconStyle,
-
-  modes: {
-    light: {
-      background: {
-        base: '#f8f9fa',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.5)',
-        surface: '#f1f3f5',
-      },
-      foreground: {
-        primary: '#212529',
-        secondary: '#495057',
-        muted: '#868e96',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.08,
-      shadowColor: 'rgba(0, 0, 0, 0.08)',
-    },
-    dark: {
-      background: {
-        base: '#0d1117',
-        elevated: '#161b22',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#21262d',
-      },
-      foreground: {
-        primary: '#f0f6fc',
-        secondary: '#8b949e',
-        muted: '#6e7681',
-        inverted: '#0d1117',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.5,
-      shadowColor: 'rgba(0, 0, 0, 0.5)',
-    },
-  },
-
-  mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 0.35,
-    shadowReduction: 0.4,
-    fontScale: 0.92,
-    touchTargetSize: '44px',
-  },
-
-  pageBackground: {
-    light: `<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 L20 10 M10 0 L10 20" stroke="#dee2e6" stroke-width="0.5" fill="none" opacity="0.5"/></pattern></defs><rect width="20" height="20" fill="url(#grid)"/></svg>`,
-    dark: `<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid-dark" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 L20 10 M10 0 L10 20" stroke="#30363d" stroke-width="0.5" fill="none" opacity="0.5"/></pattern></defs><rect width="20" height="20" fill="url(#grid-dark)"/></svg>`,
-  },
-
-  tags: ['technical', 'dashboard', 'monospace', 'grid', 'precision'],
-  category: 'technical',
-};
-
-/**
- * Foundation Personality - Base Infrastructure
- * Minimal, functional, no-frills - now available as application personality
- */
-export const foundationPersonality: Personality = {
-  id: 'foundation',
-  name: 'Foundation',
-  description:
-    'Base infrastructure - minimal, functional, no-frills with maximum clarity',
-  version: '1.0.0',
-
-  colorHarmony: {
-    type: 'complementary' as ColorHarmonyType,
-    saturationBoost: -0.15,
-    lightnessShift: 0,
-    accentSaturation: 60,
-    accentLightness: 50,
-  },
-
-  contrast: {
-    minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.02,
-    autoAdjust: true,
-  },
-
-  tokens: {
-    spacingScale: 'compact' as SpacingScale,
-    spacingMultiplier: 0.85,
-    borderRadius: 'sharp' as BorderRadiusStyle,
-    borderRadiusMultiplier: 0.75,
-    borderStyle: 'hairline' as BorderStyle,
-    borderWidth: '0.5px',
-    shadowIntensity: 'subtle' as ShadowIntensity,
-    shadowMultiplier: 0.5,
-    typography: 'clean' as TypographyStyle,
-    lineHeight: 1.5,
-    letterSpacing: 'normal',
-  },
-
-  fonts: {
-    body: {
-      family:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      weights: [400, 500, 600],
-      display: 'swap',
-      preload: false,
-    },
-    heading: {
-      family:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      weights: [500, 600, 700],
-      display: 'swap',
-      preload: false,
-    },
-    mono: {
-      family: '"SF Mono", Monaco, "Inconsolata", monospace',
-      weights: [400, 500],
-      display: 'swap',
-      preload: false,
-    },
-  },
-
-  animations: {
-    speed: 'fast' as AnimationSpeed,
-    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    duration: {
-      instant: '0ms',
-      fast: '75ms',
-      normal: '150ms',
-      slow: '250ms',
-    },
-    staggerDelay: '25ms',
-    prefersReducedMotion: true,
-  },
-
-  iconStyle: 'outlined' as IconStyle,
-
-  modes: {
-    light: {
-      background: {
-        base: '#ffffff',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.5)',
-        surface: '#fafafa',
-      },
-      foreground: {
-        primary: '#111111',
-        secondary: '#555555',
-        muted: '#999999',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.05,
-      shadowColor: 'rgba(0, 0, 0, 0.05)',
-    },
-    dark: {
-      background: {
-        base: '#0a0a0a',
-        elevated: '#111111',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#1a1a1a',
-      },
-      foreground: {
-        primary: '#f5f5f5',
-        secondary: '#a0a0a0',
-        muted: '#666666',
-        inverted: '#0a0a0a',
-      },
-      surfaceOpacity: 0.98,
-      shadowOpacity: 0.4,
-      shadowColor: 'rgba(0, 0, 0, 0.4)',
-    },
-  },
-
-  mobile: {
-    spacingMultiplier: 0.8,
-    borderRadiusMultiplier: 0.7,
-    shadowReduction: 0.5,
-    fontScale: 0.9,
-    touchTargetSize: '44px',
-  },
-
-  tags: ['minimal', 'functional', 'clean', 'utilitarian', 'base'],
-  category: 'technical',
-};
-
-/**
- * All predefined personalities (12 total: 7 original + 5 library-promoted)
+ * All predefined personalities (8 consolidated)
  */
 export const PREDEFINED_PERSONALITIES: Personality[] = [
   classicPersonality,
   minimalPersonality,
+  editorialPersonality,
   boldPersonality,
-  softPersonality,
-  professionalPersonality,
   playfulPersonality,
-  elegantPersonality,
-  architectPersonality,
-  softTouchPersonality,
-  electricPersonality,
-  controlCenterPersonality,
-  foundationPersonality,
+  cyberPersonality,
+  industrialPersonality,
+  organicPersonality,
 ];
 
 /**
@@ -1609,14 +951,28 @@ export function getPersonalityPreviewColors(personality: Personality): {
   light: string[];
   dark: string[];
 } {
+  // Generate preview colors from colorGeneration settings
+  const bgLum = personality.colorGeneration?.backgroundLuminosity ?? 98;
+  const fgContrast = personality.colorGeneration?.foregroundContrast ?? 90;
+
+  // Create hex colors based on luminosity
+  const lightBg = `hsl(0, 0%, ${bgLum}%)`;
+  const lightFg = `hsl(0, 0%, ${Math.max(0, bgLum - fgContrast)}%)`;
+  const darkBg = `hsl(0, 0%, ${Math.max(5, 100 - bgLum)}%)`;
+  const darkFg = `hsl(0, 0%, ${Math.min(95, 100 - bgLum + fgContrast)}%)`;
+
   return {
-    light: [
-      personality.modes.light.background.base,
-      personality.modes.light.foreground.primary,
-    ],
-    dark: [
-      personality.modes.dark.background.base,
-      personality.modes.dark.foreground.primary,
-    ],
+    light: [lightBg, lightFg],
+    dark: [darkBg, darkFg],
   };
 }
+
+// Legacy exports for backward compatibility
+export { classicPersonality as professionalPersonality };
+export { classicPersonality as elegantPersonality };
+export { playfulPersonality as softPersonality };
+export { playfulPersonality as softTouchPersonality };
+export { cyberPersonality as electricPersonality };
+export { cyberPersonality as controlCenterPersonality };
+export { industrialPersonality as architectPersonality };
+export { minimalPersonality as foundationPersonality };

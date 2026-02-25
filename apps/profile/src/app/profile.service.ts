@@ -34,7 +34,7 @@ export class ProfileService {
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly permissionsClient: ClientProxy,
     private readonly logger: Logger
-  ) {}
+  ) { }
 
   async findAll(query?: FindManyOptions<Profile>): Promise<Profile[]> {
     return await this.profileRepository.find(query || {});
@@ -64,7 +64,10 @@ export class ProfileService {
   }
 
   async create(
-    profile: CreateProfileDto & { appScope?: string }
+    profile: CreateProfileDto & {
+      appScope?: string;
+      copyPermissionsFromGlobalProfile?: boolean;
+    }
   ): Promise<Profile> {
     // Check if a profile already exists for this user+appScope to prevent duplicates
     const existingProfile = await this.findByUserIdAndAppScope(
@@ -73,8 +76,7 @@ export class ProfileService {
     );
     if (existingProfile) {
       this.logger.warn(
-        `Profile already exists for user ${profile.userId} in scope ${
-          profile.appScope || 'global'
+        `Profile already exists for user ${profile.userId} in scope ${profile.appScope || 'global'
         }, returning existing profile`
       );
       return existingProfile;
@@ -95,7 +97,11 @@ export class ProfileService {
     const savedProfile = await this.profileRepository.save(newProfile);
 
     // If this is an app-scoped profile, copy permissions from the global profile
-    if (profile.appScope && profile.appScope !== 'global') {
+    if (
+      profile.appScope &&
+      profile.appScope !== 'global' &&
+      profile.copyPermissionsFromGlobalProfile !== false
+    ) {
       await this.copyPermissionsFromGlobalProfile(
         profile.userId,
         savedProfile.id

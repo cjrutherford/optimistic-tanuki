@@ -25,6 +25,8 @@ describe('ProfileService', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProfileService,
@@ -117,6 +119,37 @@ describe('ProfileService', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(existingProfile);
 
       expect(await service.create(createProfileDto)).toBe(existingProfile);
+    });
+
+    it('should not copy permissions when copyPermissionsFromGlobalProfile is false', async () => {
+      const createProfileDto: CreateProfileDto & {
+        appScope?: string;
+        copyPermissionsFromGlobalProfile?: boolean;
+      } = {
+        name: 'Test',
+        description: '',
+        userId: 'user-123',
+        profilePic: '',
+        coverPic: '',
+        bio: '',
+        location: '',
+        occupation: '',
+        interests: '',
+        skills: '',
+        appScope: 'forgeofwill',
+        copyPermissionsFromGlobalProfile: false,
+      };
+
+      const savedProfile = { id: 'new-profile-id', userId: 'user-123' } as Profile;
+
+      jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(null);
+      jest.spyOn(repository, 'save').mockResolvedValue(savedProfile);
+
+      await service.create(createProfileDto);
+
+      expect(mockPermissionsClient.send).not.toHaveBeenCalled();
     });
   });
 

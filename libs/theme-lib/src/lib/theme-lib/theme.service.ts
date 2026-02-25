@@ -40,6 +40,9 @@ import {
   generatePersonalityColors,
   generatePerceptualShades,
   generateSemanticColors,
+  generateThemeResponsiveColors,
+  generateShadowColor,
+  generatePageBackgroundPattern,
 } from './color-harmony';
 import {
   ensureContrast,
@@ -554,16 +557,14 @@ export class ThemeService {
 
   /**
    * Generate and apply personality-based theme
+   * All colors are now generated from the primary color using personality parameters
    */
   private async generateAndApplyPersonalityTheme(): Promise<void> {
     const personality = this.currentPersonality;
     const config = this.personalityConfig;
     const mode = this._theme;
 
-    // Get mode configuration
-    const modeConfig = personality.modes[mode];
-
-    // Generate colors using personality harmony
+    // Generate colors using personality harmony (primary, secondary, tertiary)
     const colors = generatePersonalityColors(
       config.primaryColor,
       personality.colorHarmony.type,
@@ -578,8 +579,8 @@ export class ThemeService {
       personality.tokens.spacingScale === 'compact'
         ? 'ease-out'
         : personality.tokens.spacingScale === 'spacious'
-          ? 'ease-in'
-          : 'ease-in-out';
+        ? 'ease-in'
+        : 'ease-in-out';
 
     const primaryShades = generatePerceptualShades(
       colors.primary,
@@ -625,18 +626,29 @@ export class ThemeService {
       shadeCurve
     );
 
-    // Apply contrast adjustments
-    const foreground = modeConfig.foreground.primary;
-    const background = modeConfig.background.base;
+    // Generate theme-responsive background/foreground colors
+    const themeColors = generateThemeResponsiveColors(
+      config.primaryColor,
+      personality.colorGeneration,
+      mode
+    );
 
+    // Apply contrast adjustments to foreground
     const adjustedForeground = personality.contrast.autoAdjust
       ? ensureContrast(
-        foreground,
-        background,
-        personality.contrast.minimumRatio,
-        'auto'
-      )
-      : foreground;
+          themeColors.foreground,
+          themeColors.background,
+          personality.contrast.minimumRatio,
+          'auto'
+        )
+      : themeColors.foreground;
+
+    // Generate shadow color
+    const shadowColor = generateShadowColor(
+      config.primaryColor,
+      personality.colorGeneration.shadowTint,
+      mode
+    );
 
     // Build personality colors
     const personalityColors: PersonalityColors = {
@@ -654,23 +666,22 @@ export class ThemeService {
       dangerShades,
       info: semanticColors.info,
       infoShades,
-      background: modeConfig.background.base,
+      background: themeColors.background,
       foreground: adjustedForeground,
-      surface: modeConfig.background.elevated,
-      muted: modeConfig.foreground.muted,
-      border: modeConfig.foreground.secondary,
-      // Use personality-driven gradients for richer color variations
-      gradients: this.getPersonalityDrivenGradients(personality.id, modeConfig),
+      surface: themeColors.surface,
+      muted: themeColors.muted,
+      border: themeColors.border,
+      gradients: this.getPersonalityDrivenGradients(personality.id, mode),
     };
 
     // Validate contrast
     const contrastValidation = validateThemeContrast(
       {
         foreground: adjustedForeground,
-        background: modeConfig.background.base,
+        background: themeColors.background,
         primary: colors.primary,
         secondary: colors.secondary,
-        muted: modeConfig.foreground.muted,
+        muted: themeColors.muted,
       },
       personality.contrast.minimumRatio
     );
@@ -679,7 +690,9 @@ export class ThemeService {
     const cssVariables = this.generatePersonalityCSSVariables(
       personality,
       personalityColors,
-      mode
+      mode,
+      themeColors.overlay,
+      shadowColor
     );
 
     // Build generated theme
@@ -711,10 +724,11 @@ export class ThemeService {
   private generatePersonalityCSSVariables(
     personality: Personality,
     colors: PersonalityColors,
-    mode: 'light' | 'dark'
+    mode: 'light' | 'dark',
+    overlay: string,
+    shadowColor: string
   ): Record<string, string> {
     const variables: Record<string, string> = {};
-    const modeConfig = personality.modes[mode];
 
     // Core colors
     variables['--background'] = colors.background;
@@ -778,13 +792,13 @@ export class ThemeService {
     variables['--gradient-animated'] =
       personalityGradients.animated || colors.gradients.primary;
 
-    // Mode-specific
-    variables['--background-base'] = modeConfig.background.base;
-    variables['--background-elevated'] = modeConfig.background.elevated;
-    variables['--background-overlay'] = modeConfig.background.overlay;
-    variables['--foreground-primary'] = modeConfig.foreground.primary;
-    variables['--foreground-secondary'] = modeConfig.foreground.secondary;
-    variables['--foreground-muted'] = modeConfig.foreground.muted;
+    // Mode-specific (theme-responsive)
+    variables['--background-base'] = colors.background;
+    variables['--background-elevated'] = colors.surface;
+    variables['--background-overlay'] = overlay;
+    variables['--foreground-primary'] = colors.foreground;
+    variables['--foreground-secondary'] = colors.border;
+    variables['--foreground-muted'] = colors.muted;
 
     // Typography
     if (personality.fonts.heading) {
@@ -805,12 +819,15 @@ export class ThemeService {
     variables['--animation-duration-slow'] =
       personality.animations.duration.slow;
 
-    // Page background pattern (if defined by personality)
+    // Page background pattern (theme-responsive)
     if (personality.pageBackground) {
-      const svgPattern =
-        mode === 'light'
-          ? personality.pageBackground.light
-          : personality.pageBackground.dark;
+      const svgPattern = generatePageBackgroundPattern(
+        this.personalityConfig.primaryColor,
+        personality.pageBackground.pattern,
+        personality.pageBackground.usePrimaryTint,
+        personality.colorGeneration.pageBackgroundOpacity,
+        mode
+      );
 
       // Encode SVG for use as data URI
       const encodedPattern = encodeURIComponent(svgPattern)
@@ -826,6 +843,12 @@ export class ThemeService {
         '--page-background-pattern'
       ] = `url("data:image/svg+xml,${encodedPattern}")`;
     }
+
+    // Shadow color (theme-responsive)
+    variables['--shadow-color'] = shadowColor;
+    variables['--shadow-opacity'] = String(
+      personality.colorGeneration.shadowOpacity
+    );
 
     return variables;
   }
@@ -859,19 +882,24 @@ export class ThemeService {
     personality: Personality
   ): DesignTokens['shadows'] {
     const multiplier = personality.tokens.shadowMultiplier;
-    const opacity = personality.modes.light.shadowOpacity;
+    const opacity = personality.colorGeneration.shadowOpacity;
 
+    // Shadow color will be set dynamically via CSS variables
+    // Use a neutral shadow for the initial definition
     const shadowColor = `rgba(0, 0, 0, ${opacity})`;
 
     return {
       none: 'none',
       sm: `0 1px 2px 0 ${shadowColor}`,
-      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${4 * multiplier
-        }px -1px ${shadowColor}`,
-      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${6 * multiplier
-        }px -2px ${shadowColor}`,
-      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${10 * multiplier
-        }px -5px ${shadowColor}`,
+      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${
+        4 * multiplier
+      }px -1px ${shadowColor}`,
+      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${
+        6 * multiplier
+      }px -2px ${shadowColor}`,
+      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${
+        10 * multiplier
+      }px -5px ${shadowColor}`,
     };
   }
 
@@ -1482,7 +1510,7 @@ export class ThemeService {
   getLibraryPersonality(libraryId: string): LibraryPersonality {
     console.warn(
       `[ThemeService] getLibraryPersonality('${libraryId}') is deprecated. ` +
-      `Components now use standard CSS variables from the active personality.`
+        `Components now use standard CSS variables from the active personality.`
     );
     return getLibraryPersonality(libraryId);
   }
@@ -1493,7 +1521,7 @@ export class ThemeService {
   getAllLibraryPersonalities(): LibraryPersonality[] {
     console.warn(
       '[ThemeService] getAllLibraryPersonalities() is deprecated. ' +
-      'Use getPersonalities() for the unified personality list.'
+        'Use getPersonalities() for the unified personality list.'
     );
     return Object.values(LIBRARY_PERSONALITIES);
   }
@@ -1504,7 +1532,7 @@ export class ThemeService {
   generateLibraryVariables(libraryId: string): Record<string, string> {
     console.warn(
       `[ThemeService] generateLibraryVariables('${libraryId}') is deprecated. ` +
-      `CSS variables are now set by the active personality via setPersonality().`
+        `CSS variables are now set by the active personality via setPersonality().`
     );
     const personality = getLibraryPersonality(libraryId);
     return generateLibraryCSSVariables(personality);
@@ -1517,7 +1545,7 @@ export class ThemeService {
   applyLibraryTheme(libraryId: string): void {
     console.warn(
       `[ThemeService] applyLibraryTheme('${libraryId}') is deprecated. ` +
-      `Use setPersonality() instead. Components use standard CSS variables.`
+        `Use setPersonality() instead. Components use standard CSS variables.`
     );
     if (!isPlatformBrowser(this.platformId)) {
       return;

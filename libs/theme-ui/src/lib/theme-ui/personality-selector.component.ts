@@ -1,5 +1,5 @@
 /**
- * Personality Selector Component
+ * Personality Selector Component for CDK Overlay
  * Allows users to choose from predefined design personalities
  */
 
@@ -7,25 +7,21 @@ import {
   Component,
   OnInit,
   OnDestroy,
+  Input,
   Output,
   EventEmitter,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
-  ThemeService,
   Personality,
-  PREDEFINED_PERSONALITIES,
   getPersonalityById,
+  ThemeService,
 } from '@optimistic-tanuki/theme-lib';
 import { Subject, takeUntil } from 'rxjs';
 
-interface PersonalityCard {
-  personality: Personality;
-  isSelected: boolean;
-  previewColors: {
-    light: string[];
-    dark: string[];
-  };
+interface GroupedPersonality {
+  category: string;
+  personalities: Personality[];
 }
 
 @Component({
@@ -33,263 +29,281 @@ interface PersonalityCard {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="personality-selector">
-      <div class="selector-header">
-        <h3>Choose Your Design Style</h3>
-        <p class="subtitle">
-          Select a personality that matches your application's aesthetic
-        </p>
-      </div>
-
-      <div class="personalities-grid">
-        <div
-          *ngFor="let card of personalityCards"
-          class="personality-card"
-          [class.selected]="card.isSelected"
-          [attr.data-personality]="card.personality.id"
-          (click)="selectPersonality(card.personality.id)"
-          (keydown.enter)="selectPersonality(card.personality.id)"
-          tabindex="0"
-          role="button"
-          [attr.aria-pressed]="card.isSelected"
-          [attr.aria-label]="'Select ' + card.personality.name + ' personality'"
+    <div class="personality-overlay-container">
+      <div class="overlay-header">
+        <h2 class="overlay-title">Choose Your Style</h2>
+        <button
+          class="close-button"
+          (click)="onClose.emit()"
+          aria-label="Close"
         >
-          <!-- Preview Area -->
-          <div class="card-preview">
-            <div
-              class="preview-background"
-              [style.background]="card.previewColors.light[0]"
-            >
-              <div class="preview-elements">
-                <div
-                  class="preview-accent"
-                  [style.background]="getPrimaryColor()"
-                ></div>
-                <div
-                  class="preview-text"
-                  [style.color]="card.previewColors.light[1]"
-                >
-                  Aa
-                </div>
-              </div>
-            </div>
-          </div>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
 
-          <!-- Card Content -->
-          <div class="card-content">
-            <div class="card-header">
-              <h4 class="personality-name">{{ card.personality.name }}</h4>
-              <span *ngIf="card.personality.isClassic" class="classic-badge">
-                Classic
-              </span>
-            </div>
+      <div class="overlay-content">
+        <div class="current-selection" *ngIf="currentPersonality">
+          <span class="current-label">Current:</span>
+          <span class="current-name">{{ currentPersonality.name }}</span>
+        </div>
 
-            <p class="personality-description">
-              {{ card.personality.description }}
-            </p>
-
-            <div class="personality-tags">
-              <span
-                *ngFor="let tag of card.personality.tags.slice(0, 3)"
-                class="tag"
+        <div class="personality-groups">
+          <div
+            *ngFor="let group of groupedPersonalities"
+            class="personality-group"
+          >
+            <h3 class="group-label">{{ getCategoryLabel(group.category) }}</h3>
+            <div class="personality-options">
+              <button
+                *ngFor="let personality of group.personalities"
+                class="personality-option"
+                [class.selected]="personality.id === currentPersonality?.id"
+                [attr.data-personality]="personality.id"
+                (click)="selectPersonality(personality)"
+                type="button"
               >
-                {{ tag }}
-              </span>
+                <div class="option-preview">
+                  <div
+                    class="preview-swatch"
+                    [style.background]="
+                      getPreviewColor(personality, 'background')
+                    "
+                  ></div>
+                </div>
+                <div class="option-content">
+                  <span class="option-name">
+                    {{ personality.name }}
+                    <span *ngIf="personality.isClassic" class="classic-badge"
+                      >Classic</span
+                    >
+                  </span>
+                  <span class="option-description">{{
+                    personality.description
+                  }}</span>
+                  <div class="option-meta">
+                    <span class="meta-tag">{{
+                      personality.tokens.typography
+                    }}</span>
+                    <span class="meta-tag">{{
+                      personality.tokens.spacingScale
+                    }}</span>
+                  </div>
+                </div>
+              </button>
             </div>
-
-            <div class="personality-meta">
-              <span class="meta-item">
-                <span class="meta-label">Colors:</span>
-                {{ getHarmonyName(card.personality.colorHarmony.type) }}
-              </span>
-              <span class="meta-item">
-                <span class="meta-label">Feel:</span>
-                {{ card.personality.category }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Selection Indicator -->
-          <div class="selection-indicator" *ngIf="card.isSelected">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
           </div>
         </div>
       </div>
 
-      <!-- Selected Personality Info -->
-      <div class="selected-info" *ngIf="selectedPersonality">
-        <h4>Currently Selected: {{ selectedPersonality.name }}</h4>
-        <p>{{ selectedPersonality.description }}</p>
-
-        <div class="features-list">
-          <div class="feature">
-            <span class="feature-label">Typography:</span>
-            <span class="feature-value">{{
-              selectedPersonality.tokens.typography
-            }}</span>
-          </div>
-          <div class="feature">
-            <span class="feature-label">Spacing:</span>
-            <span class="feature-value">{{
-              selectedPersonality.tokens.spacingScale
-            }}</span>
-          </div>
-          <div class="feature">
-            <span class="feature-label">Border Radius:</span>
-            <span class="feature-value">{{
-              selectedPersonality.tokens.borderRadius
-            }}</span>
-          </div>
-          <div class="feature">
-            <span class="feature-label">Shadows:</span>
-            <span class="feature-value">{{
-              selectedPersonality.tokens.shadowIntensity
-            }}</span>
-          </div>
-          <div class="feature">
-            <span class="feature-label">Animation:</span>
-            <span class="feature-value">{{
-              selectedPersonality.animations.speed
-            }}</span>
-          </div>
-          <div class="feature">
-            <span class="feature-label">Icons:</span>
-            <span class="feature-value">{{
-              selectedPersonality.iconStyle
-            }}</span>
-          </div>
-        </div>
+      <div class="overlay-footer">
+        <p class="hint">Click any style to apply it instantly</p>
       </div>
     </div>
   `,
   styles: [
     `
-      .personality-selector {
-        padding: var(--spacing-lg, 1.5rem);
-        max-width: 1200px;
-        margin: 0 auto;
+      :host {
+        display: block;
+      }
+
+      .personality-overlay-container {
+        background: var(--surface, #ffffff);
+        border: var(--border-width, 1px) solid var(--primary);
+        border-radius: var(--border-radius-lg, 12px);
+        box-shadow: var(--shadow-xl, 0 25px 50px -12px rgba(0, 0, 0, 0.25));
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
         font-family: var(--font-body, system-ui, sans-serif);
       }
 
-      .selector-header {
-        text-align: center;
-        margin-bottom: var(--spacing-xl, 2rem);
-
-        h3 {
-          margin: 0 0 var(--spacing-sm, 0.5rem);
-          font-family: var(--font-heading, system-ui, sans-serif);
-          font-size: var(--font-size-xl, 1.5rem);
-          color: var(--foreground);
-        }
-
-        .subtitle {
-          margin: 0;
-          color: var(--muted);
-          font-size: var(--font-size-sm, 0.9rem);
-        }
+      .overlay-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
+        background: var(--primary);
+        color: var(--primary-foreground, #ffffff);
+        flex-shrink: 0;
       }
 
-      .personalities-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: var(--spacing-md, 1rem);
-        margin-bottom: var(--spacing-xl, 2rem);
+      .overlay-title {
+        margin: 0;
+        font-family: var(--font-heading, system-ui, sans-serif);
+        font-size: 1.25rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
       }
 
-      .personality-card {
-        position: relative;
-        border: var(--border-width, 2px) solid var(--border);
-        border-radius: var(--border-radius-lg, 8px);
-        overflow: hidden;
+      .close-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        background: transparent;
+        border: 2px solid var(--primary-foreground, #ffffff);
+        color: var(--primary-foreground, #ffffff);
         cursor: pointer;
-        transition: all var(--animation-duration-normal, 0.2s) var(--animation-easing, ease);
-        background: var(--surface);
+        border-radius: var(--border-radius-sm, 4px);
+        transition: all var(--animation-duration-fast, 100ms)
+          var(--animation-easing, ease);
 
         &:hover {
-          border-color: var(--primary);
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
+          background: var(--secondary);
+          border-color: var(--secondary);
+          color: #000;
+          transform: scale(1.1);
         }
 
-        &:focus {
-          outline: none;
+        svg {
+          width: 20px;
+          height: 20px;
+        }
+      }
+
+      .overlay-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: var(--spacing-md, 16px);
+      }
+
+      .current-selection {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs, 8px);
+        padding: var(--spacing-sm, 12px) var(--spacing-md, 16px);
+        background: var(--background-elevated, #fafafa);
+        border-radius: var(--border-radius-md, 8px);
+        margin-bottom: var(--spacing-md, 16px);
+        font-size: 0.875rem;
+      }
+
+      .current-label {
+        color: var(--muted, #737373);
+        font-weight: 500;
+      }
+
+      .current-name {
+        color: var(--primary);
+        font-weight: 700;
+      }
+
+      .personality-groups {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md, 16px);
+      }
+
+      .personality-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs, 8px);
+      }
+
+      .group-label {
+        margin: 0;
+        padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+        font-family: var(--font-mono, monospace);
+        font-size: 0.625rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted, #737373);
+        background: var(--background-elevated, #fafafa);
+        border-radius: var(--border-radius-sm, 4px);
+      }
+
+      .personality-options {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs, 8px);
+      }
+
+      .personality-option {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm, 12px);
+        padding: var(--spacing-sm, 12px);
+        background: transparent;
+        border: 1px solid var(--border, #e5e7eb);
+        border-radius: var(--border-radius-md, 8px);
+        cursor: pointer;
+        text-align: left;
+        transition: all var(--animation-duration-fast, 150ms)
+          var(--animation-easing, ease);
+
+        &:hover {
+          background: var(--surface, #f9fafb);
           border-color: var(--primary);
-          box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+          transform: translateX(4px);
         }
 
         &.selected {
+          background: color-mix(in srgb, var(--primary) 10%, var(--background));
           border-color: var(--primary);
-          border-width: 3px;
-          box-shadow: var(--shadow-lg);
+          border-width: 2px;
+
+          .option-name {
+            color: var(--primary);
+          }
         }
       }
 
-      .card-preview {
-        height: 100px;
-        overflow: hidden;
-
-        .preview-background {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: background var(--animation-duration-normal, 0.3s) var(--animation-easing, ease);
-        }
-
-        .preview-elements {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-md, 1rem);
-        }
-
-        .preview-accent {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          box-shadow: var(--shadow-md, 0 2px 8px rgba(0, 0, 0, 0.2));
-        }
-
-        .preview-text {
-          font-size: var(--font-size-xl, 1.5rem);
-          font-weight: 600;
-          font-family: var(--font-heading, system-ui, sans-serif);
-        }
+      .option-preview {
+        flex-shrink: 0;
       }
 
-      .card-content {
-        padding: var(--spacing-md, 1rem);
+      .preview-swatch {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--border-radius-md, 8px);
+        border: 2px solid var(--border, #e5e7eb);
+        box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
       }
 
-      .card-header {
+      .option-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs, 4px);
+      }
+
+      .option-name {
         display: flex;
         align-items: center;
-        gap: var(--spacing-sm, 0.5rem);
-        margin-bottom: var(--spacing-sm, 0.5rem);
-
-        .personality-name {
-          margin: 0;
-          font-family: var(--font-heading, system-ui, sans-serif);
-          font-size: 1.1rem;
-          color: var(--foreground);
-        }
-
-        .classic-badge {
-          font-size: 0.7rem;
-          padding: 0.15rem 0.4rem;
-          background: var(--primary);
-          color: var(--primary-foreground, white);
-          border-radius: var(--border-radius-full, 999px);
-          font-weight: 500;
-        }
+        gap: var(--spacing-xs, 8px);
+        font-family: var(--font-heading, system-ui, sans-serif);
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--foreground, #171717);
       }
 
-      .personality-description {
-        margin: 0 0 var(--spacing-sm, 0.75rem);
-        font-size: var(--font-size-sm, 0.85rem);
-        color: var(--muted);
+      .classic-badge {
+        font-size: 0.625rem;
+        padding: 2px 6px;
+        background: var(--primary);
+        color: var(--primary-foreground, #ffffff);
+        border-radius: 9999px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .option-description {
+        font-size: 0.75rem;
+        color: var(--muted, #737373);
         line-height: 1.4;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -297,139 +311,73 @@ interface PersonalityCard {
         overflow: hidden;
       }
 
-      .personality-tags {
+      .option-meta {
         display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-xs, 0.25rem);
-        margin-bottom: var(--spacing-sm, 0.75rem);
-
-        .tag {
-          font-size: 0.7rem;
-          padding: 0.15rem 0.4rem;
-          background: var(--background-elevated);
-          color: var(--foreground-secondary);
-          border-radius: var(--border-radius-sm, 2px);
-          text-transform: capitalize;
-          font-family: var(--font-body, system-ui, sans-serif);
-        }
+        gap: var(--spacing-xs, 8px);
+        margin-top: var(--spacing-xs, 4px);
       }
 
-      .personality-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-sm, 0.75rem);
+      .meta-tag {
+        font-size: 0.6875rem;
+        padding: 2px 6px;
+        background: var(--background-elevated, #f3f4f6);
+        color: var(--foreground-secondary, #6b7280);
+        border-radius: var(--border-radius-sm, 4px);
+        text-transform: capitalize;
+        font-family: var(--font-mono, monospace);
+      }
+
+      .overlay-footer {
+        padding: var(--spacing-sm, 12px) var(--spacing-md, 16px);
+        border-top: 1px solid var(--border, #e5e7eb);
+        background: var(--background-elevated, #fafafa);
+        flex-shrink: 0;
+      }
+
+      .hint {
+        margin: 0;
         font-size: 0.75rem;
-        color: var(--muted);
-        font-family: var(--font-body, system-ui, sans-serif);
-
-        .meta-item {
-          display: flex;
-          gap: var(--spacing-xs, 0.25rem);
-        }
-
-        .meta-label {
-          font-weight: 500;
-        }
+        color: var(--muted, #737373);
+        text-align: center;
+        font-style: italic;
       }
 
-      .selection-indicator {
-        position: absolute;
-        top: var(--spacing-sm, 0.5rem);
-        right: var(--spacing-sm, 0.5rem);
-        width: 24px;
-        height: 24px;
-        background: var(--primary);
-        color: var(--primary-foreground, white);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        svg {
-          width: 16px;
-          height: 16px;
-          stroke-width: 3;
-        }
+      // Scrollbar styling
+      .overlay-content::-webkit-scrollbar {
+        width: 8px;
       }
 
-      .selected-info {
-        background: var(--surface);
-        border: var(--border-width, 1px) solid var(--border);
-        border-radius: var(--border-radius-lg, 8px);
-        padding: var(--spacing-lg, 1.5rem);
-
-        h4 {
-          margin: 0 0 var(--spacing-sm, 0.5rem);
-          font-family: var(--font-heading, system-ui, sans-serif);
-          color: var(--foreground);
-        }
-
-        p {
-          margin: 0 0 var(--spacing-md, 1rem);
-          color: var(--muted);
-        }
-
-        .features-list {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: var(--spacing-sm, 0.5rem);
-        }
-
-        .feature {
-          display: flex;
-          justify-content: space-between;
-          padding: var(--spacing-sm, 0.5rem);
-          background: var(--background);
-          border-radius: var(--border-radius-md, 4px);
-
-          .feature-label {
-            color: var(--muted);
-            font-size: var(--font-size-sm, 0.85rem);
-          }
-
-          .feature-value {
-            color: var(--foreground);
-            font-size: var(--font-size-sm, 0.85rem);
-            font-weight: 500;
-            text-transform: capitalize;
-          }
-        }
+      .overlay-content::-webkit-scrollbar-track {
+        background: var(--background-elevated, #f3f4f6);
+        border-radius: var(--border-radius-sm, 4px);
       }
 
-      @media (max-width: 640px) {
-        .personalities-grid {
-          grid-template-columns: 1fr;
-        }
+      .overlay-content::-webkit-scrollbar-thumb {
+        background: var(--border, #d1d5db);
+        border-radius: var(--border-radius-sm, 4px);
 
-        .selected-info .features-list {
-          grid-template-columns: 1fr;
+        &:hover {
+          background: var(--muted, #9ca3af);
         }
       }
     `,
   ],
 })
 export class PersonalitySelectorComponent implements OnInit, OnDestroy {
-  personalities: Personality[] = PREDEFINED_PERSONALITIES;
-  personalityCards: PersonalityCard[] = [];
-  selectedPersonality: Personality | null = null;
-  currentPrimaryColor = '#3f51b5';
-
+  @Input() personalities: Personality[] = [];
+  @Input() currentPersonality: Personality | null = null;
   @Output() personalitySelected = new EventEmitter<Personality>();
+  @Output() onClose = new EventEmitter<void>();
+
+  groupedPersonalities: GroupedPersonality[] = [];
+  currentPrimaryColor = '#3f51b5';
 
   private destroy$ = new Subject<void>();
 
-  constructor(private themeService: ThemeService) { }
+  constructor(private themeService: ThemeService) {}
 
   ngOnInit(): void {
-    // Subscribe to current personality
-    this.themeService.personality$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((personality) => {
-        if (personality) {
-          this.selectedPersonality = personality;
-          this.updatePersonalityCards();
-        }
-      });
+    this.groupPersonalities();
 
     // Subscribe to primary color changes
     this.themeService.generatedTheme$
@@ -437,12 +385,8 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
       .subscribe((theme) => {
         if (theme) {
           this.currentPrimaryColor = theme.config.primaryColor;
-          this.updatePersonalityCards();
         }
       });
-
-    // Initialize cards
-    this.updatePersonalityCards();
   }
 
   ngOnDestroy(): void {
@@ -450,43 +394,134 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private updatePersonalityCards(): void {
-    this.personalityCards = this.personalities.map((personality) => ({
-      personality,
-      isSelected: this.selectedPersonality?.id === personality.id,
-      previewColors: {
-        light: [
-          personality.modes.light.background.base,
-          personality.modes.light.foreground.primary,
-        ],
-        dark: [
-          personality.modes.dark.background.base,
-          personality.modes.dark.foreground.primary,
-        ],
-      },
-    }));
-  }
+  /**
+   * Generate preview color for personality based on current primary color
+   */
+  getPreviewColor(
+    personality: Personality,
+    type: 'background' | 'foreground'
+  ): string {
+    const hue = this.extractHueFromHex(this.currentPrimaryColor);
+    const config = personality.colorGeneration;
 
-  selectPersonality(personalityId: string): void {
-    const personality = getPersonalityById(personalityId);
-    if (personality) {
-      this.themeService.setPersonality(personalityId);
-      this.personalitySelected.emit(personality);
+    if (type === 'background') {
+      const hsl = {
+        h: hue,
+        s: config.neutralSaturation,
+        l: config.backgroundLuminosity,
+      };
+      return this.hslToHex(hsl);
+    } else {
+      const bgLuminosity = config.backgroundLuminosity;
+      const fgLuminosity = Math.max(
+        0,
+        bgLuminosity - config.foregroundContrast
+      );
+      const hsl = {
+        h: hue,
+        s: config.neutralSaturation,
+        l: fgLuminosity,
+      };
+      return this.hslToHex(hsl);
     }
   }
 
-  getPrimaryColor(): string {
-    return this.currentPrimaryColor;
+  private extractHueFromHex(hex: string): number {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return 0;
+
+    const r = parseInt(result[1], 16) / 255;
+    const g = parseInt(result[2], 16) / 255;
+    const b = parseInt(result[3], 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0;
+
+    if (max !== min) {
+      const d = max - min;
+      switch (max) {
+        case r:
+          h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+          break;
+        case g:
+          h = ((b - r) / d + 2) / 6;
+          break;
+        case b:
+          h = ((r - g) / d + 4) / 6;
+          break;
+      }
+    }
+
+    return h * 360;
   }
 
-  getHarmonyName(type: string): string {
-    const harmonyNames: Record<string, string> = {
-      complementary: 'Complementary',
-      triadic: 'Triadic',
-      analogous: 'Analogous',
-      'split-complementary': 'Split',
-      tetradic: 'Tetradic',
+  private hslToHex({ h, s, l }: { h: number; s: number; l: number }): string {
+    const hDecimal = h / 360;
+    const sDecimal = s / 100;
+    const lDecimal = l / 100;
+
+    let r: number, g: number, b: number;
+
+    if (sDecimal === 0) {
+      r = g = b = lDecimal;
+    } else {
+      const hue2rgb = (p: number, q: number, t: number): number => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+
+      const q =
+        lDecimal < 0.5
+          ? lDecimal * (1 + sDecimal)
+          : lDecimal + sDecimal - lDecimal * sDecimal;
+      const p = 2 * lDecimal - q;
+      r = hue2rgb(p, q, hDecimal + 1 / 3);
+      g = hue2rgb(p, q, hDecimal);
+      b = hue2rgb(p, q, hDecimal - 1 / 3);
+    }
+
+    const toHex = (x: number): string => {
+      const hex = Math.round(x * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
     };
-    return harmonyNames[type] || type;
+
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
+  private groupPersonalities(): void {
+    const groups: Record<string, Personality[]> = {};
+
+    for (const personality of this.personalities) {
+      if (!groups[personality.category]) {
+        groups[personality.category] = [];
+      }
+      groups[personality.category].push(personality);
+    }
+
+    this.groupedPersonalities = Object.entries(groups).map(
+      ([category, personalities]) => ({
+        category,
+        personalities,
+      })
+    );
+  }
+
+  selectPersonality(personality: Personality): void {
+    this.personalitySelected.emit(personality);
+  }
+
+  getCategoryLabel(category: string): string {
+    const labels: Record<string, string> = {
+      professional: 'Professional',
+      creative: 'Creative',
+      casual: 'Casual',
+      technical: 'Technical',
+    };
+    return labels[category] || category;
   }
 }

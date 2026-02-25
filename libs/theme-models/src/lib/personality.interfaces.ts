@@ -151,6 +151,35 @@ export interface AnimationConfig {
 }
 
 /**
+ * Color generation parameters for theme-responsive personalities
+ * All colors are derived from the user's selected primary color
+ */
+export interface ColorGenerationConfig {
+  /** Base background luminosity (0-100) for light mode */
+  backgroundLuminosity: number;
+  /** Elevated surface luminosity relative to background (offset, typically -2 to -5) */
+  surfaceLuminosityOffset: number;
+  /** Foreground contrast level - how dark text should be on light bg (0-100) */
+  foregroundContrast: number;
+  /** Secondary text luminosity relative to foreground (offset, typically +15 to +25) */
+  secondaryLuminosityOffset: number;
+  /** Muted text luminosity relative to foreground (offset, typically +25 to +35) */
+  mutedLuminosityOffset: number;
+  /** Saturation adjustment for neutrals (0-100, typically 0-10) */
+  neutralSaturation: number;
+  /** Dark mode luminosity reduction (percentage, typically 85-95%) */
+  darkModeLuminosityScale: number;
+  /** Dark mode saturation boost (typically 0-20%) */
+  darkModeSaturationBoost: number;
+  /** Shadow color derivation: 'neutral' | 'primary-tint' | 'warm' | 'cool' */
+  shadowTint: 'neutral' | 'primary-tint' | 'warm' | 'cool';
+  /** Shadow opacity multiplier (0.05 - 0.3) */
+  shadowOpacity: number;
+  /** Page background pattern opacity (0 - 0.2) */
+  pageBackgroundOpacity: number;
+}
+
+/**
  * Mobile-specific adaptations
  */
 export interface MobileAdaptations {
@@ -248,8 +277,11 @@ export interface Personality {
   // Icons
   iconStyle: IconStyle;
 
-  // Mode support
-  modes: {
+  // Color generation (theme-responsive)
+  colorGeneration: ColorGenerationConfig;
+
+  // Legacy mode support (optional, for backward compatibility during transition)
+  modes?: {
     light: ModeConfig;
     dark: ModeConfig;
   };
@@ -257,10 +289,12 @@ export interface Personality {
   // Mobile adaptations
   mobile: MobileAdaptations;
 
-  // Optional page background SVG pattern per mode
+  // Page background pattern (SVG, theme-responsive)
   pageBackground?: {
-    light: string;
-    dark: string;
+    /** SVG pattern - colors will be replaced with theme colors */
+    pattern: string;
+    /** Whether pattern uses primary color tint */
+    usePrimaryTint: boolean;
   };
 
   // Metadata
