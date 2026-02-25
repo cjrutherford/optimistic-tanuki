@@ -34,7 +34,7 @@ export class ContextStorageService implements OnModuleDestroy {
   private async initRedis(): Promise<void> {
     try {
       // Support both a single 'redis' config object or separate REDIS_HOST/REDIS_PORT keys
-      let redisCfg = this.config.get<any>('redis');
+      const redisCfg = this.config.get<any>('redis');
       let redisHost: string | undefined;
       let redisPort: number | undefined;
       let redisPassword: string | undefined;

@@ -36,7 +36,7 @@ export class ToolRegistry {
   private readonly logger = new Logger(ToolRegistry.name);
   private cachedTools: DynamicStructuredTool[] | null = null;
   private mcpToolsCache: Tool[] | null = null;
-  private lastFetchTime: number = 0;
+  private lastFetchTime = 0;
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(

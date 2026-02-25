@@ -21,7 +21,7 @@ export class AppComponent implements OnInit {
 
   constructor(
     private readonly themeService: ThemeService,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: object
   ) {}
 
   ngOnInit() {

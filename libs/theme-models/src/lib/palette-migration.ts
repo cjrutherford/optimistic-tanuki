@@ -216,7 +216,7 @@ export function findBestMatchingPersonality(analysis: PaletteAnalysis): {
 
   for (const personality of PREDEFINED_PERSONALITIES) {
     let score = 0;
-    let reasons: string[] = [];
+    const reasons: string[] = [];
 
     // Check harmony type match
     if (analysis.harmony === personality.colorHarmony.type) {
@@ -365,7 +365,7 @@ export function generateMigrationReport(results: PaletteMigrationResult[]): {
 export function shouldMigrateToPersonality(
   palette: ColorPalette,
   targetPersonalityId: string,
-  minConfidence: number = 60
+  minConfidence = 60
 ): boolean {
   const result = migratePaletteToPersonality(palette);
   return (

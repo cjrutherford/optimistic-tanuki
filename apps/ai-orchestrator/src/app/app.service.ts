@@ -511,7 +511,7 @@ export class AppService {
     conversationId: string,
     persona: PersonaTelosDto,
     profile: ProfileDto,
-    retryCount: number = 0
+    retryCount = 0
   ): Promise<{
     success: boolean;
     result?: unknown;

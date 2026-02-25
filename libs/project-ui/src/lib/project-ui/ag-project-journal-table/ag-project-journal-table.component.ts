@@ -41,7 +41,7 @@ import { ProjectJournalFormComponent } from '../project-journal-form/project-jou
 export class AgProjectJournalTableComponent implements OnInit, OnChanges {
   // Traditional inputs/outputs for compatibility
   @Input() journals: ProjectJournal[] = [];
-  @Input() loading: boolean = false;
+  @Input() loading = false;
   @Output() createJournalEntry = new EventEmitter<CreateProjectJournal>();
   @Output() editJournalEntry = new EventEmitter<ProjectJournal>();
   @Output() deleteJournalEntry = new EventEmitter<string>();

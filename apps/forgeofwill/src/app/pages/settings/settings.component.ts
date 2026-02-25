@@ -1,4 +1,4 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ThemeDesignerComponent,
@@ -31,7 +31,7 @@ import { ThemeService, Personality } from '@optimistic-tanuki/theme-lib';
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
-export class SettingsComponent {
+export class SettingsComponent implements OnInit {
   title = 'Settings';
 
   showThemeDesigner = false;

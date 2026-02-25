@@ -44,7 +44,7 @@ export class PaginationComponent extends Variantable implements OnInit {
     super();
   }
 
-  @Input() totalItems: number = 0;
+  @Input() totalItems = 0;
   @Input() itemsPerPage = 10;
   @Input() currentPage = 1;
   @Input() maxVisiblePages = 5;

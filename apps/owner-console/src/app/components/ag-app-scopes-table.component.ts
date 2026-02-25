@@ -69,8 +69,8 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 export class AgAppScopesTableComponent implements OnInit, OnChanges {
   @Input() appScopes: AppScopeDto[] = [];
   @Input() permissionCounts: Map<string, number> = new Map();
-  @Input() loading: boolean = false;
-  @Input() height: string = '600px';
+  @Input() loading = false;
+  @Input() height = '600px';
   @Output() create = new EventEmitter<void>();
   @Output() edit = new EventEmitter<AppScopeDto>();
   @Output() delete = new EventEmitter<AppScopeDto>();

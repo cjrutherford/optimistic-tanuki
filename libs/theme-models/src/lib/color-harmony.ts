@@ -147,7 +147,7 @@ export function generateTriadicHarmony(hue: number): number[] {
  */
 export function generateAnalogousHarmony(
   hue: number,
-  spread: number = 30
+  spread = 30
 ): number[] {
   return [(hue - spread + 360) % 360, hue, (hue + spread) % 360];
 }
@@ -198,8 +198,8 @@ export function generateHarmonyHues(
 export function adjustSaturation(
   baseSaturation: number,
   boost: number,
-  targetMin: number = 20,
-  targetMax: number = 100
+  targetMin = 20,
+  targetMax = 100
 ): number {
   const adjusted = baseSaturation + baseSaturation * boost;
   return Math.max(targetMin, Math.min(targetMax, adjusted));
@@ -211,8 +211,8 @@ export function adjustSaturation(
 export function adjustLightness(
   baseLightness: number,
   shift: number,
-  min: number = 15,
-  max: number = 95
+  min = 15,
+  max = 95
 ): number {
   const adjusted = baseLightness + shift * 100;
   return Math.max(min, Math.min(max, adjusted));
@@ -254,7 +254,7 @@ export function generateHarmonyColor(
  */
 export function generatePerceptualShades(
   baseColor: string,
-  steps: number = 10,
+  steps = 10,
   curve: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' = 'ease-in-out'
 ): string[] {
   const rgb = hexToRgbInternal(baseColor);

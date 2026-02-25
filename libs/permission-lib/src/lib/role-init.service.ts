@@ -141,7 +141,7 @@ export class RoleInitService {
       );
       if (communityPermissions?.length) {
         try {
-          let socialScopeForPerms = await firstValueFrom(
+          const socialScopeForPerms = await firstValueFrom(
             this.permissionsClient.send(
               { cmd: AppScopeCommands.GetByName },
               { name: 'social' }

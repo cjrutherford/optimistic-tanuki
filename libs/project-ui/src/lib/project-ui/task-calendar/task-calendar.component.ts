@@ -56,7 +56,7 @@ export class TaskCalendarComponent
   implements OnInit, OnChanges, OnDestroy
 {
   @Input() tasks: Task[] = [];
-  @Input() loading: boolean = false;
+  @Input() loading = false;
   @Output() createTask = new EventEmitter<CreateTask>();
   @Output() editTask = new EventEmitter<Task>();
   @Output() deleteTask = new EventEmitter<string>();

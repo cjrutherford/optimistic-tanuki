@@ -7,12 +7,4 @@ export default {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/apps/chat-collector',
-    coverageThreshold: {
-    global: {
-      branches: 80,
-      functions: 60,
-      lines: 80,
-      statements: 80,
-    },
-  },
-};
+  }

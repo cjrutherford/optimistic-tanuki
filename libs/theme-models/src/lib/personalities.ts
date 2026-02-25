@@ -1325,7 +1325,7 @@ export function isValidPersonalityId(id: string): boolean {
  */
 export function getPersonalityPreviewColors(
   personality: Personality,
-  primaryColor: string = '#3f51b5'
+  primaryColor = '#3f51b5'
 ): {
   light: string[];
   dark: string[];

@@ -371,7 +371,7 @@ export class DataTracker {
    */
   async getRecentToolCalls(
     conversationId: string,
-    limit: number = 5
+    limit = 5
   ): Promise<ToolCallRecord[]> {
     const store = await this.getConversationData(conversationId);
     if (!store) return [];

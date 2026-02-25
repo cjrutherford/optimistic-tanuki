@@ -60,7 +60,7 @@ jobs:
           - chat-collector
           - assets
           - prompt-proxy
-          - ai-orchestration
+          - ai-orchestrator
           - telos-docs-service
           - blogging
           - permissions
