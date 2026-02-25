@@ -7,7 +7,7 @@ import {
 } from '@optimistic-tanuki/models';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { AuthCommands } from '@optimistic-tanuki/constants';
+import { AuthCommands, ProfileCommands } from '@optimistic-tanuki/constants';
 import { AuthenticationController } from './authentication.controller';
 import { ClientProxy } from '@nestjs/microservices';
 import { HttpException, Logger } from '@nestjs/common';
@@ -18,6 +18,7 @@ describe('AuthenticationController', () => {
   let controller: AuthenticationController;
   let clientProxy: ClientProxy;
   let profileService: ClientProxy;
+  let roleInitService: { processNow: jest.Mock };
 
   beforeEach(async () => {
     clientProxy = {
@@ -32,6 +33,10 @@ describe('AuthenticationController', () => {
       connect: jest.fn().mockResolvedValue({}),
     } as unknown as jest.Mocked<ClientProxy>;
 
+    roleInitService = {
+      processNow: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthenticationController],
       providers: [
@@ -45,11 +50,7 @@ describe('AuthenticationController', () => {
         },
         {
           provide: RoleInitService,
-          useValue: {
-            initializeRoles: jest.fn().mockResolvedValue(undefined),
-            enqueue: jest.fn().mockResolvedValue(undefined),
-            processNow: jest.fn().mockResolvedValue(undefined),
-          },
+          useValue: roleInitService,
         },
         Logger,
       ],
@@ -69,7 +70,7 @@ describe('AuthenticationController', () => {
     };
     // Mock UserIdFromEmail to return a valid userId
     (clientProxy.send as jest.Mock)
-      .mockReturnValueOnce(of({ userId: 'user-1' })) // UserIdFromEmail
+      .mockReturnValueOnce(of('user-1')) // UserIdFromEmail
       .mockReturnValueOnce(of(true)); // Login
     await expect(controller.loginUser(loginRequest, 'test')).resolves.toBe(
       true
@@ -78,6 +79,72 @@ describe('AuthenticationController', () => {
       { cmd: AuthCommands.Login },
       { ...loginRequest, profileId: 'profile-1' }
     );
+  });
+
+  it('should auto-create app-scoped profile for cross-app users and login with it', async () => {
+    const loginRequest: LoginRequest = {
+      email: 'cross@app.com',
+      password: 'test',
+    };
+
+    (clientProxy.send as jest.Mock).mockImplementation((pattern) => {
+      if (pattern?.cmd === AuthCommands.UserIdFromEmail) {
+        return of('user-1');
+      }
+      if (pattern?.cmd === AuthCommands.Login) {
+        return of(true);
+      }
+      return of(true);
+    });
+
+    (profileService.send as jest.Mock).mockImplementation((pattern, payload) => {
+      if (pattern?.cmd === ProfileCommands.GetAll) {
+        return of([
+          {
+            id: 'profile-client',
+            userId: 'user-1',
+            profileName: 'Client Profile',
+            appScope: 'client-interface',
+            profilePic: 'pic',
+            coverPic: 'cover',
+            bio: 'bio',
+            location: 'loc',
+            occupation: 'occ',
+            interests: 'int',
+            skills: 'skills',
+          },
+        ]);
+      }
+
+      if (pattern?.cmd === ProfileCommands.Create) {
+        expect(payload).toEqual(
+          expect.objectContaining({
+            userId: 'user-1',
+            name: 'Client Profile',
+            appScope: 'forgeofwill',
+            copyPermissionsFromGlobalProfile: false,
+          })
+        );
+        return of({
+          id: 'profile-forge',
+          userId: 'user-1',
+          profileName: 'Client Profile',
+          appScope: 'forgeofwill',
+        });
+      }
+
+      return of([]);
+    });
+
+    await expect(controller.loginUser(loginRequest, 'forgeofwill')).resolves.toBe(
+      true
+    );
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.Login },
+      { ...loginRequest, profileId: 'profile-forge' }
+    );
+    expect(roleInitService.processNow).toHaveBeenCalled();
   });
 
   it('should throw HttpException if loginUser fails', async () => {

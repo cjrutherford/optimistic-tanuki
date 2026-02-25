@@ -1,8 +1,16 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Observable, Subject, Subscription, filter, takeUntil } from 'rxjs';
+import {
+  Component,
+  OnDestroy,
+  OnInit,
+  ViewContainerRef,
+  inject,
+} from '@angular/core';
+import { Subject, filter, takeUntil } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { Overlay, OverlayModule, OverlayRef } from '@angular/cdk/overlay';
+import { ComponentPortal } from '@angular/cdk/portal';
 import {
   ThemeColors,
   ThemeService,
@@ -10,12 +18,17 @@ import {
   PREDEFINED_PERSONALITIES,
   GeneratedTheme,
 } from '@optimistic-tanuki/theme-lib';
-import { ModalComponent } from '@optimistic-tanuki/common-ui';
+import { PersonalitySelectorComponent } from './personality-selector.component';
 
 @Component({
   selector: 'lib-theme-toggle',
   standalone: true,
-  imports: [FormsModule, CommonModule, ModalComponent],
+  imports: [
+    FormsModule,
+    CommonModule,
+    OverlayModule,
+    PersonalitySelectorComponent,
+  ],
   templateUrl: './theme.component.html',
   styleUrl: './theme.component.scss',
   host: {
@@ -58,7 +71,13 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
   currentPersonality: Personality | null = null;
   showPersonalityPicker = false;
 
-  constructor(private readonly themeService: ThemeService) {
+  private overlayRef: OverlayRef | null = null;
+
+  constructor(
+    private readonly themeService: ThemeService,
+    private overlay: Overlay,
+    private viewContainerRef: ViewContainerRef
+  ) {
     this.theme = this.themeService.getTheme();
     this.accentColor = this.themeService.getAccentColor();
     this.currentPersonality = this.themeService.getCurrentPersonality();
@@ -116,6 +135,7 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next(true);
     this.destroy$.complete();
+    this.closePersonalityPicker();
   }
 
   toggleTheme() {
@@ -128,42 +148,81 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
   }
 
   togglePersonalityPicker() {
-    this.showPersonalityPicker = !this.showPersonalityPicker;
+    if (this.showPersonalityPicker) {
+      this.closePersonalityPicker();
+    } else {
+      this.openPersonalityPicker();
+    }
+  }
+
+  openPersonalityPicker() {
+    if (this.overlayRef) {
+      return;
+    }
+
+    // Create overlay with proper positioning and backdrop
+    this.overlayRef = this.overlay.create({
+      hasBackdrop: true,
+      backdropClass: 'personality-picker-backdrop',
+      positionStrategy: this.overlay
+        .position()
+        .global()
+        .centerHorizontally()
+        .centerVertically(),
+      scrollStrategy: this.overlay.scrollStrategies.block(),
+      disposeOnNavigation: true,
+      width: '90vw',
+      maxWidth: '500px',
+      maxHeight: '80vh',
+    });
+
+    // Create portal for the personality selector component
+    const portal = new ComponentPortal(
+      PersonalitySelectorComponent,
+      this.viewContainerRef
+    );
+
+    const componentRef = this.overlayRef.attach(portal);
+
+    // Pass data to the component
+    componentRef.instance.personalities = this.personalities;
+    componentRef.instance.currentPersonality = this.currentPersonality;
+
+    // Subscribe to component outputs
+    componentRef.instance.personalitySelected.subscribe(
+      (personality: Personality) => {
+        this.selectPersonality(personality);
+      }
+    );
+    componentRef.instance.onClose.subscribe(() => {
+      this.closePersonalityPicker();
+    });
+
+    // Handle backdrop click
+    this.overlayRef.backdropClick().subscribe(() => {
+      this.closePersonalityPicker();
+    });
+
+    // Handle escape key
+    this.overlayRef.keydownEvents().subscribe((event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        this.closePersonalityPicker();
+      }
+    });
+
+    this.showPersonalityPicker = true;
   }
 
   closePersonalityPicker() {
+    if (this.overlayRef) {
+      this.overlayRef.dispose();
+      this.overlayRef = null;
+    }
     this.showPersonalityPicker = false;
   }
 
   selectPersonality(personality: Personality) {
     this.themeService.setPersonality(personality.id);
-    this.showPersonalityPicker = false;
-  }
-
-  getPersonalityCategoryLabel(category: string): string {
-    const labels: Record<string, string> = {
-      professional: 'Professional',
-      creative: 'Creative',
-      casual: 'Casual',
-      technical: 'Technical',
-    };
-    return labels[category] || category;
-  }
-
-  getGroupedPersonalities(): {
-    category: string;
-    personalities: Personality[];
-  }[] {
-    const groups: Record<string, Personality[]> = {};
-    for (const p of this.personalities) {
-      if (!groups[p.category]) {
-        groups[p.category] = [];
-      }
-      groups[p.category].push(p);
-    }
-    return Object.entries(groups).map(([category, personalities]) => ({
-      category,
-      personalities,
-    }));
+    this.closePersonalityPicker();
   }
 }

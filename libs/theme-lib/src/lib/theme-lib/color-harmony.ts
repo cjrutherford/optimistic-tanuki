@@ -448,3 +448,213 @@ export function getHarmonyDescription(type: ColorHarmonyType): string {
       return '';
   }
 }
+
+/**
+ * Generate theme-responsive background and foreground colors
+ * All colors are derived from the primary color and personality parameters
+ */
+export function generateThemeResponsiveColors(
+  primaryColor: string,
+  params: {
+    backgroundLuminosity: number;
+    surfaceLuminosityOffset: number;
+    foregroundContrast: number;
+    secondaryLuminosityOffset: number;
+    mutedLuminosityOffset: number;
+    neutralSaturation: number;
+    darkModeLuminosityScale: number;
+    darkModeSaturationBoost: number;
+  },
+  mode: 'light' | 'dark'
+): {
+  background: string;
+  foreground: string;
+  surface: string;
+  muted: string;
+  border: string;
+  overlay: string;
+} {
+  const primaryRgb = hexToRgbInternal(primaryColor);
+  const primaryHsl = rgbToHsl(primaryRgb);
+
+  // Determine base luminosity based on mode
+  const baseLuminosity =
+    mode === 'light'
+      ? params.backgroundLuminosity
+      : params.backgroundLuminosity * (params.darkModeLuminosityScale / 100);
+
+  // Background: uses primary hue with adjusted saturation/luminosity
+  const backgroundHsl: HSL = {
+    h: primaryHsl.h,
+    s:
+      mode === 'light'
+        ? params.neutralSaturation
+        : Math.min(
+            100,
+            params.neutralSaturation + params.darkModeSaturationBoost
+          ),
+    l: baseLuminosity,
+  };
+  const background = rgbToHex(hslToRgb(backgroundHsl));
+
+  // Surface: slightly different from background
+  const surfaceHsl: HSL = {
+    h: primaryHsl.h,
+    s: backgroundHsl.s,
+    l: Math.max(
+      0,
+      Math.min(100, baseLuminosity + params.surfaceLuminosityOffset)
+    ),
+  };
+  const surface = rgbToHex(hslToRgb(surfaceHsl));
+
+  // Foreground: high contrast against background
+  const foregroundLuminosity =
+    mode === 'light'
+      ? Math.max(0, params.backgroundLuminosity - params.foregroundContrast)
+      : Math.min(100, baseLuminosity + params.foregroundContrast);
+
+  const foregroundHsl: HSL = {
+    h: primaryHsl.h,
+    s: mode === 'light' ? 5 : 10, // Very desaturated for text
+    l: foregroundLuminosity,
+  };
+  const foreground = rgbToHex(hslToRgb(foregroundHsl));
+
+  // Secondary (less emphasized text)
+  const secondaryHsl: HSL = {
+    h: primaryHsl.h,
+    s: foregroundHsl.s,
+    l: Math.max(
+      0,
+      Math.min(100, foregroundLuminosity + params.secondaryLuminosityOffset)
+    ),
+  };
+  const secondary = rgbToHex(hslToRgb(secondaryHsl));
+
+  // Muted (helper text)
+  const mutedHsl: HSL = {
+    h: primaryHsl.h,
+    s: foregroundHsl.s,
+    l: Math.max(
+      0,
+      Math.min(100, foregroundLuminosity + params.mutedLuminosityOffset)
+    ),
+  };
+  const muted = rgbToHex(hslToRgb(mutedHsl));
+
+  // Border: subtle, between background and foreground
+  const borderLuminosity =
+    mode === 'light' ? baseLuminosity - 15 : baseLuminosity + 15;
+  const borderHsl: HSL = {
+    h: primaryHsl.h,
+    s: Math.min(100, backgroundHsl.s * 2),
+    l: borderLuminosity,
+  };
+  const border = rgbToHex(hslToRgb(borderHsl));
+
+  // Overlay: for modals/backdrops
+  const overlayHsl: HSL = {
+    h: primaryHsl.h,
+    s: 0,
+    l: mode === 'light' ? 0 : 0,
+  };
+  const overlayBase = rgbToHex(hslToRgb(overlayHsl));
+  const overlay =
+    mode === 'light'
+      ? `${overlayBase}80` // 50% opacity in hex
+      : `${overlayBase}CC`; // 80% opacity in hex
+
+  return {
+    background,
+    foreground,
+    surface,
+    muted,
+    border,
+    overlay,
+  };
+}
+
+/**
+ * Generate shadow color based on personality tint preference
+ */
+export function generateShadowColor(
+  primaryColor: string,
+  shadowTint: 'neutral' | 'primary-tint' | 'warm' | 'cool',
+  mode: 'light' | 'dark'
+): string {
+  const primaryRgb = hexToRgbInternal(primaryColor);
+  const primaryHsl = rgbToHsl(primaryRgb);
+
+  switch (shadowTint) {
+    case 'neutral':
+      return mode === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.5)';
+
+    case 'primary-tint': {
+      const tintedHsl: HSL = {
+        h: primaryHsl.h,
+        s: Math.min(30, primaryHsl.s * 0.3),
+        l: mode === 'light' ? 20 : 10,
+      };
+      const tintedRgb = hslToRgb(tintedHsl);
+      const opacity = mode === 'light' ? 0.15 : 0.5;
+      return `rgba(${tintedRgb.r}, ${tintedRgb.g}, ${tintedRgb.b}, ${opacity})`;
+    }
+
+    case 'warm': {
+      const warmHsl: HSL = {
+        h: 30, // Orange-ish
+        s: 30,
+        l: mode === 'light' ? 25 : 15,
+      };
+      const warmRgb = hslToRgb(warmHsl);
+      const opacity = mode === 'light' ? 0.12 : 0.45;
+      return `rgba(${warmRgb.r}, ${warmRgb.g}, ${warmRgb.b}, ${opacity})`;
+    }
+
+    case 'cool': {
+      const coolHsl: HSL = {
+        h: 210, // Blue-ish
+        s: 25,
+        l: mode === 'light' ? 20 : 15,
+      };
+      const coolRgb = hslToRgb(coolHsl);
+      const opacity = mode === 'light' ? 0.12 : 0.45;
+      return `rgba(${coolRgb.r}, ${coolRgb.g}, ${coolRgb.b}, ${opacity})`;
+    }
+
+    default:
+      return mode === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.5)';
+  }
+}
+
+/**
+ * Generate page background SVG pattern with theme-responsive colors
+ */
+export function generatePageBackgroundPattern(
+  primaryColor: string,
+  pattern: string,
+  usePrimaryTint: boolean,
+  opacity: number,
+  mode: 'light' | 'dark'
+): string {
+  const primaryRgb = hexToRgbInternal(primaryColor);
+  const primaryHsl = rgbToHsl(primaryRgb);
+
+  // Calculate tint color
+  const tintHsl: HSL = {
+    h: primaryHsl.h,
+    s: usePrimaryTint ? Math.min(20, primaryHsl.s * 0.4) : 0,
+    l: mode === 'light' ? 85 : 25,
+  };
+  const tintRgb = hslToRgb(tintHsl);
+  const tintColor = rgbToHex(tintRgb);
+
+  // Replace placeholder or set default colors in pattern
+  // Pattern should use CSS variables or we inject the color
+  const hexOpacity = Math.floor(opacity * 255)
+    .toString(16)
+    .padStart(2, '0');
+
+  return pattern.replace(/fill="[^"]*"/g, `fill="${tintColor}${hexOpacity}"`);
+}

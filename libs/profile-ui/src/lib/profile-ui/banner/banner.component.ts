@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 import { ProfilePhotoComponent } from '../profile-photo/profile-photo.component';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
@@ -14,6 +14,7 @@ export class BannerComponent {
   @Input() profileName = '';
   @Input() profileImage = '';
   @Input() backgroundImage = '';
+  @Output() bannerClick = new EventEmitter<void>();
 
   // Fallback label if none provided (apps should pass the user's name from token)
   get displayName(): string {
@@ -27,5 +28,9 @@ export class BannerComponent {
     return this.backgroundImage && this.backgroundImage.length
       ? `url('${this.backgroundImage}')`
       : null;
+  }
+
+  onBannerClick(): void {
+    this.bannerClick.emit();
   }
 }

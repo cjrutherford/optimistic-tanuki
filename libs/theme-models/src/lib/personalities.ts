@@ -93,41 +93,18 @@ export const classicPersonality: Personality = {
 
   iconStyle: 'outlined' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#ffffff',
-        elevated: '#fafafa',
-        overlay: 'rgba(0, 0, 0, 0.5)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#171717',
-        secondary: '#525252',
-        muted: '#737373',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.1,
-      shadowColor: 'rgba(0, 0, 0, 0.1)',
-    },
-    dark: {
-      background: {
-        base: '#0a0a0a',
-        elevated: '#171717',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#1f1f1f',
-      },
-      foreground: {
-        primary: '#fafafa',
-        secondary: '#a3a3a3',
-        muted: '#737373',
-        inverted: '#171717',
-      },
-      surfaceOpacity: 0.9,
-      shadowOpacity: 0.5,
-      shadowColor: 'rgba(0, 0, 0, 0.5)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 100,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 92,
+    secondaryLuminosityOffset: 35,
+    mutedLuminosityOffset: 55,
+    neutralSaturation: 0,
+    darkModeLuminosityScale: 5,
+    darkModeSaturationBoost: 0,
+    shadowTint: 'neutral',
+    shadowOpacity: 0.1,
+    pageBackgroundOpacity: 0.05,
   },
 
   mobile: {
@@ -220,41 +197,18 @@ export const minimalPersonality: Personality = {
 
   iconStyle: 'outlined' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#fafafa',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.4)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#171717',
-        secondary: '#404040',
-        muted: '#737373',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.06,
-      shadowColor: 'rgba(0, 0, 0, 0.06)',
-    },
-    dark: {
-      background: {
-        base: '#050505',
-        elevated: '#0a0a0a',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#111111',
-      },
-      foreground: {
-        primary: '#fafafa',
-        secondary: '#a3a3a3',
-        muted: '#525252',
-        inverted: '#050505',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.6,
-      shadowColor: 'rgba(0, 0, 0, 0.6)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 98,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 94,
+    secondaryLuminosityOffset: 40,
+    mutedLuminosityOffset: 58,
+    neutralSaturation: 5,
+    darkModeLuminosityScale: 5,
+    darkModeSaturationBoost: 2,
+    shadowTint: 'neutral',
+    shadowOpacity: 0,
+    pageBackgroundOpacity: 0.02,
   },
 
   mobile: {
@@ -345,41 +299,18 @@ export const boldPersonality: Personality = {
 
   iconStyle: 'filled' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#ffffff',
-        elevated: '#fafafa',
-        overlay: 'rgba(0, 0, 0, 0.6)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#0a0a0a',
-        secondary: '#404040',
-        muted: '#666666',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.15,
-      shadowColor: 'rgba(0, 0, 0, 0.15)',
-    },
-    dark: {
-      background: {
-        base: '#0f0f0f',
-        elevated: '#1a1a1a',
-        overlay: 'rgba(0, 0, 0, 0.85)',
-        surface: '#262626',
-      },
-      foreground: {
-        primary: '#ffffff',
-        secondary: '#d4d4d4',
-        muted: '#a3a3a3',
-        inverted: '#0f0f0f',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.6,
-      shadowColor: 'rgba(0, 0, 0, 0.6)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 98,
+    surfaceLuminosityOffset: -3,
+    foregroundContrast: 90,
+    secondaryLuminosityOffset: 38,
+    mutedLuminosityOffset: 52,
+    neutralSaturation: 15,
+    darkModeLuminosityScale: 8,
+    darkModeSaturationBoost: 5,
+    shadowTint: 'primary-tint',
+    shadowOpacity: 0.15,
+    pageBackgroundOpacity: 0.08,
   },
 
   mobile: {
@@ -471,41 +402,18 @@ export const softPersonality: Personality = {
 
   iconStyle: 'rounded' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#fefdfb',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.3)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#1f2937',
-        secondary: '#4b5563',
-        muted: '#9ca3af',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.05,
-      shadowColor: 'rgba(0, 0, 0, 0.05)',
-    },
-    dark: {
-      background: {
-        base: '#1a1a2e',
-        elevated: '#16213e',
-        overlay: 'rgba(0, 0, 0, 0.7)',
-        surface: '#1f2937',
-      },
-      foreground: {
-        primary: '#f9fafb',
-        secondary: '#d1d5db',
-        muted: '#9ca3af',
-        inverted: '#1a1a2e',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.4,
-      shadowColor: 'rgba(0, 0, 0, 0.4)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 99,
+    surfaceLuminosityOffset: -1,
+    foregroundContrast: 88,
+    secondaryLuminosityOffset: 42,
+    mutedLuminosityOffset: 60,
+    neutralSaturation: 12,
+    darkModeLuminosityScale: 12,
+    darkModeSaturationBoost: 8,
+    shadowTint: 'primary-tint',
+    shadowOpacity: 0.08,
+    pageBackgroundOpacity: 0.03,
   },
 
   mobile: {
@@ -596,41 +504,18 @@ export const professionalPersonality: Personality = {
 
   iconStyle: 'sharp' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#f8fafc',
-        elevated: '#ffffff',
-        overlay: 'rgba(15, 23, 42, 0.5)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#0f172a',
-        secondary: '#334155',
-        muted: '#64748b',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.08,
-      shadowColor: 'rgba(15, 23, 42, 0.08)',
-    },
-    dark: {
-      background: {
-        base: '#020617',
-        elevated: '#0f172a',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#1e293b',
-      },
-      foreground: {
-        primary: '#f8fafc',
-        secondary: '#cbd5e1',
-        muted: '#94a3b8',
-        inverted: '#020617',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.5,
-      shadowColor: 'rgba(0, 0, 0, 0.5)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 98,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 88,
+    secondaryLuminosityOffset: 35,
+    mutedLuminosityOffset: 50,
+    neutralSaturation: 8,
+    darkModeLuminosityScale: 6,
+    darkModeSaturationBoost: 3,
+    shadowTint: 'warm',
+    shadowOpacity: 0.06,
+    pageBackgroundOpacity: 0.04,
   },
 
   mobile: {
@@ -720,41 +605,18 @@ export const playfulPersonality: Personality = {
 
   iconStyle: 'two-tone' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#fffbeb',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.4)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#1c1917',
-        secondary: '#44403c',
-        muted: '#78716c',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.12,
-      shadowColor: 'rgba(0, 0, 0, 0.12)',
-    },
-    dark: {
-      background: {
-        base: '#1c1917',
-        elevated: '#292524',
-        overlay: 'rgba(0, 0, 0, 0.75)',
-        surface: '#44403c',
-      },
-      foreground: {
-        primary: '#fafaf9',
-        secondary: '#d6d3d1',
-        muted: '#a8a29e',
-        inverted: '#1c1917',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.5,
-      shadowColor: 'rgba(0, 0, 0, 0.5)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 98,
+    surfaceLuminosityOffset: -4,
+    foregroundContrast: 95,
+    secondaryLuminosityOffset: 45,
+    mutedLuminosityOffset: 62,
+    neutralSaturation: 0,
+    darkModeLuminosityScale: 5,
+    darkModeSaturationBoost: 10,
+    shadowTint: 'cool',
+    shadowOpacity: 0.2,
+    pageBackgroundOpacity: 0.06,
   },
 
   mobile: {
@@ -851,41 +713,18 @@ export const elegantPersonality: Personality = {
 
   iconStyle: 'outlined' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#fafaf9',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.4)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#1c1917',
-        secondary: '#44403c',
-        muted: '#78716c',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.06,
-      shadowColor: 'rgba(0, 0, 0, 0.06)',
-    },
-    dark: {
-      background: {
-        base: '#0c0a09',
-        elevated: '#1c1917',
-        overlay: 'rgba(0, 0, 0, 0.85)',
-        surface: '#292524',
-      },
-      foreground: {
-        primary: '#fafaf9',
-        secondary: '#d6d3d1',
-        muted: '#a8a29e',
-        inverted: '#0c0a09',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.55,
-      shadowColor: 'rgba(0, 0, 0, 0.55)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 96,
+    surfaceLuminosityOffset: -3,
+    foregroundContrast: 90,
+    secondaryLuminosityOffset: 40,
+    mutedLuminosityOffset: 55,
+    neutralSaturation: 3,
+    darkModeLuminosityScale: 6,
+    darkModeSaturationBoost: 2,
+    shadowTint: 'neutral',
+    shadowOpacity: 0.25,
+    pageBackgroundOpacity: 0.05,
   },
 
   mobile: {
@@ -977,41 +816,18 @@ export const architectPersonality: Personality = {
 
   iconStyle: 'sharp' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#f5f5f5',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.7)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#1a1a1a',
-        secondary: '#404040',
-        muted: '#737373',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.2,
-      shadowColor: 'rgba(0, 0, 0, 0.2)',
-    },
-    dark: {
-      background: {
-        base: '#0d0d0d',
-        elevated: '#1a1a1a',
-        overlay: 'rgba(0, 0, 0, 0.9)',
-        surface: '#262626',
-      },
-      foreground: {
-        primary: '#f0f0f0',
-        secondary: '#a3a3a3',
-        muted: '#525252',
-        inverted: '#0d0d0d',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.6,
-      shadowColor: 'rgba(0, 0, 0, 0.6)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 99,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 88,
+    secondaryLuminosityOffset: 38,
+    mutedLuminosityOffset: 52,
+    neutralSaturation: 18,
+    darkModeLuminosityScale: 10,
+    darkModeSaturationBoost: 12,
+    shadowTint: 'warm',
+    shadowOpacity: 0.06,
+    pageBackgroundOpacity: 0.04,
   },
 
   mobile: {
@@ -1104,41 +920,18 @@ export const softTouchPersonality: Personality = {
 
   iconStyle: 'rounded' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#fdfcfb',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.25)',
-        surface: '#fff8f5',
-      },
-      foreground: {
-        primary: '#2d2d2d',
-        secondary: '#5a5a5a',
-        muted: '#9ca3af',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.04,
-      shadowColor: 'rgba(0, 0, 0, 0.04)',
-    },
-    dark: {
-      background: {
-        base: '#1a1820',
-        elevated: '#252030',
-        overlay: 'rgba(0, 0, 0, 0.75)',
-        surface: '#2d2835',
-      },
-      foreground: {
-        primary: '#f5f5f5',
-        secondary: '#c4c4c4',
-        muted: '#888888',
-        inverted: '#1a1820',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.35,
-      shadowColor: 'rgba(0, 0, 0, 0.35)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 99,
+    surfaceLuminosityOffset: -1,
+    foregroundContrast: 88,
+    secondaryLuminosityOffset: 42,
+    mutedLuminosityOffset: 58,
+    neutralSaturation: 10,
+    darkModeLuminosityScale: 8,
+    darkModeSaturationBoost: 6,
+    shadowTint: 'warm',
+    shadowOpacity: 0.04,
+    pageBackgroundOpacity: 0.03,
   },
 
   mobile: {
@@ -1230,41 +1023,18 @@ export const electricPersonality: Personality = {
 
   iconStyle: 'two-tone' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#fff8f5',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.45)',
-        surface: '#ffffff',
-      },
-      foreground: {
-        primary: '#1a1a1a',
-        secondary: '#4a4a4a',
-        muted: '#787878',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.12,
-      shadowColor: 'rgba(0, 0, 0, 0.12)',
-    },
-    dark: {
-      background: {
-        base: '#1a1518',
-        elevated: '#2a2025',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#352a30',
-      },
-      foreground: {
-        primary: '#f8f5f0',
-        secondary: '#d0d0d0',
-        muted: '#909090',
-        inverted: '#1a1518',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.5,
-      shadowColor: 'rgba(0, 0, 0, 0.5)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 99,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 90,
+    secondaryLuminosityOffset: 40,
+    mutedLuminosityOffset: 55,
+    neutralSaturation: 14,
+    darkModeLuminosityScale: 7,
+    darkModeSaturationBoost: 8,
+    shadowTint: 'primary-tint',
+    shadowOpacity: 0.1,
+    pageBackgroundOpacity: 0.06,
   },
 
   mobile: {
@@ -1357,41 +1127,23 @@ export const controlCenterPersonality: Personality = {
 
   iconStyle: 'outlined' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#f8f9fa',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.5)',
-        surface: '#f1f3f5',
-      },
-      foreground: {
-        primary: '#212529',
-        secondary: '#495057',
-        muted: '#868e96',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.08,
-      shadowColor: 'rgba(0, 0, 0, 0.08)',
-    },
-    dark: {
-      background: {
-        base: '#0d1117',
-        elevated: '#161b22',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#21262d',
-      },
-      foreground: {
-        primary: '#f0f6fc',
-        secondary: '#8b949e',
-        muted: '#6e7681',
-        inverted: '#0d1117',
-      },
-      surfaceOpacity: 0.95,
-      shadowOpacity: 0.5,
-      shadowColor: 'rgba(0, 0, 0, 0.5)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 97,
+    surfaceLuminosityOffset: -3,
+    foregroundContrast: 92,
+    secondaryLuminosityOffset: 38,
+    mutedLuminosityOffset: 54,
+    neutralSaturation: 6,
+    darkModeLuminosityScale: 6,
+    darkModeSaturationBoost: 4,
+    shadowTint: 'cool',
+    shadowOpacity: 0.12,
+    pageBackgroundOpacity: 0.05,
+  },
+
+  pageBackground: {
+    pattern: `<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 L20 10 M10 0 L10 20" stroke="currentColor" stroke-width="0.5" fill="none" opacity="0.5"/></pattern></defs><rect width="20" height="20" fill="url(#grid)"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
@@ -1400,11 +1152,6 @@ export const controlCenterPersonality: Personality = {
     shadowReduction: 0.4,
     fontScale: 0.92,
     touchTargetSize: '44px',
-  },
-
-  pageBackground: {
-    light: `<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 L20 10 M10 0 L10 20" stroke="#dee2e6" stroke-width="0.5" fill="none" opacity="0.5"/></pattern></defs><rect width="20" height="20" fill="url(#grid)"/></svg>`,
-    dark: `<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid-dark" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 L20 10 M10 0 L10 20" stroke="#30363d" stroke-width="0.5" fill="none" opacity="0.5"/></pattern></defs><rect width="20" height="20" fill="url(#grid-dark)"/></svg>`,
   },
 
   tags: ['technical', 'dashboard', 'monospace', 'grid', 'precision'],
@@ -1490,41 +1237,18 @@ export const foundationPersonality: Personality = {
 
   iconStyle: 'outlined' as IconStyle,
 
-  modes: {
-    light: {
-      background: {
-        base: '#ffffff',
-        elevated: '#ffffff',
-        overlay: 'rgba(0, 0, 0, 0.5)',
-        surface: '#fafafa',
-      },
-      foreground: {
-        primary: '#111111',
-        secondary: '#555555',
-        muted: '#999999',
-        inverted: '#ffffff',
-      },
-      surfaceOpacity: 1,
-      shadowOpacity: 0.05,
-      shadowColor: 'rgba(0, 0, 0, 0.05)',
-    },
-    dark: {
-      background: {
-        base: '#0a0a0a',
-        elevated: '#111111',
-        overlay: 'rgba(0, 0, 0, 0.8)',
-        surface: '#1a1a1a',
-      },
-      foreground: {
-        primary: '#f5f5f5',
-        secondary: '#a0a0a0',
-        muted: '#666666',
-        inverted: '#0a0a0a',
-      },
-      surfaceOpacity: 0.98,
-      shadowOpacity: 0.4,
-      shadowColor: 'rgba(0, 0, 0, 0.4)',
-    },
+  colorGeneration: {
+    backgroundLuminosity: 100,
+    surfaceLuminosityOffset: -1,
+    foregroundContrast: 95,
+    secondaryLuminosityOffset: 50,
+    mutedLuminosityOffset: 65,
+    neutralSaturation: 2,
+    darkModeLuminosityScale: 6,
+    darkModeSaturationBoost: 1,
+    shadowTint: 'neutral',
+    shadowOpacity: 0.05,
+    pageBackgroundOpacity: 0,
   },
 
   mobile: {
@@ -1597,19 +1321,135 @@ export function isValidPersonalityId(id: string): boolean {
 /**
  * Get personality preview colors
  * Returns representative colors for the personality selector UI
+ * Uses colorGeneration to derive preview colors from primary color hue
  */
-export function getPersonalityPreviewColors(personality: Personality): {
+export function getPersonalityPreviewColors(
+  personality: Personality,
+  primaryColor: string = '#3f51b5'
+): {
   light: string[];
   dark: string[];
 } {
-  return {
-    light: [
-      personality.modes.light.background.base,
-      personality.modes.light.foreground.primary,
-    ],
-    dark: [
-      personality.modes.dark.background.base,
-      personality.modes.dark.foreground.primary,
-    ],
+  // Extract hue from primary color
+  const hue = extractHueFromHex(primaryColor);
+
+  // Generate light mode colors based on personality parameters
+  const lightBgHsl = {
+    h: hue,
+    s: personality.colorGeneration.neutralSaturation,
+    l: personality.colorGeneration.backgroundLuminosity,
   };
+  const lightFgHsl = {
+    h: hue,
+    s: personality.colorGeneration.neutralSaturation,
+    l: Math.max(
+      0,
+      personality.colorGeneration.backgroundLuminosity -
+        personality.colorGeneration.foregroundContrast
+    ),
+  };
+
+  // Generate dark mode colors
+  const darkLuminosity =
+    personality.colorGeneration.backgroundLuminosity *
+    (personality.colorGeneration.darkModeLuminosityScale / 100);
+  const darkBgHsl = {
+    h: hue,
+    s: Math.min(
+      100,
+      personality.colorGeneration.neutralSaturation +
+        personality.colorGeneration.darkModeSaturationBoost
+    ),
+    l: darkLuminosity,
+  };
+  const darkFgHsl = {
+    h: hue,
+    s: Math.min(
+      100,
+      personality.colorGeneration.neutralSaturation +
+        personality.colorGeneration.darkModeSaturationBoost
+    ),
+    l: Math.min(
+      100,
+      darkLuminosity + personality.colorGeneration.foregroundContrast
+    ),
+  };
+
+  return {
+    light: [hslToHex(lightBgHsl), hslToHex(lightFgHsl)],
+    dark: [hslToHex(darkBgHsl), hslToHex(darkFgHsl)],
+  };
+}
+
+/**
+ * Extract hue from hex color
+ */
+function extractHueFromHex(hex: string): number {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return 0;
+
+  const r = parseInt(result[1], 16) / 255;
+  const g = parseInt(result[2], 16) / 255;
+  const b = parseInt(result[3], 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+
+  if (max !== min) {
+    const d = max - min;
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
+  return h * 360;
+}
+
+/**
+ * Convert HSL to hex
+ */
+function hslToHex({ h, s, l }: { h: number; s: number; l: number }): string {
+  const hDecimal = h / 360;
+  const sDecimal = s / 100;
+  const lDecimal = l / 100;
+
+  let r: number, g: number, b: number;
+
+  if (sDecimal === 0) {
+    r = g = b = lDecimal;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number): number => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q =
+      lDecimal < 0.5
+        ? lDecimal * (1 + sDecimal)
+        : lDecimal + sDecimal - lDecimal * sDecimal;
+    const p = 2 * lDecimal - q;
+    r = hue2rgb(p, q, hDecimal + 1 / 3);
+    g = hue2rgb(p, q, hDecimal);
+    b = hue2rgb(p, q, hDecimal - 1 / 3);
+  }
+
+  const toHex = (x: number): string => {
+    const hex = Math.round(x * 255).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }

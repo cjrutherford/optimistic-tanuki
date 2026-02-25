@@ -4,7 +4,10 @@ import {
   MessageService,
 } from '@optimistic-tanuki/message-ui';
 import { Component, OnInit } from '@angular/core';
-import { BannerComponent } from '@optimistic-tanuki/profile-ui';
+import {
+  BannerComponent,
+  ProfileEditorComponent,
+} from '@optimistic-tanuki/profile-ui';
 import { ProfileService } from '../profile.service';
 import {
   UpdateProfileDto,
@@ -21,6 +24,7 @@ import { isPlatformBrowser } from '@angular/common';
     CardComponent,
     ButtonComponent,
     BannerComponent,
+    ProfileEditorComponent,
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
@@ -29,6 +33,7 @@ export class ProfileComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly messageService = inject(MessageService);
   private readonly profileService = inject(ProfileService);
+  showProfileEditor = false;
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
@@ -69,6 +74,14 @@ export class ProfileComponent implements OnInit {
     this.messageService.addMessage({ content: msg, type });
   }
 
+  onBannerClick() {
+    this.showProfileEditor = true;
+  }
+
+  onProfileEditorClose() {
+    this.showProfileEditor = false;
+  }
+
   updateProfile(profile: UpdateProfileDto) {
     const id = profile.id;
     this.profileService
@@ -76,13 +89,10 @@ export class ProfileComponent implements OnInit {
       .then(() => {
         this.profileService.getProfileById(id);
         this.showMessage('Profile updated and selected!', 'success');
-        setTimeout(() => {
-          if (isPlatformBrowser(this.platformId)) {
-            window.location.href = '/feed';
-          }
-        }, 500);
+        this.showProfileEditor = false;
       });
   }
+
   selectProfile(profile: ProfileDto) {
     this.profileService.selectProfile(profile);
     this.showMessage('Profile selected!', 'success');
@@ -97,11 +107,7 @@ export class ProfileComponent implements OnInit {
     this.profileService.createProfile(newProfile).then(() => {
       this.profileService.getAllProfiles().then(() => {
         this.showMessage('Profile created and selected!', 'success');
-        setTimeout(() => {
-          if (isPlatformBrowser(this.platformId)) {
-            window.location.href = '/feed';
-          }
-        }, 500);
+        this.showProfileEditor = false;
       });
     });
   }

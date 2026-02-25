@@ -33,7 +33,7 @@ export class ProfileService {
   constructor(
     private readonly http: HttpClient,
     private readonly authState: AuthStateService
-  ) {}
+  ) { }
 
   /**
    * Get a profile from cache or fetch it
@@ -274,6 +274,7 @@ export class ProfileService {
     const resp: any = await firstValueFrom(
       this.http.post('/api/profile', {
         ...profile,
+        appScope: 'forgeofwill',
         appId: 'forgeofwill',
       })
     );
