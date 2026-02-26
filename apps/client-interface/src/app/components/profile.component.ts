@@ -7,7 +7,10 @@ import { Component, OnInit } from '@angular/core';
 
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
-import { BannerComponent } from '@optimistic-tanuki/profile-ui';
+import {
+  BannerComponent,
+  ProfileEditorComponent,
+} from '@optimistic-tanuki/profile-ui';
 import { ProfileService } from '../profile.service';
 import {
   UpdateProfileDto,
@@ -25,6 +28,7 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
     MatListModule,
     MatIconModule,
     BannerComponent,
+    ProfileEditorComponent,
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
@@ -32,6 +36,7 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 export class ProfileComponent implements OnInit {
   private readonly messageService = inject(MessageService);
   profileService: ProfileService;
+  showProfileEditor = false;
 
   constructor(readonly _profileService: ProfileService) {
     this.profileService = _profileService;
@@ -65,6 +70,14 @@ export class ProfileComponent implements OnInit {
     this.messageService.addMessage({ content: msg, type });
   }
 
+  onBannerClick() {
+    this.showProfileEditor = true;
+  }
+
+  onProfileEditorClose() {
+    this.showProfileEditor = false;
+  }
+
   updateProfile(profile: UpdateProfileDto) {
     const id = profile.id;
     this.profileService
@@ -72,26 +85,15 @@ export class ProfileComponent implements OnInit {
       .then(() => {
         this.profileService.getProfileById(id);
         this.showMessage('Profile updated and selected!', 'success');
-        setTimeout(() => {
-          window.location.href = '/feed';
-        }, 500);
+        this.showProfileEditor = false;
       });
-  }
-  selectProfile(profile: ProfileDto) {
-    this.profileService.selectProfile(profile);
-    this.showMessage('Profile selected!', 'success');
-    setTimeout(() => {
-      window.location.href = '/feed';
-    }, 500);
   }
 
   createProfile(newProfile: CreateProfileDto) {
     this.profileService.createProfile(newProfile).then(() => {
       this.profileService.getAllProfiles().then(() => {
         this.showMessage('Profile created and selected!', 'success');
-        setTimeout(() => {
-          window.location.href = '/feed';
-        }, 500);
+        this.showProfileEditor = false;
       });
     });
   }

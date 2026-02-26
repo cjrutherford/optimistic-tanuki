@@ -8,4 +8,4 @@ export default {
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/apps/blogging',
   transformIgnorePatterns: ['node_modules/(?!(feed)/)'],
-};
+  }

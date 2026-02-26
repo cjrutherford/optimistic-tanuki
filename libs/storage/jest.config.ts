@@ -8,4 +8,4 @@ export default {
   transformIgnorePatterns: ['node_modules/(?!(uuid)/)'],
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/libs/storage',
-};
+  }

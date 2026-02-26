@@ -26,20 +26,20 @@ export class CreateAvailabilityDto {
   @IsNumber()
   @Min(0)
   @Max(6)
-  dayOfWeek: number;
+  dayOfWeek!: number;
 
   @ApiProperty({ description: 'Start time (HH:MM:SS format)' })
   @IsString()
-  startTime: string;
+  startTime!: string;
 
   @ApiProperty({ description: 'End time (HH:MM:SS format)' })
   @IsString()
-  endTime: string;
+  endTime!: string;
 
   @ApiProperty({ description: 'Hourly rate' })
   @IsNumber()
   @Min(0)
-  hourlyRate: number;
+  hourlyRate!: number;
 
   @ApiPropertyOptional({ description: 'Service type' })
   @IsString()

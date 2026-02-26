@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Benchmark Results</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #1a1a2e; color: #eee; }
+    h1 { color: #00d9ff; }
+    h2 { color: #00ff88; margin-top: 30px; }
+    h3 { color: #00d9ff; }
+    .chart-container { background: #16213e; padding: 20px; border-radius: 10px; margin: 20px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #16213e; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+    th { background: #0f3460; color: #00d9ff; }
+    .score-100 { color: #00ff88; }
+    .score-50 { color: #ffaa00; }
+    .score-0 { color: #ff4444; }
+    .model-card { background: #16213e; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #00d9ff; }
+    .winner { border: 2px solid #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+  </style>
+</head>
+<body>
+  <h1>Model Benchmark Results</h1>
+  <p>Generated: 2026-02-11T13:58:53.769Z</p>
+  <div class="chart-container">
+    <h2>🏆 Model Rankings</h2>
+    <table><thead><tr><th>Rank</th><th>Model</th><th>Score</th><th>Success</th><th>Latency</th><th>Rating</th></tr></thead><tbody><tr style="border-bottom: 1px solid #333;"><td style="padding: 10px; font-weight: bold; color: #00d9ff;">#1</td><td style="padding: 10px;">cogito:3b</td><td style="padding: 10px; color: #00ff88; font-weight: bold;">99/100</td><td style="padding: 10px;">100%</td><td style="padding: 10px;">53657ms</td><td style="padding: 10px;">★★★★★</td></tr><tr style="border-bottom: 1px solid #333;"><td style="padding: 10px; font-weight: bold; color: #00d9ff;">#2</td><td style="padding: 10px;">llama3.2:3b</td><td style="padding: 10px; color: #00ff88; font-weight: bold;">98/100</td><td style="padding: 10px;">100%</td><td style="padding: 10px;">2156ms</td><td style="padding: 10px;">★★★★★</td></tr><tr style="border-bottom: 1px solid #333;"><td style="padding: 10px; font-weight: bold; color: #00d9ff;">#3</td><td style="padding: 10px;">llama3.2:latest</td><td style="padding: 10px; color: #00ff88; font-weight: bold;">95/100</td><td style="padding: 10px;">100%</td><td style="padding: 10px;">2559ms</td><td style="padding: 10px;">★★★★★</td></tr><tr style="border-bottom: 1px solid #333;"><td style="padding: 10px; font-weight: bold; color: #00d9ff;">#4</td><td style="padding: 10px;">qwen2.5:14b-instruct-q3_K_S</td><td style="padding: 10px; color: #00ff88; font-weight: bold;">90/100</td><td style="padding: 10px;">83%</td><td style="padding: 10px;">6800ms</td><td style="padding: 10px;">★★★★★</td></tr><tr style="border-bottom: 1px solid #333;"><td style="padding: 10px; font-weight: bold; color: #00d9ff;">#5</td><td style="padding: 10px;">llama3.2:3b-instruct-q4_0</td><td style="padding: 10px; color: #00ff88; font-weight: bold;">83/100</td><td style="padding: 10px;">83%</td><td style="padding: 10px;">1721ms</td><td style="padding: 10px;">★★★★★</td></tr><tr style="border-bottom: 1px solid #333;"><td style="padding: 10px; font-weight: bold; color: #00d9ff;">#6</td><td style="padding: 10px;">qwen3:4b</td><td style="padding: 10px; color: #00ff88; font-weight: bold;">83/100</td><td style="padding: 10px;">83%</td><td style="padding: 10px;">15365ms</td><td style="padding: 10px;">★★★★★</td></tr><tr style="border-bottom: 1px solid #333;"><td style="padding: 10px; font-weight: bold; color: #00d9ff;">#7</td><td style="padding: 10px;">gemma3:4b-it-q4_K_M</td><td style="padding: 10px; color: #00ff88; font-weight: bold;">81/100</td><td style="padding: 10px;">83%</td><td style="padding: 10px;">2374ms</td><td style="padding: 10px;">★★★★★</td></tr><tr style="border-bottom: 1px solid #333;"><td style="padding: 10px; font-weight: bold; color: #00d9ff;">#8</td><td style="padding: 10px;">deepseek-r1:8b</td><td style="padding: 10px; color: #00ff88; font-weight: bold;">81/100</td><td style="padding: 10px;">67%</td><td style="padding: 10px;">15404ms</td><td style="padding: 10px;">★★★★☆</td></tr><tr style="border-bottom: 1px solid #333;"><td style="padding: 10px; font-weight: bold; color: #00d9ff;">#9</td><td style="padding: 10px;">mistral-nemo:12b-instruct-2407-q3_K_M</td><td style="padding: 10px; color: #00ff88; font-weight: bold;">81/100</td><td style="padding: 10px;">83%</td><td style="padding: 10px;">3996ms</td><td style="padding: 10px;">★★★★★</td></tr><tr style="border-bottom: 1px solid #333;"><td style="padding: 10px; font-weight: bold; color: #00d9ff;">#10</td><td style="padding: 10px;">Randomblock1/nemotron-nano:8b</td><td style="padding: 10px; color: #ffaa00; font-weight: bold;">76/100</td><td style="padding: 10px;">67%</td><td style="padding: 10px;">4611ms</td><td style="padding: 10px;">★★★★☆</td></tr></tbody></table>
+  </div>
+  <div class="chart-container">
+    <h2>Overall Model Scores</h2>
+    <canvas id="overallChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <h2>Scores by Scenario</h2>
+    <canvas id="scenarioChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <h2>Average Latency by Model (ms)</h2>
+    <canvas id="latencyChart"></canvas>
+  </div>
+  <h2>Detailed Results</h2>
+<div class="model-card" style="border-left: 4px solid #00ff88;"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin: 0; color: #00d9ff;">#1 cogito:3b</h3><span style="font-size: 24px; color: #00ff88;">99/100</span></div><p><strong>Success Rate:</strong> 100% | <strong>Avg Latency:</strong> 53657ms</p><p><strong>Recommendation:</strong> EXCELLENT - Recommended for production use</p><div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> Welcome Message Generation - P, Welcome Message Generation - A, Welcome Message Self-Evaluatio, Project Reference Memory (3 tu, Task Creation Context (4 turns</div></div><div class="model-card" style="border-left: 4px solid #00ff88;"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin: 0; color: #00d9ff;">#2 llama3.2:3b</h3><span style="font-size: 24px; color: #00ff88;">98/100</span></div><p><strong>Success Rate:</strong> 100% | <strong>Avg Latency:</strong> 2156ms</p><p><strong>Recommendation:</strong> EXCELLENT - Recommended for production use</p><div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> Welcome Message Generation - P, Welcome Message Generation - A, Welcome Message Self-Evaluatio, Project Reference Memory (3 tu, Task Creation Context (4 turns</div></div><div class="model-card" style="border-left: 4px solid #00ff88;"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin: 0; color: #00d9ff;">#3 llama3.2:latest</h3><span style="font-size: 24px; color: #00ff88;">95/100</span></div><p><strong>Success Rate:</strong> 100% | <strong>Avg Latency:</strong> 2559ms</p><p><strong>Recommendation:</strong> EXCELLENT - Recommended for production use</p><div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> Welcome Message Generation - P, Welcome Message Generation - A, Welcome Message Self-Evaluatio, Project Reference Memory (3 tu, Task Creation Context (4 turns</div></div><div class="model-card" style="border-left: 4px solid #00ff88;"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin: 0; color: #00d9ff;">#4 qwen2.5:14b-instruct-q3_K_S</h3><span style="font-size: 24px; color: #00ff88;">90/100</span></div><p><strong>Success Rate:</strong> 83% | <strong>Avg Latency:</strong> 6800ms</p><p><strong>Recommendation:</strong> EXCELLENT - Recommended for production use</p><div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> Welcome Message Generation - P, Welcome Message Generation - A, Welcome Message Self-Evaluatio, Project Reference Memory (3 tu, Complex Multi-Reference (5 tur</div></div><div class="model-card" style="border-left: 4px solid #00ff88;"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin: 0; color: #00d9ff;">#5 llama3.2:3b-instruct-q4_0</h3><span style="font-size: 24px; color: #00ff88;">83/100</span></div><p><strong>Success Rate:</strong> 83% | <strong>Avg Latency:</strong> 1721ms</p><p><strong>Recommendation:</strong> EXCELLENT - Recommended for production use</p><div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> Welcome Message Generation - P, Welcome Message Generation - A, Project Reference Memory (3 tu</div></div><div class="model-card" style="border-left: 4px solid #00ff88;"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin: 0; color: #00d9ff;">#6 qwen3:4b</h3><span style="font-size: 24px; color: #00ff88;">83/100</span></div><p><strong>Success Rate:</strong> 83% | <strong>Avg Latency:</strong> 15365ms</p><p><strong>Recommendation:</strong> EXCELLENT - Recommended for production use</p><div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> Welcome Message Generation - P, Welcome Message Generation - A, Welcome Message Self-Evaluatio, Project Reference Memory (3 tu, Task Creation Context (4 turns</div><div style="margin-top: 5px;"><strong style="color: #ff4444;">✗ Weaknesses:</strong> Complex Multi-Reference (5 tur (0)</div></div><div class="model-card" style="border-left: 4px solid #00ff88;"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin: 0; color: #00d9ff;">#7 gemma3:4b-it-q4_K_M</h3><span style="font-size: 24px; color: #00ff88;">81/100</span></div><p><strong>Success Rate:</strong> 83% | <strong>Avg Latency:</strong> 2374ms</p><p><strong>Recommendation:</strong> EXCELLENT - Recommended for production use</p><div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> Welcome Message Generation - P, Welcome Message Generation - A, Welcome Message Self-Evaluatio, Project Reference Memory (3 tu, Task Creation Context (4 turns</div><div style="margin-top: 5px;"><strong style="color: #ff4444;">✗ Weaknesses:</strong> Complex Multi-Reference (5 tur (0)</div></div><div class="model-card" style="border-left: 4px solid #00ff88;"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin: 0; color: #00d9ff;">#8 deepseek-r1:8b</h3><span style="font-size: 24px; color: #00ff88;">81/100</span></div><p><strong>Success Rate:</strong> 67% | <strong>Avg Latency:</strong> 15404ms</p><p><strong>Recommendation:</strong> GOOD - Suitable for most use cases</p><div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> Welcome Message Generation - P, Welcome Message Generation - A, Welcome Message Self-Evaluatio, Project Reference Memory (3 tu</div></div><div class="model-card" style="border-left: 4px solid #00ff88;"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin: 0; color: #00d9ff;">#9 mistral-nemo:12b-instruct-2407-q3_K_M</h3><span style="font-size: 24px; color: #00ff88;">81/100</span></div><p><strong>Success Rate:</strong> 83% | <strong>Avg Latency:</strong> 3996ms</p><p><strong>Recommendation:</strong> EXCELLENT - Recommended for production use</p><div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> Welcome Message Generation - P, Welcome Message Generation - A, Welcome Message Self-Evaluatio, Project Reference Memory (3 tu, Task Creation Context (4 turns</div><div style="margin-top: 5px;"><strong style="color: #ff4444;">✗ Weaknesses:</strong> Complex Multi-Reference (5 tur (0)</div></div><div class="model-card" style="border-left: 4px solid #ffaa00;"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin: 0; color: #00d9ff;">#10 Randomblock1/nemotron-nano:8b</h3><span style="font-size: 24px; color: #ffaa00;">76/100</span></div><p><strong>Success Rate:</strong> 67% | <strong>Avg Latency:</strong> 4611ms</p><p><strong>Recommendation:</strong> GOOD - Suitable for most use cases</p><div style="margin-top: 10px;"><strong style="color: #00ff88;">✓ Strengths:</strong> Welcome Message Generation - A, Welcome Message Self-Evaluatio, Project Reference Memory (3 tu, Complex Multi-Reference (5 tur</div><div style="margin-top: 5px;"><strong style="color: #ff4444;">✗ Weaknesses:</strong> Welcome Message Generation - P (40)</div></div>  <script>
+    var models = ["#1 cogito:3b","#2 llama3.2:3b","#3 llama3.2:latest","#4 qwen2.5:14b-instruct-q3_K_S","#5 llama3.2:3b-instruct-q4_0","#6 qwen3:4b","#7 gemma3:4b-it-q4_K_M","#8 deepseek-r1:8b","#9 mistral-nemo:12b-instruct-2407-q3_K_M","#10 Randomblock1/nemotron-nano:8b"];
+    var avgScores = [99,98,95,90,83,83,81,81,81,76];
+    var avgLatencies = [53657,2156,2559,6800,1721,15365,2374,15404,3996,4611];
+    var scenarioData = [
+      { name: "Welcome Message Generatio", scores: [80, 200, 200, 200, 200, 200, 200, 200, 200, 200] },
+      { name: "Welcome Message Generatio", scores: [160, 200, 200, 200, 200, 200, 200, 200, 200, 200] },
+      { name: "Welcome Message Self-Eval", scores: [166, 140, 174, 184, 190, 174, 174, 174, 166, 184] },
+      { name: "Project Reference Memory ", scores: [200, 200, 200, 200, 200, 200, 200, 200, 200, 200] },
+      { name: "Task Creation Context (4 ", scores: [100, 100, 200, 200, 200, 200, 100, 100, 200, 200] },
+      { name: "Complex Multi-Reference (", scores: [200, 150, 200, 200, 0, 0, 100, 200, 0, 150] }
+    ];
+    var chartColors = avgScores.map(function(s) { return s >= 80 ? "#00ff88" : s >= 50 ? "#ffaa00" : "#ff4444"; });
+    new Chart(document.getElementById("overallChart"), {
+      type: "bar",
+      data: {
+        labels: models,
+        datasets: [{ label: "Average Score", data: avgScores, backgroundColor: chartColors }]
+      },
+      options: { scales: { y: { max: 100 } } }
+    });
+    var scenarioDatasets = scenarioData.map(function(s, i) {
+      return { label: s.name, data: s.scores, backgroundColor: "hsl(" + (i * 360 / scenarioData.length) + ", 70%, 50%)" };
+    });
+    new Chart(document.getElementById("scenarioChart"), {
+      type: "bar",
+      data: { labels: models, datasets: scenarioDatasets },
+      options: { scales: { y: { max: 100 } }, indexAxis: "y" }
+    });
+    new Chart(document.getElementById("latencyChart"), {
+      type: "bar",
+      data: { labels: models, datasets: [{ label: "Avg Latency (ms)", data: avgLatencies, backgroundColor: "#00d9ff" }] }
+    });
+  </script>
+</body>
+</html>

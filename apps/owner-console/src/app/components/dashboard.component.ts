@@ -19,7 +19,7 @@ import { AuthService } from '../services/auth.service';
         [showThemeToggle]="true"
         [useTile]="false"
         (menuToggle)="toggleSidebar()"
-        [logoSrc]="'/temptest-in-a-teacup.png'"
+        [logoSrc]="'/tempest-in-a-teacup.png'"
         logoAlt="Owner Console Logo"
       ></otui-app-bar>
 
@@ -65,7 +65,7 @@ export class DashboardComponent implements OnInit {
   sidebarOpen = false;
   navItems: NavItem[] = [];
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router) { }
 
   ngOnInit(): void {
     this.navItems = [

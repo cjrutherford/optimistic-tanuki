@@ -1,20 +1,55 @@
-<div>
+<div class="vote-container">
   <otui-button
-    [variant]="voteState === 1 ? 'success' : 'danger'"
+    [variant]="voteState === 1 ? 'primary' : 'outlined'"
     (action)="upvote()"
     [class.active]="voteState === 1"
-    >⬆️</otui-button
+    size="sm"
+    class="vote-btn"
   >
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      class="vote-icon"
+    >
+      <path d="M12 19V5M5 12l7-7 7 7" />
+    </svg>
+  </otui-button>
+
   <otui-button
-    [variant]="voteState === 0 ? 'success' : 'danger'"
+    [variant]="voteState === 0 ? 'primary' : 'outlined'"
     (action)="cancelVote()"
     [class.active]="voteState === 0"
-    >😑</otui-button
+    size="sm"
+    class="vote-btn"
   >
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      class="vote-icon"
+    >
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  </otui-button>
+
   <otui-button
-    [variant]="voteState === -1 ? 'success' : 'danger'"
+    [variant]="voteState === -1 ? 'primary' : 'outlined'"
     (action)="downvote()"
     [class.active]="voteState === -1"
-    >⬇️</otui-button
+    size="sm"
+    class="vote-btn"
   >
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      class="vote-icon"
+    >
+      <path d="M12 5v14M5 12l7 7 7-7" />
+    </svg>
+  </otui-button>
 </div>

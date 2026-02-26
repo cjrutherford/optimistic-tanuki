@@ -1,14 +1,20 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateTaskTimeEntryDto } from './create-task-time-entry.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsUUID, IsOptional, IsDateString, IsNumber, IsDate } from 'class-validator';
+import {
+  IsUUID,
+  IsOptional,
+  IsDateString,
+  IsNumber,
+  IsDate,
+} from 'class-validator';
 
 export class UpdateTaskTimeEntryDto extends PartialType(
   CreateTaskTimeEntryDto
 ) {
   @ApiProperty({ description: 'Time entry ID' })
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional({ description: 'End time of the time entry' })
   @IsOptional()

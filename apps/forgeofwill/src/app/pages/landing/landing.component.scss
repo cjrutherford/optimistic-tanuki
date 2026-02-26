@@ -1,0 +1,1202 @@
+// ============================================================================
+// FORGE OF WILL - CINEMATIC MOLTEN FORGE LANDING PAGE
+// A fusion of ancient blacksmithing with modern digital craftsmanship
+// ============================================================================
+
+// ============================================================================
+// BASE LAYOUT
+// ============================================================================
+
+.landing-page {
+  min-height: 100vh;
+  width: 100%;
+  background: var(--background, #0a0a0f);
+  color: var(--foreground, #f0f0f5);
+  font-family: var(--font-body, 'Crimson Pro', Georgia, serif);
+  position: relative;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  --heat-glow: 0 0 60px
+    color-mix(in srgb, var(--primary, #ff6b35) 40%, transparent);
+}
+
+// ============================================================================
+// CINEMATIC BACKGROUND SYSTEM
+// ============================================================================
+
+.forge-background {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+// Volumetric gradient mesh with heat shimmer
+.gradient-mesh {
+  position: absolute;
+  inset: 0;
+  filter: blur(60px);
+
+  .mesh-layer {
+    position: absolute;
+    inset: -20%;
+    opacity: 0.35;
+    mix-blend-mode: screen;
+  }
+
+  .layer-1 {
+    background: radial-gradient(
+      ellipse 100% 80% at 20% 40%,
+      var(--primary, #ff6b35) 0%,
+      transparent 55%
+    );
+    animation: heat-shimmer-1 25s ease-in-out infinite;
+  }
+
+  .layer-2 {
+    background: radial-gradient(
+      ellipse 90% 100% at 80% 60%,
+      var(--secondary, #00d4ff) 0%,
+      transparent 60%
+    );
+    animation: heat-shimmer-2 30s ease-in-out infinite;
+  }
+
+  .layer-3 {
+    background: radial-gradient(
+      ellipse 70% 60% at 50% 30%,
+      var(--tertiary, #f7931e) 0%,
+      transparent 50%
+    );
+    animation: heat-shimmer-3 22s ease-in-out infinite;
+  }
+
+  .layer-4 {
+    background: radial-gradient(
+      ellipse 120% 50% at 30% 80%,
+      var(--primary, #b87333) 0%,
+      transparent 55%
+    );
+    animation: heat-shimmer-4 28s ease-in-out infinite;
+  }
+}
+
+@keyframes heat-shimmer-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 0.35;
+  }
+  33% {
+    transform: translate(40px, -30px) scale(1.1) rotate(2deg);
+    opacity: 0.45;
+  }
+  66% {
+    transform: translate(-30px, 40px) scale(0.95) rotate(-1deg);
+    opacity: 0.3;
+  }
+}
+
+@keyframes heat-shimmer-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-50px, 30px) scale(1.15) rotate(-3deg);
+    opacity: 0.4;
+  }
+}
+
+@keyframes heat-shimmer-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(30px, 30px) scale(1.05) rotate(1deg);
+  }
+  75% {
+    transform: translate(-20px, -30px) scale(0.95) rotate(-1deg);
+  }
+}
+
+@keyframes heat-shimmer-4 {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translate(20px, -40px) rotate(4deg);
+    opacity: 0.35;
+  }
+}
+
+// Crystalline orbs with volumetric glow
+.crystalline-orbs {
+  position: absolute;
+  inset: 0;
+  perspective: 1000px;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+
+  .orb-inner {
+    position: absolute;
+    inset: 10%;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 30% 30%,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0.2) 40%,
+      transparent 70%
+    );
+    animation: inner-shimmer 8s ease-in-out infinite;
+  }
+
+  .orb-glow {
+    position: absolute;
+    inset: -30%;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes inner-shimmer {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.orb-primary {
+  width: 350px;
+  height: 350px;
+  top: 8%;
+  right: 3%;
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--primary, #ff6b35),
+    var(--primary-3, #b87333)
+  );
+  animation: orb-float-1 35s ease-in-out infinite;
+  box-shadow: 0 0 120px
+      color-mix(in srgb, var(--primary, #ff6b35) 60%, transparent),
+    inset 0 0 80px rgba(255, 255, 255, 0.1);
+
+  .orb-glow {
+    background: var(--primary, #ff6b35);
+  }
+}
+
+.orb-secondary {
+  width: 220px;
+  height: 220px;
+  bottom: 15%;
+  left: 3%;
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--secondary, #00d4ff),
+    var(--secondary-3, #00a8cc)
+  );
+  animation: orb-float-2 28s ease-in-out infinite;
+  box-shadow: 0 0 100px
+      color-mix(in srgb, var(--secondary, #00d4ff) 50%, transparent),
+    inset 0 0 60px rgba(255, 255, 255, 0.1);
+
+  .orb-glow {
+    background: var(--secondary, #00d4ff);
+  }
+}
+
+.orb-tertiary {
+  width: 180px;
+  height: 180px;
+  top: 45%;
+  left: 12%;
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--tertiary, #f7931e),
+    var(--warning, #ffc107)
+  );
+  animation: orb-float-3 22s ease-in-out infinite;
+  box-shadow: 0 0 80px
+      color-mix(in srgb, var(--warning, #f7931e) 50%, transparent),
+    inset 0 0 50px rgba(255, 255, 255, 0.1);
+
+  .orb-glow {
+    background: var(--warning, #f7931e);
+  }
+}
+
+.orb-accent {
+  width: 120px;
+  height: 120px;
+  bottom: 35%;
+  right: 18%;
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--tertiary, #7ee8fa),
+    transparent
+  );
+  animation: orb-float-4 24s ease-in-out infinite;
+  box-shadow: 0 0 60px
+      color-mix(in srgb, var(--tertiary, #7ee8fa) 50%, transparent),
+    inset 0 0 40px rgba(255, 255, 255, 0.15);
+
+  .orb-glow {
+    background: var(--tertiary, #7ee8fa);
+  }
+}
+
+@keyframes orb-float-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) rotateY(0deg);
+  }
+  25% {
+    transform: translate(60px, 40px) rotate(90deg) rotateY(10deg);
+  }
+  50% {
+    transform: translate(40px, -50px) rotate(180deg) rotateY(0deg);
+  }
+  75% {
+    transform: translate(-50px, 30px) rotate(270deg) rotateY(-10deg);
+  }
+}
+
+@keyframes orb-float-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate(-40px, -60px) rotate(120deg);
+  }
+  66% {
+    transform: translate(50px, 40px) rotate(240deg);
+  }
+}
+
+@keyframes orb-float-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(30px, -40px) scale(1.1);
+  }
+}
+
+@keyframes orb-float-4 {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-70px, 50px);
+  }
+}
+
+// Particle field with heat distortion
+.particle-field {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  --particle-color: var(--primary, #ff6b35);
+}
+
+// Noise texture for grit
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+// Vignette effect for cinematic depth
+.vignette-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 80% at 50% 50%,
+    transparent 0%,
+    transparent 50%,
+    var(--background, #0a0a0f) 100%
+  );
+  pointer-events: none;
+}
+
+// Bottom gradient fade
+.bottom-fade {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 250px;
+  background: linear-gradient(
+    to top,
+    var(--background, #0a0a0f) 0%,
+    color-mix(in srgb, var(--background, #0a0a0f) 80%, transparent) 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+// ============================================================================
+// MAIN CONTENT
+// ============================================================================
+
+.forge-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1400px;
+  padding: var(--spacing-xl, 4rem) var(--spacing-lg, 2.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xxl, 6rem);
+}
+
+// Brand mark with dramatic presence
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 1rem);
+  animation: forge-reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  .anvil-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--primary, #ff6b35);
+    filter: drop-shadow(
+      0 0 20px color-mix(in srgb, var(--primary, #ff6b35) 60%, transparent)
+    );
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .brand-text {
+    font-family: var(--font-heading, 'Cinzel', serif);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--primary, #ff6b35);
+    text-shadow: 0 0 30px
+      color-mix(in srgb, var(--primary, #ff6b35) 40%, transparent);
+  }
+}
+
+@keyframes forge-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+// ============================================================================
+// DRAMATIC HERO SECTION
+// ============================================================================
+
+.forge-hero {
+  text-align: center;
+  max-width: 950px;
+  margin: var(--spacing-lg, 2rem) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xl, 4rem);
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs, 0.5rem);
+  padding: 0.7rem 1.4rem;
+  background: color-mix(in srgb, var(--primary, #ff6b35) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary, #ff6b35) 40%, transparent);
+  border-radius: 999px;
+  animation: forge-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+
+  .badge-pulse {
+    width: 10px;
+    height: 10px;
+    background: var(--primary, #ff6b35);
+    border-radius: 50%;
+    animation: forge-pulse 2.5s ease-in-out infinite;
+    box-shadow: 0 0 15px var(--primary, #ff6b35);
+  }
+
+  .badge-text {
+    font-family: var(--font-body, 'Crimson Pro', serif);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--primary, #ff6b35);
+  }
+}
+
+@keyframes forge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 15px var(--primary, #ff6b35);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+    box-shadow: 0 0 25px var(--primary, #ff6b35);
+  }
+}
+
+.hero-headline {
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: clamp(3rem, 10vw, 6.5rem);
+  font-weight: 400;
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: -0.02em;
+  animation: forge-reveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+
+  .headline-line {
+    display: block;
+
+    &.accent {
+      background: linear-gradient(
+        135deg,
+        var(--primary, #ff6b35) 0%,
+        var(--warning, #f7931e) 50%,
+        var(--warning-4, #ffc107) 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(
+        0 0 40px color-mix(in srgb, var(--primary, #ff6b35) 25%, transparent)
+      );
+    }
+  }
+}
+
+.hero-lead {
+  font-family: var(--font-body, 'Crimson Pro', serif);
+  font-size: clamp(1.1rem, 2.5vw, 1.45rem);
+  color: var(--muted, #a0a0b0);
+  max-width: 650px;
+  line-height: 1.8;
+  margin: 0;
+  animation: forge-reveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+}
+
+// Hero Actions with molten button effect
+.hero-actions {
+  display: flex;
+  gap: var(--spacing-md, 1.5rem);
+  flex-wrap: wrap;
+  justify-content: center;
+  animation: forge-reveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
+}
+
+.btn-forge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.1rem 2.2rem;
+  font-family: var(--font-body, 'Crimson Pro', serif);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .btn-text {
+    position: relative;
+    z-index: 2;
+  }
+
+  &:hover {
+    transform: translateY(-3px) scale(1.02);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+  }
+}
+
+.btn-primary-ember {
+  background: linear-gradient(
+    135deg,
+    var(--primary, #ff6b35) 0%,
+    var(--primary-3, #d4853c) 50%,
+    var(--primary-5, #b87333) 100%
+  );
+  color: white;
+  box-shadow: 0 4px 25px
+      color-mix(in srgb, var(--primary, #ff6b35) 40%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.3) 0%,
+      transparent 50%,
+      rgba(0, 0, 0, 0.2) 100%
+    );
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn-spark {
+    width: 22px;
+    height: 22px;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .ember-glow {
+    position: absolute;
+    inset: -2px;
+    background: radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--primary, #ff6b35) 50%, transparent) 0%,
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    border-radius: 10px;
+    z-index: -1;
+  }
+
+  &:hover {
+    box-shadow: 0 8px 35px
+        color-mix(in srgb, var(--primary, #ff6b35) 60%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+
+    &::before {
+      opacity: 1;
+    }
+
+    .btn-spark {
+      transform: translateX(5px);
+    }
+
+    .ember-glow {
+      opacity: 1;
+    }
+  }
+}
+
+.btn-secondary-smoke {
+  background: transparent;
+  color: var(--foreground, #f0f0f5);
+  border: 1.5px solid
+    color-mix(in srgb, var(--foreground, #f0f0f5) 25%, transparent);
+
+  &:hover {
+    border-color: var(--primary, #ff6b35);
+    color: var(--primary, #ff6b35);
+    background: color-mix(in srgb, var(--primary, #ff6b35) 8%, transparent);
+    box-shadow: 0 0 30px
+      color-mix(in srgb, var(--primary, #ff6b35) 20%, transparent);
+  }
+}
+
+// Stats with dramatic reveal
+.forge-stats {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-xl, 4rem);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-lg, 2rem);
+}
+
+.stat-item {
+  text-align: center;
+  position: relative;
+  animation: stat-forge-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  .stat-value {
+    font-family: var(--font-heading, 'Cinzel', serif);
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: var(--primary, #ff6b35);
+    display: block;
+    text-shadow: 0 0 20px
+      color-mix(in srgb, var(--primary, #ff6b35) 30%, transparent);
+  }
+
+  .stat-label {
+    font-family: var(--font-body, 'Crimson Pro', serif);
+    font-size: 0.8rem;
+    color: var(--muted, #a0a0b0);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 0.4rem;
+    display: block;
+  }
+
+  .stat-line {
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--primary, #ff6b35),
+      transparent
+    );
+    animation: line-forge-grow 1s cubic-bezier(0.16, 1, 0.3, 1) 1.5s forwards;
+  }
+}
+
+@keyframes stat-forge-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes line-forge-grow {
+  to {
+    width: 70%;
+  }
+}
+
+// ============================================================================
+// FEATURE CRYSTALS - MOLTEN EDITION
+// ============================================================================
+
+.forge-features {
+  width: 100%;
+  max-width: 1300px;
+  margin-top: var(--spacing-xl, 4rem);
+  margin-bottom: var(--spacing-xl, 4rem);
+  position: relative;
+}
+
+// Decorative section title
+.features-title {
+  text-align: center;
+  margin-bottom: var(--spacing-xl, 4rem);
+
+  .features-label {
+    font-family: var(--font-body, 'Crimson Pro', serif);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted, #a0a0b0);
+    margin-bottom: var(--spacing-sm, 1rem);
+    display: block;
+  }
+
+  .features-heading {
+    font-family: var(--font-heading, 'Cinzel', serif);
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 400;
+    color: var(--foreground, #f0f0f5);
+    margin: 0;
+  }
+}
+
+.features-orbit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg, 2.5rem);
+  justify-items: center;
+}
+
+.feature-crystal {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--surface, #1a1a25) 90%, transparent) 0%,
+    color-mix(in srgb, var(--surface, #252535) 70%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--primary, #ff6b35) 20%, transparent);
+  border-radius: 20px;
+  padding: var(--spacing-lg, 2.5rem);
+  backdrop-filter: blur(12px);
+  animation: crystal-forge-float 10s ease-in-out infinite;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 50%
+    );
+    border-radius: 20px;
+    pointer-events: none;
+  }
+
+  &:hover {
+    transform: translateY(-15px) scale(1.02);
+    border-color: color-mix(in srgb, var(--primary, #ff6b35) 50%, transparent);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5),
+      0 0 80px color-mix(in srgb, var(--primary, #ff6b35) 15%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+    .crystal-face-shine {
+      animation: shine-forge-sweep 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .crystal-glow {
+      opacity: 1;
+    }
+
+    .crystal-icon {
+      transform: scale(1.1);
+      filter: drop-shadow(
+        0 0 20px color-mix(in srgb, var(--primary, #ff6b35) 50%, transparent)
+      );
+    }
+  }
+
+  &:nth-child(1) {
+    animation-delay: 0s;
+  }
+  &:nth-child(2) {
+    animation-delay: 1.5s;
+  }
+  &:nth-child(3) {
+    animation-delay: 3s;
+  }
+  &:nth-child(4) {
+    animation-delay: 4.5s;
+  }
+  &:nth-child(5) {
+    animation-delay: 6s;
+  }
+  &:nth-child(6) {
+    animation-delay: 7.5s;
+  }
+}
+
+@keyframes crystal-forge-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-12px) rotate(0.5deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-18px) rotate(-0.5deg);
+  }
+}
+
+.crystal-faces {
+  position: relative;
+  z-index: 2;
+}
+
+.crystal-face {
+  position: relative;
+}
+
+.face-front {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 1rem);
+}
+
+.crystal-icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: var(--spacing-xs, 0.5rem);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.15));
+}
+
+.crystal-title {
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--foreground, #f0f0f5);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.crystal-desc {
+  font-family: var(--font-body, 'Crimson Pro', serif);
+  font-size: 1rem;
+  color: var(--muted, #a0a0b0);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.crystal-face-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 60%
+  );
+  pointer-events: none;
+  opacity: 0;
+}
+
+@keyframes shine-forge-sweep {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+// Crystal edge decorations with molten metal effect
+.crystal-edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  .edge {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-color: color-mix(in srgb, var(--primary, #ff6b35) 35%, transparent);
+    border-style: solid;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .edge-tl {
+    top: 0;
+    left: 0;
+    border-width: 2px 0 0 2px;
+    border-radius: 20px 0 0 0;
+  }
+
+  .edge-tr {
+    top: 0;
+    right: 0;
+    border-width: 2px 2px 0 0;
+    border-radius: 0 20px 0 0;
+  }
+
+  .edge-bl {
+    bottom: 0;
+    left: 0;
+    border-width: 0 0 2px 2px;
+    border-radius: 0 0 0 20px;
+  }
+
+  .edge-br {
+    bottom: 0;
+    right: 0;
+    border-width: 0 2px 2px 0;
+    border-radius: 0 0 20px 0;
+  }
+}
+
+.feature-crystal:hover {
+  .edge {
+    border-color: var(--primary, #ff6b35);
+    box-shadow: 0 0 15px
+      color-mix(in srgb, var(--primary, #ff6b35) 60%, transparent);
+  }
+}
+
+// Crystal glow effect
+.crystal-glow {
+  position: absolute;
+  inset: -3px;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--primary, #ff6b35) 12%, transparent) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  border-radius: 22px;
+  z-index: 1;
+}
+
+// ============================================================================
+// TRUST SECTION - REFINED
+// ============================================================================
+
+.forge-trust {
+  width: 100%;
+  max-width: 900px;
+  margin-top: var(--spacing-xxl, 6rem);
+  margin-bottom: var(--spacing-xl, 4rem);
+  animation: forge-reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) 1.2s both;
+}
+
+.trust-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md, 1.5rem);
+  margin-bottom: var(--spacing-lg, 2rem);
+
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--muted, #a0a0b0) 50%, transparent),
+      transparent
+    );
+  }
+
+  .divider-text {
+    font-family: var(--font-body, 'Crimson Pro', serif);
+    font-size: 0.75rem;
+    color: var(--muted, #a0a0b0);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    white-space: nowrap;
+  }
+}
+
+.trust-glyphs {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-lg, 2.5rem);
+  flex-wrap: wrap;
+
+  .glyph {
+    width: 44px;
+    height: 44px;
+    color: var(--muted, #a0a0b0);
+    opacity: 0.6;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    &:hover {
+      color: var(--primary, #ff6b35);
+      opacity: 1;
+      transform: scale(1.15) rotate(5deg);
+      filter: drop-shadow(
+        0 0 15px color-mix(in srgb, var(--primary, #ff6b35) 50%, transparent)
+      );
+    }
+  }
+}
+
+// ============================================================================
+// RESPONSIVE ADJUSTMENTS
+// ============================================================================
+
+@media (max-width: 1024px) {
+  .features-orbit {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-md, 1.5rem);
+  }
+
+  .crystalline-orbs {
+    .orb-primary {
+      width: 250px;
+      height: 250px;
+    }
+    .orb-secondary {
+      width: 180px;
+      height: 180px;
+    }
+    .orb-tertiary {
+      width: 130px;
+      height: 130px;
+    }
+    .orb-accent {
+      display: none;
+    }
+  }
+
+  .hero-headline {
+    font-size: clamp(2.5rem, 8vw, 5rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .forge-content {
+    padding: var(--spacing-lg, 2.5rem) var(--spacing-md, 1.5rem);
+    gap: var(--spacing-xl, 4rem);
+  }
+
+  .hero-headline {
+    font-size: 2.2rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+
+    .btn-forge {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .forge-stats {
+    gap: var(--spacing-md, 1.5rem);
+
+    .stat-item {
+      flex: 1;
+      min-width: 120px;
+    }
+  }
+
+  .features-orbit {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+
+  .feature-crystal {
+    max-width: 100%;
+    animation: none;
+    padding: var(--spacing-md, 1.5rem);
+  }
+
+  .crystalline-orbs {
+    .orb {
+      display: none;
+    }
+  }
+
+  .trust-glyphs {
+    gap: var(--spacing-sm, 1rem);
+  }
+
+  .gradient-mesh {
+    filter: blur(40px);
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-mark {
+    .brand-text {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+    }
+  }
+
+  .hero-badge {
+    padding: 0.6rem 1.1rem;
+
+    .badge-text {
+      font-size: 0.7rem;
+    }
+  }
+
+  .hero-headline {
+    font-size: 1.8rem;
+  }
+
+  .stat-item {
+    .stat-value {
+      font-size: 1.8rem;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+    }
+  }
+
+  .features-orbit {
+    gap: var(--spacing-sm, 1rem);
+  }
+
+  .feature-crystal {
+    padding: var(--spacing-md, 1.5rem);
+  }
+}
+
+// ============================================================================
+// REDUCED MOTION
+// ============================================================================
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .gradient-mesh .mesh-layer,
+  .orb,
+  .feature-crystal {
+    animation: none;
+  }
+}

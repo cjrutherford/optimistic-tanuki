@@ -70,7 +70,7 @@ describe('PermissionService', () => {
 
     it('should clear permissions when logged out', fakeAsync(() => {
       isAuthenticated$.next(true);
-      let req = httpMock.expectOne(`/api/permissions/user-roles/${mockProfileId}`);
+      const req = httpMock.expectOne(`/api/permissions/user-roles/${mockProfileId}`);
       req.flush(mockUserRoles);
       tick();
       expect(service.hasFullAccess).toBe(true);

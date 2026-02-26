@@ -26,6 +26,7 @@
       "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
+      "@optimistic-tanuki/community-ui": ["libs/community-ui/src/index.ts"],
       "@optimistic-tanuki/compose-lib": ["libs/compose-lib/src/index.ts"],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
@@ -47,6 +48,7 @@
       "@optimistic-tanuki/storage": ["libs/storage/src/index.ts"],
       "@optimistic-tanuki/store-ui": ["libs/store-ui/src/index.ts"],
       "@optimistic-tanuki/theme-lib": ["libs/theme-lib/src/index.ts"],
+      "@optimistic-tanuki/theme-models": ["libs/theme-models/src/index.ts"],
       "@optimistic-tanuki/theme-ui": ["libs/theme-ui/src/index.ts"],
       "@optimistic-tanuki/ui-models": ["libs/ui-models/src/index.ts"]
     }

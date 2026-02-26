@@ -1,13 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
-import {
-  PropertyEditorComponent,
-  PropertyDefinition,
-} from './property-editor.component';
+import { PropertyEditorComponent } from './property-editor.component';
 import { Component } from '@angular/core';
 import {
   InjectedComponentInstance,
   InjectableComponent,
+  PropertyDefinition,
 } from '../interfaces/component-injection.interface';
 
 @Component({

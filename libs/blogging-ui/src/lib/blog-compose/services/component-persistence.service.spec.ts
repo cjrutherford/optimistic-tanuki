@@ -1,7 +1,18 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { ComponentPersistenceService, ComponentExtractionResult } from './component-persistence.service';
-import { BlogComponentDto, CreateBlogComponentDto } from '@optimistic-tanuki/ui-models';
+import { provideHttpClient } from '@angular/common/http';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
+import {
+  ComponentPersistenceService,
+  ComponentExtractionResult,
+} from './component-persistence.service';
+import {
+  BlogComponentDto,
+  CreateBlogComponentDto,
+  API_BASE_URL,
+} from '@optimistic-tanuki/ui-models';
 
 describe('ComponentPersistenceService', () => {
   let service: ComponentPersistenceService;
@@ -20,8 +31,13 @@ describe('ComponentPersistenceService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [ComponentPersistenceService]
+      imports: [],
+      providers: [
+        ComponentPersistenceService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: API_BASE_URL, useValue: '/api' },
+      ],
     });
     service = TestBed.inject(ComponentPersistenceService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -58,14 +74,14 @@ describe('ComponentPersistenceService', () => {
         componentType: 'author-profile',
         componentData: { name: 'John Doe', bio: 'Test bio' },
         position: 0,
-        domNode: expect.any(HTMLElement)
+        domNode: expect.any(HTMLElement),
       });
       expect(result[1]).toEqual({
         instanceId: 'instance-2',
         componentType: 'featured-posts',
         componentData: { count: 5 },
         position: 1,
-        domNode: expect.any(HTMLElement)
+        domNode: expect.any(HTMLElement),
       });
     });
 
@@ -107,7 +123,7 @@ describe('ComponentPersistenceService', () => {
         {
           componentId: 'author-profile',
           instanceId: null,
-          hasData: false
+          hasData: false,
         }
       );
     });
@@ -121,11 +137,11 @@ describe('ComponentPersistenceService', () => {
           componentType: 'author-profile',
           componentData: { name: 'John Doe', bio: 'Test bio' },
           position: 0,
-          domNode: document.createElement('div')
-        }
+          domNode: document.createElement('div'),
+        },
       ];
 
-      service.saveComponents('post-1', components).subscribe(result => {
+      service.saveComponents('post-1', components).subscribe((result) => {
         expect(result).toEqual([mockComponent]);
       });
 
@@ -136,13 +152,13 @@ describe('ComponentPersistenceService', () => {
         instanceId: 'instance-1',
         componentType: 'author-profile',
         componentData: { name: 'John Doe', bio: 'Test bio' },
-        position: 0
+        position: 0,
       });
       req.flush(mockComponent);
     });
 
     it('should return empty array for no components', () => {
-      service.saveComponents('post-1', []).subscribe(result => {
+      service.saveComponents('post-1', []).subscribe((result) => {
         expect(result).toEqual([]);
       });
 
@@ -152,7 +168,7 @@ describe('ComponentPersistenceService', () => {
 
   describe('getComponentsForPost', () => {
     it('should get components for a post', () => {
-      service.getComponentsForPost('post-1').subscribe(result => {
+      service.getComponentsForPost('post-1').subscribe((result) => {
         expect(result).toEqual([mockComponent]);
       });
 
@@ -167,7 +183,7 @@ describe('ComponentPersistenceService', () => {
       const newData = { name: 'Jane Doe', bio: 'Updated bio' };
       const updatedComponent = { ...mockComponent, componentData: newData };
 
-      service.updateComponent('component-1', newData, 1).subscribe(result => {
+      service.updateComponent('component-1', newData, 1).subscribe((result) => {
         expect(result).toEqual(updatedComponent);
       });
 
@@ -175,7 +191,7 @@ describe('ComponentPersistenceService', () => {
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual({
         componentData: newData,
-        position: 1
+        position: 1,
       });
       req.flush(updatedComponent);
     });

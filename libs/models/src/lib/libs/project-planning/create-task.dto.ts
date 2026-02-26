@@ -32,7 +32,7 @@ export class CreateTaskDto {
   @IsString()
   @MinLength(3)
   @MaxLength(200)
-  title: string;
+  title!: string;
 
   @ApiProperty({
     description: 'Description of the task',
@@ -41,25 +41,25 @@ export class CreateTaskDto {
   @IsString()
   @MinLength(10)
   @MaxLength(5000)
-  description: string;
+  description!: string;
 
   @ApiProperty({ description: 'Status of the task', enum: TaskStatus })
   @IsEnum(TaskStatus)
-  status: TaskStatus;
+  status!: TaskStatus;
 
   @ApiProperty({ description: 'Priority of the task', enum: TaskPriority })
   @IsEnum(TaskPriority)
-  priority: TaskPriority;
+  priority!: TaskPriority;
 
   @ApiProperty({ description: 'User who created the task' })
   @IsString()
   @IsUUID()
-  createdBy: string;
+  createdBy!: string;
 
   @ApiProperty({ description: 'ID of the related project' })
   @IsString()
   @IsUUID()
-  projectId: string;
+  projectId!: string;
 
   @ApiPropertyOptional({
     description: 'Array of tag IDs to associate with the task',

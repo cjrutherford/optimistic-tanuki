@@ -105,11 +105,11 @@ describe('AgGridUiComponent', () => {
   it('should have grid API available after onGridReady', () => {
     const mockParams = {
       api: {
-        sizeColumnsToFit: () => {},
-        hideOverlay: () => {},
+        sizeColumnsToFit: () => { },
+        hideOverlay: () => { },
         getDisplayedRowCount: () => 0,
-        setGridOption: () => {},
-        refreshCells: () => {},
+        setGridOption: () => { },
+        refreshCells: () => { },
       },
     } as any;
 
@@ -147,5 +147,18 @@ describe('AgGridUiComponent', () => {
     expect(component.background).toBe('#ffffff');
     expect(component.foreground).toBe('#000000');
     expect(component.accent).toBe('#ff0000');
+  });
+
+  it('should expose personality id for host binding', () => {
+    expect(component.personalityId).toBe('classic');
+  });
+
+  it('should set host data-personality attribute', () => {
+    fixture.detectChanges();
+
+    const hostElement = fixture.nativeElement as HTMLElement;
+    expect(hostElement.getAttribute('data-personality')).toBe(
+      component.personalityId
+    );
   });
 });

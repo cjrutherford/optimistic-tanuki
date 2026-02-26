@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { SocialWebSocketService } from './social-websocket.service';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { AuthStateService } from './state/auth-state.service';
 
 describe('SocialWebSocketService', () => {
   let service: SocialWebSocketService;
@@ -8,9 +11,19 @@ describe('SocialWebSocketService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: API_BASE_URL,
           useValue: 'http://localhost:3000/api',
+        },
+        {
+          provide: AuthStateService,
+          useValue: {
+            getDecodedTokenValue: jest.fn(),
+            getPersistedSelectedProfile: jest.fn().mockReturnValue(null),
+            isAuthenticated: jest.fn().mockReturnValue(false),
+          },
         },
       ],
     });

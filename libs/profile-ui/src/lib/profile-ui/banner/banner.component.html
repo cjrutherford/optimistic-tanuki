@@ -1,5 +1,10 @@
 <otui-card>
-  <div class="banner" [style.backgroundImage]="backgroundStyle">
+  <div
+    class="banner"
+    [style.backgroundImage]="backgroundStyle"
+    (click)="onBannerClick()"
+    style="cursor: pointer"
+  >
     <div class="filter-layer">
       <lib-profile-photo
         class="profile-image"

@@ -1,16 +1,37 @@
-<div class="contacts-container">
-  @for( contact of contacts; track contact.id; let i = $index) {
-  <div style="position: relative">
-    <lib-contact-bubble
-      [contacts]="[contact]"
-      (click)="openChat(contact.id)"
-    ></lib-contact-bubble>
-    <!-- <lib-chat-window 
-                [contact]="getConversationContacts(profiles, windowStates()[contact.id]!.conversation || [])" 
-                [messages]="windowStates()[contact.id]!.conversation || []"
-                [windowState]="windowStates()[contact.id]!.windowState || 'hidden'"
-                (windowStateChange)="handleWindowStateChange(contact.id, $event)"
-            ></lib-chat-window> -->
+<div class="messenger-container">
+  <div class="messenger-sidebar">
+    <div class="messenger-header">
+      <h3>Conversations</h3>
+    </div>
+    <div class="contacts-container">
+      @for( contact of contacts; track contact.id; let i = $index) {
+      <div class="contact-item" (click)="openChat(contact.id)">
+        <lib-contact-bubble [contacts]="[contact]"></lib-contact-bubble>
+        <div class="contact-info">
+          <div class="contact-name">{{ contact.name }}</div>
+          <div class="contact-preview">
+            {{ contact.lastMessage || 'No messages yet' }}
+          </div>
+        </div>
+        <div class="contact-timestamp">
+          {{ contact.lastMessageTime | date : 'shortTime' }}
+        </div>
+      </div>
+      }
+    </div>
   </div>
-  }
+
+  <div class="messenger-main">
+    @for( contact of contacts; track contact.id; let i = $index) {
+    <lib-chat-window
+      *ngIf="windowStates()[contact.id]?.windowState !== 'hidden'"
+      [contact]="
+        getConversationContacts(profiles, getMessagesForContact(contact.id))
+      "
+      [messages]="getConversation(contact.id)"
+      [windowState]="windowStates()[contact.id]!.windowState || 'popout'"
+      (windowStateChange)="handleWindowStateChange(contact.id, $event)"
+    ></lib-chat-window>
+    }
+  </div>
 </div>

@@ -1,14 +1,56 @@
-<div class="modal" [ngClass]="[mode, variant, size]">
+<!-- Modal Overlay / Backdrop -->
+@if (visible) {
+<div
+  class="modal-overlay"
+  [class.with-backdrop]="backdrop"
+  (click)="onBackdropClick($event)"
+  [style.zIndex]="zIndex"
+  tabindex="-1"
+  aria-hidden="true"
+></div>
+
+<!-- Modal Dialog -->
+<div
+  #modalDialog
+  class="modal-dialog"
+  [attr.role]="ariaDescribedBy ? 'dialog' : 'alertdialog'"
+  aria-modal="true"
+  [attr.aria-label]="ariaLabel || heading"
+  [attr.aria-labelledby]="ariaLabelledBy || (heading ? 'modal-title' : null)"
+  [attr.aria-describedby]="ariaDescribedBy"
+  [style.zIndex]="zIndex ? zIndex + 1 : null"
+  tabindex="0"
+  (keydown)="onTabKey($event)"
+>
+  <!-- Modal Header -->
   <div class="modal-header">
-    <h2 *ngIf="heading">{{ heading }}</h2>
-    <ng-content select="[modal-header]"></ng-content>
-    <otui-button
-      *ngIf="closeModal.observers.length"
-      (action)="closeModal.emit()"
-      >Close</otui-button
+    @if (heading) {
+    <h2 id="modal-title" class="modal-title">{{ heading }}</h2>
+    }
+    <ng-content select="[modal-title], [modalTitle]"></ng-content>
+
+    <!-- Close Button -->
+    @if (closable) {
+    <button
+      #closeButton
+      type="button"
+      class="modal-close-btn"
+      (click)="onCloseClick()"
+      aria-label="Close modal"
     >
+      <span aria-hidden="true">&times;</span>
+    </button>
+    }
   </div>
-  <div class="modal-content">
+
+  <!-- Modal Content -->
+  <div class="modal-body" [attr.id]="ariaDescribedBy || 'modal-desc'">
     <ng-content></ng-content>
   </div>
+
+  <!-- Modal Footer (optional) -->
+  <div class="modal-footer">
+    <ng-content select="[modal-footer], [modalFooter]"></ng-content>
+  </div>
 </div>
+}

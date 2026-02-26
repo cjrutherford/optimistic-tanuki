@@ -4,7 +4,13 @@ import {
   fakeAsync,
   tick,
 } from '@angular/core/testing';
-import { PLATFORM_ID, SimpleChange, SimpleChanges, signal, WritableSignal } from '@angular/core';
+import {
+  PLATFORM_ID,
+  SimpleChange,
+  SimpleChanges,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import { of } from 'rxjs';
 import { io } from 'socket.io-client';
 
@@ -18,12 +24,17 @@ import {
   SOCKET_HOST,
   SOCKET_NAMESPACE,
   SOCKET_IO_INSTANCE,
+  SOCKET_AUTH_TOKEN_PROVIDER,
 } from '@optimistic-tanuki/chat-ui';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 class MockSocketChatService {
   onMessage = jest.fn();
   onConversations = jest.fn();
+  onAIStatusUpdate = jest.fn();
+  onToolCallUpdate = jest.fn();
+  onStreamingResponse = jest.fn();
   getConversations = jest.fn();
   sendMessage = jest.fn();
   destroy = jest.fn();
@@ -61,7 +72,9 @@ describe('ChatComponent', () => {
   beforeEach(async () => {
     const profileServiceMock = {
       currentUserProfile: signal<ProfileDto | null>(mockProfile),
-      getDisplayProfile: jest.fn().mockReturnValue(of(mockProfile)),
+      getDisplayProfile: jest
+        .fn()
+        .mockImplementation((id: string) => of(mockProfile)),
     };
 
     const messageServiceMock = {
@@ -77,6 +90,19 @@ describe('ChatComponent', () => {
         { provide: MessageService, useValue: messageServiceMock },
         { provide: SocketChatService, useValue: socketChatServiceMock },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: SOCKET_HOST, useValue: 'http://localhost:3000' },
+        { provide: SOCKET_NAMESPACE, useValue: '/chat' },
+        { provide: SOCKET_IO_INSTANCE, useValue: {} },
+        { provide: SOCKET_AUTH_TOKEN_PROVIDER, useValue: () => null },
+        {
+          provide: ThemeService,
+          useValue: {
+            setPersonality: jest.fn(),
+            themeColors$: of({}),
+            getCurrentPersonality: jest.fn().mockReturnValue(undefined),
+            personality$: of(undefined),
+          },
+        },
       ],
     })
       .overrideComponent(ChatComponent, {
@@ -158,7 +184,9 @@ describe('ChatComponent', () => {
     component = fixture.componentInstance;
     (component as any).platformId = 'server';
     component.ngOnInit();
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Not in browser'));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Not in browser')
+    );
     consoleSpy.mockRestore();
   });
 
@@ -241,7 +269,9 @@ describe('ChatComponent', () => {
   }));
 
   it('should show warning when opening persona chat if not logged in', fakeAsync(() => {
-    (profileService.currentUserProfile as WritableSignal<ProfileDto | null>).set(null);
+    (
+      profileService.currentUserProfile as WritableSignal<ProfileDto | null>
+    ).set(null);
 
     component.openOrCreatePersonaChat('persona1');
     tick();
@@ -267,13 +297,18 @@ describe('ChatComponent', () => {
   }));
 
   it('should update contacts and handle null current user', async () => {
-    (profileService.currentUserProfile as WritableSignal<ProfileDto | null>).set(null);
+    (
+      profileService.currentUserProfile as WritableSignal<ProfileDto | null>
+    ).set(null);
     await component.updateContacts();
     expect(component.contacts()).toEqual([]);
   });
 
   it('should process external messages correctly', () => {
-    const messages: Partial<ChatMessage>[] = [{ content: 'msg1' }, { content: 'msg2' }];
+    const messages: Partial<ChatMessage>[] = [
+      { content: 'msg1' },
+      { content: 'msg2' },
+    ];
     component.processExternalMessages(messages);
     expect(socketChatService.sendMessage).toHaveBeenCalledTimes(2);
   });
@@ -282,7 +317,9 @@ describe('ChatComponent', () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
     component.socketChat = null;
     component.processExternalMessages([{ content: 'test' }]);
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('SocketChatService is not available'));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('SocketChatService is not available')
+    );
     consoleSpy.mockRestore();
   });
 });

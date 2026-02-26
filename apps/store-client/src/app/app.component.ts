@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
@@ -8,7 +8,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   private themeService = inject(ThemeService);
   protected title = 'store-client';
 

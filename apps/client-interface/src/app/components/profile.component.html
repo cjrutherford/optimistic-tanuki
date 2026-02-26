@@ -4,8 +4,17 @@
   [profileName]="profile.profileName"
   [profileImage]="profile.profilePic"
   [backgroundImage]="profile.coverPic"
+  (bannerClick)="onBannerClick()"
 >
 </lib-banner>
+
+<lib-profile-editor
+  [open]="showProfileEditor"
+  [profile]="profile"
+  (closeEditor)="onProfileEditorClose()"
+  (updateProfile)="updateProfile($event)"
+  (createProfile)="createProfile($event)"
+></lib-profile-editor>
 } @else {
 <otui-card>
   <div class="no-profile">

@@ -24,6 +24,7 @@ const mockRepo = () => ({
     leftJoinAndSelect: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
+    getOne: jest.fn(),
     getMany: jest.fn(),
   })),
 });
@@ -35,6 +36,7 @@ describe('RolesService', () => {
   let roleAssignmentsRepository: Repository<RoleAssignment>;
   let appScopesRepository: Repository<AppScope>;
   let getMany: jest.Mock;
+  let getOne: jest.Mock;
   let andWhere: jest.Mock;
   let where: jest.Mock;
   let leftJoinAndSelect: jest.Mock;
@@ -72,6 +74,7 @@ describe('RolesService', () => {
     );
 
     getMany = jest.fn();
+    getOne = jest.fn();
     andWhere = jest.fn().mockReturnThis();
     where = jest.fn().mockReturnThis();
     leftJoinAndSelect = jest.fn().mockReturnThis();
@@ -84,6 +87,15 @@ describe('RolesService', () => {
         andWhere,
         getMany,
       } as any);
+
+    // Also spy on rolesRepository.createQueryBuilder for getRoleByName
+    jest.spyOn(rolesRepository, 'createQueryBuilder').mockReturnValue({
+      leftJoinAndSelect,
+      where,
+      andWhere,
+      getOne,
+      getMany,
+    } as any);
   });
 
   it('should be defined', () => {
@@ -117,6 +129,46 @@ describe('RolesService', () => {
       jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(role);
       const result = await service.getRole('1');
       expect(result).toEqual(role);
+    });
+
+    it('should return null if role not found', async () => {
+      jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(null);
+      const result = await service.getRole('nonexistent');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getRoleByName', () => {
+    it('should return a role by name', async () => {
+      const role = new Role();
+      getOne.mockResolvedValue(role);
+
+      const result = await service.getRoleByName('admin');
+      expect(result).toEqual(role);
+      expect(where).toHaveBeenCalledWith('role.name = :name', {
+        name: 'admin',
+      });
+    });
+
+    it('should return a role by name with appScope', async () => {
+      const role = new Role();
+      getOne.mockResolvedValue(role);
+
+      const result = await service.getRoleByName('admin', 'app1');
+      expect(result).toEqual(role);
+      expect(where).toHaveBeenCalledWith('role.name = :name', {
+        name: 'admin',
+      });
+      expect(andWhere).toHaveBeenCalledWith('appScope.name = :appScope', {
+        appScope: 'app1',
+      });
+    });
+
+    it('should return null if role not found by name', async () => {
+      getOne.mockResolvedValue(null);
+
+      const result = await service.getRoleByName('nonexistent');
+      expect(result).toBeNull();
     });
   });
 

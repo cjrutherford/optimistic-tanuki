@@ -23,6 +23,18 @@ import { EnhancedMCPToolExecutor } from './enhanced-mcp-tool-executor.service';
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 import { StreamingEventType } from './streaming-events';
 
+const TOOL_OUTPUT_BLACKLIST = ['list_tools'];
+const TOOL_RESULT_SUMMARIES: Record<string, string> = {
+  list_tools: 'Available tools retrieved',
+};
+
+function getToolResultContent(tool: string, output: unknown): string {
+  if (TOOL_OUTPUT_BLACKLIST.includes(tool)) {
+    return TOOL_RESULT_SUMMARIES[tool] || 'Tool executed successfully';
+  }
+  return typeof output === 'string' ? output : JSON.stringify(output, null, 2);
+}
+
 @Injectable()
 export class AppService {
   constructor(
@@ -42,7 +54,7 @@ export class AppService {
     private readonly systemPromptBuilder: SystemPromptBuilder,
     private readonly toolValidation: ToolValidationService,
     private readonly enhancedToolExecutor: EnhancedMCPToolExecutor
-  ) { }
+  ) {}
 
   /**
    * Convert chat messages to LangChain BaseMessage format
@@ -160,8 +172,9 @@ export class AppService {
       // Create welcome message
       const welcomePrompt = `Hello, I'm ${profile.profileName}, and I just created my profile. I need help getting started, and I'm new here. Please ask me questions to help me clarify my goals and projects.`;
 
-      const conversationSummary = `The user has just created a profile as a user of ${appId}. This app's description is: ${this.aiEnabledApps[appId] ?? 'No description available'
-        }. The user may have limited information in their profile. Your goal is to assist the user in fleshing out their projects and goals. Behind the scenes, provide JSON output with potential TELOS data points. Inform the user that they can export their TELOS data at any time. TELOS is not an acronym, but a framework for maintaining focus and clarity for both AI and humans. TELOS data should be included at the end of the response in json format separated from the main response with '---'. JSON format should be with keys for goals, skills, interests, limitations, strengths, objectives, coreObjective, and overallProfileSummary.
+      const conversationSummary = `The user has just created a profile as a user of ${appId}. This app's description is: ${
+        this.aiEnabledApps[appId] ?? 'No description available'
+      }. The user may have limited information in their profile. Your goal is to assist the user in fleshing out their projects and goals. Behind the scenes, provide JSON output with potential TELOS data points. Inform the user that they can export their TELOS data at any time. TELOS is not an acronym, but a framework for maintaining focus and clarity for both AI and humans. TELOS data should be included at the end of the response in json format separated from the main response with '---'. JSON format should be with keys for goals, skills, interests, limitations, strengths, objectives, coreObjective, and overallProfileSummary.
       Please do not use tools for this initial welcome message. Focus on engaging the user and gathering information.`;
 
       const responses: Partial<ChatMessage>[] = [];
@@ -294,6 +307,23 @@ export class AppService {
         langChainMessages.push(new HumanMessage(lastMessage.content));
 
         try {
+          // Emit workflow start event
+          await firstValueFrom(
+            this.chatCollectorService.send(
+              { cmd: ChatCommands.POST_MESSAGE },
+              {
+                conversationId: conversation.id,
+                senderId: persona.id,
+                senderName: persona.name,
+                recipientId: [profile.id],
+                recipientName: [profile.profileName],
+                content: '⚡ Starting AI processing...',
+                timestamp: new Date(),
+                type: 'system',
+              }
+            )
+          );
+
           // Use LangGraph with Agent for state-managed, multi-step execution
           this.l.log('Executing conversation through LangGraph with Agent...');
 
@@ -316,7 +346,7 @@ export class AppService {
                     senderName: persona.name,
                     recipientId: [profile.id],
                     recipientName: [profile.profileName],
-                    content: `💭 Thinking: ${progress.content.text}`,
+                    content: `💭 ${progress.content.text}`,
                     timestamp: new Date(),
                     type: 'system',
                   };
@@ -334,7 +364,7 @@ export class AppService {
                     senderName: persona.name,
                     recipientId: [profile.id],
                     recipientName: [profile.profileName],
-                    content: `🔧 Calling tool: ${progress.content.tool}`,
+                    content: `🔧 Using: ${progress.content.tool}`,
                     timestamp: new Date(),
                     type: 'system',
                   };
@@ -346,16 +376,17 @@ export class AppService {
                   );
                   responses.push(toolCallMessage);
                 } else if (progress.type === StreamingEventType.TOOL_END) {
+                  const resultContent = getToolResultContent(
+                    progress.content.tool,
+                    progress.content.output
+                  );
                   const toolResultMessage: Partial<ChatMessage> = {
                     conversationId: conversation.id,
                     senderId: persona.id,
                     senderName: persona.name,
                     recipientId: [profile.id],
                     recipientName: [profile.profileName],
-                    content: `✅ Tool result (${progress.content.tool}):\n${typeof progress.content.output === 'string'
-                        ? progress.content.output
-                        : JSON.stringify(progress.content.output, null, 2)
-                      }`,
+                    content: `✓ ${resultContent}`,
                     timestamp: new Date(),
                     type: 'system',
                   };
@@ -366,6 +397,26 @@ export class AppService {
                     )
                   );
                   responses.push(toolResultMessage);
+                } else if (
+                  progress.type === StreamingEventType.RESPONSE_START
+                ) {
+                  const responseStartMessage: Partial<ChatMessage> = {
+                    conversationId: conversation.id,
+                    senderId: persona.id,
+                    senderName: persona.name,
+                    recipientId: [profile.id],
+                    recipientName: [profile.profileName],
+                    content: '📝 Generating response...',
+                    timestamp: new Date(),
+                    type: 'system',
+                  };
+                  await firstValueFrom(
+                    this.chatCollectorService.send(
+                      { cmd: ChatCommands.POST_MESSAGE },
+                      responseStartMessage
+                    )
+                  );
+                  responses.push(responseStartMessage);
                 }
               } catch (err) {
                 this.l.error('Error sending progress update:', err);
@@ -460,27 +511,49 @@ export class AppService {
     conversationId: string,
     persona: PersonaTelosDto,
     profile: ProfileDto,
-    retryCount: number = 0
-  ): Promise<{ success: boolean; result?: unknown; errorMessage?: string; shouldRetry?: boolean }> {
+    retryCount = 0
+  ): Promise<{
+    success: boolean;
+    result?: unknown;
+    errorMessage?: string;
+    shouldRetry?: boolean;
+  }> {
     const MAX_RETRIES = 2;
 
     try {
-      this.l.log(`Attempting to execute tool: ${toolName} (attempt ${retryCount + 1})`);
+      this.l.log(
+        `Attempting to execute tool: ${toolName} (attempt ${retryCount + 1})`
+      );
 
       // Validate parameters first
-      const validation = this.toolValidation.validateToolCall(toolName, parameters);
+      const validation = this.toolValidation.validateToolCall(
+        toolName,
+        parameters
+      );
       if (!validation.isValid) {
-        const errorMsg = `Parameter validation failed: ${validation.errors.join(', ')}`;
+        const errorMsg = `Parameter validation failed: ${validation.errors.join(
+          ', '
+        )}`;
         this.l.warn(errorMsg);
 
         // Send validation error message with suggestions
-        const suggestions = validation.suggestions?.join(' ') || this.toolValidation.generateToolHelpMessage(toolName);
-        await this.sendToolErrorMessage(conversationId, persona, profile, toolName, errorMsg, suggestions, false);
+        const suggestions =
+          validation.suggestions?.join(' ') ||
+          this.toolValidation.generateToolHelpMessage(toolName);
+        await this.sendToolErrorMessage(
+          conversationId,
+          persona,
+          profile,
+          toolName,
+          errorMsg,
+          suggestions,
+          false
+        );
 
         return {
           success: false,
           errorMessage: errorMsg,
-          shouldRetry: false // Don't retry validation errors without parameter changes
+          shouldRetry: false, // Don't retry validation errors without parameter changes
         };
       }
 
@@ -494,19 +567,35 @@ export class AppService {
       if (result.result !== undefined) {
         // Success!
         this.l.log(`Tool ${toolName} executed successfully`);
-        await this.sendToolSuccessMessage(conversationId, persona, profile, toolName, result.result);
+        await this.sendToolSuccessMessage(
+          conversationId,
+          persona,
+          profile,
+          toolName,
+          result.result
+        );
 
         return {
           success: true,
-          result: result.result
+          result: result.result,
         };
       } else {
         // Tool failed, analyze the error
-        const shouldRetry = retryCount < MAX_RETRIES && this.isRetryableError(result.error || '');
+        const shouldRetry =
+          retryCount < MAX_RETRIES && this.isRetryableError(result.error || '');
 
         if (shouldRetry) {
-          this.l.warn(`Tool ${toolName} failed, will retry. Error: ${result.error}`);
-          await this.sendToolRetryMessage(conversationId, persona, profile, toolName, result.error, retryCount + 1);
+          this.l.warn(
+            `Tool ${toolName} failed, will retry. Error: ${result.error}`
+          );
+          await this.sendToolRetryMessage(
+            conversationId,
+            persona,
+            profile,
+            toolName,
+            result.error,
+            retryCount + 1
+          );
 
           // Wait before retry
           await this.sleep(1000 * (retryCount + 1)); // Exponential backoff
@@ -534,7 +623,7 @@ export class AppService {
           return {
             success: false,
             errorMessage: result.error,
-            shouldRetry: false
+            shouldRetry: false,
           };
         }
       }
@@ -566,7 +655,7 @@ export class AppService {
         return {
           success: false,
           errorMessage: error.message,
-          shouldRetry: false
+          shouldRetry: false,
         };
       }
     }
@@ -594,7 +683,10 @@ export class AppService {
     };
 
     await firstValueFrom(
-      this.chatCollectorService.send({ cmd: ChatCommands.POST_MESSAGE }, message)
+      this.chatCollectorService.send(
+        { cmd: ChatCommands.POST_MESSAGE },
+        message
+      )
     );
   }
 
@@ -616,13 +708,18 @@ export class AppService {
       senderName: persona.name,
       recipientId: [profile.id],
       recipientName: [profile.profileName],
-      content: `❌ Tool ${toolName} failed: ${error}\n\n${guidance}${isRetrying ? '\n\nI\'ll try to fix this and retry.' : ''}`,
+      content: `❌ Tool ${toolName} failed: ${error}\n\n${guidance}${
+        isRetrying ? "\n\nI'll try to fix this and retry." : ''
+      }`,
       timestamp: new Date(),
       type: 'system',
     };
 
     await firstValueFrom(
-      this.chatCollectorService.send({ cmd: ChatCommands.POST_MESSAGE }, message)
+      this.chatCollectorService.send(
+        { cmd: ChatCommands.POST_MESSAGE },
+        message
+      )
     );
   }
 
@@ -649,7 +746,10 @@ export class AppService {
     };
 
     await firstValueFrom(
-      this.chatCollectorService.send({ cmd: ChatCommands.POST_MESSAGE }, message)
+      this.chatCollectorService.send(
+        { cmd: ChatCommands.POST_MESSAGE },
+        message
+      )
     );
   }
 
@@ -665,16 +765,16 @@ export class AppService {
       /try again/i,
       /503/,
       /502/,
-      /504/
+      /504/,
     ];
 
-    return retryablePatterns.some(pattern => pattern.test(error));
+    return retryablePatterns.some((pattern) => pattern.test(error));
   }
 
   /**
    * Sleep utility for retry delays
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

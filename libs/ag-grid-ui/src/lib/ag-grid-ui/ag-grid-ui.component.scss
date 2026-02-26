@@ -10,4 +10,25 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: var(--local-background, var(--background, #ffffff));
+  color: var(--local-foreground, var(--foreground, #212121));
+  border: var(--local-border-width, 1px) solid
+    var(--local-border-color, var(--complement, #c0af4b));
+  border-radius: var(--local-border-radius, var(--border-radius-md, 8px));
+  box-shadow: var(--local-shadow, var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.08)));
+  font-family: var(--local-font-family, var(--font-family-base, inherit));
+  transition:
+    box-shadow var(--local-transition-duration, var(--animation-duration-fast, 150ms))
+      var(--local-easing, var(--animation-easing, ease)),
+    border-color var(--local-transition-duration, var(--animation-duration-fast, 150ms))
+      var(--local-easing, var(--animation-easing, ease));
+}
+
+:host([data-personality='minimal']) .ag-grid-wrapper {
+  box-shadow: var(--shadow-none, none);
+}
+
+:host([data-personality='playful']) .ag-grid-wrapper,
+:host([data-personality='bold']) .ag-grid-wrapper {
+  box-shadow: var(--local-shadow, var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.12)));
 }

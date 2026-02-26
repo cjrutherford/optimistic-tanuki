@@ -9,50 +9,72 @@ import {
   Inject,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { NavigationEnd, RouterModule } from '@angular/router';
 import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { Observable, Subscription, filter } from 'rxjs';
 import { map, shareReplay, startWith } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 import { AuthStateService } from './state/auth-state.service';
 import {
   AppBarComponent,
   NavSidebarComponent,
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
+import { Router } from '@angular/router';
 import { ProfileService } from './profile.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import {
+  ChatUiComponent,
+  ChatContact,
+  ChatConversation,
+  ChatMessage,
+} from '@optimistic-tanuki/chat-ui';
+import {
+  ChatService,
+  ChatConversation as AppChatConversation,
+} from './chat.service';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
   standalone: true,
-  imports: [CommonModule, RouterModule, AppBarComponent, NavSidebarComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    AppBarComponent,
+    NavSidebarComponent,
+    ChatUiComponent,
+  ],
 })
 export class AppComponent implements OnInit, OnDestroy {
-  background!: string;
-  foreground!: string;
-  accent!: string;
-  backgroundGradient!: string;
-
   themeName = signal('light-theme');
   themeService = inject(ThemeService);
   urlSub!: Subscription;
-  themeSub!: Subscription;
 
   public authState = inject(AuthStateService);
   public profileService = inject(ProfileService);
   public currentUrl$!: Observable<string>;
 
+  private chatService = inject(ChatService);
+  private http = inject(HttpClient);
+
   constructor(
     private router: Router,
-    @Inject(PLATFORM_ID) private platformId: object // Injected PLATFORM_ID
+    @Inject(PLATFORM_ID) private platformId: object
   ) {}
+
   title = 'client-interface';
   isNavExpanded = signal(false);
   isAuthenticated = signal(false);
   selectedProfile = signal<ProfileDto | null>(null);
   navItems = signal<NavItem[]>([]);
+
+  chatContacts: ChatContact[] = [];
+  chatConversations: ChatConversation[] = [];
+  showChat = signal(false);
+  chatInitialized = signal(false);
 
   ngOnInit() {
     this.currentUrl$ = this.router.events.pipe(
@@ -60,14 +82,6 @@ export class AppComponent implements OnInit, OnDestroy {
       map((event: NavigationEnd) => event.urlAfterRedirects),
       startWith(this.router.url)
     );
-
-    // this.urlSub = this.router.events.subscribe((event) => {
-    //   if (event instanceof NavigationEnd && this.router.url !== '/') {
-    //     if (!this.authState.isAuthenticated) {
-    //       this.router.navigate(['/login']);
-    //     }
-    //   }
-    // });
 
     this.authState.isAuthenticated$.subscribe({
       next: (isAuthenticated) => {
@@ -84,33 +98,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.updateNavItems();
     });
 
-    // Initialize theme - only in browser to avoid SSR issues
-    if (isPlatformBrowser(this.platformId)) {
-      // Check if there's a stored palette preference, otherwise use default
-      const currentPalette = this.themeService.getCurrentPalette();
-      if (!currentPalette) {
-        // Set default palette for client-interface
-        this.themeService.setPalette('Ocean Breeze');
-      }
-      // Apply stored or default theme mode
-      this.themeService.setTheme(this.themeService.getTheme());
-    }
-
-    this.themeSub = this.themeService.themeColors$.subscribe(
-      (theme: ThemeColors | undefined) => {
-        if (!theme || !isPlatformBrowser(this.platformId)) return;
-        this.themeName.set(this.themeService.getTheme());
-        this.background = theme.background;
-        this.foreground = theme.foreground;
-        this.accent = theme.accent;
-        this.backgroundGradient = theme.accentGradients['light'];
-      }
-    );
+    // Theme is now automatically initialized by ThemeService with CSS variables
+    console.log('[AppComponent] Theme initialized via ThemeService');
   }
+
   ngOnDestroy() {
-    if (this.themeSub) {
-      this.themeSub.unsubscribe();
-    }
     if (this.urlSub) {
       this.urlSub.unsubscribe();
     }
@@ -135,9 +127,14 @@ export class AppComponent implements OnInit, OnDestroy {
           isActive: currentUrl === '/feed',
         },
         {
-          label: 'Tasks',
-          action: () => this.navigateTo('/tasks'),
-          isActive: currentUrl === '/tasks',
+          label: 'Messages',
+          action: () => this.navigateTo('/messages'),
+          isActive: currentUrl === '/messages',
+        },
+        {
+          label: 'Communities',
+          action: () => this.navigateTo('/communities'),
+          isActive: currentUrl.startsWith('/communities'),
         },
         {
           label: 'Forum',
@@ -159,6 +156,7 @@ export class AppComponent implements OnInit, OnDestroy {
         {
           label: 'Register',
           action: () => this.navigateTo('/register'),
+          isActive: currentUrl === '/register',
         },
       ]);
     }
@@ -172,6 +170,145 @@ export class AppComponent implements OnInit, OnDestroy {
     console.log(`Navigating to ${path}`);
     this.router.navigate([path]);
     this.isNavExpanded.set(false);
+  }
+
+  toggleChat() {
+    this.showChat.update((v) => !v);
+    if (this.showChat() && !this.chatInitialized()) {
+      this.loadChatData();
+    }
+  }
+
+  async startChatWithUser(otherProfileId: string) {
+    const currentProfile = this.profileService.getCurrentUserProfile();
+    if (!currentProfile) {
+      console.error('No current profile found');
+      return;
+    }
+
+    try {
+      const conversation = await this.chatService.startDirectChat(
+        currentProfile.id,
+        otherProfileId
+      );
+
+      this.showChat.set(true);
+
+      if (!this.chatInitialized()) {
+        await this.loadChatData();
+      }
+
+      const existingContact = this.chatContacts.find(
+        (c) => c.id === conversation.id
+      );
+      if (!existingContact) {
+        const profile = await this.fetchProfile(otherProfileId);
+        this.chatContacts = [
+          ...this.chatContacts,
+          {
+            id: conversation.id,
+            name: profile?.profileName || 'Unknown',
+            profilePic: profile?.profilePic,
+          },
+        ];
+
+        this.chatConversations = [
+          ...this.chatConversations,
+          {
+            id: conversation.id,
+            participants: conversation.participants,
+            messages: [],
+            createdAt: conversation.createdAt,
+            updatedAt: conversation.updatedAt,
+          },
+        ];
+      }
+
+      this.openChat(conversation.id);
+    } catch (err) {
+      console.error('Failed to start chat:', err);
+    }
+  }
+
+  async openChat(conversationId: string) {
+    const contact = this.chatContacts.find((c) => c.id === conversationId);
+    if (contact) {
+      this.openChat(contact.id);
+    }
+  }
+
+  private async fetchProfile(profileId: string): Promise<ProfileDto | null> {
+    try {
+      return await firstValueFrom(
+        this.http.get<ProfileDto>(`/api/profile/${profileId}`)
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  async loadChatData() {
+    const profile = this.profileService.getCurrentUserProfile();
+    if (!profile) return;
+
+    try {
+      const conversations: AppChatConversation[] =
+        await this.chatService.getConversations(profile.id);
+
+      const allParticipantIds = new Set<string>();
+      conversations.forEach((c) => {
+        c.participants.forEach((p) => allParticipantIds.add(p));
+      });
+
+      const participantIds = Array.from(allParticipantIds);
+      if (participantIds.length === 0) {
+        this.chatContacts = [];
+        this.chatConversations = this.mapConversations(conversations);
+        this.chatInitialized.set(true);
+        return;
+      }
+
+      const profiles = await this.fetchProfiles(participantIds);
+      const profileMap = new Map(profiles.map((p) => [p.id, p]));
+
+      this.chatContacts = conversations.map((conv) => {
+        const otherParticipantId = conv.participants.find(
+          (p) => p !== profile.id
+        );
+        const otherProfile = otherParticipantId
+          ? profileMap.get(otherParticipantId)
+          : null;
+
+        return {
+          id: conv.id,
+          name: otherProfile?.profileName || conv.title || 'Unknown',
+          profilePic: otherProfile?.profilePic,
+        };
+      });
+
+      this.chatConversations = this.mapConversations(conversations);
+      this.chatInitialized.set(true);
+    } catch (err) {
+      console.error('Failed to load chat data:', err);
+    }
+  }
+
+  private mapConversations(
+    conversations: AppChatConversation[]
+  ): ChatConversation[] {
+    return conversations.map((c) => ({
+      id: c.id,
+      participants: c.participants,
+      messages: [],
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    }));
+  }
+
+  private async fetchProfiles(profileIds: string[]): Promise<ProfileDto[]> {
+    return firstValueFrom(
+      this.http.post<ProfileDto[]>('/api/profile/by-ids', { ids: profileIds })
+    ) as Promise<ProfileDto[]>;
   }
 
   loginOutButton() {

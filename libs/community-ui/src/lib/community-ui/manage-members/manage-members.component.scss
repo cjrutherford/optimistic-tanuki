@@ -1,0 +1,363 @@
+// ============================================
+// Manage Members — Personality-Aware Styling
+// ============================================
+
+:host {
+  display: block;
+  font-family: var(--font-body, sans-serif);
+}
+
+.manage-members {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+.header {
+  margin-bottom: var(--spacing-xl);
+
+  h2 {
+    font-family: var(--font-heading, sans-serif);
+    font-size: var(--font-size-xl, 1.5rem);
+    font-weight: 600;
+    margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+    color: var(--local-foreground);
+  }
+
+  .description {
+    font-size: var(--font-size-sm, 0.95rem);
+    color: var(--local-complement);
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+.tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 2px solid var(--local-borderColor);
+}
+
+.tab {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  border: none;
+  font-family: var(--font-body, sans-serif);
+  font-size: var(--font-size-sm, 0.95rem);
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--local-complement);
+  position: relative;
+  transition: color var(--animation-duration-fast, 0.15s) var(--animation-easing, ease);
+
+  &:hover {
+    color: var(--local-foreground);
+  }
+
+  &.active {
+    color: var(--local-accent);
+    font-weight: 600;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--local-accent);
+      border-radius: var(--border-radius-full) var(--border-radius-full) 0 0;
+    }
+  }
+}
+
+.tab-content {
+  min-height: 300px;
+}
+
+.members-list,
+.requests-list,
+.invites-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.member-info,
+.request-info,
+.invite-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  padding: var(--spacing-md);
+  background: var(--local-background);
+  border: var(--border-width, 1px) solid var(--local-borderColor);
+  border-radius: var(--border-radius-md);
+  transition: box-shadow var(--animation-duration-fast, 0.15s) var(--animation-easing, ease);
+
+  &:hover {
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.member-actions,
+.request-actions,
+.invite-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-left: auto;
+}
+
+.member-id,
+.user-id {
+  font-weight: 500;
+  color: var(--local-foreground);
+  font-family: var(--font-body, sans-serif);
+}
+
+.role-badge {
+  font-size: var(--font-size-xs, 0.75rem);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  text-transform: capitalize;
+  font-weight: 500;
+  border: var(--border-width, 1px) solid transparent;
+
+  &.owner {
+    background: var(--local-accent);
+    color: var(--primary-foreground);
+    border-color: var(--local-accent);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &.admin {
+    background: color-mix(in srgb, var(--local-accent) 15%, transparent);
+    color: var(--local-accent);
+    border-color: color-mix(in srgb, var(--local-accent) 30%, transparent);
+  }
+
+  &.moderator {
+    background: color-mix(in srgb, var(--local-complement) 15%, transparent);
+    color: var(--local-complement);
+    border-color: color-mix(in srgb, var(--local-complement) 25%, transparent);
+  }
+
+  &.member {
+    background: color-mix(in srgb, var(--local-foreground) 6%, transparent);
+    color: var(--local-complement);
+    border-color: color-mix(in srgb, var(--local-foreground) 10%, transparent);
+  }
+}
+
+.joined,
+.requested,
+.invited {
+  font-size: var(--font-size-xs, 0.85rem);
+  color: var(--local-complement);
+}
+
+.invite-section {
+  .invite-form {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    align-items: flex-end;
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-xxl);
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid color-mix(in srgb, var(--local-borderColor) 40%, transparent);
+    border-top-color: var(--local-accent);
+    border-radius: 50%;
+    animation: spin var(--animation-duration-normal, 0.8s) linear infinite;
+  }
+}
+
+.error-message {
+  padding: var(--spacing-md);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  border: var(--border-width, 1px) solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm, 0.9rem);
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--local-complement);
+  font-size: var(--font-size-md, 1rem);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ── Personality Category Overrides ──
+
+// Minimal: no row borders, flat badges
+:host-context([data-personality="minimal"]) {
+  .member-info, .request-info, .invite-info {
+    border-color: transparent;
+    border-bottom: 1px solid var(--local-borderColor);
+    border-radius: 0;
+    &:hover { box-shadow: none; background: color-mix(in srgb, var(--local-foreground) 2%, transparent); }
+  }
+  .role-badge {
+    border-radius: var(--border-radius-sm);
+    &.owner { box-shadow: none; }
+  }
+}
+
+// Elegant: refined row hover, gradient owner badge
+:host-context([data-personality="elegant"]) {
+  .member-info, .request-info, .invite-info {
+    &:hover {
+      background: color-mix(in srgb, var(--local-accent) 3%, var(--local-background));
+    }
+  }
+  .role-badge.owner {
+    background: linear-gradient(
+      135deg,
+      var(--local-accent),
+      color-mix(in srgb, var(--local-accent) 80%, var(--local-complement))
+    );
+  }
+  .tabs { border-bottom-color: color-mix(in srgb, var(--local-accent) 15%, transparent); }
+  .header h2 { letter-spacing: 0.01em; }
+}
+
+// Bold: thick row accent, heavy badge shadows
+:host-context([data-personality="bold"]) {
+  .member-info, .request-info, .invite-info {
+    border-left: 4px solid transparent;
+    box-shadow: var(--shadow-sm);
+    &:hover { border-left-color: var(--local-accent); box-shadow: var(--shadow-md); }
+  }
+  .role-badge {
+    font-weight: 700;
+    &.owner { box-shadow: var(--shadow-md); }
+  }
+  .tab.active::after { height: 3px; }
+  .header h2 { font-weight: 800; }
+}
+
+// Playful: rounded rows, gradient badges, bouncy hover
+:host-context([data-personality="playful"]) {
+  .member-info, .request-info, .invite-info {
+    border-radius: var(--border-radius-xl);
+    &:hover { transform: translateX(4px); box-shadow: var(--shadow-md); }
+  }
+  .role-badge {
+    border-radius: var(--border-radius-full);
+    &.owner {
+      background: linear-gradient(135deg, var(--local-accent), var(--local-complement));
+    }
+    &.admin {
+      background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--local-accent) 20%, transparent),
+        color-mix(in srgb, var(--local-complement) 15%, transparent)
+      );
+    }
+  }
+  .tab.active::after {
+    background: linear-gradient(90deg, var(--local-accent), var(--local-complement));
+    border-radius: var(--border-radius-full);
+  }
+}
+
+// Electric: glow hover on rows, neon badge borders
+:host-context([data-personality="electric"]) {
+  .member-info, .request-info, .invite-info {
+    &:hover {
+      box-shadow: var(--shadow-sm), 0 0 12px color-mix(in srgb, var(--local-accent) 12%, transparent);
+      border-color: color-mix(in srgb, var(--local-accent) 40%, transparent);
+    }
+  }
+  .role-badge.owner {
+    box-shadow: 0 0 8px color-mix(in srgb, var(--local-accent) 30%, transparent);
+  }
+}
+
+// Soft & Soft Touch: no hard borders, wash backgrounds
+:host-context([data-personality="soft"]),
+:host-context([data-personality="soft-touch"]) {
+  .member-info, .request-info, .invite-info {
+    border: none;
+    background: color-mix(in srgb, var(--local-background) 95%, var(--local-accent));
+    border-radius: var(--border-radius-xl);
+    &:hover { box-shadow: var(--shadow-sm); }
+  }
+  .tabs {
+    border-bottom: none;
+    background: color-mix(in srgb, var(--local-borderColor) 20%, transparent);
+    border-radius: var(--border-radius-full);
+    padding: var(--spacing-xs);
+  }
+  .tab {
+    border-radius: var(--border-radius-full);
+    &.active {
+      background: var(--local-background);
+      box-shadow: var(--shadow-sm);
+      &::after { display: none; }
+    }
+  }
+  .role-badge { border-radius: var(--border-radius-full); border: none; }
+  .error-message {
+    border: none;
+    background: color-mix(in srgb, var(--danger) 8%, var(--local-background));
+    border-radius: var(--border-radius-lg);
+  }
+}
+
+// Technical: sharp rows, monospace badges, dense layout
+:host-context([data-personality="architect"]),
+:host-context([data-personality="control-center"]),
+:host-context([data-personality="foundation"]) {
+  .member-info, .request-info, .invite-info {
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  .role-badge {
+    border-radius: var(--border-radius-sm);
+    font-family: var(--font-mono, monospace);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .header h2 {
+    text-transform: uppercase;
+    font-size: var(--font-size-md, 1rem);
+    letter-spacing: 0.05em;
+  }
+  .tab.active::after { border-radius: 0; }
+  .error-message {
+    border-radius: var(--border-radius-sm);
+    border-left: 3px solid var(--danger);
+  }
+}
+
+:host-context([data-personality="architect"]) {
+  .member-info, .request-info, .invite-info {
+    box-shadow: var(--shadow-md);
+    &:hover { box-shadow: var(--shadow-lg); }
+  }
+}
+
+:host-context([data-personality="control-center"]) {
+  .member-info, .request-info, .invite-info {
+    box-shadow: none;
+    border: 1px solid var(--local-borderColor);
+  }
+}

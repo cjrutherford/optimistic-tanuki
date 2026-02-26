@@ -20,6 +20,7 @@ import {
 import { Injectable } from '@angular/core';
 import { AuthStateService } from './auth-state.service';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { ThemeService, FontLoadingService } from '@optimistic-tanuki/theme-lib';
 
 @Injectable()
 class AppScopeInterceptor implements HttpInterceptor {
@@ -81,6 +82,8 @@ export const appConfig: ApplicationConfig = {
     {
       provide: API_BASE_URL,
       useValue: '/api',
-    }
+    },
+    ThemeService,
+    FontLoadingService,
   ],
 };

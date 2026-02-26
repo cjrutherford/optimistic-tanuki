@@ -134,6 +134,56 @@ export class RoleInitService {
       }
     }
 
+    // For client-interface scope, also create community permissions in social scope
+    if (item.scopeName === 'client-interface') {
+      const communityPermissions = item.permissions?.filter((p) =>
+        p.name.startsWith('community.')
+      );
+      if (communityPermissions?.length) {
+        try {
+          const socialScopeForPerms = await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: AppScopeCommands.GetByName },
+              { name: 'social' }
+            )
+          ).catch(() => null);
+
+          if (socialScopeForPerms?.id) {
+            for (const p of communityPermissions) {
+              const socialPayload = {
+                name: p.name,
+                description: p.description || '',
+                resource: p.resource,
+                action: p.action,
+                targetId: socialScopeForPerms.id,
+              };
+              try {
+                await firstValueFrom(
+                  this.permissionsClient.send(
+                    { cmd: PermissionCommands.Create },
+                    socialPayload
+                  )
+                );
+                this.logger.debug(
+                  `Created community permission ${p.name} in social scope`
+                );
+              } catch (e) {
+                this.logger.debug(
+                  `Permission.Create failed for ${p.name} in social scope`,
+                  (e as { message: string })?.message || e
+                );
+              }
+            }
+          }
+        } catch (e) {
+          this.logger.debug(
+            `Failed to create community permissions in social scope`,
+            (e as { message: string })?.message || e
+          );
+        }
+      }
+    }
+
     // 3) create roles and attach permissions
     const createdRoles: Record<string, any> = {};
     for (const r of item.roles || []) {
@@ -299,14 +349,15 @@ export class RoleInitService {
 
       // Default cross-scope mapping: when initializing roles for the
       // client-interface scope, ensure that profiles which receive the
-      // "client_interface_user" role also get that role assigned in
+      // "client_interface_user" or "community_user" role also get that role assigned in
       // the "social" app scope. This makes social routes callable by
       // default for client-interface users without requiring
       // controller-specific mapping logic.
       if (
         item.scopeName === 'client-interface' &&
         a.profileId &&
-        a.roleName === 'client_interface_user'
+        (a.roleName === 'client_interface_user' ||
+          a.roleName === 'community_owner')
       ) {
         try {
           if (!socialScope) {
@@ -332,7 +383,7 @@ export class RoleInitService {
             );
           } else {
             this.logger.debug(
-              'RoleInitService: social app scope not found; skipping client_interface_user -> social mapping'
+              `RoleInitService: social app scope not found; skipping ${a.roleName} -> social mapping`
             );
           }
         } catch (e) {

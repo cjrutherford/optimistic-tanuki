@@ -1,10 +1,11 @@
 # ag-grid-ui
 
-A theme-aware AG Grid wrapper component for the Optimistic Tanuki workspace. This library provides an AG Grid integration that automatically adapts to the application's theme using the ThemeService.
+A theme-aware and personality-aware AG Grid wrapper component for the Optimistic Tanuki workspace. This library provides an AG Grid integration that automatically adapts to the application's theme and personality using the ThemeService.
 
 ## Features
 
 - 🎨 **Theme-aware styling**: Automatically integrates with the application's ThemeService
+- 🧬 **Personality-aware styling**: Adapts spacing, radius, typography, and shadow behavior from the active personality
 - ⚙️ **Reasonable defaults**: Pre-configured with pagination, sorting, and filtering
 - 📦 **Easy to use**: Simple input bindings for common use cases
 - 🛠️ **Utility functions**: Helper functions for creating common column types

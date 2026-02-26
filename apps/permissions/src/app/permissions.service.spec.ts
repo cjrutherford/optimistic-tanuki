@@ -13,18 +13,19 @@ const mockPermissionsRepository = () => ({
   create: jest.fn(),
   save: jest.fn(),
   findOne: jest.fn(),
-  find: jest.fn(),
+  find: jest.fn().mockResolvedValue([]),
   update: jest.fn(),
   delete: jest.fn(),
 });
 
 const mockRoleAssignmentRepository = () => ({
-  find: jest.fn(),
+  find: jest.fn().mockResolvedValue([]),
 });
 
 describe('PermissionsService', () => {
   let service: PermissionsService;
   let repository: Repository<Permission>;
+  let roleAssignmentsRepository: Repository<RoleAssignment>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -44,6 +45,9 @@ describe('PermissionsService', () => {
     service = module.get<PermissionsService>(PermissionsService);
     repository = module.get<Repository<Permission>>(
       getRepositoryToken(Permission)
+    );
+    roleAssignmentsRepository = module.get<Repository<RoleAssignment>>(
+      getRepositoryToken(RoleAssignment)
     );
   });
 
@@ -127,6 +131,36 @@ describe('PermissionsService', () => {
       await service.deletePermission('1');
 
       expect(repository.delete).toHaveBeenCalledWith('1');
+    });
+  });
+
+  describe('searchPermissions', () => {
+    it('should search and return matching permissions', async () => {
+      const permission = new Permission();
+      permission.name = 'test:read';
+      const assignment = { roleId: '1', role: { id: '1' } } as any;
+
+      jest
+        .spyOn(roleAssignmentsRepository, 'find')
+        .mockResolvedValue([assignment]);
+      jest.spyOn(repository, 'find').mockResolvedValue([permission]);
+
+      const result = await service.searchPermissions('test', 'profile1');
+
+      expect(result).toContain('test:read');
+      expect(roleAssignmentsRepository.find).toHaveBeenCalledWith({
+        where: { profileId: 'profile1' },
+        relations: ['role'],
+      });
+      expect(repository.find).toHaveBeenCalled();
+    });
+
+    it('should return empty array when no permissions match', async () => {
+      jest.spyOn(roleAssignmentsRepository, 'find').mockResolvedValue([]);
+
+      const result = await service.searchPermissions('nonexistent', 'profile1');
+
+      expect(result).toEqual([]);
     });
   });
 });

@@ -6,6 +6,7 @@ import { MCPToolExecutor } from './mcp-tool-executor';
 import { ModelInitializerService } from './model-initializer.service';
 import { WorkflowControlService } from './workflow-control.service';
 import { SystemPromptBuilder } from './system-prompt-builder.service';
+import { ToolFactory } from './tool-factory.service';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatOllama } from '@langchain/ollama';
 import { of } from 'rxjs';
@@ -31,7 +32,7 @@ jest.mock('@langchain/core/tools', () => ({
 const mockMsg = (role: string, content: string, additional: any = {}) => ({
   content,
   _getType: () => role,
-  ...additional
+  ...additional,
 });
 
 describe('LangChainAgentService', () => {
@@ -88,13 +89,17 @@ describe('LangChainAgentService', () => {
         {
           provide: ModelInitializerService,
           useValue: {
-            getModelConfig: jest.fn().mockReturnValue({ name: 'mock-model', temperature: 0.7 }),
+            getModelConfig: jest
+              .fn()
+              .mockReturnValue({ name: 'mock-model', temperature: 0.7 }),
           },
         },
         {
           provide: WorkflowControlService,
           useValue: {
-            extractThinkingTokens: jest.fn().mockReturnValue({ thinking: [], cleanContent: 'content' }),
+            extractThinkingTokens: jest
+              .fn()
+              .mockReturnValue({ thinking: [], cleanContent: 'content' }),
             filterThinkingTokens: jest.fn((content) => content),
           },
         },
@@ -103,10 +108,18 @@ describe('LangChainAgentService', () => {
           useValue: {
             buildSystemPrompt: jest.fn().mockResolvedValue({
               template: {
-                formatMessages: jest.fn().mockResolvedValue([{ content: 'System prompt' }]),
+                formatMessages: jest
+                  .fn()
+                  .mockResolvedValue([{ content: 'System prompt' }]),
               },
               variables: {},
             }),
+          },
+        },
+        {
+          provide: ToolFactory,
+          useValue: {
+            createTools: jest.fn().mockResolvedValue([]),
           },
         },
       ],
@@ -116,7 +129,9 @@ describe('LangChainAgentService', () => {
     toolsService = module.get<ToolsService>(ToolsService);
     mcpExecutor = module.get<MCPToolExecutor>(MCPToolExecutor);
     systemPromptBuilder = module.get<SystemPromptBuilder>(SystemPromptBuilder);
-    workflowControl = module.get<WorkflowControlService>(WorkflowControlService);
+    workflowControl = module.get<WorkflowControlService>(
+      WorkflowControlService
+    );
   });
 
   afterEach(() => {
@@ -128,10 +143,88 @@ describe('LangChainAgentService', () => {
   });
 
   describe('initializeAgent', () => {
+    let toolFactory: { createTools: jest.Mock };
+
+    beforeEach(() => {
+      toolFactory = {
+        createTools: jest.fn().mockResolvedValue([]),
+      };
+    });
+
     it('should initialize agent with tools', async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          LangChainAgentService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn((key) => {
+                if (key === 'ollama') return { host: 'localhost', port: 11434 };
+                return null;
+              }),
+            },
+          },
+          {
+            provide: ToolsService,
+            useValue: {
+              listTools: jest.fn().mockResolvedValue([]),
+            },
+          },
+          {
+            provide: MCPToolExecutor,
+            useValue: {
+              executeToolCall: jest.fn(),
+            },
+          },
+          {
+            provide: ModelInitializerService,
+            useValue: {
+              getModelConfig: jest
+                .fn()
+                .mockReturnValue({ name: 'mock-model', temperature: 0.7 }),
+            },
+          },
+          {
+            provide: WorkflowControlService,
+            useValue: {
+              extractThinkingTokens: jest
+                .fn()
+                .mockReturnValue({ thinking: [], cleanContent: 'content' }),
+              filterThinkingTokens: jest.fn((content) => content),
+            },
+          },
+          {
+            provide: SystemPromptBuilder,
+            useValue: {
+              buildSystemPrompt: jest.fn().mockResolvedValue({
+                template: {
+                  formatMessages: jest
+                    .fn()
+                    .mockResolvedValue([{ content: 'System prompt' }]),
+                },
+                variables: {},
+              }),
+            },
+          },
+          {
+            provide: ToolFactory,
+            useValue: toolFactory,
+          },
+        ],
+      }).compile();
+
+      service = module.get<LangChainAgentService>(LangChainAgentService);
+      toolsService = module.get<ToolsService>(ToolsService);
+      mcpExecutor = module.get<MCPToolExecutor>(MCPToolExecutor);
+      systemPromptBuilder =
+        module.get<SystemPromptBuilder>(SystemPromptBuilder);
+      workflowControl = module.get<WorkflowControlService>(
+        WorkflowControlService
+      );
+
       await service.initializeAgent('user-123', 'conv-123');
 
-      expect(toolsService.listTools).toHaveBeenCalled();
+      expect(toolFactory.createTools).toHaveBeenCalled();
       expect(createReactAgent).toHaveBeenCalled();
       expect(service.isInitialized()).toBe(true);
     });
@@ -139,39 +232,39 @@ describe('LangChainAgentService', () => {
     it('should not re-initialize if already initialized', async () => {
       await service.initializeAgent('user-123', 'conv-123');
       const callCount = (createReactAgent as jest.Mock).mock.calls.length;
-      
+
       await service.initializeAgent('user-123', 'conv-123');
       expect((createReactAgent as jest.Mock).mock.calls.length).toBe(callCount);
     });
 
     it('should handle tool normalization with various schema types', async () => {
-        (toolsService.listTools as jest.Mock).mockResolvedValue([
-            {
-                name: 'complex_tool',
-                description: 'Complex',
-                inputSchema: {
-                    type: 'object',
-                    properties: { 
-                        userId: { type: 'string' },
-                        metadata: { type: 'object' },
-                        tags: { type: 'array', items: { type: 'string' } }
-                    }
-                }
-            }
-        ]);
+      toolFactory.createTools.mockResolvedValue([
+        {
+          name: 'complex_tool',
+          description: 'Complex',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              userId: { type: 'string' },
+              metadata: { type: 'object' },
+              tags: { type: 'array', items: { type: 'string' } },
+            },
+          },
+        },
+      ]);
 
-        await service.initializeAgent('user-123', 'conv-123');
-        expect(createReactAgent).toHaveBeenCalled();
+      await service.initializeAgent('user-123', 'conv-123');
+      expect(createReactAgent).toHaveBeenCalled();
     });
   });
 
   describe('reset', () => {
     it('should reset initialization state', async () => {
-        await service.initializeAgent('user-123', 'conv-123');
-        expect(service.isInitialized()).toBe(true);
-        
-        service.reset();
-        expect(service.isInitialized()).toBe(false);
+      await service.initializeAgent('user-123', 'conv-123');
+      expect(service.isInitialized()).toBe(true);
+
+      service.reset();
+      expect(service.isInitialized()).toBe(false);
     });
   });
 
@@ -216,8 +309,10 @@ describe('LangChainAgentService', () => {
 
       const mockState = {
         messages: [
-          mockMsg('ai', '<think>Thinking...</think>Response', { tool_calls: [] })
-        ]
+          mockMsg('ai', '<think>Thinking...</think>Response', {
+            tool_calls: [],
+          }),
+        ],
       };
 
       async function* generator() {
@@ -235,18 +330,22 @@ describe('LangChainAgentService', () => {
         onProgress
       );
 
-      expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'thinking',
-        content: expect.objectContaining({ text: 'Thinking...' })
-      }));
+      expect(onProgress).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'thinking',
+          content: expect.objectContaining({ text: 'Thinking...' }),
+        })
+      );
     });
 
     it('should detect and report tool calls', async () => {
-      const toolCall = { name: 'create_project', args: { name: 'Test' }, id: 'call_1' };
+      const toolCall = {
+        name: 'create_project',
+        args: { name: 'Test' },
+        id: 'call_1',
+      };
       const mockState = {
-        messages: [
-          mockMsg('ai', '', { tool_calls: [toolCall] })
-        ]
+        messages: [mockMsg('ai', '', { tool_calls: [toolCall] })],
       };
 
       async function* generator() {
@@ -264,77 +363,86 @@ describe('LangChainAgentService', () => {
         onProgress
       );
 
-      expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'tool_start',
-        content: { tool: 'create_project', input: { name: 'Test' } }
-      }));
+      expect(onProgress).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'tool_start',
+          content: { tool: 'create_project', input: { name: 'Test' } },
+        })
+      );
     });
 
     it('should handle tool outputs', async () => {
-        // Mock a tool output message
-        const toolOutputMsg = mockMsg('tool', 'Success', {
-            name: 'create_project',
-            tool_call_id: 'call_1'
-        });
+      // Mock a tool output message
+      const toolOutputMsg = mockMsg('tool', 'Success', {
+        name: 'create_project',
+        tool_call_id: 'call_1',
+      });
 
-        const mockState = {
-            messages: [
-                mockMsg('ai', '', { tool_calls: [{ id: 'call_1', name: 'create_project', args: {} }] }),
-                toolOutputMsg
-            ]
-        };
+      const mockState = {
+        messages: [
+          mockMsg('ai', '', {
+            tool_calls: [{ id: 'call_1', name: 'create_project', args: {} }],
+          }),
+          toolOutputMsg,
+        ],
+      };
 
-        async function* generator() {
-            yield mockState;
-        }
-        mockAgentStream.mockReturnValue(generator());
+      async function* generator() {
+        yield mockState;
+      }
+      mockAgentStream.mockReturnValue(generator());
 
-        const onProgress = jest.fn();
-        const result = await service.executeAgent(
-            'Create project',
-            [],
-            mockProfile,
-            mockPersona,
-            undefined,
-            onProgress
-        );
+      const onProgress = jest.fn();
+      const result = await service.executeAgent(
+        'Create project',
+        [],
+        mockProfile,
+        mockPersona,
+        undefined,
+        onProgress
+      );
 
-        expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({
-            type: 'tool_end',
-            content: { tool: 'create_project', output: 'Success' }
-        }));
-        
-        expect(result.toolCalls).toHaveLength(1);
-        expect(result.toolCalls[0].output).toBe('Success');
+      expect(onProgress).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'tool_end',
+          content: expect.objectContaining({
+            tool: 'create_project',
+            output: 'Success',
+          }),
+        })
+      );
+
+      expect(result.toolCalls).toHaveLength(1);
+      expect(result.toolCalls[0].output).toBe('Success');
     });
 
     it('should fallback to manual JSON parsing if no tool calls detected but JSON in output', async () => {
-        // Simulate model outputting JSON instead of tool call
-        const jsonOutput = `Here is the JSON: { "name": "create_project", "arguments": { "name": "Manual" } }`;
-        const mockState = {
-            messages: [
-                mockMsg('ai', jsonOutput, { tool_calls: [] })
-            ]
-        };
+      // Simulate model outputting JSON instead of tool call
+      const jsonOutput = `Here is the JSON: { "name": "create_project", "arguments": { "name": "Manual" } }`;
+      const mockState = {
+        messages: [mockMsg('ai', jsonOutput, { tool_calls: [] })],
+      };
 
-        async function* generator() {
-            yield mockState;
-        }
-        mockAgentStream.mockReturnValue(generator());
-        
-        (mcpExecutor.executeToolCall as jest.Mock).mockResolvedValue({ result: 'Manual Success' });
+      async function* generator() {
+        yield mockState;
+      }
+      mockAgentStream.mockReturnValue(generator());
 
-        const result = await service.executeAgent(
-            'Create project manually',
-            [],
-            mockProfile,
-            mockPersona
-        );
+      (mcpExecutor.executeToolCall as jest.Mock).mockResolvedValue({
+        result: 'Manual Success',
+      });
 
-        expect(mcpExecutor.executeToolCall).toHaveBeenCalled();
-        expect(result.toolCalls).toHaveLength(1);
-        expect(result.toolCalls[0].tool).toBe('create_project');
-        expect(result.output).toContain('I\'ve executed the create_project tool');
+      const result = await service.executeAgent(
+        'Create project manually',
+        [],
+        mockProfile,
+        mockPersona
+      );
+
+      expect(mcpExecutor.executeToolCall).toHaveBeenCalled();
+      expect(result.toolCalls).toHaveLength(1);
+      expect(result.toolCalls[0].tool).toBe('create_project');
+      expect(result.output).toContain("I've executed the create_project tool");
     });
   });
 });

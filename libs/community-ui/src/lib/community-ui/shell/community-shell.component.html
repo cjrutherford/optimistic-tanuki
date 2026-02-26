@@ -1,0 +1,83 @@
+<div class="community-shell" [class.sidebar-collapsed]="sidebarCollapsed()">
+  <aside class="groups-sidebar">
+    <div class="sidebar-header">
+      <h2>My Groups</h2>
+      <button
+        class="toggle-btn"
+        (click)="toggleSidebar()"
+        [attr.aria-label]="
+          sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'
+        "
+      >
+        <span class="toggle-icon">{{ sidebarCollapsed() ? '→' : '←' }}</span>
+      </button>
+    </div>
+
+    @if (!sidebarCollapsed()) {
+    <div class="groups-list">
+      @if (userCommunities().length === 0) {
+      <p class="no-groups">You haven't joined any groups yet.</p>
+      } @else { @for (community of userCommunities(); track community.id) {
+      <button class="group-item" (click)="navigateToCommunity(community.id)">
+        @if (community.logoUrl || community.logoAssetId) {
+        <img
+          [src]="community.logoUrl || '/api/asset/' + community.logoAssetId"
+          alt=""
+          class="community-logo"
+        />
+        }
+        <div class="group-info">
+          <span class="group-name">{{ community.name }}</span>
+          <span class="member-count">{{ community.memberCount }} members</span>
+        </div>
+      </button>
+      } }
+    </div>
+    }
+  </aside>
+
+  <div class="main-content">
+    <header class="community-header">
+      <h1>Communities</h1>
+      <p class="subtitle">Find, create, and manage your communities</p>
+    </header>
+
+    <nav class="community-nav">
+      <button
+        class="nav-tab"
+        [class.active]="activeTab() === 'find'"
+        (click)="onFindCommunities()"
+      >
+        Find Communities
+      </button>
+      <button
+        class="nav-tab"
+        [class.active]="activeTab() === 'create'"
+        (click)="onCreateCommunity()"
+      >
+        Create Community
+      </button>
+      <button
+        class="nav-tab"
+        [class.active]="activeTab() === 'manage'"
+        (click)="onManageGroups()"
+      >
+        My Groups
+      </button>
+    </nav>
+
+    <main class="community-content">
+      <router-outlet></router-outlet>
+    </main>
+
+    @if (error()) {
+    <div class="error-message">
+      {{ error() }}
+    </div>
+    } @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+    </div>
+    }
+  </div>
+</div>

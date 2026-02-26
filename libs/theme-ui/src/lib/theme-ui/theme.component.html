@@ -20,5 +20,25 @@
         (change)="updateAccentColor()"
       />
     </div>
+    <div class="personality-selector">
+      <button
+        class="personality-trigger"
+        type="button"
+        (click)="togglePersonalityPicker()"
+        [class.active]="showPersonalityPicker"
+        aria-label="Select personality"
+      >
+        <span class="personality-current">
+          {{ currentPersonality?.name || 'Classic' }}
+        </span>
+        <span class="personality-icon">⚙</span>
+      </button>
+    </div>
   </form>
 </div>
+
+<!-- CDK Overlay backdrop styling -->
+<div
+  class="cdk-overlay-backdrop personality-picker-backdrop"
+  *ngIf="showPersonalityPicker"
+></div>

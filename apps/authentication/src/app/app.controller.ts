@@ -210,4 +210,25 @@ export class AppController {
       throw new RpcException(e);
     }
   }
+
+  @MessagePattern({ cmd: AuthCommands.Logout })
+  async logout(@Payload() data: { token: string }) {
+    try {
+      const missingFields = validateRequiredFields<{ token: string }>(data, [
+        'token',
+      ]);
+      if (missingFields.length > 0) {
+        throw new RpcException(
+          `Missing required fields: ${missingFields.join(' ')}`
+        );
+      }
+      const { token } = data;
+      return await this.appService.logout(token);
+    } catch (e) {
+      if (e instanceof RpcException) {
+        throw e;
+      }
+      throw new RpcException(e);
+    }
+  }
 }

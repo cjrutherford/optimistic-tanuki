@@ -3,8 +3,13 @@ import { BlogComponentController } from './blog-component.controller';
 import { ClientProxy } from '@nestjs/microservices';
 import { Logger } from '@nestjs/common';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
-import { CreateBlogComponentDto, UpdateBlogComponentDto } from '@optimistic-tanuki/models';
+import {
+  CreateBlogComponentDto,
+  UpdateBlogComponentDto,
+} from '@optimistic-tanuki/models';
 import { of } from 'rxjs';
+import { JwtService } from '@nestjs/jwt';
+import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 
 describe('BlogComponentController', () => {
   let controller: BlogComponentController;
@@ -15,6 +20,10 @@ describe('BlogComponentController', () => {
     userId: 'user-1',
     username: 'testuser',
     email: 'test@example.com',
+    exp: 1234567890,
+    iat: 1234567800,
+    name: 'Test User',
+    profileId: 'profile-1',
   };
 
   const mockComponent = {
@@ -42,9 +51,36 @@ describe('BlogComponentController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BlogComponentController],
       providers: [
+        JwtService,
+        {
+          provide: PermissionsCacheService,
+          useValue: {
+            get: jest.fn().mockResolvedValue(null),
+            set: jest.fn().mockResolvedValue(undefined),
+            delete: jest.fn().mockResolvedValue(undefined),
+          },
+        },
         {
           provide: ServiceTokens.BLOG_SERVICE,
           useValue: mockClientProxy,
+        },
+        {
+          provide: ServiceTokens.AUTHENTICATION_SERVICE,
+          useValue: {
+            send: jest.fn().mockReturnValue(of({ isValid: true })),
+          },
+        },
+        {
+          provide: ServiceTokens.PERMISSIONS_SERVICE,
+          useValue: {
+            send: jest.fn().mockReturnValue(of({})),
+          },
+        },
+        {
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: {
+            send: jest.fn().mockReturnValue(of({})),
+          },
         },
         {
           provide: Logger,
@@ -54,7 +90,9 @@ describe('BlogComponentController', () => {
     }).compile();
 
     controller = module.get<BlogComponentController>(BlogComponentController);
-    clientProxy = module.get<ClientProxy>(ServiceTokens.BLOG_SERVICE) as jest.Mocked<ClientProxy>;
+    clientProxy = module.get<ClientProxy>(
+      ServiceTokens.BLOG_SERVICE
+    ) as jest.Mocked<ClientProxy>;
     logger = module.get<Logger>(Logger) as jest.Mocked<Logger>;
   });
 
@@ -140,7 +178,10 @@ describe('BlogComponentController', () => {
     it('should delete a blog component', async () => {
       clientProxy.send.mockReturnValue(of(undefined));
 
-      const result = await controller.deleteBlogComponent('component-1', mockUser);
+      const result = await controller.deleteBlogComponent(
+        'component-1',
+        mockUser
+      );
 
       expect(result).toBeUndefined();
       expect(clientProxy.send).toHaveBeenCalledWith(
@@ -154,7 +195,10 @@ describe('BlogComponentController', () => {
     it('should delete all components for a post', async () => {
       clientProxy.send.mockReturnValue(of(undefined));
 
-      const result = await controller.deleteComponentsByPost('post-1', mockUser);
+      const result = await controller.deleteComponentsByPost(
+        'post-1',
+        mockUser
+      );
 
       expect(result).toBeUndefined();
       expect(clientProxy.send).toHaveBeenCalledWith(

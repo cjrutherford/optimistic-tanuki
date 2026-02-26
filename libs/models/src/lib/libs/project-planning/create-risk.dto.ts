@@ -46,7 +46,7 @@ export class CreateRiskDto {
   })
   @IsString()
   @IsUUID()
-  riskOwner: string;
+  riskOwner!: string;
 
   @ApiProperty({
     description:
@@ -54,7 +54,7 @@ export class CreateRiskDto {
   })
   @IsString()
   @IsUUID()
-  projectId: string;
+  projectId!: string;
 
   @ApiProperty({
     description: 'Name of the risk',
@@ -63,25 +63,25 @@ export class CreateRiskDto {
   @IsString()
   @MinLength(3)
   @MaxLength(200)
-  name: string;
+  name!: string;
 
   @ApiProperty({ description: 'Description of the risk' })
   @IsString()
   @MinLength(10)
   @MaxLength(5000)
-  description: string;
+  description!: string;
 
   @ApiProperty({ description: 'Impact level of the risk', enum: RiskImpact })
   @IsEnum(RiskImpact)
-  impact: RiskImpact;
+  impact!: RiskImpact;
 
   @ApiProperty({ description: 'Likelihood of the risk', enum: RiskLikelihood })
   @IsEnum(RiskLikelihood)
-  likelihood: RiskLikelihood;
+  likelihood!: RiskLikelihood;
 
   @ApiProperty({ description: 'Current status of the risk', enum: RiskStatus })
   @IsEnum(RiskStatus)
-  status: RiskStatus;
+  status!: RiskStatus;
 
   @ApiPropertyOptional({ description: 'Mitigation plan for the risk' })
   @IsOptional()

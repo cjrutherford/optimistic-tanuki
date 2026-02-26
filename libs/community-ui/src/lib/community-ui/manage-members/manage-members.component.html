@@ -1,0 +1,160 @@
+<div class="manage-members">
+  <div class="header">
+    <otui-button variant="secondary" routerLink="/communities/manage">
+      Back to My Groups
+    </otui-button>
+
+    @if (community()) {
+    <h2>Manage: {{ community()!.name }}</h2>
+    <p class="description">{{ community()!.description }}</p>
+    }
+  </div>
+
+  @if (loading()) {
+  <div class="loading">
+    <div class="spinner"></div>
+  </div>
+  } @if (error()) {
+  <div class="error-message">
+    {{ error() }}
+  </div>
+  }
+
+  <div class="tabs">
+    <button
+      class="tab"
+      [class.active]="activeTab() === 'members'"
+      (click)="setTab('members')"
+    >
+      Members ({{ members().length }})
+    </button>
+    <button
+      class="tab"
+      [class.active]="activeTab() === 'requests'"
+      (click)="setTab('requests')"
+    >
+      Pending Requests ({{ pendingRequests().length }})
+    </button>
+    <button
+      class="tab"
+      [class.active]="activeTab() === 'invites'"
+      (click)="setTab('invites')"
+    >
+      Invites ({{ pendingInvites().length }})
+    </button>
+  </div>
+
+  <div class="tab-content">
+    @if (activeTab() === 'members') {
+    <div class="members-list">
+      @for (member of members(); track member.id) {
+      <otui-card class="member-card">
+        <div class="member-info">
+          @if (member.profile) {
+          <img
+            [src]="member.profile.profilePic || '/assets/default-avatar.png'"
+            alt="Profile"
+            class="member-avatar"
+          />
+          <span class="member-name">{{
+            member.profile.profileName || member.profile.name || member.userId
+          }}</span>
+          } @else {
+          <span class="member-id">{{ member.userId }}</span>
+          }
+          <span class="role-badge" [class]="getRoleBadgeClass(member.role)">
+            {{ member.role }}
+          </span>
+          <span class="joined">
+            Joined: {{ member.joinedAt | date : 'short' }}
+          </span>
+        </div>
+
+        @if (isAdmin() && member.role !== 'owner') {
+        <div class="member-actions">
+          <otui-button variant="secondary" (action)="appointAsManager(member)">
+            Appoint Manager
+          </otui-button>
+          <otui-button variant="danger" (action)="removeMember(member)">
+            Remove
+          </otui-button>
+        </div>
+        }
+      </otui-card>
+      } @if (members().length === 0) {
+      <div class="empty-state">
+        <p>No members yet.</p>
+      </div>
+      }
+    </div>
+    } @if (activeTab() === 'requests') {
+    <div class="requests-list">
+      @for (request of pendingRequests(); track request.id) {
+      <otui-card class="request-card">
+        <div class="request-info">
+          <span class="user-id">{{ request.userId }}</span>
+          <span class="requested">
+            Requested: {{ request.joinedAt | date : 'short' }}
+          </span>
+        </div>
+
+        @if (isAdmin()) {
+        <div class="request-actions">
+          <otui-button variant="primary" (action)="approveRequest(request)">
+            Approve
+          </otui-button>
+          <otui-button variant="danger" (action)="rejectRequest(request)">
+            Reject
+          </otui-button>
+        </div>
+        }
+      </otui-card>
+      } @if (pendingRequests().length === 0) {
+      <div class="empty-state">
+        <p>No pending requests.</p>
+      </div>
+      }
+    </div>
+    } @if (activeTab() === 'invites') {
+    <div class="invite-section">
+      @if (isAdmin()) {
+      <div class="invite-form">
+        <lib-text-input
+          [formControl]="inviteControl"
+          placeholder="Enter user ID to invite"
+        >
+        </lib-text-input>
+        <otui-button variant="primary" (action)="inviteUser()">
+          Send Invite
+        </otui-button>
+      </div>
+      }
+
+      <div class="invites-list">
+        @for (invite of pendingInvites(); track invite.id) {
+        <otui-card class="invite-card">
+          <div class="invite-info">
+            <span class="user-id">{{ invite.inviteeId }}</span>
+            <span class="invited">
+              Invited: {{ invite.createdAt | date : 'short' }}
+            </span>
+          </div>
+
+          @if (isAdmin()) {
+          <div class="invite-actions">
+            <otui-button variant="danger" (action)="cancelInvite(invite)">
+              Cancel
+            </otui-button>
+          </div>
+          }
+        </otui-card>
+        } @if (pendingInvites().length === 0) {
+        <div class="empty-state">
+          <p>No pending invites.</p>
+        </div>
+        }
+      </div>
+    </div>
+    }
+  </div>
+</div>

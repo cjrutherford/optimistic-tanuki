@@ -6,5 +6,5 @@ import { IsUUID } from 'class-validator';
 export class UpdateTimerDto extends PartialType(CreateTimerDto) {
   @ApiProperty({ description: 'Timer ID' })
   @IsUUID()
-  id: string;
+  id!: string;
 }

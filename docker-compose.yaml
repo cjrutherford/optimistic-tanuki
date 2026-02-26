@@ -146,6 +146,8 @@ services:
         condition: service_started
       forum:
         condition: service_started
+      wellness:
+        condition: service_started
 
   profile:
     container_name: ot_profile
@@ -220,6 +222,8 @@ services:
       dockerfile: ./apps/assets/Dockerfile
     ports:
       - '3005:3005'
+    volumes:
+      - assets_storage:/usr/src/app/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -374,5 +378,29 @@ services:
       - app-configurator
       - app-configurator-seed
 
+  wellness:
+    container_name: ot_wellness
+    build:
+      context: .
+      dockerfile: ./apps/wellness/Dockerfile
+    ports:
+      - '3016:3016'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  d6:
+    container_name: ot_d6
+    build:
+      context: .
+      dockerfile: ./apps/d6/Dockerfile
+    ports:
+      - '8086:4000'
+    depends_on:
+      - gateway
+
 volumes:
   postgres_data:
+  assets_storage:

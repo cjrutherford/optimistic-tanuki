@@ -40,6 +40,9 @@ export type PermissionsCacheConfig = {
 
 export type Config = {
   listenPort: number;
+  auth?: {
+    jwtSecret?: string;
+  };
   permissions?: {
     cache?: PermissionsCacheConfig;
   };
@@ -64,9 +67,15 @@ export const loadConfig = (): Config => {
   const fileContents = fs.readFileSync(configPath, 'utf8');
   const config = yaml.load(fileContents) as Config;
 
-  // Support environment variable overrides
   if (process.env.LISTEN_PORT) {
     config.listenPort = parseInt(process.env.LISTEN_PORT, 10);
+  }
+
+  if (process.env.JWT_SECRET) {
+    config.auth = {
+      ...config.auth,
+      jwtSecret: process.env.JWT_SECRET,
+    };
   }
 
   const serviceKeys = Object.keys(config.services) as Array<

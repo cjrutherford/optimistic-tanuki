@@ -1,18 +1,60 @@
+/* Responsive attachment grid with theme variables */
+.attachments-container {
+  margin: var(--spacing-sm, 8px);
+  padding: var(--spacing-sm, 8px);
+  font-family: var(
+    --font-body,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif
+  );
+}
+
 .attachment-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
+  gap: var(--spacing-sm, 8px);
+
+  /* Mobile: 2 columns */
+  grid-template-columns: repeat(2, 1fr);
+
+  /* Tablet: 4 columns */
+  @media (min-width: 641px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* Desktop: 6 columns */
+  @media (min-width: 1025px) {
+    grid-template-columns: repeat(6, 1fr);
+  }
 }
 
 .attachment-item {
-  border: 1px solid #ccc;
-  padding: 10px;
+  border: 1px solid var(--complement, #c0af4b);
+  padding: var(--spacing-sm, 8px);
   text-align: center;
+  border-radius: var(--border-radius-md, 4px);
+  background-color: var(--background, #ffffff);
+  transition: all 0.15s ease-in-out;
+
+  &:hover {
+    border-color: var(--accent, #3f51b5);
+    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent, #3f51b5);
+    outline-offset: 2px;
+  }
 }
-.attachments-container {
-  margin: 10px;
-  padding: 10px;
-}
+
 .attachment-input {
-  margin: 10px;
+  margin: var(--spacing-sm, 8px);
+
+  &:focus-visible {
+    outline: 2px solid var(--accent, #3f51b5);
+    outline-offset: 2px;
+  }
 }

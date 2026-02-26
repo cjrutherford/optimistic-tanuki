@@ -1,64 +1,275 @@
+// ============================================
+// Personality-Driven Post Component
+// Uses application personality CSS variables
+// ============================================
+
+@use '../../styles/mixins' as *;
+
 .post-container {
-  margin: 20px;
-  padding: 20px;
   width: 100%;
-  .post-header {
+  box-sizing: border-box;
+  font-family: var(--font-body, system-ui);
+
+  ::ng-deep .post-header {
     display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 10px;
-    .title {
-      font-weight: bold;
+    flex-direction: column;
+    gap: var(--spacing-sm, 8px);
+    padding-bottom: var(--spacing-md, 12px);
+    border-bottom: var(--border-width, 2px) solid
+      color-mix(in srgb, var(--primary) 20%, transparent);
+
+    .post-profile {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm, 12px);
+
+      .profile-name {
+        font-family: var(--font-heading, system-ui);
+        font-weight: 600;
+        font-size: 1.125rem;
+        color: var(--foreground);
+      }
+
+      .community-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs, 6px);
+        padding: var(--spacing-xs, 4px) var(--spacing-sm, 12px);
+        background: var(--primary-gradient, var(--primary));
+        color: var(--primary-foreground, #fff);
+        border-radius: var(--border-radius-full, 9999px);
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: var(--spacing-xs, 4px);
+        box-shadow: var(--shadow-md);
+        animation: social-pulse 3s ease-in-out infinite;
+
+        .community-logo {
+          width: 16px;
+          height: 16px;
+          border-radius: 4px;
+          object-fit: cover;
+        }
+
+        .community-name {
+          white-space: nowrap;
+        }
+      }
     }
+
+    .title {
+      font-family: var(--font-heading, system-ui, sans-serif);
+      font-weight: 700;
+      font-size: 1.375rem;
+      color: var(--foreground, #1f2937);
+      line-height: 1.3;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
     .subtitle {
-      font-size: 0.9em;
-      color: var(--foreground-color);
+      font-size: 0.875rem;
+      color: var(--muted-foreground, #9ca3af);
+      font-weight: 500;
     }
   }
 
   .content {
-    margin-top: 10px;
-    font-size: 1.2em;
-    color: var(--foreground-color);
-    line-height: 1.5;
+    margin-top: 16px;
+    font-size: 1rem;
+    color: var(--foreground, #374151);
+    line-height: 1.7;
     word-break: break-word;
     display: grid;
+    gap: 20px;
+
+    grid-template-areas:
+      'content'
+      'attachment'
+      'link'
+      'actions';
+    grid-template-columns: 1fr;
+
+    .post-content {
+      grid-area: content;
+      padding: 12px 0;
+
+      ::ng-deep {
+        p {
+          margin: 0 0 12px 0;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+
+        img {
+          max-width: 100%;
+          height: auto;
+          border-radius: var(--border-radius-md, 16px);
+          border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
+          box-shadow: var(--shadow-md, 0 4px 20px color-mix(in srgb, var(--primary) 15%, transparent));
+        }
+
+        a {
+          color: var(--primary);
+          text-decoration: none;
+          font-weight: 500;
+          border-bottom: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
+          transition: all 200ms ease;
+
+          &:hover {
+            border-bottom-style: solid;
+            border-bottom-color: var(--secondary);
+            color: var(--secondary);
+          }
+        }
+      }
+    }
+
+    .post-attachment {
+      grid-area: attachment;
+
+      h3 {
+        font-family: var(--font-heading, system-ui, sans-serif);
+        font-size: 0.8125rem;
+        color: var(--primary);
+        margin: 0 0 8px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        border-radius: var(--border-radius-md, 16px);
+        border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
+        transition: all 300ms var(--animation-easing, ease);
+
+        &:hover {
+          transform: scale(1.02);
+          box-shadow: var(--shadow-lg, 0 8px 30px color-mix(in srgb, var(--primary) 20%, transparent));
+        }
+      }
+    }
+
+    .post-link {
+      grid-area: link;
+
+      h3 {
+        font-family: var(--font-heading, system-ui, sans-serif);
+        font-size: 0.8125rem;
+        color: var(--primary);
+        margin: 0 0 8px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+      }
+
+      a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 200ms ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        &::before {
+          content: '→';
+          transition: transform 200ms ease;
+        }
+
+        &:hover {
+          color: var(--secondary);
+          transform: translateX(4px);
+
+          &::before {
+            transform: translateX(-4px);
+          }
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--primary);
+          outline-offset: 3px;
+          border-radius: 4px;
+        }
+      }
+    }
+
+    .actions {
+      grid-area: actions;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding-top: 16px;
+      border-top: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+    }
+  }
+}
+
+// Tablet: Two column layout
+@media (min-width: 641px) {
+  .post-container .content {
+    grid-template-areas:
+      'content content'
+      'attachment link'
+      'actions actions';
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+// Desktop: Four column layout
+@media (min-width: 1025px) {
+  .post-container .content {
     grid-template-areas:
       'content content content content'
       'attachment attachment link link'
       'actions actions actions actions';
-    .post-content {
-      grid-area: content;
-      margin: 10px 0;
-      padding-bottom: 30px;
-      border-bottom: 2px solid var(--accent-shade-darken-50);
-    }
-    .post-attachment {
-      grid-area: attachment;
-      margin: 10px 0;
-      img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 10px;
-      }
-    }
-    .post-link {
-      grid-area: link;
-      margin: 10px 0;
-      a {
-        color: var(--link-color);
-        text-decoration: none;
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-    }
-    .actions {
-      grid-area: actions;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-    }
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+// Post card variant
+.post-container.electric-card {
+  background: var(--card, linear-gradient(180deg, var(--background) 0%, color-mix(in srgb, var(--primary) 5%, var(--background)) 100%));
+  border-radius: var(--border-radius-lg, 20px);
+  padding: 24px;
+  border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
+  box-shadow: var(--shadow-md, 0 8px 32px color-mix(in srgb, var(--primary) 10%, transparent));
+  transition: all 300ms var(--animation-easing, ease);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary) 60%, transparent);
+    box-shadow: var(--shadow-lg, 0 12px 48px color-mix(in srgb, var(--primary) 20%, transparent));
+    transform: translateY(-2px);
+  }
+}
+
+// Highlight animation for new posts
+.post-container.new-post {
+  animation: social-shimmer 2s ease-in-out;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary), var(--tertiary, var(--secondary)));
+    border-radius: 20px 20px 0 0;
+  }
+}
+
+// Action buttons styling
+.post-container .actions {
+  ::ng-deep button {
+    @include social-vote-button;
   }
 }

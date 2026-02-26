@@ -15,11 +15,11 @@ export class CreateResourceDto {
   @IsString()
   @MinLength(1)
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @ApiProperty({ description: 'Resource type', example: 'room' })
   @IsString()
-  type: string; // 'room', 'equipment', 'vehicle', 'other'
+  type!: string; // 'room', 'equipment', 'vehicle', 'other'
 
   @ApiPropertyOptional({ description: 'Resource description' })
   @IsString()

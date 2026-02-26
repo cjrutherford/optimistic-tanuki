@@ -141,6 +141,7 @@ export class RolesService {
       profileId: assignRoleDto.profileId,
       appScope,
       role,
+      targetId: assignRoleDto.targetId,
     });
 
     return await this.roleAssignmentsRepository.save(assignment);
@@ -148,6 +149,43 @@ export class RolesService {
 
   async unassignRole(assignmentId: string): Promise<void> {
     await this.roleAssignmentsRepository.delete(assignmentId);
+  }
+
+  async findRoleAssignment(
+    profileId: string,
+    roleId: string,
+    appScopeId: string,
+    targetId?: string
+  ): Promise<RoleAssignment | null> {
+    const queryBuilder = this.roleAssignmentsRepository
+      .createQueryBuilder('assignment')
+      .leftJoinAndSelect('assignment.role', 'role')
+      .leftJoinAndSelect('assignment.appScope', 'appScope')
+      .where('assignment.profileId = :profileId', { profileId })
+      .andWhere('assignment.roleId = :roleId', { roleId })
+      .andWhere('assignment.appScopeId = :appScopeId', { appScopeId });
+
+    if (targetId) {
+      queryBuilder.andWhere('assignment.targetId = :targetId', { targetId });
+    } else {
+      queryBuilder.andWhere('assignment.targetId IS NULL');
+    }
+
+    return await queryBuilder.getOne();
+  }
+
+  async unassignRoleByTarget(
+    profileId: string,
+    roleId: string,
+    appScopeId: string,
+    targetId: string
+  ): Promise<void> {
+    await this.roleAssignmentsRepository.delete({
+      profileId,
+      roleId,
+      appScopeId,
+      targetId,
+    });
   }
 
   async getUserRoles(

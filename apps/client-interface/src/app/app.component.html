@@ -1,7 +1,4 @@
-<div
-  class="container"
-  [ngStyle]="{ background: backgroundGradient, color: foreground }"
->
+<div class="container">
   <otui-app-bar
     appTitle="Optimistic Tanuki"
     logoSrc="assets/tanuki.jpg"
@@ -20,7 +17,24 @@
   >
   </otui-nav-sidebar>
 
-  <div class="content">
+  <main class="content">
     <router-outlet></router-outlet>
+  </main>
+
+  @if (isAuthenticated()) {
+  <div class="chat-floating-button" (click)="toggleChat()">
+    <span class="chat-icon">💬</span>
+    @if (!showChat()) {
+    <span class="chat-label">Messages</span>
+    }
   </div>
+
+  @if (showChat()) {
+  <div class="chat-panel">
+    <lib-chat-ui
+      [contacts]="chatContacts"
+      [conversations]="chatConversations"
+    ></lib-chat-ui>
+  </div>
+  } }
 </div>

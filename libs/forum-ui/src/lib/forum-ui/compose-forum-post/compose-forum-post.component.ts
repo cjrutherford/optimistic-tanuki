@@ -8,7 +8,11 @@ import {
   inject,
   forwardRef,
 } from '@angular/core';
-import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import {
+  FormsModule,
+  ControlValueAccessor,
+  NG_VALUE_ACCESSOR,
+} from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -21,9 +25,16 @@ import { TiptapEditorDirective } from 'ngx-tiptap';
 import DOMPurify from 'dompurify';
 
 import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
-import { TextInputComponent, SelectComponent } from '@optimistic-tanuki/form-ui';
+import {
+  TextInputComponent,
+  SelectComponent,
+} from '@optimistic-tanuki/form-ui';
 import { RichTextToolbarComponent } from '@optimistic-tanuki/social-ui';
-import { Themeable, ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import {
+  Themeable,
+  ThemeService,
+  ThemeColors,
+} from '@optimistic-tanuki/theme-lib';
 import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
 
 import { TopicDto, ThreadDto } from '../models';
@@ -71,7 +82,10 @@ export class ComposeForumPostComponent
   @Input() profileId?: string; // Profile ID for asset uploads
   @Output() postSubmitted = new EventEmitter<ForumPostData>();
   @Output() topicCreated = new EventEmitter<string>();
-  @Output() threadCreated = new EventEmitter<{ title: string; topicId: string }>();
+  @Output() threadCreated = new EventEmitter<{
+    title: string;
+    topicId: string;
+  }>();
 
   override readonly themeService: ThemeService = inject(ThemeService);
   private imageUploadService = inject(ImageUploadService);
@@ -85,9 +99,31 @@ export class ComposeForumPostComponent
   tags: string[] = [];
   newTag = '';
   isDragOver = false;
-  
+
   showNewTopicInput = false;
   showNewThreadInput = false;
+
+  get topicOptions() {
+    const options: { value: string; label: string }[] = [
+      { value: '', label: 'Select Topic' },
+    ];
+    for (const topic of this.availableTopics) {
+      options.push({ value: topic.id, label: topic.title });
+    }
+    options.push({ value: 'new', label: '+ Create New Topic' });
+    return options;
+  }
+
+  get threadOptions() {
+    const options: { value: string; label: string }[] = [
+      { value: '', label: 'Select Thread' },
+    ];
+    for (const thread of this.availableThreads) {
+      options.push({ value: thread.id, label: thread.title });
+    }
+    options.push({ value: 'new', label: '+ Create New Thread' });
+    return options;
+  }
 
   // Control Value Accessor methods
   private onChange = (value: string) => {};
@@ -171,8 +207,24 @@ export class ComposeForumPostComponent
   private sanitize(input: string): string {
     return DOMPurify.sanitize(input, {
       ALLOWED_TAGS: [
-        'p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'ul', 'ol', 'li', 'a', 'blockquote', 'code', 'pre'
+        'p',
+        'br',
+        'strong',
+        'em',
+        'u',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'ul',
+        'ol',
+        'li',
+        'a',
+        'blockquote',
+        'code',
+        'pre',
       ],
       ALLOWED_ATTR: ['href', 'target', 'class'],
     });
@@ -181,12 +233,14 @@ export class ComposeForumPostComponent
   onTopicChange(topicId: string): void {
     this.selectedTopicId = topicId;
     this.showNewTopicInput = topicId === 'new';
-    
+
     // Filter threads for selected topic
     if (topicId && topicId !== 'new') {
-      this.availableThreads = this.availableThreads.filter(t => t.topicId === topicId);
+      this.availableThreads = this.availableThreads.filter(
+        (t) => t.topicId === topicId
+      );
     }
-    
+
     // Reset thread selection
     this.selectedThreadId = '';
     this.showNewThreadInput = false;
@@ -214,7 +268,9 @@ export class ComposeForumPostComponent
   }
 
   onToolbarImageUploadClick(): void {
-    const fileInput = document.getElementById('forumImageInput') as HTMLInputElement;
+    const fileInput = document.getElementById(
+      'forumImageInput'
+    ) as HTMLInputElement;
     if (fileInput) {
       fileInput.click();
     }
@@ -290,10 +346,10 @@ export class ComposeForumPostComponent
     }
 
     const files = Array.from(e.dataTransfer.files);
-    
+
     // Filter for image files only
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+
     if (imageFiles.length === 0) {
       alert('Please drop image files only');
       return;
@@ -363,7 +419,7 @@ export class ComposeForumPostComponent
     this.newTag = '';
     this.showNewTopicInput = false;
     this.showNewThreadInput = false;
-    
+
     if (this.editor) {
       this.editor.commands.setContent('');
     }

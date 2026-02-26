@@ -13,6 +13,7 @@ export * from './lib/extensions/component-injection.extension';
 export * from './lib/components/component-selector.component';
 export * from './lib/components/property-editor.component';
 export * from './lib/components/component-wrapper.component';
+export * from './lib/components/component-editor-wrapper.component';
 
 // Example Components
 export * from './lib/components/example-components/callout-box.component';

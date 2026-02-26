@@ -10,15 +10,16 @@ import { ChatOllama } from '@langchain/ollama';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { DynamicStructuredTool } from '@langchain/core/tools';
-import { BaseMessage, AIMessage } from '@langchain/core/messages';
+import { BaseMessage, AIMessage, HumanMessage } from '@langchain/core/messages';
 import { ConfigService } from '@nestjs/config';
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ToolsService } from './tools.service';
 import { z } from 'zod';
 import { ModelInitializerService } from './model-initializer.service';
 import { WorkflowControlService } from './workflow-control.service';
-import { StreamingEventType } from './streaming-events';
+import { StreamingEvent, StreamingEventType } from './streaming-events';
 import { SystemPromptBuilder } from './system-prompt-builder.service';
+import { ToolFactory } from './tool-factory.service';
 import { PersonaTelosDto, ProfileDto } from '@optimistic-tanuki/models';
 
 export interface AgentExecutionResult {
@@ -48,7 +49,8 @@ export class LangChainAgentService {
     private readonly config: ConfigService,
     private readonly modelInitializer: ModelInitializerService,
     private readonly workflowControl: WorkflowControlService,
-    private readonly systemPromptBuilder: SystemPromptBuilder
+    private readonly systemPromptBuilder: SystemPromptBuilder,
+    private readonly toolFactory: ToolFactory
   ) {
     this.initializeAgentModel();
   }
@@ -116,238 +118,18 @@ export class LangChainAgentService {
    * Create LangChain tools from MCP tools
    */
   private async createTools(): Promise<DynamicStructuredTool[]> {
-    const mcpTools = await this.toolsService.listTools();
-    const tools: DynamicStructuredTool[] = [];
-
-    for (const mcpTool of mcpTools) {
-      try {
-        // Convert JSON Schema to Zod schema
-        const zodSchema = this.jsonSchemaToZod(mcpTool.inputSchema);
-
-        // Create LangChain tool
-        const tool = new DynamicStructuredTool({
-          name: mcpTool.name,
-          description: mcpTool.description || `Tool: ${mcpTool.name}`,
-          schema: zodSchema,
-          func: async (input: Record<string, unknown>, runManager, config) => {
-            const userId = config?.configurable?.userId;
-            const conversationId = config?.configurable?.conversationId;
-
-            if (!userId) {
-              throw new Error('User ID not found in tool config');
-            }
-
-            // Inject userId/profileId into parameters
-            // Ensure profileId is mapped from userId if not present
-            const enrichedInput = {
-              ...input,
-              userId: (input.userId as string) || userId,
-              profileId:
-                (input.profileId as string) ||
-                (input.userId as string) ||
-                userId,
-              createdBy: (input.createdBy as string) || userId,
-            };
-
-            this.logger.log(
-              `Agent calling tool: ${mcpTool.name} with params:`,
-              JSON.stringify(enrichedInput, null, 2)
-            );
-
-            try {
-              // Create ToolCall object matching the expected format
-              const toolCall: any = {
-                id: `call_${Date.now()}_${Math.random()
-                  .toString(36)
-                  .substring(7)}`,
-                type: 'function' as const,
-                function: {
-                  name: mcpTool.name,
-                  arguments: JSON.stringify(enrichedInput),
-                },
-              };
-
-              const context: any = {
-                userId,
-                profileId: userId,
-                conversationId,
-                timestamp: new Date(),
-              };
-
-              const result = await this.mcpExecutor.executeToolCall(
-                toolCall,
-                context
-              );
-
-              return JSON.stringify(result.result || result, null, 2);
-            } catch (error) {
-              this.logger.error(
-                `Tool ${mcpTool.name} execution failed: ${error.message}`
-              );
-
-              // Return a structured error message to the agent so it can retry
-              if (
-                error.message.includes('required property') ||
-                error.message.includes('validation failed')
-              ) {
-                return `Error: Validation failed or missing required parameter. Please check the tool definition using 'list_tools' and try again with the correct parameters. Details: ${error.message}`;
-              }
-
-              return `Error executing ${mcpTool.name}: ${error.message}`;
-            }
-          },
-        });
-
-        tools.push(tool);
-        this.logger.log(`Successfully added tool: ${mcpTool.name}`);
-      } catch (error) {
-        this.logger.warn(
-          `Failed to convert tool ${mcpTool.name}: ${error.message}`
-        );
-      }
+    this.logger.log('Creating tools via ToolFactory...');
+    try {
+      const tools = await this.toolFactory.createTools({
+        userId: '',
+        conversationId: undefined,
+      });
+      this.logger.log(`ToolFactory returned ${tools.length} tools`);
+      return tools;
+    } catch (error) {
+      this.logger.error(`ToolFactory.createTools failed: ${error.message}`);
+      return [];
     }
-
-    // Define list_tools as a standalone variable first
-    const listToolsTool = new DynamicStructuredTool({
-      name: 'list_tools',
-      description:
-        'List all available tools with their descriptions and parameters. Shows exact parameter names, types, required/optional status, and valid enum values.',
-      schema: z.object({}),
-      func: async () => {
-        const toolsList = mcpTools.map((t) => {
-          const params = t.inputSchema?.properties
-            ? Object.entries(t.inputSchema.properties)
-              .map(([name, schema]: [string, any]) => {
-                const required = t.inputSchema.required?.includes(name)
-                  ? '**[REQUIRED]**'
-                  : '[optional]';
-
-                // Extract type info
-                let typeInfo = schema.type || 'any';
-
-                // Extract and display enum values if present
-                const enumValues = schema.enum
-                  ? ` (values: ${schema.enum.join(', ')})`
-                  : '';
-
-                const description = schema.description || 'No description';
-
-                return `  - ${name} (${typeInfo})${enumValues} ${required}: ${description}`;
-              })
-              .join('\n')
-            : '  No parameters';
-
-          return `### ${t.name}\n${t.description || 'No description'}\n**Parameters:**\n${params}`;
-        });
-
-        return `Available tools:\n\n${toolsList.join('\n\n')}`;
-      },
-    });
-
-    // Return only prioritized tools to keep context small and focused
-    const prioritizedTools = [
-      'create_project',
-      'list_projects',
-      'query_projects',
-      'create_task',
-      'create_risk',
-      'create_change',
-      'list_tools',
-    ];
-
-    // Filter tools to only include prioritized ones
-    const filteredTools = [listToolsTool, ...tools].filter((t) =>
-      prioritizedTools.includes(t.name)
-    );
-
-    const sortedTools = filteredTools.sort((a, b) => {
-      const indexA = prioritizedTools.indexOf(a.name);
-      const indexB = prioritizedTools.indexOf(b.name);
-      return indexA - indexB;
-    });
-
-    this.logger.log(
-      `Created ${sortedTools.length} focused LangChain tools: ${sortedTools
-        .map((t) => t.name)
-        .join(', ')}`
-    );
-    return sortedTools as any[];
-  }
-
-  /**
-   * Convert JSON Schema to Zod schema (simplified)
-   */
-  private jsonSchemaToZod(schema: any): z.ZodObject<any> {
-    if (!schema || !schema.properties) {
-      return z.object({});
-    }
-
-    const shape: Record<string, z.ZodTypeAny> = {};
-
-    for (const [key, prop] of Object.entries(schema.properties)) {
-      const property = prop as any;
-      let zodType: z.ZodTypeAny;
-
-      // Handle enums FIRST - they have higher specificity than base types
-      if (property.enum && Array.isArray(property.enum) && property.enum.length > 0) {
-        zodType = z.enum(property.enum as [string, ...string[]]);
-        if (property.description) {
-          zodType = zodType.describe(property.description);
-        }
-      } else {
-        switch (property.type) {
-          case 'string':
-            zodType = z.string();
-            if (property.description) {
-              zodType = zodType.describe(property.description);
-            }
-            break;
-          case 'number':
-          case 'integer':
-            zodType = z.number();
-            if (property.description) {
-              zodType = zodType.describe(property.description);
-            }
-            break;
-          case 'boolean':
-            zodType = z.boolean();
-            if (property.description) {
-              zodType = zodType.describe(property.description);
-            }
-            break;
-          case 'array':
-            zodType = z.array(z.any());
-            if (property.description) {
-              zodType = zodType.describe(property.description);
-            }
-            break;
-          case 'object':
-            zodType = z.record(z.any());
-            if (property.description) {
-              zodType = zodType.describe(property.description);
-            }
-            break;
-          default:
-            zodType = z.any();
-        }
-      }
-
-      // Handle required vs optional
-      // Automatically make context fields optional as they are injected
-      const autoInjectedFields = ['userId', 'profileId', 'createdBy'];
-      const isRequired =
-        schema.required &&
-        schema.required.includes(key) &&
-        !autoInjectedFields.includes(key);
-
-      if (!isRequired) {
-        zodType = zodType.optional();
-      }
-
-      shape[key] = zodType;
-    }
-
-    return z.object(shape);
   }
 
   /**
@@ -360,38 +142,79 @@ export class LangChainAgentService {
     profile: ProfileDto,
     persona: PersonaTelosDto,
     conversationId?: string,
-    onProgress?: (data: {
-      type: 'tool_start' | 'tool_end' | 'log' | 'thinking';
-      content: any;
-    }) => Promise<void> | void
+    onProgress?: (data: StreamingEvent) => Promise<void> | void
   ): Promise<AgentExecutionResult> {
     if (!this.initialized || !this.agent) {
       throw new Error('Agent not initialized. Call initializeAgent first.');
     }
 
+    const emitEvent = async (type: StreamingEventType, content: any) => {
+      if (onProgress) {
+        try {
+          await onProgress({
+            type,
+            content,
+            timestamp: new Date(),
+          });
+        } catch (err) {
+          this.logger.warn(`Progress callback error: ${err.message}`);
+        }
+      }
+    };
+
+    const emitToolStart = async (toolName: string, input: unknown) => {
+      await emitEvent(StreamingEventType.TOOL_START, { tool: toolName, input });
+    };
+
+    const emitToolEnd = async (toolName: string, output: unknown) => {
+      await emitEvent(StreamingEventType.TOOL_END, {
+        tool: toolName,
+        output,
+        success: true,
+      });
+    };
+
+    const emitThinking = async (text: string, raw: string) => {
+      await emitEvent(StreamingEventType.THINKING, { text, raw });
+    };
+
     try {
       this.logger.log(`Executing agent for user ${profile.id}`);
-      if (onProgress)
-        await onProgress({
-          type: 'log',
-          content: `Starting agent execution for user ${profile.id}`,
-        });
+      this.logger.log(`LLM available: ${!!this.llm}`);
 
+      // Quick health check - test LLM connection
+      try {
+        this.logger.log('Testing LLM connection...');
+        const testResult = await this.llm.invoke([new HumanMessage('hi')]);
+        this.logger.log(`LLM test successful`);
+      } catch (llmError) {
+        this.logger.error(
+          `LLM test failed: ${llmError.message}. Continuing anyway...`
+        );
+      }
+
+      await emitEvent(
+        StreamingEventType.MESSAGE,
+        `Starting agent execution for user ${profile.id}`
+      );
+
+      this.logger.log(`Building system prompt for persona: ${persona.name}`);
       // Build system prompt using the centralized builder
       // This ensures we get the "OPERATIONAL PROTOCOLS" and anti-regurgitation instructions
-      const { template, variables } = await this.systemPromptBuilder.buildSystemPrompt(
-        {
-          personaId: persona.id,
-          profileId: profile.id,
-          // We could extract projectId from chatHistory/input if we had that logic here,
-          // but for now we rely on the builder's defaults or basic profile context.
-        },
-        {
-          includeTools: true, // Agent always needs tools
-          includeExamples: false, // Keep it leaner for agent
-          // Agent mode specific flags could be added to builder if needed
-        }
-      );
+      const { template, variables } =
+        await this.systemPromptBuilder.buildSystemPrompt(
+          {
+            personaId: persona.id,
+            profileId: profile.id,
+            // We could extract projectId from chatHistory/input if we had that logic here,
+            // but for now we rely on the builder's defaults or basic profile context.
+          },
+          {
+            includeTools: true, // Agent always needs tools
+            includeExamples: false, // Keep it leaner for agent
+            // Agent mode specific flags could be added to builder if needed
+          }
+        );
 
       const systemMessages = await template.formatMessages(variables);
       // systemMessages is an array of BaseMessage (usually 1 SystemMessage)
@@ -411,14 +234,21 @@ export class LangChainAgentService {
       };
 
       // Use stream to get intermediate steps
+      // Emit response start - in agent mode, this indicates the agent is processing
+      await emitEvent(StreamingEventType.RESPONSE_START, {
+        mode: 'tool_calling',
+      });
+
+      this.logger.log('Calling agent.stream()...');
       const stream = await this.agent.stream(inputs, {
-        streamMode: 'values',
+        streamMode: ['values', 'messages'],
         configurable: {
           userId: profile.id,
           conversationId,
         },
-        recursionLimit: 15, // Prevent infinite loops
+        recursionLimit: 15,
       });
+      this.logger.log('Agent stream created, starting iteration...');
 
       let finalState: any;
       const toolCalls: Array<{
@@ -426,31 +256,68 @@ export class LangChainAgentService {
         input: unknown;
         output: unknown;
       }> = [];
+      const allMessages: BaseMessage[] = [];
 
       this.logger.log('Starting agent stream loop...');
       for await (const chunk of stream) {
-        this.logger.debug(
-          'Agent stream chunk received'
-        );
-        finalState = chunk;
-        const messages = chunk.messages || [];
-        const lastMessage = messages[messages.length - 1];
+        this.logger.debug('Agent stream chunk received');
+
+        // LangGraph returns tuples when using multiple stream modes: [mode, data]
+        // Example: ['values', { messages: [...] }] or ['messages', AIMessageChunk(...)]
+        let stateChunk: any;
+        let messageChunk: any;
+        let streamMode: string | null = null;
+
+        if (Array.isArray(chunk) && chunk.length === 2) {
+          // Tuple format: [mode, data]
+          streamMode = chunk[0];
+          stateChunk = chunk[1];
+          this.logger.debug(`Stream mode: ${streamMode}`);
+
+          if (streamMode === 'values') {
+            // Full state with messages array
+            finalState = stateChunk;
+            const messages = stateChunk.messages || [];
+            allMessages.push(...messages);
+            this.logger.debug(
+              `Values mode - messages count: ${messages.length}`
+            );
+          } else if (streamMode === 'messages') {
+            // Individual message chunk
+            messageChunk = stateChunk;
+            allMessages.push(messageChunk);
+            this.logger.debug(
+              `Messages mode - message type: ${messageChunk._getType?.() || typeof messageChunk
+              }`
+            );
+          }
+        } else if (chunk && typeof chunk === 'object') {
+          // Single object format (single stream mode)
+          stateChunk = chunk;
+          if (chunk.messages) {
+            finalState = chunk;
+            allMessages.push(...chunk.messages);
+            this.logger.debug(
+              `Single mode - messages: ${chunk.messages.length}`
+            );
+          }
+        } else {
+          this.logger.debug(`Unexpected chunk type: ${typeof chunk}`);
+        }
+
+        // Process message chunk for tool calls and thinking tokens
+        const lastMessage =
+          messageChunk ||
+          finalState?.messages?.[finalState.messages.length - 1];
 
         if (lastMessage) {
-          // Check for thinking tokens in content
           if (lastMessage.content && typeof lastMessage.content === 'string') {
-            const { thinking } = this.workflowControl.extractThinkingTokens(lastMessage.content);
-            if (thinking.length > 0 && onProgress) {
+            const { thinking } = this.workflowControl.extractThinkingTokens(
+              lastMessage.content
+            );
+            if (thinking.length > 0) {
               for (const thinkingText of thinking) {
-                // We might emit duplicates if the stream yields partial updates, 
-                // but 'values' mode usually yields per-node. 
-                // A simple deduplication or just emitting is fine for now as the UI handles it.
-                // For a more robust solution, we'd track emitted tokens.
-                // Assuming per-node yield, we typically get the full message once.
-                await onProgress({
-                  type: StreamingEventType.THINKING as any, // Cast to avoid type issues if onProgress signature isn't updated in this file yet
-                  content: { text: thinkingText, raw: lastMessage.content },
-                });
+                await emitThinking(thinkingText, lastMessage.content);
               }
             }
           }
@@ -459,45 +326,49 @@ export class LangChainAgentService {
           if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
             for (const toolCall of lastMessage.tool_calls) {
               this.logger.log(`Agent detected tool call: ${toolCall.name}`);
-              if (onProgress) {
-                await onProgress({
-                  type: 'tool_start',
-                  content: { tool: toolCall.name, input: toolCall.args },
-                });
-              }
+              await emitToolStart(toolCall.name, toolCall.args);
             }
           }
 
           // Check for tool outputs (ToolMessage)
-          if (lastMessage._getType() === 'tool') {
+          if (
+            lastMessage._getType?.() === 'tool' ||
+            lastMessage.type === 'tool'
+          ) {
             this.logger.log(
-              `Agent received tool output for: ${lastMessage.name}`
+              `Agent received tool output for: ${lastMessage.name || 'unknown'}`
             );
-            // We might need to match this with the previous tool call, but for now just report it
-            if (onProgress) {
-              await onProgress({
-                type: 'tool_end',
-                content: {
-                  tool: lastMessage.name,
-                  output: lastMessage.content,
-                },
-              });
-            }
+            await emitToolEnd(lastMessage.name, lastMessage.content);
 
             // Store for result
             toolCalls.push({
               tool: lastMessage.name || 'unknown',
-              input: {}, // We'd need to look back to find input, skipping for now or we can track it
+              input: {},
               output: lastMessage.content,
             });
           }
         }
       }
 
-      // Extract final response
-      const messages = finalState?.messages || [];
-      const lastMessage = messages[messages.length - 1];
+      this.logger.log('Agent stream loop complete');
+      this.logger.debug(`Total messages accumulated: ${allMessages.length}`);
+      console.dir(allMessages, { depth: null });
+
+      // Extract final response from accumulated messages
+      const finalMessages = finalState?.messages || allMessages;
+      const lastMessage = finalMessages[finalMessages.length - 1];
       const output = lastMessage?.content || '';
+      this.logger.log(
+        `Extracted output: ${output?.substring(0, 100) || '(empty)'}...`
+      );
+      this.logger.debug(
+        `Final message type: ${lastMessage?._getType?.() || lastMessage?.type || 'unknown'
+        }`
+      );
+      this.logger.debug(
+        `Final message has tool_calls: ${!!(lastMessage as any)?.tool_calls
+          ?.length}`
+      );
 
       const hasToolCalls = (lastMessage as any)?.tool_calls?.length > 0;
 
@@ -505,7 +376,7 @@ export class LangChainAgentService {
         const msg =
           'Agent execution completed but produced no output and no tool calls. The model may have failed to respond or encountered an internal error.';
         this.logger.warn(msg);
-        if (onProgress) await onProgress({ type: 'log', content: msg });
+        await emitEvent(StreamingEventType.MESSAGE, msg);
         throw new Error(msg);
       }
 
@@ -517,11 +388,11 @@ export class LangChainAgentService {
         output: unknown;
       }> = [];
 
-      for (let i = 0; i < messages.length; i++) {
-        const msg = messages[i];
+      for (let i = 0; i < finalMessages.length; i++) {
+        const msg = finalMessages[i];
         if (msg.tool_calls && msg.tool_calls.length > 0) {
           for (const toolCall of msg.tool_calls) {
-            const toolOutputMsg = messages.find(
+            const toolOutputMsg = finalMessages.find(
               (m: any) => m.tool_call_id === toolCall.id
             );
 
@@ -539,19 +410,14 @@ export class LangChainAgentService {
         typeof output === 'string' ? output : JSON.stringify(output)
       );
 
-      // FALLBACK: If no native tool calls, check for manual JSON tool call in the text
-      // This supports models that output JSON text instead of native tool calls (e.g. DeepSeek via prompt instructions)
       if (allToolCalls.length === 0) {
         const manualToolCall = this.parseJsonToolCall(cleanedOutput);
         if (manualToolCall) {
-          this.logger.log(`Detected manual JSON tool call: ${manualToolCall.name}`);
+          this.logger.log(
+            `Detected manual JSON tool call: ${manualToolCall.name}`
+          );
 
-          if (onProgress) {
-            await onProgress({
-              type: 'tool_start',
-              content: { tool: manualToolCall.name, input: manualToolCall.arguments },
-            });
-          }
+          await emitToolStart(manualToolCall.name, manualToolCall.arguments);
 
           try {
             // Convert to OpenAI format for executor
@@ -583,43 +449,31 @@ export class LangChainAgentService {
               output: result.result || result,
             });
 
-            if (onProgress) {
-              await onProgress({
-                type: 'tool_end',
-                content: {
-                  tool: manualToolCall.name,
-                  output: result.result || result,
-                },
-              });
-            }
+            await emitToolEnd(manualToolCall.name, result.result || result);
 
             // Update output to reflect the action taken
-            // We could optionally feed this back to the model, but for now just returning the result 
-            // mimics the success path.
             return {
-              output: `I've executed the ${manualToolCall.name} tool. Result: ${JSON.stringify(result.result)}`,
-              intermediateSteps: messages.map((msg: any) => ({
+              output: `I've executed the ${manualToolCall.name
+                } tool. Result: ${JSON.stringify(result.result)}`,
+              intermediateSteps: finalMessages.map((msg: any) => ({
                 action: msg.tool_calls?.[0]?.name || 'response',
                 observation: msg.content || '',
               })),
               toolCalls: allToolCalls,
             };
-
           } catch (err) {
             this.logger.error(`Manual tool execution failed: ${err.message}`);
-            if (onProgress) {
-              await onProgress({
-                type: 'log',
-                content: `Manual tool execution failed: ${err.message}`,
-              });
-            }
+            await emitEvent(
+              StreamingEventType.MESSAGE,
+              `Manual tool execution failed: ${err.message}`
+            );
           }
         }
       }
 
       return {
         output: cleanedOutput,
-        intermediateSteps: messages.map((msg: any) => ({
+        intermediateSteps: finalMessages.map((msg: any) => ({
           action: msg.tool_calls?.[0]?.name || 'response',
           observation: msg.content || '',
         })),
@@ -627,11 +481,10 @@ export class LangChainAgentService {
       };
     } catch (error) {
       this.logger.error(`Agent execution failed: ${error.message}`);
-      if (onProgress)
-        onProgress({
-          type: 'log',
-          content: `Agent execution failed: ${error.message}`,
-        });
+      await emitEvent(
+        StreamingEventType.MESSAGE,
+        `Agent execution failed: ${error.message}`
+      );
       throw error;
     }
   }
@@ -640,7 +493,9 @@ export class LangChainAgentService {
    * Parse JSON tool call from text
    * Looks for { "name": "...", "arguments": { ... } } structure
    */
-  private parseJsonToolCall(text: string): { name: string; arguments: any } | null {
+  private parseJsonToolCall(
+    text: string
+  ): { name: string; arguments: any } | null {
     try {
       // Find JSON object
       const jsonMatch = text.match(/\{[\s\S]*\}/);

@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TableComponent, TableRowAction } from './table.component';
-
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  TableComponent,
+  TableRowAction,
+  TableAction,
+  TableRow,
+} from './table.component';
 
 describe('TableComponent', () => {
   let component: TableComponent;
@@ -10,7 +13,6 @@ describe('TableComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TableComponent],
-      providers: [ThemeService],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TableComponent);
@@ -22,100 +24,19 @@ describe('TableComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should apply dark theme colors when theme is dark', () => {
-    const mockColors = {
-      background: '#000',
-      foreground: '#fff',
-      accent: '#111',
-      complementary: '#222',
-      accentShades: [
-        [null, '#666'],
-        [null, '#777'],
-        [null, '#888'],
-        [null, '#999'],
-        [null, '#aaa'],
-        [null, '#bbb'],
-        [null, '#ccc'],
-      ],
-      complementaryShades: [
-        [null, '#ddd'],
-        [null, '#eee'],
-        [null, '#fff'],
-      ],
-      accentGradients: {
-        dark: 'dark-accent-gradient',
-        light: 'light-accent-gradient',
-      },
-    } as any;
-
-    component.theme = 'dark';
-    component.applyTheme(mockColors);
-
-    expect(component.background).toBe(mockColors.background);
-    expect(component.backgroundGradient).toBe(
-      `linear-gradient(to bottom, ${mockColors.accent}, ${mockColors.background}, ${mockColors.background}, ${mockColors.accentShades[1][1]})`
-    );
-    expect(component.foreground).toBe(mockColors.foreground);
-    expect(component.accent).toBe(mockColors.accent);
-    expect(component.complement).toBe(mockColors.complementary);
-    expect(component.borderGradient).toBe(mockColors.accentGradients.dark);
-    expect(component.borderColor).toBe(mockColors.complementaryShades[2][1]);
-  });
-
-  it('should apply light theme colors when theme is light', () => {
-    const mockColors = {
-      background: '#eee',
-      foreground: '#222',
-      accent: '#abc',
-      complementary: '#def',
-      accentShades: [
-        [null, '#666'],
-        [null, '#777'],
-        [null, '#888'],
-        [null, '#999'],
-        [null, '#aaa'],
-        [null, '#bbb'],
-        [null, '#ccc'],
-      ],
-      complementaryShades: [
-        [null, '#ddd'],
-        [null, '#eee'],
-        [null, '#fff'],
-      ],
-      accentGradients: {
-        dark: 'dark-accent-gradient',
-        light: 'light-accent-gradient',
-      },
-    } as any;
-
-    component.theme = 'light';
-    component.applyTheme(mockColors);
-
-    expect(component.background).toBe(mockColors.background);
-    expect(component.backgroundGradient).toBe(
-      `linear-gradient(to bottom, ${mockColors.accent}, ${mockColors.background}, ${mockColors.background}, ${mockColors.accentShades[1][1]})`
-    );
-    expect(component.foreground).toBe(mockColors.foreground);
-    expect(component.accent).toBe(mockColors.accent);
-    expect(component.complement).toBe(mockColors.complementary);
-    expect(component.borderGradient).toBe(mockColors.accentGradients.light);
-    expect(component.borderColor).toBe(mockColors.complementaryShades[2][1]);
-  });
-
-  it('should initialize table with badge cells', () => {
+  it('should convert legacy badge cells to columns', () => {
     component.cells = [{ heading: 'Test', isBadge: true }];
-    (component as any).initializeTable();
-    expect(component.cells[0].heading).toBeUndefined();
+    fixture.detectChanges();
+    // The cells setter should convert legacy cells to columns
+    expect(component.columns.length).toBeGreaterThan(0);
   });
 
-  // (Removed commented test for template ref cells — kept test suite focused)
-
-  it('should add spacer cell if spacer is true', () => {
+  it('should track spacer input as deprecated property', () => {
+    // Spacer is now deprecated and just stores the value
     component.spacer = true;
-    component.cells = [];
-    (component as any).initializeTable();
-    expect(component.cells.length).toBe(1);
-    expect(component.cells[0].customStyles).toEqual({ flex: '1' });
+    expect(component.spacer).toBe(true);
+    component.spacer = false;
+    expect(component.spacer).toBe(false);
   });
 
   it('should return true for hasOverflowableCells if any cell is overflowable', () => {
@@ -136,8 +57,6 @@ describe('TableComponent', () => {
     expect(component.rowExpanded).toBe(false);
   });
 
-  // (Removed commented helper test for TemplateRef detection)
-
   it('should return false if value is not TemplateRef', () => {
     expect(component.isTemplateRef('string')).toBe(false);
   });
@@ -150,12 +69,159 @@ describe('TableComponent', () => {
     expect(component.showActions).toBe(false);
   });
 
-  it('should execute action and hide actions', () => {
+  it('should execute legacy action and hide actions', () => {
     const mockAction = jest.fn();
     const action: TableRowAction = { title: 'Test', action: mockAction };
     component.rowIndex = 5;
-    component.executeAction(action);
+    component.executeLegacyAction(action);
     expect(mockAction).toHaveBeenCalledWith(5);
     expect(component.showActions).toBe(false);
+  });
+
+  it('should execute new action with row and index', () => {
+    const mockActionFn = jest.fn();
+    const action: TableAction = {
+      label: 'Test',
+      action: mockActionFn,
+    };
+    const row: TableRow = { id: 1, name: 'Test' };
+    component.executeAction(action, row, 3);
+    expect(mockActionFn).toHaveBeenCalledWith(row, 3);
+  });
+
+  it('should support columns and data inputs', () => {
+    component.columns = [
+      { key: 'id', header: 'ID' },
+      { key: 'name', header: 'Name' },
+    ];
+    component.data = [
+      { id: 1, name: 'Item 1' },
+      { id: 2, name: 'Item 2' },
+    ];
+    fixture.detectChanges();
+
+    expect(component.columns.length).toBe(2);
+    expect(component.data.length).toBe(2);
+  });
+
+  it('should track selection state using toggleRowSelection', () => {
+    const row1: TableRow = { id: 1 };
+    const row2: TableRow = { id: 2 };
+    component.data = [row1, row2];
+    component.selectable = true;
+
+    expect(component.isRowSelected(row1)).toBe(false);
+
+    // Use toggleRowSelection instead of handleRowClick
+    component.toggleRowSelection(row1);
+    expect(component.isRowSelected(row1)).toBe(true);
+    expect(component.isRowSelected(row2)).toBe(false);
+
+    // Toggle again should deselect
+    component.toggleRowSelection(row1);
+    expect(component.isRowSelected(row1)).toBe(false);
+  });
+
+  it('should support row selection toggling', () => {
+    const row1: TableRow = { id: 1 };
+    component.data = [row1];
+    component.selectable = true;
+
+    component.toggleRowSelection(row1);
+    expect(component.selectedRows.has(row1)).toBe(true);
+
+    component.toggleRowSelection(row1);
+    expect(component.selectedRows.has(row1)).toBe(false);
+  });
+
+  it('should support toggling all selections', () => {
+    const row1: TableRow = { id: 1 };
+    const row2: TableRow = { id: 2 };
+    component.data = [row1, row2];
+    component.selectable = true;
+
+    // Select all
+    component.toggleAllSelection();
+    expect(component.areAllSelected()).toBe(true);
+    expect(component.isRowSelected(row1)).toBe(true);
+    expect(component.isRowSelected(row2)).toBe(true);
+
+    // Deselect all
+    component.toggleAllSelection();
+    expect(component.areAllSelected()).toBe(false);
+    expect(component.isRowSelected(row1)).toBe(false);
+    expect(component.isRowSelected(row2)).toBe(false);
+  });
+
+  it('should handle row click events', () => {
+    const mockRowClick = jest.fn();
+    component.rowClick.subscribe(mockRowClick);
+
+    const row: TableRow = { id: 1, name: 'Test' };
+    component.handleRowClick(row, 0);
+
+    expect(mockRowClick).toHaveBeenCalledWith({ row, index: 0 });
+  });
+
+  it('should handle sort events', () => {
+    const mockSort = jest.fn();
+    component.sort.subscribe(mockSort);
+
+    component.columns = [{ key: 'name', header: 'Name', sortable: true }];
+    component.sortable = true;
+    fixture.detectChanges();
+
+    component.handleSort(component.columns[0]);
+    expect(mockSort).toHaveBeenCalledWith({ column: 'name', direction: 'asc' });
+
+    // Sort again should toggle direction
+    component.handleSort(component.columns[0]);
+    expect(mockSort).toHaveBeenCalledWith({
+      column: 'name',
+      direction: 'desc',
+    });
+  });
+
+  it('should get sort indicator', () => {
+    component.columns = [{ key: 'name', header: 'Name', sortable: true }];
+    component.sortable = true;
+
+    // No sort applied yet
+    expect(component.getSortIndicator(component.columns[0])).toBe('↕️');
+
+    // Sort ascending
+    component.handleSort(component.columns[0]);
+    expect(component.getSortIndicator(component.columns[0])).toBe('↑');
+
+    // Sort descending
+    component.handleSort(component.columns[0]);
+    expect(component.getSortIndicator(component.columns[0])).toBe('↓');
+  });
+
+  it('should emit rowSelect event when selection changes', () => {
+    const mockRowSelect = jest.fn();
+    component.rowSelect.subscribe(mockRowSelect);
+
+    const row1: TableRow = { id: 1 };
+    component.data = [row1];
+    component.selectable = true;
+
+    component.toggleRowSelection(row1);
+    expect(mockRowSelect).toHaveBeenCalledWith([row1]);
+  });
+
+  it('should respect selectable flag', () => {
+    const row1: TableRow = { id: 1 };
+    component.data = [row1];
+    component.selectable = false; // Not selectable
+
+    component.toggleRowSelection(row1);
+    // Should not be selected because selectable is false
+    expect(component.isRowSelected(row1)).toBe(false);
+
+    // Enable selection
+    component.selectable = true;
+    component.toggleRowSelection(row1);
+    expect(component.isRowSelected(row1)).toBe(true);
   });
 });

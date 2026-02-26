@@ -1,19 +1,16 @@
-@if (isOpen) {
 <otui-modal
   [heading]="heading"
-  (closeModal)="onClose()"
-  [mode]="'sidebar-left'"
+  (close)="onClose()"
+  [position]="'sidebar-left'"
+  [visible]="isOpen"
 >
   <otui-card>
     <div class="nav-links">
-      <otui-button
-        *ngFor="let item of navItems"
-        [variant]="getVariant(item)"
-        (action)="onNavItemClick(item)"
-      >
+      @for (item of navItems; track item.label) {
+      <otui-button [variant]="getVariant(item)" (action)="onNavItemClick(item)">
         {{ item.label }}
       </otui-button>
+      }
     </div>
   </otui-card>
 </otui-modal>
-}

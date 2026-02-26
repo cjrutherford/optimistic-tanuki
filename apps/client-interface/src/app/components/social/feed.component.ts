@@ -7,10 +7,12 @@ import {
   inject,
 } from '@angular/core';
 
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
+import {
+  ButtonComponent,
+  SpinnerComponent,
+} from '@optimistic-tanuki/common-ui';
 import {
   PostDto,
   ComposeComponent,
@@ -20,9 +22,10 @@ import {
   PostData,
   ImageUploadCallback,
 } from '@optimistic-tanuki/social-ui';
-import { 
+import {
   CreateAttachmentDto,
-  CreateSocialComponentDto
+  CreateSocialComponentDto,
+  CommunityDto,
 } from '@optimistic-tanuki/ui-models';
 import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -38,13 +41,14 @@ import { AssetService } from '../../asset.service';
 import { CreateAssetDto, FollowDto } from '@optimistic-tanuki/ui-models';
 import { FollowService } from '../../follow.service';
 import { HttpClient } from '@angular/common/http';
+import { CommunityService } from '../../community.service';
 
 @Component({
   selector: 'app-feed',
   standalone: true,
   imports: [
-    MatCardModule,
-    MatButtonModule,
+    ButtonComponent,
+    SpinnerComponent,
     MatInputModule,
     MatIconModule,
     ComposeComponent,
@@ -64,7 +68,11 @@ import { HttpClient } from '@angular/common/http';
 })
 export class FeedComponent implements OnInit, OnDestroy {
   posts = signal<PostDto[]>([]);
+  loading = signal(true);
   followingIds = new Set<string>();
+  communityInfo = signal<{
+    [key: string]: { id: string; name: string; logoUrl?: string };
+  }>({});
   themeStyles!: {
     backgroundColor: string;
     color: string;
@@ -113,6 +121,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   socialWebSocketService = inject(SocialWebSocketService);
   assetService = inject(AssetService);
   followService = inject(FollowService);
+  communityService = inject(CommunityService);
   private readonly http = inject(HttpClient);
   private readonly gatewayUrl = 'http://localhost:3000/social';
 
@@ -159,7 +168,9 @@ export class FeedComponent implements OnInit, OnDestroy {
         .subscribe((posts) => {
           console.log('Received posts from WebSocket:', posts.length);
           this.posts.set(posts);
+          this.loading.set(false);
           this.loadProfiles(posts);
+          this.loadCommunityInfo(posts);
         });
 
       // Fallback to HTTP if WebSocket doesn't connect within 5 seconds
@@ -174,7 +185,9 @@ export class FeedComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this.destroy$))
             .subscribe((posts) => {
               this.posts.set(posts);
+              this.loading.set(false);
               this.loadProfiles(posts);
+              this.loadCommunityInfo(posts);
             });
         }
       }, 5000);
@@ -184,7 +197,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
   profiles = signal<{ [key: string]: PostProfileStub }>({});
 
-  currentFeed: 'public' | 'following' = 'public';
+  currentFeed: 'public' | 'following' | 'communities' = 'public';
 
   private loadFollowing(profileId: string) {
     this.followService.getFollowing(profileId).subscribe({
@@ -232,26 +245,59 @@ export class FeedComponent implements OnInit, OnDestroy {
     });
   }
 
+  private loadCommunityInfo(posts: PostDto[]) {
+    const communityIds = [
+      ...new Set(
+        posts.map((post) => post.communityId).filter((id): id is string => !!id)
+      ),
+    ];
+    if (communityIds.length === 0) return;
+
+    communityIds.forEach((communityId) => {
+      this.communityService.getCommunity(communityId).subscribe({
+        next: (community: CommunityDto) => {
+          if (community) {
+            this.communityInfo.update((info) => ({
+              ...info,
+              [communityId]: {
+                id: community.id,
+                name: community.name,
+                logoUrl: community.logoAssetId
+                  ? `/api/asset/${community.logoAssetId}`
+                  : community.logoUrl,
+              },
+            }));
+          }
+        },
+        error: (err: any) =>
+          console.error('Failed to load community info:', err),
+      });
+    });
+  }
+
   async createdPost(postData: PostData) {
     console.log('[Feed] create called with postData:', postData);
-    const { title, content, attachments, links, injectedComponentsNew } = postData;
+    const { title, content, attachments, links, injectedComponentsNew } =
+      postData;
     const currentProfile = this.profileService.currentUserProfile();
     if (!currentProfile) {
       console.error('No current profile found');
       return;
     }
-    
+
     const finalPost: CreatePostDto = {
       title,
       content,
       profileId: currentProfile.id,
     };
-    
+
+    let newPost: PostDto | null = null;
+
     try {
       // 1. Create post
-      const newPost = await firstValueFrom(this.postService.createPost(finalPost));
+      newPost = await firstValueFrom(this.postService.createPost(finalPost));
       console.log('[Feed] Post created:', newPost.id);
-      
+
       // 2. Create attachments
       if (attachments && attachments.length > 0) {
         for (const attachment of attachments) {
@@ -263,13 +309,29 @@ export class FeedComponent implements OnInit, OnDestroy {
         }
         console.log(`[Feed] ${attachments.length} attachments created`);
       }
-      
+
       // 3. Create components (NEW)
-      if (injectedComponentsNew && injectedComponentsNew.length > 0) {
+      if (
+        injectedComponentsNew &&
+        injectedComponentsNew.length > 0 &&
+        newPost
+      ) {
         console.log(`[Feed] Saving ${injectedComponentsNew.length} components`);
-        await this.saveComponents(newPost.id, injectedComponentsNew);
+        try {
+          await this.saveComponents(newPost.id, injectedComponentsNew);
+        } catch (componentError) {
+          // ROLLBACK: Component save failed, delete the post
+          console.error(
+            '[Feed] Component save failed, rolling back post:',
+            componentError
+          );
+          await this.rollbackPost(newPost.id);
+          throw new Error(
+            'Failed to save post components. Post has been removed.'
+          );
+        }
       }
-      
+
       // 4. Update UI
       // Ensure profile is in map for the new post
       if (!this.profiles()[currentProfile.id]) {
@@ -282,15 +344,34 @@ export class FeedComponent implements OnInit, OnDestroy {
           },
         }));
       }
-      if (!this.posts().some((p) => p.id === newPost.id)) {
-        this.posts.update((posts) => [newPost, ...posts]);
+      if (newPost) {
+        const newPostId = newPost.id;
+        if (!this.posts().some((p) => p.id === newPostId)) {
+          this.posts.update((posts) => [newPost!, ...posts]);
+        }
       }
       console.log('[Feed] Post added to feed');
     } catch (error) {
       console.error('[Feed] Failed to create post:', error);
+      // Re-throw to let the compose component handle the error display
+      throw error;
     }
   }
-  
+
+  /**
+   * Rollback a post creation by deleting the post and all its data
+   */
+  private async rollbackPost(postId: string): Promise<void> {
+    console.log('[Feed] Rolling back post:', postId);
+    try {
+      await firstValueFrom(this.postService.deletePost(postId));
+      console.log('[Feed] Post rolled back successfully:', postId);
+    } catch (rollbackError) {
+      console.error('[Feed] Failed to rollback post:', rollbackError);
+      // Log the error but don't throw - we've done our best to clean up
+    }
+  }
+
   /**
    * Save injected components to the database via RPC
    */
@@ -298,8 +379,10 @@ export class FeedComponent implements OnInit, OnDestroy {
     postId: string,
     components: InjectedComponentData[]
   ): Promise<void> {
-    console.log(`[Feed] Saving ${components.length} components for post ${postId}`);
-    
+    console.log(
+      `[Feed] Saving ${components.length} components for post ${postId}`
+    );
+
     for (const component of components) {
       const dto: CreateSocialComponentDto = {
         postId,
@@ -308,14 +391,19 @@ export class FeedComponent implements OnInit, OnDestroy {
         componentData: component.componentData,
         position: component.position || 0,
       };
-      
+
       try {
         await firstValueFrom(
           this.http.post(`${this.gatewayUrl}/component`, dto)
         );
-        console.log(`[Feed] Component saved: ${component.instanceId} (${component.componentType})`);
+        console.log(
+          `[Feed] Component saved: ${component.instanceId} (${component.componentType})`
+        );
       } catch (error) {
-        console.error(`[Feed] Failed to save component ${component.instanceId}:`, error);
+        console.error(
+          `[Feed] Failed to save component ${component.instanceId}:`,
+          error
+        );
         // Continue with other components even if one fails
       }
     }
@@ -446,10 +534,11 @@ export class FeedComponent implements OnInit, OnDestroy {
   loadPublicFeed() {
     this.currentFeed = 'public';
     this.postService
-      .getPosts({ visibility: 'public' })
+      .searchPosts({ visibility: 'public', communityId: null as any })
       .subscribe((posts: PostDto[]) => {
         this.posts.set(posts);
         this.loadProfiles(posts);
+        this.loadCommunityInfo(posts);
       });
   }
 
@@ -465,7 +554,41 @@ export class FeedComponent implements OnInit, OnDestroy {
       .subscribe((posts: PostDto[]) => {
         this.posts.set(posts);
         this.loadProfiles(posts);
+        this.loadCommunityInfo(posts);
       });
+  }
+
+  loadCommunitiesFeed() {
+    this.currentFeed = 'communities';
+    this.loading.set(true);
+
+    this.communityService.getUserCommunities().subscribe({
+      next: (communities) => {
+        const communityIds = communities.map((c) => c.id);
+        if (communityIds.length === 0) {
+          this.posts.set([]);
+          this.loading.set(false);
+          return;
+        }
+
+        this.postService.getPostsByCommunityIds(communityIds).subscribe({
+          next: (posts) => {
+            this.posts.set(posts);
+            this.loadProfiles(posts);
+            this.loadCommunityInfo(posts);
+            this.loading.set(false);
+          },
+          error: (err) => {
+            console.error('Failed to load community posts:', err);
+            this.loading.set(false);
+          },
+        });
+      },
+      error: (err) => {
+        console.error('Failed to load user communities:', err);
+        this.loading.set(false);
+      },
+    });
   }
 
   private getFileExtensionFromDataUrl(

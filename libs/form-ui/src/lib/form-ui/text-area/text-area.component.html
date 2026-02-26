@@ -1,9 +1,18 @@
-<div class="text-area-container">
-  <label class="text-area-label" for="textArea">{{ label }}</label>
+<div class="form-field">
+  @if (label) {
+  <label class="form-label" [for]="inputId">{{ label }}</label>
+  }
   <textarea
-    id="textArea"
-    class="text-area"
+    [id]="inputId"
+    class="form-control form-control-textarea"
     (input)="onInput($event)"
     [value]="value"
+    [placeholder]="placeholder"
+    [disabled]="disabled"
+    [rows]="rows"
+    [class.has-error]="hasError"
   ></textarea>
+  @if (errorMessage) {
+  <span class="error-message">{{ errorMessage }}</span>
+  }
 </div>

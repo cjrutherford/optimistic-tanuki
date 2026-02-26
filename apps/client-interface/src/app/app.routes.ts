@@ -26,6 +26,23 @@ const forumUserIdResolver: ResolveFn<string> = () => {
   return profile?.id || '';
 };
 
+const communityPermissionResolver: ResolveFn<string[]> = async () => {
+  const permissionsService = inject(UserPermissionsService);
+  const permissions = await permissionsService.searchPermissions('community.');
+  return permissions;
+};
+
+const communityIsLoggedInResolver: ResolveFn<boolean> = () => {
+  const authState = inject(AuthStateService);
+  return authState.isAuthenticated;
+};
+
+const communityUserIdResolver: ResolveFn<string> = () => {
+  const authState = inject(AuthStateService);
+  const profile = authState.getPersistedSelectedProfile();
+  return profile?.id || '';
+};
+
 export const appRoutes: Route[] = [
   {
     path: '',
@@ -52,17 +69,28 @@ export const appRoutes: Route[] = [
   },
   // profile route removed — profile editing is available from Settings
   {
-    path: 'tasks',
-    loadComponent: () =>
-      import('./components/tasks/tasks.component').then(
-        (m) => m.TasksComponent
+    path: 'forum',
+    loadChildren: () =>
+      import('@optimistic-tanuki/forum-ui').then((m) =>
+        m.provideForumRoutes(
+          forumPermissionResolver,
+          forumIsLoggedInResolver,
+          forumUserIdResolver
+        )
       ),
-    canActivate: [AuthGuard, ProfileGuard], // Protect the tasks route
+    canActivate: [AuthGuard, ProfileGuard], // Protect the forum route
   },
   {
-    path: 'forum',
-    loadChildren: () => import('@optimistic-tanuki/forum-ui').then(m => m.provideForumRoutes(forumPermissionResolver, forumIsLoggedInResolver, forumUserIdResolver)),
-    canActivate: [AuthGuard, ProfileGuard], // Protect the forum route
+    path: 'communities',
+    loadChildren: () =>
+      import('@optimistic-tanuki/community-ui').then((m) =>
+        m.provideCommunityRoutes(
+          communityPermissionResolver,
+          communityIsLoggedInResolver,
+          communityUserIdResolver
+        )
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
   },
   {
     path: 'settings',
@@ -71,6 +99,14 @@ export const appRoutes: Route[] = [
         (m) => m.SettingsComponent
       ),
     canActivate: [AuthGuard], // Protect the settings route
+  },
+  {
+    path: 'messages',
+    loadComponent: () =>
+      import('./components/messages.component').then(
+        (m) => m.MessagesComponent
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
   },
   {
     path: '**',

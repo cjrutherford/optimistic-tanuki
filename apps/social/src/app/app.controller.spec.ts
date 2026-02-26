@@ -7,6 +7,8 @@ import FollowService from './services/follow.service';
 import { PostService } from './services/post.service';
 import { RpcException } from '@nestjs/microservices';
 import { VoteService } from './services/vote.service';
+import { SocialComponentService } from './services/social-component.service';
+import { CommunityService } from './services/community.service';
 
 describe('AppController', () => {
   let controller: AppController;
@@ -15,6 +17,7 @@ describe('AppController', () => {
   let attachmentService: jest.Mocked<AttachmentService>;
   let commentService: jest.Mocked<CommentService>;
   let followService: jest.Mocked<FollowService>;
+  let socialComponentService: jest.Mocked<SocialComponentService>;
 
   beforeEach(async () => {
     postService = {
@@ -57,6 +60,14 @@ describe('AppController', () => {
       getFollowerCount: jest.fn(),
       getFollowingCount: jest.fn(),
     } as any;
+    socialComponentService = {
+      create: jest.fn(),
+      findAll: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+      findByType: jest.fn(),
+    } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
@@ -66,6 +77,8 @@ describe('AppController', () => {
         { provide: AttachmentService, useValue: attachmentService },
         { provide: CommentService, useValue: commentService },
         { provide: FollowService, useValue: followService },
+        { provide: SocialComponentService, useValue: socialComponentService },
+        { provide: CommunityService, useValue: { findOne: jest.fn() } },
       ],
     }).compile();
 
@@ -101,17 +114,17 @@ describe('AppController', () => {
   });
 
   it('should update a post', async () => {
-    postService.update.mockResolvedValue('updated');
-    const result = await controller.updatePost(1, {} as any);
-    expect(result).toBe('updated');
-    expect(postService.update).toHaveBeenCalledWith(1, {});
+    postService.update.mockResolvedValue(undefined);
+    const result = await controller.updatePost('1', {} as any, 'user-1');
+    expect(result).toBeUndefined();
+    expect(postService.update).toHaveBeenCalledWith('1', {}, 'user-1');
   });
 
   it('should remove a post', async () => {
-    postService.remove.mockResolvedValue('removed');
-    const result = await controller.removePost(1);
-    expect(result).toBe('removed');
-    expect(postService.remove).toHaveBeenCalledWith(1);
+    postService.remove.mockResolvedValue(undefined);
+    const result = await controller.removePost('1', 'user-1');
+    expect(result).toBeUndefined();
+    expect(postService.remove).toHaveBeenCalledWith('1', 'user-1');
   });
 
   it('should upvote a post', async () => {

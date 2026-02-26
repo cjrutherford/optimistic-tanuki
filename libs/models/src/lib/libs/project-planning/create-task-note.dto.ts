@@ -14,7 +14,7 @@ export class CreateTaskNoteDto {
   })
   @IsString()
   @IsUUID()
-  profileId: string;
+  profileId!: string;
 
   @ApiProperty({
     type: String,
@@ -22,13 +22,13 @@ export class CreateTaskNoteDto {
   })
   @IsString()
   @IsUUID()
-  taskId: string;
+  taskId!: string;
 
   @ApiProperty({ type: String, description: 'Content of the note' })
   @IsString()
   @MinLength(1)
   @MaxLength(10000)
-  content: string;
+  content!: string;
 
   @ApiPropertyOptional({
     type: String,

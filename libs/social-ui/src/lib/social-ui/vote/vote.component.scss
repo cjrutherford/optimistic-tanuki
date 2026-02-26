@@ -1,6 +1,262 @@
-.active {
-  box-shadow: 2px 2px 2px 0 var(--success-shade-darken-50);
-  font-size: 30px;
-  color: var(--success-shade-darken-50);
-  background-color: var(--success-shade-lighten-50);
+// ============================================
+// Personality-Driven Vote Component
+// Uses CSS custom properties for theming
+// ============================================
+
+@use '../../styles/mixins' as *;
+
+.vote-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+
+.vote-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px !important;
+  min-width: auto !important;
+  min-height: 36px !important;
+  border-radius: 10px;
+  border: var(--border-width, 2px) solid transparent;
+  background: transparent;
+  color: var(--muted-foreground, #6b7280);
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 250ms var(--animation-easing, ease);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  @include reduced-motion {
+    transition: none;
+  }
+
+  &:hover {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--primary) 10%, transparent),
+      color-mix(in srgb, var(--secondary) 10%, transparent)
+    );
+    border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+    color: var(--primary);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &.active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: var(--primary-foreground, #fff);
+    border-color: transparent;
+    box-shadow: var(--shadow-md, 0 4px 16px color-mix(in srgb, var(--primary) 40%, transparent));
+
+    &:hover {
+      box-shadow: var(--shadow-lg, 0 6px 24px color-mix(in srgb, var(--primary) 50%, transparent));
+      transform: scale(1.08);
+    }
+  }
+
+  &.upvote.active {
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      opacity: 0;
+      animation: vote-glow 0.3s ease forwards;
+    }
+  }
+
+  &.downvote.active {
+    background: linear-gradient(135deg, var(--tertiary) 0%, var(--complement) 100%);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--tertiary) 40%, transparent);
+
+    &:hover {
+      box-shadow: 0 6px 24px color-mix(in srgb, var(--tertiary) 50%, transparent);
+    }
+  }
+}
+
+.vote-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+  transition: transform 250ms var(--animation-easing, ease);
+
+  .vote-btn:hover & {
+    transform: scale(1.2);
+  }
+
+  .vote-btn.active & {
+    filter: brightness(10) saturate(0);
+  }
+}
+
+.vote-count {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  min-width: 32px;
+  text-align: center;
+  color: var(--muted-foreground, #6b7280);
+  transition: all 200ms ease;
+
+  .vote-btn.active:hover + &,
+  .vote-btn.active:hover ~ & {
+    color: var(--primary);
+    transform: scale(1.1);
+  }
+
+  &.positive {
+    color: var(--success, #10b981);
+  }
+
+  &.negative {
+    color: var(--danger, #ef4444);
+  }
+}
+
+// Vote buttons with icons
+.vote-btn-upvote {
+  &::before {
+    content: '▲';
+    margin-right: 4px;
+    font-size: 0.75rem;
+  }
+}
+
+.vote-btn-downvote {
+  &::before {
+    content: '▼';
+    margin-right: 4px;
+    font-size: 0.75rem;
+  }
+}
+
+// Vote summary with progress bar
+.vote-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--card, linear-gradient(180deg, var(--background) 0%, color-mix(in srgb, var(--primary) 5%, var(--background)) 100%));
+  border-radius: var(--border-radius-md, 12px);
+  border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+
+  .vote-progress {
+    height: 8px;
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    border-radius: 4px;
+    overflow: hidden;
+
+    .vote-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      border-radius: 4px;
+      transition: width 300ms var(--animation-easing, ease);
+    }
+  }
+
+  .vote-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted-foreground, #6b7280);
+
+    .upvotes {
+      color: var(--success, #10b981);
+    }
+
+    .downvotes {
+      color: var(--danger, #ef4444);
+    }
+  }
+}
+
+// Vote button group
+.vote-button-group {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+  border-radius: var(--border-radius-md, 12px);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+
+  .vote-btn {
+    border-radius: 8px;
+  }
+}
+
+// Vote animation keyframes
+@keyframes vote-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+// Vote result with percentage
+.vote-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .vote-percentage {
+    font-family: var(--font-heading, system-ui, sans-serif);
+    font-size: 1.25rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .vote-bar {
+    flex: 1;
+    height: 6px;
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    border-radius: 3px;
+    overflow: hidden;
+
+    .vote-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      border-radius: 3px;
+      transition: width 400ms var(--animation-easing, ease);
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 640px) {
+  .vote-btn {
+    padding: 6px 12px !important;
+    font-size: 0.8125rem;
+  }
+
+  .vote-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .vote-count {
+    font-size: 0.8125rem;
+    min-width: 24px;
+  }
 }

@@ -23,8 +23,9 @@ import {
 import {
   Themeable,
   ThemeColors,
-  ThemeService,
+  Personality,
 } from '@optimistic-tanuki/theme-lib';
+import { takeUntil } from 'rxjs';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -45,11 +46,19 @@ ModuleRegistry.registerModules([AllCommunityModule]);
   templateUrl: './ag-grid-ui.component.html',
   styleUrls: ['./ag-grid-ui.component.scss'],
   encapsulation: ViewEncapsulation.None,
+  host: {
+    '[class.theme-light]': "theme === 'light'",
+    '[class.theme-dark]': "theme === 'dark'",
+    '[attr.data-personality]': 'personalityId',
+    '[style.--local-background]': 'background',
+    '[style.--local-foreground]': 'foreground',
+    '[style.--local-accent]': 'accent',
+    '[style.--local-border-color]': 'borderColor',
+  },
 })
 export class AgGridUiComponent
   extends Themeable
-  implements OnInit, OnDestroy, OnChanges
-{
+  implements OnInit, OnDestroy, OnChanges {
   /** Row data to display in the grid */
   @Input() rowData: any[] = [];
 
@@ -62,13 +71,14 @@ export class AgGridUiComponent
   /** Optional loading hint; when true the AG Grid loading overlay will be shown */
   @Input() loading?: boolean = false;
   /** Height of the grid (default: 500px) */
-  @Input() height: string = '500px';
+  @Input() height = '500px';
 
   /** Width of the grid (default: 100%) */
-  @Input() width: string = '100%';
+  @Input() width = '100%';
 
   /** Grid API instance (available after grid is ready) */
   public gridApi?: GridApi;
+  public personalityId = 'classic';
 
   // Internal signals for reactive data flow
   rowDataSignal: WritableSignal<any[]> = signal([]);
@@ -79,6 +89,7 @@ export class AgGridUiComponent
 
   // AG Grid theme instance (created with themeQuartz)
   private gridThemeSignal = signal<any>(themeQuartz);
+  private personalitySignal = signal<Personality | null>(null);
 
   /** Default grid options with reasonable defaults */
   public defaultGridOptions: GridOptions = {
@@ -124,6 +135,12 @@ export class AgGridUiComponent
     this.complement = colors.complementary;
     this.borderColor = colors.complementaryShades[2][1];
 
+    const personality = this.getActivePersonality();
+    const personalityTokens = personality?.tokens;
+    const spacingMultiplier = personalityTokens?.spacingMultiplier || 1;
+    const borderRadiusMultiplier = personalityTokens?.borderRadiusMultiplier || 1;
+    const borderWidth = personalityTokens?.borderWidth || '1px';
+
     // Create AG Grid theme using the new themeQuartz API
     const isDark = this.theme === 'dark';
 
@@ -160,18 +177,31 @@ export class AgGridUiComponent
         : colors.accentShades[2][1],
 
       // Spacing
-      spacing: 6,
-      cellHorizontalPadding: 12,
-      headerHeight: 48,
-      rowHeight: 42,
+      spacing: Math.max(4, Math.round(6 * spacingMultiplier)),
+      cellHorizontalPadding: Math.max(8, Math.round(12 * spacingMultiplier)),
+      headerHeight: Math.max(40, Math.round(48 * spacingMultiplier)),
+      rowHeight: Math.max(36, Math.round(42 * spacingMultiplier)),
 
       // Typography
       fontSize: 14,
-      fontFamily: 'inherit',
+      fontFamily: personality?.fonts?.body?.family || 'var(--font-family-base, inherit)',
 
       // Borders
-      borderRadius: 4,
-      wrapperBorderRadius: 4,
+      borderRadius: Math.max(2, Math.round(4 * borderRadiusMultiplier)),
+      wrapperBorderRadius: Math.max(2, Math.round(4 * borderRadiusMultiplier)),
+    });
+
+    this.setLocalCSSVariables({
+      'font-family': personality?.fonts?.body?.family || 'var(--font-family-base, inherit)',
+      'border-radius': `calc(var(--border-radius-md, 8px) * ${borderRadiusMultiplier})`,
+      'border-width': borderWidth,
+      shadow:
+        this.resolveShadow(personality) ||
+        'var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.08))',
+      'transition-duration':
+        personality?.animations?.duration?.fast ||
+        'var(--animation-duration-fast, 150ms)',
+      easing: personality?.animations?.easing || 'var(--animation-easing, ease)',
     });
 
     this.gridThemeSignal.set(newTheme);
@@ -248,6 +278,25 @@ export class AgGridUiComponent
   });
   override ngOnInit(): void {
     super.ngOnInit();
+    const initialPersonality = this.themeService.getCurrentPersonality();
+    if (initialPersonality) {
+      this.personalitySignal.set(initialPersonality);
+      this.personalityId = initialPersonality.id;
+    }
+    this.themeService.personality$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((personality) => {
+        if (!personality) {
+          return;
+        }
+        this.personalitySignal.set(personality);
+        this.personalityId = personality.id;
+
+        if (this.themeColors) {
+          this.applyTheme(this.themeColors);
+        }
+      });
+
     // Initialize signals with current input values
     this.rowDataSignal.set(this.rowData || []);
     this.columnDefsSignal.set(this.columnDefs || []);
@@ -286,5 +335,23 @@ export class AgGridUiComponent
         }
       }
     }
+  }
+
+  private getActivePersonality(): Personality | null {
+    return this.personalitySignal() || this.themeService.getCurrentPersonality();
+  }
+
+  private resolveShadow(personality: Personality | null): string {
+    const shadowIntensity = personality?.tokens?.shadowIntensity || 'medium';
+
+    if (shadowIntensity === 'none') {
+      return 'none';
+    }
+
+    return shadowIntensity === 'subtle'
+      ? 'var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.08))'
+      : shadowIntensity === 'dramatic'
+        ? 'var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.2))'
+        : 'var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.12))';
   }
 }

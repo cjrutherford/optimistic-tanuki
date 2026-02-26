@@ -1,7 +1,11 @@
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { AuthenticationService } from '../authentication.service';
-import { LoginRequest, ProfileDto } from '@optimistic-tanuki/ui-models';
+import {
+  LoginRequest,
+  ProfileDto,
+  API_BASE_URL,
+} from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
 import { jwtDecode } from 'jwt-decode';
 import { isPlatformBrowser } from '@angular/common';
@@ -34,6 +38,7 @@ export class AuthStateService {
   private authService = inject(AuthenticationService);
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
+  private apiBaseUrl = inject(API_BASE_URL);
 
   constructor() {
     if (!isPlatformBrowser(this.platformId)) {
@@ -105,6 +110,19 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
+
+    const token = this.getToken();
+
+    if (token) {
+      this.http
+        .post(`${this.apiBaseUrl}/authentication/logout`, { token })
+        .subscribe({
+          next: () => console.log('Token invalidated on gateway'),
+          error: (err) =>
+            console.error('Failed to invalidate token on gateway:', err),
+        });
+    }
+
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.profilesKey);
     localStorage.removeItem(this.selectedProfileKey);
@@ -112,6 +130,7 @@ export class AuthStateService {
     this.isAuthenticatedSubject.next(false);
     this.decodedTokenSubject.next(null);
     this.currentProfileSubject.next(null);
+    this._isAuthenticated = false;
   }
 
   private getDecodedToken(): UserData | null {

@@ -12,6 +12,7 @@ import {
   withInterceptors,
   HttpHandlerFn,
   HttpRequest,
+  withFetch,
 } from '@angular/common/http';
 import { AuthStateService } from './state/auth-state.service';
 import { AuthenticationService } from './authentication.service';
@@ -24,7 +25,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     provideAnimationsAsync(),
-    provideHttpClient(withInterceptors([AuthInterceptor])),
+    provideHttpClient(withInterceptors([AuthInterceptor]), withFetch()),
     {
       provide: API_BASE_URL,
       useValue: '/api',

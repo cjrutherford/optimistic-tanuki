@@ -5,6 +5,7 @@ import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 
 import { AssetController } from '../controllers/asset.controller';
 import { PalettesController } from '../controllers/palettes.controller';
+import { PersonalitiesController } from '../controllers/personalities.controller';
 import { AuthGuard } from '../auth/auth.guard';
 import { AuthenticationController } from '../controllers/authentication/authentication.controller';
 import { JwtService } from '@nestjs/jwt';
@@ -35,6 +36,8 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
+import { CommunityController } from '../controllers/social/community/community.controller';
+import { WellnessController } from '../controllers/wellness/wellness.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -63,10 +66,12 @@ import { SocialComponentController } from '../controllers/social/social-componen
   ],
   controllers: [
     PalettesController,
+    PersonalitiesController,
     AuthenticationController,
     ProfileController,
     SocialController,
     SocialComponentController,
+    CommunityController,
     FollowController,
     AssetController,
     ProjectPlanningController,
@@ -80,6 +85,7 @@ import { SocialComponentController } from '../controllers/social/social-componen
     StoreController,
     AppConfigController,
     ForumController,
+    WellnessController,
   ],
   providers: [
     {
@@ -301,9 +307,23 @@ import { SocialComponentController } from '../controllers/social/social-componen
     {
       provide: ServiceTokens.FORUM_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.forum'
-        );
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.forum');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.WELLNESS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.wellness');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

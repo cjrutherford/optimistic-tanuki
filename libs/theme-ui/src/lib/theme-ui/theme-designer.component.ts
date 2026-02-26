@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ThemeService, ColorPalette } from '@optimistic-tanuki/theme-lib';
 import { GradientBuilder, GradientType } from '@optimistic-tanuki/common-ui';
 import { Subject, takeUntil } from 'rxjs';
+import { PersonalitySelectorComponent } from './personality-selector.component';
+import { PersonalityPreviewComponent } from './personality-preview.component';
 
 interface GradientPreset {
   name: string;
@@ -21,7 +23,12 @@ interface ShadowPreset {
 @Component({
   selector: 'lib-theme-designer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    PersonalitySelectorComponent,
+    PersonalityPreviewComponent,
+  ],
   templateUrl: './theme-designer.component.html',
   styleUrls: ['./theme-designer.component.scss'],
 })
@@ -29,6 +36,7 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
   // Color selection
   accentColor = '#3f51b5';
   complementaryColor = '#c0af4b';
+  primaryColor = '#3f51b5';
   currentTheme: 'light' | 'dark' = 'light';
 
   // Palette management
@@ -122,6 +130,7 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
     // Load current theme settings
     this.currentTheme = this.themeService.getTheme();
     this.accentColor = this.themeService.getAccentColor();
+    this.primaryColor = this.themeService.getPersonalityConfig().primaryColor;
 
     // Load available palettes
     this.themeService.availablePalettes$
@@ -130,6 +139,7 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
         this.availablePalettes = palettes;
       });
 
+    // Subscribe to theme color changes
     this.themeService.themeColors$
       .pipe(takeUntil(this.destroy$))
       .subscribe((colors) => {
@@ -359,5 +369,17 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
         alert(error.message || 'Failed to delete palette');
       }
     }
+  }
+
+  // ==================== Personality Methods ====================
+
+  onPersonalitySelected(personality: any): void {
+    // Personality has been updated via the selector component
+    // The theme service has already been updated
+    console.log('Personality selected:', personality.name);
+  }
+
+  updatePrimaryColor(): void {
+    this.themeService.setPrimaryColor(this.primaryColor);
   }
 }

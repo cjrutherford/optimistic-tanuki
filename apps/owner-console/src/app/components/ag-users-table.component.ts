@@ -51,8 +51,8 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 })
 export class AgUsersTableComponent implements OnInit, OnChanges {
   @Input() users: ProfileDto[] = [];
-  @Input() loading: boolean = false;
-  @Input() height: string = '600px';
+  @Input() loading = false;
+  @Input() height = '600px';
   @Output() manageRoles = new EventEmitter<ProfileDto>();
 
   // Internal signals

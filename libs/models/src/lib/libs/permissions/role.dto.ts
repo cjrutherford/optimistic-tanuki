@@ -48,6 +48,11 @@ export class AssignRoleDto {
   @IsString()
   @ApiProperty()
   appScopeId!: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional()
+  targetId?: string;
 }
 
 export class RoleDto {
@@ -78,4 +83,8 @@ export class RoleAssignmentDto {
   role!: RoleDto;
   @ApiProperty()
   created_at!: Date;
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional()
+  targetId?: string;
 }
