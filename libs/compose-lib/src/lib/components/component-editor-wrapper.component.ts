@@ -15,7 +15,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 
 import {
   InjectedComponentInstance,
@@ -39,7 +39,7 @@ import {
 @Component({
   selector: 'lib-component-editor-wrapper',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   template: `
     <div
       class="component-editor-wrapper"
@@ -61,7 +61,10 @@ import {
         [class.visible]="isHovered || isLocked || isSelected"
       >
         <div class="component-label">
-          <mat-icon *ngIf="componentDef.icon">{{ componentDef.icon }}</mat-icon>
+          <otui-icon
+            *ngIf="componentDef.icon"
+            [name]="componentDef.icon"
+          ></otui-icon>
           <span class="label-text">{{ componentDef.name || 'Component' }}</span>
           <span
             class="lock-indicator"
@@ -77,21 +80,21 @@ import {
             (click)="onEditClick($event)"
             title="Edit Properties"
           >
-            <mat-icon>edit</mat-icon>
+            <otui-icon name="edit"></otui-icon>
           </button>
           <button
             class="control-btn duplicate-btn"
             (click)="onDuplicateClick($event)"
             title="Duplicate Component"
           >
-            <mat-icon>content_copy</mat-icon>
+            <otui-icon name="content-copy"></otui-icon>
           </button>
           <button
             class="control-btn delete-btn"
             (click)="onDeleteClick($event)"
             title="Delete Component"
           >
-            <mat-icon>delete</mat-icon>
+            <otui-icon name="delete"></otui-icon>
           </button>
         </div>
       </div>
@@ -104,9 +107,10 @@ import {
         <!-- Fallback preview when component cannot be rendered -->
         <div class="component-preview" *ngIf="!dynamicComponentRef">
           <div class="preview-header">
-            <mat-icon *ngIf="componentDef.icon">{{
-              componentDef.icon
-            }}</mat-icon>
+            <otui-icon
+              *ngIf="componentDef.icon"
+              [name]="componentDef.icon"
+            ></otui-icon>
             <h4>{{ componentDef.name || 'Component' }}</h4>
           </div>
           <p class="preview-description">
@@ -143,9 +147,11 @@ import {
       >
         <div class="quick-edit-header">
           <div class="header-content">
-            <mat-icon *ngIf="componentDef.icon" class="component-icon">{{
-              componentDef.icon
-            }}</mat-icon>
+            <otui-icon
+              *ngIf="componentDef.icon"
+              class="component-icon"
+              [name]="componentDef.icon"
+            ></otui-icon>
             <div>
               <h4>{{ componentDef.name }}</h4>
               <p *ngIf="componentDef.description" class="component-description">
@@ -158,7 +164,7 @@ import {
             (click)="closeQuickEdit(); $event.stopPropagation()"
             title="Close"
           >
-            <mat-icon>close</mat-icon>
+            <otui-icon name="close"></otui-icon>
           </button>
         </div>
 

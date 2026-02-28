@@ -1,11 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, MatCardModule, CardComponent],
+  imports: [CommonModule, CardComponent],
   selector: 'app-gallery',
   templateUrl: './gallery.component.html',
   styleUrls: ['./gallery.component.scss'],

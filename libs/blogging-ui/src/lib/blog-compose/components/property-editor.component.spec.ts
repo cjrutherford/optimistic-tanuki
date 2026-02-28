@@ -1,10 +1,26 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PropertyEditorComponent } from './property-editor.component';
-import { InjectedComponentInstance, PropertyDefinition } from '../interfaces/component-injection.interface';
-import { Component, Input, Output, EventEmitter, forwardRef } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import {
+  InjectedComponentInstance,
+  PropertyDefinition,
+} from '../interfaces/component-injection.interface';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  forwardRef,
+} from '@angular/core';
+import {
+  ControlValueAccessor,
+  NG_VALUE_ACCESSOR,
+  FormsModule,
+} from '@angular/forms';
+import {
+  IconComponent,
+  ButtonComponent,
+  CardComponent,
+} from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 @Component({
@@ -15,9 +31,9 @@ import { TextInputComponent } from '@optimistic-tanuki/form-ui';
     {
       provide: NG_VALUE_ACCESSOR,
       useExisting: forwardRef(() => MockTextInputComponent),
-      multi: true
-    }
-  ]
+      multi: true,
+    },
+  ],
 })
 class MockTextInputComponent implements ControlValueAccessor {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,7 +55,7 @@ class MockTextInputComponent implements ControlValueAccessor {
 @Component({
   selector: 'otui-button',
   standalone: true,
-  template: '<ng-content></ng-content>'
+  template: '<ng-content></ng-content>',
 })
 class MockButtonComponent {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,14 +66,14 @@ class MockButtonComponent {
 @Component({
   selector: 'otui-card',
   standalone: true,
-  template: '<ng-content></ng-content>'
+  template: '<ng-content></ng-content>',
 })
 class MockCardComponent {}
 
 @Component({
   selector: 'mat-icon',
   standalone: true,
-  template: ''
+  template: '',
 })
 class MockMatIconComponent {}
 
@@ -74,7 +90,7 @@ describe('PropertyEditorComponent', () => {
       component: {} as any,
       category: 'Test',
       description: 'A test component',
-      icon: ''
+      icon: '',
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     componentRef: {} as any,
@@ -82,26 +98,40 @@ describe('PropertyEditorComponent', () => {
       title: 'Initial Title',
       count: 10,
       tags: ['a', 'b'],
-      config: { enabled: true }
-    }
+      config: { enabled: true },
+    },
   };
 
   const mockPropertyDefinitions: PropertyDefinition[] = [
     { key: 'title', type: 'string', label: 'Title' },
     { key: 'count', type: 'number', label: 'Count' },
     { key: 'tags', type: 'array', label: 'Tags' },
-    { key: 'config', type: 'object', label: 'Config' }
+    { key: 'config', type: 'object', label: 'Config' },
   ];
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PropertyEditorComponent, FormsModule]
+      imports: [PropertyEditorComponent, FormsModule],
     })
-    .overrideComponent(PropertyEditorComponent, {
-      remove: { imports: [MatIconModule, ButtonComponent, CardComponent, TextInputComponent] },
-      add: { imports: [MockTextInputComponent, MockButtonComponent, MockCardComponent, MockMatIconComponent] }
-    })
-    .compileComponents();
+      .overrideComponent(PropertyEditorComponent, {
+        remove: {
+          imports: [
+            IconComponent,
+            ButtonComponent,
+            CardComponent,
+            TextInputComponent,
+          ],
+        },
+        add: {
+          imports: [
+            MockTextInputComponent,
+            MockButtonComponent,
+            MockCardComponent,
+            MockMatIconComponent,
+          ],
+        },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(PropertyEditorComponent);
     component = fixture.componentInstance;
@@ -153,36 +183,45 @@ describe('PropertyEditorComponent', () => {
   describe('Saving', () => {
     it('should emit cleaned data on save', () => {
       jest.spyOn(component.propertiesUpdated, 'emit');
-      
+
       component.editedData = {
         title: 'New Title',
         count: 20,
         tags: ['x'],
         tags_json: '["x"]', // Should be removed
         config: { a: 1 },
-        config_json: '{"a": 1}' // Should be removed
+        config_json: '{"a": 1}', // Should be removed
       };
-      
+
       component.onSave();
-      
+
       expect(component.propertiesUpdated.emit).toHaveBeenCalledWith({
         title: 'New Title',
         count: 20,
         tags: ['x'],
-        config: { a: 1 }
+        config: { a: 1 },
       });
     });
   });
 
   describe('Placeholders', () => {
     it('should return default value string if present', () => {
-      const prop: PropertyDefinition = { key: 'test', type: 'string', label: '', defaultValue: 'Default' };
+      const prop: PropertyDefinition = {
+        key: 'test',
+        type: 'string',
+        label: '',
+        defaultValue: 'Default',
+      };
       expect(component.getPlaceholder(prop)).toBe('Default');
     });
 
     it('should return type specific placeholder if no default', () => {
-      expect(component.getPlaceholder({ key: 'k', type: 'string', label: '' })).toBe('Enter text...');
-      expect(component.getPlaceholder({ key: 'k', type: 'number', label: '' })).toBe('0');
+      expect(
+        component.getPlaceholder({ key: 'k', type: 'string', label: '' })
+      ).toBe('Enter text...');
+      expect(
+        component.getPlaceholder({ key: 'k', type: 'number', label: '' })
+      ).toBe('0');
     });
   });
 });

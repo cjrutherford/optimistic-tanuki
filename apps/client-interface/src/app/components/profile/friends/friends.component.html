@@ -1,15 +1,15 @@
 <otui-tile>
   <div class="icon">
-    <mat-icon matListIcon>person</mat-icon>
+    <otui-icon name="person"></otui-icon>
   </div>
   <div class="img">
     <img
-      mat-card-avatar
+      class="avatar"
       [src]="friend.photo || 'https://placehold.it/300x300'"
       alt="{{ friend.name }}"
       width="500px"
     />
   </div>
 
-  <div matLine>{{ friend.name }}</div>
+  <div class="name">{{ friend.name }}</div>
 </otui-tile>

@@ -15,7 +15,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 
 import {
   InjectedComponentInstance,
@@ -40,7 +40,7 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
 @Component({
   selector: 'lib-component-editor-wrapper',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   template: `
     <div
       class="component-editor-wrapper"

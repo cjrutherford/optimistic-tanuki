@@ -11,9 +11,12 @@ import {
   Input,
 } from '@angular/core';
 
-import { MatDialog } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ButtonComponent,
+  CardComponent,
+  ModalComponent,
+} from '@optimistic-tanuki/common-ui';
 import { TiptapEditorDirective } from 'ngx-tiptap';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -34,6 +37,7 @@ import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
     FormsModule,
     CardComponent,
     ButtonComponent,
+    ModalComponent,
     TiptapEditorDirective,
     RichTextToolbarComponent,
   ],
@@ -62,8 +66,8 @@ export class CommentComponent
   comment = '';
   accentShade!: string;
   editor: Editor | null = null;
+  showDialog = false;
 
-  private dialog = inject(MatDialog);
   private imageUploadService = inject(ImageUploadService);
 
   constructor() {
@@ -138,7 +142,10 @@ export class CommentComponent
         if (base64Src) {
           try {
             const fileName = file.name || `image_${Date.now()}`;
-            const assetUrl = await this.imageUploadCallback!(base64Src, fileName);
+            const assetUrl = await this.imageUploadCallback!(
+              base64Src,
+              fileName
+            );
             if (this.editor) {
               this.editor.chain().focus().setImage({ src: assetUrl }).run();
             }
@@ -197,8 +204,7 @@ export class CommentComponent
   }
 
   openCommentDialog() {
-    this.dialog.closeAll();
-    this.dialog.open(this.commentDialog);
+    this.showDialog = true;
   }
 
   onSubmit() {
@@ -207,7 +213,7 @@ export class CommentComponent
     if (this.editor) {
       this.editor.commands.setContent('');
     }
-    this.dialog.closeAll();
+    this.showDialog = false;
   }
 
   onCancel() {
@@ -215,6 +221,6 @@ export class CommentComponent
     if (this.editor) {
       this.editor.commands.setContent('');
     }
-    this.dialog.closeAll();
+    this.showDialog = false;
   }
 }

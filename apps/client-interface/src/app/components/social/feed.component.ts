@@ -7,8 +7,6 @@ import {
   inject,
 } from '@angular/core';
 
-import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
 import {
   ButtonComponent,
   SpinnerComponent,
@@ -46,14 +44,7 @@ import { CommunityService } from '../../community.service';
 @Component({
   selector: 'app-feed',
   standalone: true,
-  imports: [
-    ButtonComponent,
-    SpinnerComponent,
-    MatInputModule,
-    MatIconModule,
-    ComposeComponent,
-    PostComponent,
-  ],
+  imports: [ButtonComponent, SpinnerComponent, ComposeComponent, PostComponent],
   providers: [
     ThemeService,
     PostService,

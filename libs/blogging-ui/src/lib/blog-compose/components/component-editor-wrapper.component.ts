@@ -15,7 +15,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 
 import {
   InjectedComponentInstance,
@@ -39,7 +39,7 @@ import {
 @Component({
   selector: 'lib-component-editor-wrapper',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   template: `
     <div
       class="component-editor-wrapper"
@@ -56,15 +56,21 @@ import {
       [attr.data-component-id]="componentId"
     >
       <!-- Top Control Bar -->
-      <div class="control-bar" [class.visible]="isHovered || isLocked || isSelected">
+      <div
+        class="control-bar"
+        [class.visible]="isHovered || isLocked || isSelected"
+      >
         <div class="component-label">
-          <mat-icon *ngIf="componentDef.icon">{{
-            componentDef.icon
-          }}</mat-icon>
-          <span class="label-text">{{
-            componentDef.name || 'Component'
-          }}</span>
-          <span class="lock-indicator" *ngIf="isLocked" title="Locked - Click wrapper to unlock">
+          <otui-icon
+            *ngIf="componentDef.icon"
+            [name]="componentDef.icon"
+          ></otui-icon>
+          <span class="label-text">{{ componentDef.name || 'Component' }}</span>
+          <span
+            class="lock-indicator"
+            *ngIf="isLocked"
+            title="Locked - Click wrapper to unlock"
+          >
             🔒
           </span>
         </div>
@@ -74,21 +80,21 @@ import {
             (click)="onEditClick($event)"
             title="Edit Properties"
           >
-            <mat-icon>edit</mat-icon>
+            <otui-icon name="edit"></otui-icon>
           </button>
           <button
             class="control-btn duplicate-btn"
             (click)="onDuplicateClick($event)"
             title="Duplicate Component"
           >
-            <mat-icon>content_copy</mat-icon>
+            <otui-icon name="content-copy"></otui-icon>
           </button>
           <button
             class="control-btn delete-btn"
             (click)="onDeleteClick($event)"
             title="Delete Component"
           >
-            <mat-icon>delete</mat-icon>
+            <otui-icon name="delete"></otui-icon>
           </button>
         </div>
       </div>
@@ -101,9 +107,10 @@ import {
         <!-- Fallback preview when component cannot be rendered -->
         <div class="component-preview" *ngIf="!dynamicComponentRef">
           <div class="preview-header">
-            <mat-icon *ngIf="componentDef.icon">{{
-              componentDef.icon
-            }}</mat-icon>
+            <otui-icon
+              *ngIf="componentDef.icon"
+              [name]="componentDef.icon"
+            ></otui-icon>
             <h4>{{ componentDef.name || 'Component' }}</h4>
           </div>
           <p class="preview-description">
@@ -140,24 +147,41 @@ import {
       >
         <div class="quick-edit-header">
           <div class="header-content">
-            <mat-icon *ngIf="componentDef.icon" class="component-icon">{{ componentDef.icon }}</mat-icon>
+            <otui-icon
+              *ngIf="componentDef.icon"
+              class="component-icon"
+              [name]="componentDef.icon"
+            ></otui-icon>
             <div>
               <h4>{{ componentDef.name }}</h4>
-              <p *ngIf="componentDef.description" class="component-description">{{ componentDef.description }}</p>
+              <p *ngIf="componentDef.description" class="component-description">
+                {{ componentDef.description }}
+              </p>
             </div>
           </div>
-          <button class="close-btn" (click)="closeQuickEdit(); $event.stopPropagation()" title="Close">
-            <mat-icon>close</mat-icon>
+          <button
+            class="close-btn"
+            (click)="closeQuickEdit(); $event.stopPropagation()"
+            title="Close"
+          >
+            <otui-icon name="close"></otui-icon>
           </button>
         </div>
-        
+
         <div class="quick-edit-form">
           <div class="form-field" *ngFor="let prop of editableProperties">
             <label [for]="'quick-' + prop.key" class="property-label">
               {{ prop.label }}
-              <span *ngIf="prop.isOutput" class="output-indicator" title="Output property">📤</span>
+              <span
+                *ngIf="prop.isOutput"
+                class="output-indicator"
+                title="Output property"
+                >📤</span
+              >
             </label>
-            <p *ngIf="prop.description" class="property-description">{{ prop.description }}</p>
+            <p *ngIf="prop.description" class="property-description">
+              {{ prop.description }}
+            </p>
 
             <!-- String/URL input -->
             <input
@@ -193,7 +217,9 @@ import {
                 [(ngModel)]="editingData[prop.key]"
                 class="checkbox-input"
               />
-              <span class="checkbox-label">{{ prop.description || prop.label }}</span>
+              <span class="checkbox-label">{{
+                prop.description || prop.label
+              }}</span>
             </div>
 
             <!-- Select dropdown -->
@@ -205,7 +231,10 @@ import {
               (keydown)="$event.stopPropagation()"
               (keyup)="$event.stopPropagation()"
             >
-              <option *ngFor="let option of prop.options" [value]="option.value">
+              <option
+                *ngFor="let option of prop.options"
+                [value]="option.value"
+              >
                 {{ option.label }}
               </option>
             </select>
@@ -237,12 +266,18 @@ import {
             ></textarea>
           </div>
         </div>
-        
+
         <div class="quick-edit-actions">
-          <button class="action-btn cancel-btn" (click)="cancelQuickEdit(); $event.stopPropagation()">
+          <button
+            class="action-btn cancel-btn"
+            (click)="cancelQuickEdit(); $event.stopPropagation()"
+          >
             Cancel
           </button>
-          <button class="action-btn save-btn" (click)="saveQuickEdit(); $event.stopPropagation()">
+          <button
+            class="action-btn save-btn"
+            (click)="saveQuickEdit(); $event.stopPropagation()"
+          >
             Save Changes
           </button>
         </div>
@@ -275,7 +310,7 @@ import {
       }
 
       .component-editor-wrapper.locked {
-        border-color: #2196F3;
+        border-color: #2196f3;
         background-color: rgba(33, 150, 243, 0.08);
         box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
         z-index: 3; /* Locked wrapper is above selected */
@@ -341,8 +376,13 @@ import {
       }
 
       @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
       }
 
       .control-buttons {
@@ -694,7 +734,8 @@ import {
   ],
 })
 export class ComponentEditorWrapperComponent
-  implements OnInit, OnDestroy, OnChanges, AfterViewInit {
+  implements OnInit, OnDestroy, OnChanges, AfterViewInit
+{
   @ViewChild('componentHost', { read: ViewContainerRef })
   componentHost!: ViewContainerRef;
 
@@ -713,11 +754,11 @@ export class ComponentEditorWrapperComponent
   }>();
 
   isHovered = false;
-  isLocked = false;  // New: Click-to-lock state
+  isLocked = false; // New: Click-to-lock state
   isEditing = false;
   editingData: Record<string, unknown> = {};
   dynamicComponentRef: ComponentRef<unknown> | null = null;
-  componentId: string;  // New: Unique identifier for logging
+  componentId: string; // New: Unique identifier for logging
 
   get editableProperties(): PropertyDefinition[] {
     if (!this.componentDef?.id) return [];
@@ -728,14 +769,16 @@ export class ComponentEditorWrapperComponent
 
   constructor() {
     this.componentId = `component-${Math.random().toString(36).substr(2, 9)}`;
-    console.log(`[ComponentLifecycle] Component wrapper created with ID: ${this.componentId}`);
+    console.log(
+      `[ComponentLifecycle] Component wrapper created with ID: ${this.componentId}`
+    );
   }
 
   ngOnInit(): void {
     console.log(`[ComponentLifecycle] ${this.componentId} - Initializing`, {
       componentDefId: this.componentDef?.id,
       componentData: this.componentData,
-      instanceId: this.componentInstance?.instanceId
+      instanceId: this.componentInstance?.instanceId,
     });
     this.initializeEditingData();
   }
@@ -786,13 +829,19 @@ export class ComponentEditorWrapperComponent
       const parsed = JSON.parse(jsonString);
       if (Array.isArray(parsed)) {
         this.editingData[key] = parsed;
-        console.log(`[ComponentLifecycle] ${this.componentId} - Array updated from JSON`, {
-          key,
-          value: parsed
-        });
+        console.log(
+          `[ComponentLifecycle] ${this.componentId} - Array updated from JSON`,
+          {
+            key,
+            value: parsed,
+          }
+        );
       }
     } catch (error) {
-      console.warn(`[ComponentLifecycle] ${this.componentId} - Invalid JSON for array property ${key}`, error);
+      console.warn(
+        `[ComponentLifecycle] ${this.componentId} - Invalid JSON for array property ${key}`,
+        error
+      );
     }
   }
 
@@ -801,23 +850,32 @@ export class ComponentEditorWrapperComponent
       const parsed = JSON.parse(jsonString);
       if (typeof parsed === 'object' && parsed !== null) {
         this.editingData[key] = parsed;
-        console.log(`[ComponentLifecycle] ${this.componentId} - Object updated from JSON`, {
-          key,
-          value: parsed
-        });
+        console.log(
+          `[ComponentLifecycle] ${this.componentId} - Object updated from JSON`,
+          {
+            key,
+            value: parsed,
+          }
+        );
       }
     } catch (error) {
-      console.warn(`[ComponentLifecycle] ${this.componentId} - Invalid JSON for object property ${key}`, error);
+      console.warn(
+        `[ComponentLifecycle] ${this.componentId} - Invalid JSON for object property ${key}`,
+        error
+      );
     }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['componentData']) {
-      console.log(`[ComponentLifecycle] ${this.componentId} - Component data changed`, {
-        previousValue: changes['componentData'].previousValue,
-        currentValue: changes['componentData'].currentValue,
-        isEditing: this.isEditing
-      });
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Component data changed`,
+        {
+          previousValue: changes['componentData'].previousValue,
+          currentValue: changes['componentData'].currentValue,
+          isEditing: this.isEditing,
+        }
+      );
       // Always update editingData when componentData changes from parent
       // This ensures the quick-edit form shows the latest data
       if (!this.isEditing) {
@@ -828,16 +886,19 @@ export class ComponentEditorWrapperComponent
       this.updateDynamicComponent();
     }
     if (changes['componentDef'] && this.componentHost) {
-      console.log(`[ComponentLifecycle] ${this.componentId} - Component definition changed`, {
-        componentDefId: this.componentDef?.id
-      });
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Component definition changed`,
+        {
+          componentDefId: this.componentDef?.id,
+        }
+      );
       this.renderDynamicComponent();
     }
   }
 
   ngAfterViewInit(): void {
     console.log(`[ComponentLifecycle] ${this.componentId} - After view init`, {
-      hasComponent: !!this.componentDef?.component
+      hasComponent: !!this.componentDef?.component,
     });
     if (this.componentDef?.component) {
       setTimeout(() => this.renderDynamicComponent());
@@ -876,7 +937,9 @@ export class ComponentEditorWrapperComponent
     // Only enable hover if not locked
     if (!this.isLocked) {
       this.isHovered = true;
-      console.log(`[ComponentLifecycle] ${this.componentId} - Mouse enter (hover enabled)`);
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Mouse enter (hover enabled)`
+      );
     }
   }
 
@@ -884,7 +947,9 @@ export class ComponentEditorWrapperComponent
     // Only disable hover if not locked
     if (!this.isLocked) {
       this.isHovered = false;
-      console.log(`[ComponentLifecycle] ${this.componentId} - Mouse leave (hover disabled)`);
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Mouse leave (hover disabled)`
+      );
     }
   }
 
@@ -894,7 +959,9 @@ export class ComponentEditorWrapperComponent
     // Check if clicking on control buttons
     const target = event.target as HTMLElement;
     if (target.closest('.control-buttons')) {
-      console.log(`[ComponentLifecycle] ${this.componentId} - Click on control button, not toggling lock`);
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Click on control button, not toggling lock`
+      );
       return;
     }
 
@@ -904,12 +971,17 @@ export class ComponentEditorWrapperComponent
     if (this.isLocked) {
       // When locking, force controls visible and disable hover
       this.isHovered = false;
-      console.log(`[ComponentLifecycle] ${this.componentId} - Locked (controls pinned, hover disabled)`, {
-        instanceId: this.componentInstance?.instanceId
-      });
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Locked (controls pinned, hover disabled)`,
+        {
+          instanceId: this.componentInstance?.instanceId,
+        }
+      );
     } else {
       // When unlocking, re-enable hover
-      console.log(`[ComponentLifecycle] ${this.componentId} - Unlocked (hover re-enabled)`);
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Unlocked (hover re-enabled)`
+      );
     }
 
     this.selectionChanged.emit(this.componentInstance);
@@ -931,10 +1003,13 @@ export class ComponentEditorWrapperComponent
     // Prevent TipTap from capturing keyboard events in the overlay
     // This allows typing in form inputs without replacing the component
     event.stopPropagation();
-    console.log(`[ComponentLifecycle] ${this.componentId} - Keydown in overlay (stopped propagation)`, {
-      key: event.key,
-      target: (event.target as HTMLElement).tagName
-    });
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Keydown in overlay (stopped propagation)`,
+      {
+        key: event.key,
+        target: (event.target as HTMLElement).tagName,
+      }
+    );
   }
 
   onOverlayKeyUp(event: KeyboardEvent): void {
@@ -950,7 +1025,9 @@ export class ComponentEditorWrapperComponent
   onOverlayPaste(event: ClipboardEvent): void {
     // Prevent TipTap from capturing paste events in the overlay
     event.stopPropagation();
-    console.log(`[ComponentLifecycle] ${this.componentId} - Paste event stopped from propagating to TipTap`);
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Paste event stopped from propagating to TipTap`
+    );
   }
 
   onEditClick(event: Event): void {
@@ -958,24 +1035,32 @@ export class ComponentEditorWrapperComponent
     const wasEditing = this.isEditing;
     this.isEditing = !this.isEditing;
 
-    console.log(`[ComponentLifecycle] ${this.componentId} - Edit button clicked`, {
-      wasEditing,
-      isNowEditing: this.isEditing,
-      currentData: this.componentData
-    });
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Edit button clicked`,
+      {
+        wasEditing,
+        isNowEditing: this.isEditing,
+        currentData: this.componentData,
+      }
+    );
 
     if (this.isEditing) {
       this.editingData = { ...this.componentData };
-      console.log(`[ComponentLifecycle] ${this.componentId} - Edit mode enabled, editing data initialized`);
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Edit mode enabled, editing data initialized`
+      );
     }
   }
 
   onDuplicateClick(event: Event): void {
     event.stopPropagation();
-    console.log(`[ComponentLifecycle] ${this.componentId} - Duplicate button clicked`, {
-      componentDefId: this.componentDef?.id,
-      componentData: this.componentData
-    });
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Duplicate button clicked`,
+      {
+        componentDefId: this.componentDef?.id,
+        componentData: this.componentData,
+      }
+    );
     if (this.isEditing) {
       this.closeQuickEdit();
     }
@@ -984,10 +1069,13 @@ export class ComponentEditorWrapperComponent
 
   onDeleteClick(event: Event): void {
     event.stopPropagation();
-    console.log(`[ComponentLifecycle] ${this.componentId} - Delete button clicked`, {
-      componentDefId: this.componentDef?.id,
-      instanceId: this.componentInstance?.instanceId
-    });
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Delete button clicked`,
+      {
+        componentDefId: this.componentDef?.id,
+        instanceId: this.componentInstance?.instanceId,
+      }
+    );
     if (this.isEditing) {
       this.closeQuickEdit();
     }
@@ -995,24 +1083,32 @@ export class ComponentEditorWrapperComponent
   }
 
   closeQuickEdit(): void {
-    console.log(`[ComponentLifecycle] ${this.componentId} - Closing quick edit`);
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Closing quick edit`
+    );
     this.isEditing = false;
   }
 
   cancelQuickEdit(): void {
-    console.log(`[ComponentLifecycle] ${this.componentId} - Quick edit cancelled`, {
-      discardedChanges: this.editingData,
-      originalData: this.componentData
-    });
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Quick edit cancelled`,
+      {
+        discardedChanges: this.editingData,
+        originalData: this.componentData,
+      }
+    );
     this.editingData = { ...this.componentData };
     this.isEditing = false;
   }
 
   saveQuickEdit(): void {
-    console.log(`[ComponentLifecycle] ${this.componentId} - Saving quick edit`, {
-      oldData: this.componentData,
-      newData: this.editingData
-    });
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Saving quick edit`,
+      {
+        oldData: this.componentData,
+        newData: this.editingData,
+      }
+    );
 
     // Clean up temporary JSON strings before saving
     const cleanedData = { ...this.editingData };
@@ -1038,7 +1134,9 @@ export class ComponentEditorWrapperComponent
     // Update the rendered component
     this.updateDynamicComponent();
 
-    console.log(`[ComponentLifecycle] ${this.componentId} - Quick edit saved successfully, overlay closed`);
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Quick edit saved successfully, overlay closed`
+    );
   }
 
   hasVisibleProperties(): boolean {
@@ -1074,14 +1172,19 @@ export class ComponentEditorWrapperComponent
 
   private renderDynamicComponent(): void {
     if (!this.componentHost || !this.componentDef?.component) {
-      console.log(`[ComponentLifecycle] ${this.componentId} - Cannot render: missing host or component def`);
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Cannot render: missing host or component def`
+      );
       return;
     }
 
-    console.log(`[ComponentLifecycle] ${this.componentId} - Rendering dynamic component`, {
-      componentDefId: this.componentDef?.id,
-      componentType: this.componentDef?.component.name
-    });
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Rendering dynamic component`,
+      {
+        componentDefId: this.componentDef?.id,
+        componentType: this.componentDef?.component.name,
+      }
+    );
 
     this.destroyDynamicComponent();
 
@@ -1090,16 +1193,23 @@ export class ComponentEditorWrapperComponent
         this.componentDef.component
       );
       this.updateDynamicComponent();
-      console.log(`[ComponentLifecycle] ${this.componentId} - Dynamic component rendered successfully`);
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Dynamic component rendered successfully`
+      );
     } catch (error) {
-      console.error(`[ComponentLifecycle] ${this.componentId} - Error rendering dynamic component:`, error);
+      console.error(
+        `[ComponentLifecycle] ${this.componentId} - Error rendering dynamic component:`,
+        error
+      );
       this.dynamicComponentRef = null;
     }
   }
 
   private updateDynamicComponent(): void {
     if (!this.dynamicComponentRef) {
-      console.log(`[ComponentLifecycle] ${this.componentId} - Skipping update: no component ref`);
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Skipping update: no component ref`
+      );
       return;
     }
 
@@ -1108,12 +1218,18 @@ export class ComponentEditorWrapperComponent
       ...this.componentData,
     };
 
-    console.log(`[ComponentLifecycle] ${this.componentId} - Updating dynamic component`, {
-      mergedData: data
-    });
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Updating dynamic component`,
+      {
+        mergedData: data,
+      }
+    );
 
     if (this.dynamicComponentRef) {
-      const instance = this.dynamicComponentRef.instance as Record<string, unknown>;
+      const instance = this.dynamicComponentRef.instance as Record<
+        string,
+        unknown
+      >;
       Object.keys(data).forEach((key) => {
         if (instance && instance[key] !== undefined) {
           instance[key] = data[key];
@@ -1122,7 +1238,9 @@ export class ComponentEditorWrapperComponent
       this.dynamicComponentRef.changeDetectorRef.detectChanges();
     }
 
-    console.log(`[ComponentLifecycle] ${this.componentId} - Dynamic component updated`);
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - Dynamic component updated`
+    );
   }
 
   /**
@@ -1130,11 +1248,14 @@ export class ComponentEditorWrapperComponent
    * Used by the injection service when data changes
    */
   public updateComponentData(newData: Record<string, unknown>): void {
-    console.log(`[ComponentLifecycle] ${this.componentId} - External data update requested`, {
-      currentData: this.componentData,
-      newData,
-      isEditing: this.isEditing
-    });
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - External data update requested`,
+      {
+        currentData: this.componentData,
+        newData,
+        isEditing: this.isEditing,
+      }
+    );
 
     this.componentData = { ...this.componentData, ...newData };
     if (!this.isEditing) {
@@ -1142,12 +1263,16 @@ export class ComponentEditorWrapperComponent
     }
     this.updateDynamicComponent();
 
-    console.log(`[ComponentLifecycle] ${this.componentId} - External data update completed`);
+    console.log(
+      `[ComponentLifecycle] ${this.componentId} - External data update completed`
+    );
   }
 
   private destroyDynamicComponent(): void {
     if (this.dynamicComponentRef) {
-      console.log(`[ComponentLifecycle] ${this.componentId} - Destroying existing dynamic component`);
+      console.log(
+        `[ComponentLifecycle] ${this.componentId} - Destroying existing dynamic component`
+      );
       this.dynamicComponentRef.destroy();
       this.dynamicComponentRef = null;
     }

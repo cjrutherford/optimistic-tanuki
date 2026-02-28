@@ -16,6 +16,7 @@ import { SocialComponent } from '../entities/social-component.entity';
 import { Community } from '../entities/community.entity';
 import { CommunityMember } from '../entities/community-member.entity';
 import { CommunityInvite } from '../entities/community-invite.entity';
+import { Notification } from '../entities/notification.entity';
 import { VoteService } from './services/vote.service';
 import { PostService } from './services/post.service';
 import { LinkService } from './services/link.service';
@@ -25,6 +26,7 @@ import { SocialComponentService } from './services/social-component.service';
 import { CommunityService } from './services/community.service';
 import FollowEntity from '../entities/Follow.entity';
 import FollowService from './services/follow.service';
+import { NotificationService } from './services/notification.service';
 
 @Module({
   imports: [
@@ -47,6 +49,7 @@ import FollowService from './services/follow.service';
     FollowService,
     SocialComponentService,
     CommunityService,
+    NotificationService,
     {
       provide: getRepositoryToken(Post),
       useFactory: (ds: DataSource) => ds.getRepository(Post),
@@ -95,6 +98,11 @@ import FollowService from './services/follow.service';
     {
       provide: getRepositoryToken(CommunityInvite),
       useFactory: (ds: DataSource) => ds.getRepository(CommunityInvite),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(Notification),
+      useFactory: (ds: DataSource) => ds.getRepository(Notification),
       inject: ['SOCIAL_CONNECTION'],
     },
   ],

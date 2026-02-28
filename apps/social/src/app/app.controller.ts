@@ -16,6 +16,7 @@ import {
   FollowCommands,
   SocialComponentCommands,
   CommunityCommands,
+  NotificationCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateAttachmentDto,
@@ -46,6 +47,7 @@ import { transformSearchCommentDtoToFindOptions } from '../entities/comment.enti
 import { Attachment, toFindOptions } from '../entities/attachment.entity';
 import { FindManyOptions, FindOneOptions, FindOptions, In } from 'typeorm';
 import FollowService from './services/follow.service';
+import { NotificationService } from './services/notification.service';
 
 @Controller()
 export class AppController {
@@ -57,7 +59,8 @@ export class AppController {
     private readonly commentService: CommentService,
     private readonly followService: FollowService,
     private readonly socialComponentService: SocialComponentService,
-    private readonly communityService: CommunityService
+    private readonly communityService: CommunityService,
+    private readonly notificationService: NotificationService
   ) {}
 
   @MessagePattern({ cmd: PostCommands.CREATE })
@@ -660,5 +663,61 @@ export class AppController {
     }
 
     return posts;
+  }
+
+  // Notification handlers
+  @MessagePattern({ cmd: NotificationCommands.CREATE })
+  async createNotification(
+    @Payload()
+    data: {
+      recipientId: string;
+      type: string;
+      title: string;
+      body: string;
+      senderId?: string;
+      resourceType?: string;
+      resourceId?: string;
+      actionUrl?: string;
+    }
+  ) {
+    return await this.notificationService.create(data);
+  }
+
+  @MessagePattern({ cmd: NotificationCommands.FIND })
+  async findNotification(@Payload('id') id: string) {
+    return await this.notificationService.findOne(id);
+  }
+
+  @MessagePattern({ cmd: NotificationCommands.FIND_BY_RECIPIENT })
+  async findNotificationsByRecipient(
+    @Payload('recipientId') recipientId: string
+  ) {
+    return await this.notificationService.findByRecipient(recipientId);
+  }
+
+  @MessagePattern({ cmd: NotificationCommands.MARK_READ })
+  async markNotificationRead(@Payload('id') id: string) {
+    await this.notificationService.markAsRead(id);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: NotificationCommands.MARK_ALL_READ })
+  async markAllNotificationsRead(@Payload('recipientId') recipientId: string) {
+    await this.notificationService.markAllAsRead(recipientId);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: NotificationCommands.DELETE })
+  async deleteNotification(@Payload('id') id: string) {
+    await this.notificationService.delete(id);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: NotificationCommands.GET_UNREAD_COUNT })
+  async getUnreadNotificationCount(
+    @Payload('recipientId') recipientId: string
+  ) {
+    const count = await this.notificationService.getUnreadCount(recipientId);
+    return { count };
   }
 }

@@ -252,6 +252,9 @@ services:
       - '3005:3005'
     volumes:
       - assets_storage:/usr/src/app/storage
+    environment:
+      - STORAGE_STRATEGY=local
+      - LOCAL_STORAGE_PATH=/usr/src/app/storage
     depends_on:
       postgres:
         condition: service_healthy

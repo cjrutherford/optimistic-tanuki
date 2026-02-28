@@ -2,13 +2,16 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ComponentSelectorComponent } from './component-selector.component';
 import { InjectableComponent } from '../interfaces/component-injection.interface';
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import {
+  IconComponent,
+  ButtonComponent,
+  CardComponent,
+} from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'otui-button',
   standalone: true,
-  template: '<ng-content></ng-content>'
+  template: '<ng-content></ng-content>',
 })
 class MockButtonComponent {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,14 +22,14 @@ class MockButtonComponent {
 @Component({
   selector: 'otui-card',
   standalone: true,
-  template: '<ng-content></ng-content>'
+  template: '<ng-content></ng-content>',
 })
 class MockCardComponent {}
 
 @Component({
   selector: 'mat-icon',
   standalone: true,
-  template: ''
+  template: '',
 })
 class MockMatIconComponent {}
 
@@ -42,7 +45,7 @@ describe('ComponentSelectorComponent', () => {
       component: {} as any,
       category: 'Cat1',
       description: 'Desc 1',
-      icon: 'icon1'
+      icon: 'icon1',
     },
     {
       id: 'comp2',
@@ -51,7 +54,7 @@ describe('ComponentSelectorComponent', () => {
       component: {} as any,
       category: 'Cat2',
       description: 'Desc 2',
-      icon: 'icon2'
+      icon: 'icon2',
     },
     {
       id: 'comp3',
@@ -60,19 +63,25 @@ describe('ComponentSelectorComponent', () => {
       component: {} as any,
       category: 'Cat1',
       description: 'Desc 3',
-      icon: 'icon3'
-    }
+      icon: 'icon3',
+    },
   ];
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ComponentSelectorComponent]
+      imports: [ComponentSelectorComponent],
     })
-    .overrideComponent(ComponentSelectorComponent, {
-      remove: { imports: [MatIconModule, ButtonComponent, CardComponent] },
-      add: { imports: [MockButtonComponent, MockCardComponent, MockMatIconComponent] }
-    })
-    .compileComponents();
+      .overrideComponent(ComponentSelectorComponent, {
+        remove: { imports: [IconComponent, ButtonComponent, CardComponent] },
+        add: {
+          imports: [
+            MockButtonComponent,
+            MockCardComponent,
+            MockMatIconComponent,
+          ],
+        },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(ComponentSelectorComponent);
     component = fixture.componentInstance;
@@ -109,7 +118,9 @@ describe('ComponentSelectorComponent', () => {
     it('should filter components by category', () => {
       component.selectCategory('Cat1');
       expect(component.filteredComponents.length).toBe(2);
-      expect(component.filteredComponents.every(c => c.category === 'Cat1')).toBe(true);
+      expect(
+        component.filteredComponents.every((c) => c.category === 'Cat1')
+      ).toBe(true);
     });
   });
 
@@ -117,9 +128,9 @@ describe('ComponentSelectorComponent', () => {
     it('should emit componentSelected event', () => {
       jest.spyOn(component.componentSelected, 'emit');
       const target = mockComponents[0];
-      
+
       component.selectComponent(target);
-      
+
       expect(component.componentSelected.emit).toHaveBeenCalledWith(target);
     });
   });
@@ -127,9 +138,9 @@ describe('ComponentSelectorComponent', () => {
   describe('Closing', () => {
     it('should emit closed event', () => {
       jest.spyOn(component.closed, 'emit');
-      
+
       component.onClose();
-      
+
       expect(component.closed.emit).toHaveBeenCalled();
     });
   });

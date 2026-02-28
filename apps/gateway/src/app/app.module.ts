@@ -40,6 +40,7 @@ import { OAuthController } from '../controllers/oauth/oauth.controller';
 import { VideosController } from '../controllers/videos/videos.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
+import { NotificationController } from '../controllers/social/notification/notification.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -90,6 +91,7 @@ import { WellnessController } from '../controllers/wellness/wellness.controller'
     OAuthController,
     VideosController,
     WellnessController,
+    NotificationController,
   ],
   providers: [
     {

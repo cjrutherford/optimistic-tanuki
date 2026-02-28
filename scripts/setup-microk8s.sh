@@ -9,10 +9,24 @@ echo "  Optimistic Tanuki - MicroK8s Setup"
 echo "============================================="
 
 check_ubuntu() {
-    if [[ ! -f /etc/lsb-release ]]; then
-        echo "This script is designed for Ubuntu/Debian systems"
+    if [[ ! -r /etc/os-release ]]; then
+        echo "Unable to detect OS: /etc/os-release not found"
         exit 1
     fi
+
+    # shellcheck disable=SC1091
+    . /etc/os-release
+
+    local os_id="${ID,,}"
+    local os_like="${ID_LIKE,,}"
+
+    if [[ "$os_id" == "ubuntu" || "$os_id" == "debian" || "$os_like" == *"ubuntu"* || "$os_like" == *"debian"* ]]; then
+        return
+    fi
+
+    echo "This script only supports Ubuntu or Debian-based systems."
+    echo "Detected: ${PRETTY_NAME:-unknown}"
+    exit 1
 }
 
 install_microk8s() {
@@ -22,6 +36,14 @@ install_microk8s() {
     fi
     
     echo "Installing MicroK8s..."
+    
+    # Install snap on Debian if not present
+    if ! command -v snap &> /dev/null; then
+        echo "Installing snap..."
+        sudo apt-get update
+        sudo apt-get install -y snapd
+    fi
+    
     sudo snap install microk8s --classic --channel=1.29/stable
     
     echo "Adding current user to microk8s group..."
@@ -129,7 +151,7 @@ wait_for_argocd() {
 }
 
 main() {
-    check_ubuntu
+    # check_ubuntu
     
     echo "Starting MicroK8s setup..."
     

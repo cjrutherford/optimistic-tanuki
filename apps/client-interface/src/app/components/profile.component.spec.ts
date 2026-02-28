@@ -3,11 +3,9 @@ import { ProfileComponent } from './profile.component';
 import { ProfileService } from '../profile.service';
 import { of } from 'rxjs';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
-import { MatCardModule } from '@angular/material/card';
-import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
 import { BannerComponent } from '@optimistic-tanuki/profile-ui';
 import { CommonModule } from '@angular/common';
+import { CardComponent, IconComponent } from '@optimistic-tanuki/common-ui';
 
 describe('ProfileComponent', () => {
   let component: ProfileComponent;
@@ -40,13 +38,7 @@ describe('ProfileComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [
-        CommonModule,
-        MatCardModule,
-        MatListModule,
-        MatIconModule,
-        BannerComponent,
-      ],
+      imports: [CommonModule, CardComponent, IconComponent, BannerComponent],
       declarations: [],
       providers: [{ provide: ProfileService, useValue: profileServiceMock }],
     }).compileComponents();
@@ -67,13 +59,7 @@ describe('ProfileComponent', () => {
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [
-        CommonModule,
-        MatCardModule,
-        MatListModule,
-        MatIconModule,
-        BannerComponent,
-      ],
+      imports: [CommonModule, CardComponent, IconComponent, BannerComponent],
       providers: [
         {
           provide: ProfileService,

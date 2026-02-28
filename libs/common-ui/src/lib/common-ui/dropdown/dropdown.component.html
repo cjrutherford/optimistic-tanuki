@@ -1,0 +1,33 @@
+<div class="dropdown-container">
+  <button
+    class="dropdown-trigger"
+    [class.active]="isOpen"
+    [class.disabled]="disabled"
+    (click)="toggle()"
+    [disabled]="disabled"
+    type="button"
+  >
+    @if (triggerLabel) {
+    <span class="trigger-label">{{ triggerLabel }}</span>
+    }
+    <ng-content select="[dropdown-trigger]"></ng-content>
+    <span class="dropdown-arrow" [class.open]="isOpen">
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </span>
+  </button>
+
+  @if (isOpen) {
+  <div class="dropdown-menu" (click)="$event.stopPropagation()">
+    <ng-content></ng-content>
+  </div>
+  }
+</div>

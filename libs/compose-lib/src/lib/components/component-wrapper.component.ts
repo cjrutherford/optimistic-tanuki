@@ -6,13 +6,13 @@ import {
   HostListener,
 } from '@angular/core';
 
-import { MatIconModule } from '@angular/material/icon';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'lib-component-wrapper',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [IconComponent],
   template: `
     <div
       class="component-wrapper"
@@ -29,28 +29,28 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
           (click)="onEdit($event)"
           title="Edit Properties"
         >
-          <mat-icon>edit</mat-icon>
+          <otui-icon name="edit"></otui-icon>
         </button>
         <button
           class="control-btn delete-btn"
           (click)="onDelete($event)"
           title="Delete Component"
         >
-          <mat-icon>delete</mat-icon>
+          <otui-icon name="delete"></otui-icon>
         </button>
         <button
           class="control-btn move-up-btn"
           (click)="onMoveUp($event)"
           title="Move Up"
         >
-          <mat-icon>keyboard_arrow_up</mat-icon>
+          <otui-icon name="keyboard-arrow-up"></otui-icon>
         </button>
         <button
           class="control-btn move-down-btn"
           (click)="onMoveDown($event)"
           title="Move Down"
         >
-          <mat-icon>keyboard_arrow_down</mat-icon>
+          <otui-icon name="keyboard-arrow-down"></otui-icon>
         </button>
       </div>
       } @if (isSelected) {

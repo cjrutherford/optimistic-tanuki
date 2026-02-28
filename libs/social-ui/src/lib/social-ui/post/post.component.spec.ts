@@ -10,8 +10,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
-import { MatDialogModule } from '@angular/material/dialog';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 import {
   CardComponent,
@@ -37,8 +35,6 @@ describe('PostComponent', () => {
         TileComponent,
         CommentListComponent,
         ProfilePhotoComponent,
-        MatDialogModule,
-        NoopAnimationsModule,
       ],
       providers: [
         ThemeService,
