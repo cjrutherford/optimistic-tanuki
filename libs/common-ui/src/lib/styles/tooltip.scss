@@ -1,0 +1,12 @@
+.otui-tooltip {
+  padding: 6px 12px;
+  background: var(--tooltip-bg, var(--background, #fff));
+  color: var(--tooltip-color, var(--foreground, #212121));
+  border: 1px solid var(--tooltip-border, var(--border, #ccc));
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+}

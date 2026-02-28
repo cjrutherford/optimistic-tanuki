@@ -1,8 +1,7 @@
 import { Component, EventEmitter, OnDestroy, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
-import { ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, IconComponent } from '@optimistic-tanuki/common-ui';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { filter, Subscription } from 'rxjs';
 import { UserComponent } from './user/user.component';
@@ -12,8 +11,8 @@ import { UserComponent } from './user/user.component';
   standalone: true,
   imports: [
     CommonModule,
-    MatIconModule,
     ButtonComponent,
+    IconComponent,
     ThemeToggleComponent,
     UserComponent,
   ],

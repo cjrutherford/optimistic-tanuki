@@ -31,6 +31,11 @@ export {
 export { GlassContainerComponent } from './glass-container.component';
 export { HeroSectionComponent } from './hero-section/hero-section.component';
 export { ContentSectionComponent } from './content-section/content-section.component';
+export { IconComponent, type IconName } from './icon/icon.component';
+export { TabsComponent, type Tab } from './tabs/tabs.component';
+export { DropdownComponent } from './dropdown/dropdown.component';
+export { ChipComponent } from './chip/chip.component';
+export { TooltipDirective } from './tooltip/tooltip.directive';
 
 // Export interfaces
 export type { ListItem } from './interfaces/component.interface';

@@ -1,0 +1,24 @@
+<div class="tabs-container" [class.vertical]="vertical">
+  <div class="tabs-header" role="tablist">
+    @for (tab of tabs; track tab.id) {
+    <button
+      class="tab-item"
+      [class.active]="activeTab === tab.id"
+      [class.disabled]="tab.disabled"
+      (click)="selectTab(tab)"
+      role="tab"
+      [attr.aria-selected]="activeTab === tab.id"
+      [attr.aria-disabled]="tab.disabled"
+      [disabled]="tab.disabled"
+    >
+      <span class="tab-label">{{ tab.label }}</span>
+      @if (tab.badge && tab.badge > 0) {
+      <span class="tab-badge">{{ tab.badge }}</span>
+      }
+    </button>
+    }
+  </div>
+  <div class="tabs-content">
+    <ng-content></ng-content>
+  </div>
+</div>

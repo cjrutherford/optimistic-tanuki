@@ -20,14 +20,6 @@ import {
   ControlValueAccessor,
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatCardModule } from '@angular/material/card';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDialog } from '@angular/material/dialog';
 import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
 import {
   InjectedComponentData,
@@ -100,13 +92,6 @@ export interface ImageUploadCallback {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    MatChipsModule,
-    MatCardModule,
-    MatTooltipModule,
     TiptapEditorDirective,
     ComponentSelectorComponent,
     RichTextToolbarComponent,
@@ -176,7 +161,6 @@ export class ComposeComponent
   postAccentColor = '#3f51b5';
 
   private componentInjectionService = inject(ComponentInjectionService);
-  private dialog = inject(MatDialog);
   private imageUploadService = inject(ImageUploadService);
   private cdr = inject(ChangeDetectorRef);
 

@@ -5,8 +5,6 @@ import {
 } from '@optimistic-tanuki/message-ui';
 import { Component, OnInit } from '@angular/core';
 
-import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
 import {
   BannerComponent,
   ProfileEditorComponent,
@@ -25,8 +23,6 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
   imports: [
     CardComponent,
     ButtonComponent,
-    MatListModule,
-    MatIconModule,
     BannerComponent,
     ProfileEditorComponent,
   ],

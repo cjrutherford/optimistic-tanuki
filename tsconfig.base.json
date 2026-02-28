@@ -4,7 +4,10 @@
     "rootDir": ".",
     "sourceMap": true,
     "resolveJsonModule": true,
-    "types": ["node", "jest"],
+    "types": [
+      "node",
+      "jest"
+    ],
     "declaration": false,
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -13,44 +16,107 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": [
+      "es2020",
+      "dom"
+    ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@optimistic-tanuki/ag-grid-ui": ["libs/ag-grid-ui/src/index.ts"],
+      "@optimistic-tanuki/ag-grid-ui": [
+        "libs/ag-grid-ui/src/index.ts"
+      ],
       "@optimistic-tanuki/app-config-models": [
         "libs/app-config-models/src/index.ts"
       ],
-      "@optimistic-tanuki/auth-ui": ["libs/auth-ui/src/index.ts"],
-      "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
-      "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
-      "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
-      "@optimistic-tanuki/community-ui": ["libs/community-ui/src/index.ts"],
-      "@optimistic-tanuki/compose-lib": ["libs/compose-lib/src/index.ts"],
-      "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
-      "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
-      "@optimistic-tanuki/encryption": ["libs/encryption/src/index.ts"],
-      "@optimistic-tanuki/form-ui": ["libs/form-ui/src/index.ts"],
-      "@optimistic-tanuki/forum-ui": ["libs/forum-ui/src/index.ts"],
-      "@optimistic-tanuki/logger": ["libs/logger/src/index.ts"],
-      "@optimistic-tanuki/message-ui": ["libs/message-ui/src/index.ts"],
-      "@optimistic-tanuki/models": ["libs/models/src/index.ts"],
-      "@optimistic-tanuki/navigation-ui": ["libs/navigation-ui/src/index.ts"],
-      "@optimistic-tanuki/permission-lib": ["libs/permission-lib/src/index.ts"],
-      "@optimistic-tanuki/persona-ui": ["libs/persona-ui/src/index.ts"],
-      "@optimistic-tanuki/profile-ui": ["libs/profile-ui/src/index.ts"],
-      "@optimistic-tanuki/project-ui": ["libs/project-ui/src/index.ts"],
+      "@optimistic-tanuki/auth-ui": [
+        "libs/auth-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/blogging-ui": [
+        "libs/blogging-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/chat-ui": [
+        "libs/chat-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/common-ui": [
+        "libs/common-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/community-ui": [
+        "libs/community-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/compose-lib": [
+        "libs/compose-lib/src/index.ts"
+      ],
+      "@optimistic-tanuki/constants": [
+        "libs/constants/src/index.ts"
+      ],
+      "@optimistic-tanuki/database": [
+        "libs/database/src/index.ts"
+      ],
+      "@optimistic-tanuki/encryption": [
+        "libs/encryption/src/index.ts"
+      ],
+      "@optimistic-tanuki/form-ui": [
+        "libs/form-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/forum-ui": [
+        "libs/forum-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/logger": [
+        "libs/logger/src/index.ts"
+      ],
+      "@optimistic-tanuki/message-ui": [
+        "libs/message-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/models": [
+        "libs/models/src/index.ts"
+      ],
+      "@optimistic-tanuki/navigation-ui": [
+        "libs/navigation-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/notification-ui": [
+        "libs/notification-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/permission-lib": [
+        "libs/permission-lib/src/index.ts"
+      ],
+      "@optimistic-tanuki/persona-ui": [
+        "libs/persona-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/profile-ui": [
+        "libs/profile-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/project-ui": [
+        "libs/project-ui/src/index.ts"
+      ],
       "@optimistic-tanuki/prompt-generation": [
         "libs/prompt-generation/src/index.ts"
       ],
-      "@optimistic-tanuki/social-ui": ["libs/social-ui/src/index.ts"],
-      "@optimistic-tanuki/storage": ["libs/storage/src/index.ts"],
-      "@optimistic-tanuki/store-ui": ["libs/store-ui/src/index.ts"],
-      "@optimistic-tanuki/theme-lib": ["libs/theme-lib/src/index.ts"],
-      "@optimistic-tanuki/theme-models": ["libs/theme-models/src/index.ts"],
-      "@optimistic-tanuki/theme-ui": ["libs/theme-ui/src/index.ts"],
-      "@optimistic-tanuki/ui-models": ["libs/ui-models/src/index.ts"]
+      "@optimistic-tanuki/social-ui": [
+        "libs/social-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/storage": [
+        "libs/storage/src/index.ts"
+      ],
+      "@optimistic-tanuki/store-ui": [
+        "libs/store-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/theme-lib": [
+        "libs/theme-lib/src/index.ts"
+      ],
+      "@optimistic-tanuki/theme-models": [
+        "libs/theme-models/src/index.ts"
+      ],
+      "@optimistic-tanuki/theme-ui": [
+        "libs/theme-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/ui-models": [
+        "libs/ui-models/src/index.ts"
+      ],
+      "@optimistic-tanuki/search-ui": [
+        "libs/search-ui/src/index.ts"
+      ]
     }
   },
   "angularCompilerOptions": {

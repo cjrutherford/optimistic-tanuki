@@ -15,6 +15,7 @@ export {
   SocialComponentCommands,
   SocialRealtimeCommands,
   CommunityCommands,
+  NotificationCommands,
 } from './lib/libs/social';
 
 export { TasksCommands, TimersCommands, NotesCommands } from './lib/libs/tasks';

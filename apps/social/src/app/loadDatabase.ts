@@ -8,8 +8,12 @@ import { Comment } from '../entities/comment.entity';
 import { SocialComponent } from '../entities/social-component.entity';
 import FollowEntity from '../entities/Follow.entity';
 import { Community } from '../entities/community.entity';
-import { CommunityMember, CommunityMemberRole } from '../entities/community-member.entity';
+import {
+  CommunityMember,
+  CommunityMemberRole,
+} from '../entities/community-member.entity';
 import { CommunityInvite } from '../entities/community-invite.entity';
+import { Notification } from '../entities/notification.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -23,7 +27,8 @@ const loadDatabase = (config: ConfigService) => {
     SocialComponent,
     Community,
     CommunityMember,
-    CommunityInvite
+    CommunityInvite,
+    Notification,
   ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',

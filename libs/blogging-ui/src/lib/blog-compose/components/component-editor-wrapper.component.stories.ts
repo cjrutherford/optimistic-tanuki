@@ -1,6 +1,6 @@
 import { Meta, StoryObj, moduleMetadata } from '@storybook/angular';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 import { Component, Input } from '@angular/core';
 
 import { ComponentEditorWrapperComponent } from './component-editor-wrapper.component';
@@ -84,7 +84,7 @@ const meta: Meta<ComponentEditorWrapperComponent> = {
   component: ComponentEditorWrapperComponent,
   decorators: [
     moduleMetadata({
-      imports: [FormsModule, MatIconModule, SampleInjectedComponent],
+      imports: [FormsModule, IconComponent, SampleInjectedComponent],
     }),
   ],
   parameters: {

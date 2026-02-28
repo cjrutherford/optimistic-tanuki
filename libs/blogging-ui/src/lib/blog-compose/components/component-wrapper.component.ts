@@ -1,12 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 
-import { MatIconModule } from '@angular/material/icon';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'lib-component-wrapper',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [IconComponent],
   template: `
     <div
       class="component-wrapper"
@@ -26,35 +26,42 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
           title="Drag to Move"
           style="cursor: grab;"
         >
-          <mat-icon>drag_indicator</mat-icon>
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <circle cx="9" cy="5" r="1.5"></circle>
+            <circle cx="15" cy="5" r="1.5"></circle>
+            <circle cx="9" cy="12" r="1.5"></circle>
+            <circle cx="15" cy="12" r="1.5"></circle>
+            <circle cx="9" cy="19" r="1.5"></circle>
+            <circle cx="15" cy="19" r="1.5"></circle>
+          </svg>
         </button>
         <button
           class="control-btn edit-btn"
           (click)="onEdit($event)"
           title="Edit Properties"
         >
-          <mat-icon>edit</mat-icon>
+          <otui-icon name="edit"></otui-icon>
         </button>
         <button
           class="control-btn delete-btn"
           (click)="onDelete($event)"
           title="Delete Component"
         >
-          <mat-icon>delete</mat-icon>
+          <otui-icon name="delete"></otui-icon>
         </button>
         <button
           class="control-btn move-up-btn"
           (click)="onMoveUp($event)"
           title="Move Up"
         >
-          <mat-icon>keyboard_arrow_up</mat-icon>
+          <otui-icon name="keyboard_arrow_up"></otui-icon>
         </button>
         <button
           class="control-btn move-down-btn"
           (click)="onMoveDown($event)"
           title="Move Down"
         >
-          <mat-icon>keyboard_arrow_down</mat-icon>
+          <otui-icon name="keyboard_arrow_down"></otui-icon>
         </button>
       </div>
       } @if (isSelected) {

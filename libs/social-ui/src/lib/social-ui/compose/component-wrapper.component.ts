@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 
 import {
   InjectedComponentInstance,
@@ -35,7 +35,7 @@ import { PropertyDefinition } from './components/property-editor.component';
 @Component({
   selector: 'lib-component-wrapper',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   template: `
     <div
       class="component-wrapper"
@@ -56,9 +56,16 @@ import { PropertyDefinition } from './components/property-editor.component';
         [class.visible]="isHovered || isLocked || isSelected"
       >
         <div class="component-label">
-          <mat-icon *ngIf="componentDef?.icon">{{
-            componentDef?.icon
-          }}</mat-icon>
+          <otui-icon
+            *ngIf="componentDef?.icon"
+            [name]="
+              componentDef?.icon === 'info'
+                ? 'star'
+                : componentDef?.icon === 'code'
+                ? 'star'
+                : 'star'
+            "
+          ></otui-icon>
           <span class="label-text">{{
             componentDef?.name || 'Component'
           }}</span>
@@ -75,35 +82,47 @@ import { PropertyDefinition } from './components/property-editor.component';
             (click)="onEditClick($event)"
             title="Edit Properties"
           >
-            <mat-icon>edit</mat-icon>
+            <otui-icon name="edit"></otui-icon>
           </button>
           <button
             class="control-btn duplicate-btn"
             (click)="onDuplicateClick($event)"
             title="Duplicate Component"
           >
-            <mat-icon>content_copy</mat-icon>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              width="16"
+              height="16"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path
+                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              ></path>
+            </svg>
           </button>
           <button
             class="control-btn move-up-btn"
             (click)="onMoveUpClick($event)"
             title="Move Up"
           >
-            <mat-icon>keyboard_arrow_up</mat-icon>
+            <otui-icon name="chevron-up"></otui-icon>
           </button>
           <button
             class="control-btn move-down-btn"
             (click)="onMoveDownClick($event)"
             title="Move Down"
           >
-            <mat-icon>keyboard_arrow_down</mat-icon>
+            <otui-icon name="chevron-down"></otui-icon>
           </button>
           <button
             class="control-btn delete-btn"
             (click)="onDeleteClick($event)"
             title="Delete Component"
           >
-            <mat-icon>delete</mat-icon>
+            <otui-icon name="delete"></otui-icon>
           </button>
         </div>
       </div>
@@ -115,9 +134,7 @@ import { PropertyDefinition } from './components/property-editor.component';
         <!-- Fallback preview when component cannot be rendered -->
         <div class="component-preview" *ngIf="!dynamicComponentRef">
           <div class="preview-header">
-            <mat-icon *ngIf="componentDef?.icon">{{
-              componentDef?.icon
-            }}</mat-icon>
+            <otui-icon *ngIf="componentDef?.icon" name="star"></otui-icon>
             <h4>{{ componentDef?.name || 'Component' }}</h4>
           </div>
           <p class="preview-description">
@@ -138,9 +155,11 @@ import { PropertyDefinition } from './components/property-editor.component';
       >
         <div class="quick-edit-header">
           <div class="header-content">
-            <mat-icon *ngIf="componentDef?.icon" class="component-icon">{{
-              componentDef?.icon
-            }}</mat-icon>
+            <otui-icon
+              *ngIf="componentDef?.icon"
+              class="component-icon"
+              name="star"
+            ></otui-icon>
             <div>
               <h4>{{ componentDef?.name }}</h4>
               <p
@@ -156,7 +175,7 @@ import { PropertyDefinition } from './components/property-editor.component';
             (click)="closeQuickEdit(); $event.stopPropagation()"
             title="Close"
           >
-            <mat-icon>close</mat-icon>
+            <otui-icon name="close"></otui-icon>
           </button>
         </div>
 

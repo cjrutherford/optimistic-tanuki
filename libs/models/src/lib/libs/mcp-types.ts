@@ -100,7 +100,7 @@ export const ToolExecutionContextSchema = z.object({
   userId: z.string().min(1, 'User ID is required'),
   profileId: z.string().min(1, 'Profile ID is required'),
   conversationId: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 /**
@@ -206,7 +206,7 @@ export const ToolDefinitionSchema = z.object({
     parameters: z
       .object({
         type: z.literal('object'),
-        properties: z.record(z.any()),
+        properties: z.record(z.string(), z.any()),
         required: z.array(z.string()).optional(),
       })
       .passthrough(), // Allow additional properties

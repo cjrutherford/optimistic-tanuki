@@ -38,6 +38,7 @@ import { ForumController } from '../controllers/forum/forum.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
+import { NotificationController } from '../controllers/social/notification/notification.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -86,6 +87,7 @@ import { WellnessController } from '../controllers/wellness/wellness.controller'
     AppConfigController,
     ForumController,
     WellnessController,
+    NotificationController,
   ],
   providers: [
     {

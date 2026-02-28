@@ -7,8 +7,11 @@ import {
   OnChanges,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import {
+  IconComponent,
+  ButtonComponent,
+  CardComponent,
+} from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
 
@@ -29,7 +32,7 @@ export interface PropertyDefinition {
   standalone: true,
   imports: [
     FormsModule,
-    MatIconModule,
+    IconComponent,
     ButtonComponent,
     CardComponent,
     TextInputComponent,
@@ -40,7 +43,7 @@ export interface PropertyDefinition {
       <div class="editor-header">
         <h3>Edit Component Properties</h3>
         <button (click)="onClose()" class="close-btn">
-          <mat-icon>close</mat-icon>
+          <otui-icon name="close"></otui-icon>
         </button>
       </div>
       @if (componentInstance) {

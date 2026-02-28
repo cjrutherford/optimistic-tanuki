@@ -1,0 +1,6 @@
+.icon {
+  display: inline-block;
+  flex-shrink: 0;
+  color: var(--icon-color, var(--foreground, currentColor));
+  transition: color 0.15s ease;
+}

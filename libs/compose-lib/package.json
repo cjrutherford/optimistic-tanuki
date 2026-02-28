@@ -4,7 +4,6 @@
   "peerDependencies": {
     "@angular/common": "^20.2.0",
     "@angular/core": "^20.2.0",
-    "@angular/material": "^20.2.0",
     "@tiptap/core": "^2.10.3",
     "@tiptap/pm": "^2.10.3",
     "@optimistic-tanuki/common-ui": "*",
