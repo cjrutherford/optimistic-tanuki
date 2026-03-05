@@ -61,3 +61,4 @@ storybook-static
 frontend-design
 .opencode
 .secrets
+tf/.terraform

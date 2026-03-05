@@ -4,7 +4,7 @@ kind: Kustomization
 namespace: optimistic-tanuki
 
 resources:
-  - ../base
+  - ../../base
 
 patches:
   - patch: |-

@@ -4,7 +4,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 SECRETS_FILE="$PROJECT_DIR/.secrets"
-OUTPUT_FILE="$PROJECT_DIR/k8s/secrets/secrets.yaml"
+OUTPUT_FILE="$PROJECT_DIR/k8s/base/secrets.yaml"
+LEGACY_OUTPUT_FILE="$PROJECT_DIR/k8s/secrets/secrets.yaml"
 
 echo "============================================="
 echo "  Generating K8s Secrets from .secrets"
@@ -34,9 +35,9 @@ if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ] || [ -z "$JWT_SECRET" 
     exit 1
 fi
 
-echo "Generating $OUTPUT_FILE..."
+echo "Generating $OUTPUT_FILE and $LEGACY_OUTPUT_FILE..."
 
-cat > "$OUTPUT_FILE" << EOF
+SECRET_CONTENT=$(cat << EOF
 apiVersion: v1
 kind: Secret
 metadata:
@@ -51,8 +52,14 @@ stringData:
   S3_SECRET_KEY: ${S3_SECRET_KEY}
   REDIS_PASSWORD: ${REDIS_PASSWORD}
 EOF
+)
 
-echo "K8s secrets generated successfully at $OUTPUT_FILE"
+printf "%s\n" "$SECRET_CONTENT" > "$OUTPUT_FILE"
+printf "%s\n" "$SECRET_CONTENT" > "$LEGACY_OUTPUT_FILE"
+
+echo "K8s secrets generated successfully at:"
+echo "  - $OUTPUT_FILE"
+echo "  - $LEGACY_OUTPUT_FILE"
 echo ""
 echo "To apply to cluster:"
 echo "  microk8s kubectl apply -f $OUTPUT_FILE"

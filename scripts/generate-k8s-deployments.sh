@@ -22,7 +22,7 @@ SERVICES=(
     "blogging:3011"
     "permissions:3012"
     "project-planning:3006"
-    "store:3013"
+    "store:3009"
     "app-configurator:3014"
     "wellness:3016"
 )
@@ -223,12 +223,11 @@ resources:
   - postgres.yaml
   - redis.yaml
   - seaweedfs.yaml
+  - secrets.yaml
   - gateway.yaml
-  - assets.yaml
   - services/
   - clients/
   - ingress.yaml
-  - ../secrets/secrets.yaml
 EOF
 
 echo "All K8s deployment files generated successfully!"
