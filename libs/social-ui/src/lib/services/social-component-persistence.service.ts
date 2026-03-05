@@ -1,11 +1,12 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin } from 'rxjs';
-import { 
-  SocialComponentDto, 
-  CreateSocialComponentDto, 
-  UpdateSocialComponentDto 
+import {
+  SocialComponentDto,
+  CreateSocialComponentDto,
+  UpdateSocialComponentDto
 } from '@optimistic-tanuki/ui-models';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 export interface ComponentExtractionResult {
   instanceId: string;
@@ -19,9 +20,10 @@ export interface ComponentExtractionResult {
   providedIn: 'root'
 })
 export class SocialComponentPersistenceService {
-  private readonly gatewayUrl = 'http://localhost:3000/social-components';
-  
-  constructor(private http: HttpClient) {}
+  private readonly baseApiUrl = inject(API_BASE_URL);
+  private readonly gatewayUrl = `${this.baseApiUrl}/social-components`;
+
+  constructor(private http: HttpClient) { }
 
   /**
    * Extracts component data from HTML content for database persistence
@@ -30,14 +32,14 @@ export class SocialComponentPersistenceService {
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, 'text/html');
     const componentNodes = doc.querySelectorAll('[data-angular-component]');
-    
+
     const components: ComponentExtractionResult[] = [];
-    
+
     componentNodes.forEach((node, index) => {
       const componentId = node.getAttribute('data-component-id');
       const instanceId = node.getAttribute('data-instance-id');
       const dataStr = node.getAttribute('data-component-data');
-      
+
       if (componentId && instanceId && dataStr) {
         try {
           components.push({
@@ -58,7 +60,7 @@ export class SocialComponentPersistenceService {
         });
       }
     });
-    
+
     return components;
   }
 
@@ -84,7 +86,7 @@ export class SocialComponentPersistenceService {
 
       return this.http.post<SocialComponentDto>(`${this.gatewayUrl}`, createDto);
     });
-    
+
     return forkJoin(saveRequests);
   }
 

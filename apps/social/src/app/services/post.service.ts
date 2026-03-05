@@ -10,6 +10,7 @@ import {
   In,
   FindOperator,
   FindOptionsWhere,
+  MoreThanOrEqual,
 } from 'typeorm';
 import {
   CreatePostDto,
@@ -226,5 +227,98 @@ export class PostService {
     }
 
     return await this.postRepo.find({ where });
+  }
+
+  async createScheduledPost(data: {
+    title: string;
+    content?: string;
+    profileId: string;
+    userId: string;
+    scheduledAt: Date;
+    visibility?: 'public' | 'followers';
+    communityId?: string;
+    attachmentIds?: string[];
+  }): Promise<Post> {
+    const post = this.postRepo.create({
+      title: data.title,
+      content: data.content || '',
+      profileId: data.profileId,
+      userId: data.userId,
+      scheduledAt: data.scheduledAt,
+      isScheduled: true,
+      visibility: data.visibility || 'public',
+      communityId: data.communityId || null,
+    });
+
+    if (data.attachmentIds && data.attachmentIds.length > 0) {
+      const attachments = await this.attachmentRepo.findBy({
+        id: In(data.attachmentIds),
+      });
+      post.attachments = attachments;
+    }
+
+    return await this.postRepo.save(post);
+  }
+
+  async findScheduledPosts(profileId?: string): Promise<Post[]> {
+    const where: FindOptionsWhere<Post> = { isScheduled: true };
+    if (profileId) {
+      where.profileId = profileId;
+    }
+    return await this.postRepo.find({
+      where,
+      order: { scheduledAt: 'ASC' },
+    });
+  }
+
+  async findPendingScheduledPosts(): Promise<Post[]> {
+    return await this.postRepo.find({
+      where: {
+        isScheduled: true,
+        scheduledAt: MoreThanOrEqual(new Date()),
+      },
+      order: { scheduledAt: 'ASC' },
+    });
+  }
+
+  async publishScheduledPost(id: string): Promise<Post> {
+    const post = await this.postRepo.findOne({ where: { id } });
+    if (!post || !post.isScheduled) {
+      throw new Error('Scheduled post not found');
+    }
+
+    await this.postRepo.update(id, {
+      isScheduled: false,
+      scheduledAt: null,
+    });
+
+    return await this.postRepo.findOne({ where: { id } });
+  }
+
+  async updateScheduledPost(
+    id: string,
+    data: {
+      title?: string;
+      content?: string;
+      scheduledAt?: Date;
+      visibility?: 'public' | 'followers';
+      communityId?: string;
+    }
+  ): Promise<Post> {
+    const post = await this.postRepo.findOne({ where: { id } });
+    if (!post || !post.isScheduled) {
+      throw new Error('Scheduled post not found');
+    }
+
+    await this.postRepo.update(id, data);
+    return await this.postRepo.findOne({ where: { id } });
+  }
+
+  async deleteScheduledPost(id: string): Promise<void> {
+    const post = await this.postRepo.findOne({ where: { id } });
+    if (!post || !post.isScheduled) {
+      throw new Error('Scheduled post not found');
+    }
+    await this.postRepo.delete(id);
   }
 }

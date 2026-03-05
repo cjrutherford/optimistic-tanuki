@@ -376,4 +376,23 @@ export class ProfileService {
   getDisplayProfile(id: string) {
     return this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`);
   }
+
+  getBlockedUsers(profileId: string) {
+    return this.http.get<any[]>(
+      `${this.apiBaseUrl}/profile/${profileId}/blocked`
+    );
+  }
+
+  blockUser(profileId: string, blockedProfileId: string) {
+    return this.http.post<void>(
+      `${this.apiBaseUrl}/profile/${profileId}/block`,
+      { blockedProfileId }
+    );
+  }
+
+  unblockUser(profileId: string, blockedProfileId: string) {
+    return this.http.delete<void>(
+      `${this.apiBaseUrl}/profile/${profileId}/block/${blockedProfileId}`
+    );
+  }
 }

@@ -13,6 +13,7 @@ import { FindOptionsWhere } from 'typeorm';
 import { Post } from './post.entity';
 import { SearchCommentDto } from '@optimistic-tanuki/models';
 import { Vote } from './vote.entity';
+import { Reaction } from './reaction.entity';
 
 @Entity()
 export class Comment {
@@ -44,6 +45,9 @@ export class Comment {
 
   @OneToMany(() => Vote, (vote) => vote.comment)
   votes: Vote[];
+
+  @OneToMany(() => Reaction, (reaction) => reaction.comment)
+  reactions: Reaction[];
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

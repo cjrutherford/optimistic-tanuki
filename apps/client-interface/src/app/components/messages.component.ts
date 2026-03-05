@@ -1,16 +1,19 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
   ChatUiComponent,
   ChatContact,
   ChatConversation,
+  ChatMessage,
+  SocketChatService,
 } from '@optimistic-tanuki/chat-ui';
 import { ProfileService } from '../profile.service';
 import {
   ChatService,
   ChatConversation as AppChatConversation,
 } from '../chat.service';
+import { PresenceService, UserPresence } from '../presence.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -75,19 +78,32 @@ import { firstValueFrom } from 'rxjs';
     `,
   ],
 })
-export class MessagesComponent implements OnInit {
+export class MessagesComponent implements OnInit, OnDestroy {
   private profileService = inject(ProfileService);
   private chatService = inject(ChatService);
+  private presenceService = inject(PresenceService);
   private http = inject(HttpClient);
   private router = inject(Router);
+  private socketChatService = inject(SocketChatService);
 
   chatContacts = signal<ChatContact[]>([]);
   chatConversations = signal<ChatConversation[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
 
+  private currentProfileId: string | null = null;
+
   async ngOnInit() {
+    this.socketChatService.onConversations((conversations) => {
+      this.handleConversationsLoaded(
+        conversations as unknown as AppChatConversation[]
+      );
+    });
     await this.loadConversations();
+  }
+
+  ngOnDestroy() {
+    this.socketChatService.destroy();
   }
 
   private async loadConversations() {
@@ -97,9 +113,16 @@ export class MessagesComponent implements OnInit {
       return;
     }
 
+    this.currentProfileId = profile.id;
+    this.socketChatService.getConversations(profile.id);
+  }
+
+  private async handleConversationsLoaded(
+    conversations: AppChatConversation[]
+  ) {
     try {
-      const conversations: AppChatConversation[] =
-        await this.chatService.getConversations(profile.id);
+      const profile = this.profileService.getCurrentUserProfile();
+      if (!profile) return;
 
       const allParticipantIds = new Set<string>();
       conversations.forEach((c) => {
@@ -109,29 +132,72 @@ export class MessagesComponent implements OnInit {
       const participantIds = Array.from(allParticipantIds);
 
       let profiles: ProfileDto[] = [];
+      let presences: UserPresence[] = [];
+
       if (participantIds.length > 0) {
-        profiles = await firstValueFrom(
-          this.http.post<ProfileDto[]>('/api/profile/by-ids', {
-            ids: participantIds,
-          })
-        );
+        const [profilesResponse, presencesResponse] = await Promise.all([
+          firstValueFrom(
+            this.http.post<ProfileDto[]>('/api/profile/by-ids', {
+              ids: participantIds,
+            })
+          ),
+          firstValueFrom(this.presenceService.getPresenceBatch(participantIds)),
+        ]);
+        profiles = profilesResponse;
+        presences = presencesResponse;
       }
 
       const profileMap = new Map(profiles.map((p) => [p.id, p]));
+      const presenceMap = new Map(presences.map((p) => [p.userId, p]));
+
+      const conversationMessagesPromises = conversations.map(async (conv) => {
+        try {
+          const messages = await this.chatService.getMessages(conv.id);
+          const transformedMessages: ChatMessage[] = messages.map((m) => ({
+            id: m.id,
+            conversationId: m.conversationId,
+            senderId: m.senderId,
+            content: m.content,
+            type: m.type as 'chat' | 'info' | 'warning' | 'system',
+            recipientId: m.recipients || [],
+            timestamp: new Date(m.createdAt),
+          }));
+          return { id: conv.id, messages: transformedMessages };
+        } catch (err) {
+          console.error(
+            'Failed to load messages for conversation:',
+            conv.id,
+            err
+          );
+          return { id: conv.id, messages: [] as ChatMessage[] };
+        }
+      });
+
+      const conversationMessages = await Promise.all(
+        conversationMessagesPromises
+      );
+      const messagesMap = new Map(
+        conversationMessages.map((cm) => [cm.id, cm.messages])
+      );
 
       this.chatContacts.set(
         conversations.map((conv) => {
           const otherParticipantId = conv.participants.find(
-            (p) => p !== profile.id
+            (p) => p !== this.currentProfileId
           );
           const otherProfile = otherParticipantId
             ? profileMap.get(otherParticipantId)
+            : null;
+          const presence = otherParticipantId
+            ? presenceMap.get(otherParticipantId)
             : null;
 
           return {
             id: conv.id,
             name: otherProfile?.profileName || conv.title || 'Unknown',
             profilePic: otherProfile?.profilePic,
+            presence: presence?.status || 'offline',
+            lastSeen: presence?.lastSeen,
           };
         })
       );
@@ -140,7 +206,7 @@ export class MessagesComponent implements OnInit {
         conversations.map((c) => ({
           id: c.id,
           participants: c.participants,
-          messages: [],
+          messages: messagesMap.get(c.id) || [],
           createdAt: c.createdAt,
           updatedAt: c.updatedAt,
         }))
@@ -149,7 +215,7 @@ export class MessagesComponent implements OnInit {
       this.loading.set(false);
     } catch (err) {
       console.error('Failed to load conversations:', err);
-      this.error.set('Failed to load conversations');
+      this.error.set('Failed to load conversations. Please try again later.');
       this.loading.set(false);
     }
   }

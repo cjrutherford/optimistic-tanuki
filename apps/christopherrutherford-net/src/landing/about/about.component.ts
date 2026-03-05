@@ -48,6 +48,7 @@ export class AboutComponent extends Themeable {
     super();
     // Set a predefined palette instead of manual colors
     this.themeService.setTheme('dark');
-    this.themeService.setPalette('Forest Dream'); // Use predefined palette
+    this.themeService.setPersonality('soft-touch');
+    this.themeService.setPrimaryColor('#1b5e20');
   }
 }

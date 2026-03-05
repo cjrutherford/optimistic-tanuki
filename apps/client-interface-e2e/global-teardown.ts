@@ -6,10 +6,20 @@ import { join } from 'path';
 const execAsync = promisify(exec);
 
 async function globalTeardown(config: FullConfig) {
-  if (process.env.CI) {
-    console.log('\n[Playwright Global Teardown] Skipping docker-compose cleanup because CI environment detected');
+  if (process.env['CI']) {
+    console.log(
+      '\n[Playwright Global Teardown] Skipping docker-compose cleanup because CI environment detected'
+    );
     return;
   }
+
+  if (process.env['SKIP_SETUP'] === 'true') {
+    console.log(
+      '\n[Playwright Global Teardown] SKIP_SETUP=true detected, skipping docker-compose cleanup'
+    );
+    return;
+  }
+
   const composeFile = join(
     __dirname,
     '../../e2e/docker-compose.client-interface-e2e.yaml'

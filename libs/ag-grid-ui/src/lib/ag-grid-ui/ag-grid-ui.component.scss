@@ -15,20 +15,68 @@
   border: var(--local-border-width, 1px) solid
     var(--local-border-color, var(--complement, #c0af4b));
   border-radius: var(--local-border-radius, var(--border-radius-md, 8px));
-  box-shadow: var(--local-shadow, var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.08)));
+  box-shadow: var(
+    --local-shadow,
+    var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.08))
+  );
   font-family: var(--local-font-family, var(--font-family-base, inherit));
-  transition:
-    box-shadow var(--local-transition-duration, var(--animation-duration-fast, 150ms))
+  transition: box-shadow
+      var(--local-transition-duration, var(--animation-duration-fast, 150ms))
       var(--local-easing, var(--animation-easing, ease)),
-    border-color var(--local-transition-duration, var(--animation-duration-fast, 150ms))
+    border-color
+      var(--local-transition-duration, var(--animation-duration-fast, 150ms))
       var(--local-easing, var(--animation-easing, ease));
 }
 
 :host([data-personality='minimal']) .ag-grid-wrapper {
   box-shadow: var(--shadow-none, none);
+  border-radius: var(--border-radius-sm, 4px);
 }
 
 :host([data-personality='playful']) .ag-grid-wrapper,
 :host([data-personality='bold']) .ag-grid-wrapper {
-  box-shadow: var(--local-shadow, var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.12)));
+  box-shadow: var(
+    --local-shadow,
+    var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.12))
+  );
+  border-radius: var(--border-radius-lg, 12px);
+}
+
+// ============================================
+// Personality-Specific AG Grid Enhancements
+// ============================================
+
+body.personality-architect .ag-grid-wrapper {
+  border-radius: 0;
+  border-width: 2px;
+  &:hover {
+    box-shadow: 6px 6px 0 var(--primary);
+  }
+}
+
+body.personality-playful .ag-grid-wrapper {
+  border-radius: 16px;
+  &:hover {
+    transform: translateY(-2px) scale(1.01);
+  }
+}
+
+body.personality-minimal .ag-grid-wrapper {
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+body.personality-soft-touch .ag-grid-wrapper {
+  border-radius: 24px;
+}
+
+body.personality-electric .ag-grid-wrapper {
+  border: 2px dashed var(--primary);
+  &:hover {
+    box-shadow: 0 0 20px var(--primary);
+  }
+}
+
+body.personality-control-center .ag-grid-wrapper {
+  border-radius: 4px;
 }

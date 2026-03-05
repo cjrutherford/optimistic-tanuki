@@ -1,8 +1,17 @@
 import * as yaml from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
+import { TcpClientOptions, Transport } from '@nestjs/microservices';
 
-export declare type SocialConfigType = {
+export type TcpServiceConfig = {
+  name: 'authentication' | 'profile' | 'social';
+  transport: Transport;
+  options: TcpClientOptions;
+  host: string;
+  port: number;
+};
+
+export type SocialConfigType = {
   listenPort: number;
   database: {
     host: string;
@@ -10,6 +19,10 @@ export declare type SocialConfigType = {
     username: string;
     password: string;
     database: string;
+  };
+  services?: {
+    authentication?: TcpServiceConfig;
+    profile: TcpServiceConfig;
   };
 };
 

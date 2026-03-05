@@ -58,3 +58,64 @@
     outline-offset: 2px;
   }
 }
+
+// ============================================
+// Personality-Specific Attachment Enhancements
+// ============================================
+
+body.personality-architect {
+  .attachment-item {
+    border-radius: 0;
+    &:hover {
+      box-shadow: 4px 4px 0 var(--primary);
+      transform: translate(-2px, -2px);
+    }
+  }
+}
+
+body.personality-playful {
+  .attachment-item {
+    border-radius: 16px;
+    &:hover {
+      transform: translateY(-4px) scale(1.02);
+    }
+  }
+}
+
+body.personality-minimal {
+  .attachment-item {
+    border-radius: 2px;
+    border-width: 1px;
+    box-shadow: none;
+    &:hover {
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+  }
+}
+
+body.personality-electric {
+  .attachment-item {
+    &:hover {
+      box-shadow: 0 0 20px var(--primary);
+    }
+  }
+}
+
+body.personality-soft-touch {
+  .attachment-item {
+    border-radius: 20px;
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+body.personality-control-center {
+  .attachment-item {
+    border-radius: 2px;
+    &:hover {
+      box-shadow: inset 0 0 0 1px var(--primary);
+    }
+  }
+}

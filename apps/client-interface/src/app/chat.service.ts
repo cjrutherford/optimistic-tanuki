@@ -48,7 +48,7 @@ export class ChatService {
   getConversations(profileId: string): Promise<ChatConversation[]> {
     return firstValueFrom(
       this.http.get<ChatConversation[]>(
-        `${this.baseUrl}/conversations/${profileId}`
+        `${this.baseUrl}/conversations/find?profileId=${profileId}`
       )
     ) as Promise<ChatConversation[]>;
   }

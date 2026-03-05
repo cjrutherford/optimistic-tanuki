@@ -10,3 +10,43 @@
 .menu-btn {
   margin-left: auto;
 }
+
+// ============================================
+// Personality-Specific App Bar Enhancements
+// ============================================
+
+body.personality-architect {
+  .title-bar {
+    border-bottom: 2px solid var(--primary);
+  }
+}
+
+body.personality-playful {
+  .title-bar {
+    border-radius: var(--border-radius-lg, 12px);
+  }
+}
+
+body.personality-minimal {
+  .title-bar {
+    padding: 8px;
+  }
+}
+
+body.personality-soft-touch {
+  .title-bar {
+    border-radius: var(--border-radius-xl, 20px);
+  }
+}
+
+body.personality-electric {
+  .title-bar {
+    border: 1px dashed var(--primary);
+  }
+}
+
+body.personality-control-center {
+  .title-bar {
+    border-radius: 0;
+  }
+}

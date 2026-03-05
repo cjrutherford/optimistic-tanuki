@@ -12,11 +12,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { EventCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { BlogEventCommands as EventCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
-  EventQueryDto,
-  CreateEventDto,
-  UpdateEventDto,
+  BlogEventQueryDto as EventQueryDto,
+  CreateBlogEventDto as CreateEventDto,
+  UpdateBlogEventDto as UpdateEventDto,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { RequirePermissions } from '../../decorators/permissions.decorator';

@@ -1,9 +1,8 @@
 import { ColorPalette } from './theme.interface';
 import {
-  PERSONALITY_GRADIENTS,
-  generateGradientVariables,
-  getPersonalityGradients,
-} from './personality-gradients';
+  createGradientVariablesFromTheme,
+  resolvePersonalityGradientTheme,
+} from './gradient-factory';
 
 /**
  * Extended palette with gradient support
@@ -15,6 +14,10 @@ export interface ColorPaletteWithGradients extends ColorPalette {
     tertiary: string;
     surface: string;
   };
+}
+
+function paletteGradients(paletteName: string) {
+  return resolvePersonalityGradientTheme(paletteName);
 }
 
 /**
@@ -36,12 +39,7 @@ export const PREDEFINED_PALETTES: ColorPaletteWithGradients[] = [
     tertiary: '#7e57c2', // Unchanged: 5.9:1 on white ✅
     background: { light: '#ffffff', dark: '#1a1a2e' },
     foreground: { light: '#212121', dark: '#ffffff' },
-    gradients: {
-      primary: PERSONALITY_GRADIENTS['optimistic-blue'].primary,
-      secondary: PERSONALITY_GRADIENTS['optimistic-blue'].secondary,
-      tertiary: PERSONALITY_GRADIENTS['optimistic-blue'].tertiary,
-      surface: PERSONALITY_GRADIENTS['optimistic-blue'].surface,
-    },
+    gradients: paletteGradients('optimistic-blue'),
   },
   {
     name: 'Electric Sunset',
@@ -51,12 +49,7 @@ export const PREDEFINED_PALETTES: ColorPaletteWithGradients[] = [
     tertiary: '#c2185b', // Changed: was #ff35a6 (3.4:1), now 5.0:1 on white ✅
     background: { light: '#fafafa', dark: '#1e1e1e' },
     foreground: { light: '#2c2c2c', dark: '#f5f5f5' },
-    gradients: {
-      primary: PERSONALITY_GRADIENTS['electric-sunset'].primary,
-      secondary: PERSONALITY_GRADIENTS['electric-sunset'].secondary,
-      tertiary: PERSONALITY_GRADIENTS['electric-sunset'].tertiary,
-      surface: PERSONALITY_GRADIENTS['electric-sunset'].surface,
-    },
+    gradients: paletteGradients('electric-sunset'),
   },
   {
     name: 'Forest Dream',
@@ -66,12 +59,7 @@ export const PREDEFINED_PALETTES: ColorPaletteWithGradients[] = [
     tertiary: '#bf360c', // Changed: was #e65100, now 5.7:1 on light ✅
     background: { light: '#f1f8e9', dark: '#1b2e1b' },
     foreground: { light: '#1b5e20', dark: '#c8e6c9' },
-    gradients: {
-      primary: PERSONALITY_GRADIENTS['forest-dream'].primary,
-      secondary: PERSONALITY_GRADIENTS['forest-dream'].secondary,
-      tertiary: PERSONALITY_GRADIENTS['forest-dream'].tertiary,
-      surface: PERSONALITY_GRADIENTS['forest-dream'].surface,
-    },
+    gradients: paletteGradients('forest-dream'),
   },
   {
     name: 'Cyberpunk Neon',
@@ -81,12 +69,7 @@ export const PREDEFINED_PALETTES: ColorPaletteWithGradients[] = [
     tertiary: '#f57f17', // Changed: was #ffff00 (1.2:1), now 4.5:1 on light ✅
     background: { light: '#f0f0f0', dark: '#0a0a0a' },
     foreground: { light: '#1a1a1a', dark: '#ffffff' },
-    gradients: {
-      primary: PERSONALITY_GRADIENTS['cyberpunk-neon'].primary,
-      secondary: PERSONALITY_GRADIENTS['cyberpunk-neon'].secondary,
-      tertiary: PERSONALITY_GRADIENTS['cyberpunk-neon'].tertiary,
-      surface: PERSONALITY_GRADIENTS['cyberpunk-neon'].surface,
-    },
+    gradients: paletteGradients('cyberpunk-neon'),
   },
   {
     name: 'Royal Purple',
@@ -96,12 +79,7 @@ export const PREDEFINED_PALETTES: ColorPaletteWithGradients[] = [
     tertiary: '#c2185b', // Unchanged: 5.0:1 on light ✅
     background: { light: '#faf8ff', dark: '#2a1a3a' },
     foreground: { light: '#4a148c', dark: '#e1bee7' },
-    gradients: {
-      primary: PERSONALITY_GRADIENTS['royal-purple'].primary,
-      secondary: PERSONALITY_GRADIENTS['royal-purple'].secondary,
-      tertiary: PERSONALITY_GRADIENTS['royal-purple'].tertiary,
-      surface: PERSONALITY_GRADIENTS['royal-purple'].surface,
-    },
+    gradients: paletteGradients('royal-purple'),
   },
   {
     name: 'Ocean Breeze',
@@ -111,12 +89,7 @@ export const PREDEFINED_PALETTES: ColorPaletteWithGradients[] = [
     tertiary: '#00838f', // Changed: was same, dark mode adjusted
     background: { light: '#e0f2f1', dark: '#1a2e3a' },
     foreground: { light: '#004d40', dark: '#b2dfdb' },
-    gradients: {
-      primary: PERSONALITY_GRADIENTS['ocean-breeze'].primary,
-      secondary: PERSONALITY_GRADIENTS['ocean-breeze'].secondary,
-      tertiary: PERSONALITY_GRADIENTS['ocean-breeze'].tertiary,
-      surface: PERSONALITY_GRADIENTS['ocean-breeze'].surface,
-    },
+    gradients: paletteGradients('ocean-breeze'),
   },
   {
     name: 'Retro Gaming',
@@ -126,12 +99,7 @@ export const PREDEFINED_PALETTES: ColorPaletteWithGradients[] = [
     tertiary: '#558b2f', // Changed: was #63e91e (1.2:1), now 4.6:1 ✅
     background: { light: '#fff3e0', dark: '#0f0f23' },
     foreground: { light: '#bf360c', dark: '#ff8a65' },
-    gradients: {
-      primary: PERSONALITY_GRADIENTS['retro-gaming'].primary,
-      secondary: PERSONALITY_GRADIENTS['retro-gaming'].secondary,
-      tertiary: PERSONALITY_GRADIENTS['retro-gaming'].tertiary,
-      surface: PERSONALITY_GRADIENTS['retro-gaming'].surface,
-    },
+    gradients: paletteGradients('retro-gaming'),
   },
   {
     name: 'Minimal Monochrome',
@@ -141,12 +109,7 @@ export const PREDEFINED_PALETTES: ColorPaletteWithGradients[] = [
     tertiary: '#1976d2', // Changed: was #2196f3 (4.1:1), now 5.1:1 ✅
     background: { light: '#ffffff', dark: '#121212' },
     foreground: { light: '#212121', dark: '#ffffff' },
-    gradients: {
-      primary: PERSONALITY_GRADIENTS['minimal-monochrome'].primary,
-      secondary: PERSONALITY_GRADIENTS['minimal-monochrome'].secondary,
-      tertiary: PERSONALITY_GRADIENTS['minimal-monochrome'].tertiary,
-      surface: PERSONALITY_GRADIENTS['minimal-monochrome'].surface,
-    },
+    gradients: paletteGradients('minimal-monochrome'),
   },
 ];
 
@@ -188,7 +151,7 @@ export function getPaletteWithGradients(
 
   return {
     ...palette,
-    gradients: getPersonalityGradients(paletteName),
+    gradients: paletteGradients(paletteName),
   };
 }
 
@@ -198,17 +161,12 @@ export function getPaletteWithGradients(
 export function getPaletteGradientVariables(
   paletteName: string
 ): Record<string, string> {
-  const gradients = getPersonalityGradients(paletteName);
-  return generateGradientVariables(gradients);
+  const gradients = paletteGradients(paletteName);
+  return createGradientVariablesFromTheme(gradients);
 }
 
-/**
- * Import from personality-gradients module
- */
-export {
-  getPersonalityGradients,
-  generateGradientVariables,
-} from './personality-gradients';
+export const getPersonalityGradients = paletteGradients;
+export const generateGradientVariables = createGradientVariablesFromTheme;
 
 /**
  * Re-export contrast verification utilities

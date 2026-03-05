@@ -54,7 +54,8 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
  */
 export class ChatWindowComponent
   extends Themeable
-  implements OnChanges, AfterViewInit {
+  implements OnChanges, AfterViewInit
+{
   /**
    * The contact or contacts in the chat.
    */
@@ -80,6 +81,16 @@ export class ChatWindowComponent
   @Input() aiThinkingMessage: string | null = null;
 
   /**
+   * Current user ID for determining message ownership.
+   */
+  @Input() currentUserId: string = '';
+
+  /**
+   * IDs of users currently typing in this conversation.
+   */
+  @Input() typingUsers: string[] = [];
+
+  /**
    * The current state of the chat window.
    */
   @Input() windowState: ChatWindowState = 'popout';
@@ -91,6 +102,14 @@ export class ChatWindowComponent
   @Output() windowStateChange: EventEmitter<ChatWindowState> =
     new EventEmitter<ChatWindowState>();
   @Output() messageSubmitted: EventEmitter<string> = new EventEmitter<string>();
+  @Output() reactionAdded = new EventEmitter<{
+    messageId: string;
+    emoji: string;
+  }>();
+  @Output() reactionRemoved = new EventEmitter<{
+    messageId: string;
+    emoji: string;
+  }>();
   accentTransparent = 'rgba(0, 123, 255, 0.1)';
   complementTransparent = 'rgba(108, 117, 125, 0.1)';
   /**
@@ -105,6 +124,14 @@ export class ChatWindowComponent
   onMessageSubmitted(message: string) {
     // Handle the submitted message
     this.messageSubmitted.emit(message);
+  }
+
+  onReactionAdded(event: { messageId: string; emoji: string }) {
+    this.reactionAdded.emit(event);
+  }
+
+  onReactionRemoved(event: { messageId: string; emoji: string }) {
+    this.reactionRemoved.emit(event);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -126,8 +153,12 @@ export class ChatWindowComponent
     this.accent = colors.accent;
     this.complement = colors.complementary;
     this.borderColor = colors.accent;
-    this.accentTransparent = `rgba(${accentRgb?.r || 0}, ${accentRgb?.g || 0}, ${accentRgb?.b || 0}, 0.5)`;
-    this.complementTransparent = `rgba(${complementRgb?.r || 0}, ${complementRgb?.g || 0}, ${complementRgb?.b || 0}, 0.5)`;
+    this.accentTransparent = `rgba(${accentRgb?.r || 0}, ${
+      accentRgb?.g || 0
+    }, ${accentRgb?.b || 0}, 0.5)`;
+    this.complementTransparent = `rgba(${complementRgb?.r || 0}, ${
+      complementRgb?.g || 0
+    }, ${complementRgb?.b || 0}, 0.5)`;
     this.borderGradient = new GradientBuilder()
       .setType('linear')
       .setOptions({

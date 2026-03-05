@@ -1,3 +1,6 @@
+@use '../../styles/personality-tokens' as *;
+@use '../../styles/personality-effects' as *;
+
 .tabs-container {
   display: flex;
   flex-direction: column;
@@ -90,4 +93,118 @@
 
 .tabs-content {
   padding: 16px 0;
+}
+
+// ============================================
+// Personality-Specific Tab Enhancements
+// ============================================
+
+// Architect personality - underline style
+body.personality-architect .tab-item {
+  font-family: var(--font-heading);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  &.active::after {
+    height: 3px;
+    background: var(--primary);
+  }
+}
+
+// Playful personality - pill style
+body.personality-playful .tab-item {
+  border-radius: 20px;
+
+  &:hover:not(.disabled) {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+
+  &.active {
+    background: var(--primary);
+    color: var(--primary-foreground);
+
+    &::after {
+      display: none;
+    }
+  }
+}
+
+// Minimal personality - subtle
+body.personality-minimal .tab-item {
+  padding: 8px 16px;
+  font-weight: 400;
+
+  &.active {
+    font-weight: 600;
+
+    &::after {
+      height: 1px;
+    }
+  }
+}
+
+// Electric personality - bold indicator
+body.personality-electric .tab-item {
+  &.active::after {
+    height: 4px;
+    border-radius: 2px;
+  }
+}
+
+// Soft Touch personality - rounded
+body.personality-soft-touch .tab-item {
+  border-radius: 12px;
+
+  &.active {
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+
+    &::after {
+      display: none;
+    }
+  }
+}
+
+// Control Center - technical underline
+body.personality-control-center .tab-item {
+  font-family: var(--font-mono);
+  font-size: 13px;
+
+  &.active::after {
+    height: 2px;
+    background: var(--primary);
+  }
+}
+
+// Pills variant
+.tabs-pills .tab-item {
+  border-radius: 9999px;
+  padding: 8px 16px;
+
+  &.active {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+}
+
+// Enclosed variant
+.tabs-enclosed {
+  .tabs-header {
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-md, 4px);
+    padding: 4px;
+    gap: 0;
+  }
+
+  .tab-item {
+    border-radius: var(--border-radius-sm, 2px);
+
+    &.active {
+      background: var(--primary);
+      color: var(--primary-foreground);
+
+      &::after {
+        display: none;
+      }
+    }
+  }
 }

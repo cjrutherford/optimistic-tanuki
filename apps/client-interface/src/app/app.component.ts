@@ -30,10 +30,21 @@ import {
   ChatMessage,
 } from '@optimistic-tanuki/chat-ui';
 import {
+  NotificationBellComponent,
+  NotificationService,
+  Notification,
+} from '@optimistic-tanuki/notification-ui';
+import {
   ChatService,
   ChatConversation as AppChatConversation,
 } from './chat.service';
 import { HttpClient } from '@angular/common/http';
+import {
+  GlobalSearchComponent,
+  SearchResult,
+} from '@optimistic-tanuki/search-ui';
+import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import { MessageComponent } from '@optimistic-tanuki/message-ui';
 
 @Component({
   selector: 'app-root',
@@ -46,6 +57,10 @@ import { HttpClient } from '@angular/common/http';
     AppBarComponent,
     NavSidebarComponent,
     ChatUiComponent,
+    NotificationBellComponent,
+    GlobalSearchComponent,
+    DevInfoComponent,
+    MessageComponent,
   ],
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -59,6 +74,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private chatService = inject(ChatService);
   private http = inject(HttpClient);
+  private notificationService = inject(NotificationService);
 
   constructor(
     private router: Router,
@@ -76,6 +92,9 @@ export class AppComponent implements OnInit, OnDestroy {
   showChat = signal(false);
   chatInitialized = signal(false);
 
+  notifications = signal<Notification[]>([]);
+  unreadCount = signal(0);
+
   ngOnInit() {
     this.currentUrl$ = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -88,6 +107,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.isAuthenticated.set(isAuthenticated);
         if (isAuthenticated) {
           this.selectedProfile.set(this.profileService.getCurrentUserProfile());
+          this.loadNotifications();
         }
         this.updateNavItems();
       },
@@ -97,9 +117,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.currentUrl$.subscribe((url) => {
       this.updateNavItems();
     });
-
-    // Theme is now automatically initialized by ThemeService with CSS variables
-    console.log('[AppComponent] Theme initialized via ThemeService');
   }
 
   ngOnDestroy() {
@@ -125,6 +142,11 @@ export class AppComponent implements OnInit, OnDestroy {
           label: 'Feed',
           action: () => this.navigateTo('/feed'),
           isActive: currentUrl === '/feed',
+        },
+        {
+          label: 'Explore',
+          action: () => this.navigateTo('/explore'),
+          isActive: currentUrl === '/explore',
         },
         {
           label: 'Messages',
@@ -320,6 +342,48 @@ export class AppComponent implements OnInit, OnDestroy {
     } else {
       console.log('Navigating to login page...');
       this.router.navigate(['/login']);
+    }
+  }
+
+  loadNotifications() {
+    const profile = this.profileService.getCurrentUserProfile();
+    if (!profile) return;
+
+    this.notificationService.loadNotifications(profile.id);
+
+    // Sync component signals with service signals
+    this.notifications.set(this.notificationService.notifications());
+    this.unreadCount.set(this.notificationService.unreadCount());
+  }
+
+  onNotificationClick(notification: Notification) {
+    if (notification.actionUrl) {
+      this.router.navigate([notification.actionUrl]);
+    }
+    if (!notification.isRead) {
+      this.notificationService.markAsRead(notification.id).subscribe({
+        error: (err: Error) =>
+          console.error('Failed to mark notification as read:', err),
+      });
+    }
+  }
+
+  onMarkAllRead() {
+    const profile = this.profileService.getCurrentUserProfile();
+    if (!profile) return;
+
+    this.notificationService.markAllAsRead(profile.id).subscribe({
+      error: (err: Error) => console.error('Failed to mark all as read:', err),
+    });
+  }
+
+  onSearchResultClick(result: SearchResult): void {
+    if (result.type === 'user') {
+      this.router.navigate(['/profile', result.id]);
+    } else if (result.type === 'post') {
+      this.router.navigate(['/feed/post', result.id]);
+    } else if (result.type === 'community') {
+      this.router.navigate(['/communities', result.id]);
     }
   }
 }

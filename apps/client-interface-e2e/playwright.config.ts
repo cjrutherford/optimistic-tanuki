@@ -25,15 +25,19 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
+  outputDir: './test-results',
   /* Run your local dev server before starting the tests */
-  webServer: process.env.CI
-    ? undefined
-    : {
-        command: 'npx nx run client-interface:serve',
-        url: 'http://localhost:4200',
-        reuseExistingServer: true,
-        cwd: workspaceRoot,
-      },
+  /* For e2e tests, docker-compose (started by global-setup) handles the server */
+  /* Only start local dev server when USE_DOCKER is not set and not in CI */
+  webServer:
+    process.env['USE_DOCKER'] || process.env['CI']
+      ? undefined
+      : {
+          command: 'npx nx run client-interface:serve',
+          url: 'http://localhost:4200',
+          reuseExistingServer: true,
+          cwd: workspaceRoot,
+        },
   projects: [
     {
       name: 'chromium',

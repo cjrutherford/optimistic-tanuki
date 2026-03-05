@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
@@ -22,13 +22,18 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     DatabaseModule.register({ name: 'assets', factory: loadDatabase }),
     StorageModule.registerAsync({
       useFactory: (configService: ConfigService) => {
+        const logger = new Logger('AppModule');
         const storageStrategy =
           configService.get<string>('storageStrategy') || 'local';
         const localStoragePath =
           configService.get<string>('storagePath') || './storage';
 
+        logger.log(`Configuring storage strategy: ${storageStrategy}${storageStrategy === 'network' ? ' (S3)' : ` at path: ${localStoragePath}`}`);
+
         if (storageStrategy === 'network') {
           const s3Config = configService.get<any>('s3');
+          logger.log(`S3 endpoint: ${s3Config?.endpoint || 'http://localhost:9000'}`);
+          logger.log(`S3 bucket: ${s3Config?.bucket || 'assets'}`);
           return {
             enabledAdapters: ['network'],
             s3Options: {
@@ -41,6 +46,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           };
         }
 
+        logger.log(`Local storage path: ${localStoragePath}`);
         return {
           enabledAdapters: ['local'],
           localStoragePath,
@@ -61,4 +67,4 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

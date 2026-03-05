@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { io, Socket } from 'socket.io-client';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import {
   PostDto,
@@ -20,6 +20,11 @@ export class SocialWebSocketService implements OnDestroy {
   private connected$ = new BehaviorSubject<boolean>(false);
   private posts$ = new BehaviorSubject<PostDto[]>([]);
   private connectionError$ = new BehaviorSubject<string | null>(null);
+  private typingIndicators = new Subject<{
+    conversationId: string;
+    userId: string;
+    isTyping: boolean;
+  }>();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private baseReconnectDelay = 1000;
@@ -226,6 +231,15 @@ export class SocialWebSocketService implements OnDestroy {
     this.socket.on('unsubscribed', (data: any) => {
       console.log('Unsubscribed:', data);
     });
+
+    // Typing indicators
+    this.socket.on(
+      'typing',
+      (data: { conversationId: string; userId: string; isTyping: boolean }) => {
+        console.log('Typing indicator:', data);
+        this.typingIndicators.next(data);
+      }
+    );
   }
 
   private reconnectWithBackoff(): void {
@@ -321,6 +335,28 @@ export class SocialWebSocketService implements OnDestroy {
    */
   getPosts(): Observable<PostDto[]> {
     return this.posts$.asObservable();
+  }
+
+  /**
+   * Send typing indicator
+   */
+  sendTypingIndicator(conversationId: string, isTyping: boolean): void {
+    if (!this.socket?.connected) {
+      console.warn('Socket not connected. Call connect() first.');
+      return;
+    }
+    this.socket.emit('typing', { conversationId, isTyping });
+  }
+
+  /**
+   * Listen to typing indicators
+   */
+  onTypingIndicator(): Observable<{
+    conversationId: string;
+    userId: string;
+    isTyping: boolean;
+  }> {
+    return this.typingIndicators.asObservable();
   }
 
   /**

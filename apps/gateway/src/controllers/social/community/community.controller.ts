@@ -326,6 +326,26 @@ export class CommunityController {
     );
   }
 
+  @Get('profile/:profileId/communities')
+  @ApiOperation({ summary: 'Get communities for a profile' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'The communities for the profile have been successfully retrieved.',
+    type: [CommunityDto],
+  })
+  async getCommunitiesByProfileId(
+    @Param('profileId') profileId: string,
+    @AppScope() appScope: string
+  ): Promise<CommunityDto[]> {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: 'getCommunitiesByProfileId' },
+        { profileId, appScope }
+      )
+    );
+  }
+
   @Post(':id/invite')
   @RequirePermissions('community.invite')
   @ApiOperation({ summary: 'Invite a user to a community' })

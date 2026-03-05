@@ -11,15 +11,29 @@
 .compose-card {
   width: 100%;
   padding: 24px;
-  background: var(--card, linear-gradient(180deg, var(--background) 0%, color-mix(in srgb, var(--primary) 5%, var(--background)) 100%));
+  background: var(
+    --card,
+    linear-gradient(
+      180deg,
+      var(--background) 0%,
+      color-mix(in srgb, var(--primary) 5%, var(--background)) 100%
+    )
+  );
   border-radius: var(--border-radius-lg, 20px);
-  border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
-  box-shadow: var(--shadow-md, 0 8px 32px color-mix(in srgb, var(--primary) 10%, transparent));
+  border: var(--border-width, 2px) solid
+    color-mix(in srgb, var(--primary) 30%, transparent);
+  box-shadow: var(
+    --shadow-md,
+    0 8px 32px color-mix(in srgb, var(--primary) 10%, transparent)
+  );
   transition: all 300ms var(--animation-easing, ease);
 
   &:hover {
     border-color: color-mix(in srgb, var(--primary) 50%, transparent);
-    box-shadow: var(--shadow-lg, 0 12px 48px color-mix(in srgb, var(--primary) 15%, transparent));
+    box-shadow: var(
+      --shadow-lg,
+      0 12px 48px color-mix(in srgb, var(--primary) 15%, transparent)
+    );
   }
 
   form {
@@ -41,7 +55,8 @@
 // Theme config panel
 .theme-config-panel {
   margin-bottom: 20px;
-  border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
+  border: var(--border-width, 2px) solid
+    color-mix(in srgb, var(--primary) 30%, transparent);
   border-radius: var(--border-radius-md, 16px);
   overflow: hidden;
   background: var(--background, #fff);
@@ -101,7 +116,8 @@
 input[type='color'] {
   width: 52px;
   height: 36px;
-  border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 40%, transparent);
+  border: var(--border-width, 2px) solid
+    color-mix(in srgb, var(--primary) 40%, transparent);
   border-radius: 10px;
   cursor: pointer;
   background: var(--background, #fff);
@@ -122,7 +138,8 @@ input[type='color'] {
 
 // Tiptap editor
 .tiptap-editor-styles ::ng-deep .ProseMirror {
-  border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
+  border: var(--border-width, 2px) solid
+    color-mix(in srgb, var(--primary) 30%, transparent);
   background: var(--background, #fff);
   color: var(--foreground, #374151);
   font-family: var(--font-body, system-ui, sans-serif);
@@ -138,7 +155,10 @@ input[type='color'] {
     border-color: color-mix(in srgb, var(--primary) 60%, transparent);
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04),
       0 0 0 4px color-mix(in srgb, var(--primary) 10%, transparent),
-      var(--shadow-md, 0 8px 24px color-mix(in srgb, var(--primary) 10%, transparent));
+      var(
+        --shadow-md,
+        0 8px 24px color-mix(in srgb, var(--primary) 10%, transparent)
+      );
   }
 
   p {
@@ -161,7 +181,8 @@ input[type='color'] {
     max-width: 100%;
     height: auto;
     border-radius: var(--border-radius-md, 16px);
-    border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
+    border: var(--border-width, 2px) solid
+      color-mix(in srgb, var(--primary) 30%, transparent);
     margin: 12px 0;
   }
 
@@ -189,16 +210,22 @@ input[type='color'] {
     padding-left: 16px;
     margin: 16px 0;
     color: var(--muted-foreground, #6b7280);
-    background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 5%, transparent), transparent);
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--primary) 5%, transparent),
+      transparent
+    );
     padding: 12px 16px;
-    border-radius: 0 var(--border-radius-md, 12px) var(--border-radius-md, 12px) 0;
+    border-radius: 0 var(--border-radius-md, 12px) var(--border-radius-md, 12px)
+      0;
   }
 
   a {
     color: var(--primary);
     text-decoration: none;
     font-weight: 500;
-    border-bottom: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
+    border-bottom: var(--border-width, 2px) solid
+      color-mix(in srgb, var(--primary) 30%, transparent);
     transition: all 200ms ease;
 
     &:hover {
@@ -248,7 +275,10 @@ input[type='color'] {
       color: var(--primary);
       padding: 24px;
       border-radius: var(--border-radius-md, 16px);
-      box-shadow: var(--shadow-lg, 0 12px 48px color-mix(in srgb, var(--primary) 20%, transparent));
+      box-shadow: var(
+        --shadow-lg,
+        0 12px 48px color-mix(in srgb, var(--primary) 20%, transparent)
+      );
       z-index: 1080;
       font-family: var(--font-heading, system-ui, sans-serif);
       font-size: 1.25rem;
@@ -271,12 +301,16 @@ input[type='color'] {
       height: auto;
       cursor: pointer;
       border-radius: var(--border-radius-md, 16px);
-      border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
+      border: var(--border-width, 2px) solid
+        color-mix(in srgb, var(--primary) 30%, transparent);
       transition: all 200ms ease;
 
       &:hover {
         border-color: color-mix(in srgb, var(--primary) 60%, transparent);
-        box-shadow: var(--shadow-md, 0 8px 24px color-mix(in srgb, var(--primary) 15%, transparent));
+        box-shadow: var(
+          --shadow-md,
+          0 8px 24px color-mix(in srgb, var(--primary) 15%, transparent)
+        );
       }
     }
   }
@@ -285,7 +319,10 @@ input[type='color'] {
     outline: none;
     border-color: var(--primary) !important;
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 20%, transparent),
-      var(--shadow-md, 0 8px 32px color-mix(in srgb, var(--primary) 20%, transparent)) !important;
+      var(
+        --shadow-md,
+        0 8px 32px color-mix(in srgb, var(--primary) 20%, transparent)
+      ) !important;
 
     .resize-handle {
       display: block !important;
@@ -303,13 +340,19 @@ input[type='color'] {
     border: 3px solid var(--background, #fff);
     border-radius: 50%;
     cursor: se-resize;
-    box-shadow: var(--shadow-md, 0 4px 12px color-mix(in srgb, var(--primary) 40%, transparent));
+    box-shadow: var(
+      --shadow-md,
+      0 4px 12px color-mix(in srgb, var(--primary) 40%, transparent)
+    );
     z-index: 1;
     transition: all 200ms ease;
 
     &:hover {
       transform: scale(1.15);
-      box-shadow: var(--shadow-lg, 0 6px 20px color-mix(in srgb, var(--primary) 50%, transparent));
+      box-shadow: var(
+        --shadow-lg,
+        0 6px 20px color-mix(in srgb, var(--primary) 50%, transparent)
+      );
     }
   }
 }
@@ -320,7 +363,8 @@ input[type='color'] {
   justify-content: flex-end;
   gap: 12px;
   padding-top: 16px;
-  border-top: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-top: var(--border-width, 2px) solid
+    color-mix(in srgb, var(--primary) 20%, transparent);
 
   button {
     @include social-button;
@@ -328,7 +372,8 @@ input[type='color'] {
     &.secondary {
       background: transparent;
       color: var(--muted-foreground, #6b7280);
-      border: var(--border-width, 2px) solid color-mix(in srgb, var(--primary) 30%, transparent);
+      border: var(--border-width, 2px) solid
+        color-mix(in srgb, var(--primary) 30%, transparent);
       box-shadow: none;
 
       &:hover {
@@ -357,6 +402,66 @@ input[type='color'] {
 
     button {
       width: 100%;
+    }
+  }
+}
+
+// ============================================
+// Personality-Specific Compose Enhancements
+// ============================================
+
+body.personality-architect {
+  .compose-card {
+    border-radius: 0;
+    &:hover {
+      box-shadow: 6px 6px 0 var(--primary);
+    }
+  }
+}
+
+body.personality-playful {
+  .compose-card {
+    border-radius: 24px;
+    &:hover {
+      transform: translateY(-4px);
+    }
+  }
+}
+
+body.personality-minimal {
+  .compose-card {
+    border-radius: 4px;
+    border-width: 1px;
+    box-shadow: none;
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+  }
+}
+
+body.personality-electric {
+  .compose-card {
+    &:hover {
+      box-shadow: 0 0 30px color-mix(in srgb, var(--primary) 30%, transparent);
+    }
+  }
+}
+
+body.personality-soft-touch {
+  .compose-card {
+    border-radius: 28px;
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+body.personality-control-center {
+  .compose-card {
+    border-radius: 2px;
+    &:hover {
+      box-shadow: inset 0 0 0 1px var(--primary);
     }
   }
 }

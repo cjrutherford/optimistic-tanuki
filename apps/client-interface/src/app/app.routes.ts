@@ -72,6 +72,18 @@ export const appRoutes: Route[] = [
       import('./components/social/feed.component').then((m) => m.FeedComponent),
     canActivate: [AuthGuard, ProfileGuard], // Protect the feed route
   },
+  {
+    path: 'profile',
+    loadComponent: () =>
+      import('./components/profile.component').then((m) => m.ProfileComponent),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'profile/:userId',
+    loadComponent: () =>
+      import('./components/profile.component').then((m) => m.ProfileComponent),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
   // profile route removed — profile editing is available from Settings
   {
     path: 'forum',
@@ -106,10 +118,42 @@ export const appRoutes: Route[] = [
     canActivate: [AuthGuard], // Protect the settings route
   },
   {
+    path: 'settings/privacy',
+    loadComponent: () =>
+      import('./components/settings/privacy-settings.component').then(
+        (m) => m.PrivacySettingsComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'messages',
     loadComponent: () =>
       import('./components/messages.component').then(
         (m) => m.MessagesComponent
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
+    path: 'notifications',
+    loadComponent: () =>
+      import('./components/notifications/notifications-page.component').then(
+        (m) => m.NotificationsPageComponent
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
+    path: 'explore',
+    loadComponent: () =>
+      import('@optimistic-tanuki/search-ui').then(
+        (m) => m.ExplorePageComponent
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
+    path: 'activity',
+    loadComponent: () =>
+      import('./components/activity/activity-page.component').then(
+        (m) => m.ActivityPageComponent
       ),
     canActivate: [AuthGuard, ProfileGuard],
   },

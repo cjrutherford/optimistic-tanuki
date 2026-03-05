@@ -14,9 +14,16 @@
             ></lib-profile-photo>
             <div class="contact-details">
               <div class="contact-name">{{ c.name }}</div>
-              <div class="contact-status">
+              <div
+                class="contact-status"
+                [class]="'status-' + (c.presence || 'offline')"
+              >
                 <span class="status-dot"></span>
-                Online
+                @if (c.presence === 'online') { Online } @else if (c.presence
+                === 'away') { Away } @else if (c.presence === 'busy') { Busy }
+                @else if (c.lastSeen) { Last seen
+                {{ c.lastSeen | date : 'short' }}
+                } @else { Offline }
               </div>
             </div>
           </div>
@@ -50,12 +57,20 @@
     <lib-message-list
       [messages]="messages.messages"
       [contacts]="contact"
+      [currentUserId]="currentUserId"
+      [typingUsers]="typingUsers"
+      (reactionAdded)="onReactionAdded($event)"
+      (reactionRemoved)="onReactionRemoved($event)"
     ></lib-message-list>
     } @else {
     <div class="no-participants">No participants</div>
     <lib-message-list
       [messages]="messages.messages"
       [contacts]="[]"
+      [currentUserId]="currentUserId"
+      [typingUsers]="typingUsers"
+      (reactionAdded)="onReactionAdded($event)"
+      (reactionRemoved)="onReactionRemoved($event)"
     ></lib-message-list>
     } @if(aiIsResponding || aiThinkingMessage) {
     <div class="ai-status-indicator">

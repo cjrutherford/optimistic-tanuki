@@ -14,4 +14,18 @@ export class ProfilePhotoComponent {
   @Input() profileId = '';
   @Input() enableChat = false;
   @Output() startChat = new EventEmitter<string>();
+  @Output() profileClick = new EventEmitter<void>();
+
+  handleClick(event: Event) {
+    if (this.enableChat && this.profileId) {
+      this.startChat.emit(this.profileId);
+    } else {
+      this.profileClick.emit();
+    }
+  }
+
+  handleImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    img.src = 'https://placehold.co/150x150/grey/white?text=Profile';
+  }
 }

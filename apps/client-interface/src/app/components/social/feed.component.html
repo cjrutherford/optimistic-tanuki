@@ -46,13 +46,40 @@
       (postDeleted)="onDeletePost(post)"
       [canFollow]="canFollow(post)"
       [isFollowing]="isFollowing(post)"
+      [isBlocked]="isBlocked(post)"
+      [ownedCommunities]="ownedCommunities()"
       (followToggle)="onFollowToggle(post)"
+      (blockToggle)="onBlockToggle(post)"
+      (profileClick)="onProfileClick($event)"
       (newCommentAdded)="commented($event, i)"
       [imageUploadCallback]="imageUploadCallback"
       [communityInfo]="
         post.communityId ? communityInfo()[post.communityId] : undefined
       "
+      [currentUserId]="getCurrentUserId()"
+      [userVote]="getUserVote(post.id)"
+      [voteCount]="getVoteCount(post.id)"
+      [userReaction]="getUserReaction(post.id)"
+      [reactionCounts]="getReactionCounts(post.id)"
+      (voteChange)="onVoteChanged($event)"
+      (reactionChange)="onReactionChanged($event)"
     ></lib-post>
     }
+
+    <div
+      appInfiniteScroll
+      [disabled]="loadingMore() || !hasMorePosts()"
+      (scrolled)="loadMorePosts()"
+      class="scroll-trigger"
+    >
+      @if (loadingMore()) {
+      <div class="loading-more">
+        <otui-spinner></otui-spinner>
+        <p>Loading more posts...</p>
+      </div>
+      } @if (!hasMorePosts() && posts().length > 0) {
+      <div class="end-message">You've reached the end</div>
+      }
+    </div>
   </div>
 </div>

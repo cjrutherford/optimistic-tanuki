@@ -34,13 +34,15 @@ h3 {
 // ── Personality Overrides ──
 
 // Professional: classic, minimal, professional, elegant
-:host-context([data-personality="classic"]),
-:host-context([data-personality="minimal"]),
-:host-context([data-personality="professional"]) {
-  h3 { letter-spacing: 0.01em; }
+:host-context([data-personality='classic']),
+:host-context([data-personality='minimal']),
+:host-context([data-personality='professional']) {
+  h3 {
+    letter-spacing: 0.01em;
+  }
 }
 
-:host-context([data-personality="elegant"]) {
+:host-context([data-personality='elegant']) {
   h3 {
     font-style: italic;
     border-bottom-color: var(--accent);
@@ -49,15 +51,18 @@ h3 {
 }
 
 // Creative: bold, playful, electric
-:host-context([data-personality="bold"]) {
+:host-context([data-personality='bold']) {
   h3 {
     border-bottom-width: 3px;
     border-bottom-color: var(--accent);
   }
-  .actions { border-top-width: 3px; border-top-color: var(--accent); }
+  .actions {
+    border-top-width: 3px;
+    border-top-color: var(--accent);
+  }
 }
 
-:host-context([data-personality="playful"]) {
+:host-context([data-personality='playful']) {
   .form-group label {
     color: var(--accent);
   }
@@ -67,15 +72,15 @@ h3 {
   }
 }
 
-:host-context([data-personality="electric"]) {
+:host-context([data-personality='electric']) {
   h3 {
     text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
   }
 }
 
 // Casual: soft, soft-touch
-:host-context([data-personality="soft"]),
-:host-context([data-personality="soft-touch"]) {
+:host-context([data-personality='soft']),
+:host-context([data-personality='soft-touch']) {
   h3 {
     border-bottom: none;
     padding-bottom: var(--spacing-md);
@@ -86,9 +91,9 @@ h3 {
 }
 
 // Technical: architect, control-center, foundation
-:host-context([data-personality="architect"]),
-:host-context([data-personality="control-center"]),
-:host-context([data-personality="foundation"]) {
+:host-context([data-personality='architect']),
+:host-context([data-personality='control-center']),
+:host-context([data-personality='foundation']) {
   .form-group label {
     font-family: var(--font-mono, monospace);
     text-transform: uppercase;
@@ -101,7 +106,107 @@ h3 {
   }
 }
 
-:host-context([data-personality="control-center"]) {
-  .form-group { margin-bottom: var(--spacing-sm); }
-  .actions { margin-top: var(--spacing-md); }
+:host-context([data-personality='control-center']) {
+  .form-group {
+    margin-bottom: var(--spacing-sm);
+  }
+  .actions {
+    margin-top: var(--spacing-md);
+  }
+}
+
+// ============================================
+// Personality-Specific Create Thread (body class)
+// ============================================
+
+body.personality-architect {
+  :host {
+    h3 {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .form-group label {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .actions {
+      border-top-width: 3px;
+      &:hover {
+        box-shadow: 4px 4px 0 var(--primary);
+      }
+    }
+  }
+}
+
+body.personality-playful {
+  :host {
+    .form-group label {
+      color: var(--primary);
+    }
+    .actions {
+      border-top: none;
+      &:hover {
+        transform: translateY(-4px);
+      }
+    }
+  }
+}
+
+body.personality-minimal {
+  :host {
+    .actions {
+      border-top: none;
+      &:hover {
+        box-shadow: var(--shadow-sm);
+      }
+    }
+  }
+}
+
+body.personality-electric {
+  :host {
+    h3 {
+      text-shadow: 0 0 8px color-mix(in srgb, var(--primary) 30%, transparent);
+    }
+    .actions:hover {
+      box-shadow: 0 0 20px var(--primary);
+    }
+  }
+}
+
+body.personality-soft-touch {
+  :host {
+    h3 {
+      border-bottom: none;
+      padding-bottom: var(--spacing-md);
+    }
+    .actions {
+      border-top: none;
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+}
+
+body.personality-control-center {
+  :host {
+    .form-group label {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      font-size: var(--font-size-xs);
+    }
+    h3 {
+      font-family: var(--font-mono);
+    }
+    .form-group {
+      margin-bottom: var(--spacing-sm);
+    }
+    .actions:hover {
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
 }

@@ -1,6 +1,6 @@
 .login-container {
   display: flex;
-  padding: 0; /* Remove padding to center the card */
+  padding: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -8,8 +8,8 @@
 .card-outer {
   background: var(--border-gradient);
   padding: 6px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px var(--complement);
+  border-radius: var(--border-radius-md, 8px);
+  box-shadow: var(--shadow-md, 0 4px 8px var(--complement));
 }
 .card-inner {
   display: flex;
@@ -18,8 +18,8 @@
   justify-content: center;
   padding: 20px;
   background: var(--background);
-  border-radius: 8px;
-  box-shadow: 0 4px 8px var(--complement);
+  border-radius: var(--border-radius-md, 8px);
+  box-shadow: var(--shadow-md, 0 4px 8px var(--complement));
   @media (max-width: 600px) {
     flex-direction: column;
   }
@@ -49,4 +49,38 @@
       padding-bottom: 10px;
     }
   }
+}
+
+// ============================================
+// Personality-Specific Login Block Enhancements
+// ============================================
+
+body.personality-architect .card-outer,
+body.personality-architect .card-inner {
+  border-radius: 0;
+}
+
+body.personality-playful .card-outer,
+body.personality-playful .card-inner {
+  border-radius: 16px;
+}
+
+body.personality-minimal .card-outer,
+body.personality-minimal .card-inner {
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+body.personality-soft-touch .card-outer,
+body.personality-soft-touch .card-inner {
+  border-radius: 24px;
+}
+
+body.personality-electric .card-outer {
+  border: 2px solid var(--primary);
+}
+
+body.personality-control-center .card-outer,
+body.personality-control-center .card-inner {
+  border-radius: 4px;
 }

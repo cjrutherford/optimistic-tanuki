@@ -3,7 +3,6 @@ import {
   EventEmitter,
   OnInit,
   Output,
-  TemplateRef,
   ViewChild,
   inject,
   AfterViewInit,
@@ -12,11 +11,7 @@ import {
 } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import {
-  ButtonComponent,
-  CardComponent,
-  ModalComponent,
-} from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TiptapEditorDirective } from 'ngx-tiptap';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -37,7 +32,6 @@ import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
     FormsModule,
     CardComponent,
     ButtonComponent,
-    ModalComponent,
     TiptapEditorDirective,
     RichTextToolbarComponent,
   ],
@@ -62,7 +56,6 @@ export class CommentComponent
   @Output() commentAdded: EventEmitter<string> = new EventEmitter<string>();
   @Input() imageUploadCallback?: ImageUploadCallback;
   @Input() profileId?: string; // Profile ID for asset uploads
-  @ViewChild('commentDialog') commentDialog!: TemplateRef<HTMLElement>;
   comment = '';
   accentShade!: string;
   editor: Editor | null = null;
@@ -204,7 +197,11 @@ export class CommentComponent
   }
 
   openCommentDialog() {
-    this.showDialog = true;
+    this.showDialog = !this.showDialog;
+  }
+
+  toggleCommentDialog() {
+    this.showDialog = !this.showDialog;
   }
 
   onSubmit() {

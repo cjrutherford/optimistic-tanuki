@@ -14,7 +14,7 @@ import {
 import { CommonModule } from '@angular/common';
 import {
   Personality,
-  getPersonalityById,
+  getPersonalityPreviewColors,
   ThemeService,
 } from '@optimistic-tanuki/theme-lib';
 import { Subject, takeUntil } from 'rxjs';
@@ -374,7 +374,7 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private themeService: ThemeService) {}
+  constructor(private themeService: ThemeService) { }
 
   ngOnInit(): void {
     this.groupPersonalities();
@@ -401,96 +401,11 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
     personality: Personality,
     type: 'background' | 'foreground'
   ): string {
-    const hue = this.extractHueFromHex(this.currentPrimaryColor);
-    const config = personality.colorGeneration;
-
-    if (type === 'background') {
-      const hsl = {
-        h: hue,
-        s: config.neutralSaturation,
-        l: config.backgroundLuminosity,
-      };
-      return this.hslToHex(hsl);
-    } else {
-      const bgLuminosity = config.backgroundLuminosity;
-      const fgLuminosity = Math.max(
-        0,
-        bgLuminosity - config.foregroundContrast
-      );
-      const hsl = {
-        h: hue,
-        s: config.neutralSaturation,
-        l: fgLuminosity,
-      };
-      return this.hslToHex(hsl);
-    }
-  }
-
-  private extractHueFromHex(hex: string): number {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return 0;
-
-    const r = parseInt(result[1], 16) / 255;
-    const g = parseInt(result[2], 16) / 255;
-    const b = parseInt(result[3], 16) / 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h = 0;
-
-    if (max !== min) {
-      const d = max - min;
-      switch (max) {
-        case r:
-          h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-          break;
-        case g:
-          h = ((b - r) / d + 2) / 6;
-          break;
-        case b:
-          h = ((r - g) / d + 4) / 6;
-          break;
-      }
-    }
-
-    return h * 360;
-  }
-
-  private hslToHex({ h, s, l }: { h: number; s: number; l: number }): string {
-    const hDecimal = h / 360;
-    const sDecimal = s / 100;
-    const lDecimal = l / 100;
-
-    let r: number, g: number, b: number;
-
-    if (sDecimal === 0) {
-      r = g = b = lDecimal;
-    } else {
-      const hue2rgb = (p: number, q: number, t: number): number => {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1 / 6) return p + (q - p) * 6 * t;
-        if (t < 1 / 2) return q;
-        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-        return p;
-      };
-
-      const q =
-        lDecimal < 0.5
-          ? lDecimal * (1 + sDecimal)
-          : lDecimal + sDecimal - lDecimal * sDecimal;
-      const p = 2 * lDecimal - q;
-      r = hue2rgb(p, q, hDecimal + 1 / 3);
-      g = hue2rgb(p, q, hDecimal);
-      b = hue2rgb(p, q, hDecimal - 1 / 3);
-    }
-
-    const toHex = (x: number): string => {
-      const hex = Math.round(x * 255).toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    };
-
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    const colors = getPersonalityPreviewColors(
+      personality,
+      this.currentPrimaryColor
+    );
+    return type === 'background' ? colors.light[0] : colors.light[1];
   }
 
   private groupPersonalities(): void {

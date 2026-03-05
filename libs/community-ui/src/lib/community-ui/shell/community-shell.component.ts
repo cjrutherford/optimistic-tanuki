@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   Router,
@@ -7,6 +7,7 @@ import {
   RouterLink,
   RouterLinkActive,
 } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 
 import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { Variantable, VariantOptions } from '@optimistic-tanuki/common-ui';
@@ -42,7 +43,10 @@ import { CommunityDto } from '../models';
   templateUrl: './community-shell.component.html',
   styleUrls: ['./community-shell.component.scss'],
 })
-export class CommunityShellComponent extends Variantable implements OnInit {
+export class CommunityShellComponent
+  extends Variantable
+  implements OnInit, OnDestroy
+{
   private readonly communityService = inject(CommunityService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -93,14 +97,14 @@ export class CommunityShellComponent extends Variantable implements OnInit {
   }
 
   override ngOnInit() {
-    this.route.data.subscribe((data) => {
+    this.route.data.pipe(takeUntil(this.destroy$)).subscribe((data) => {
       this.userValidPermissions = data['userValidPermissions'] || [];
       this.userLoggedIn = data['userLoggedIn'] || false;
       this.currentUserId = data['currentUserId'] || '';
       this.isLoggedIn.set(this.userLoggedIn);
     });
 
-    this.route.url.subscribe((url) => {
+    this.route.url.pipe(takeUntil(this.destroy$)).subscribe((url) => {
       const path = url[0]?.path;
       if (path === 'create') {
         this.activeTab.set('create');
@@ -117,7 +121,20 @@ export class CommunityShellComponent extends Variantable implements OnInit {
       }
     });
 
+    this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const communityId = params['communityId'];
+      if (communityId) {
+        this.currentCommunityId.set(communityId);
+      }
+    });
+
     this.loadUserCommunities();
+  }
+
+  override ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    super.ngOnDestroy();
   }
 
   onFindCommunities() {
@@ -151,6 +168,11 @@ export class CommunityShellComponent extends Variantable implements OnInit {
   }
 
   navigateToCommunity(communityId: string) {
-    this.router.navigate(['/communities', communityId, 'posts']);
+    const currentId = this.currentCommunityId();
+    if (currentId === communityId) {
+      window.location.reload();
+    } else {
+      this.router.navigate(['/communities', communityId, 'posts']);
+    }
   }
 }

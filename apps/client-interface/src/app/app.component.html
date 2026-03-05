@@ -7,6 +7,7 @@
     [useTile]="false"
     (menuToggle)="toggleNav()"
   >
+    <search-global-search (searchResultClick)="onSearchResultClick($event)" />
   </otui-app-bar>
 
   <otui-nav-sidebar
@@ -22,6 +23,14 @@
   </main>
 
   @if (isAuthenticated()) {
+  <notif-notification-bell
+    class="notification-bell"
+    [notifications]="notifications"
+    [unreadCount]="unreadCount"
+    (notificationClick)="onNotificationClick($event)"
+    (onMarkAllRead)="onMarkAllRead()"
+  ></notif-notification-bell>
+
   <div class="chat-floating-button" (click)="toggleChat()">
     <span class="chat-icon">💬</span>
     @if (!showChat()) {
@@ -37,4 +46,8 @@
     ></lib-chat-ui>
   </div>
   } }
+
+  <otui-dev-info />
+
+  <lib-message />
 </div>

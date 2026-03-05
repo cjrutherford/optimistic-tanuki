@@ -1,4 +1,6 @@
 @use '../../styles/mixins' as *;
+@use '../../styles/personality-tokens' as *;
+@use '../../styles/personality-effects' as *;
 
 // ============================================
 // Personality-Driven Checkbox Component
@@ -35,10 +37,12 @@
     width: 22px;
     height: 22px;
     background: var(--surface, var(--background));
-    border: var(--border-width, 1.5px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+    border: var(--border-width, 1.5px) solid
+      color-mix(in srgb, var(--primary) 20%, transparent);
     border-radius: var(--border-radius-md, 8px);
     position: relative;
-    transition: all var(--animation-duration-normal, 250ms) var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+    transition: all var(--animation-duration-normal, 250ms)
+      var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
     box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03));
 
     @include reduced-motion {
@@ -68,7 +72,11 @@
 
   // Checked state
   input:checked ~ .checkmark {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--primary) 0%,
+      var(--secondary) 100%
+    );
     border-color: var(--primary);
     box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent);
 
@@ -179,12 +187,17 @@ input:checked.form-check.has-error ~ .checkmark {
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       transform: none;
       border: none;
-      transition: transform 250ms var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+      transition: transform 250ms
+        var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
     }
   }
 
   input:checked ~ .checkmark {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--primary) 0%,
+      var(--secondary) 100%
+    );
 
     &::after {
       transform: translateX(22px);
@@ -247,5 +260,88 @@ input:checked.form-check.has-error ~ .checkmark {
 
   .form-check {
     margin-left: 8px;
+  }
+}
+
+// ============================================
+// Personality-Specific Checkbox Enhancements
+// ============================================
+
+body.personality-architect .form-check {
+  .checkmark {
+    border-radius: 0;
+    border-width: 2px;
+
+    &:hover {
+      box-shadow: 3px 3px 0 var(--primary);
+    }
+  }
+
+  input:checked ~ .checkmark {
+    box-shadow: 4px 4px 0 var(--primary);
+  }
+}
+
+body.personality-playful .form-check {
+  .checkmark {
+    border-radius: 8px;
+
+    &::after {
+      animation: checkbox-pop 0.3s ease-out;
+    }
+  }
+
+  input:checked ~ .checkmark {
+    animation: checkbox-pop 0.3s ease-out;
+  }
+}
+
+body.personality-minimal .form-check {
+  .checkmark {
+    border-radius: 2px;
+    border-width: 1px;
+  }
+}
+
+body.personality-soft-touch .form-check {
+  .checkmark {
+    border-radius: 50%;
+  }
+}
+
+body.personality-control-center .form-check {
+  .checkmark {
+    border-radius: 4px;
+  }
+
+  input:checked ~ .checkmark {
+    &::after {
+      content: '✓';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+  }
+}
+
+body.personality-electric .form-check {
+  input:checked ~ .checkmark {
+    box-shadow: 0 0 15px var(--primary);
+  }
+}
+
+@keyframes checkbox-pop {
+  0% {
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
   }
 }

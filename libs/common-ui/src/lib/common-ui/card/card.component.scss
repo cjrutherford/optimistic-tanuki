@@ -1,4 +1,6 @@
 @use '../../styles/mixins' as *;
+@use '../../styles/personality-tokens' as *;
+@use '../../styles/personality-effects' as *;
 
 // ============================================
 // Personality-Driven Card Component
@@ -170,11 +172,7 @@
   border-color: var(--primary);
 
   &::before {
-    background: linear-gradient(
-      90deg,
-      var(--primary),
-      var(--secondary)
-    );
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
   }
 }
 
@@ -184,6 +182,142 @@
       color-mix(in srgb, var(--primary) 3%, transparent) 1px,
       transparent 1px
     ),
-    linear-gradient(90deg, color-mix(in srgb, var(--primary) 3%, transparent) 1px, transparent 1px);
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--primary) 3%, transparent) 1px,
+      transparent 1px
+    );
   background-size: 20px 20px;
+}
+
+// ============================================
+// Personality-Specific Card Enhancements
+// ============================================
+
+// Architect personality - brutalist style
+body.personality-architect .card {
+  border-radius: 0;
+  border: 2px solid var(--foreground);
+
+  &:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 6px 6px 0 var(--primary);
+  }
+}
+
+// Playful personality - bouncy hover
+body.personality-playful .card {
+  &:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Minimal personality - subtle lift
+body.personality-minimal .card {
+  border-radius: 2px;
+  box-shadow: none;
+  border: 1px solid var(--border);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+// Electric personality - glow effect
+body.personality-electric .card {
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 30px var(--primary-alpha-30, rgba(63, 81, 181, 0.3));
+  }
+}
+
+// Soft Touch personality - gentle rounded
+body.personality-soft-touch .card {
+  border-radius: 16px;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Control Center personality - technical
+body.personality-control-center .card {
+  border-radius: 4px;
+  border: 1px solid var(--border);
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 0 0 1px var(--primary);
+  }
+}
+
+// Gradient header variant
+.card-header-gradient {
+  background: var(
+    --gradient-card-header,
+    linear-gradient(180deg, var(--primary) 0%, transparent 100%)
+  );
+  border-bottom: none;
+  color: var(--primary-foreground, #fff);
+
+  .card-title {
+    color: var(--primary-foreground, #fff);
+  }
+}
+
+// Accent corner variant
+.card.accent-corner {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-left: 30px solid var(--primary);
+    border-top: 30px solid transparent;
+  }
+}
+
+// Animated gradient border
+.card.animated-border {
+  position: relative;
+  background: var(--surface);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2;
+    background: var(--gradient-animated, var(--primary));
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+    border-radius: inherit;
+    z-index: -1;
+  }
+}
+
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+// Glass card variant
+.card.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }

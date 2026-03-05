@@ -1,4 +1,6 @@
 @use '../../styles/mixins' as *;
+@use '../../styles/personality-tokens' as *;
+@use '../../styles/personality-effects' as *;
 
 // ============================================
 // Personality-Driven Text Area Component
@@ -29,12 +31,14 @@
   font-size: 0.9375rem;
   color: var(--foreground);
   background: var(--surface, var(--background));
-  border: var(--border-width, 0.5px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border: var(--border-width, 0.5px) solid
+    color-mix(in srgb, var(--primary) 15%, transparent);
   border-radius: var(--border-radius-lg, 20px);
   outline: none;
   resize: vertical;
   line-height: 1.6;
-  transition: all var(--animation-duration-normal, 250ms) var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+  transition: all var(--animation-duration-normal, 250ms)
+    var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
   box-shadow: var(--shadow-sm, inset 0 1px 3px rgba(0, 0, 0, 0.03));
 
   @include reduced-motion {
@@ -44,7 +48,10 @@
   &:focus {
     border-color: color-mix(in srgb, var(--primary) 50%, transparent);
     box-shadow: var(--shadow-sm, inset 0 1px 3px rgba(0, 0, 0, 0.03)),
-      var(--shadow-lg, 0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent));
+      var(
+        --shadow-lg,
+        0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent)
+      );
     background: var(--background);
   }
 
@@ -207,8 +214,64 @@
       padding: 0;
     }
   }
+}
 
-  .textarea-footer {
-    padding: 0;
+// ============================================
+// Personality-Specific Textarea Enhancements
+// ============================================
+
+body.personality-architect textarea {
+  border-radius: 0;
+
+  &:focus {
+    border-width: 2px;
+    box-shadow: 4px 4px 0 var(--primary);
   }
+}
+
+body.personality-playful textarea {
+  border-radius: 12px;
+
+  &:focus {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent);
+  }
+}
+
+body.personality-minimal textarea {
+  border-radius: 2px;
+  border-width: 0.5px;
+
+  &:focus {
+    box-shadow: none;
+    outline: 1px solid var(--primary);
+    outline-offset: 3px;
+  }
+}
+
+body.personality-electric textarea {
+  &:focus {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
+  }
+}
+
+body.personality-soft-touch textarea {
+  border-radius: 16px;
+
+  &:focus {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent);
+  }
+}
+
+body.personality-control-center textarea {
+  border-radius: 4px;
+  font-family: var(--font-mono);
+
+  &:focus {
+    box-shadow: inset 0 2px 4px
+      color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+}
+
+.textarea-footer {
+  padding: 0;
 }

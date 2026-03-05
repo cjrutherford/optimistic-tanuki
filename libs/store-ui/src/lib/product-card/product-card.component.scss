@@ -3,14 +3,15 @@
 }
 
 .product-card {
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: var(--border-radius, 8px);
+  border: var(--border-width, 1px) solid var(--border-color, #e0e0e0);
+  border-radius: var(--border-radius-md, 8px);
   overflow: hidden;
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow var(--animation-duration-normal, 0.3s)
+    var(--animation-easing, ease);
   background-color: var(--background, var(--surface-color, #ffffff));
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.1));
   }
 }
 
@@ -35,6 +36,7 @@
   margin: 0 0 0.5rem;
   font-size: 1.25rem;
   font-weight: 600;
+  font-family: var(--font-heading, system-ui);
   color: var(--foreground, var(--text-color, #333));
 }
 
@@ -74,13 +76,14 @@
   width: 100%;
   padding: 0.75rem;
   border: none;
-  border-radius: var(--border-radius, 4px);
+  border-radius: var(--border-radius-md, 4px);
   background-color: var(--accent, var(--primary-color, #007bff));
   color: var(--button-text-color, #ffffff);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color var(--animation-duration-normal, 0.3s)
+    var(--animation-easing, ease);
 
   &:hover:not(:disabled) {
     background-color: var(--accent-hover, var(--primary-hover-color, #0056b3));
@@ -89,5 +92,52 @@
   &:disabled {
     background-color: var(--disabled-color, #ccc);
     cursor: not-allowed;
+  }
+}
+
+// ============================================
+// Personality-Specific Product Card Enhancements
+// ============================================
+
+body.personality-architect .product-card {
+  border-radius: 0;
+  &:hover {
+    box-shadow: 6px 6px 0 var(--primary);
+  }
+}
+
+body.personality-playful .product-card {
+  border-radius: 16px;
+  &:hover {
+    transform: translateY(-4px) scale(1.01);
+  }
+}
+
+body.personality-minimal .product-card {
+  border-radius: 4px;
+  box-shadow: none;
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
+body.personality-soft-touch .product-card {
+  border-radius: 24px;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+body.personality-electric .product-card {
+  &:hover {
+    box-shadow: 0 0 20px var(--primary);
+  }
+}
+
+body.personality-control-center .product-card {
+  border-radius: 4px;
+  &:hover {
+    box-shadow: inset 0 0 0 1px var(--primary);
   }
 }

@@ -5,3 +5,14 @@ database:
   username: postgres
   password: postgres
   database: ot_social
+services:
+  authentication:
+    name: authentication
+    transport: TCP
+    host: ot_authentication
+    port: 3001
+  profile:
+    name: profile
+    transport: TCP
+    host: ot_profile
+    port: 3002

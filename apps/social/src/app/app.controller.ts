@@ -4,6 +4,7 @@ import { PostService } from './services/post.service';
 import { AttachmentService } from './services/attachment.service';
 import { CommentService } from './services/comment.service';
 import { VoteService } from './services/vote.service';
+import { ReactionService } from './services/reaction.service';
 import { SocialComponentService } from './services/social-component.service';
 import { CommunityService } from './services/community.service';
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
@@ -13,34 +14,55 @@ import {
   LinkCommands,
   PostCommands,
   VoteCommands,
+  ReactionCommands,
   FollowCommands,
   SocialComponentCommands,
   CommunityCommands,
   NotificationCommands,
+  SearchCommands,
+  PrivacyCommands,
+  ActivityCommands,
+  SavedItemCommands,
+  PresenceCommands,
+  ProfileAnalyticsCommands,
+  PollCommands,
+  PostShareCommands,
+  SocialEventCommands as EventCommands,
+  ScheduledPostCommands,
 } from '@optimistic-tanuki/constants';
 import {
-  CreateAttachmentDto,
-  CreateCommentDto,
-  CreateLinkDto,
-  CreatePostDto,
-  QueryFollowsDto,
-  SearchAttachmentDto,
-  SearchCommentDto,
-  SearchPostDto,
-  SearchPostOptions,
-  UpdateAttachmentDto,
-  UpdateCommentDto,
-  UpdateFollowDto,
-  UpdateLinkDto,
-  UpdatePostDto,
-  CreateSocialComponentDto,
-  UpdateSocialComponentDto,
+  CreatePollDto,
+  UpdatePollDto,
+  VotePollDto,
+  CreatePostShareDto,
+  CreateEventDto,
+  UpdateEventDto,
+  EventStatus,
+  CreateScheduledPostDto,
+  UpdateScheduledPostDto,
   SocialComponentQueryDto,
   CreateCommunityDto,
-  UpdateCommunityDto,
   SearchCommunityDto,
+  UpdateCommunityDto,
   JoinCommunityDto,
   InviteToCommunityDto,
+  CreatePostDto,
+  UpdatePostDto,
+  SearchPostDto,
+  SearchPostOptions,
+  CreateCommentDto,
+  UpdateCommentDto,
+  SearchCommentDto,
+  CreateAttachmentDto,
+  UpdateAttachmentDto,
+  SearchAttachmentDto,
+  CreateLinkDto,
+  UpdateLinkDto,
+  CreateReactionDto,
+  CreateSocialComponentDto,
+  UpdateSocialComponentDto,
+  QueryFollowsDto,
+  UpdateFollowDto,
 } from '@optimistic-tanuki/models';
 import { postSearchDtoToFindManyOptions } from '../entities/post.entity';
 import { transformSearchCommentDtoToFindOptions } from '../entities/comment.entity';
@@ -48,6 +70,25 @@ import { Attachment, toFindOptions } from '../entities/attachment.entity';
 import { FindManyOptions, FindOneOptions, FindOptions, In } from 'typeorm';
 import FollowService from './services/follow.service';
 import { NotificationService } from './services/notification.service';
+import { SearchService } from './services/search.service';
+import { PrivacyService } from './services/privacy.service';
+import { ActivityService } from './services/activity.service';
+import { PresenceService } from './services/presence.service';
+import { PresenceStatus } from '../entities/user-presence.entity';
+import { ProfileAnalyticsService } from './services/profile-analytics.service';
+import { PollService } from './services/poll.service';
+import { PostShareService } from './services/post-share.service';
+import { EventService } from './services/event.service';
+import { Inject } from '@nestjs/common';
+import { Repository } from 'typeorm';
+
+interface UserBlock {
+  id: string;
+  blockerId: string;
+  blockedId: string;
+  reason?: string;
+  createdAt: Date;
+}
 
 @Controller()
 export class AppController {
@@ -55,13 +96,22 @@ export class AppController {
   constructor(
     private readonly postService: PostService,
     private readonly voteService: VoteService,
+    private readonly reactionService: ReactionService,
     private readonly attachmentService: AttachmentService,
     private readonly commentService: CommentService,
     private readonly followService: FollowService,
     private readonly socialComponentService: SocialComponentService,
     private readonly communityService: CommunityService,
-    private readonly notificationService: NotificationService
-  ) {}
+    private readonly notificationService: NotificationService,
+    private readonly searchService: SearchService,
+    private readonly privacyService: PrivacyService,
+    private readonly activityService: ActivityService,
+    private readonly presenceService: PresenceService,
+    private readonly profileAnalyticsService: ProfileAnalyticsService,
+    private readonly pollService: PollService,
+    private readonly postShareService: PostShareService,
+    private readonly eventService: EventService,
+  ) { }
 
   @MessagePattern({ cmd: PostCommands.CREATE })
   async createPost(data: CreatePostDto) {
@@ -183,6 +233,62 @@ export class AppController {
   @MessagePattern({ cmd: VoteCommands.GET })
   async getVote(@Payload('postid') id: string) {
     return await this.voteService.findAll({ where: { post: { id } } });
+  }
+
+  @MessagePattern({ cmd: ReactionCommands.ADD })
+  async addReaction(data: CreateReactionDto) {
+    // Check if user already has a reaction on this post/comment
+    const existingReaction = await this.reactionService.findUserReaction(
+      data.userId!,
+      data.postId,
+      data.commentId
+    );
+
+    if (existingReaction) {
+      // Update existing reaction
+      if (existingReaction.value === data.value) {
+        // Same value - remove the reaction (toggle off)
+        await this.reactionService.remove(existingReaction.id);
+        return null;
+      } else {
+        // Different value - update the reaction
+        await this.reactionService.update(existingReaction.id, {
+          value: data.value,
+        });
+        return await this.reactionService.findOne(existingReaction.id);
+      }
+    }
+
+    // Create new reaction
+    return await this.reactionService.create(data);
+  }
+
+  @MessagePattern({ cmd: ReactionCommands.GET_BY_POST })
+  async getReactionsByPost(@Payload('postId') postId: string) {
+    return await this.reactionService.findByPostId(postId);
+  }
+
+  @MessagePattern({ cmd: ReactionCommands.GET_BY_COMMENT })
+  async getReactionsByComment(@Payload('commentId') commentId: string) {
+    return await this.reactionService.findByCommentId(commentId);
+  }
+
+  @MessagePattern({ cmd: ReactionCommands.GET_USER_REACTION })
+  async getUserReaction(
+    @Payload('userId') userId: string,
+    @Payload('postId') postId?: string,
+    @Payload('commentId') commentId?: string
+  ) {
+    return await this.reactionService.findUserReaction(
+      userId,
+      postId,
+      commentId
+    );
+  }
+
+  @MessagePattern({ cmd: ReactionCommands.GET })
+  async getReactionCounts(@Payload('postId') postId: string) {
+    return await this.reactionService.getReactionCounts(postId);
   }
 
   @MessagePattern({ cmd: CommentCommands.CREATE })
@@ -513,6 +619,16 @@ export class AppController {
     );
   }
 
+  @MessagePattern({ cmd: 'getCommunitiesByProfileId' })
+  async getCommunitiesByProfileId(
+    @Payload() data: { profileId: string; appScope: string }
+  ) {
+    return await this.communityService.getCommunitiesByProfileId(
+      data.profileId,
+      data.appScope
+    );
+  }
+
   @MessagePattern({ cmd: CommunityCommands.INVITE })
   async inviteToCommunity(
     @Payload() data: { dto: InviteToCommunityDto; inviterId: string }
@@ -719,5 +835,451 @@ export class AppController {
   ) {
     const count = await this.notificationService.getUnreadCount(recipientId);
     return { count };
+  }
+
+  // Search handlers
+  @MessagePattern({ cmd: SearchCommands.SEARCH })
+  async search(
+    @Payload() data: { query: string; options: any; profileId?: string }
+  ) {
+    return await this.searchService.search(
+      data.query,
+      data.options,
+      data.profileId
+    );
+  }
+
+  @MessagePattern({ cmd: SearchCommands.GET_TRENDING })
+  async getTrending(@Payload() data: { limit: number }) {
+    return await this.searchService.getTrending(data.limit);
+  }
+
+  @MessagePattern({ cmd: SearchCommands.GET_SUGGESTED_USERS })
+  async getSuggestedUsers(
+    @Payload() data: { limit: number; profileId: string }
+  ) {
+    return await this.searchService.getSuggestedUsers(
+      data.limit,
+      data.profileId
+    );
+  }
+
+  @MessagePattern({ cmd: SearchCommands.GET_SUGGESTED_COMMUNITIES })
+  async getSuggestedCommunities(@Payload() data: { limit: number }) {
+    return await this.searchService.getSuggestedCommunities(data.limit);
+  }
+
+  @MessagePattern({ cmd: SearchCommands.GET_SEARCH_HISTORY })
+  async getSearchHistory(
+    @Payload() data: { profileId: string; limit: number }
+  ) {
+    return await this.searchService.getSearchHistory(
+      data.profileId,
+      data.limit
+    );
+  }
+
+  // Privacy handlers
+  @MessagePattern({ cmd: PrivacyCommands.BLOCK_USER })
+  async blockUser(
+    @Payload() data: { blockerId: string; blockedId: string; reason?: string }
+  ) {
+    return await this.privacyService.blockUser(
+      data.blockerId,
+      data.blockedId,
+      data.reason
+    );
+  }
+
+  @MessagePattern({ cmd: PrivacyCommands.UNBLOCK_USER })
+  async unblockUser(@Payload() data: { blockerId: string; blockedId: string }) {
+    await this.privacyService.unblockUser(data.blockerId, data.blockedId);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: PrivacyCommands.GET_BLOCKED_USERS })
+  async getBlockedUsers(@Payload() data: { blockerId: string }) {
+    return await this.privacyService.getBlockedUsers(data.blockerId);
+  }
+
+  @MessagePattern({ cmd: PrivacyCommands.IS_USER_BLOCKED })
+  async isUserBlocked(
+    @Payload() data: { blockerId: string; blockedId: string }
+  ) {
+    return await this.privacyService.isUserBlocked(
+      data.blockerId,
+      data.blockedId
+    );
+  }
+
+  @MessagePattern({ cmd: PrivacyCommands.MUTE_USER })
+  async muteUser(
+    @Payload() data: { muterId: string; mutedId: string; duration?: number }
+  ) {
+    return await this.privacyService.muteUser(
+      data.muterId,
+      data.mutedId,
+      data.duration
+    );
+  }
+
+  @MessagePattern({ cmd: PrivacyCommands.UNMUTE_USER })
+  async unmuteUser(@Payload() data: { muterId: string; mutedId: string }) {
+    await this.privacyService.unmuteUser(data.muterId, data.mutedId);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: PrivacyCommands.GET_MUTED_USERS })
+  async getMutedUsers(@Payload() data: { muterId: string }) {
+    return await this.privacyService.getMutedUsers(data.muterId);
+  }
+
+  @MessagePattern({ cmd: PrivacyCommands.REPORT_CONTENT })
+  async reportContent(
+    @Payload()
+    data: {
+      reporterId: string;
+      contentType: 'post' | 'comment' | 'profile' | 'community' | 'message';
+      contentId: string;
+      reason: string;
+      description?: string;
+    }
+  ) {
+    return await this.privacyService.reportContent(
+      data.reporterId,
+      data.contentType,
+      data.contentId,
+      data.reason as any,
+      data.description
+    );
+  }
+
+  @MessagePattern({ cmd: PrivacyCommands.GET_MY_REPORTS })
+  async getMyReports(@Payload() data: { reporterId: string }) {
+    return await this.privacyService.getMyReports(data.reporterId);
+  }
+
+  // Activity handlers
+  @MessagePattern({ cmd: ActivityCommands.CREATE })
+  async createActivity(
+    @Payload()
+    data: {
+      profileId: string;
+      type: string;
+      description: string;
+      resourceId?: string;
+      resourceType?: string;
+    }
+  ) {
+    return await this.activityService.createActivity(data as any);
+  }
+
+  @MessagePattern({ cmd: ActivityCommands.FIND })
+  async findActivity(@Payload('id') id: string) {
+    return await this.activityService.findOne(id);
+  }
+
+  @MessagePattern({ cmd: ActivityCommands.FIND_BY_PROFILE })
+  async findActivitiesByProfile(
+    @Payload()
+    data: {
+      profileId: string;
+      type?: string;
+      limit?: number;
+      offset?: number;
+    }
+  ) {
+    return await this.activityService.findByProfile(data.profileId, {
+      type: data.type as any,
+      limit: data.limit,
+      offset: data.offset,
+    });
+  }
+
+  @MessagePattern({ cmd: ActivityCommands.DELETE })
+  async deleteActivity(@Payload('id') id: string) {
+    await this.activityService.deleteActivity(id);
+    return { success: true };
+  }
+
+  // SavedItem handlers
+  @MessagePattern({ cmd: SavedItemCommands.SAVE })
+  async saveItem(
+    @Payload()
+    data: {
+      profileId: string;
+      itemType: 'post' | 'comment';
+      itemId: string;
+      itemTitle?: string;
+    }
+  ) {
+    return await this.activityService.saveItem(
+      data.profileId,
+      data.itemType,
+      data.itemId,
+      data.itemTitle
+    );
+  }
+
+  @MessagePattern({ cmd: SavedItemCommands.UNSAVE })
+  async unsaveItem(@Payload() data: { profileId: string; itemId: string }) {
+    await this.activityService.unsaveItem(data.profileId, data.itemId);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: SavedItemCommands.FIND_SAVED })
+  async findSavedItems(@Payload('profileId') profileId: string) {
+    return await this.activityService.findSavedItems(profileId);
+  }
+
+  @MessagePattern({ cmd: SavedItemCommands.IS_SAVED })
+  async isItemSaved(@Payload() data: { profileId: string; itemId: string }) {
+    return await this.activityService.isItemSaved(data.profileId, data.itemId);
+  }
+
+  // Presence handlers
+  @MessagePattern({ cmd: PresenceCommands.SET_PRESENCE })
+  async setPresence(
+    @Payload() data: { userId: string; status: PresenceStatus }
+  ) {
+    return await this.presenceService.setPresence(data.userId, data.status);
+  }
+
+  @MessagePattern({ cmd: PresenceCommands.GET_PRESENCE })
+  async getPresence(@Payload('userId') userId: string) {
+    return await this.presenceService.getPresence(userId);
+  }
+
+  @MessagePattern({ cmd: PresenceCommands.GET_PRESENCE_BATCH })
+  async getPresenceBatch(@Payload('userIds') userIds: string[]) {
+    return await this.presenceService.getPresenceBatch(userIds);
+  }
+
+  @MessagePattern({ cmd: PresenceCommands.GET_ONLINE_USERS })
+  async getOnlineUsers() {
+    return await this.presenceService.getOnlineUsers();
+  }
+
+  @MessagePattern({ cmd: PresenceCommands.UPDATE_LAST_SEEN })
+  async updateLastSeen(@Payload('userId') userId: string) {
+    await this.presenceService.updateLastSeen(userId);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: PresenceCommands.SET_OFFLINE })
+  async setOffline(@Payload('userId') userId: string) {
+    await this.presenceService.setOffline(userId);
+    return { success: true };
+  }
+
+  // Profile Analytics handlers
+  @MessagePattern({ cmd: ProfileAnalyticsCommands.RECORD_VIEW })
+  async recordProfileView(
+    @Payload() data: { profileId: string; viewerId: string; source: string }
+  ) {
+    return await this.profileAnalyticsService.recordView(
+      data.profileId,
+      data.viewerId,
+      data.source
+    );
+  }
+
+  @MessagePattern({ cmd: ProfileAnalyticsCommands.GET_VIEW_STATS })
+  async getProfileViewStats(@Payload('profileId') profileId: string) {
+    return await this.profileAnalyticsService.getViewStats(profileId);
+  }
+
+  @MessagePattern({ cmd: ProfileAnalyticsCommands.GET_RECENT_VIEWERS })
+  async getRecentProfileViewers(
+    @Payload() data: { profileId: string; limit?: number }
+  ) {
+    return await this.profileAnalyticsService.getRecentViewers(
+      data.profileId,
+      data.limit
+    );
+  }
+
+  // Poll handlers
+  @MessagePattern({ cmd: PollCommands.CREATE })
+  async createPoll(data: CreatePollDto) {
+    return await this.pollService.create(data);
+  }
+
+  @MessagePattern({ cmd: PollCommands.UPDATE })
+  async updatePoll(
+    @Payload('id') id: string,
+    @Payload('data') data: UpdatePollDto
+  ) {
+    return await this.pollService.update(id, data);
+  }
+
+  @MessagePattern({ cmd: PollCommands.DELETE })
+  async deletePoll(@Payload('id') id: string) {
+    await this.pollService.remove(id);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: PollCommands.FIND })
+  async findPoll(@Payload('id') id: string) {
+    return await this.pollService.findOne(id);
+  }
+
+  @MessagePattern({ cmd: PollCommands.FIND_MANY })
+  async findManyPolls(@Payload('profileId') profileId?: string) {
+    return await this.pollService.findMany(profileId);
+  }
+
+  @MessagePattern({ cmd: PollCommands.VOTE })
+  async votePoll(data: VotePollDto) {
+    return await this.pollService.vote(data);
+  }
+
+  @MessagePattern({ cmd: PollCommands.REMOVE_VOTE })
+  async removeVotePoll(
+    @Payload('pollId') pollId: string,
+    @Payload('userId') userId: string
+  ) {
+    return await this.pollService.removeVote(pollId, userId);
+  }
+
+  // PostShare handlers
+  @MessagePattern({ cmd: PostShareCommands.CREATE })
+  async createPostShare(data: CreatePostShareDto) {
+    return await this.postShareService.create(data);
+  }
+
+  @MessagePattern({ cmd: PostShareCommands.DELETE })
+  async deletePostShare(@Payload('id') id: string) {
+    await this.postShareService.remove(id);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: PostShareCommands.FIND_BY_POST })
+  async findPostSharesByPost(
+    @Payload('originalPostId') originalPostId: string
+  ) {
+    return await this.postShareService.findByPost(originalPostId);
+  }
+
+  @MessagePattern({ cmd: PostShareCommands.FIND_BY_PROFILE })
+  async findPostSharesByProfile(@Payload('sharedById') sharedById: string) {
+    return await this.postShareService.findByProfile(sharedById);
+  }
+
+  // Event handlers
+  @MessagePattern({ cmd: EventCommands.CREATE })
+  async createEvent(data: CreateEventDto) {
+    return await this.eventService.create(data);
+  }
+
+  @MessagePattern({ cmd: EventCommands.UPDATE })
+  async updateEvent(
+    @Payload('id') id: string,
+    @Payload('data') data: UpdateEventDto
+  ) {
+    return await this.eventService.update(id, data);
+  }
+
+  @MessagePattern({ cmd: EventCommands.DELETE })
+  async deleteEvent(@Payload('id') id: string) {
+    await this.eventService.remove(id);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: EventCommands.FIND })
+  async findEvent(@Payload('id') id: string) {
+    return await this.eventService.findOne(id);
+  }
+
+  @MessagePattern({ cmd: EventCommands.FIND_MANY })
+  async findManyEvents(
+    @Payload()
+    options?: {
+      profileId?: string;
+      communityId?: string;
+      status?: EventStatus;
+      upcoming?: boolean;
+    }
+  ) {
+    return await this.eventService.findMany(options);
+  }
+
+  @MessagePattern({ cmd: EventCommands.FIND_UPCOMING })
+  async findUpcomingEvents(@Payload('limit') limit: number = 10) {
+    return await this.eventService.findUpcoming(limit);
+  }
+
+  @MessagePattern({ cmd: EventCommands.ATTEND })
+  async attendEvent(
+    @Payload('eventId') eventId: string,
+    @Payload('profileId') profileId: string
+  ) {
+    return await this.eventService.attend(eventId, profileId);
+  }
+
+  @MessagePattern({ cmd: EventCommands.UNATTEND })
+  async unattendEvent(
+    @Payload('eventId') eventId: string,
+    @Payload('profileId') profileId: string
+  ) {
+    return await this.eventService.unattend(eventId, profileId);
+  }
+
+  @MessagePattern({ cmd: EventCommands.IS_ATTENDING })
+  async isAttendingEvent(
+    @Payload('eventId') eventId: string,
+    @Payload('profileId') profileId: string
+  ) {
+    return await this.eventService.isAttending(eventId, profileId);
+  }
+
+  // ScheduledPost handlers
+  @MessagePattern({ cmd: ScheduledPostCommands.CREATE })
+  async createScheduledPost(data: CreateScheduledPostDto) {
+    return await this.postService.createScheduledPost({
+      title: data.title,
+      content: data.content,
+      profileId: data.profileId,
+      userId: data.userId,
+      scheduledAt: new Date(data.scheduledAt),
+      visibility: data.visibility,
+      communityId: data.communityId,
+      attachmentIds: data.attachmentIds,
+    });
+  }
+
+  @MessagePattern({ cmd: ScheduledPostCommands.UPDATE })
+  async updateScheduledPost(
+    @Payload('id') id: string,
+    @Payload('data') data: UpdateScheduledPostDto
+  ) {
+    return await this.postService.updateScheduledPost(id, {
+      title: data.title,
+      content: data.content,
+      scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
+      visibility: data.visibility,
+      communityId: data.communityId,
+    });
+  }
+
+  @MessagePattern({ cmd: ScheduledPostCommands.DELETE })
+  async deleteScheduledPost(@Payload('id') id: string) {
+    await this.postService.deleteScheduledPost(id);
+    return { success: true };
+  }
+
+  @MessagePattern({ cmd: ScheduledPostCommands.FIND })
+  async findScheduledPost(@Payload('id') id: string) {
+    return await this.postService.findOne(id);
+  }
+
+  @MessagePattern({ cmd: ScheduledPostCommands.FIND_MANY })
+  async findManyScheduledPosts(@Payload('profileId') profileId?: string) {
+    return await this.postService.findScheduledPosts(profileId);
+  }
+
+  @MessagePattern({ cmd: ScheduledPostCommands.PUBLISH })
+  async publishScheduledPost(@Payload('id') id: string) {
+    return await this.postService.publishScheduledPost(id);
   }
 }

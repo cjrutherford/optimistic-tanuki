@@ -40,11 +40,22 @@ import { CreateAssetDto, FollowDto } from '@optimistic-tanuki/ui-models';
 import { FollowService } from '../../follow.service';
 import { HttpClient } from '@angular/common/http';
 import { CommunityService } from '../../community.service';
+import { VoteService } from '../../vote.service';
+import { ReactionService } from '../../reaction.service';
+import { InfiniteScrollDirective } from '../../directives/infinite-scroll.directive';
+import { LazyLoadDirective } from '../../directives/lazy-load.directive';
 
 @Component({
   selector: 'app-feed',
   standalone: true,
-  imports: [ButtonComponent, SpinnerComponent, ComposeComponent, PostComponent],
+  imports: [
+    ButtonComponent,
+    SpinnerComponent,
+    ComposeComponent,
+    PostComponent,
+    InfiniteScrollDirective,
+    LazyLoadDirective,
+  ],
   providers: [
     ThemeService,
     PostService,
@@ -53,6 +64,8 @@ import { CommunityService } from '../../community.service';
     SocialWebSocketService,
     AssetService,
     FollowService,
+    VoteService,
+    ReactionService,
   ],
   templateUrl: './feed.component.html',
   styleUrls: ['./feed.component.scss'],
@@ -60,7 +73,15 @@ import { CommunityService } from '../../community.service';
 export class FeedComponent implements OnInit, OnDestroy {
   posts = signal<PostDto[]>([]);
   loading = signal(true);
+  loadingMore = signal(false);
+  hasMorePosts = signal(true);
+  private currentPage = 0;
+  private pageSize = 20;
+  private currentVisibility: 'public' | 'following' | 'communities' = 'public';
+  private currentCommunityIds: string[] = [];
   followingIds = new Set<string>();
+  blockedIds = new Set<string>();
+  ownedCommunities = signal<{ id: string; name: string }[]>([]);
   communityInfo = signal<{
     [key: string]: { id: string; name: string; logoUrl?: string };
   }>({});
@@ -70,6 +91,17 @@ export class FeedComponent implements OnInit, OnDestroy {
     border: string;
   };
   destroy$ = new Subject<void>();
+
+  // Track user votes for each post: postId -> vote value (0 = no vote)
+  userVotes = signal<{ [postId: string]: number }>({});
+  // Track vote counts: postId -> count
+  voteCounts = signal<{ [postId: string]: number }>({});
+  // Track user reactions: postId -> reaction value (0 = no reaction)
+  userReactions = signal<{ [postId: string]: number }>({});
+  // Track reaction counts: postId -> { value -> count }
+  reactionCounts = signal<{ [postId: string]: { [value: number]: number } }>(
+    {}
+  );
 
   // Image upload callback for the compose component
   imageUploadCallback: ImageUploadCallback = async (
@@ -113,6 +145,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   assetService = inject(AssetService);
   followService = inject(FollowService);
   communityService = inject(CommunityService);
+  voteService = inject(VoteService);
+  reactionService = inject(ReactionService);
   private readonly http = inject(HttpClient);
   private readonly gatewayUrl = 'http://localhost:3000/social';
 
@@ -134,6 +168,8 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (currentProfile) {
       // Load initial following list for the current profile
       this.loadFollowing(currentProfile.id);
+      this.loadOwnedCommunities();
+      this.loadBlockedUsers(currentProfile.id);
 
       // Connect to WebSocket
       this.socialWebSocketService.connect();
@@ -161,6 +197,7 @@ export class FeedComponent implements OnInit, OnDestroy {
           this.posts.set(posts);
           this.loading.set(false);
           this.loadProfiles(posts);
+          this.loadReactionData(posts);
           this.loadCommunityInfo(posts);
         });
 
@@ -179,6 +216,7 @@ export class FeedComponent implements OnInit, OnDestroy {
               this.loading.set(false);
               this.loadProfiles(posts);
               this.loadCommunityInfo(posts);
+              this.loadReactionData(posts);
             });
         }
       }, 5000);
@@ -208,6 +246,38 @@ export class FeedComponent implements OnInit, OnDestroy {
         console.log('Following IDs loaded:', Array.from(this.followingIds));
       },
       error: (err) => console.error('Failed to load following', err),
+    });
+  }
+
+  private loadOwnedCommunities() {
+    this.communityService.getUserCommunities().subscribe({
+      next: (communities) => {
+        const owned = communities
+          .filter((c: CommunityDto) => {
+            const currentProfile = this.profileService.currentUserProfile();
+            return currentProfile && c.ownerId === currentProfile.userId;
+          })
+          .map((c: CommunityDto) => ({ id: c.id, name: c.name }));
+        this.ownedCommunities.set(owned);
+      },
+      error: (err) => console.error('Failed to load owned communities', err),
+    });
+  }
+
+  private loadBlockedUsers(profileId: string) {
+    this.profileService.getBlockedUsers(profileId).subscribe({
+      next: (blocked) => {
+        this.blockedIds.clear();
+        if (Array.isArray(blocked)) {
+          blocked.forEach((b: any) => {
+            if (b.blockedProfileId) {
+              this.blockedIds.add(b.blockedProfileId);
+            }
+          });
+        }
+        console.log('Blocked IDs loaded:', Array.from(this.blockedIds));
+      },
+      error: (err) => console.error('Failed to load blocked users', err),
     });
   }
 
@@ -517,45 +587,286 @@ export class FeedComponent implements OnInit, OnDestroy {
     }
   }
 
+  onProfileClick(profileId: string) {
+    if (profileId) {
+      this.router.navigate(['/profile', profileId]);
+    }
+  }
+
+  isBlocked(post: PostDto): boolean {
+    return this.blockedIds.has(post.profileId);
+  }
+
+  onBlockToggle(post: PostDto) {
+    const currentProfile = this.profileService.currentUserProfile();
+    if (!currentProfile) return;
+
+    if (this.isBlocked(post)) {
+      this.profileService
+        .unblockUser(currentProfile.id, post.profileId)
+        .subscribe({
+          next: () => {
+            this.blockedIds.delete(post.profileId);
+            console.log('User unblocked:', post.profileId);
+          },
+          error: (err: any) => console.error('Failed to unblock user', err),
+        });
+    } else {
+      this.profileService
+        .blockUser(currentProfile.id, post.profileId)
+        .subscribe({
+          next: () => {
+            this.blockedIds.add(post.profileId);
+            console.log('User blocked:', post.profileId);
+          },
+          error: (err: any) => console.error('Failed to block user', err),
+        });
+    }
+  }
+
+  onInviteToCommunity(event: { post: PostDto; communityId: string }) {
+    const community = this.ownedCommunities().find(
+      (c) => c.id === event.communityId
+    );
+    if (!community) return;
+
+    this.communityService
+      .inviteUser(event.communityId, event.post.profileId)
+      .subscribe({
+        next: () => {
+          console.log('User invited to community:', community.name);
+        },
+        error: (err: any) =>
+          console.error('Failed to invite user to community', err),
+      });
+  }
+
+  onVoteChanged(event: { postId: string; value: number }) {
+    const currentProfile = this.profileService.currentUserProfile();
+    if (!currentProfile) {
+      console.error('Cannot vote: No current profile found.');
+      return;
+    }
+
+    console.log('[Feed] Vote changed:', event);
+
+    this.voteService.vote(event.postId, event.value).subscribe({
+      next: (vote) => {
+        console.log('[Feed] Vote updated:', vote);
+        // Update local vote state
+        this.userVotes.update((votes) => ({
+          ...votes,
+          [event.postId]: event.value,
+        }));
+        // Update vote count
+        this.voteCounts.update((counts) => {
+          const currentCount = counts[event.postId] || 0;
+          const currentVote = this.userVotes()[event.postId] || 0;
+          let newCount = currentCount;
+          if (currentVote === 0 && event.value !== 0) {
+            newCount = currentCount + 1;
+          } else if (currentVote !== 0 && event.value === 0) {
+            newCount = Math.max(0, currentCount - 1);
+          } else if (currentVote !== event.value) {
+            // Vote changed, count stays the same
+            newCount = currentCount;
+          }
+          return { ...counts, [event.postId]: newCount };
+        });
+      },
+      error: (err) => console.error('[Feed] Failed to vote:', err),
+    });
+  }
+
+  getUserVote(postId: string): number {
+    return this.userVotes()[postId] || 0;
+  }
+
+  getVoteCount(postId: string): number {
+    return this.voteCounts()[postId] || 0;
+  }
+
+  getUserReaction(postId: string): number {
+    return this.userReactions()[postId] || 0;
+  }
+
+  getReactionCounts(postId: string): { [value: number]: number } {
+    return this.reactionCounts()[postId] || {};
+  }
+
+  onReactionChanged(event: { postId: string; value: number }) {
+    const currentProfile = this.profileService.currentUserProfile();
+    if (!currentProfile) {
+      console.error('Cannot react: No current profile found.');
+      return;
+    }
+
+    console.log('[Feed] Reaction changed:', event);
+
+    // Call the backend to add/update reaction
+    this.reactionService
+      .addReaction({
+        postId: event.postId,
+        value: event.value,
+        profileId: currentProfile.id,
+      })
+      .subscribe({
+        next: (reaction) => {
+          console.log('[Feed] Reaction updated:', reaction);
+          // Toggle reaction: if clicking same emoji, remove it; otherwise switch
+          const currentReaction = this.userReactions()[event.postId] || 0;
+          const newReaction = currentReaction === event.value ? 0 : event.value;
+
+          this.userReactions.update((reactions) => ({
+            ...reactions,
+            [event.postId]: newReaction,
+          }));
+
+          // Update counts
+          this.reactionCounts.update((counts) => {
+            const postCounts = counts[event.postId] || {};
+            const currentCount = postCounts[event.value] || 0;
+
+            let newCounts = { ...postCounts };
+
+            if (currentReaction === event.value) {
+              // Removing this reaction
+              newCounts[event.value] = Math.max(0, currentCount - 1);
+            } else {
+              // Adding or switching reaction
+              if (currentReaction > 0) {
+                // Remove old reaction
+                newCounts[currentReaction] = Math.max(
+                  0,
+                  (postCounts[currentReaction] || 1) - 1
+                );
+              }
+              newCounts[event.value] = currentCount + 1;
+            }
+
+            return { ...counts, [event.postId]: newCounts };
+          });
+        },
+        error: (err) => console.error('[Feed] Failed to react:', err),
+      });
+  }
+
+  getCurrentUserId(): string {
+    const profile = this.profileService.currentUserProfile();
+    // console.log('[Feed] Current profile:', profile);
+    return profile?.id || '';
+  }
+
   onScroll() {
     // const length = this.posts.length;
     // this.posts.push(...Array.from({ length: 20 }, (_, i) => `Post #${length + i + 1}`));
   }
 
+  loadReactionData(posts: PostDto[]) {
+    for (const post of posts) {
+      this.reactionService
+        .getReactionsByPost(post.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((reactions) => {
+          this.reactionCounts.update((counts) => ({
+            ...counts,
+            [post.id]: reactions
+              .map((r) => r.value)
+              .reduce((acc, value) => {
+                acc[value] = (acc[value] || 0) + 1;
+                return acc;
+              }, {} as { [value: number]: number }),
+          }));
+        });
+
+      this.reactionService
+        .getUserReaction(post.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((reaction) => {
+          this.userReactions.update((reactions) => ({
+            ...reactions,
+            [post.id]: reaction ? reaction.value : 0,
+          }));
+        });
+    }
+  }
+
   loadPublicFeed() {
     this.currentFeed = 'public';
+    this.currentVisibility = 'public';
+    this.currentPage = 0;
+    this.hasMorePosts.set(true);
     this.postService
-      .searchPosts({ visibility: 'public', communityId: null as any })
+      .searchPosts(
+        { visibility: 'public', communityId: null as any },
+        {
+          orderBy: 'createdAt',
+          orderDirection: 'desc',
+          limit: this.pageSize,
+          offset: 0,
+        }
+      )
       .subscribe((posts: PostDto[]) => {
         this.posts.set(posts);
-        this.loadProfiles(posts);
+        this.hasMorePosts.set(posts.length >= this.pageSize);
+        this.loadReactionData(posts);
         this.loadCommunityInfo(posts);
+        this.loadProfiles(posts);
       });
   }
 
   loadFollowingFeed() {
     this.currentFeed = 'following';
+    this.currentVisibility = 'following';
+    this.currentPage = 0;
+    this.hasMorePosts.set(true);
     const currentProfile = this.profileService.currentUserProfile();
     if (!currentProfile) {
       console.error('No current profile found');
       return;
     }
-    this.postService
-      .getPosts({ visibility: 'followers', profileId: currentProfile.id })
-      .subscribe((posts: PostDto[]) => {
-        this.posts.set(posts);
-        this.loadProfiles(posts);
-        this.loadCommunityInfo(posts);
-      });
+
+    const loadPosts = () => {
+      this.postService
+        .getFeed({
+          includeFollowing: true,
+          includePublic: false,
+          limit: this.pageSize,
+          offset: 0,
+        })
+        .subscribe((posts: PostDto[]) => {
+          const followingPosts = posts.filter(
+            (post) =>
+              this.followingIds.has(post.profileId) ||
+              post.profileId === currentProfile.id
+          );
+          this.posts.set(followingPosts);
+          this.hasMorePosts.set(followingPosts.length >= this.pageSize);
+          this.loadReactionData(posts);
+          this.loadCommunityInfo(posts);
+          this.loadProfiles(posts);
+        });
+    };
+
+    if (this.followingIds.size === 0) {
+      this.loadFollowing(currentProfile.id);
+      setTimeout(loadPosts, 100);
+    } else {
+      loadPosts();
+    }
   }
 
   loadCommunitiesFeed() {
     this.currentFeed = 'communities';
+    this.currentVisibility = 'communities';
+    this.currentPage = 0;
+    this.hasMorePosts.set(true);
     this.loading.set(true);
 
     this.communityService.getUserCommunities().subscribe({
       next: (communities) => {
         const communityIds = communities.map((c) => c.id);
+        this.currentCommunityIds = communityIds;
         if (communityIds.length === 0) {
           this.posts.set([]);
           this.loading.set(false);
@@ -565,9 +876,11 @@ export class FeedComponent implements OnInit, OnDestroy {
         this.postService.getPostsByCommunityIds(communityIds).subscribe({
           next: (posts) => {
             this.posts.set(posts);
-            this.loadProfiles(posts);
+            this.hasMorePosts.set(posts.length >= this.pageSize);
+            this.loadReactionData(posts);
             this.loadCommunityInfo(posts);
             this.loading.set(false);
+            this.loadProfiles(posts);
           },
           error: (err) => {
             console.error('Failed to load community posts:', err);
@@ -580,6 +893,88 @@ export class FeedComponent implements OnInit, OnDestroy {
         this.loading.set(false);
       },
     });
+  }
+
+  loadMorePosts() {
+    if (this.loadingMore() || !this.hasMorePosts()) {
+      return;
+    }
+
+    this.loadingMore.set(true);
+    this.currentPage++;
+
+    const offset = this.currentPage * this.pageSize;
+
+    if (this.currentVisibility === 'public') {
+      this.postService
+        .searchPosts(
+          { visibility: 'public', communityId: null as any },
+          {
+            orderBy: 'createdAt',
+            orderDirection: 'desc',
+            limit: this.pageSize,
+            offset,
+          }
+        )
+        .subscribe({
+          next: (posts) => {
+            this.posts.update((current) => [...current, ...posts]);
+            this.hasMorePosts.set(posts.length >= this.pageSize);
+            this.loadReactionData(posts);
+            this.loadCommunityInfo(posts);
+            this.loadProfiles(posts);
+            this.loadingMore.set(false);
+          },
+          error: () => {
+            this.currentPage--;
+            this.loadingMore.set(false);
+          },
+        });
+    } else if (this.currentVisibility === 'following') {
+      this.postService
+        .getFeed({
+          includeFollowing: true,
+          includePublic: false,
+          limit: this.pageSize,
+          offset,
+        })
+        .subscribe({
+          next: (posts) => {
+            this.posts.update((current) => [...current, ...posts]);
+            this.hasMorePosts.set(posts.length >= this.pageSize);
+            this.loadReactionData(posts);
+            this.loadCommunityInfo(posts);
+            this.loadProfiles(posts);
+            this.loadingMore.set(false);
+          },
+          error: () => {
+            this.currentPage--;
+            this.loadingMore.set(false);
+          },
+        });
+    } else if (
+      this.currentVisibility === 'communities' &&
+      this.currentCommunityIds.length > 0
+    ) {
+      this.postService
+        .getPostsByCommunityIds(this.currentCommunityIds)
+        .subscribe({
+          next: (posts) => {
+            this.posts.update((current) => [...current, ...posts]);
+            this.hasMorePosts.set(posts.length >= this.pageSize);
+            this.loadReactionData(posts);
+            this.loadCommunityInfo(posts);
+            this.loadProfiles(posts);
+            this.loadingMore.set(false);
+          },
+          error: () => {
+            this.currentPage--;
+            this.loadingMore.set(false);
+          },
+        });
+    } else {
+      this.loadingMore.set(false);
+    }
   }
 
   private getFileExtensionFromDataUrl(
