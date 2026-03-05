@@ -29,6 +29,18 @@ check_ubuntu() {
     exit 1
 }
 
+install_snap() {
+    if command -v snap &> /dev/null; then
+        echo "snap is already installed"
+        return
+    fi
+    
+    echo "Installing snap..."
+    sudo apt-get update
+    sudo apt-get install -y snapd
+    echo "snap installed successfully!"
+}
+
 install_microk8s() {
     if command -v microk8s &> /dev/null; then
         echo "MicroK8s is already installed"
@@ -37,12 +49,7 @@ install_microk8s() {
     
     echo "Installing MicroK8s..."
     
-    # Install snap on Debian if not present
-    if ! command -v snap &> /dev/null; then
-        echo "Installing snap..."
-        sudo apt-get update
-        sudo apt-get install -y snapd
-    fi
+    install_snap
     
     sudo snap install microk8s --classic --channel=1.29/stable
     
@@ -66,110 +73,13 @@ enable_addons() {
     echo "Addons enabled successfully!"
 }
 
-setup_terraform() {
-    echo "Setting up Terraform..."
-    
-    if ! command -v terraform &> /dev/null; then
-        echo "Installing Terraform..."
-        sudo apt-get update
-        sudo apt-get install -y wget unzip
-        
-        wget -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.7.0/terraform_1.7.0_linux_amd64.zip
-        sudo unzip -o /tmp/terraform.zip -d /usr/local/bin/
-        rm /tmp/terraform.zip
-    fi
-    
-    cd "$PROJECT_DIR/tf"
-    
-    echo "Initializing Terraform..."
-    terraform init
-    
-    echo "Validating Terraform configuration..."
-    terraform validate
-    
-    echo "Terraform setup complete!"
-}
-
-deploy_infrastructure() {
-    echo "Deploying infrastructure with Terraform..."
-    
-    cd "$PROJECT_DIR/tf"
-    
-    read -p "Enter ArgoCD admin password: " -s ARGO_PASSWORD
-    echo
-    
-    read -p "Enter your domain (e.g., example.com): " DOMAIN
-    
-    terraform plan -out=tfplan \
-        -var="argo_admin_password=$ARGO_PASSWORD" \
-        -var="domain=$DOMAIN"
-    
-    read -p "Apply Terraform plan? (y/n): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        terraform apply -auto-approve tfplan
-    fi
-    
-    echo "Infrastructure deployed!"
-}
-
-generate_secrets() {
-    echo "Generating K8s secrets from .secrets file..."
-    
-    cd "$PROJECT_DIR"
-    
-    if [ ! -f ".secrets" ]; then
-        echo "Warning: .secrets file not found. Skipping secret generation."
-        echo "Run './scripts/generate-secrets.sh' after creating .secrets"
-    else
-        chmod +x scripts/generate-secrets.sh
-        ./scripts/generate-secrets.sh
-        
-        echo "Applying secrets to cluster..."
-        microk8s kubectl apply -f k8s/secrets/secrets.yaml
-    fi
-}
-
-deploy_argocd_app() {
-    echo "Deploying ArgoCD Application..."
-    
-    cd "$PROJECT_DIR"
-    
-    microk8s kubectl apply -f k8s/argo-app/application.yaml
-    
-    echo "ArgoCD Application deployed!"
-}
-
-wait_for_argocd() {
-    echo "Waiting for ArgoCD to be ready..."
-    
-    sleep 30
-    
-    microk8s kubectl get pods -n argocd
-    
-    echo "ArgoCD is ready!"
-}
-
 main() {
     # check_ubuntu
     
     echo "Starting MicroK8s setup..."
     
-    if [ "$1" == "--skip-install" ]; then
-        echo "Skipping installation..."
-    else
-        install_microk8s
-    fi
-    
+    install_microk8s
     enable_addons
-    setup_terraform
-    
-    if [ "$1" == "--deploy" ]; then
-        generate_secrets
-        deploy_infrastructure
-        wait_for_argocd
-        deploy_argocd_app
-    fi
     
     echo "============================================="
     echo "  Setup Complete!"
@@ -177,7 +87,8 @@ main() {
     echo ""
     echo "Next steps:"
     echo "1. Run 'newgrp microk8s' to apply group changes"
-    echo "2. Run './setup-microk8s.sh --deploy' to deploy infrastructure"
+    echo "2. Run './scripts/install-terraform.sh' to install Terraform"
+    echo "3. Run './scripts/deploy-production.sh' to deploy the infrastructure"
     echo ""
     echo "Useful commands:"
     echo "  microk8s status"

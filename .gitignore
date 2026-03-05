@@ -69,3 +69,4 @@ frontend-design
 .codex
 .kilo/
 .secrets
+tf/.terraform

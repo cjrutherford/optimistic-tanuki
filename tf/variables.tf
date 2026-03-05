@@ -39,3 +39,9 @@ variable "docker_registry" {
   type        = string
   default     = "cjrutherford"
 }
+
+variable "kubeconfig_path" {
+  description = "Path to kubeconfig used by Terraform Kubernetes/Helm providers"
+  type        = string
+  default     = "~/.kube/config"
+}

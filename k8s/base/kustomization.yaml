@@ -8,9 +8,29 @@ resources:
   - postgres.yaml
   - redis.yaml
   - seaweedfs.yaml
+  - secrets.yaml
   - gateway.yaml
-  - assets.yaml
-  - services/
-  - clients/
+  - services/authentication.yaml
+  - services/profile.yaml
+  - services/social.yaml
+  - services/forum.yaml
+  - services/chat-collector.yaml
+  - services/assets.yaml
+  - services/prompt-proxy.yaml
+  - services/ai-orchestration.yaml
+  - services/telos-docs-service.yaml
+  - services/blogging.yaml
+  - services/permissions.yaml
+  - services/project-planning.yaml
+  - services/store.yaml
+  - services/app-configurator.yaml
+  - services/wellness.yaml
+  - clients/client-interface.yaml
+  - clients/forgeofwill.yaml
+  - clients/digital-homestead.yaml
+  - clients/christopherrutherford-net.yaml
+  - clients/owner-console.yaml
+  - clients/store-client.yaml
+  - clients/configurable-client.yaml
+  - clients/d6.yaml
   - ingress.yaml
-  - ../secrets/secrets.yaml
