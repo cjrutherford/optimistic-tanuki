@@ -43,7 +43,8 @@
     &:focus {
       outline: none;
       border-color: var(--accent, #3f51b5);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #3f51b5) 10%, transparent);
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--accent, #3f51b5) 10%, transparent);
     }
 
     &:focus-visible {
@@ -121,5 +122,79 @@ li {
       outline-offset: 2px;
       border-radius: 2px;
     }
+  }
+}
+
+// ============================================
+// Personality-Specific Link Enhancements
+// ============================================
+
+body.personality-architect {
+  .link-input input,
+  .link-input button {
+    border-radius: 0;
+  }
+  .link-input button:hover {
+    box-shadow: 4px 4px 0 var(--primary);
+    transform: translate(-2px, -2px);
+  }
+  li a:hover {
+    border-bottom: 2px solid var(--primary);
+  }
+}
+
+body.personality-playful {
+  .link-input input,
+  .link-input button {
+    border-radius: 20px;
+  }
+  .link-input button:hover {
+    transform: translateY(-4px);
+  }
+  li a:hover {
+    transform: translateX(4px);
+  }
+}
+
+body.personality-minimal {
+  .link-input input,
+  .link-input button {
+    border-radius: 2px;
+  }
+  .link-input button {
+    padding: 2px 8px;
+  }
+}
+
+body.personality-electric {
+  .link-input button:hover {
+    box-shadow: 0 0 20px var(--primary);
+  }
+  li a:hover {
+    text-shadow: 0 0 8px var(--primary);
+  }
+}
+
+body.personality-soft-touch {
+  .link-input input,
+  .link-input button {
+    border-radius: 24px;
+  }
+  .link-input button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+}
+
+body.personality-control-center {
+  .link-input input,
+  .link-input button {
+    border-radius: 2px;
+  }
+  .link-input button:hover {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  li a:hover {
+    border-bottom: 1px solid var(--primary);
   }
 }

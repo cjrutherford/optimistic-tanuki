@@ -115,4 +115,10 @@ export class CommunityService {
   cancelInvite(inviteId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/invites/${inviteId}`);
   }
+
+  getUserCommunitiesByProfileId(profileId: string): Observable<CommunityDto[]> {
+    return this.http.get<CommunityDto[]>(
+      `${this.baseUrl}/profile/${profileId}/communities`
+    );
+  }
 }

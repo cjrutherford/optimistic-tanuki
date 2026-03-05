@@ -4,6 +4,8 @@ FROM node:lts-alpine as builder
 # Set working directory
 WORKDIR /usr/src/app
 
+ARG GIT_SHA=unknown
+
 # Copy package.json and package-lock.json
 COPY package.json ./
 COPY package-lock.json ./
@@ -25,8 +27,11 @@ RUN apk add --no-cache dumb-init
 
 WORKDIR /app
 
+ARG GIT_SHA=unknown
+
 # Set NODE_ENV to production for the runtime environment
 ENV NODE_ENV=production
+ENV GIT_SHA=${GIT_SHA}
 
 # Copy package.json and package-lock.json again to install only production dependencies
 COPY --from=builder /usr/src/app/package.json ./
@@ -39,10 +44,20 @@ RUN npm install --omit=dev --legacy-peer-deps && npm i -g nodemon @angular/cli
 # The structure should be dist/apps/d6/server/main.js and dist/apps/d6/browser/...
 COPY --from=builder /usr/src/app/dist/apps/d6 ./dist/apps/d6
 
-# Expose the port the SSR server will listen on.
-# Angular Universal apps often default to 4000 or use process.env.PORT.
-# Check your apps/d6/src/server.ts for the actual port.
+# Create startup script to inject dev env vars
+RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
+    echo 'if [ "$NODE_ENV" = "development" ]; then' >> /docker-entrypoint.sh && \
+    echo '  STARTUP_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")' >> /docker-entrypoint.sh && \
+    echo '  for f in $(find /app/dist/apps/d6/browser -name "index.html"); do' >> /docker-entrypoint.sh && \
+    echo '    sed -i "s|<head>|<head><script>window.__env__ = { GIT_SHA: \"$GIT_SHA\", STARTUP_TIME: \"$STARTUP_TIME\", NODE_ENV: \"$NODE_ENV\" };</script>|g" "$f"' >> /docker-entrypoint.sh && \
+    echo '  done' >> /docker-entrypoint.sh && \
+    echo 'fi' >> /docker-entrypoint.sh && \
+    echo 'exec "$@"' >> /docker-entrypoint.sh && \
+    chmod +x /docker-entrypoint.sh
+
 EXPOSE 4000
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # Command to run the SSR server.
 # The entry point is typically dist/apps/d6/server/main.js.

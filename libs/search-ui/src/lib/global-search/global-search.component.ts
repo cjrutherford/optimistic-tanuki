@@ -17,11 +17,12 @@ import {
   of,
 } from 'rxjs';
 import { SearchService, SearchResult, SearchResponse } from '../search.service';
+import { SpinnerComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'search-global-search',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, SpinnerComponent],
   template: `
     <div class="search-container">
       <div class="search-input-wrapper">

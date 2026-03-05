@@ -11,10 +11,18 @@
   max-width: 800px;
   margin: 0 auto;
   padding: var(--spacing-lg);
+
+  @media (max-width: 640px) {
+    padding: var(--spacing-sm);
+  }
 }
 
 .header {
   margin-bottom: var(--spacing-xl);
+
+  @media (max-width: 640px) {
+    margin-bottom: var(--spacing-md);
+  }
 
   h2 {
     font-family: var(--font-heading, sans-serif);
@@ -22,6 +30,11 @@
     font-weight: 600;
     margin: var(--spacing-md) 0 var(--spacing-sm) 0;
     color: var(--local-foreground);
+
+    @media (max-width: 640px) {
+      font-size: var(--font-size-lg, 1.25rem);
+      margin: var(--spacing-sm) 0 var(--spacing-xs) 0;
+    }
   }
 
   .description {
@@ -29,6 +42,10 @@
     color: var(--local-complement);
     margin: 0;
     line-height: 1.5;
+
+    @media (max-width: 640px) {
+      font-size: var(--font-size-xs, 0.85rem);
+    }
   }
 }
 
@@ -37,6 +54,14 @@
   gap: var(--spacing-xs);
   margin-bottom: var(--spacing-lg);
   border-bottom: 2px solid var(--local-borderColor);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+
+  @media (max-width: 640px) {
+    margin-bottom: var(--spacing-md);
+    gap: 0;
+  }
 }
 
 .tab {
@@ -49,7 +74,14 @@
   cursor: pointer;
   color: var(--local-complement);
   position: relative;
-  transition: color var(--animation-duration-fast, 0.15s) var(--animation-easing, ease);
+  white-space: nowrap;
+  transition: color var(--animation-duration-fast, 0.15s)
+    var(--animation-easing, ease);
+
+  @media (max-width: 640px) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs, 0.85rem);
+  }
 
   &:hover {
     color: var(--local-foreground);
@@ -74,6 +106,10 @@
 
 .tab-content {
   min-height: 300px;
+
+  @media (max-width: 640px) {
+    min-height: 200px;
+  }
 }
 
 .members-list,
@@ -82,6 +118,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+
+  @media (max-width: 640px) {
+    gap: var(--spacing-xs);
+  }
 }
 
 .member-info,
@@ -95,7 +135,13 @@
   background: var(--local-background);
   border: var(--border-width, 1px) solid var(--local-borderColor);
   border-radius: var(--border-radius-md);
-  transition: box-shadow var(--animation-duration-fast, 0.15s) var(--animation-easing, ease);
+  transition: box-shadow var(--animation-duration-fast, 0.15s)
+    var(--animation-easing, ease);
+
+  @media (max-width: 640px) {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
 
   &:hover {
     box-shadow: var(--shadow-sm);
@@ -175,7 +221,8 @@
   .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid color-mix(in srgb, var(--local-borderColor) 40%, transparent);
+    border: 3px solid
+      color-mix(in srgb, var(--local-borderColor) 40%, transparent);
     border-top-color: var(--local-accent);
     border-radius: 50%;
     animation: spin var(--animation-duration-normal, 0.8s) linear infinite;
@@ -186,7 +233,8 @@
   padding: var(--spacing-md);
   background: color-mix(in srgb, var(--danger) 12%, transparent);
   color: var(--danger);
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius: var(--border-radius-md);
   margin-bottom: var(--spacing-md);
   font-size: var(--font-size-sm, 0.9rem);
@@ -200,30 +248,45 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // ── Personality Category Overrides ──
 
 // Minimal: no row borders, flat badges
-:host-context([data-personality="minimal"]) {
-  .member-info, .request-info, .invite-info {
+:host-context([data-personality='minimal']) {
+  .member-info,
+  .request-info,
+  .invite-info {
     border-color: transparent;
     border-bottom: 1px solid var(--local-borderColor);
     border-radius: 0;
-    &:hover { box-shadow: none; background: color-mix(in srgb, var(--local-foreground) 2%, transparent); }
+    &:hover {
+      box-shadow: none;
+      background: color-mix(in srgb, var(--local-foreground) 2%, transparent);
+    }
   }
   .role-badge {
     border-radius: var(--border-radius-sm);
-    &.owner { box-shadow: none; }
+    &.owner {
+      box-shadow: none;
+    }
   }
 }
 
 // Elegant: refined row hover, gradient owner badge
-:host-context([data-personality="elegant"]) {
-  .member-info, .request-info, .invite-info {
+:host-context([data-personality='elegant']) {
+  .member-info,
+  .request-info,
+  .invite-info {
     &:hover {
-      background: color-mix(in srgb, var(--local-accent) 3%, var(--local-background));
+      background: color-mix(
+        in srgb,
+        var(--local-accent) 3%,
+        var(--local-background)
+      );
     }
   }
   .role-badge.owner {
@@ -233,35 +296,63 @@
       color-mix(in srgb, var(--local-accent) 80%, var(--local-complement))
     );
   }
-  .tabs { border-bottom-color: color-mix(in srgb, var(--local-accent) 15%, transparent); }
-  .header h2 { letter-spacing: 0.01em; }
+  .tabs {
+    border-bottom-color: color-mix(
+      in srgb,
+      var(--local-accent) 15%,
+      transparent
+    );
+  }
+  .header h2 {
+    letter-spacing: 0.01em;
+  }
 }
 
 // Bold: thick row accent, heavy badge shadows
-:host-context([data-personality="bold"]) {
-  .member-info, .request-info, .invite-info {
+:host-context([data-personality='bold']) {
+  .member-info,
+  .request-info,
+  .invite-info {
     border-left: 4px solid transparent;
     box-shadow: var(--shadow-sm);
-    &:hover { border-left-color: var(--local-accent); box-shadow: var(--shadow-md); }
+    &:hover {
+      border-left-color: var(--local-accent);
+      box-shadow: var(--shadow-md);
+    }
   }
   .role-badge {
     font-weight: 700;
-    &.owner { box-shadow: var(--shadow-md); }
+    &.owner {
+      box-shadow: var(--shadow-md);
+    }
   }
-  .tab.active::after { height: 3px; }
-  .header h2 { font-weight: 800; }
+  .tab.active::after {
+    height: 3px;
+  }
+  .header h2 {
+    font-weight: 800;
+  }
 }
 
 // Playful: rounded rows, gradient badges, bouncy hover
-:host-context([data-personality="playful"]) {
-  .member-info, .request-info, .invite-info {
+:host-context([data-personality='playful']) {
+  .member-info,
+  .request-info,
+  .invite-info {
     border-radius: var(--border-radius-xl);
-    &:hover { transform: translateX(4px); box-shadow: var(--shadow-md); }
+    &:hover {
+      transform: translateX(4px);
+      box-shadow: var(--shadow-md);
+    }
   }
   .role-badge {
     border-radius: var(--border-radius-full);
     &.owner {
-      background: linear-gradient(135deg, var(--local-accent), var(--local-complement));
+      background: linear-gradient(
+        135deg,
+        var(--local-accent),
+        var(--local-complement)
+      );
     }
     &.admin {
       background: linear-gradient(
@@ -272,16 +363,23 @@
     }
   }
   .tab.active::after {
-    background: linear-gradient(90deg, var(--local-accent), var(--local-complement));
+    background: linear-gradient(
+      90deg,
+      var(--local-accent),
+      var(--local-complement)
+    );
     border-radius: var(--border-radius-full);
   }
 }
 
 // Electric: glow hover on rows, neon badge borders
-:host-context([data-personality="electric"]) {
-  .member-info, .request-info, .invite-info {
+:host-context([data-personality='electric']) {
+  .member-info,
+  .request-info,
+  .invite-info {
     &:hover {
-      box-shadow: var(--shadow-sm), 0 0 12px color-mix(in srgb, var(--local-accent) 12%, transparent);
+      box-shadow: var(--shadow-sm),
+        0 0 12px color-mix(in srgb, var(--local-accent) 12%, transparent);
       border-color: color-mix(in srgb, var(--local-accent) 40%, transparent);
     }
   }
@@ -291,13 +389,21 @@
 }
 
 // Soft & Soft Touch: no hard borders, wash backgrounds
-:host-context([data-personality="soft"]),
-:host-context([data-personality="soft-touch"]) {
-  .member-info, .request-info, .invite-info {
+:host-context([data-personality='soft']),
+:host-context([data-personality='soft-touch']) {
+  .member-info,
+  .request-info,
+  .invite-info {
     border: none;
-    background: color-mix(in srgb, var(--local-background) 95%, var(--local-accent));
+    background: color-mix(
+      in srgb,
+      var(--local-background) 95%,
+      var(--local-accent)
+    );
     border-radius: var(--border-radius-xl);
-    &:hover { box-shadow: var(--shadow-sm); }
+    &:hover {
+      box-shadow: var(--shadow-sm);
+    }
   }
   .tabs {
     border-bottom: none;
@@ -310,10 +416,15 @@
     &.active {
       background: var(--local-background);
       box-shadow: var(--shadow-sm);
-      &::after { display: none; }
+      &::after {
+        display: none;
+      }
     }
   }
-  .role-badge { border-radius: var(--border-radius-full); border: none; }
+  .role-badge {
+    border-radius: var(--border-radius-full);
+    border: none;
+  }
   .error-message {
     border: none;
     background: color-mix(in srgb, var(--danger) 8%, var(--local-background));
@@ -322,10 +433,12 @@
 }
 
 // Technical: sharp rows, monospace badges, dense layout
-:host-context([data-personality="architect"]),
-:host-context([data-personality="control-center"]),
-:host-context([data-personality="foundation"]) {
-  .member-info, .request-info, .invite-info {
+:host-context([data-personality='architect']),
+:host-context([data-personality='control-center']),
+:host-context([data-personality='foundation']) {
+  .member-info,
+  .request-info,
+  .invite-info {
     border-radius: var(--border-radius-sm);
     padding: var(--spacing-sm) var(--spacing-md);
   }
@@ -341,22 +454,30 @@
     font-size: var(--font-size-md, 1rem);
     letter-spacing: 0.05em;
   }
-  .tab.active::after { border-radius: 0; }
+  .tab.active::after {
+    border-radius: 0;
+  }
   .error-message {
     border-radius: var(--border-radius-sm);
     border-left: 3px solid var(--danger);
   }
 }
 
-:host-context([data-personality="architect"]) {
-  .member-info, .request-info, .invite-info {
+:host-context([data-personality='architect']) {
+  .member-info,
+  .request-info,
+  .invite-info {
     box-shadow: var(--shadow-md);
-    &:hover { box-shadow: var(--shadow-lg); }
+    &:hover {
+      box-shadow: var(--shadow-lg);
+    }
   }
 }
 
-:host-context([data-personality="control-center"]) {
-  .member-info, .request-info, .invite-info {
+:host-context([data-personality='control-center']) {
+  .member-info,
+  .request-info,
+  .invite-info {
     box-shadow: none;
     border: 1px solid var(--local-borderColor);
   }

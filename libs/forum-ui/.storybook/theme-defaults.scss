@@ -23,9 +23,12 @@
   --border: #e0e0e0;
 
   /* Gradients */
-  --primary-gradient: linear-gradient(135deg, #3f51b5, #7e57c2);
-  --secondary-gradient: linear-gradient(135deg, #c0af4b, #ff9800);
-  --surface-gradient: linear-gradient(135deg, #fafafa, #ffffff);
+  --gradient-primary: linear-gradient(135deg, #3f51b5, #7e57c2);
+  --gradient-secondary: linear-gradient(135deg, #c0af4b, #ff9800);
+  --gradient-surface: linear-gradient(135deg, #fafafa, #ffffff);
+  --primary-gradient: var(--gradient-primary);
+  --secondary-gradient: var(--gradient-secondary);
+  --surface-gradient: var(--gradient-surface);
 
   /* Spacing */
   --spacing-xs: 4px;

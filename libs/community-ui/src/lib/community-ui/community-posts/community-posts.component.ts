@@ -14,14 +14,17 @@ import {
   PostDto,
   PostProfileStub,
 } from '@optimistic-tanuki/social-ui';
+import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { CommunityService } from '../services/community.service';
 import { CommunityDto } from '../models';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'lib-community-posts',
   standalone: true,
   providers: [ThemeVariableService],
-  imports: [CommonModule, ComposeComponent, PostComponent],
+  imports: [CommonModule, ComposeComponent, PostComponent, ButtonComponent],
   host: {
     '[class.theme]': 'theme',
     '[style.--local-background]': 'background',
@@ -39,16 +42,32 @@ export class CommunityPostsComponent extends Variantable {
   private readonly communityService = inject(CommunityService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   community = signal<CommunityDto | null>(null);
   posts = signal<PostDto[]>([]);
   profiles = signal<{ [key: string]: PostProfileStub }>({});
   loading = signal(true);
   error = signal<string | null>(null);
-  activeTab = signal<'posts' | 'create'>('posts');
+  activeTab = signal<'posts' | 'create' | 'manage'>('posts');
+  isOwnerOrManager = signal(false);
 
-  setActiveTab(tab: 'posts' | 'create') {
+  userVotes = signal<{ [postId: string]: number }>({});
+  voteCounts = signal<{ [postId: string]: number }>({});
+  userReactions = signal<{ [postId: string]: number }>({});
+  reactionCounts = signal<{ [postId: string]: { [value: number]: number } }>(
+    {}
+  );
+
+  setActiveTab(tab: 'posts' | 'create' | 'manage') {
     this.activeTab.set(tab);
+  }
+
+  goToManage() {
+    const communityId = this.route.snapshot.paramMap.get('communityId');
+    if (communityId) {
+      this.router.navigate(['/communities/manage', communityId, 'members']);
+    }
   }
 
   goToChat() {
@@ -105,11 +124,6 @@ export class CommunityPostsComponent extends Variantable {
   override ngOnInit(): void {
     super.ngOnInit();
 
-    this.route.data.subscribe((data: any) => {
-      this.currentUserId = data['currentUserId'] || '';
-      this.loadCurrentProfile();
-    });
-
     const communityId = this.route.snapshot.paramMap.get('communityId');
     if (!communityId) {
       this.error.set('Community ID not found');
@@ -117,8 +131,10 @@ export class CommunityPostsComponent extends Variantable {
       return;
     }
 
-    this.loadCommunity(communityId);
-    this.loadPosts(communityId);
+    this.loadCurrentProfile().then(() => {
+      this.loadCommunity(communityId);
+      this.loadPosts(communityId);
+    });
   }
 
   override ngOnDestroy(): void {
@@ -153,6 +169,19 @@ export class CommunityPostsComponent extends Variantable {
           logoUrl,
         };
         this.community.set(communityWithUrls);
+
+        const isOwner = community.ownerId === this.currentProfileId;
+
+        if (!isOwner && this.currentProfileId) {
+          const isAdminOrMod = community.ownerIds?.includes(
+            this.currentProfileId
+          );
+          if (isAdminOrMod) {
+            this.isOwnerOrManager.set(true);
+          }
+        } else if (isOwner) {
+          this.isOwnerOrManager.set(true);
+        }
       }
     } catch (err) {
       console.error('Error loading community:', err);
@@ -165,11 +194,72 @@ export class CommunityPostsComponent extends Variantable {
       const posts = await this.communityService.getCommunityPosts(communityId);
       this.posts.set(posts);
       await this.loadProfiles(posts);
+      await this.loadReactionData(posts);
     } catch (err) {
       console.error('Error loading posts:', err);
       this.error.set('Failed to load posts');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  private async loadReactionData(posts: PostDto[]) {
+    for (const post of posts) {
+      try {
+        const reactions = await firstValueFrom(
+          this.http.get<any[]>(`/api/social/reactions/post/${post.id}`)
+        );
+        this.reactionCounts.update((counts) => ({
+          ...counts,
+          [post.id]: reactions.reduce(
+            (acc: { [value: number]: number }, r: any) => {
+              acc[r.value] = (acc[r.value] || 0) + 1;
+              return acc;
+            },
+            {}
+          ),
+        }));
+      } catch (err) {
+        console.error('Error loading reactions for post:', post.id, err);
+      }
+
+      if (this.currentProfileId) {
+        try {
+          const userReaction = await firstValueFrom(
+            this.http.get<any>(`/api/social/reaction/post/${post.id}/user`)
+          );
+          if (userReaction) {
+            this.userReactions.update((reactions) => ({
+              ...reactions,
+              [post.id]: userReaction.value,
+            }));
+          }
+        } catch (err) {
+          console.error('Error loading user reaction for post:', post.id, err);
+        }
+
+        try {
+          const votes = await firstValueFrom(
+            this.http.get<any[]>(`/api/social/vote/${post.id}`)
+          );
+          this.voteCounts.update((counts) => ({
+            ...counts,
+            [post.id]: votes.length,
+          }));
+
+          const userVote = votes.find(
+            (v: any) => v.profileId === this.currentProfileId
+          );
+          if (userVote) {
+            this.userVotes.update((votes) => ({
+              ...votes,
+              [post.id]: userVote.value,
+            }));
+          }
+        } catch (err) {
+          console.error('Error loading votes for post:', post.id, err);
+        }
+      }
     }
   }
 
@@ -242,5 +332,99 @@ export class CommunityPostsComponent extends Variantable {
       this.error.set(err.message || 'Failed to create post');
       console.error('Error creating post:', err);
     }
+  }
+
+  onVoteChanged(event: { postId: string; value: number }) {
+    if (!this.currentProfileId) {
+      console.error('No profile found for voting');
+      return;
+    }
+
+    firstValueFrom(
+      this.http.post(`/api/social/vote`, {
+        postId: event.postId,
+        value: event.value,
+        profileId: this.currentProfileId,
+      })
+    )
+      .then(() => {
+        this.userVotes.update((votes) => ({
+          ...votes,
+          [event.postId]: event.value,
+        }));
+        this.voteCounts.update((counts) => {
+          const currentCount = counts[event.postId] || 0;
+          const currentVote = this.userVotes()[event.postId] || 0;
+          let newCount = currentCount;
+          if (currentVote === 0 && event.value !== 0) {
+            newCount = currentCount + 1;
+          } else if (currentVote !== 0 && event.value === 0) {
+            newCount = Math.max(0, currentCount - 1);
+          }
+          return { ...counts, [event.postId]: newCount };
+        });
+      })
+      .catch((err) => console.error('Error voting:', err));
+  }
+
+  onReactionChanged(event: { postId: string; value: number }) {
+    if (!this.currentProfileId) {
+      console.error('No profile found for reacting');
+      return;
+    }
+
+    firstValueFrom(
+      this.http.post(`/api/social/reaction`, {
+        postId: event.postId,
+        value: event.value,
+        profileId: this.currentProfileId,
+      })
+    )
+      .then(() => {
+        const currentReaction = this.userReactions()[event.postId] || 0;
+        const newReaction = currentReaction === event.value ? 0 : event.value;
+
+        this.userReactions.update((reactions) => ({
+          ...reactions,
+          [event.postId]: newReaction,
+        }));
+
+        this.reactionCounts.update((counts) => {
+          const postCounts = counts[event.postId] || {};
+          const currentCount = postCounts[event.value] || 0;
+          let newCounts = { ...postCounts };
+
+          if (currentReaction === event.value) {
+            newCounts[event.value] = Math.max(0, currentCount - 1);
+          } else {
+            if (currentReaction > 0) {
+              newCounts[currentReaction] = Math.max(
+                0,
+                (postCounts[currentReaction] || 1) - 1
+              );
+            }
+            newCounts[event.value] = currentCount + 1;
+          }
+
+          return { ...counts, [event.postId]: newCounts };
+        });
+      })
+      .catch((err) => console.error('Error reacting:', err));
+  }
+
+  getUserVote(postId: string): number {
+    return this.userVotes()[postId] || 0;
+  }
+
+  getVoteCount(postId: string): number {
+    return this.voteCounts()[postId] || 0;
+  }
+
+  getUserReaction(postId: string): number {
+    return this.userReactions()[postId] || 0;
+  }
+
+  getReactionCounts(postId: string): { [value: number]: number } {
+    return this.reactionCounts()[postId] || {};
   }
 }

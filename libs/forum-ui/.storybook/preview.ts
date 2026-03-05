@@ -1,13 +1,66 @@
-
-import { applicationConfig } from '@storybook/angular';
+import type { Preview } from '@storybook/angular';
+import { applicationConfig, moduleMetadata } from '@storybook/angular';
 import { provideAnimations } from '@angular/platform-browser/animations';
+import { StorybookThemeBridgeComponent } from '@optimistic-tanuki/theme-lib';
 
-export const decorators = [
-    applicationConfig({
-        providers: [provideAnimations()],
-    }),
+const allPersonalities = [
+  'classic',
+  'minimal',
+  'bold',
+  'soft',
+  'professional',
+  'playful',
+  'elegant',
+  'architect',
+  'soft-touch',
+  'electric',
+  'control-center',
+  'foundation',
 ];
 
-// Import global styles
-import '!style-loader!css-loader!sass-loader!./theme-defaults.scss';
-import '!style-loader!css-loader!sass-loader!../../theme-ui/src/lib/theme-ui/utilities.scss';
+const preview: Preview = {
+  globalTypes: {
+    personalityId: {
+      name: 'Personality',
+      description: 'Design personality preset',
+      defaultValue: 'classic',
+      toolbar: {
+        icon: 'paintbrush',
+        items: allPersonalities,
+      },
+    },
+    colorMode: {
+      name: 'Mode',
+      description: 'Theme mode',
+      defaultValue: 'light',
+      toolbar: {
+        icon: 'mirror',
+        items: ['light', 'dark'],
+      },
+    },
+  },
+  decorators: [
+    applicationConfig({
+      providers: [provideAnimations()],
+    }),
+    moduleMetadata({
+      imports: [StorybookThemeBridgeComponent],
+    }),
+    (story, context) => {
+      const storyResult = story();
+      return {
+        ...storyResult,
+        props: {
+          ...storyResult.props,
+          personalityId: context.globals['personalityId'] ?? 'classic',
+          mode: context.globals['colorMode'] ?? 'light',
+        },
+        template: `<lib-storybook-theme-bridge [personalityId]="personalityId" [mode]="mode">${
+          storyResult.template ?? '<story />'
+        }</lib-storybook-theme-bridge>`,
+      };
+    },
+  ],
+};
+
+export default preview;

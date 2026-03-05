@@ -20,12 +20,14 @@ export class AppComponent implements OnInit {
   ngOnInit() {
     // Initialize theme - only in browser to avoid SSR issues
     if (isPlatformBrowser(this.platformId)) {
-      // Check if there's a stored palette preference, otherwise use default
-      const currentPalette = this.themeService.getCurrentPalette();
-      if (!currentPalette) {
+      const hasStoredPersonalityTheme = !!localStorage.getItem(
+        'optimistic-tanuki-personality-theme'
+      );
+      if (!hasStoredPersonalityTheme) {
         // Set default palette for christopherrutherford-net
         this.themeService.setTheme('dark');
-        this.themeService.setPalette('Ocean Breeze');
+        this.themeService.setPersonality('foundation');
+        this.themeService.setPrimaryColor('#006064');
       } else {
         // Apply stored theme mode
         this.themeService.setTheme(this.themeService.getTheme());

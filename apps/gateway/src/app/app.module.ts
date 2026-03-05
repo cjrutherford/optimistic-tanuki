@@ -39,6 +39,14 @@ import { SocialComponentController } from '../controllers/social/social-componen
 import { CommunityController } from '../controllers/social/community/community.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
 import { NotificationController } from '../controllers/social/notification/notification.controller';
+import { SearchController } from '../controllers/social/search/search.controller';
+import { PrivacyController } from '../controllers/social/privacy/privacy.controller';
+import { ActivityController } from '../controllers/social/activity/activity.controller';
+import { PresenceController } from '../controllers/social/presence/presence.controller';
+import { ProfileAnalyticsController } from '../controllers/social/profile-analytics/profile-analytics.controller';
+import { PollController } from '../controllers/social/poll/poll.controller';
+import { PostShareController } from '../controllers/social/post-share/post-share.controller';
+import { SocialEventController } from '../controllers/social/social-event/social-event.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -88,6 +96,14 @@ import { NotificationController } from '../controllers/social/notification/notif
     ForumController,
     WellnessController,
     NotificationController,
+    SearchController,
+    PrivacyController,
+    ActivityController,
+    PresenceController,
+    ProfileAnalyticsController,
+    PollController,
+    PostShareController,
+    SocialEventController,
   ],
   providers: [
     {

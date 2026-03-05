@@ -124,6 +124,13 @@ VALUES
   ('asset.delete', 'Delete asset', 'asset', 'delete', NULL, (SELECT id FROM app_scope WHERE name='client-interface'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
+-- Reaction permissions for client-interface scope (mapped from social)
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+VALUES
+  ('social.reaction.create', 'Create reaction', 'reaction', 'create', NULL, (SELECT id FROM app_scope WHERE name='client-interface')),
+  ('social.reaction.read',   'Read reaction',   'reaction', 'read',   NULL, (SELECT id FROM app_scope WHERE name='client-interface'))
+ON CONFLICT (name, "appScopeId") DO NOTHING;
+
 -- Blogging permissions
 INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
 VALUES
@@ -150,6 +157,13 @@ VALUES
   ('social.follow', 'Follow/unfollow users', 'follow', 'create', NULL, (SELECT id FROM app_scope WHERE name='social')),
   ('social.post.create', 'Create social post', 'post', 'create', NULL, (SELECT id FROM app_scope WHERE name='social')),
   ('social.post.read',   'Read social post',   'post', 'read',   NULL, (SELECT id FROM app_scope WHERE name='social'))
+ON CONFLICT (name, "appScopeId") DO NOTHING;
+
+-- Reaction permissions for social scope
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+VALUES
+  ('social.reaction.create', 'Create reaction', 'reaction', 'create', NULL, (SELECT id FROM app_scope WHERE name='social')),
+  ('social.reaction.read',   'Read reaction',   'reaction', 'read',   NULL, (SELECT id FROM app_scope WHERE name='social'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Global scope permissions for owner-console registered users
@@ -284,7 +298,7 @@ ON CONFLICT DO NOTHING;
 -- social role
 INSERT INTO "role_permission" ("roleId", "permissionId")
 SELECT r.id, p.id
-FROM role r JOIN permission p ON p.name IN ('social.follow', 'social.post.create', 'social.post.read') AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='social')
+FROM role r JOIN permission p ON p.name IN ('social.follow', 'social.post.create', 'social.post.read', 'social.reaction.create', 'social.reaction.read') AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='social')
 WHERE r.name = 'social_user'
 ON CONFLICT DO NOTHING;
 
@@ -303,7 +317,8 @@ SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'profile.read', 'profile.update',
   'asset.create', 'asset.read', 'asset.update',
-  'social.follow', 'social.post.create', 'social.post.read'
+  'social.follow', 'social.post.create', 'social.post.read',
+  'social.reaction.create', 'social.reaction.read'
 ) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='global')
 WHERE r.name = 'standard_user'
 ON CONFLICT DO NOTHING;
@@ -314,7 +329,8 @@ SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'profile.read', 'profile.update',
   'asset.create', 'asset.read', 'asset.update', 'asset.delete',
-  'social.post.create', 'social.post.read'
+  'social.post.create', 'social.post.read',
+  'social.reaction.create', 'social.reaction.read'
 ) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='forgeofwill')
 WHERE r.name = 'forgeofwill_standard_user'
 ON CONFLICT DO NOTHING;
@@ -324,7 +340,8 @@ INSERT INTO "role_permission" ("roleId", "permissionId")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'profile.read', 'profile.update',
-  'asset.create', 'asset.read', 'asset.update'
+  'asset.create', 'asset.read', 'asset.update',
+  'social.reaction.create', 'social.reaction.read'
 ) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='client-interface')
 WHERE r.name = 'client_interface_user'
 ON CONFLICT DO NOTHING;
@@ -340,7 +357,9 @@ JOIN permission p ON p.name IN (
   'social.post.delete',
   'social.comment.create',
   'social.vote.create',
-  'social.follow'
+  'social.follow',
+  'social.reaction.create',
+  'social.reaction.read'
 ) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='social')
 WHERE r.name = 'client_interface_user'
 ON CONFLICT DO NOTHING;

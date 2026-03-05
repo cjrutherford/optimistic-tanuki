@@ -1,6 +1,6 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, shareReplay, catchError } from 'rxjs';
 export * from './search.model';
 import {
   SearchResult,
@@ -15,6 +15,13 @@ import {
 export class SearchService {
   private http = inject(HttpClient);
   private baseUrl = '/api/search';
+
+  private trendingCache = new Map<number, Observable<SearchResult[]>>();
+  private suggestedUsersCache = new Map<number, Observable<SearchResult[]>>();
+  private suggestedCommunitiesCache = new Map<
+    number,
+    Observable<SearchResult[]>
+  >();
 
   searchResults = signal<SearchResponse | null>(null);
   isLoading = signal<boolean>(false);
@@ -36,24 +43,42 @@ export class SearchService {
   }
 
   getTrending(limit: number = 10): Observable<SearchResult[]> {
-    return this.http.get<SearchResult[]>(`${this.baseUrl}/trending`, {
-      params: { limit: limit.toString() },
-    });
+    if (this.trendingCache.has(limit)) {
+      return this.trendingCache.get(limit)!;
+    }
+    const request = this.http
+      .get<SearchResult[]>(`${this.baseUrl}/trending`, {
+        params: { limit: limit.toString() },
+      })
+      .pipe(shareReplay(1));
+    this.trendingCache.set(limit, request);
+    return request;
   }
 
   getSuggestedUsers(limit: number = 10): Observable<SearchResult[]> {
-    return this.http.get<SearchResult[]>(`${this.baseUrl}/suggested-users`, {
-      params: { limit: limit.toString() },
-    });
+    if (this.suggestedUsersCache.has(limit)) {
+      return this.suggestedUsersCache.get(limit)!;
+    }
+    const request = this.http
+      .get<SearchResult[]>(`${this.baseUrl}/suggested-users`, {
+        params: { limit: limit.toString() },
+      })
+      .pipe(shareReplay(1));
+    this.suggestedUsersCache.set(limit, request);
+    return request;
   }
 
   getSuggestedCommunities(limit: number = 10): Observable<SearchResult[]> {
-    return this.http.get<SearchResult[]>(
-      `${this.baseUrl}/suggested-communities`,
-      {
+    if (this.suggestedCommunitiesCache.has(limit)) {
+      return this.suggestedCommunitiesCache.get(limit)!;
+    }
+    const request = this.http
+      .get<SearchResult[]>(`${this.baseUrl}/suggested-communities`, {
         params: { limit: limit.toString() },
-      }
-    );
+      })
+      .pipe(shareReplay(1));
+    this.suggestedCommunitiesCache.set(limit, request);
+    return request;
   }
 
   getSearchHistory(

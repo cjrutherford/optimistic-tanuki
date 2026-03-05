@@ -12,7 +12,7 @@
     "build": "nx run-many --target=build --projects=authentication,client-interface,gateway,profile,social,project-planning,assets,forgeofwill,chat-collector,prompt-proxy,ai-orchestrator,telos-docs-service,blogging,christopherrutherford-net,digital-homestead,permissions,owner-console,store,store-client,app-configurator,configurable-client,forum,d6,wellness",
     "watch:build": "nx watch --all -- nx run-many --target=build --projects=authentication,client-interface,gateway,profile,social,project-planning,assets,forgeofwill,chat-collector,prompt-proxy,ai-orchestrator,telos-docs-service,blogging,christopherrutherford-net,digital-homestead,permissions,owner-console,store,store-client,app-configurator,configurable-client,forum,d6,wellness --configuration=development",
     "docker:build:dev": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml build",
-    "docker:dev": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d --force-recreate && docker compose exec telos-docs-service node /usr/src/app/seed-persona.js && docker compose exec permissions node /usr/src/app/seed-permissions.js && docker compose exec store node /usr/src/app/seed-store.js",
+    "docker:dev": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d --force-recreate && docker compose exec telos-docs-service node /usr/src/app/seed-persona.js && docker compose exec permissions node /usr/src/app/seed-permissions.js && docker compose exec store node /usr/src/app/seed-store.js && docker compose exec social node /usr/src/app/seed-social.js",
     "fow:docker:build:dev": "docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml build",
     "fow:docker:dev": "docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml up -d --force-recreate && docker compose exec telos-docs-service node /usr/src/app/seed-persona.js",
     "fow:docker:down": "docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml down --remove-orphans",
@@ -25,8 +25,7 @@
     "prerender": "ng run christopherrutherford-net:prerender"
   },
   "private": true,
-  "overrides": {
-  },
+  "overrides": {},
   "dependencies": {
     "@angular/animations": "20.2.4",
     "@angular/cdk": "20.2.4",
@@ -98,7 +97,6 @@
     "dotenv": "^17.2.3",
     "eventsource": "^4.1.0",
     "express": "^4.21.2",
-    "feed": "^5.1.0",
     "http-proxy-middleware": "^3.0.5",
     "isomorphic-dompurify": "^2.34.0",
     "js-yaml": "^4.1.0",
@@ -161,6 +159,7 @@
     "@storybook/addon-actions": "^9.0.8",
     "@storybook/addon-docs": "9.1.7",
     "@storybook/angular": "9.1.7",
+    "@storybook/test": "^9.0.0-alpha.2",
     "@storybook/test-runner": "^0.23.0",
     "@swc-node/register": "~1.9.1",
     "@swc/cli": "~0.6.0",

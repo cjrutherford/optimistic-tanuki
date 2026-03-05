@@ -70,12 +70,13 @@
             [routerLink]="['/communities', community.id, 'posts']"
             >View Posts</otui-button
           >
+          @if (canManage(community.id)) {
           <otui-button
             variant="secondary"
             [routerLink]="['/communities/manage', community.id, 'members']"
             >Manage</otui-button
           >
-          } @case ('pending') {
+          } } @case ('pending') {
           <otui-button variant="secondary" [disabled]="true"
             >Pending</otui-button
           >
@@ -122,12 +123,13 @@
             [routerLink]="['/communities', community.id, 'posts']"
             >View Posts</otui-button
           >
+          @if (canManage(community.id)) {
           <otui-button
             variant="secondary"
             [routerLink]="['/communities/manage', community.id, 'members']"
             >Manage</otui-button
           >
-          } @case ('pending') {
+          } } @case ('pending') {
           <otui-button variant="secondary" [disabled]="true"
             >Pending</otui-button
           >

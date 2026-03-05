@@ -55,6 +55,12 @@
           @if (isOwner(community)) {
           <otui-button
             variant="primary"
+            [routerLink]="['/communities/manage', community.id]"
+          >
+            Manage
+          </otui-button>
+          <otui-button
+            variant="primary"
             [routerLink]="['/communities/manage', community.id, 'members']"
           >
             Manage Members

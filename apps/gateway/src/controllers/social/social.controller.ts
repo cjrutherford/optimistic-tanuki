@@ -18,6 +18,7 @@ import {
   PostCommands,
   ServiceTokens,
   VoteCommands,
+  ReactionCommands,
   CommunityCommands,
 } from '@optimistic-tanuki/constants';
 import { SocialGateway } from '../../app/social-gateway/social.gateway';
@@ -27,8 +28,10 @@ import {
   CreateAttachmentDto,
   CreateCommentDto,
   CreatePostDto,
+  CreateReactionDto,
   CreateVoteDto,
   PostDto,
+  ReactionDto,
   SearchAttachmentDto,
   SearchCommentDto,
   SearchPostDto,
@@ -125,6 +128,81 @@ export class SocialController {
   }
 
   @UseGuards(AuthGuard)
+  @ApiTags('reaction')
+  @ApiOperation({ summary: 'Add or update a reaction' })
+  @ApiResponse({
+    status: 201,
+    description: 'The reaction has been successfully added/updated.',
+    type: ReactionDto,
+  })
+  @Post('reaction')
+  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 reactions per minute
+  async reaction(
+    @User() user: UserDetails,
+    @Body() reactionDto: CreateReactionDto
+  ) {
+    reactionDto.userId = user.userId;
+    const result = await firstValueFrom(
+      this.socialClient.send({ cmd: ReactionCommands.ADD }, reactionDto)
+    );
+    return result;
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiTags('reaction')
+  @ApiOperation({ summary: 'Get reactions for a post' })
+  @ApiResponse({
+    status: 200,
+    description: 'The reactions have been successfully retrieved.',
+    type: [ReactionDto],
+  })
+  @Get('reactions/post/:postId')
+  async getReactionsByPost(
+    @Param('postId') postId: string
+  ): Promise<ReactionDto[]> {
+    return await firstValueFrom(
+      this.socialClient.send({ cmd: ReactionCommands.GET_BY_POST }, { postId })
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiTags('reaction')
+  @ApiOperation({ summary: 'Get reaction counts for a post' })
+  @ApiResponse({
+    status: 200,
+    description: 'The reaction counts have been successfully retrieved.',
+  })
+  @Get('reactions/post/:postId/counts')
+  async getReactionCounts(
+    @Param('postId') postId: string
+  ): Promise<{ [value: number]: number }> {
+    return await firstValueFrom(
+      this.socialClient.send({ cmd: ReactionCommands.GET }, { postId })
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiTags('reaction')
+  @ApiOperation({ summary: 'Get current user reaction for a post' })
+  @ApiResponse({
+    status: 200,
+    description: 'The user reaction has been successfully retrieved.',
+    type: ReactionDto,
+  })
+  @Get('reaction/post/:postId/user')
+  async getUserReaction(
+    @Param('postId') postId: string,
+    @User() user: UserDetails
+  ): Promise<ReactionDto | null> {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: ReactionCommands.GET_USER_REACTION },
+        { userId: user.userId, postId }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
   @ApiTags('comment')
   @ApiOperation({ summary: 'Create a new comment' })
   @ApiResponse({
@@ -181,6 +259,20 @@ export class SocialController {
   })
   @Get('post/:id')
   async getPost(@Param('id') id: string): Promise<PostDto> {
+    return await firstValueFrom(
+      this.socialClient.send({ cmd: PostCommands.FIND }, { id })
+    );
+  }
+
+  @ApiTags('post')
+  @ApiOperation({ summary: 'Get a shared post by ID (public)' })
+  @ApiResponse({
+    status: 200,
+    description: 'The shared post has been successfully retrieved.',
+    type: PostDto,
+  })
+  @Get('post/:id/shared')
+  async getSharedPost(@Param('id') id: string): Promise<PostDto> {
     return await firstValueFrom(
       this.socialClient.send({ cmd: PostCommands.FIND }, { id })
     );

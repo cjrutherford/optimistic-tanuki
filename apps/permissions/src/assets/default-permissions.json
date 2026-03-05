@@ -771,6 +771,14 @@
       "appScope": "social"
     },
     {
+      "name": "social.reaction.create",
+      "description": "Create a reaction (social)",
+      "resource": "reaction",
+      "action": "create",
+      "targetId": null,
+      "appScope": "social"
+    },
+    {
       "name": "social.post.read",
       "description": "Read social post",
       "resource": "post",
@@ -3906,6 +3914,76 @@
       "role": "community_owner",
       "permission": "community.invite",
       "permissionAppScope": "community"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.post.read",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.post.update",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.post.delete",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.vote.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.comment.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.follow",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.reaction.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.post.read",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.vote.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.comment.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.follow",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.reaction.create",
+      "permissionAppScope": "social"
     }
   ]
 }

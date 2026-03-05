@@ -2,8 +2,7 @@ import { GridComponent } from './grid.component';
 import { TileComponent } from '../tile/tile.component'; // Import TileComponent
 import type { Meta, StoryObj } from '@storybook/angular';
 import { moduleMetadata } from '@storybook/angular';
-import { within } from '@storybook/test';
-import { expect } from '@storybook/jest';
+import { expect, within } from '@storybook/test';
 
 const meta: Meta<GridComponent> = {
   component: GridComponent,

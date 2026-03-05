@@ -28,6 +28,7 @@ import {
 import { filter } from 'rxjs';
 import { AiAssistantBubbleComponent } from './ai-assistant-bubble/ai-assistant-bubble.component';
 import { ChatMessage } from '@optimistic-tanuki/chat-ui';
+import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   imports: [
@@ -37,6 +38,7 @@ import { ChatMessage } from '@optimistic-tanuki/chat-ui';
     ChatComponent,
     MessageComponent,
     AiAssistantBubbleComponent,
+    DevInfoComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',

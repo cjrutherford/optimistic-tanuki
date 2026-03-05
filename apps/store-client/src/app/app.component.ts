@@ -14,6 +14,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.themeService.setTheme('dark');
-    this.themeService.setPalette('Retro Gaming');
+    this.themeService.setPersonality('playful');
+    this.themeService.setPrimaryColor('#c2185b');
   }
 }

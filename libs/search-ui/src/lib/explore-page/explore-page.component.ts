@@ -8,7 +8,6 @@ import {
   ButtonComponent,
   TabsComponent,
 } from '@optimistic-tanuki/common-ui';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'search-explore-page',
@@ -38,26 +37,30 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
         [activeTab]="activeTab()"
         (tabChange)="onTabChange($event)"
       >
+        @if (activeTab() === 'trending') {
         <div class="content-grid">
           @for (post of trendingPosts(); track post.id) {
           <otui-card
             class="content-card"
-            [clickable]="true"
             (click)="navigateTo(['/feed/post', post.id])"
           >
             <div class="card-content">
               <h3>{{ post.title }}</h3>
-              <p>{{ post.highlight }}</p>
+              <p [innerHTML]="post.highlight"></p>
             </div>
           </otui-card>
           }
         </div>
-
+        } @if (activeTab() === 'people') {
         <div class="people-grid">
           @for (user of suggestedUsers(); track user.id) {
           <div class="user-card">
             <img
-              [src]="user.imageUrl || '/assets/default-avatar.png'"
+              [src]="
+                user.imageUrl ||
+                'https://placehold.co/80x80/666666/ffffff?text=User'
+              "
+              (error)="onImageError($event, 'avatar')"
               class="user-avatar"
               alt=""
             />
@@ -71,16 +74,19 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
           </div>
           }
         </div>
-
+        } @if (activeTab() === 'communities') {
         <div class="communities-grid">
           @for (community of suggestedCommunities(); track community.id) {
           <otui-card
             class="community-card"
-            [clickable]="true"
             (click)="navigateTo(['/communities', community.id])"
           >
             <img
-              [src]="community.imageUrl || '/assets/default-community.png'"
+              [src]="
+                community.imageUrl ||
+                'https://placehold.co/400x120/666666/ffffff?text=Community'
+              "
+              (error)="onImageError($event, 'community')"
               class="community-image"
               alt=""
             />
@@ -91,6 +97,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
           </otui-card>
           }
         </div>
+        }
       </otui-tabs>
       }
     </div>
@@ -170,13 +177,15 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 export class ExplorePageComponent implements OnInit {
   private searchService = inject(SearchService);
   private router = inject(Router);
-  protected themeService = inject(ThemeService);
 
   isLoading = signal(true);
   activeTab = signal('trending');
   trendingPosts = signal<SearchResult[]>([]);
   suggestedUsers = signal<SearchResult[]>([]);
   suggestedCommunities = signal<SearchResult[]>([]);
+
+  private loadedCount = 0;
+  private totalRequests = 3;
 
   tabOptions = [
     { id: 'trending', label: 'Trending' },
@@ -196,10 +205,24 @@ export class ExplorePageComponent implements OnInit {
     this.router.navigate(path);
   }
 
+  onImageError(event: Event, type: 'avatar' | 'community'): void {
+    const img = event.target as HTMLImageElement;
+    img.onerror = null;
+    if (type === 'avatar') {
+      img.src = 'https://placehold.co/80x80/666666/ffffff?text=User';
+    } else {
+      img.src = 'https://placehold.co/400x120/666666/ffffff?text=Community';
+    }
+  }
+
   private loadContent(): void {
     this.searchService.getTrending(10).subscribe({
       next: (posts) => {
         this.trendingPosts.set(posts);
+        this.checkLoadingComplete();
+      },
+      error: () => {
+        this.trendingPosts.set([]);
         this.checkLoadingComplete();
       },
     });
@@ -209,6 +232,10 @@ export class ExplorePageComponent implements OnInit {
         this.suggestedUsers.set(users);
         this.checkLoadingComplete();
       },
+      error: () => {
+        this.suggestedUsers.set([]);
+        this.checkLoadingComplete();
+      },
     });
 
     this.searchService.getSuggestedCommunities(10).subscribe({
@@ -216,15 +243,16 @@ export class ExplorePageComponent implements OnInit {
         this.suggestedCommunities.set(communities);
         this.checkLoadingComplete();
       },
+      error: () => {
+        this.suggestedCommunities.set([]);
+        this.checkLoadingComplete();
+      },
     });
   }
 
   private checkLoadingComplete(): void {
-    if (
-      this.trendingPosts().length > 0 ||
-      this.suggestedUsers().length > 0 ||
-      this.suggestedCommunities().length > 0
-    ) {
+    this.loadedCount++;
+    if (this.loadedCount >= this.totalRequests) {
       this.isLoading.set(false);
     }
   }

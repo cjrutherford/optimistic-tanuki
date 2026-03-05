@@ -16,6 +16,19 @@
   gap: var(--spacing-sm, 8px);
   padding: var(--spacing-sm, 8px) 0;
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .feed-tabs {
+    gap: var(--spacing-xs, 4px);
+    padding: var(--spacing-xs, 4px) 0;
+  }
+
+  .feed-tabs otui-button {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
 }
 
 .feed-loading {
@@ -37,4 +50,28 @@
   flex-direction: column;
   gap: var(--spacing-md, 16px);
   width: 100%;
+}
+
+.scroll-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg, 24px);
+  min-height: 60px;
+}
+
+.loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+  color: var(--muted);
+}
+
+.end-message {
+  text-align: center;
+  padding: var(--spacing-lg, 24px);
+  color: var(--muted);
+  font-size: 14px;
 }

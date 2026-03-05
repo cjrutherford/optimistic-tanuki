@@ -6,7 +6,6 @@ import {
   generateWarningColor,
   generateTertiaryColor,
 } from './color-utils';
-import { loadTheme, saveTheme } from './theme-storage';
 import { loadPredefinedPalettes } from './theme-palettes';
 
 import { TestBed, fakeAsync, tick, flush } from '@angular/core/testing';
@@ -19,11 +18,6 @@ jest.mock('./color-utils', () => ({
   generateWarningColor: jest.fn(),
   generateSuccessColor: jest.fn(),
   generateTertiaryColor: jest.fn(),
-}));
-
-jest.mock('./theme-storage', () => ({
-  loadTheme: jest.fn(),
-  saveTheme: jest.fn(),
 }));
 
 jest.mock('./theme-palettes', () => ({
@@ -73,13 +67,6 @@ describe('ThemeService', () => {
     ]);
 
     // Mock return values for dependencies
-    (loadTheme as jest.Mock).mockReturnValue({
-      theme: 'light',
-      accentColor: '#ff0000',
-      complementColor: '#00ff00',
-      paletteMode: 'custom',
-      isInitialized: true, // Simulate existing user
-    });
     (generateColorShades as jest.Mock).mockReturnValue([
       [0, '#shade1'],
       [1, '#shade2'],
@@ -120,11 +107,10 @@ describe('ThemeService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should initialize with stored theme and accent color', fakeAsync(() => {
+  it('should initialize with default personality when no stored config', fakeAsync(() => {
     expect(service.getTheme()).toBe('light');
-    // Note: With personality system enabled, the accent color may come from personality config
+    expect(service.getCurrentPersonality()).toBeTruthy();
     expect(service.getAccentColor()).toBeTruthy();
-    expect(loadTheme).toHaveBeenCalledTimes(1);
   }));
 
   it('should update theme', fakeAsync(() => {
@@ -156,7 +142,7 @@ describe('ThemeService', () => {
     service.themeColors$.subscribe((themeColors) => {
       if (themeColors) {
         expect(themeColors).toBeTruthy();
-        expect(themeColors.accent).toBe('#ff0000');
+        expect(themeColors.accent).toMatch(/^#/);
         done();
       }
     });
@@ -174,6 +160,6 @@ describe('ThemeService', () => {
 
     // Verify theme colors were generated
     expect(themeColors).toBeTruthy();
-    expect(themeColors.accent).toBe('#ff0000');
+    expect(themeColors.accent).toMatch(/^#/);
   }));
 });

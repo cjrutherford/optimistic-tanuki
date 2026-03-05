@@ -10,17 +10,23 @@
 }
 
 .tag {
-  background-color: color-mix(in srgb, var(--muted-foreground) 12%, transparent);
+  background-color: color-mix(
+    in srgb,
+    var(--muted-foreground) 12%,
+    transparent
+  );
   color: var(--foreground);
   border-radius: var(--border-radius-full);
   padding: var(--spacing-xs) var(--spacing-md);
   font-size: var(--font-size-sm);
   font-family: var(--font-body, sans-serif);
   cursor: pointer;
-  transition:
-    background-color var(--animation-duration-fast, 150ms) var(--animation-easing, ease),
-    transform var(--animation-duration-fast, 150ms) var(--animation-easing, ease),
-    box-shadow var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
+  transition: background-color var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease),
+    transform var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease),
+    box-shadow var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease);
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -44,14 +50,14 @@
 // ── Personality Overrides ──
 
 // Professional
-:host-context([data-personality="classic"]),
-:host-context([data-personality="professional"]) {
+:host-context([data-personality='classic']),
+:host-context([data-personality='professional']) {
   .tag {
     border-radius: var(--border-radius-sm);
   }
 }
 
-:host-context([data-personality="minimal"]) {
+:host-context([data-personality='minimal']) {
   .tag {
     background-color: transparent;
     border-color: var(--border);
@@ -63,7 +69,7 @@
   }
 }
 
-:host-context([data-personality="elegant"]) {
+:host-context([data-personality='elegant']) {
   .tag {
     font-style: italic;
     border-color: color-mix(in srgb, var(--accent) 20%, transparent);
@@ -76,7 +82,7 @@
 }
 
 // Creative
-:host-context([data-personality="bold"]) {
+:host-context([data-personality='bold']) {
   .tag {
     font-weight: 700;
     text-transform: uppercase;
@@ -92,24 +98,31 @@
   }
 }
 
-:host-context([data-personality="playful"]) {
+:host-context([data-personality='playful']) {
   .tag {
     border-radius: var(--border-radius-full);
-    background: var(--primary-gradient, var(--accent));
+    background: var(--gradient-primary, var(--primary-gradient, var(--accent)));
     color: var(--primary-foreground);
     font-weight: 600;
     &:hover {
       transform: translateY(-3px) rotate(-2deg);
       box-shadow: var(--shadow-md);
-      background: var(--secondary-gradient, var(--complement));
+      background: var(
+        --gradient-secondary,
+        var(--secondary-gradient, var(--complement))
+      );
     }
     .count {
-      background: color-mix(in srgb, var(--primary-foreground) 25%, transparent);
+      background: color-mix(
+        in srgb,
+        var(--primary-foreground) 25%,
+        transparent
+      );
     }
   }
 }
 
-:host-context([data-personality="electric"]) {
+:host-context([data-personality='electric']) {
   .tag {
     border-color: color-mix(in srgb, var(--accent) 30%, transparent);
     &:hover {
@@ -121,8 +134,8 @@
 }
 
 // Casual
-:host-context([data-personality="soft"]),
-:host-context([data-personality="soft-touch"]) {
+:host-context([data-personality='soft']),
+:host-context([data-personality='soft-touch']) {
   .tag {
     background-color: color-mix(in srgb, var(--accent) 8%, transparent);
     border: none;
@@ -134,9 +147,9 @@
 }
 
 // Technical
-:host-context([data-personality="architect"]),
-:host-context([data-personality="control-center"]),
-:host-context([data-personality="foundation"]) {
+:host-context([data-personality='architect']),
+:host-context([data-personality='control-center']),
+:host-context([data-personality='foundation']) {
   .tag {
     border-radius: var(--border-radius-none);
     font-family: var(--font-mono, monospace);

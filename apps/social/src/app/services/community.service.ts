@@ -77,7 +77,11 @@ export class CommunityService {
   }
 
   async findOne(id: string): Promise<Community | null> {
-    return await this.communityRepo.findOne({ where: { id } });
+    const community = await this.communityRepo.findOne({ where: { id } });
+    if (community) {
+      return await this.addMemberInfo(community);
+    }
+    return null;
   }
 
   async findAll(
@@ -99,18 +103,55 @@ export class CommunityService {
       where.joinPolicy = searchDto.joinPolicy;
     }
 
-    return await this.communityRepo.find({
+    const communities = await this.communityRepo.find({
       where,
       take: 50,
     });
+
+    const communitiesWithMembers = await Promise.all(
+      communities.map((community) => this.addMemberInfo(community))
+    );
+
+    return communitiesWithMembers;
   }
 
   async getTopActive(limit: number, appScope: string): Promise<Community[]> {
-    return await this.communityRepo.find({
+    const communities = await this.communityRepo.find({
       where: { appScope },
       order: { memberCount: 'DESC' },
       take: limit,
     });
+
+    const communitiesWithMembers = await Promise.all(
+      communities.map((community) => this.addMemberInfo(community))
+    );
+
+    return communitiesWithMembers;
+  }
+
+  private async addMemberInfo(community: Community): Promise<Community> {
+    const members = await this.memberRepo.find({
+      where: {
+        communityId: community.id,
+        status: CommunityMembershipStatus.APPROVED,
+      },
+    });
+
+    (community as any).memberIds = members.map((m) => m.profileId);
+    (community as any).memberUserIds = members.map((m) => m.userId);
+    (community as any).ownerIds = [
+      community.ownerId,
+      ...members
+        .filter(
+          (m) =>
+            m.role === CommunityMemberRole.OWNER ||
+            m.role === CommunityMemberRole.ADMIN ||
+            m.role === CommunityMemberRole.MODERATOR
+        )
+        .map((m) => m.userId),
+    ];
+
+    return community;
   }
 
   async update(
@@ -260,6 +301,19 @@ export class CommunityService {
   ): Promise<Community[]> {
     const members = await this.memberRepo.find({
       where: { userId, status: CommunityMembershipStatus.APPROVED },
+      relations: ['community'],
+    });
+    return members
+      .filter((m) => m.community.appScope === appScope)
+      .map((m) => m.community);
+  }
+
+  async getCommunitiesByProfileId(
+    profileId: string,
+    appScope: string
+  ): Promise<Community[]> {
+    const members = await this.memberRepo.find({
+      where: { profileId, status: CommunityMembershipStatus.APPROVED },
       relations: ['community'],
     });
     return members
@@ -541,5 +595,51 @@ export class CommunityService {
     chatRoomId: string
   ): Promise<void> {
     await this.communityRepo.update(communityId, { chatRoomId });
+  }
+
+  async updateMemberRole(
+    memberId: string,
+    newRole: CommunityMemberRole,
+    requesterId: string
+  ): Promise<CommunityMember> {
+    const member = await this.memberRepo.findOne({ where: { id: memberId } });
+    if (!member) {
+      throw new RpcException('Member not found');
+    }
+
+    if (member.role === CommunityMemberRole.OWNER) {
+      throw new RpcException('Cannot change the owner role');
+    }
+
+    const community = await this.findOne(member.communityId);
+    if (!community) {
+      throw new RpcException('Community not found');
+    }
+
+    const requester = await this.getMember(member.communityId, requesterId);
+    if (!requester) {
+      throw new RpcException('Not a member of this community');
+    }
+
+    if (requester.role !== CommunityMemberRole.OWNER) {
+      if (requester.role === CommunityMemberRole.ADMIN) {
+        if (newRole === CommunityMemberRole.OWNER) {
+          throw new RpcException('Only the owner can assign owner role');
+        }
+        if (
+          member.role === CommunityMemberRole.ADMIN &&
+          requesterId !== community.ownerId
+        ) {
+          throw new RpcException('Only the owner can change admin roles');
+        }
+      } else if (requester.role === CommunityMemberRole.MODERATOR) {
+        throw new RpcException('Moderators cannot change member roles');
+      } else {
+        throw new RpcException('Members cannot change member roles');
+      }
+    }
+
+    member.role = newRole;
+    return await this.memberRepo.save(member);
   }
 }

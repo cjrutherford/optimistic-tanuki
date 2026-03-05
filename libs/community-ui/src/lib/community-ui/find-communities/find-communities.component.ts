@@ -55,6 +55,7 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
   error = signal<string | null>(null);
 
   userMemberships = signal<Map<string, CommunityMemberDto>>(new Map());
+  userOwnerships = signal<Set<string>>(new Set());
   currentUserId = '';
 
   displayMode = signal<'all' | 'top'>('all');
@@ -92,6 +93,7 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
   }
 
   override ngOnInit() {
+    this.loadUserMemberships();
     this.loadTopActive();
     this.loadAllCommunities();
 
@@ -100,6 +102,45 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
       .subscribe((query) => {
         this.searchCommunities(query || '');
       });
+  }
+
+  async loadUserMemberships() {
+    try {
+      const profile = await this.communityService.getCurrentUserProfile();
+      if (profile) {
+        this.currentUserId = profile.id;
+        const userCommunities =
+          await this.communityService.getUserCommunities();
+        const memberships = new Map<string, CommunityMemberDto>();
+        const ownerships = new Set<string>();
+
+        for (const community of userCommunities) {
+          memberships.set(community.id, {
+            id: '',
+            communityId: community.id,
+            userId: profile.userId,
+            profileId: profile.id,
+            role:
+              community.ownerId === profile.userId
+                ? ('owner' as any)
+                : ('member' as any),
+            status: 'approved' as any,
+            joinedAt: new Date(),
+          });
+
+          if (
+            community.ownerIds?.includes(profile.userId) ||
+            community.ownerId === profile.userId
+          ) {
+            ownerships.add(community.id);
+          }
+        }
+        this.userMemberships.set(memberships);
+        this.userOwnerships.set(ownerships);
+      }
+    } catch (err) {
+      console.error('Error loading user memberships:', err);
+    }
   }
 
   async loadTopActive() {
@@ -170,6 +211,10 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
     const membership = this.userMemberships().get(communityId);
     if (!membership) return 'none';
     return membership.status === 'approved' ? 'member' : 'pending';
+  }
+
+  canManage(communityId: string): boolean {
+    return this.userOwnerships().has(communityId);
   }
 
   setDisplayMode(mode: 'all' | 'top') {

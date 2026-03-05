@@ -102,4 +102,3 @@ export {
   generateShadowColor,
   generatePageBackgroundPattern,
 } from './color-harmony';
-export * from './personality-gradients';

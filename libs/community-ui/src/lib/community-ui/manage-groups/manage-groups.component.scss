@@ -11,10 +11,18 @@
   max-width: 800px;
   margin: 0 auto;
   padding: var(--spacing-lg);
+
+  @media (max-width: 640px) {
+    padding: var(--spacing-sm);
+  }
 }
 
 .header {
   margin-bottom: var(--spacing-xl);
+
+  @media (max-width: 640px) {
+    margin-bottom: var(--spacing-md);
+  }
 
   h2 {
     font-family: var(--font-heading, sans-serif);
@@ -22,6 +30,10 @@
     font-weight: 600;
     margin: 0 0 var(--spacing-sm) 0;
     color: var(--local-foreground);
+
+    @media (max-width: 640px) {
+      font-size: var(--font-size-lg, 1.25rem);
+    }
   }
 
   p {
@@ -29,6 +41,10 @@
     color: var(--local-complement);
     margin: 0;
     line-height: 1.5;
+
+    @media (max-width: 640px) {
+      font-size: var(--font-size-xs, 0.85rem);
+    }
   }
 }
 
@@ -36,6 +52,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+
+  @media (max-width: 640px) {
+    gap: var(--spacing-sm);
+  }
 }
 
 .card-content {
@@ -47,15 +67,24 @@
   border: var(--border-width, 1px) solid var(--local-borderColor);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--animation-duration-fast, 0.15s) var(--animation-easing, ease),
-    transform var(--animation-duration-fast, 0.15s) var(--animation-easing, ease);
+  transition: box-shadow var(--animation-duration-fast, 0.15s)
+      var(--animation-easing, ease),
+    transform var(--animation-duration-fast, 0.15s)
+      var(--animation-easing, ease);
 
-  &:hover {
-    box-shadow: var(--shadow-md);
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
   }
 
   @media (max-width: 640px) {
-    flex-direction: column;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-md);
+  }
+
+  &:hover {
+    box-shadow: var(--shadow-md);
   }
 }
 
@@ -70,12 +99,21 @@
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
 
+  @media (max-width: 640px) {
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-xs);
+  }
+
   h3 {
     font-family: var(--font-heading, sans-serif);
     font-size: var(--font-size-lg, 1.25rem);
     font-weight: 600;
     margin: 0;
     color: var(--local-foreground);
+
+    @media (max-width: 640px) {
+      font-size: var(--font-size-md, 1.1rem);
+    }
   }
 }
 
@@ -83,7 +121,8 @@
   font-size: var(--font-size-xs, 0.75rem);
   padding: var(--spacing-xs) var(--spacing-sm);
   background: color-mix(in srgb, var(--local-complement) 12%, transparent);
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--local-complement) 20%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--local-complement) 20%, transparent);
   border-radius: var(--border-radius-sm);
   color: var(--local-complement);
   font-weight: 500;
@@ -121,7 +160,8 @@
   border-radius: var(--border-radius-full);
   color: var(--local-accent);
   font-weight: 500;
-  transition: background var(--animation-duration-fast, 0.15s) var(--animation-easing, ease);
+  transition: background var(--animation-duration-fast, 0.15s)
+    var(--animation-easing, ease);
 
   &:hover {
     background: color-mix(in srgb, var(--local-accent) 18%, transparent);
@@ -148,7 +188,8 @@
   .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid color-mix(in srgb, var(--local-borderColor) 40%, transparent);
+    border: 3px solid
+      color-mix(in srgb, var(--local-borderColor) 40%, transparent);
     border-top-color: var(--local-accent);
     border-radius: 50%;
     animation: spin var(--animation-duration-normal, 0.8s) linear infinite;
@@ -159,7 +200,8 @@
   padding: var(--spacing-md);
   background: color-mix(in srgb, var(--danger) 12%, transparent);
   color: var(--danger);
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius: var(--border-radius-md);
   margin-bottom: var(--spacing-md);
   font-size: var(--font-size-sm, 0.9rem);
@@ -177,16 +219,21 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // ── Personality Category Overrides ──
 
 // Minimal: borderless cards, flat tags
-:host-context([data-personality="minimal"]) {
+:host-context([data-personality='minimal']) {
   .card-content {
     box-shadow: none;
-    &:hover { box-shadow: none; border-color: var(--local-accent); }
+    &:hover {
+      box-shadow: none;
+      border-color: var(--local-accent);
+    }
   }
   .tag {
     background: transparent;
@@ -197,23 +244,35 @@
 }
 
 // Elegant: top accent line on cards, refined typography
-:host-context([data-personality="elegant"]) {
+:host-context([data-personality='elegant']) {
   .card-content {
-    border-top: 2px solid color-mix(in srgb, var(--local-accent) 30%, transparent);
-    &:hover { border-top-color: var(--local-accent); }
+    border-top: 2px solid
+      color-mix(in srgb, var(--local-accent) 30%, transparent);
+    &:hover {
+      border-top-color: var(--local-accent);
+    }
   }
-  .group-header h3 { letter-spacing: 0.01em; }
-  .tag { letter-spacing: 0.02em; }
+  .group-header h3 {
+    letter-spacing: 0.01em;
+  }
+  .tag {
+    letter-spacing: 0.02em;
+  }
 }
 
 // Bold: thick accent left border, heavy shadows
-:host-context([data-personality="bold"]) {
+:host-context([data-personality='bold']) {
   .card-content {
     box-shadow: var(--shadow-lg);
     border-left: 4px solid var(--local-accent);
-    &:hover { transform: translateY(-2px); box-shadow: var(--shadow-xl); }
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-xl);
+    }
   }
-  .group-header h3 { font-weight: 800; }
+  .group-header h3 {
+    font-weight: 800;
+  }
   .tag {
     background: var(--local-accent);
     color: var(--primary-foreground);
@@ -222,7 +281,7 @@
 }
 
 // Playful: rounded cards, gradient tags, bouncy hover
-:host-context([data-personality="playful"]) {
+:host-context([data-personality='playful']) {
   .card-content {
     border-radius: var(--border-radius-xl);
     background: linear-gradient(
@@ -244,16 +303,19 @@
     );
     border-radius: var(--border-radius-full);
   }
-  .private-badge { border-radius: var(--border-radius-full); }
+  .private-badge {
+    border-radius: var(--border-radius-full);
+  }
 }
 
 // Electric: glow on hover, neon border highlights
-:host-context([data-personality="electric"]) {
+:host-context([data-personality='electric']) {
   .card-content {
     border-color: color-mix(in srgb, var(--local-accent) 25%, transparent);
     box-shadow: var(--shadow-md);
     &:hover {
-      box-shadow: var(--shadow-lg), 0 0 20px color-mix(in srgb, var(--local-accent) 15%, transparent);
+      box-shadow: var(--shadow-lg),
+        0 0 20px color-mix(in srgb, var(--local-accent) 15%, transparent);
       border-color: var(--local-accent);
     }
   }
@@ -264,17 +326,27 @@
 }
 
 // Soft & Soft Touch: borderless, wash backgrounds, round
-:host-context([data-personality="soft"]),
-:host-context([data-personality="soft-touch"]) {
+:host-context([data-personality='soft']),
+:host-context([data-personality='soft-touch']) {
   .card-content {
     border: none;
-    background: color-mix(in srgb, var(--local-background) 95%, var(--local-accent));
+    background: color-mix(
+      in srgb,
+      var(--local-background) 95%,
+      var(--local-accent)
+    );
     border-radius: var(--border-radius-xl);
     box-shadow: var(--shadow-sm);
-    &:hover { box-shadow: var(--shadow-md); }
+    &:hover {
+      box-shadow: var(--shadow-md);
+    }
   }
   .tag {
-    background: color-mix(in srgb, var(--local-accent) 8%, var(--local-background));
+    background: color-mix(
+      in srgb,
+      var(--local-accent) 8%,
+      var(--local-background)
+    );
     border-radius: var(--border-radius-full);
   }
   .error-message {
@@ -285,13 +357,15 @@
 }
 
 // Technical: sharp corners, monospace tags, dense
-:host-context([data-personality="architect"]),
-:host-context([data-personality="control-center"]),
-:host-context([data-personality="foundation"]) {
+:host-context([data-personality='architect']),
+:host-context([data-personality='control-center']),
+:host-context([data-personality='foundation']) {
   .card-content {
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--local-borderColor);
-    &:hover { border-color: var(--local-accent); }
+    &:hover {
+      border-color: var(--local-accent);
+    }
   }
   .group-header h3 {
     text-transform: uppercase;
@@ -304,22 +378,30 @@
     font-size: 0.7rem;
     letter-spacing: 0.02em;
   }
-  .private-badge { border-radius: var(--border-radius-sm); }
+  .private-badge {
+    border-radius: var(--border-radius-sm);
+  }
   .error-message {
     border-radius: var(--border-radius-sm);
     border-left: 3px solid var(--danger);
   }
 }
 
-:host-context([data-personality="architect"]) {
+:host-context([data-personality='architect']) {
   .card-content {
     box-shadow: var(--shadow-lg);
     border-top: 3px solid var(--local-accent);
-    &:hover { box-shadow: var(--shadow-xl); }
+    &:hover {
+      box-shadow: var(--shadow-xl);
+    }
   }
 }
 
-:host-context([data-personality="control-center"]) {
-  .card-content { box-shadow: none; }
-  .groups-list { gap: var(--spacing-sm); }
+:host-context([data-personality='control-center']) {
+  .card-content {
+    box-shadow: none;
+  }
+  .groups-list {
+    gap: var(--spacing-sm);
+  }
 }

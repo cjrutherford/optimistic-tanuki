@@ -5,13 +5,32 @@
 // Uses application personality CSS variables
 // ============================================
 
+// Ensure host breaks out of any parent positioning context
+:host {
+  position: static;
+
+  // Prevent any layout shifts on hover that could trigger re-renders
+  &.animate-on-hover {
+    animation: none !important;
+  }
+}
+
+// Force GPU acceleration and prevent layout recalculations
+.modal-overlay,
+.modal-dialog {
+  contain: layout style paint;
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: none;
   z-index: var(--z-index-modal-backdrop, 1040);
-  animation: personality-fade-in var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
+  animation: personality-fade-in var(--animation-duration-fast, 100ms)
+    var(--animation-easing, ease);
 
   @include reduced-motion {
     animation: none;
@@ -45,7 +64,8 @@
   max-width: 90vw;
   overflow: hidden;
   z-index: var(--z-index-modal, 1050);
-  animation: personality-modal-appear var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
+  animation: personality-modal-appear var(--animation-duration-fast, 100ms)
+    var(--animation-easing, ease);
 
   @include reduced-motion {
     animation: none;
@@ -88,7 +108,8 @@
     height: 100vh;
     max-height: 100vh;
     border-radius: var(--border-radius-sm, 4px);
-    animation: personality-slide-in-left var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
+    animation: personality-slide-in-left var(--animation-duration-fast, 100ms)
+      var(--animation-easing, ease);
   }
 }
 
@@ -99,7 +120,8 @@
     height: 100vh;
     max-height: 100vh;
     border-radius: var(--border-radius-sm, 4px);
-    animation: personality-slide-in-right var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
+    animation: personality-slide-in-right var(--animation-duration-fast, 100ms)
+      var(--animation-easing, ease);
   }
 }
 
@@ -110,7 +132,8 @@
     right: 0;
     max-height: 70vh;
     border-radius: var(--border-radius-sm, 4px);
-    animation: personality-slide-up var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
+    animation: personality-slide-up var(--animation-duration-fast, 100ms)
+      var(--animation-easing, ease);
   }
 }
 
@@ -230,7 +253,10 @@
   line-height: 1;
   cursor: pointer;
   border-radius: var(--border-radius-sm, 4px);
-  transition: background-color var(--animation-duration-fast, 100ms) var(--animation-easing, ease), transform var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
+  transition: background-color var(--animation-duration-fast, 100ms)
+      var(--animation-easing, ease),
+    transform var(--animation-duration-fast, 100ms)
+      var(--animation-easing, ease);
 
   &:hover {
     background: var(--secondary);
@@ -277,11 +303,7 @@
   }
 
   .modal-header {
-    background: linear-gradient(
-      90deg,
-      var(--primary),
-      var(--secondary)
-    );
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
   }
 }
 
@@ -437,4 +459,99 @@
   .modal-dialog {
     animation: none;
   }
+}
+
+// ============================================
+// Personality-Specific Modal Enhancements
+// ============================================
+
+// Architect personality - brutalist
+body.personality-architect .modal-dialog {
+  border-radius: 0;
+  border: 3px solid var(--foreground);
+
+  .modal-header {
+    border-bottom-width: 3px;
+    padding: 12px 16px;
+  }
+}
+
+// Playful personality - bouncy animation
+body.personality-playful .modal-dialog {
+  animation: modal-bounce-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes modal-bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  60% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Minimal personality - subtle fade
+body.personality-minimal .modal-dialog {
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+
+  .modal-header {
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+    color: var(--foreground);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+}
+
+// Electric personality - glow overlay
+body.personality-electric .modal-overlay {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+body.personality-electric .modal-dialog {
+  box-shadow: 0 0 40px var(--primary-alpha-40, rgba(63, 81, 181, 0.4));
+
+  .modal-header {
+    background: var(--gradient-primary);
+  }
+}
+
+// Soft Touch personality - rounded
+body.personality-soft-touch .modal-dialog {
+  border-radius: 20px;
+
+  .modal-header {
+    border-radius: 18px 18px 0 0;
+  }
+}
+
+// Control Center - technical
+body.personality-control-center .modal-dialog {
+  border-radius: 4px;
+  border: 1px solid var(--primary);
+
+  .modal-header {
+    background: var(--primary);
+    border-bottom: 2px solid var(--foreground);
+  }
+}
+
+// Gradient overlay variant
+.modal-overlay-gradient {
+  background: var(--gradient-modal-overlay, rgba(0, 0, 0, 0.7));
+}
+
+// Fullscreen modal variant
+.modal-fullscreen {
+  max-width: 100vw;
+  max-height: 100vh;
+  border-radius: 0;
+  border: none;
 }

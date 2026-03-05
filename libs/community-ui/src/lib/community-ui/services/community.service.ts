@@ -108,9 +108,7 @@ export class CommunityService {
 
   getPendingInvites(communityId: string): Promise<CommunityInviteDto[]> {
     return this.http
-      .get<CommunityInviteDto[]>(
-        `${this.baseUrl}/${communityId}/pending-invites`
-      )
+      .get<CommunityInviteDto[]>(`${this.baseUrl}/${communityId}/invites`)
       .toPromise() as Promise<CommunityInviteDto[]>;
   }
 

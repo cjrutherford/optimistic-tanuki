@@ -1,12 +1,15 @@
 .profile-photo {
   border-radius: 50%;
-  border: 2px solid var(--accent, #3f51b5);
+  border: var(--border-width, 2px) solid var(--accent, #3f51b5);
   width: var(--size, 32px);
   height: var(--size, 32px);
   max-height: 150px;
   max-width: 150px;
   object-fit: cover;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform var(--animation-duration-normal, 0.3s)
+      var(--animation-easing, ease),
+    box-shadow var(--animation-duration-normal, 0.3s)
+      var(--animation-easing, ease);
   position: relative;
 
   &:hover {
@@ -18,7 +21,7 @@
 
     &:hover {
       box-shadow: 0 0 0 3px var(--accent, #3f51b5),
-        0 4px 12px rgba(0, 0, 0, 0.15);
+        var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
     }
   }
 }
@@ -35,10 +38,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--background, white);
+  border: var(--border-width, 2px) solid var(--background, white);
   opacity: 0;
   transform: scale(0.8);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity var(--animation-duration-fast, 0.2s)
+      var(--animation-easing, ease),
+    transform var(--animation-duration-fast, 0.2s) var(--animation-easing, ease);
   pointer-events: none;
 }
 
@@ -46,4 +51,56 @@
 .profile-photo.clickable ~ .chat-indicator {
   opacity: 1;
   transform: scale(1);
+}
+
+// ============================================
+// Personality-Specific Profile Photo Enhancements
+// ============================================
+
+body.personality-architect {
+  .profile-photo {
+    border-radius: 0;
+    &.clickable:hover {
+      box-shadow: 4px 4px 0 var(--accent);
+    }
+  }
+}
+
+body.personality-playful {
+  .profile-photo {
+    border-radius: var(--border-radius-lg, 16px);
+    &:hover {
+      transform: scale(1.1) rotate(3deg);
+    }
+  }
+}
+
+body.personality-minimal {
+  .profile-photo {
+    border-radius: var(--border-radius-sm, 4px);
+    border-width: 1px;
+  }
+}
+
+body.personality-soft-touch {
+  .profile-photo {
+    border-radius: var(--border-radius-full, 9999px);
+    &:hover {
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+body.personality-electric {
+  .profile-photo {
+    &.clickable:hover {
+      box-shadow: 0 0 20px var(--accent);
+    }
+  }
+}
+
+body.personality-control-center {
+  .profile-photo {
+    border-radius: var(--border-radius-sm, 4px);
+  }
 }

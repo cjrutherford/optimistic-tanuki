@@ -39,6 +39,9 @@ export interface CommunityDto {
   logoUrl?: string;
   createdAt: Date;
   updatedAt: Date;
+  memberIds?: string[];
+  memberUserIds?: string[];
+  ownerIds?: string[];
 }
 
 export interface CreateCommunityDto {

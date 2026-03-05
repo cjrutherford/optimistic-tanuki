@@ -39,7 +39,8 @@
     padding: 0;
     font-size: inherit;
     font-family: inherit;
-    transition: color var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
+    transition: color var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease);
 
     &:hover {
       color: var(--complement);
@@ -81,7 +82,8 @@
   color: var(--danger);
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius: var(--border-radius-md);
   font-family: var(--font-body, sans-serif);
 }
@@ -109,10 +111,12 @@
 
 .topic-card {
   cursor: pointer;
-  transition:
-    border-color var(--animation-duration-fast, 150ms) var(--animation-easing, ease),
-    box-shadow var(--animation-duration-fast, 150ms) var(--animation-easing, ease),
-    transform var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
+  transition: border-color var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease),
+    box-shadow var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease),
+    transform var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease);
   border: var(--border-width, 1px) solid var(--border);
   border-radius: var(--border-radius-lg);
 
@@ -176,9 +180,10 @@
 
 .thread-card {
   cursor: pointer;
-  transition:
-    border-color var(--animation-duration-fast, 150ms) var(--animation-easing, ease),
-    background-color var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
+  transition: border-color var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease),
+    background-color var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease);
   border: var(--border-width, 1px) solid var(--border);
   border-radius: var(--border-radius-md);
 
@@ -303,20 +308,32 @@
 // ── Personality Overrides ──
 
 // Professional
-:host-context([data-personality="classic"]),
-:host-context([data-personality="professional"]) {
-  .topic-card { border-radius: var(--border-radius-md); }
-  .thread-card { border-radius: var(--border-radius-sm); }
-  .badge { border-radius: var(--border-radius-sm); }
+:host-context([data-personality='classic']),
+:host-context([data-personality='professional']) {
+  .topic-card {
+    border-radius: var(--border-radius-md);
+  }
+  .thread-card {
+    border-radius: var(--border-radius-sm);
+  }
+  .badge {
+    border-radius: var(--border-radius-sm);
+  }
 }
 
-:host-context([data-personality="minimal"]) {
-  .forum-header { box-shadow: var(--shadow-none); }
+:host-context([data-personality='minimal']) {
+  .forum-header {
+    box-shadow: var(--shadow-none);
+  }
   .topic-card {
     border-radius: var(--border-radius-sm);
-    &:hover { box-shadow: var(--shadow-sm); }
+    &:hover {
+      box-shadow: var(--shadow-sm);
+    }
   }
-  .thread-card { border-radius: var(--border-radius-sm); }
+  .thread-card {
+    border-radius: var(--border-radius-sm);
+  }
   .badge {
     border-radius: var(--border-radius-sm);
     background-color: transparent;
@@ -324,16 +341,22 @@
   }
 }
 
-:host-context([data-personality="elegant"]) {
+:host-context([data-personality='elegant']) {
   .forum-header {
     border-bottom-color: color-mix(in srgb, var(--accent) 20%, transparent);
   }
   .topic-card {
     border-color: color-mix(in srgb, var(--accent) 15%, transparent);
-    &:hover { border-color: var(--accent); }
-    h3 { font-style: italic; }
+    &:hover {
+      border-color: var(--accent);
+    }
+    h3 {
+      font-style: italic;
+    }
   }
-  .thread-card h4 { font-style: italic; }
+  .thread-card h4 {
+    font-style: italic;
+  }
   .badge {
     background-color: transparent;
     border: 1px solid currentColor;
@@ -342,7 +365,7 @@
 }
 
 // Creative
-:host-context([data-personality="bold"]) {
+:host-context([data-personality='bold']) {
   .forum-header {
     border-bottom-width: 3px;
     border-bottom-color: var(--accent);
@@ -363,7 +386,9 @@
   }
   .thread-card {
     border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
-    &:hover { border-left-color: var(--accent); }
+    &:hover {
+      border-left-color: var(--accent);
+    }
   }
   .badge {
     font-weight: 800;
@@ -371,15 +396,21 @@
   }
 }
 
-:host-context([data-personality="playful"]) {
+:host-context([data-personality='playful']) {
   .forum-header {
-    background: var(--surface-gradient, var(--card, var(--background)));
+    background: var(
+      --gradient-surface,
+      var(--surface-gradient, var(--card, var(--background)))
+    );
     border-bottom: none;
     box-shadow: var(--shadow-md);
   }
   .topic-card {
     border-radius: var(--border-radius-xl);
-    background: var(--surface-gradient, var(--card, var(--background)));
+    background: var(
+      --gradient-surface,
+      var(--surface-gradient, var(--card, var(--background)))
+    );
     &:hover {
       transform: translateY(-3px) rotate(-0.5deg);
       box-shadow: var(--shadow-lg);
@@ -389,7 +420,8 @@
     border-radius: var(--border-radius-lg);
     &:hover {
       transform: translateX(4px);
-      transition: transform var(--animation-duration-fast, 150ms) cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: transform var(--animation-duration-fast, 150ms)
+        cubic-bezier(0.34, 1.56, 0.64, 1);
     }
   }
   .badge {
@@ -403,14 +435,13 @@
   }
 }
 
-:host-context([data-personality="electric"]) {
+:host-context([data-personality='electric']) {
   .forum-header {
     border-bottom-color: color-mix(in srgb, var(--accent) 40%, transparent);
     box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 10%, transparent);
   }
   .topic-card:hover {
-    box-shadow:
-      var(--shadow-md),
+    box-shadow: var(--shadow-md),
       0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
   }
   .thread-card:hover {
@@ -422,8 +453,8 @@
 }
 
 // Casual
-:host-context([data-personality="soft"]),
-:host-context([data-personality="soft-touch"]) {
+:host-context([data-personality='soft']),
+:host-context([data-personality='soft-touch']) {
   .forum-header {
     border-bottom: none;
     background-color: color-mix(in srgb, var(--accent) 4%, var(--background));
@@ -435,7 +466,11 @@
     border-radius: var(--border-radius-xl);
     &:hover {
       box-shadow: var(--shadow-sm);
-      background-color: color-mix(in srgb, var(--accent) 10%, var(--background));
+      background-color: color-mix(
+        in srgb,
+        var(--accent) 10%,
+        var(--background)
+      );
     }
   }
   .thread-card {
@@ -461,7 +496,7 @@
 }
 
 // Technical
-:host-context([data-personality="architect"]) {
+:host-context([data-personality='architect']) {
   .forum-header {
     box-shadow: var(--shadow-md);
     border-top: 3px solid var(--accent);
@@ -470,20 +505,28 @@
   .topic-card {
     border-radius: var(--border-radius-none);
     box-shadow: var(--shadow-md);
-    &:hover { box-shadow: var(--shadow-lg); }
+    &:hover {
+      box-shadow: var(--shadow-lg);
+    }
   }
-  .thread-card { border-radius: var(--border-radius-none); }
+  .thread-card {
+    border-radius: var(--border-radius-none);
+  }
 }
 
-:host-context([data-personality="control-center"]),
-:host-context([data-personality="foundation"]) {
-  .topic-card { border-radius: var(--border-radius-none); }
-  .thread-card { border-radius: var(--border-radius-none); }
+:host-context([data-personality='control-center']),
+:host-context([data-personality='foundation']) {
+  .topic-card {
+    border-radius: var(--border-radius-none);
+  }
+  .thread-card {
+    border-radius: var(--border-radius-none);
+  }
 }
 
-:host-context([data-personality="architect"]),
-:host-context([data-personality="control-center"]),
-:host-context([data-personality="foundation"]) {
+:host-context([data-personality='architect']),
+:host-context([data-personality='control-center']),
+:host-context([data-personality='foundation']) {
   .topic-card h3,
   .topic-header h2,
   .thread-header h4 {
@@ -506,12 +549,20 @@
   }
   .breadcrumb {
     font-family: var(--font-mono, monospace);
-    .current { letter-spacing: 0.02em; }
+    .current {
+      letter-spacing: 0.02em;
+    }
   }
 }
 
-:host-context([data-personality="control-center"]) {
-  .forum-content { padding: var(--spacing-sm); }
-  .topics-grid { gap: var(--spacing-sm); }
-  .threads-list { gap: var(--spacing-xs); }
+:host-context([data-personality='control-center']) {
+  .forum-content {
+    padding: var(--spacing-sm);
+  }
+  .topics-grid {
+    gap: var(--spacing-sm);
+  }
+  .threads-list {
+    gap: var(--spacing-xs);
+  }
 }

@@ -3,10 +3,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Event } from '../entities';
 import { Between, FindOptionsWhere, Like, Repository } from 'typeorm';
 import {
-  EventDto,
-  CreateEventDto,
-  UpdateEventDto,
-  EventQueryDto,
+  BlogEventDto as EventDto,
+  CreateBlogEventDto as CreateEventDto,
+  UpdateBlogEventDto as UpdateEventDto,
+  BlogEventQueryDto as EventQueryDto,
 } from '@optimistic-tanuki/models';
 
 @Injectable()

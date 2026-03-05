@@ -124,3 +124,117 @@ mat-list-item {
   left: 0;
   color: white;
 }
+
+.profile-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  flex-wrap: wrap;
+}
+
+.invite-dropdown {
+  position: relative;
+
+  .invite-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #ccc);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    min-width: 150px;
+  }
+
+  &:hover .invite-menu {
+    display: block;
+  }
+
+  .invite-option {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--foreground, #333);
+
+    &:hover {
+      background: var(--dropdown-hover-bg, rgba(0, 0, 0, 0.05));
+    }
+  }
+}
+
+.profile-section {
+  padding: 16px;
+
+  h3 {
+    margin: 0 0 16px 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+}
+
+.posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.post-card {
+  padding: 16px;
+
+  .post-title {
+    font-weight: 600;
+    font-size: 1.125rem;
+    margin-bottom: 8px;
+  }
+
+  .post-content {
+    margin-bottom: 8px;
+    color: var(--foreground, #333);
+  }
+
+  .post-date {
+    font-size: 0.875rem;
+    color: var(--muted-foreground, #666);
+  }
+}
+
+.communities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.community-card {
+  padding: 16px;
+  cursor: pointer;
+  text-align: center;
+
+  .community-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    margin-bottom: 8px;
+  }
+
+  .community-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .community-members {
+    font-size: 0.875rem;
+    color: var(--muted-foreground, #666);
+  }
+}
+
+.no-content {
+  color: var(--muted-foreground, #666);
+  font-style: italic;
+}

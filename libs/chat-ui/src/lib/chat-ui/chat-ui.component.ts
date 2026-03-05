@@ -47,6 +47,14 @@ export declare type ChatContact = {
    * The timestamp of the last message.
    */
   lastMessageTime?: string;
+  /**
+   * The presence status of the contact.
+   */
+  presence?: 'online' | 'offline' | 'away' | 'busy';
+  /**
+   * The last time the contact was seen (for offline users).
+   */
+  lastSeen?: Date;
 };
 
 /**

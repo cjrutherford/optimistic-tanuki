@@ -6,10 +6,10 @@ export {
   ContactQueryDto,
 } from './contact';
 export {
-  EventDto,
-  CreateEventDto,
-  UpdateEventDto,
-  EventQueryDto,
+  EventDto as BlogEventDto,
+  CreateEventDto as CreateBlogEventDto,
+  UpdateEventDto as UpdateBlogEventDto,
+  EventQueryDto as BlogEventQueryDto,
 } from './event';
 export {
   PostDto as BlogPostDto,

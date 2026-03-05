@@ -1,4 +1,6 @@
 @use '../../styles/mixins' as *;
+@use '../../styles/personality-tokens' as *;
+@use '../../styles/personality-effects' as *;
 
 // ============================================
 // Personality-Driven Text Input Component
@@ -202,7 +204,8 @@
   display: flex;
   align-items: center;
   background: var(--surface, var(--background));
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--primary) 15%, transparent);
   border-radius: var(--border-radius-md, 8px);
   overflow: hidden;
   transition: all 250ms var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
@@ -234,10 +237,113 @@
   }
 
   .input-prefix {
-    border-right: 0.5px solid color-mix(in srgb, var(--primary) 10%, transparent);
+    border-right: 0.5px solid
+      color-mix(in srgb, var(--primary) 10%, transparent);
   }
 
   .input-suffix {
     border-left: 0.5px solid color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+}
+
+// ============================================
+// Personality-Specific Input Enhancements
+// ============================================
+
+// Architect - sharp corners, hard focus
+body.personality-architect .form-control {
+  border-radius: 0;
+
+  &:focus {
+    border-width: 2px;
+    box-shadow: 4px 4px 0 var(--primary);
+  }
+}
+
+// Playful - bouncy, rounded
+body.personality-playful .form-control {
+  border-radius: 12px;
+
+  &:focus {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent);
+    transform: scale(1.01);
+  }
+}
+
+// Minimal - subtle, sharp
+body.personality-minimal .form-control {
+  border-radius: 2px;
+  border-width: 0.5px;
+
+  &:focus {
+    border-width: 1px;
+    box-shadow: none;
+    outline: 1px solid var(--primary);
+    outline-offset: 3px;
+  }
+}
+
+// Electric - glow effect
+body.personality-electric .form-control {
+  &:focus {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
+    border-color: var(--primary);
+  }
+}
+
+// Soft Touch - rounded, gentle
+body.personality-soft-touch .form-control {
+  border-radius: 20px;
+
+  &:focus {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent);
+  }
+}
+
+// Control Center - technical
+body.personality-control-center .form-control {
+  border-radius: 4px;
+  font-family: var(--font-mono);
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: inset 0 2px 4px
+      color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+}
+
+// Elegant - refined
+body.personality-elegant .form-control {
+  border-radius: 6px;
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+}
+
+// Gradient focus variant
+.form-control.gradient-focus {
+  &:focus {
+    background: var(--gradient-input-focus);
+  }
+}
+
+// Animated focus variant
+.form-control.animate-focus {
+  &:focus {
+    animation: input-focus-pulse 0.3s ease-out;
+  }
+}
+
+@keyframes input-focus-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
   }
 }

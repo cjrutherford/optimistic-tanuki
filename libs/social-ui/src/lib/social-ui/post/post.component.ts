@@ -23,6 +23,7 @@ import {
   ModalComponent,
   HeroSectionComponent,
   ContentSectionComponent,
+  DropdownComponent,
 } from '@optimistic-tanuki/common-ui';
 import {
   CalloutBoxComponent,
@@ -30,6 +31,7 @@ import {
   ImageGalleryComponent,
 } from '@optimistic-tanuki/compose-lib';
 import { VoteComponent } from '../vote/vote.component';
+import { ReactionComponent } from '../vote/reaction.component';
 import { CommentComponent } from '../comment/comment.component';
 import { CommentListComponent } from '../comment/comment-list/comment-list.component';
 import {
@@ -73,11 +75,13 @@ export declare type PostProfileStub = {
     CardComponent,
     ButtonComponent,
     VoteComponent,
+    ReactionComponent,
     CommentComponent,
     GridComponent,
     TileComponent,
     CommentListComponent,
     ProfilePhotoComponent,
+    DropdownComponent,
   ],
   providers: [],
   templateUrl: './post.component.html',
@@ -90,6 +94,11 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
     avatar: 'https://placehold.co/300x300',
   };
   @Input() availableProfiles: { [key: string]: PostProfileStub } = {};
+  @Input() currentUserId: string = '';
+  @Input() userVote: number = 0;
+  @Input() voteCount: number = 0;
+  @Input() userReaction: number = 0;
+  @Input() reactionCounts: { [value: number]: number } = {};
   theme: 'light' | 'dark' = 'light';
 
   @Input() content!: PostDto;
@@ -99,13 +108,24 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() canDelete = false;
   @Input() canFollow = false;
   @Input() isFollowing = false;
+  @Input() isBlocked = false;
+  @Input() ownedCommunities: { id: string; name: string }[] = [];
   @Input() imageUploadCallback?: ImageUploadCallback;
   @Input() communityInfo?: { id: string; name: string; logoUrl?: string };
+  @Input() shareUrl: string = '';
   @Output() newCommentAdded: EventEmitter<CreateCommentDto> =
     new EventEmitter<CreateCommentDto>();
   @Output() postDeleted = new EventEmitter<void>();
   @Output() followToggle = new EventEmitter<void>();
+  @Output() blockToggle = new EventEmitter<void>();
   @Output() startChat = new EventEmitter<string>();
+  @Output() profileClick = new EventEmitter<string>();
+  @Output() voteChange = new EventEmitter<{ postId: string; value: number }>();
+  @Output() reactionChange = new EventEmitter<{
+    postId: string;
+    value: number;
+  }>();
+  @Output() inviteToCommunity = new EventEmitter<string>();
 
   // ViewChild references for component reconstruction
   @ViewChild('contentContainer', { read: ViewContainerRef })
@@ -122,11 +142,9 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   private componentRefs: ComponentRef<any>[] = [];
 
   downloadAttachment(attachment: AttachmentDto) {
-    // Logic to download the attachment
     console.log('Downloading attachment:', attachment);
   }
   openLink(link: { url: string }) {
-    // Logic to open the link
     console.log('Opening link:', link);
   }
 
@@ -136,6 +154,20 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   onFollowToggle() {
     this.followToggle.emit();
+  }
+
+  onBlockToggle() {
+    this.blockToggle.emit();
+  }
+
+  onInviteToCommunity(communityId: string) {
+    this.inviteToCommunity.emit(communityId);
+  }
+
+  onProfileClick() {
+    if (this.profile?.id) {
+      this.profileClick.emit(this.profile.id);
+    }
   }
 
   get attachmentRows() {
@@ -160,6 +192,26 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
       profileId: '',
     };
     this.newCommentAdded.emit(comment);
+  }
+
+  onVoteChanged(event: { postId: string; value: number }) {
+    this.voteChange.emit(event);
+  }
+
+  onReactionChanged(event: { postId: string; value: number }) {
+    this.reactionChange.emit(event);
+  }
+
+  async onShare() {
+    const shareUrl =
+      this.shareUrl ||
+      `${window.location.origin}/social/post/${this.content.id}/shared`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      console.log('Share URL copied to clipboard:', shareUrl);
+    } catch (err) {
+      console.error('Failed to copy share URL:', err);
+    }
   }
 
   // Lifecycle hooks for component reconstruction
@@ -196,7 +248,6 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
         .getComponentsForPost(this.content.id)
         .toPromise();
       this.storedComponents = components || [];
-      console.log('[PostComponent] Loaded components:', this.storedComponents);
 
       // Reconstruct components after data is loaded
       setTimeout(() => this.reconstructComponents(), 0);

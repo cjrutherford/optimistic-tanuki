@@ -43,6 +43,40 @@ body * {
   outline-offset: 2px;
 }
 
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--primary, #3f51b5);
+  color: white;
+  padding: 8px 16px;
+  z-index: 10000;
+  transition: top 0.2s;
+  text-decoration: none;
+
+  &:focus {
+    top: 0;
+  }
+}
+
+/* Screen reader only - visible to screen readers but hidden visually */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;

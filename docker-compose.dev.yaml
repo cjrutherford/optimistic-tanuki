@@ -45,6 +45,8 @@ services:
     build:
       context: .
       dockerfile: ./apps/client-interface/Dockerfile
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       # The new Dockerfile handles copying built assets, so direct volume mounting of dist might conflict or be unnecessary for SSR.
       # For development with hot-reloading of the SSR server, a different approach might be needed.
@@ -58,6 +60,9 @@ services:
     ports:
       - '8080:4000' # Match the new exposed port
       - '9240:9240'
+    environment:
+      - NODE_ENV=development
+      - GIT_SHA=${GIT_SHA:-unknown}
     command:
       [
         'dumb-init',
@@ -67,14 +72,14 @@ services:
         '-L',
         '/app/dist/apps/client-interface/server/server.mjs',
       ]
-    environment:
-      - NODE_ENV=development
 
   forgeofwill-client-interface:
     container_name: fow_client_interface # Added
     build:
       context: .
       dockerfile: ./apps/forgeofwill/Dockerfile
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/forgeofwill:/app/apps/forgeofwill
       - ./libs:/app/libs
@@ -99,6 +104,8 @@ services:
     build:
       context: .
       dockerfile: ./apps/digital-homestead/Dockerfile
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/digital-homestead:/app/apps/digital-homestead
       - ./libs:/app/libs
@@ -297,11 +304,41 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+  assets:
+    container_name: ot_assets
+    build:
+      context: .
+      dockerfile: ./apps/assets/Dockerfile
+    volumes:
+      - ./dist/apps/assets:/usr/src/app
+      - /usr/src/app/node_modules
+      - asset-data:/usr/src/app/storage
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9235',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9235:9235'
+    environment:
+      - NODE_ENV=development
+      - STORAGE_STRATEGY=local
+      - LOCAL_STORAGE_PATH=/usr/src/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   d6:
     container_name: ot_d6
     build:
       context: .
       dockerfile: ./apps/d6/Dockerfile
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/d6:/app/apps/d6
       - ./libs:/app/libs

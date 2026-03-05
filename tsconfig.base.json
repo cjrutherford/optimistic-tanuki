@@ -22,6 +22,7 @@
     ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
+    "strictPropertyInitialization": false,
     "baseUrl": ".",
     "paths": {
       "@optimistic-tanuki/ag-grid-ui": [

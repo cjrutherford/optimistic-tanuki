@@ -10,12 +10,23 @@ export {
   CommentCommands,
   AttachmentCommands,
   VoteCommands,
+  ReactionCommands,
   LinkCommands,
   FollowCommands,
   SocialComponentCommands,
   SocialRealtimeCommands,
   CommunityCommands,
   NotificationCommands,
+  SearchCommands,
+  PrivacyCommands,
+  ActivityCommands,
+  SavedItemCommands,
+  PresenceCommands,
+  ProfileAnalyticsCommands,
+  PollCommands,
+  PostShareCommands,
+  EventCommands as SocialEventCommands,
+  ScheduledPostCommands,
 } from './lib/libs/social';
 
 export { TasksCommands, TimersCommands, NotesCommands } from './lib/libs/tasks';
@@ -43,7 +54,7 @@ export {
   BlogCommands,
   BlogComponentCommands,
   ContactCommands,
-  EventCommands,
+  EventCommands as BlogEventCommands,
   PostCommands as BlogPostCommands,
 } from './lib/libs/blog';
 

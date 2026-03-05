@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ImageUploadComponent } from './image-upload.component';
-import { within } from '@storybook/test';
-import { expect } from '@storybook/jest';
+import { expect, within } from '@storybook/test';
 
 const meta: Meta<ImageUploadComponent> = {
   component: ImageUploadComponent,

@@ -309,6 +309,75 @@ export class RoleInitBuilder {
       case 'global':
         this.assignRoleToProfile('standard_user');
         return this;
+      case 'social':
+        // Add social permissions and assign social_user role
+        this.addPermission(
+          'social.post.create',
+          'social',
+          'post',
+          'Create social post',
+          undefined,
+          'social'
+        );
+        this.addPermission(
+          'social.post.read',
+          'social',
+          'post',
+          'Read social post',
+          undefined,
+          'social'
+        );
+        this.addPermission(
+          'social.post.update',
+          'social',
+          'post',
+          'Update social post',
+          undefined,
+          'social'
+        );
+        this.addPermission(
+          'social.post.delete',
+          'social',
+          'post',
+          'Delete social post',
+          undefined,
+          'social'
+        );
+        this.addPermission(
+          'social.vote.create',
+          'social',
+          'vote',
+          'Create vote',
+          undefined,
+          'social'
+        );
+        this.addPermission(
+          'social.comment.create',
+          'social',
+          'comment',
+          'Create comment',
+          undefined,
+          'social'
+        );
+        this.addPermission(
+          'social.follow',
+          'social',
+          'follow',
+          'Follow/unfollow users',
+          undefined,
+          'social'
+        );
+        this.addRole('SocialUser', 'Social user with basic permissions', [
+          'social.post.create',
+          'social.post.read',
+          'social.post.update',
+          'social.post.delete',
+          'social.vote.create',
+          'social.comment.create',
+          'social.follow',
+        ]);
+        this.assignRoleToProfile('social_standard_user');
+        return this;
       // Backend Services - no default role assignment needed
       case 'authentication':
       case 'profile':

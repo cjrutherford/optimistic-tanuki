@@ -1,9 +1,11 @@
-<otui-modal
-  [visible]="showDialog"
-  [heading]="'Leave a Comment'"
-  [closable]="true"
-  (close)="showDialog = false"
->
+<!-- Comment toggle button -->
+<otui-button variant="success" (click)="toggleCommentDialog()">
+  {{ showDialog ? 'Cancel' : 'Leave a Comment' }}
+</otui-button>
+
+<!-- Inline comment form -->
+@if (showDialog) {
+<div class="inline-comment-form">
   <form (ngSubmit)="onSubmit()" class="comment-form">
     @if(editor) {
     <lib-rich-text-toolbar
@@ -33,7 +35,5 @@
       >
     </div>
   </form>
-</otui-modal>
-<otui-button variant="success" (click)="openCommentDialog()"
-  >Leave a Comment</otui-button
->
+</div>
+}

@@ -1,4 +1,6 @@
 @use '../../styles/mixins' as *;
+@use '../../styles/personality-tokens' as *;
+@use '../../styles/personality-effects' as *;
 
 // ============================================
 // Personality-Driven Select Component
@@ -20,11 +22,13 @@
   color: var(--foreground);
   background: var(--surface, var(--background));
   background-color: transparent;
-  border: var(--border-width, 0.5px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border: var(--border-width, 0.5px) solid
+    color-mix(in srgb, var(--primary) 15%, transparent);
   border-radius: var(--border-radius-md, 8px);
   outline: none;
   cursor: pointer;
-  transition: all var(--animation-duration-normal, 250ms) var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+  transition: all var(--animation-duration-normal, 250ms)
+    var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
   box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03));
   appearance: none;
   // Note: SVG stroke color in data URI cannot use CSS custom properties.
@@ -41,7 +45,10 @@
   &:focus {
     border-color: color-mix(in srgb, var(--primary) 50%, transparent);
     box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03)),
-      var(--shadow-lg, 0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent));
+      var(
+        --shadow-lg,
+        0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent)
+      );
     background-color: var(--background);
     outline: none;
   }
@@ -141,7 +148,8 @@
     left: 0;
     right: 0;
     background: var(--background);
-    border: var(--border-width, 0.5px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+    border: var(--border-width, 0.5px) solid
+      color-mix(in srgb, var(--primary) 15%, transparent);
     border-radius: var(--border-radius-md, 16px);
     box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.1));
     overflow: hidden;
@@ -194,10 +202,47 @@
     &:checked {
       background: linear-gradient(
         135deg,
-        color-mix(in srgb, var(--primary) 15%, transparent),
-        color-mix(in srgb, var(--secondary) 15%, transparent)
+        var(--primary) 0%,
+        var(--secondary) 100%
       );
-      color: var(--primary);
+      color: var(--primary-foreground);
     }
+  }
+}
+
+// ============================================
+// Personality-Specific Select Enhancements
+// ============================================
+
+body.personality-architect .form-control-select {
+  border-radius: 0;
+
+  &:focus {
+    border-width: 2px;
+    box-shadow: 4px 4px 0 var(--primary);
+  }
+}
+
+body.personality-playful .form-control-select {
+  border-radius: 12px;
+}
+
+body.personality-minimal .form-control-select {
+  border-radius: 2px;
+  border-width: 0.5px;
+}
+
+body.personality-soft-touch .form-control-select {
+  border-radius: 20px;
+}
+
+body.personality-control-center .form-control-select {
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+body.personality-electric .form-control-select {
+  &:focus {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
   }
 }

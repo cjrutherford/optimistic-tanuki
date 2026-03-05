@@ -5,6 +5,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   Logger,
   UseGuards,
 } from '@nestjs/common';
@@ -58,6 +59,12 @@ export class AppController {
   @Get('health')
   healthCheckHttp() {
     return { status: 'healthy' };
+  }
+
+  @Get('conversations/find')
+  async findConversations(@Query('profileId') profileId: string) {
+    this.l.log(`HTTP: Finding conversations for profile ID: ${profileId}`);
+    return await this.appService.getConversationsHttp(profileId);
   }
 
   @Get('conversations/:profileId')

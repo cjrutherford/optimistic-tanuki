@@ -23,7 +23,22 @@ const commonEngine = new CommonEngine();
  *   // Handle API request
  * });
  * ```
- */
+ */app.use(
+  '/socket.io',
+  createProxyMiddleware({
+    target: 'http://gateway:3300',
+    ws: true,
+    changeOrigin: true,
+  })
+);
+app.use(
+  '/chat',
+  createProxyMiddleware({
+    target: 'http://gateway:3300',
+    ws: true,
+    changeOrigin: true,
+  })
+);
 app.use(
   '/api',
   createProxyMiddleware({

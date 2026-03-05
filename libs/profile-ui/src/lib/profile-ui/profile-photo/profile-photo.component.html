@@ -5,7 +5,8 @@
   [class.clickable]="enableChat"
   [style.--size.px]="size"
   [attr.data-profile-id]="profileId"
-  (click)="enableChat && profileId ? startChat.emit(profileId) : null"
+  (click)="handleClick($event)"
+  (error)="handleImageError($event)"
 />
 @if (enableChat) {
 <span class="chat-indicator" title="Start chat">

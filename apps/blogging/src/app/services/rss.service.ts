@@ -1,14 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { Feed } from 'feed';
 import { BlogPostDto } from '@optimistic-tanuki/models';
 
 @Injectable()
 export class RssService {
-  /**
-   * Generate RSS feed from published blog posts
-   * @param posts - Array of published blog posts
-   * @param blogInfo - Information about the blog
-   */
   generateRssFeed(
     posts: BlogPostDto[],
     blogInfo: {
@@ -23,49 +17,72 @@ export class RssService {
       };
     }
   ): string {
-    const feed = new Feed({
-      title: blogInfo.title,
-      description: blogInfo.description,
-      id: blogInfo.link,
-      link: blogInfo.link,
-      language: 'en',
-      favicon: `${blogInfo.link}/favicon.ico`,
-      copyright: `All rights reserved ${new Date().getFullYear()}`,
-      updated: posts.length > 0 ? new Date(posts[0].updatedAt) : new Date(),
-      generator: 'Optimistic Tanuki Blog',
-      feedLinks: {
-        rss2: blogInfo.feedUrl,
-      },
-      author: blogInfo.author,
-    });
+    const pubDate =
+      posts.length > 0
+        ? this.formatDate(new Date(posts[0].updatedAt))
+        : this.formatDate(new Date());
 
-    // Add each post to the feed
-    posts.forEach((post) => {
-      feed.addItem({
-        title: post.title,
-        id: post.id,
-        link: `${blogInfo.link}/post/${post.id}`,
-        description: this.extractDescription(post.content),
-        content: post.content,
-        author: [
-          {
-            name: post.authorId,
-          },
-        ],
-        date: post.publishedAt
-          ? new Date(post.publishedAt)
-          : new Date(post.createdAt),
-      });
-    });
+    const items = posts
+      .map((post) => {
+        const itemPubDate = post.publishedAt
+          ? this.formatDate(new Date(post.publishedAt))
+          : this.formatDate(new Date(post.createdAt));
 
-    return feed.rss2();
+        return `
+    <item>
+      <title><![CDATA[${this.escapeXml(post.title)}]]></title>
+      <link>${this.escapeXml(`${blogInfo.link}/post/${post.id}`)}</link>
+      <guid isPermaLink="true">${this.escapeXml(
+        `${blogInfo.link}/post/${post.id}`
+      )}</guid>
+      <description><![CDATA[${this.extractDescription(
+        post.content
+      )}]]></description>
+      <content:encoded><![CDATA[${post.content}]]></content:encoded>
+      <author>${this.escapeXml(post.authorId)}</author>
+      <pubDate>${itemPubDate}</pubDate>
+    </item>`;
+      })
+      .join('');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title><![CDATA[${this.escapeXml(blogInfo.title)}]]></title>
+    <description><![CDATA[${this.escapeXml(
+      blogInfo.description
+    )}]]></description>
+    <link>${this.escapeXml(blogInfo.link)}</link>
+    <language>en</language>
+    <lastBuildDate>${pubDate}</lastBuildDate>
+    <generator>Optimistic Tanuki Blog</generator>
+    <copyright>All rights reserved ${new Date().getFullYear()}</copyright>
+    ${
+      blogInfo.author
+        ? `<managingEditor>${this.escapeXml(
+            blogInfo.author.email
+          )} (${this.escapeXml(blogInfo.author.name)})</managingEditor>`
+        : ''
+    }
+    ${items}
+  </channel>
+</rss>`;
   }
 
-  /**
-   * Extract a description from HTML content (first 200 chars)
-   */
+  private formatDate(date: Date): string {
+    return date.toUTCString();
+  }
+
+  private escapeXml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+
   private extractDescription(content: string): string {
-    // Strip HTML tags and get first 200 characters
     const stripped = content.replace(/<[^>]*>/g, '').trim();
     return stripped.length > 200
       ? stripped.substring(0, 197) + '...'

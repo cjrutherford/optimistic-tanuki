@@ -21,6 +21,7 @@ import {
   TimelineCommands,
   RoleCommands,
   AppScopeCommands,
+  PrivacyCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateProfileDto,
@@ -62,6 +63,8 @@ export class ProfileController {
     private readonly telosDocsClient: ClientProxy,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly permissionsClient: ClientProxy,
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialClient: ClientProxy,
     private readonly roleInit: RoleInitService
   ) {}
 
@@ -481,5 +484,59 @@ export class ProfileController {
   @Delete('timeline/:id')
   deleteTimeline(@Param('id') id: string) {
     return this.client.send({ cmd: TimelineCommands.Delete }, id);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get blocked users for a profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'The blocked users have been successfully retrieved.',
+  })
+  @Get(':id/blocked')
+  async getBlockedUsers(@Param('id') profileId: string) {
+    const blocked = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: PrivacyCommands.GET_BLOCKED_USERS },
+        { blockerId: profileId }
+      )
+    );
+    return (blocked || []).map((b: any) => ({
+      ...b,
+      blockedProfileId: b.blockedId,
+    }));
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Block a user' })
+  @ApiResponse({
+    status: 201,
+    description: 'User has been blocked.',
+  })
+  @Post(':id/block')
+  async blockUser(
+    @Param('id') profileId: string,
+    @Body() body: { blockedProfileId: string }
+  ) {
+    return this.socialClient.send(
+      { cmd: PrivacyCommands.BLOCK_USER },
+      { blockerId: profileId, blockedId: body.blockedProfileId }
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Unblock a user' })
+  @ApiResponse({
+    status: 200,
+    description: 'User has been unblocked.',
+  })
+  @Delete(':id/block/:blockedProfileId')
+  async unblockUser(
+    @Param('id') profileId: string,
+    @Param('blockedProfileId') blockedProfileId: string
+  ) {
+    return this.socialClient.send(
+      { cmd: PrivacyCommands.UNBLOCK_USER },
+      { blockerId: profileId, blockedId: blockedProfileId }
+    );
   }
 }
