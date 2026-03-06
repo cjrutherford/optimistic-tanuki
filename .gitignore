@@ -61,4 +61,10 @@ storybook-static
 frontend-design
 .opencode
 .secrets
+k8s/base/secrets.yaml
+k8s/secrets/secrets.yaml
 tf/.terraform
+tf/*.tfstate
+tf/*.tfstate.*
+tf/tfplan
+tmp/

@@ -58,6 +58,14 @@ spec:
               port: 3009
             initialDelaySeconds: 10
             periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /usr/src/assets/config.yaml
+              subPath: config.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: prompt-proxy-config
       restartPolicy: Always
 ---
 apiVersion: v1
