@@ -18,3 +18,27 @@ output "argo_namespace" {
   description = "Namespace where ArgoCD is installed"
   value       = var.argo_namespace
 }
+
+output "app_namespace" {
+  description = "Namespace where the application is deployed"
+  value       = var.app_namespace
+}
+
+output "postgres_service" {
+  description = "PostgreSQL service endpoint"
+  value       = "postgres.${var.app_namespace}.svc.cluster.local:5432"
+}
+
+output "redis_service" {
+  description = "Redis service endpoint"
+  value       = "redis.${var.app_namespace}.svc.cluster.local:6379"
+}
+
+output "seaweedfs_service" {
+  description = "SeaweedFS service endpoints"
+  value = {
+    master = "seaweedfs.${var.app_namespace}.svc.cluster.local:9333"
+    volume = "seaweedfs.${var.app_namespace}.svc.cluster.local:8333"
+    s3     = "seaweedfs.${var.app_namespace}.svc.cluster.local:8888"
+  }
+}

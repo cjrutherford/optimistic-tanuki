@@ -4,11 +4,6 @@ kind: Kustomization
 namespace: optimistic-tanuki
 
 resources:
-  - namespace.yaml
-  - postgres.yaml
-  - redis.yaml
-  - seaweedfs.yaml
-  - secrets.yaml
   - gateway.yaml
   - services/authentication.yaml
   - services/profile.yaml

@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 TF_DIR="$PROJECT_DIR/tf"
-NAMESPACE="${NAMESPACE:-optimistic-tanuki}"
+NAMESPACE="${NAMESPACE:-optimistic-tanuki-staging}"
 DEPLOY_TARGET="${DEPLOY_TARGET:-k8s}"
 RUN_DB_SETUP="${RUN_DB_SETUP:-true}"
 RUN_SEED="${RUN_SEED:-true}"
@@ -17,9 +17,9 @@ WAIT_TIMEOUT="${WAIT_TIMEOUT:-300s}"
 HELM_IMPORT_EXISTING="${HELM_IMPORT_EXISTING:-true}"
 ADOPT_EXISTING_INGRESS_CLASS="${ADOPT_EXISTING_INGRESS_CLASS:-true}"
 BOOTSTRAP_APPLY_SURFACE="${BOOTSTRAP_APPLY_SURFACE:-true}"
-ARGO_ENV="${ARGO_ENV:-production}"
+ARGO_ENV="${ARGO_ENV:-staging}"
 ARGO_TARGET_REVISION="${ARGO_TARGET_REVISION:-main}"
-INGRESS_SERVICE_TYPE="${INGRESS_SERVICE_TYPE:-LoadBalancer}"
+INGRESS_SERVICE_TYPE="${INGRESS_SERVICE_TYPE:-NodePort}"
 
 KUBECTL_CMD="kubectl"
 if command -v microk8s >/dev/null 2>&1; then
@@ -88,7 +88,7 @@ wait_for_argocd_application_sync() {
 }
 
 echo "=========================================="
-echo "Production Deployment Pipeline"
+echo "Staging Deployment Pipeline"
 echo "=========================================="
 
 if [ "$SETUP_MICROK8S" = "true" ]; then
@@ -159,7 +159,7 @@ echo ""
 echo "Step 6: Applying Terraform configuration..."
 if [ -f "$SCRIPT_DIR/apply-terraform.sh" ]; then
     chmod +x "$SCRIPT_DIR/apply-terraform.sh"
-    APP_NAMESPACE="optimistic-tanuki" INGRESS_SERVICE_TYPE="LoadBalancer" HELM_IMPORT_EXISTING="$HELM_IMPORT_EXISTING" ADOPT_EXISTING_INGRESS_CLASS="$ADOPT_EXISTING_INGRESS_CLASS" "$SCRIPT_DIR/apply-terraform.sh"
+    APP_NAMESPACE="$NAMESPACE" INGRESS_SERVICE_TYPE="$INGRESS_SERVICE_TYPE" HELM_IMPORT_EXISTING="$HELM_IMPORT_EXISTING" ADOPT_EXISTING_INGRESS_CLASS="$ADOPT_EXISTING_INGRESS_CLASS" "$SCRIPT_DIR/apply-terraform.sh"
 else
     cd "$TF_DIR"
     echo "Initializing Terraform..."

@@ -29,6 +29,26 @@ spec:
               value: 'production'
             - name: LISTEN_PORT
               value: '3000'
+            - name: AUTH_SERVICE_URL
+              value: 'http://authentication:3001'
+            - name: BLOGGING_SERVICE_URL
+              value: 'http://blogging:3011'
+            - name: SOCIAL_SERVICE_URL
+              value: 'http://social:3003'
+            - name: PROFILE_SERVICE_URL
+              value: 'http://profile:3002'
+            - name: ASSETS_SERVICE_URL
+              value: 'http://assets:3005'
+            - name: CHAT_COLLECTOR_SERVICE_URL
+              value: 'http://chat-collector:3007'
+            - name: PERMISSIONS_SERVICE_URL
+              value: 'http://permissions:3012'
+            - name: PROJECT_PLANNING_SERVICE_URL
+              value: 'http://project-planning:3006'
+            - name: PROMPT_PROXY_SERVICE_URL
+              value: 'http://prompt-proxy:3009'
+            - name: TELOS_DOCS_SERVICE_URL
+              value: 'http://telos-docs-service:3008'
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
