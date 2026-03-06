@@ -10,6 +10,18 @@ Welcome to the Optimistic Tanuki documentation! This guide will help you navigat
 
 - [MVP Overview](./getting-started/mvp-overview.md) - Minimum Viable Product plan and roadmap
 
+### 🛠️ DevOps & Infrastructure
+
+Infrastructure and deployment documentation:
+
+- **[DevOps README](./devops/README.md)** - DevOps documentation index
+- [Architecture Overview](./devops/architecture.md) - Infrastructure architecture
+- [Kubernetes Deployment](./devops/k8s.md) - K8s deployment guides
+- [Service Ports Reference](./devops/ports.md) - Port mappings for all services
+- [Gateway Configuration](./devops/gateway.md) - Gateway service configuration
+- [Docker Compose](./devops/docker-compose.md) - Local development
+- [ArgoCD](./devops/argocd.md) - GitOps deployment with ArgoCD
+
 ### 💻 Development
 
 - [Debugging Guide](./development/debugging.md) - Docker-based development with debugging and hot-reload

@@ -16,6 +16,9 @@ const browserDistFolder = resolve(serverDistFolder, '../browser');
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
+const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
+const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+
 /**
  * Example Express Rest API endpoints can be defined here.
  * Uncomment and define endpoints as necessary.
@@ -42,7 +45,7 @@ app.use(
 app.use(
   '/socket.io',
   createProxyMiddleware({
-    target: 'http://gateway:3300',
+    target: gatewayWsUrl,
     ws: true,
     changeOrigin: true,
   })
@@ -50,7 +53,7 @@ app.use(
 app.use(
   '/chat',
   createProxyMiddleware({
-    target: 'http://gateway:3300',
+    target: gatewayWsUrl,
     ws: true,
     changeOrigin: true,
   })
@@ -59,7 +62,7 @@ app.use(
 app.use(
   '/api',
   createProxyMiddleware({
-    target: 'http://gateway:3000/api',
+    target: `${gatewayUrl}/api`,
     ws: true,
     changeOrigin: true,
   })
@@ -72,7 +75,7 @@ app.use('/**', (req, res, next) => {
     .handle(req, {
       document: (html: string) => {
         const envScript = `<script>window['env'] = { SOCKET_URL: '${
-          process.env['SOCKET_URL'] || 'http://localhost:3300'
+          process.env['SOCKET_URL'] || gatewayWsUrl
         }' };</script>`;
         const finalDoc = html.replace('</body>', `${envScript}</body>`);
         return finalDoc;

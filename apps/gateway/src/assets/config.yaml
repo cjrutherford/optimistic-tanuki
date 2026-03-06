@@ -76,6 +76,7 @@ services:
     host: ot_videos
   wellness:
     name: wellness
+    transport: TCP
     host: ot_wellness
     port: 3016
 auth:
