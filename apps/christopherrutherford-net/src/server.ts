@@ -15,6 +15,8 @@ const browserDistFolder = resolve(serverDistFolder, '../browser');
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
+const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
+
 /**
  * Example Express Rest API endpoints can be defined here.
  * Uncomment and define endpoints as necessary.
@@ -46,7 +48,7 @@ app.use((req, res, next) => {
 app.use(
   '/api',
   createProxyMiddleware({
-    target: 'http://gateway:3000/api',
+    target: `${gatewayUrl}/api`,
     ws: true,
     changeOrigin: true,
   })

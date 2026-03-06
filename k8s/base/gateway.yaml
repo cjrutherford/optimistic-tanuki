@@ -29,26 +29,62 @@ spec:
               value: 'production'
             - name: LISTEN_PORT
               value: '3000'
-            - name: AUTH_SERVICE_URL
-              value: 'http://authentication:3001'
-            - name: BLOGGING_SERVICE_URL
-              value: 'http://blogging:3011'
-            - name: SOCIAL_SERVICE_URL
-              value: 'http://social:3003'
-            - name: PROFILE_SERVICE_URL
-              value: 'http://profile:3002'
-            - name: ASSETS_SERVICE_URL
-              value: 'http://assets:3005'
-            - name: CHAT_COLLECTOR_SERVICE_URL
-              value: 'http://chat-collector:3007'
-            - name: PERMISSIONS_SERVICE_URL
-              value: 'http://permissions:3012'
-            - name: PROJECT_PLANNING_SERVICE_URL
-              value: 'http://project-planning:3006'
-            - name: PROMPT_PROXY_SERVICE_URL
-              value: 'http://prompt-proxy:3009'
-            - name: TELOS_DOCS_SERVICE_URL
-              value: 'http://telos-docs-service:3008'
+            - name: AUTHENTICATION_HOST
+              value: 'authentication'
+            - name: AUTHENTICATION_PORT
+              value: '3001'
+            - name: BLOGGING_HOST
+              value: 'blogging'
+            - name: BLOGGING_PORT
+              value: '3011'
+            - name: SOCIAL_HOST
+              value: 'social'
+            - name: SOCIAL_PORT
+              value: '3003'
+            - name: PROFILE_HOST
+              value: 'profile'
+            - name: PROFILE_PORT
+              value: '3002'
+            - name: ASSET_HOST
+              value: 'asset'
+            - name: ASSET_PORT
+              value: '3005'
+            - name: CHAT_COLLECTOR_HOST
+              value: 'chat_collector'
+            - name: CHAT_COLLECTOR_PORT
+              value: '3007'
+            - name: PERMISSIONS_HOST
+              value: 'permissions'
+            - name: PERMISSIONS_PORT
+              value: '3012'
+            - name: PROJECT_PLANNING_HOST
+              value: 'project_planning'
+            - name: PROJECT_PLANNING_PORT
+              value: '3006'
+            - name: TELOS_DOCS_SERVICE_HOST
+              value: 'telos_docs_service'
+            - name: TELOS_DOCS_SERVICE_PORT
+              value: '3008'
+            - name: AI_ORCHESTRATION_HOST
+              value: 'ai_orchestration'
+            - name: AI_ORCHESTRATION_PORT
+              value: '3010'
+            - name: APP_CONFIGURATOR_HOST
+              value: 'app_configurator'
+            - name: APP_CONFIGURATOR_PORT
+              value: '3014'
+            - name: STORE_HOST
+              value: 'store'
+            - name: STORE_PORT
+              value: '3013'
+            - name: FORUM_HOST
+              value: 'forum'
+            - name: FORUM_PORT
+              value: '3015'
+            - name: WELLNESS_HOST
+              value: 'wellness'
+            - name: WELLNESS_PORT
+              value: '3016'
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
