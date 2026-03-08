@@ -55,6 +55,10 @@ resource "helm_release" "argocd" {
       value = "--insecure"
     },
     {
+      name  = "server.config.url"
+      value = "http://${var.domain}"
+    },
+    {
       name  = "server.ingress.enabled"
       value = "true"
     },
@@ -417,16 +421,14 @@ resource "kubernetes_deployment" "seaweedfs" {
             }
           }
           liveness_probe {
-            http_get {
-              path = "/health"
+            tcp_socket {
               port = 9333
             }
             initial_delay_seconds = 30
             period_seconds        = 10
           }
           readiness_probe {
-            http_get {
-              path = "/health"
+            tcp_socket {
               port = 9333
             }
             initial_delay_seconds = 10

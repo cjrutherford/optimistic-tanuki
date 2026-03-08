@@ -25,6 +25,9 @@ load_secrets() {
     S3_ACCESS_KEY=$(grep "^S3_ACCESS_KEY=" "$SECRETS_FILE" | cut -d'=' -f2-)
     S3_SECRET_KEY=$(grep "^S3_SECRET_KEY=" "$SECRETS_FILE" | cut -d'=' -f2-)
     REDIS_PASSWORD=$(grep "^REDIS_PASSWORD=" "$SECRETS_FILE" | cut -d'=' -f2-)
+    TAILSCALE_OAUTH_CLIENT_ID=$(grep "^TAILSCALE_OAUTH_CLIENT_ID=" "$SECRETS_FILE" | cut -d'=' -f2-)
+    TAILSCALE_OAUTH_CLIENT_SECRET=$(grep "^TAILSCALE_OAUTH_CLIENT_SECRET=" "$SECRETS_FILE" | cut -d'=' -f2-)
+    TAILSCALE_FQDN=$(grep "^TAILSCALE_FQDN=" "$SECRETS_FILE" | cut -d'=' -f2-)
 
     export TF_VAR_postgres_user="${POSTGRES_USER:-postgres}"
     export TF_VAR_postgres_password="${POSTGRES_PASSWORD:-}"
@@ -33,6 +36,9 @@ load_secrets() {
     export TF_VAR_s3_access_key="${S3_ACCESS_KEY:-}"
     export TF_VAR_s3_secret_key="${S3_SECRET_KEY:-}"
     export TF_VAR_redis_password="${REDIS_PASSWORD:-}"
+    export TF_VAR_tailscale_oauth_client_id="${TAILSCALE_OAUTH_CLIENT_ID:-}"
+    export TF_VAR_tailscale_oauth_client_secret="${TAILSCALE_OAUTH_CLIENT_SECRET:-}"
+    export TF_VAR_tailscale_fqdn="${TAILSCALE_FQDN:-}"
 
     echo "Loaded secrets from $SECRETS_FILE"
 }
@@ -217,21 +223,37 @@ TF_AUTO_APPROVE="${TF_AUTO_APPROVE:-true}"
 TF_SKIP_PLAN="${TF_SKIP_PLAN:-false}"
 HELM_IMPORT_EXISTING="${HELM_IMPORT_EXISTING:-true}"
 ADOPT_EXISTING_INGRESS_CLASS="${ADOPT_EXISTING_INGRESS_CLASS:-true}"
+TAILSCALE_OAUTH_CLIENT_ID="${TAILSCALE_OAUTH_CLIENT_ID:-$TF_VAR_tailscale_oauth_client_id}"
+TAILSCALE_OAUTH_CLIENT_SECRET="${TAILSCALE_OAUTH_CLIENT_SECRET:-$TF_VAR_tailscale_oauth_client_secret}"
+TAILSCALE_FQDN="${TAILSCALE_FQDN:-$TF_VAR_tailscale_fqdn}"
+TAILSCALE_OPERATOR_VERSION="${TAILSCALE_OPERATOR_VERSION:-1.94.2}"
 
 export TF_VAR_argo_admin_password="$ARGO_PASSWORD"
 export TF_VAR_domain="$DOMAIN"
 export TF_VAR_cluster_name="$CLUSTER_NAME"
 export TF_VAR_ingress_service_type="$INGRESS_SERVICE_TYPE"
 export TF_VAR_app_namespace="$APP_NAMESPACE"
+export TF_VAR_tailscale_oauth_client_id="${TAILSCALE_OAUTH_CLIENT_ID:-}"
+export TF_VAR_tailscale_oauth_client_secret="${TAILSCALE_OAUTH_CLIENT_SECRET:-}"
+export TF_VAR_tailscale_fqdn="${TAILSCALE_FQDN:-}"
+export TF_VAR_tailscale_operator_version="$TAILSCALE_OPERATOR_VERSION"
 
 echo "Initializing Terraform..."
 terraform init -input=false
+
+HELM_CMD="$(get_helm_cmd || true)"
+if [ -n "$HELM_CMD" ]; then
+    echo "Ensuring tailscale helm repo is available..."
+    $HELM_CMD repo add tailscale https://pkgs.tailscale.com/helmcharts 2>/dev/null || true
+    $HELM_CMD repo update 2>/dev/null || true
+fi
 
 KUBECTL_CMD="$(get_kubectl_cmd || true)"
 if [ -n "$KUBECTL_CMD" ]; then
     import_namespace_if_present "kubernetes_namespace_v1.argo_ns" "${ARGO_NAMESPACE:-argocd}" "$KUBECTL_CMD"
     import_namespace_if_present "kubernetes_namespace_v1.ingress_ns" "${INGRESS_NAMESPACE:-ingress}" "$KUBECTL_CMD"
     import_namespace_if_present "kubernetes_namespace_v1.app_ns" "${APP_NAMESPACE:-optimistic-tanuki}" "$KUBECTL_CMD"
+    import_namespace_if_present "kubernetes_namespace_v1.tailscale_ns" "tailscale" "$KUBECTL_CMD"
 
     if [ "$ADOPT_EXISTING_INGRESS_CLASS" = "true" ]; then
         adopt_ingress_class_for_helm "$KUBECTL_CMD" "${INGRESS_CLASS_NAME:-nginx}" "${INGRESS_RELEASE_NAME:-ingress-nginx}" "${INGRESS_NAMESPACE:-ingress}"
@@ -247,6 +269,7 @@ if [ "$HELM_IMPORT_EXISTING" = "true" ]; then
     fi
     import_helm_release_if_present "helm_release.argocd" "${ARGO_NAMESPACE:-argocd}" "${ARGO_RELEASE_NAME:-argocd}" "$HELM_CMD"
     import_helm_release_if_present "helm_release.ingress_nginx" "${INGRESS_NAMESPACE:-ingress}" "${INGRESS_RELEASE_NAME:-ingress-nginx}" "$HELM_CMD"
+    import_helm_release_if_present "helm_release.tailscale_operator[0]" "tailscale" "tailscale-operator" "$HELM_CMD"
 fi
 
 import_pvc_if_present() {
@@ -327,14 +350,22 @@ if [ "$TF_SKIP_PLAN" = "true" ]; then
             -var="domain=$DOMAIN" \
             -var="cluster_name=$CLUSTER_NAME" \
             -var="ingress_service_type=$INGRESS_SERVICE_TYPE" \
-            -var="app_namespace=$APP_NAMESPACE"
+            -var="app_namespace=$APP_NAMESPACE" \
+            -var="tailscale_oauth_client_id=$TAILSCALE_OAUTH_CLIENT_ID" \
+            -var="tailscale_oauth_client_secret=$TAILSCALE_OAUTH_CLIENT_SECRET" \
+            -var="tailscale_fqdn=$TAILSCALE_FQDN" \
+            -var="tailscale_operator_version=$TAILSCALE_OPERATOR_VERSION"
     else
         terraform apply -input=false -lock-timeout=5m \
             -var="argo_admin_password=$ARGO_PASSWORD" \
             -var="domain=$DOMAIN" \
             -var="cluster_name=$CLUSTER_NAME" \
             -var="ingress_service_type=$INGRESS_SERVICE_TYPE" \
-            -var="app_namespace=$APP_NAMESPACE"
+            -var="app_namespace=$APP_NAMESPACE" \
+            -var="tailscale_oauth_client_id=$TAILSCALE_OAUTH_CLIENT_ID" \
+            -var="tailscale_oauth_client_secret=$TAILSCALE_OAUTH_CLIENT_SECRET" \
+            -var="tailscale_fqdn=$TAILSCALE_FQDN" \
+            -var="tailscale_operator_version=$TAILSCALE_OPERATOR_VERSION"
     fi
 else
     echo "Planning Terraform deployment..."
@@ -343,7 +374,11 @@ else
         -var="domain=$DOMAIN" \
         -var="cluster_name=$CLUSTER_NAME" \
         -var="ingress_service_type=$INGRESS_SERVICE_TYPE" \
-        -var="app_namespace=$APP_NAMESPACE"
+        -var="app_namespace=$APP_NAMESPACE" \
+        -var="tailscale_oauth_client_id=$TAILSCALE_OAUTH_CLIENT_ID" \
+        -var="tailscale_oauth_client_secret=$TAILSCALE_OAUTH_CLIENT_SECRET" \
+        -var="tailscale_fqdn=$TAILSCALE_FQDN" \
+        -var="tailscale_operator_version=$TAILSCALE_OPERATOR_VERSION"
 
     echo "Applying Terraform configuration..."
     if [ "$TF_AUTO_APPROVE" = "true" ]; then

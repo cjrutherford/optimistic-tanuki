@@ -29,3 +29,4 @@ resources:
   - clients/configurable-client.yaml
   - clients/d6.yaml
   - ingress.yaml
+  - tailscale-ingress.yaml

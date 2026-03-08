@@ -14,6 +14,7 @@ PRODUCTION_NAMESPACE="optimistic-tanuki"
 STAGING_NAMESPACE="optimistic-tanuki-staging"
 ARGO_NAMESPACE="argocd"
 INGRESS_NAMESPACE="ingress"
+TAILSCALE_NAMESPACE="tailscale"
 
 KUBECTL_CMD="kubectl"
 if command -v microk8s >/dev/null 2>&1; then
@@ -198,11 +199,42 @@ if [ "$KEEP_CLUSTER_RESOURCES" = "false" ]; then
     echo ""
     echo "Step 3: Cleaning up remaining Kubernetes resources..."
 
+    echo "Deleting all ingresses in namespace $APP_NAMESPACE..."
+    $KUBECTL_CMD delete ingress --all -n "$APP_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+
+    echo "Deleting seaweedfs deployment first (required for PVC cleanup)..."
+    $KUBECTL_CMD delete deployment seaweedfs -n "$APP_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+    $KUBECTL_CMD delete pod seaweedfs -n "$APP_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+    
+    echo "Waiting for seaweedfs pods to terminate..."
+    $KUBECTL_CMD wait --for=delete pod -l app=seaweedfs -n "$APP_NAMESPACE" --timeout=60s 2>/dev/null || true
+    
+    echo "Force deleting seaweedfs PVC if stuck..."
+    $KUBECTL_CMD delete pvc seaweedfs-pvc -n "$APP_NAMESPACE" --ignore-not-found=true --wait=false 2>/dev/null || true
+    
+    $KUBECTL_CMD patch pvc seaweedfs-pvc -n "$APP_NAMESPACE" -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+    $KUBECTL_CMD delete pvc seaweedfs-pvc -n "$APP_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+
     echo "Deleting all resources in namespace $APP_NAMESPACE..."
     $KUBECTL_CMD delete all --all -n "$APP_NAMESPACE" --ignore-not-found=true --wait=true 2>/dev/null || true
 
+    echo "Deleting remaining configmaps, secrets, and persistentvolumeclaims in $APP_NAMESPACE..."
+    $KUBECTL_CMD delete configmap --all -n "$APP_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+    $KUBECTL_CMD delete secret --all -n "$APP_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+    $KUBECTL_CMD delete pvc --all -n "$APP_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+
     echo "Deleting namespace $APP_NAMESPACE..."
     $KUBECTL_CMD delete namespace "$APP_NAMESPACE" --ignore-not-found=true --wait=true 2>/dev/null || true
+
+    echo "Cleaning up tailscale namespace..."
+    $KUBECTL_CMD delete helmrelease tailscale-operator -n "$TAILSCALE_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+    $KUBECTL_CMD delete all --all -n "$TAILSCALE_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+    $KUBECTL_CMD delete namespace "$TAILSCALE_NAMESPACE" --ignore-not-found=true --wait=true 2>/dev/null || true
+
+    echo "Cleaning up ingress namespace..."
+    $KUBECTL_CMD delete helmrelease ingress-nginx -n "$INGRESS_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+    $KUBECTL_CMD delete all --all -n "$INGRESS_NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+    $KUBECTL_CMD delete namespace "$INGRESS_NAMESPACE" --ignore-not-found=true --wait=true 2>/dev/null || true
 
     if [ "$TARGET_ENV" = "staging" ]; then
         echo "Checking if production namespace still exists..."

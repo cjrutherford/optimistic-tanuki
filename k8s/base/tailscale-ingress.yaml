@@ -1,0 +1,208 @@
+# Tailscale Ingress Configuration
+#
+# Each Ingress creates a separate Tailscale proxy device with its own DNS name.
+# DNS format: <hostname>.<your-tailnet-name>.ts.net
+#
+# Examples with default Tailnet "tail-scale":
+#   - optimistic-tanuki.tail-scale.ts.net
+#   - client-interface.tail-scale.ts.net
+#   - forgeofwill.tail-scale.ts.net
+#
+# To customize the base domain, edit the "host" and "tailscale.com/hostname"
+# values below to match your Tailscale account's DNS configuration.
+#
+# Access URLs:
+#   - Gateway API:  https://optimistic-tanuki.tail-scale.ts.net
+#   - Client UI:    https://client-interface.tail-scale.ts.net
+#   - Forgeofwill:  https://forgeofwill.tail-scale.ts.net
+#   - etc.
+#
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: optimistic-tanuki-ingress-tailscale
+  namespace: optimistic-tanuki
+  annotations:
+    tailscale.com/hostname: optimistic-tanuki
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: optimistic-tanuki.tail-scale.ts.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: client-interface-ingress-tailscale
+  namespace: optimistic-tanuki
+  annotations:
+    tailscale.com/hostname: client-interface
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: client-interface.tail-scale.ts.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: client-interface
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forgeofwill-ingress-tailscale
+  namespace: optimistic-tanuki
+  annotations:
+    tailscale.com/hostname: forgeofwill
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: forgeofwill.tail-scale.ts.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: forgeofwill
+                port:
+                  number: 8081
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: digital-homestead-ingress-tailscale
+  namespace: optimistic-tanuki
+  annotations:
+    tailscale.com/hostname: digital-homestead
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: digital-homestead.tail-scale.ts.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: digital-homestead
+                port:
+                  number: 8082
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: christopherrutherford-net-ingress-tailscale
+  namespace: optimistic-tanuki
+  annotations:
+    tailscale.com/hostname: crdn
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: crdn.tail-scale.ts.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: christopherrutherford-net
+                port:
+                  number: 8083
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: owner-console-ingress-tailscale
+  namespace: optimistic-tanuki
+  annotations:
+    tailscale.com/hostname: owner-console
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: owner-console.tail-scale.ts.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: owner-console
+                port:
+                  number: 8084
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: store-client-ingress-tailscale
+  namespace: optimistic-tanuki
+  annotations:
+    tailscale.com/hostname: store-client
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: store-client.tail-scale.ts.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: store-client
+                port:
+                  number: 8085
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: d6-ingress-tailscale
+  namespace: optimistic-tanuki
+  annotations:
+    tailscale.com/hostname: d6
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: d6.tail-scale.ts.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: d6
+                port:
+                  number: 8086
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: configurable-client-ingress-tailscale
+  namespace: optimistic-tanuki
+  annotations:
+    tailscale.com/hostname: configurable-client
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: configurable-client.tail-scale.ts.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: configurable-client
+                port:
+                  number: 8090

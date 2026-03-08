@@ -42,21 +42,36 @@ run_db_setup_in_pod() {
 
 run_migrations_in_pod() {
     local app_name=$1
-    echo "Running migrations for $app_name..."
-    
-    local pod_name=$($KUBECTL_CMD get pods -n "$NAMESPACE" -l app="$app_name" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
-    
-    if [ -z "$pod_name" ]; then
-        echo "Warning: No pod found for $app_name, skipping migrations"
-        return
-    fi
+    echo "Skipping in-pod migrations - apps don't have TypeScript source for migrations"
+    echo "Migrations should be run from host using setup-and-migrate.sh or a migration job"
+    return 0
+}
 
-    echo "Executing migrations in pod: $pod_name"
-    $KUBECTL_CMD exec -n "$NAMESPACE" "$pod_name" -- \
-        sh -c "cd /usr/src/app && npm run db:migrate" 2>/dev/null || \
-    $KUBECTL_CMD exec -n "$NAMESPACE" "$pod_name" -- \
-        node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d ./src/app/staticDatabase.ts migration:run 2>/dev/null || \
+run_migrations_from_host() {
+    local app_name=$1
+    echo "Running migrations for $app_name from host..."
+    
+    export POSTGRES_USER="${POSTGRES_USER:-postgres}"
+    export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
+    export NODE_ENV=development
+    
+    local db_name="ot_${app_name//-/_}"
+    export POSTGRES_DB="$db_name"
+    
+    echo "Database: $db_name"
+    
+    cd "$PROJECT_DIR/apps/$app_name"
+    export TS_NODE_PROJECT=./tsconfig.app.json
+    
+    if [ -f "./src/app/staticDatabase.ts" ]; then
+        node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d ./src/app/staticDatabase.ts migration:run 2>&1 || \
         echo "Warning: Could not run migrations for $app_name"
+    else
+        echo "Warning: No staticDatabase.ts found for $app_name, skipping"
+    fi
+    
+    cd "$PROJECT_DIR"
+    return 0
 }
 
 run_db_setup_docker() {
@@ -132,9 +147,32 @@ main() {
             fi
 
             if [ "$RUN_MIGRATIONS" = "true" ]; then
+                echo "Running migrations from host against K8s database..."
+                
+                echo "Setting up port-forward for postgres..."
+                local pf_pid=""
+                $KUBECTL_CMD port-forward -n "$NAMESPACE" svc/postgres 5432:5432 >/dev/null 2>&1 &
+                pf_pid=$!
+                sleep 3
+                
+                export POSTGRES_HOST="127.0.0.1"
+                export POSTGRES_USER="$POSTGRES_USER"
+                export POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
+                
+                local failed_migrations=0
                 for app in authentication profile social assets project-planning chat-collector telos-docs-service blogging permissions store app-configurator forum wellness; do
-                    run_migrations_in_pod $app
+                    if ! run_migrations_from_host $app; then
+                        echo "ERROR: Migrations failed for $app"
+                        failed_migrations=$((failed_migrations + 1))
+                    fi
                 done
+                
+                kill $pf_pid 2>/dev/null || true
+                
+                if [ $failed_migrations -gt 0 ]; then
+                    echo ""
+                    echo "WARNING: $failed_migrations app(s) failed migrations. Check logs above."
+                fi
             fi
             ;;
         2)
