@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - mvp-polish
   workflow_dispatch:
     inputs:
       environment:
@@ -89,20 +90,28 @@ jobs:
         run: |
           argocd login argocd.${{ secrets.DOMAIN }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
 
+      - name: Apply ArgoCD Application for staging
+        run: |
+          sed -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
+              -e "s|\${ARGO_TARGET_REVISION:-main}|main|g" \
+              -e "s|k8s/overlays/\${ARGO_ENV:-production}|k8s/overlays/staging|g" \
+              -e "s|optimistic-tanuki|optimistic-tanuki-staging|g" \
+              k8s/argo-app/application.yaml | kubectl apply -f -
+
       - name: Sync staging application
         run: |
-          argocd app sync optimistic-tanuki --server argocd.${{ secrets.DOMAIN }} --insecure || \
-          argocd app create optimistic-tanuki \
+          argocd app sync optimistic-tanuki-staging --server argocd.${{ secrets.DOMAIN }} --insecure || \
+          argocd app create optimistic-tanuki-staging \
             --repo https://github.com/cjrutherford/optimistic-tanuki.git \
             --path k8s/overlays/staging \
             --dest-server https://kubernetes.default.svc \
-            --dest-namespace optimistic-tanuki \
+            --dest-namespace optimistic-tanuki-staging \
             --server argocd.${{ secrets.DOMAIN }} \
             --insecure
 
       - name: Wait for deployment
         run: |
-          argocd app wait optimistic-tanuki --server argocd.${{ secrets.DOMAIN }} --insecure
+          argocd app wait optimistic-tanuki-staging --server argocd.${{ secrets.DOMAIN }} --insecure
 
       - name: Run smoke tests
         run: |
@@ -137,6 +146,13 @@ jobs:
       - name: Login to ArgoCD
         run: |
           argocd login argocd.${{ secrets.DOMAIN }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
+
+      - name: Apply ArgoCD Application for production
+        run: |
+          sed -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
+              -e "s|\${ARGO_TARGET_REVISION:-main}|main|g" \
+              -e "s|k8s/overlays/\${ARGO_ENV:-production}|k8s/overlays/production|g" \
+              k8s/argo-app/application.yaml | kubectl apply -f -
 
       - name: Sync production application
         run: |

@@ -8,9 +8,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: ${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}
-    targetRevision: ${ARGO_TARGET_REVISION:-main}
-    path: k8s/overlays/${ARGO_ENV:-production}
+    repoURL: https://github.com/cjrutherford/optimistic-tanuki.git
+    targetRevision: mvp-polish
+    path: k8s/overlays/production
   destination:
     server: https://kubernetes.default.svc
     namespace: optimistic-tanuki

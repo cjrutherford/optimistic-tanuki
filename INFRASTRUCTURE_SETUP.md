@@ -19,6 +19,7 @@ This guide covers setting up the complete CI/CD pipeline with GitHub Actions, Te
 5. [Configure GitHub Secrets](#5-configure-github-secrets)
 6. [Deploy Application](#6-deploy-application)
 7. [Verify Deployment](#7-verify-deployment)
+8. [(Optional) Configure Tailscale Ingress](#8-optional-configure-tailscale-ingress)
 
 ---
 
@@ -72,16 +73,19 @@ nano .secrets
 
 ### Required Secrets
 
-| Variable            | Description                 | Example                    |
-| ------------------- | --------------------------- | -------------------------- |
-| `POSTGRES_USER`     | Database username           | `postgres`                 |
-| `POSTGRES_PASSWORD` | Database password (change!) | `your-secure-password`     |
-| `JWT_SECRET`        | JWT signing secret (Base64) | `c3VwZXJzZWNyZXRzdHJpbmc=` |
-| `S3_ACCESS_KEY`     | SeaweedFS access key        | `seaweedfs`                |
-| `S3_SECRET_KEY`     | SeaweedFS secret key        | `your-secure-key`          |
-| `REDIS_PASSWORD`    | Redis password (optional)   | `redis-password`           |
-| `OLLAMA_API_URL`    | Ollama API URL              | `http://ollama`            |
-| `OLLAMA_API_PORT`   | Ollama API port             | `11434`                    |
+| Variable                        | Description                 | Example                    |
+| ------------------------------- | --------------------------- | -------------------------- |
+| `POSTGRES_USER`                 | Database username           | `postgres`                 |
+| `POSTGRES_PASSWORD`             | Database password (change!) | `your-secure-password`     |
+| `JWT_SECRET`                    | JWT signing secret (Base64) | `c3VwZXJzZWNyZXRzdHJpbmc=` |
+| `S3_ACCESS_KEY`                 | SeaweedFS access key        | `seaweedfs`                |
+| `S3_SECRET_KEY`                 | SeaweedFS secret key        | `your-secure-key`          |
+| `REDIS_PASSWORD`                | Redis password (optional)   | `redis-password`           |
+| `OLLAMA_API_URL`                | Ollama API URL              | `http://ollama`            |
+| `OLLAMA_API_PORT`               | Ollama API port             | `11434`                    |
+| `TAILSCALE_OAUTH_CLIENT_ID`     | Tailscale OAuth client ID   | `your-client-id`           |
+| `TAILSCALE_OAUTH_CLIENT_SECRET` | Tailscale OAuth secret      | `your-client-secret`       |
+| `TAILSCALE_FQDN`                | Tailscale proxy FQDN        | `myapp.tail-scale.ts.net`  |
 
 ### Generate JWT Secret
 
@@ -282,6 +286,63 @@ microk8s kubectl logs -n optimistic-tanuki -l app=assets
 
 ---
 
+## 8. (Optional) Configure Tailscale Ingress
+
+Tailscale can be used alongside nginx ingress to provide secure access to your services.
+
+### Prerequisites
+
+1. A Tailscale account with an OAuth client
+2. Tailscale operator installed in your cluster
+
+### Generate OAuth Credentials
+
+1. Go to [https://login.tailscale.com/admin/settings/oauth](https://login.tailscale.com/admin/settings/oauth)
+2. Click "Generate OAuth client"
+3. Set capabilities:
+   - Devices: "Read devices"
+   - ACL: Read the operator's ACL
+4. Copy the Client ID and Client Secret
+
+### Configure Secrets
+
+Add the following to your `.secrets` file:
+
+```bash
+TAILSCALE_OAUTH_CLIENT_ID=your-client-id
+TAILSCALE_OAUTH_CLIENT_SECRET=your-client-secret
+TAILSCALE_FQDN=your-app.tail-scale.ts.net
+```
+
+### Deploy Tailscale Operator
+
+```bash
+# Generate secrets
+./scripts/generate-secrets.sh
+
+# Apply Terraform (includes Tailscale operator)
+./scripts/apply-terraform.sh
+```
+
+### Verify Tailscale Ingress
+
+```bash
+# Check Tailscale operator pods
+microk8s kubectl get pods -n tailscale
+
+# Check Tailscale ingress
+microk8s kubectl get ingress -n optimistic-tanuki
+```
+
+### Access via Tailscale
+
+Once configured, services will be accessible at:
+
+- Gateway: `https://optimistic-tanuki.tail-scale.ts.net`
+- Client: `https://optimistic-tanuki-client.tail-scale.ts.net`
+
+---
+
 ## Troubleshooting
 
 ### Pods Not Starting
@@ -323,26 +384,29 @@ curl http://seaweedfs:8888
 │                     GitHub Actions                          │
 │  (Build → Push Images → Trigger ArgoCD Sync)             │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      ArgoCD                                │
 │  (GitOps Controller - syncs from k8s/overlays/)           │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                     MicroK8s                               │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐  │
 │  │  ingress    │ │  ArgoCD     │ │  optimistic-tanuki  │  │
 │  │  nginx      │ │  (installed)│ │  namespace          │  │
 │  └─────────────┘ └─────────────┘ └─────────────────────┘  │
+│  ┌─────────────┐ ┌─────────────────────────────────────┐  │
+│  │  tailscale  │ │                                     │  │
+│  │  operator   │ │  Services (gateway, auth, etc)      │  │
+│  └─────────────┘ └─────────────────────────────────────┘  │
 │                                                             │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐  │
-│  │ postgres │ │  redis   │ │seaweedfs │ │ services     │  │
-│  │          │ │          │ │ (S3)     │ │ (gateway,    │  │
-│  │          │ │          │ │          │ │  assets,     │  │
-│  │          │ │          │ │          │ │  auth, etc) │  │
+│  │ postgres │ │  redis   │ │seaweedfs │ │              │  │
+│  │          │ │          │ │ (S3)     │ │   clients    │  │
+│  │          │ │          │ │          │ │              │  │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```

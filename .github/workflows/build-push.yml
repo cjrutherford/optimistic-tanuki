@@ -1,9 +1,10 @@
-name: Build and Push Images
+name: Build, Push and Update Manifests
 
 on:
   push:
     branches:
       - main
+      - mvp-polish
     paths:
       - 'apps/**'
       - 'libs/**'
@@ -14,7 +15,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
   id-token: write
 
@@ -23,52 +24,62 @@ env:
   IMAGE_NAME: cjrutherford
 
 jobs:
-  determine-changes:
-    name: Determine Changed Apps
-    runs-on: ubuntu-latest
-    outputs:
-      has_changes: ${{ steps.filter.outputs.apps }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            apps:
-              - 'apps/**'
-              - 'libs/storage/**'
-              - 'libs/database/**'
-              - 'libs/models/**'
-              - 'libs/logger/**'
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-  build-backend:
-    name: Build Backend Services
-    needs: determine-changes
-    if: needs.determine-changes.outputs.has_changes != ''
+  build-and-push:
+    name: Build and Push Images
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app:
-          - authentication
-          - profile
-          - social
-          - forum
-          - chat-collector
-          - assets
-          - prompt-proxy
-          - ai-orchestrator
-          - telos-docs-service
-          - blogging
-          - permissions
-          - project-planning
-          - store
-          - app-configurator
-          - wellness
-          - gateway
+        include:
+          # Backend services
+          - app: authentication
+            type: service
+          - app: profile
+            type: service
+          - app: social
+            type: service
+          - app: forum
+            type: service
+          - app: chat-collector
+            type: service
+          - app: assets
+            type: service
+          - app: prompt-proxy
+            type: service
+          - app: ai-orchestrator
+            type: service
+          - app: telos-docs-service
+            type: service
+          - app: blogging
+            type: service
+          - app: permissions
+            type: service
+          - app: project-planning
+            type: service
+          - app: store
+            type: service
+          - app: app-configurator
+            type: service
+          - app: wellness
+            type: service
+          - app: gateway
+            type: service
+          # Client services
+          - app: client-interface
+            type: client
+          - app: forgeofwill
+            type: client
+          - app: digital-homestead
+            type: client
+          - app: christopherrutherford-net
+            type: client
+          - app: owner-console
+            type: client
+          - app: store-client
+            type: client
+          - app: configurable-client
+            type: client
+          - app: d6
+            type: client
     steps:
       - uses: actions/checkout@v4
 
@@ -88,13 +99,16 @@ jobs:
           images: ${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}
           tags: |
             type=ref,event=branch
-            type=sha
+            type=sha,prefix=sha-
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ github.ref_name }},enable=${{ github.ref != 'refs/heads/main' }}
 
       - name: Install dependencies
+        if: matrix.type == 'service'
         run: npm ci --legacy-peer-deps
 
       - name: Build application
+        if: matrix.type == 'service'
         run: npx nx build ${{ matrix.app }} --configuration=production
 
       - name: Build and push Docker image
@@ -108,113 +122,66 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-clients:
-    name: Build Client Apps
-    needs: determine-changes
-    if: needs.determine-changes.outputs.has_changes != ''
+  update-manifests:
+    name: Update K8s Manifests
+    needs: [build-and-push]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        app:
-          - client-interface
-          - forgeofwill
-          - digital-homestead
-          - christopherrutherford-net
-          - owner-console
-          - store-client
-          - configurable-client
-          - d6
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}
-          tags: |
-            type=ref,event=branch
-            type=sha
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./apps/${{ matrix.app }}/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  trigger-argocd-sync:
-    name: Trigger ArgoCD Sync
-    needs: [build-backend, build-clients]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Create deployment tag file
+      - name: Set Git config
         run: |
-          echo "Deployment triggered at $(date)"
-          echo "Git SHA: ${{ github.sha }}"
-          echo "${{ github.sha }}" > DEPLOYMENT_TAG
-          cat DEPLOYMENT_TAG
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
 
-      - name: Commit deployment tag
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'ci: Deployment trigger - ${{ github.sha }}'
-          file_pattern: DEPLOYMENT_TAG
-          push_arguments: '--force'
-
-      - name: Install ArgoCD CLI
-        if: false
+      - name: Update images with SHA tag
         run: |
-          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          chmod +x /usr/local/bin/argocd
+          SHA_TAG="${{ github.sha }}"
 
-      - name: Setup kubectl
-        if: false
-        uses: azure/k8s-set-context@v4
-        with:
-          kubeconfig: ${{ secrets.KUBECONFIG }}
+          # Update backend services
+          for app in authentication profile social forum chat-collector assets prompt-proxy ai-orchestrator telos-docs-service blogging permissions project-planning store app-configurator wellness gateway; do
+            if [ -f "k8s/base/services/$app.yaml" ]; then
+              echo "Updating $app to sha-$SHA_TAG"
+              sed -i "s|image: cjrutherford/optimistic_tanuki_$app:.*|image: cjrutherford/optimistic_tanuki_$app:sha-$SHA_TAG|" k8s/base/services/$app.yaml
+            fi
+          done
 
-      - name: Sync ArgoCD application
-        if: false
+          # Update client services
+          for app in client-interface forgeofwill digital-homestead christopherrutherford-net owner-console store-client configurable-client d6; do
+            if [ -f "k8s/base/clients/$app.yaml" ]; then
+              echo "Updating $app to sha-$SHA_TAG"
+              sed -i "s|image: cjrutherford/optimistic_tanuki_$app:.*|image: cjrutherford/optimistic_tanuki_$app:sha-$SHA_TAG|" k8s/base/clients/$app.yaml
+            fi
+          done
+
+      - name: Commit and push changes
         run: |
-          argocd login argocd.${{ secrets.DOMAIN }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }} --insecure || true
-          argocd app sync optimistic-tanuki --server argocd.${{ secrets.DOMAIN }} --insecure || true
-        continue-on-error: true
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "ci: Update container image tags to ${{ github.sha }}"
+            git push origin ${{ github.ref_name }}
+          fi
 
   notify:
     name: Notify
-    needs: [trigger-argocd-sync]
+    needs: [update-manifests]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Success
-        if: needs.trigger-argocd-sync.result == 'success'
+        if: needs.update-manifests.result == 'success'
         run: |
-          echo "✅ Build and push completed!"
-          echo "   Image tag: ${{ github.sha }}"
-          echo "   ArgoCD will sync automatically on next poll (usually 3 minutes)"
+          echo "✅ Build, push, and manifest update completed!"
+          echo "   Git SHA: ${{ github.sha }}"
+          echo "   ArgoCD will sync automatically (or manually trigger sync)"
 
       - name: Failure
         if: failure()
         run: |
-          echo "❌ Build or push failed!"
+          echo "❌ Build or manifest update failed!"
           echo "   Check GitHub Actions logs for details."

@@ -31,7 +31,7 @@ variable "argo_admin_password" {
 variable "domain" {
   description = "Domain for ingress"
   type        = string
-  default     = "localhost"
+  default     = "example.com"
 }
 
 variable "docker_registry" {
@@ -150,5 +150,31 @@ variable "s3_secret_key" {
   description = "S3/SeaweedFS secret key"
   type        = string
   sensitive   = true
+  default     = ""
+}
+
+variable "tailscale_oauth_client_id" {
+  description = "Tailscale OAuth client ID"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth client secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "tailscale_operator_version" {
+  description = "Version of Tailscale Kubernetes operator"
+  type        = string
+  default     = "1.94.2"
+}
+
+variable "tailscale_fqdn" {
+  description = "Tailscale proxy FQDN (e.g., myapp.tail-scale.ts.net)"
+  type        = string
   default     = ""
 }

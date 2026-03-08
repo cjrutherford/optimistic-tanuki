@@ -13,6 +13,7 @@ RUN_MIGRATIONS="${RUN_MIGRATIONS:-true}"
 SEED_TARGET="${SEED_TARGET:-all}"
 SETUP_MICROK8S="${SETUP_MICROK8S:-true}"
 INSTALL_TERRAFORM="${INSTALL_TERRAFORM:-true}"
+TF_SKIP_IF_EXISTS="${TF_SKIP_IF_EXISTS:-true}"
 WAIT_TIMEOUT="${WAIT_TIMEOUT:-300s}"
 HELM_IMPORT_EXISTING="${HELM_IMPORT_EXISTING:-true}"
 ADOPT_EXISTING_INGRESS_CLASS="${ADOPT_EXISTING_INGRESS_CLASS:-true}"
@@ -20,6 +21,15 @@ BOOTSTRAP_APPLY_SURFACE="${BOOTSTRAP_APPLY_SURFACE:-true}"
 ARGO_ENV="${ARGO_ENV:-production}"
 ARGO_TARGET_REVISION="${ARGO_TARGET_REVISION:-main}"
 INGRESS_SERVICE_TYPE="${INGRESS_SERVICE_TYPE:-LoadBalancer}"
+TAILSCALE_OAUTH_CLIENT_ID="${TAILSCALE_OAUTH_CLIENT_ID:-}"
+TAILSCALE_OAUTH_CLIENT_SECRET="${TAILSCALE_OAUTH_CLIENT_SECRET:-}"
+TAILSCALE_FQDN="${TAILSCALE_FQDN:-}"
+TAILSCALE_OPERATOR_VERSION="${TAILSCALE_OPERATOR_VERSION:-1.94.2}"
+
+SECRETS_FILE="$PROJECT_DIR/.secrets"
+if [ -f "$SECRETS_FILE" ]; then
+    source "$SECRETS_FILE"
+fi
 
 KUBECTL_CMD="kubectl"
 if command -v microk8s >/dev/null 2>&1; then
@@ -67,14 +77,25 @@ prepare_kubeconfig_for_terraform() {
 wait_for_deployment() {
     local namespace=$1
     local name=$2
-    echo "Waiting for deployment/$name to be created in namespace $namespace..."
-    if ! timeout "$WAIT_TIMEOUT" bash -lc "until $KUBECTL_CMD get deployment/$name -n $namespace --request-timeout=10s >/dev/null 2>&1; do sleep 5; done"; then
-        echo "Error: deployment/$name was not created in namespace $namespace within $WAIT_TIMEOUT"
-        exit 1
+    
+    if ! $KUBECTL_CMD get deployment "$name" -n "$namespace" >/dev/null 2>&1; then
+        echo "Deployment/$name does not exist in namespace $namespace, skipping wait."
+        return 0
     fi
+    
+    local ready=$($KUBECTL_CMD get deployment "$name" -n "$namespace" -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+    if [ "$ready" = "0" ] || [ -z "$ready" ]; then
+        echo "Waiting for deployment/$name to be ready in namespace $namespace..."
+        if ! timeout "$WAIT_TIMEOUT" bash -lc "until $KUBECTL_CMD get deployment/$name -n $namespace --request-timeout=10s >/dev/null 2>&1; do sleep 5; done"; then
+            echo "Warning: deployment/$name was not created in namespace $namespace within $WAIT_TIMEOUT"
+            return 1
+        fi
 
-    echo "Waiting for deployment/$name rollout in namespace $namespace..."
-    $KUBECTL_CMD rollout status "deployment/$name" -n "$namespace" --timeout="$WAIT_TIMEOUT"
+        echo "Waiting for deployment/$name rollout in namespace $namespace..."
+        $KUBECTL_CMD rollout status "deployment/$name" -n "$namespace" --timeout="$WAIT_TIMEOUT" || echo "Warning: rollout status failed, continuing..."
+    else
+        echo "Deployment/$name already has $ready ready replicas, skipping wait."
+    fi
 }
 
 wait_for_argocd_application_sync() {
@@ -94,12 +115,26 @@ echo "=========================================="
 if [ "$SETUP_MICROK8S" = "true" ]; then
     echo ""
     echo "Step 1: Setting up MicroK8s (snap + microk8s)..."
-    if [ -f "$SCRIPT_DIR/setup-microk8s.sh" ]; then
-        chmod +x "$SCRIPT_DIR/setup-microk8s.sh"
-        "$SCRIPT_DIR/setup-microk8s.sh"
+    if command -v microk8s >/dev/null 2>&1; then
+        if microk8s status --wait-ready >/dev/null 2>&1; then
+            echo "MicroK8s is already running, skipping setup."
+        else
+            if [ -f "$SCRIPT_DIR/setup-microk8s.sh" ]; then
+                chmod +x "$SCRIPT_DIR/setup-microk8s.sh"
+                "$SCRIPT_DIR/setup-microk8s.sh"
+            else
+                echo "Error: setup-microk8s.sh not found."
+                exit 1
+            fi
+        fi
     else
-        echo "Error: setup-microk8s.sh not found."
-        exit 1
+        if [ -f "$SCRIPT_DIR/setup-microk8s.sh" ]; then
+            chmod +x "$SCRIPT_DIR/setup-microk8s.sh"
+            "$SCRIPT_DIR/setup-microk8s.sh"
+        else
+            echo "Error: setup-microk8s.sh not found."
+            exit 1
+        fi
     fi
 else
     echo ""
@@ -152,24 +187,47 @@ else
 fi
 
 echo ""
-echo "Step 5.5: Preparing Kubernetes API access for Terraform..."
+echo "Step 6: Applying Terraform configuration..."
 prepare_kubeconfig_for_terraform
 
-echo ""
-echo "Step 6: Applying Terraform configuration..."
-if [ -f "$SCRIPT_DIR/apply-terraform.sh" ]; then
-    chmod +x "$SCRIPT_DIR/apply-terraform.sh"
-    APP_NAMESPACE="optimistic-tanuki" INGRESS_SERVICE_TYPE="LoadBalancer" HELM_IMPORT_EXISTING="$HELM_IMPORT_EXISTING" ADOPT_EXISTING_INGRESS_CLASS="$ADOPT_EXISTING_INGRESS_CLASS" "$SCRIPT_DIR/apply-terraform.sh"
+check_terraform_applied() {
+    if ! $KUBECTL_CMD get namespace argocd >/dev/null 2>&1; then
+        return 1
+    fi
+    if ! $KUBECTL_CMD get namespace optimistic-tanuki >/dev/null 2>&1; then
+        return 1
+    fi
+    return 0
+}
+
+TF_ALREADY_APPLIED=false
+if [ "$TF_SKIP_IF_EXISTS" = "true" ] && check_terraform_applied; then
+    echo "Terraform resources already exist in cluster, skipping apply."
 else
-    cd "$TF_DIR"
-    echo "Initializing Terraform..."
-    terraform init
-    
-    echo "Planning Terraform deployment..."
-    terraform plan -out=tfplan
-    
-    echo "Applying Terraform configuration..."
-    terraform apply -auto-approve tfplan
+    if [ -f "$SCRIPT_DIR/apply-terraform.sh" ]; then
+        chmod +x "$SCRIPT_DIR/apply-terraform.sh"
+        APP_NAMESPACE="optimistic-tanuki" \
+        INGRESS_SERVICE_TYPE="LoadBalancer" \
+        HELM_IMPORT_EXISTING="$HELM_IMPORT_EXISTING" \
+        ADOPT_EXISTING_INGRESS_CLASS="$ADOPT_EXISTING_INGRESS_CLASS" \
+        TF_SKIP_PLAN=true \
+        TF_AUTO_APPROVE=true \
+        TAILSCALE_OAUTH_CLIENT_ID="$TAILSCALE_OAUTH_CLIENT_ID" \
+        TAILSCALE_OAUTH_CLIENT_SECRET="$TAILSCALE_OAUTH_CLIENT_SECRET" \
+        TAILSCALE_FQDN="$TAILSCALE_FQDN" \
+        TAILSCALE_OPERATOR_VERSION="$TAILSCALE_OPERATOR_VERSION" \
+        "$SCRIPT_DIR/apply-terraform.sh"
+    else
+        cd "$TF_DIR"
+        echo "Initializing Terraform..."
+        terraform init
+        
+        echo "Planning Terraform deployment..."
+        terraform plan -out=tfplan
+        
+        echo "Applying Terraform configuration..."
+        terraform apply -auto-approve tfplan
+    fi
 fi
 
 echo ""
@@ -180,16 +238,57 @@ ARGO_TARGET_REVISION="${ARGO_TARGET_REVISION:-main}"
 ARGO_ENV="${ARGO_ENV:-production}"
 
 ARGO_APP_FILE="$PROJECT_DIR/k8s/argo-app/application.yaml"
-sed -e "s|\${ARGO_REPO_URL}|$ARGO_REPO_URL|g" \
-    -e "s|\${ARGO_TARGET_REVISION}|$ARGO_TARGET_REVISION|g" \
-    -e "s|\${ARGO_ENV}|$ARGO_ENV|g" \
-    "$ARGO_APP_FILE" | $KUBECTL_CMD apply -f -
-
-if [ "$BOOTSTRAP_APPLY_SURFACE" = "true" ]; then
-    echo "Bootstrap: Applying application surface manifests directly for first-time setup..."
-    $KUBECTL_CMD apply -k "$PROJECT_DIR/k8s/overlays/${ARGO_ENV}"
+if [ -f "$ARGO_APP_FILE" ]; then
+    sed -e "s|\${ARGO_REPO_URL}|$ARGO_REPO_URL|g" \
+        -e "s|\${ARGO_TARGET_REVISION}|$ARGO_TARGET_REVISION|g" \
+        -e "s|\${ARGO_ENV}|$ARGO_ENV|g" \
+        "$ARGO_APP_FILE" | $KUBECTL_CMD apply -f -
+else
+    echo "ArgoCD application file not found, skipping."
 fi
 
+echo ""
+echo "Step 7.5: Creating required service aliases..."
+NAMESPACE="${NAMESPACE:-optimistic-tanuki}"
+
+if ! $KUBECTL_CMD get svc db -n "$NAMESPACE" >/dev/null 2>&1; then
+    echo "Creating 'db' service alias for postgres..."
+    $KUBECTL_CMD expose deployment postgres -n "$NAMESPACE" --name=db --port=5432 --target-port=5432 2>/dev/null || true
+else
+    echo "Service 'db' already exists, skipping."
+fi
+
+if [ "$BOOTSTRAP_APPLY_SURFACE" = "true" ]; then
+    echo "Bootstrap: Applying application surface manifests..."
+    if $KUBECTL_CMD get namespace "$NAMESPACE" >/dev/null 2>&1; then
+        echo "Deleting existing client services to avoid conflicts..."
+        for svc in christopherrutherford-net client-interface configurable-client d6 digital-homestead forgeofwill owner-console store-client; do
+            $KUBECTL_CMD delete svc "$svc" -n "$NAMESPACE" --ignore-not-found=true 2>/dev/null || true
+        done
+        $KUBECTL_CMD apply -k "$PROJECT_DIR/k8s/overlays/${ARGO_ENV}" --server-side --force-conflicts
+    else
+        echo "Namespace $NAMESPACE does not exist, skipping bootstrap apply."
+    fi
+fi
+
+if [ -n "$TAILSCALE_OAUTH_CLIENT_ID" ] && [ -n "$TAILSCALE_OAUTH_CLIENT_SECRET" ]; then
+    echo ""
+    echo "Step 8: Deploying Tailscale Kubernetes Operator..."
+    TAILSCALE_NS="tailscale"
+    
+    if ! $KUBECTL_CMD get namespace "$TAILSCALE_NS" >/dev/null 2>&1; then
+        $KUBECTL_CMD create namespace "$TAILSCALE_NS"
+    fi
+    
+    echo "Installing Tailscale operator and CRDs from official manifest..."
+    curl -sL "https://raw.githubusercontent.com/tailscale/tailscale/v${TAILSCALE_OPERATOR_VERSION:-1.94.2}/cmd/k8s-operator/deploy/manifests/operator.yaml" | \
+        sed "s|client_id: # SET CLIENT ID HERE|client_id: ${TAILSCALE_OAUTH_CLIENT_ID}|g" | \
+        sed "s|client_secret: # SET CLIENT SECRET HERE|client_secret: ${TAILSCALE_OAUTH_CLIENT_SECRET}|g" | \
+        $KUBECTL_CMD apply -f -
+    
+    echo "Tailscale operator deployed successfully."
+fi
+    
 wait_for_deployment "argocd" "argocd-server"
 wait_for_argocd_application_sync "optimistic-tanuki" "argocd"
 wait_for_deployment "$NAMESPACE" "postgres"
