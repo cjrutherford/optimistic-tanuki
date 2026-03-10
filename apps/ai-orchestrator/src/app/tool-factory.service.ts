@@ -266,7 +266,7 @@ export class ToolFactory {
             zodType = z.array(z.any());
             break;
           case 'object':
-            zodType = z.record(z.any());
+            zodType = z.record(z.string(),z.any());
             break;
           default:
             zodType = z.any();

@@ -15,6 +15,8 @@ import { Observable, Subscription, filter } from 'rxjs';
 import { map, shareReplay, startWith } from 'rxjs/operators';
 import { firstValueFrom } from 'rxjs';
 import { AuthStateService } from './state/auth-state.service';
+import { ProfileContext } from './profile.context';
+import { TitleService } from './title.service';
 import {
   AppBarComponent,
   NavSidebarComponent,
@@ -70,6 +72,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   public authState = inject(AuthStateService);
   public profileService = inject(ProfileService);
+  public profileContext = inject(ProfileContext);
+  private titleService = inject(TitleService);
   public currentUrl$!: Observable<string>;
 
   private chatService = inject(ChatService);
