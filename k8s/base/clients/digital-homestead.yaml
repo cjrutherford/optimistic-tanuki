@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: digital-homestead
-          image: cjrutherford/optimistic_tanuki_digital-homestead:latest
+          image: cjrutherford/optimistic_tanuki_digital-homestead:sha-b5069ddd46734a298d76679f5c63e7d2b5849f06
           imagePullPolicy: Always
           ports:
             - containerPort: 4000

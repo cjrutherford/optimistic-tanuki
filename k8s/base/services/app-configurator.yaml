@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: app-configurator
-          image: cjrutherford/optimistic_tanuki_app-configurator:latest
+          image: cjrutherford/optimistic_tanuki_app-configurator:sha-b5069ddd46734a298d76679f5c63e7d2b5849f06
           imagePullPolicy: Always
           ports:
             - containerPort: 3014
