@@ -16,6 +16,13 @@
   padding: var(--spacing-md, 16px);
 }
 
+.notification-bell {
+  position: fixed;
+  top: 40px;
+  right: 24px;
+  z-index: 1000;
+}
+
 .chat-floating-button {
   position: fixed;
   bottom: 24px;

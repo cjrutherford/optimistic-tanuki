@@ -38,7 +38,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
         <div class="notification-header">
           <h3>Notifications</h3>
           @if (unreadCount() > 0) {
-          <otui-button class="text-button" [variant]="'text'" (click)="onMarkAllRead.emit()">
+          <otui-button class="text-button" [variant]="'outlined'" (click)="onMarkAllRead.emit()">
             Mark all read
           </otui-button>
           }
@@ -49,7 +49,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
           <otui-button
             class="notification-item"
             [class.unread]="!notification.isRead"
-            [variant]="'text'"
+            [variant]="'outlined'"
             (click)="onNotificationClick(notification)"
           >
             @if (notification.senderAvatar) {

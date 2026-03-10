@@ -7,6 +7,7 @@ import {
   OnDestroy,
   PLATFORM_ID,
   Inject,
+  effect,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, RouterModule } from '@angular/router';
@@ -83,7 +84,12 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: object
-  ) {}
+  ) {
+    effect(() => {
+      this.notifications.set(this.notificationService.notifications());
+      this.unreadCount.set(this.notificationService.unreadCount());
+    });
+  }
 
   title = 'client-interface';
   isNavExpanded = signal(false);
@@ -166,6 +172,11 @@ export class AppComponent implements OnInit, OnDestroy {
           label: 'Forum',
           action: () => this.navigateTo('/forum'),
           isActive: currentUrl.startsWith('/forum'),
+        },
+        {
+          label: 'Activity',
+          action: () => this.navigateTo('/activity'),
+          isActive: currentUrl === '/activity',
         },
         {
           label: 'Settings',

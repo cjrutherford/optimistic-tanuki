@@ -8,6 +8,7 @@ import { ReactionService } from './services/reaction.service';
 import { SocialComponentService } from './services/social-component.service';
 import { CommunityService } from './services/community.service';
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
+import { ClientProxy } from '@nestjs/microservices';
 import {
   AttachmentCommands,
   CommentCommands,
@@ -29,6 +30,8 @@ import {
   PostShareCommands,
   SocialEventCommands as EventCommands,
   ScheduledPostCommands,
+  ServiceTokens,
+  ProfileCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreatePollDto,
@@ -81,6 +84,7 @@ import { PostShareService } from './services/post-share.service';
 import { EventService } from './services/event.service';
 import { Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
+import { firstValueFrom } from 'rxjs';
 
 interface UserBlock {
   id: string;
@@ -111,11 +115,88 @@ export class AppController {
     private readonly pollService: PollService,
     private readonly postShareService: PostShareService,
     private readonly eventService: EventService,
-  ) { }
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profileClient: ClientProxy
+  ) {}
+
+  private extractMentions(text: string): string[] {
+    if (!text) return [];
+    const mentionRegex = /@(\w+)/g;
+    const mentions: string[] = [];
+    let match;
+    while ((match = mentionRegex.exec(text)) !== null) {
+      mentions.push(match[1]);
+    }
+    return [...new Set(mentions)];
+  }
+
+  private async processMentions(
+    content: string,
+    title: string,
+    authorProfileId: string,
+    postId: string
+  ): Promise<void> {
+    const textToParse = `${content || ''} ${title || ''}`;
+    const mentionedNames = this.extractMentions(textToParse);
+
+    if (mentionedNames.length === 0) return;
+
+    this.logger.log(
+      `Found mentions in post ${postId}: ${mentionedNames.join(', ')}`
+    );
+
+    for (const profileName of mentionedNames) {
+      try {
+        const profiles = await firstValueFrom(
+          this.profileClient.send({ cmd: ProfileCommands.Get }, { profileName })
+        );
+
+        const profile = Array.isArray(profiles) ? profiles[0] : profiles;
+
+        if (profile && profile.id && profile.id !== authorProfileId) {
+          await this.notificationService.queueNotification({
+            recipientId: profile.id,
+            type: 'mention',
+            title: 'You were mentioned',
+            body: `Someone mentioned you in a post`,
+            senderId: authorProfileId,
+            resourceType: 'post',
+            resourceId: postId,
+            actionUrl: `/feed/post/${postId}`,
+          });
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to process mention ${profileName}:`, err);
+      }
+    }
+  }
 
   @MessagePattern({ cmd: PostCommands.CREATE })
   async createPost(data: CreatePostDto) {
-    return await this.postService.create(data);
+    const post = await this.postService.create(data);
+
+    // Create activity log for post creation
+    try {
+      await this.activityService.createActivity({
+        profileId: data.profileId,
+        type: 'post' as any,
+        description: 'You created a new post',
+        resourceId: post.id,
+        resourceType: 'post',
+      });
+    } catch (err) {
+      this.logger.warn('Failed to create activity log for post:', err);
+    }
+
+    // Process mentions and send notifications
+    this.processMentions(
+      data.content,
+      data.title,
+      data.profileId,
+      post.id
+    ).catch((err) => this.logger.warn('Failed to process mentions:', err));
+
+    return post;
   }
 
   @MessagePattern({ cmd: PostCommands.FIND_MANY })
@@ -203,12 +284,46 @@ export class AppController {
     @Payload('userId') userId: string,
     @Payload('profileId') profileId: string
   ) {
-    return await this.voteService.create({
+    const vote = await this.voteService.create({
       postId: id,
       value: 1,
       userId,
       profileId,
     });
+
+    // Create activity log
+    try {
+      await this.activityService.createActivity({
+        profileId,
+        type: 'like' as any,
+        description: 'You liked a post',
+        resourceId: id,
+        resourceType: 'post',
+      });
+    } catch (err) {
+      this.logger.warn('Failed to create activity log for upvote:', err);
+    }
+
+    // Get the post to find the author and send notification
+    try {
+      const post = await this.postService.findOne(id);
+      if (post && post.profileId && post.profileId !== profileId) {
+        await this.notificationService.queueNotification({
+          recipientId: post.profileId,
+          type: 'like',
+          title: 'New Like',
+          body: 'Someone liked your post',
+          senderId: profileId,
+          resourceType: 'post',
+          resourceId: id,
+          actionUrl: `/feed/post/${id}`,
+        });
+      }
+    } catch (err) {
+      this.logger.warn('Failed to send notification for upvote:', err);
+    }
+
+    return vote;
   }
 
   @MessagePattern({ cmd: VoteCommands.DOWNVOTE })
@@ -217,12 +332,27 @@ export class AppController {
     @Payload('userId') userId: string,
     @Payload('profileId') profileId: string
   ) {
-    return await this.voteService.create({
+    const vote = await this.voteService.create({
       postId: id,
       value: -1,
       userId,
       profileId,
     });
+
+    // Create activity log for downvote
+    try {
+      await this.activityService.createActivity({
+        profileId,
+        type: 'like' as any,
+        description: 'You downvoted a post',
+        resourceId: id,
+        resourceType: 'post',
+      });
+    } catch (err) {
+      this.logger.warn('Failed to create activity log for downvote:', err);
+    }
+
+    return vote;
   }
 
   @MessagePattern({ cmd: VoteCommands.UNVOTE })
@@ -293,7 +423,46 @@ export class AppController {
 
   @MessagePattern({ cmd: CommentCommands.CREATE })
   async createComment(data: CreateCommentDto) {
-    return await this.commentService.create(data);
+    const comment = await this.commentService.create(data);
+
+    // Get the post to find the author
+    const post = await this.postService.findOne(data.postId);
+
+    // Create activity log for comment
+    try {
+      await this.activityService.createActivity({
+        profileId: data.profileId,
+        type: 'comment' as any,
+        description: 'You commented on a post',
+        resourceId: comment.id,
+        resourceType: 'post',
+      });
+    } catch (err) {
+      this.logger.warn('Failed to create activity log for comment:', err);
+    }
+
+    // Send notification to post author (if not commenting on own post)
+    if (post && post.profileId && post.profileId !== data.profileId) {
+      this.notificationService
+        .queueNotification({
+          recipientId: post.profileId,
+          type: 'comment',
+          title: 'New Comment',
+          body: 'Someone commented on your post',
+          senderId: data.profileId,
+          resourceType: 'post',
+          resourceId: data.postId,
+          actionUrl: `/feed/post/${data.postId}`,
+        })
+        .catch((err) => this.logger.warn('Failed to queue notification:', err));
+    }
+
+    // Process mentions in comment
+    this.processMentions(data.content, '', data.profileId, data.postId).catch(
+      (err) => this.logger.warn('Failed to process mentions in comment:', err)
+    );
+
+    return comment;
   }
 
   @MessagePattern({ cmd: CommentCommands.FIND_MANY })
@@ -392,12 +561,64 @@ export class AppController {
 
   @MessagePattern({ cmd: FollowCommands.FOLLOW })
   async follow(@Payload() data: UpdateFollowDto) {
-    return await this.followService.follow(data.followerId, data.followeeId);
+    const result = await this.followService.follow(
+      data.followerId,
+      data.followeeId
+    );
+
+    // Create activity log for follow
+    try {
+      await this.activityService.createActivity({
+        profileId: data.followerId,
+        type: 'follow' as any,
+        description: 'You started following a user',
+        resourceId: data.followeeId,
+        resourceType: 'profile',
+      });
+    } catch (err) {
+      this.logger.warn('Failed to create activity log for follow:', err);
+    }
+
+    // Send notification to the followed user
+    try {
+      await this.notificationService.queueNotification({
+        recipientId: data.followeeId,
+        type: 'follow',
+        title: 'New Follower',
+        body: 'Someone started following you',
+        senderId: data.followerId,
+        resourceType: 'profile',
+        resourceId: data.followerId,
+        actionUrl: `/profile/${data.followerId}`,
+      });
+    } catch (err) {
+      this.logger.warn('Failed to send notification for follow:', err);
+    }
+
+    return result;
   }
 
   @MessagePattern({ cmd: FollowCommands.UNFOLLOW })
   async unfollow(@Payload() data: UpdateFollowDto) {
-    return await this.followService.unfollow(data.followerId, data.followeeId);
+    const result = await this.followService.unfollow(
+      data.followerId,
+      data.followeeId
+    );
+
+    // Create activity log for unfollow
+    try {
+      await this.activityService.createActivity({
+        profileId: data.followerId,
+        type: 'follow' as any,
+        description: 'You unfollowed a user',
+        resourceId: data.followeeId,
+        resourceType: 'profile',
+      });
+    } catch (err) {
+      this.logger.warn('Failed to create activity log for unfollow:', err);
+    }
+
+    return result;
   }
 
   @MessagePattern({ cmd: FollowCommands.GET_FOLLOWERS })

@@ -29,10 +29,11 @@ export class VoteService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
-  vote(postId: string, value: number): Observable<VoteDto> {
+  vote(postId: string, value: number, profileId: string): Observable<VoteDto> {
     return this.http.post<VoteDto>(this.baseUrl, {
       postId,
       value,
+      profileId,
     });
   }
 

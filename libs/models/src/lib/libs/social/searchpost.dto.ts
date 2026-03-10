@@ -121,6 +121,13 @@ export class SearchPostDto {
   @IsOptional()
   @IsUUID(undefined, { each: true })
   communityIds?: string[];
+
+  @ApiPropertyOptional({
+    description: "the profile id of the posts author",
+  })
+  @IsOptional()
+  @IsUUID()
+  profileId?: string;
 }
 
 export class SearchPostOptions {

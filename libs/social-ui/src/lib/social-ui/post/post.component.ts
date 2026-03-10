@@ -99,6 +99,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() voteCount: number = 0;
   @Input() userReaction: number = 0;
   @Input() reactionCounts: { [value: number]: number } = {};
+  @Input() isSaved: boolean = false;
   theme: 'light' | 'dark' = 'light';
 
   @Input() content!: PostDto;
@@ -126,6 +127,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
     value: number;
   }>();
   @Output() inviteToCommunity = new EventEmitter<string>();
+  @Output() saveToggle = new EventEmitter<void>();
 
   // ViewChild references for component reconstruction
   @ViewChild('contentContainer', { read: ViewContainerRef })
@@ -162,6 +164,10 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   onInviteToCommunity(communityId: string) {
     this.inviteToCommunity.emit(communityId);
+  }
+
+  onSaveToggle() {
+    this.saveToggle.emit();
   }
 
   onProfileClick() {

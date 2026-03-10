@@ -19,6 +19,7 @@ import { AuthGuard } from '../../../auth/auth.guard';
 import { User, UserDetails } from '../../../decorators/user.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { SocialGateway } from '../../../app/social-gateway/social.gateway';
 
 export interface CreateNotificationDto {
   recipientId: string;
@@ -53,7 +54,8 @@ export class NotificationController {
 
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
-    private readonly socialClient: ClientProxy
+    private readonly socialClient: ClientProxy,
+    private readonly socialGateway: SocialGateway
   ) {}
 
   @Get(':profileId')
@@ -99,12 +101,18 @@ export class NotificationController {
   async create(
     @Body() createNotificationDto: CreateNotificationDto
   ): Promise<NotificationDto> {
-    return await firstValueFrom(
+    const notification = await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.CREATE },
         createNotificationDto
       )
     );
+
+    if (notification) {
+      this.socialGateway.broadcastNotification(notification);
+    }
+
+    return notification;
   }
 
   @Put(':notificationId/read')
