@@ -223,7 +223,7 @@ services:
     ports:
       - '3005:3005'
     volumes:
-      - assets_storage:/usr/src/app/storage
+      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
     environment:
       - STORAGE_STRATEGY=local
       - LOCAL_STORAGE_PATH=/usr/src/app/storage
@@ -406,4 +406,3 @@ services:
 
 volumes:
   postgres_data:
-  assets_storage:

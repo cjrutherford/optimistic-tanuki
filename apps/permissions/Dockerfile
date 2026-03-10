@@ -12,12 +12,10 @@ WORKDIR /usr/src/app
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3012
-RUN npm i -g nodemon pg
-RUN npm i --save pg
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
-RUN npm i --save typeorm zod
 COPY ./dist/apps/permissions .
+RUN npm install pg typeorm nodemon
 RUN chown -R node:node .
 USER node
 EXPOSE 3012
