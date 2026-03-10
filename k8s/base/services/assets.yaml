@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: assets
-          image: cjrutherford/optimistic_tanuki_assets:latest
+          image: cjrutherford/optimistic_tanuki_assets:sha-b5069ddd46734a298d76679f5c63e7d2b5849f06
           imagePullPolicy: Always
           ports:
             - containerPort: 3005
