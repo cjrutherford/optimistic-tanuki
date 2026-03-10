@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: d6
-          image: cjrutherford/optimistic_tanuki_d6:sha-b5069ddd46734a298d76679f5c63e7d2b5849f06
+          image: cjrutherford/optimistic_tanuki_d6:sha-92b0c5c58f8bd553138f1bfb09fedc1d92c221d5
           imagePullPolicy: Always
           ports:
             - containerPort: 4000
