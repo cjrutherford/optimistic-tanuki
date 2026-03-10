@@ -227,6 +227,42 @@ export class SocialGateway {
     }
   }
 
+  @SubscribeMessage(SocialRealtimeCommands.SUBSCRIBE_NOTIFICATIONS)
+  async handleSubscribeNotifications(
+    @MessageBody() payload: { profileId: string },
+    @ConnectedSocket() client: Socket
+  ): Promise<void> {
+    this.l.log(`User ${payload.profileId} subscribing to notifications`);
+
+    const connectedClient = this.registerClient(payload.profileId, client);
+    connectedClient.subscriptions.add(`notifications:${payload.profileId}`);
+
+    client.emit('subscribed', {
+      type: 'notifications',
+      profileId: payload.profileId,
+    });
+  }
+
+  @SubscribeMessage(SocialRealtimeCommands.UNSUBSCRIBE_NOTIFICATIONS)
+  async handleUnsubscribeNotifications(
+    @MessageBody() payload: { profileId: string },
+    @ConnectedSocket() client: Socket
+  ): Promise<void> {
+    this.l.log(`User ${payload.profileId} unsubscribing from notifications`);
+
+    const connectedClient = this.connectedClients.get(payload.profileId);
+    if (!connectedClient) {
+      return;
+    }
+
+    connectedClient.subscriptions.delete(`notifications:${payload.profileId}`);
+
+    client.emit('unsubscribed', {
+      type: 'notifications',
+      profileId: payload.profileId,
+    });
+  }
+
   @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
     // Use reverse mapping for efficient lookup
@@ -302,6 +338,20 @@ export class SocialGateway {
       followerId,
       followeeId,
     });
+  }
+
+  broadcastNotification(notification: any): void {
+    const { recipientId } = notification;
+    this.l.log(`Broadcasting notification to user: ${recipientId}`);
+    this.broadcastToSubscribers(
+      `notifications:${recipientId}`,
+      'notification',
+      notification
+    );
+  }
+
+  handleBroadcastNotification(payload: { notification: any }): void {
+    this.broadcastNotification(payload.notification);
   }
 
   private registerClient(profileId: string, client: Socket): ConnectedClient {

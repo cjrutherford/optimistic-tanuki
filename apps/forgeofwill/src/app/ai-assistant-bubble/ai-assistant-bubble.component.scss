@@ -50,4 +50,10 @@
     padding: 0 6px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
 }

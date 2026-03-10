@@ -44,6 +44,7 @@ import { VoteService } from '../../vote.service';
 import { ReactionService } from '../../reaction.service';
 import { InfiniteScrollDirective } from '../../directives/infinite-scroll.directive';
 import { LazyLoadDirective } from '../../directives/lazy-load.directive';
+import { ActivityService } from '../../activity.service';
 
 @Component({
   selector: 'app-feed',
@@ -66,6 +67,7 @@ import { LazyLoadDirective } from '../../directives/lazy-load.directive';
     FollowService,
     VoteService,
     ReactionService,
+    ActivityService,
   ],
   templateUrl: './feed.component.html',
   styleUrls: ['./feed.component.scss'],
@@ -102,6 +104,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   reactionCounts = signal<{ [postId: string]: { [value: number]: number } }>(
     {}
   );
+  // Track saved items: postId -> boolean
+  savedPosts = signal<{ [postId: string]: boolean }>({});
 
   // Image upload callback for the compose component
   imageUploadCallback: ImageUploadCallback = async (
@@ -147,6 +151,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   communityService = inject(CommunityService);
   voteService = inject(VoteService);
   reactionService = inject(ReactionService);
+  activityService = inject(ActivityService);
   private readonly http = inject(HttpClient);
   private readonly gatewayUrl = 'http://localhost:3000/social';
 
@@ -650,32 +655,34 @@ export class FeedComponent implements OnInit, OnDestroy {
 
     console.log('[Feed] Vote changed:', event);
 
-    this.voteService.vote(event.postId, event.value).subscribe({
-      next: (vote) => {
-        console.log('[Feed] Vote updated:', vote);
-        // Update local vote state
-        this.userVotes.update((votes) => ({
-          ...votes,
-          [event.postId]: event.value,
-        }));
-        // Update vote count
-        this.voteCounts.update((counts) => {
-          const currentCount = counts[event.postId] || 0;
-          const currentVote = this.userVotes()[event.postId] || 0;
-          let newCount = currentCount;
-          if (currentVote === 0 && event.value !== 0) {
-            newCount = currentCount + 1;
-          } else if (currentVote !== 0 && event.value === 0) {
-            newCount = Math.max(0, currentCount - 1);
-          } else if (currentVote !== event.value) {
-            // Vote changed, count stays the same
-            newCount = currentCount;
-          }
-          return { ...counts, [event.postId]: newCount };
-        });
-      },
-      error: (err) => console.error('[Feed] Failed to vote:', err),
-    });
+    this.voteService
+      .vote(event.postId, event.value, currentProfile.id)
+      .subscribe({
+        next: (vote) => {
+          console.log('[Feed] Vote updated:', vote);
+          // Update local vote state
+          this.userVotes.update((votes) => ({
+            ...votes,
+            [event.postId]: event.value,
+          }));
+          // Update vote count
+          this.voteCounts.update((counts) => {
+            const currentCount = counts[event.postId] || 0;
+            const currentVote = this.userVotes()[event.postId] || 0;
+            let newCount = currentCount;
+            if (currentVote === 0 && event.value !== 0) {
+              newCount = currentCount + 1;
+            } else if (currentVote !== 0 && event.value === 0) {
+              newCount = Math.max(0, currentCount - 1);
+            } else if (currentVote !== event.value) {
+              // Vote changed, count stays the same
+              newCount = currentCount;
+            }
+            return { ...counts, [event.postId]: newCount };
+          });
+        },
+        error: (err) => console.error('[Feed] Failed to vote:', err),
+      });
   }
 
   getUserVote(postId: string): number {

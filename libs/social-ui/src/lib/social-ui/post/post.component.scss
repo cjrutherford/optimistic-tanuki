@@ -42,7 +42,7 @@
           var(--primary-gradient, var(--primary))
         );
         color: var(--primary-foreground, #fff);
-        border-radius: var(--border-radius-full, 9999px);
+        border-radius: 10px;
         font-size: 0.75rem;
         font-weight: 600;
         margin-left: var(--spacing-xs, 4px);

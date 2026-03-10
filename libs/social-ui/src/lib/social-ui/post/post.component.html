@@ -102,6 +102,12 @@
         (reactionSelected)="onReactionChanged($event)"
       ></lib-reaction>
       <otui-button variant="success" (action)="onShare()"> Share </otui-button>
+      <otui-button
+        [variant]="isSaved ? 'warning' : 'secondary'"
+        (action)="onSaveToggle()"
+      >
+        {{ isSaved ? 'Saved' : 'Save' }}
+      </otui-button>
       @if (canDelete) {
       <otui-button variant="danger" (action)="onDelete()">Delete</otui-button>
       }
