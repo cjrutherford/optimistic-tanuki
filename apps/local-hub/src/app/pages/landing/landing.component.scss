@@ -1,0 +1,150 @@
+.hero {
+  padding: 80px 24px 60px;
+  text-align: center;
+  background: linear-gradient(
+    135deg,
+    var(--primary, #3f51b5) 0%,
+    var(--accent, #4a90d9) 100%
+  );
+  color: white;
+  border-radius: 12px;
+  margin-bottom: 48px;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+
+.hero-subtitle {
+  font-size: 1.125rem;
+  max-width: 600px;
+  margin: 0 auto 32px;
+  opacity: 0.9;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+  text-decoration: none;
+
+  &-primary {
+    background: white;
+    color: var(--primary, #3f51b5);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  &-outline {
+    background: transparent;
+    color: white;
+    border-color: white;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+.features {
+  margin-bottom: 48px;
+}
+
+.section-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 32px;
+  text-align: center;
+  color: var(--foreground, #212121);
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+}
+
+.feature-card {
+  background: var(--surface, #f9f9f9);
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+  border: 1px solid var(--muted, #e0e0e0);
+
+  h3 {
+    margin: 12px 0 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: var(--foreground-muted, #666);
+    line-height: 1.5;
+  }
+}
+
+.feature-icon {
+  font-size: 2rem;
+}
+
+.how-it-works {
+  margin-bottom: 48px;
+}
+
+.steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.step-number {
+  min-width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary, #3f51b5);
+  color: white;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-content {
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: var(--foreground-muted, #666);
+  }
+}

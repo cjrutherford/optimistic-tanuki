@@ -1,0 +1,77 @@
+<div class="community-page">
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Loading community…</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-state" role="alert">
+      <p>{{ error() }}</p>
+    </div>
+  }
+
+  @if (!loading() && !error() && community()) {
+    <header class="community-header">
+      <div class="community-meta">
+        <span class="locality-badge">{{ community()!.localityType }}</span>
+        <span class="community-location">
+          {{ community()!.city }}, {{ community()!.adminArea }}, {{ community()!.countryCode }}
+        </span>
+      </div>
+      <h1 class="community-name">{{ community()!.name }}</h1>
+      <p class="community-description">{{ community()!.description }}</p>
+      <p class="member-count">{{ community()!.memberCount | number }} members</p>
+
+      <div class="community-actions">
+        @if (!isMember()) {
+          <button
+            class="btn btn-primary"
+            (click)="promptJoin()"
+            [disabled]="joiningInProgress()"
+          >
+            @if (joiningInProgress()) {
+              Joining…
+            } @else if (!isAuthenticated()) {
+              Sign in to Join
+            } @else {
+              Join Community
+            }
+          </button>
+        } @else {
+          <span class="member-badge">✓ You are a member</span>
+        }
+
+        <button class="btn btn-outline" (click)="navigateToClassifieds()">
+          View Classifieds
+        </button>
+      </div>
+    </header>
+
+    <section class="community-tabs">
+      <div class="tab-placeholder">
+        <h2>Posts</h2>
+        @if (!isMember()) {
+          <div class="gated-notice">
+            <p>
+              @if (!isAuthenticated()) {
+                <a href="/login" class="action-link">Sign in</a> and join this community to post and comment.
+              } @else {
+                Join this community to post and comment.
+              }
+            </p>
+          </div>
+        } @else {
+          <div class="placeholder-content">
+            <p>Post feed coming soon — Phase 2.</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="community-about">
+      <h2>About</h2>
+      <p>{{ community()!.description }}</p>
+    </section>
+  }
+</div>
