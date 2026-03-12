@@ -2,10 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CommunityComponent } from './community.component';
 import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { CommunityService } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 
@@ -29,6 +28,11 @@ const communityServiceMock = {
     createdAt: new Date().toISOString(),
   }),
   isMember: jest.fn().mockResolvedValue(false),
+  joinCommunity: jest.fn().mockResolvedValue(undefined),
+};
+
+const messageServiceMock = {
+  addMessage: jest.fn(),
 };
 
 describe('CommunityComponent', () => {
@@ -41,12 +45,11 @@ describe('CommunityComponent', () => {
         CommunityComponent,
         RouterTestingModule,
         HttpClientTestingModule,
-        NoopAnimationsModule,
       ],
       providers: [
         { provide: CommunityService, useValue: communityServiceMock },
         { provide: AuthStateService, useValue: authStateMock },
-        { provide: API_BASE_URL, useValue: '/api' },
+        { provide: MessageService, useValue: messageServiceMock },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: { get: () => 'test-city' } } },

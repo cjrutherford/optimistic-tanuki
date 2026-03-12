@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ClassifiedAdDto } from '../models/index';
 import { ClassifiedCardComponent } from '../classified-card/classified-card.component';

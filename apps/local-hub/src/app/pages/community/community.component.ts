@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { CommunityService, LocalCommunity } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
+import { MessageService } from '@optimistic-tanuki/message-ui';
 
 @Component({
   selector: 'app-community',
@@ -18,6 +19,7 @@ export class CommunityComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private communityService = inject(CommunityService);
   private authState = inject(AuthStateService);
+  private messageService = inject(MessageService);
   private destroy$ = new Subject<void>();
 
   community = signal<LocalCommunity | null>(null);
@@ -90,8 +92,15 @@ export class CommunityComponent implements OnInit, OnDestroy {
     try {
       await this.communityService.joinCommunity(communityId);
       this.isMember.set(true);
+      this.messageService.addMessage({
+        content: 'You have joined the community!',
+        type: 'success',
+      });
     } catch {
-      // TODO: show error toast
+      this.messageService.addMessage({
+        content: 'Failed to join the community. Please try again.',
+        type: 'error',
+      });
     } finally {
       this.joiningInProgress.set(false);
     }
