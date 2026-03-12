@@ -2,11 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ClassifiedsComponent } from './classifieds.component';
 import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { ClassifiedService } from '../../services/classified.service';
 import { CommunityService } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { ClassifiedService } from '@optimistic-tanuki/classified-ui';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 
@@ -33,7 +31,8 @@ const communityServiceMock = {
 };
 
 const classifiedServiceMock = {
-  getClassifieds: jest.fn().mockResolvedValue([]),
+  findByCommunity: jest.fn().mockResolvedValue([]),
+  create: jest.fn(),
 };
 
 describe('ClassifiedsComponent', () => {
@@ -46,13 +45,11 @@ describe('ClassifiedsComponent', () => {
         ClassifiedsComponent,
         RouterTestingModule,
         HttpClientTestingModule,
-        NoopAnimationsModule,
       ],
       providers: [
         { provide: ClassifiedService, useValue: classifiedServiceMock },
         { provide: CommunityService, useValue: communityServiceMock },
         { provide: AuthStateService, useValue: authStateMock },
-        { provide: API_BASE_URL, useValue: '/api' },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: { get: () => 'test-city' } } },

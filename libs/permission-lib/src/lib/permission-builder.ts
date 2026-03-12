@@ -85,6 +85,7 @@ const ALL_USER_ROLES: { [key: string]: string[] } = {
   social: ['social_user'],
   'christopherrutherford-net': ['christopherrutherford_standard_user'],
   store: ['store_customer'],
+  'local-hub': ['local_hub_member'],
 };
 
 export class RoleInitBuilder {
@@ -308,6 +309,48 @@ export class RoleInitBuilder {
         return this;
       case 'global':
         this.assignRoleToProfile('standard_user');
+        return this;
+      case 'local-hub':
+        // Add classifieds permissions and assign local_hub_member role
+        this.addPermission(
+          'classified.create',
+          'classified',
+          'create',
+          'Create classified ad',
+          undefined,
+          'local-hub'
+        );
+        this.addPermission(
+          'classified.read',
+          'classified',
+          'read',
+          'Read classified ad',
+          undefined,
+          'local-hub'
+        );
+        this.addPermission(
+          'classified.update',
+          'classified',
+          'update',
+          'Update classified ad',
+          undefined,
+          'local-hub'
+        );
+        this.addPermission(
+          'classified.delete',
+          'classified',
+          'delete',
+          'Delete classified ad',
+          undefined,
+          'local-hub'
+        );
+        this.addRole('local_hub_member', 'Local Hub community member', [
+          'classified.create',
+          'classified.read',
+          'classified.update',
+          'classified.delete',
+        ]);
+        this.assignRoleToProfile('local_hub_member');
         return this;
       case 'social':
         // Add social permissions and assign social_user role
