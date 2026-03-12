@@ -103,14 +103,38 @@ export class CommunityChatComponent implements OnInit {
       this.currentUserId = data['currentUserId'] || '';
     });
 
-    const communityId = this.route.snapshot.paramMap.get('communityId');
-    if (!communityId) {
+    const communitySlug = this.route.snapshot.paramMap.get('communitySlug');
+    if (!communitySlug) {
       this.loadUserCommunitiesChat();
       return;
     }
 
-    await this.loadCommunity(communityId);
+    await this.loadCommunityBySlug(communitySlug);
     this.loading.set(false);
+  }
+
+  private async loadCommunityBySlug(slug: string) {
+    try {
+      const community = await this.communityService.findBySlug(slug);
+      if (!community) {
+        this.error.set('Community not found');
+        return;
+      }
+
+      this.community.set(community);
+      this.isOwner.set(community.ownerId === this.currentUserId);
+
+      const chatRoom = await this.communityService.getCommunityChatRoom(
+        community.id
+      );
+      if (chatRoom) {
+        this.chatRoomId.set(chatRoom.id);
+        await this.loadChatRoom(chatRoom.id, community);
+      }
+    } catch (err) {
+      console.error('Failed to load community:', err);
+      this.error.set('Failed to load community');
+    }
   }
 
   private async loadCommunity(communityId: string) {

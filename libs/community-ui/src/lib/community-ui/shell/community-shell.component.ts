@@ -112,7 +112,8 @@ export class CommunityShellComponent
       } else if (path === 'manage') {
         this.activeTab.set('manage');
         this.currentCommunityId.set(null);
-      } else if (path && /^[a-f0-9-]+$/i.test(path)) {
+      } else if (path && /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/i.test(path)) {
+        // Accept both UUIDs and slugs (lowercase alphanumeric with hyphens)
         this.activeTab.set('find');
         this.currentCommunityId.set(path);
       } else {
@@ -122,9 +123,9 @@ export class CommunityShellComponent
     });
 
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-      const communityId = params['communityId'];
-      if (communityId) {
-        this.currentCommunityId.set(communityId);
+      const communitySlug = params['communitySlug'];
+      if (communitySlug) {
+        this.currentCommunityId.set(communitySlug);
       }
     });
 
@@ -167,12 +168,13 @@ export class CommunityShellComponent
       });
   }
 
-  navigateToCommunity(communityId: string) {
-    const currentId = this.currentCommunityId();
-    if (currentId === communityId) {
+  navigateToCommunity(community: { id: string; slug?: string | null }) {
+    const slug = community.slug || community.id;
+    const currentSlug = this.currentCommunityId();
+    if (currentSlug === slug) {
       window.location.reload();
     } else {
-      this.router.navigate(['/communities', communityId, 'posts']);
+      this.router.navigate(['/communities', slug, 'posts']);
     }
   }
 }

@@ -159,6 +159,24 @@ export class CommunityController {
     );
   }
 
+  @Get('slug/:slug')
+  @ApiOperation({ summary: 'Get a community by slug' })
+  @ApiResponse({
+    status: 200,
+    description: 'The community has been successfully retrieved.',
+    type: CommunityDto,
+  })
+  async getCommunityBySlug(
+    @Param('slug') slug: string
+  ): Promise<CommunityDto | null> {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.FIND_BY_SLUG },
+        { slug }
+      )
+    );
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a community by ID' })
   @ApiResponse({

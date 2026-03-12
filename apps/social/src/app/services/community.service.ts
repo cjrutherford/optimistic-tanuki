@@ -17,6 +17,16 @@ import {
   InviteToCommunityDto,
 } from '@optimistic-tanuki/models';
 
+/** Convert a community name to a URL-safe slug, e.g. "My Cool Community" → "my-cool-community" */
+function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 @Injectable()
 export class CommunityService {
   private readonly logger = new Logger('Social Service | Community Service');
@@ -29,6 +39,33 @@ export class CommunityService {
     @InjectRepository(CommunityInvite)
     private readonly inviteRepo: Repository<CommunityInvite>
   ) {}
+
+  /** Generate a slug from a name, appending a numeric suffix if the base slug is taken. */
+  private async generateUniqueSlug(base: string): Promise<string> {
+    const baseSlug = toSlug(base);
+    // Fetch all existing slugs that start with this base in one query
+    const conflicting = await this.communityRepo
+      .createQueryBuilder('c')
+      .select('c.slug')
+      .where('c.slug LIKE :pattern', { pattern: `${baseSlug}%` })
+      .getMany();
+
+    const existingSlugs = new Set(conflicting.map((c) => c.slug));
+
+    if (!existingSlugs.has(baseSlug)) {
+      return baseSlug;
+    }
+
+    for (let i = 2; i <= 999; i++) {
+      const candidate = `${baseSlug}-${i}`;
+      if (!existingSlugs.has(candidate)) {
+        return candidate;
+      }
+    }
+
+    // Fallback: append a short random suffix
+    return `${baseSlug}-${Date.now().toString(36)}`;
+  }
 
   async create(
     dto: CreateCommunityDto,
@@ -48,9 +85,11 @@ export class CommunityService {
       name,
     }));
 
+    const slug = dto.slug ? dto.slug : await this.generateUniqueSlug(dto.name);
+
     const community = this.communityRepo.create({
       name: dto.name,
-      slug: dto.slug ?? null,
+      slug,
       description: dto.description || '',
       ownerId: userId,
       ownerProfileId: profileId,
@@ -206,6 +245,16 @@ export class CommunityService {
         throw new RpcException('Community with this name already exists');
       }
       community.name = dto.name;
+    }
+
+    if (dto.slug) {
+      const slugConflict = await this.communityRepo.findOne({
+        where: { slug: dto.slug },
+      });
+      if (slugConflict && slugConflict.id !== id) {
+        throw new RpcException('A community with this slug already exists');
+      }
+      community.slug = dto.slug;
     }
 
     if (dto.description !== undefined) {
