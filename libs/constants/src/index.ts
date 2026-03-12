@@ -92,4 +92,4 @@ export { WellnessCommands } from './lib/libs/wellness';
 
 export { WellnessAiCommands } from './lib/libs/ai-orchestration';
 
-export { ClassifiedCommands } from './lib/libs/classifieds';
+export { ClassifiedCommands, LocalCommunityCommands } from './lib/libs/classifieds';
