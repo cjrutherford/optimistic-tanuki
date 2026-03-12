@@ -37,8 +37,8 @@ export class ClassifiedAdEntity {
   @Column({ type: 'varchar', length: 50, default: 'active' })
   status!: ClassifiedAdStatus;
 
-  @Column({ type: 'uuid' })
-  communityId!: string;
+  @Column({ type: 'uuid', nullable: true })
+  communityId!: string | null;
 
   @Column({ type: 'uuid' })
   profileId!: string;

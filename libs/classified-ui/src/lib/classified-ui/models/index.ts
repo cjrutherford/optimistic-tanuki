@@ -2,7 +2,7 @@ export type ClassifiedAdStatus = 'active' | 'sold' | 'expired' | 'removed';
 
 export interface ClassifiedAdDto {
   id: string;
-  communityId: string;
+  communityId: string | null;
   profileId: string;
   userId: string;
   title: string;
@@ -22,7 +22,7 @@ export interface ClassifiedAdDto {
 }
 
 export interface CreateClassifiedAdDto {
-  communityId: string;
+  communityId?: string | null;
   title: string;
   description: string;
   price: number;

@@ -8,6 +8,13 @@ import {
 } from 'typeorm';
 import { CommunityMember } from './community-member.entity';
 
+export type LocalityType =
+  | 'city'
+  | 'town'
+  | 'neighborhood'
+  | 'county'
+  | 'region';
+
 @Entity()
 export class Community {
   @PrimaryGeneratedColumn('uuid')
@@ -15,6 +22,32 @@ export class Community {
 
   @Column({ unique: true })
   name: string;
+
+  /** URL-safe slug; set only for locality-based communities. */
+  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
+  slug: string | null;
+
+  /** When set, this community represents a real-world locality. */
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  localityType: LocalityType | null;
+
+  @Column({ type: 'varchar', length: 3, nullable: true })
+  countryCode: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  adminArea: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  city: string | null;
+
+  @Column({ type: 'decimal', precision: 9, scale: 6, nullable: true })
+  lat: number | null;
+
+  @Column({ type: 'decimal', precision: 9, scale: 6, nullable: true })
+  lng: number | null;
+
+  @Column({ type: 'integer', nullable: true })
+  population: number | null;
 
   @Column({ type: 'text', default: '' })
   description: string;
