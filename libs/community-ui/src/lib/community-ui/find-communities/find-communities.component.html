@@ -67,13 +67,13 @@
           @switch (getMembershipStatus(community.id)) { @case ('member') {
           <otui-button
             variant="secondary"
-            [routerLink]="['/communities', community.id, 'posts']"
+            [routerLink]="['/communities', community.slug || community.id, 'posts']"
             >View Posts</otui-button
           >
           @if (canManage(community.id)) {
           <otui-button
             variant="secondary"
-            [routerLink]="['/communities/manage', community.id, 'members']"
+            [routerLink]="['/communities/manage', community.slug || community.id, 'members']"
             >Manage</otui-button
           >
           } } @case ('pending') {
@@ -120,13 +120,13 @@
           @switch (getMembershipStatus(community.id)) { @case ('member') {
           <otui-button
             variant="secondary"
-            [routerLink]="['/communities', community.id, 'posts']"
+            [routerLink]="['/communities', community.slug || community.id, 'posts']"
             >View Posts</otui-button
           >
           @if (canManage(community.id)) {
           <otui-button
             variant="secondary"
-            [routerLink]="['/communities/manage', community.id, 'members']"
+            [routerLink]="['/communities/manage', community.slug || community.id, 'members']"
             >Manage</otui-button
           >
           } } @case ('pending') {

@@ -236,6 +236,12 @@ export class UpdateCommunityDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(255)
+  slug?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   @MaxLength(2000)
   description?: string;
 
