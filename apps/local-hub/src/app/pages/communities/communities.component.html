@@ -1,0 +1,61 @@
+<div class="communities-page">
+  <header class="page-header">
+    <h1>Local Communities</h1>
+    <p class="subtitle">Find and join communities in your area.</p>
+    <div class="search-bar">
+      <input
+        type="text"
+        placeholder="Search by city, state, or name..."
+        [value]="searchQuery()"
+        (input)="onSearch($event)"
+        class="search-input"
+        aria-label="Search communities"
+      />
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Loading communities…</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-state" role="alert">
+      <p>{{ error() }}</p>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    @if (filteredCommunities.length === 0) {
+      <div class="empty-state">
+        <p>No communities found matching your search.</p>
+      </div>
+    } @else {
+      <ul class="community-grid" role="list">
+        @for (community of filteredCommunities; track community.id) {
+          <li
+            class="community-card"
+            role="listitem"
+            (click)="navigateToCommunity(community.slug)"
+            (keyup.enter)="navigateToCommunity(community.slug)"
+            tabindex="0"
+          >
+            <div class="community-card-header">
+              <h2 class="community-name">{{ community.name }}</h2>
+              <span class="locality-badge">{{ community.localityType }}</span>
+            </div>
+            <p class="community-location">
+              {{ community.city }}, {{ community.adminArea }}, {{ community.countryCode }}
+            </p>
+            <p class="community-description">{{ community.description }}</p>
+            <div class="community-footer">
+              <span class="member-count">{{ community.memberCount | number }} members</span>
+              <span class="view-link">View community →</span>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  }
+</div>

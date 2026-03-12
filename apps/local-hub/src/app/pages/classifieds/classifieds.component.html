@@ -1,0 +1,89 @@
+<div class="classifieds-page">
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Loading classifieds…</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-state" role="alert">
+      <p>{{ error() }}</p>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <header class="page-header">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <button class="breadcrumb-link" (click)="navigateToCommunity()">
+          {{ community()?.name }}
+        </button>
+        <span class="breadcrumb-sep" aria-hidden="true">›</span>
+        <span>Classifieds</span>
+      </nav>
+      <h1>Classifieds</h1>
+      @if (community()) {
+        <p class="subtitle">
+          Browse local listings in {{ community()!.name }}, {{ community()!.city }}.
+        </p>
+      }
+
+      <div class="post-action">
+        <button class="btn btn-primary" (click)="promptPostClassified()">
+          @if (!isAuthenticated()) {
+            Sign in to Post a Listing
+          } @else if (!isMember()) {
+            Join to Post a Listing
+          } @else {
+            + Post a Listing
+          }
+        </button>
+      </div>
+    </header>
+
+    @if (classifieds().length === 0) {
+      <div class="empty-state">
+        <p>No listings yet. Be the first to post!</p>
+      </div>
+    } @else {
+      <ul class="classifieds-grid" role="list">
+        @for (item of classifieds(); track item.id) {
+          <li class="classified-card" role="listitem">
+            @if (item.featured) {
+              <div class="featured-badge">⭐ Featured</div>
+            }
+            <h2 class="classified-title">{{ item.title }}</h2>
+            <div class="classified-meta">
+              <span class="classified-price">
+                {{ item.price | currency: item.currency }}
+              </span>
+              <span class="classified-condition">{{ item.condition }}</span>
+              <span class="classified-category">{{ item.category }}</span>
+            </div>
+            <p class="classified-description">{{ item.description }}</p>
+            @if (item.location) {
+              <p class="classified-location">📍 {{ item.location }}</p>
+            }
+            <div class="classified-footer">
+              <span class="classified-status classified-status--{{ item.status }}">
+                {{ item.status }}
+              </span>
+              <button
+                class="btn btn-outline btn-sm"
+                (click)="promptContactSeller(item)"
+                [disabled]="item.status !== 'active'"
+              >
+                @if (!isAuthenticated()) {
+                  Sign in to Contact Seller
+                } @else if (!isMember()) {
+                  Join to Contact Seller
+                } @else {
+                  Contact Seller
+                }
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  }
+</div>
