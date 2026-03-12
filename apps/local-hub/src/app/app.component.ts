@@ -7,11 +7,11 @@ import {
   PLATFORM_ID,
   Inject,
 } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { NavigationEnd, RouterModule } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
-import { Subscription, filter } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
+import { Subject, filter } from 'rxjs';
+import { map, startWith, takeUntil } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import {
   AppBarComponent,
@@ -44,7 +44,7 @@ export class AppComponent implements OnInit, OnDestroy {
   public authState = inject(AuthStateService);
   public currentUrl$!: Observable<string>;
 
-  private urlSub!: Subscription;
+  private destroy$ = new Subject<void>();
 
   isNavExpanded = signal(false);
   isAuthenticated = signal(false);
@@ -64,20 +64,19 @@ export class AppComponent implements OnInit, OnDestroy {
       startWith(this.router.url)
     );
 
-    this.authState.isAuthenticated$.subscribe((isAuthenticated) => {
+    this.authState.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe((isAuthenticated) => {
       this.isAuthenticated.set(isAuthenticated);
       this.updateNavItems();
     });
 
-    this.currentUrl$.subscribe(() => {
+    this.currentUrl$.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.updateNavItems();
     });
   }
 
   ngOnDestroy() {
-    if (this.urlSub) {
-      this.urlSub.unsubscribe();
-    }
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   updateNavItems() {

@@ -37,16 +37,27 @@ export class AuthenticationService {
   }
 
   setToken(token: string) {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    this.userData.next(payload);
-    this.isAuthenticated.next(true);
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        console.error('Invalid JWT token format');
+        return;
+      }
+      const payload = JSON.parse(atob(parts[1]));
+      this.userData.next(payload);
+      this.isAuthenticated.next(true);
 
-    const expiresAt = payload.exp * 1000;
-    const timeout = expiresAt - Date.now();
+      const expiresAt = payload.exp * 1000;
+      const timeout = expiresAt - Date.now();
 
-    setTimeout(() => {
-      this.isAuthenticated.next(false);
-      this.userData.next(null);
-    }, timeout);
+      if (timeout > 0) {
+        setTimeout(() => {
+          this.isAuthenticated.next(false);
+          this.userData.next(null);
+        }, timeout);
+      }
+    } catch {
+      console.error('Failed to decode JWT token');
+    }
   }
 }

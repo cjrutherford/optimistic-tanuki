@@ -1,9 +1,12 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { ClassifiedService, ClassifiedAd } from '../../services/classified.service';
 import { CommunityService, LocalCommunity } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
+import { MessageService } from '@optimistic-tanuki/message-ui';
 
 @Component({
   selector: 'app-classifieds',
@@ -12,12 +15,14 @@ import { AuthStateService } from '../../services/auth-state.service';
   templateUrl: './classifieds.component.html',
   styleUrls: ['./classifieds.component.scss'],
 })
-export class ClassifiedsComponent implements OnInit {
+export class ClassifiedsComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private classifiedService = inject(ClassifiedService);
   private communityService = inject(CommunityService);
   private authState = inject(AuthStateService);
+  private messageService = inject(MessageService);
+  private destroy$ = new Subject<void>();
 
   community = signal<LocalCommunity | null>(null);
   classifieds = signal<ClassifiedAd[]>([]);
@@ -27,12 +32,17 @@ export class ClassifiedsComponent implements OnInit {
   isMember = signal(false);
 
   ngOnInit(): void {
-    this.authState.isAuthenticated$.subscribe((auth) => {
+    this.authState.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe((auth) => {
       this.isAuthenticated.set(auth);
     });
 
     const slug = this.route.snapshot.paramMap.get('slug') ?? '';
     this.loadData(slug);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   async loadData(slug: string): Promise<void> {
@@ -78,12 +88,18 @@ export class ClassifiedsComponent implements OnInit {
       return;
     }
     if (!this.isMember()) {
-      // TODO: show join-community modal
-      alert('Please join this community first to post a classified.');
+      // TODO: show join-community modal (Phase 2)
+      this.messageService.addMessage({
+        content: 'Please join this community first to post a classified.',
+        type: 'info',
+      });
       return;
     }
     // TODO: navigate to create classified form (Phase 3)
-    alert('Create classified — coming in Phase 3!');
+    this.messageService.addMessage({
+      content: 'Create classified listings coming in Phase 3!',
+      type: 'info',
+    });
   }
 
   promptContactSeller(classified: ClassifiedAd): void {
@@ -92,10 +108,17 @@ export class ClassifiedsComponent implements OnInit {
       return;
     }
     if (!this.isMember()) {
-      alert('Please join this community first to contact sellers.');
+      // TODO: show join-community modal (Phase 2)
+      this.messageService.addMessage({
+        content: 'Please join this community first to contact sellers.',
+        type: 'info',
+      });
       return;
     }
     // TODO: open buyer/seller chat (Phase 3)
-    alert(`Contacting seller for: "${classified.title}" — coming in Phase 3!`);
+    this.messageService.addMessage({
+      content: `Buyer/seller messaging for "${classified.title}" coming in Phase 3!`,
+      type: 'info',
+    });
   }
 }
