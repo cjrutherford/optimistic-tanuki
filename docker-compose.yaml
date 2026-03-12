@@ -394,6 +394,29 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  classifieds:
+    container_name: ot_classifieds
+    build:
+      context: .
+      dockerfile: ./apps/classifieds/Dockerfile
+    ports:
+      - '3017:3017'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  local-hub-client-interface:
+    container_name: ot_local_hub
+    build:
+      context: .
+      dockerfile: ./apps/local-hub/Dockerfile
+    ports:
+      - '8087:4000'
+    depends_on:
+      - gateway
+
   d6:
     container_name: ot_d6
     build:

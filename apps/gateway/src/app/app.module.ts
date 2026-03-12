@@ -98,6 +98,7 @@ import { SocialEventController } from '../controllers/social/social-event/social
     WellnessController,
     ClassifiedsController,
     NotificationController,
+    SearchController,
     PrivacyController,
     ActivityController,
     PresenceController,

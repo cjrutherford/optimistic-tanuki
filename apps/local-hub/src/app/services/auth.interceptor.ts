@@ -9,12 +9,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = authStateService.getToken();
 
-  const clonedRequest = req.clone({
-    setHeaders: {
-      Authorization: token ? `Bearer ${token}` : '',
-      'X-ot-appscope': 'local-hub',
-    },
-  });
+  const headers: Record<string, string> = {
+    'X-ot-appscope': 'local-hub',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const clonedRequest = req.clone({ setHeaders: headers });
 
   return next(clonedRequest).pipe(
     catchError((error) => {
