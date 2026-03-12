@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
 import { AuthStateService } from '../services/auth-state.service';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -8,16 +9,12 @@ import { AuthStateService } from '../services/auth-state.service';
 export class AuthGuard implements CanActivate {
   private router = inject(Router);
   private authStateService = inject(AuthStateService);
-  private isAuthenticated = false;
-
-  constructor() {
-    this.authStateService.isAuthenticated$.subscribe((isAuthenticated) => {
-      this.isAuthenticated = isAuthenticated;
-    });
-  }
 
   async canActivate(): Promise<boolean> {
-    if (this.isAuthenticated) {
+    const isAuthenticated = await firstValueFrom(
+      this.authStateService.isAuthenticated$
+    );
+    if (isAuthenticated) {
       return true;
     }
     this.router.navigate(['/login']);

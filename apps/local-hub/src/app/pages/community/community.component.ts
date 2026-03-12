@@ -1,6 +1,8 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { CommunityService, LocalCommunity } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 
@@ -11,11 +13,12 @@ import { AuthStateService } from '../../services/auth-state.service';
   templateUrl: './community.component.html',
   styleUrls: ['./community.component.scss'],
 })
-export class CommunityComponent implements OnInit {
+export class CommunityComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private communityService = inject(CommunityService);
   private authState = inject(AuthStateService);
+  private destroy$ = new Subject<void>();
 
   community = signal<LocalCommunity | null>(null);
   loading = signal(true);
@@ -25,12 +28,17 @@ export class CommunityComponent implements OnInit {
   joiningInProgress = signal(false);
 
   ngOnInit(): void {
-    this.authState.isAuthenticated$.subscribe((auth) => {
+    this.authState.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe((auth) => {
       this.isAuthenticated.set(auth);
     });
 
     const slug = this.route.snapshot.paramMap.get('slug') ?? '';
     this.loadCommunity(slug);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   async loadCommunity(slug: string): Promise<void> {
