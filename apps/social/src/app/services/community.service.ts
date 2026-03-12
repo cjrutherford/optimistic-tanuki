@@ -50,6 +50,7 @@ export class CommunityService {
 
     const community = this.communityRepo.create({
       name: dto.name,
+      slug: dto.slug ?? null,
       description: dto.description || '',
       ownerId: userId,
       ownerProfileId: profileId,
@@ -60,6 +61,13 @@ export class CommunityService {
       memberCount: 1,
       bannerAssetId: dto.bannerAssetId,
       logoAssetId: dto.logoAssetId,
+      localityType: dto.localityType ?? null,
+      countryCode: dto.countryCode ?? null,
+      adminArea: dto.adminArea ?? null,
+      city: dto.city ?? null,
+      lat: dto.lat ?? null,
+      lng: dto.lng ?? null,
+      population: dto.population ?? null,
     });
 
     const saved = await this.communityRepo.save(community);
@@ -74,6 +82,27 @@ export class CommunityService {
     await this.memberRepo.save(ownerMember);
 
     return saved;
+  }
+
+  async findBySlug(slug: string): Promise<Community | null> {
+    const community = await this.communityRepo.findOne({ where: { slug } });
+    if (community) {
+      return await this.addMemberInfo(community);
+    }
+    return null;
+  }
+
+  /** Return all communities that are locality-based (have a slug/localityType set). */
+  async listLocality(appScope?: string): Promise<Community[]> {
+    const qb = this.communityRepo
+      .createQueryBuilder('c')
+      .where('c.slug IS NOT NULL');
+    if (appScope) {
+      qb.andWhere('c.appScope = :appScope', { appScope });
+    }
+    qb.orderBy('c.memberCount', 'DESC').addOrderBy('c.name', 'ASC');
+    const communities = await qb.getMany();
+    return Promise.all(communities.map((c) => this.addMemberInfo(c)));
   }
 
   async findOne(id: string): Promise<Community | null> {

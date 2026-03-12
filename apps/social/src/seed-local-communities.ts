@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { LocalCommunityEntity } from './app/entities/local-community.entity';
+import { Community } from './entities/community.entity';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 54 localities within 250 miles of ZIP 31406 (Savannah, GA: 31.9868,-81.0982)
@@ -411,8 +411,8 @@ async function main() {
   const app = await NestFactory.createApplicationContext(AppModule);
 
   try {
-    const communityRepo = app.get<Repository<LocalCommunityEntity>>(
-      getRepositoryToken(LocalCommunityEntity)
+    const communityRepo = app.get<Repository<Community>>(
+      getRepositoryToken(Community)
     );
 
     console.log(`Seeding ${COMMUNITIES.length} local communities...`);
@@ -425,12 +425,13 @@ async function main() {
       });
 
       if (existing) {
-        Object.assign(existing, data);
+        const { slug, description, localityType, countryCode, adminArea, city, lat, lng, population } = data;
+        Object.assign(existing, { slug, description, localityType, countryCode, adminArea, city, lat, lng, population });
         await communityRepo.save(existing);
         updated++;
         console.log(`  Updated: ${data.name}`);
       } else {
-        const community = communityRepo.create(data);
+        const community = communityRepo.create({ ...data, ownerId: 'system', ownerProfileId: 'system', appScope: 'local-hub', isPrivate: false, joinPolicy: 'public', tags: [], memberCount: 0 });
         await communityRepo.save(community);
         created++;
         console.log(`  Created: ${data.name}`);

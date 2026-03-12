@@ -16,10 +16,11 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { LocalCommunityCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { CommunityCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
+import { AppScope } from '../../decorators/appscope.decorator';
 
 @ApiTags('communities')
 @ApiBearerAuth()
@@ -29,52 +30,59 @@ export class CommunitiesController {
   private readonly logger = new Logger(CommunitiesController.name);
 
   constructor(
-    @Inject(ServiceTokens.CLASSIFIEDS_SERVICE)
-    private readonly classifiedsClient: ClientProxy
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialClient: ClientProxy
   ) {}
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'List all local communities' })
-  @ApiResponse({ status: 200, description: 'Array of local communities.' })
-  listCommunities() {
+  @ApiOperation({ summary: 'List all locality-based communities' })
+  @ApiResponse({ status: 200, description: 'Array of locality communities.' })
+  listCommunities(@AppScope() appScope: string) {
     return firstValueFrom(
-      this.classifiedsClient.send({ cmd: LocalCommunityCommands.LIST }, {})
+      this.socialClient.send(
+        { cmd: CommunityCommands.LIST_LOCALITY },
+        { appScope }
+      )
     );
   }
 
   @Public()
   @Get(':slug')
-  @ApiOperation({ summary: 'Get a local community by slug' })
-  @ApiResponse({ status: 200, description: 'Local community.' })
+  @ApiOperation({ summary: 'Get a locality community by slug' })
+  @ApiResponse({ status: 200, description: 'Community.' })
   findCommunity(@Param('slug') slug: string) {
     return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: LocalCommunityCommands.FIND_BY_SLUG },
+      this.socialClient.send(
+        { cmd: CommunityCommands.FIND_BY_SLUG },
         { slug }
       )
     );
   }
 
   @Post(':id/join')
-  @ApiOperation({ summary: 'Join a local community' })
+  @ApiOperation({ summary: 'Join a community' })
   @ApiResponse({ status: 201, description: 'Successfully joined.' })
   joinCommunity(@Param('id') id: string, @User() user: UserDetails) {
     return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: LocalCommunityCommands.JOIN },
-        { communityId: id, userId: user.userId, profileId: user.profileId }
+      this.socialClient.send(
+        { cmd: CommunityCommands.JOIN },
+        {
+          dto: { communityId: id },
+          userId: user.userId,
+          profileId: user.profileId,
+        }
       )
     );
   }
 
   @Delete(':id/membership')
-  @ApiOperation({ summary: 'Leave a local community' })
+  @ApiOperation({ summary: 'Leave a community' })
   @ApiResponse({ status: 200, description: 'Successfully left.' })
   leaveCommunity(@Param('id') id: string, @User() user: UserDetails) {
     return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: LocalCommunityCommands.LEAVE },
+      this.socialClient.send(
+        { cmd: CommunityCommands.LEAVE },
         { communityId: id, userId: user.userId }
       )
     );
@@ -85,8 +93,8 @@ export class CommunitiesController {
   @ApiResponse({ status: 200, description: 'Boolean membership status.' })
   checkMembership(@Param('id') id: string, @User() user: UserDetails) {
     return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: LocalCommunityCommands.IS_MEMBER },
+      this.socialClient.send(
+        { cmd: 'IS_COMMUNITY_MEMBER' },
         { communityId: id, userId: user.userId }
       )
     );

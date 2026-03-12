@@ -774,6 +774,16 @@ export class AppController {
     return await this.communityService.findOne(id);
   }
 
+  @MessagePattern({ cmd: CommunityCommands.FIND_BY_SLUG })
+  async findCommunityBySlug(@Payload() data: { slug: string }) {
+    return await this.communityService.findBySlug(data.slug);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.LIST_LOCALITY })
+  async listLocalityCommunities(@Payload() data: { appScope?: string }) {
+    return await this.communityService.listLocality(data.appScope);
+  }
+
   @MessagePattern({ cmd: CommunityCommands.FIND_MANY })
   async findAllCommunities(
     @Payload() data: { criteria: SearchCommunityDto; appScope: string }
@@ -828,6 +838,13 @@ export class AppController {
   @MessagePattern({ cmd: CommunityCommands.GET_MEMBERS })
   async getCommunityMembers(@Payload('communityId') communityId: string) {
     return await this.communityService.getMembers(communityId);
+  }
+
+  @MessagePattern({ cmd: 'IS_COMMUNITY_MEMBER' })
+  async isCommunityMember(
+    @Payload() data: { communityId: string; userId: string }
+  ) {
+    return await this.communityService.isMember(data.communityId, data.userId);
   }
 
   @MessagePattern({ cmd: CommunityCommands.GET_USER_COMMUNITIES })

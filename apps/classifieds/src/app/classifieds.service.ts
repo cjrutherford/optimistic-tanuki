@@ -5,7 +5,7 @@ import { RpcException } from '@nestjs/microservices';
 import { ClassifiedAdEntity } from './entities/classified-ad.entity';
 
 export interface CreateClassifiedAdDto {
-  communityId: string;
+  communityId?: string | null;
   title: string;
   description: string;
   price: number;
