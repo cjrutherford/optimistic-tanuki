@@ -46,6 +46,9 @@
       "@optimistic-tanuki/community-ui": [
         "libs/community-ui/src/index.ts"
       ],
+      "@optimistic-tanuki/classified-ui": [
+        "libs/classified-ui/src/index.ts"
+      ],
       "@optimistic-tanuki/compose-lib": [
         "libs/compose-lib/src/index.ts"
       ],

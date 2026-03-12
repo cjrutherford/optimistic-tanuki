@@ -75,6 +75,11 @@ services:
     transport: TCP
     host: ot_wellness
     port: 3016
+  classifieds:
+    name: classifieds
+    transport: TCP
+    host: ot_classifieds
+    port: 3017
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=
