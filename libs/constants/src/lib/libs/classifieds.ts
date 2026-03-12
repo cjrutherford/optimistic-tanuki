@@ -18,3 +18,14 @@ export const ClassifiedCommands = {
   FEATURE: 'classified.feature',
   UNFEATURE: 'classified.unfeature',
 };
+
+/**
+ * Commands for Local Community management within the Classifieds microservice.
+ */
+export const LocalCommunityCommands = {
+  LIST: 'local-community.list',
+  FIND_BY_SLUG: 'local-community.findBySlug',
+  JOIN: 'local-community.join',
+  LEAVE: 'local-community.leave',
+  IS_MEMBER: 'local-community.isMember',
+};

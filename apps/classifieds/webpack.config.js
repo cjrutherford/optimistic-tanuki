@@ -16,6 +16,7 @@ module.exports = {
       outputHashing: 'none',
       generatePackageJson: true,
       externalDependencies: 'all',
+      additionalEntryPoints: ['./src/seed-local-communities.ts'],
     }),
   ],
 };
