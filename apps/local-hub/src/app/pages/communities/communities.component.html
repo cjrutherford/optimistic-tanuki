@@ -1,61 +1,146 @@
 <div class="communities-page">
   <header class="page-header">
-    <h1>Local Communities</h1>
-    <p class="subtitle">Find and join communities in your area.</p>
-    <div class="search-bar">
-      <input
-        type="text"
-        placeholder="Search by city, state, or name..."
-        [value]="searchQuery()"
-        (input)="onSearch($event)"
-        class="search-input"
-        aria-label="Search communities"
-      />
+    <div class="header-content">
+      <h1 class="page-title">Local Communities</h1>
+      <p class="page-subtitle">Find and join communities in your area</p>
+
+      <button class="map-link" (click)="navigateToCities()">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+          <line x1="8" y1="2" x2="8" y2="18" />
+          <line x1="16" y1="6" x2="16" y2="22" />
+        </svg>
+        View City Map
+      </button>
+    </div>
+
+    <div class="search-container">
+      <div class="search-wrapper">
+        <svg
+          class="search-icon"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search by city, community name..."
+          [value]="searchQuery()"
+          (input)="onSearch($event)"
+          class="search-input"
+          aria-label="Search communities"
+        />
+      </div>
     </div>
   </header>
 
   @if (loading()) {
-    <div class="loading-state">
-      <p>Loading communities…</p>
+  <div class="loading-state">
+    <div class="loading-spinner"></div>
+    <p>Loading communities...</p>
+  </div>
+  } @if (error()) {
+  <div class="error-state" role="alert">
+    <p>{{ error() }}</p>
+  </div>
+  } @if (!loading() && !error()) { @if (filteredCommunities.length === 0) {
+  <div class="empty-state">
+    <div class="empty-icon">
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
     </div>
-  }
-
-  @if (error()) {
-    <div class="error-state" role="alert">
-      <p>{{ error() }}</p>
-    </div>
-  }
-
-  @if (!loading() && !error()) {
-    @if (filteredCommunities.length === 0) {
-      <div class="empty-state">
-        <p>No communities found matching your search.</p>
+    <p>No communities found matching your search.</p>
+  </div>
+  } @else {
+  <ul class="community-grid" role="list">
+    @for (community of filteredCommunities; track community.id) {
+    <li
+      class="community-card"
+      role="listitem"
+      (click)="navigateToCommunity(community.slug)"
+      (keyup.enter)="navigateToCommunity(community.slug)"
+      tabindex="0"
+    >
+      <div class="card-image-wrapper">
+        <img
+          [src]="community.imageUrl"
+          [alt]="community.name"
+          class="card-image"
+          loading="lazy"
+        />
+        <div class="card-image-overlay"></div>
+        <span class="locality-badge">{{ community.localityType }}</span>
       </div>
-    } @else {
-      <ul class="community-grid" role="list">
-        @for (community of filteredCommunities; track community.id) {
-          <li
-            class="community-card"
-            role="listitem"
-            (click)="navigateToCommunity(community.slug)"
-            (keyup.enter)="navigateToCommunity(community.slug)"
-            tabindex="0"
+
+      <div class="card-content">
+        <h2 class="community-name">{{ community.name }}</h2>
+        <p class="community-location">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
           >
-            <div class="community-card-header">
-              <h2 class="community-name">{{ community.name }}</h2>
-              <span class="locality-badge">{{ community.localityType }}</span>
-            </div>
-            <p class="community-location">
-              {{ community.city }}, {{ community.adminArea }}, {{ community.countryCode }}
-            </p>
-            <p class="community-description">{{ community.description }}</p>
-            <div class="community-footer">
-              <span class="member-count">{{ community.memberCount | number }} members</span>
-              <span class="view-link">View community →</span>
-            </div>
-          </li>
-        }
-      </ul>
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          {{ community.city }}, {{ community.adminArea }}
+        </p>
+        <p class="community-description">{{ community.description }}</p>
+
+        <div class="community-tags">
+          @for (tag of community.highlights?.slice(0, 3) || []; track tag) {
+          <span class="tag">{{ tag }}</span>
+          }
+        </div>
+
+        <div class="community-footer">
+          <span class="member-count">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            {{ community.memberCount | number }} members
+          </span>
+          <span class="view-link">View community →</span>
+        </div>
+      </div>
+    </li>
     }
-  }
+  </ul>
+  } }
 </div>

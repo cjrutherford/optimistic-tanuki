@@ -1,42 +1,125 @@
 <section class="hero">
   <div class="hero-content">
-    <h1 class="hero-title">Your Local Community, Online</h1>
+    <div class="hero-badge">Welcome to Towne Square</div>
+    <h1 class="hero-title">
+      Your Local Community, <span class="highlight">Online</span>
+    </h1>
     <p class="hero-subtitle">
       Browse local communities, discover classifieds, and connect with your
       neighbors. Sign in to join the conversation.
     </p>
     <div class="hero-actions">
-      <button class="btn btn-primary" (click)="navigateToCommunities()">
-        Browse Communities
+      <button class="btn btn-primary" (click)="navigateToCities()">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+          <line x1="8" y1="2" x2="8" y2="18" />
+          <line x1="16" y1="6" x2="16" y2="22" />
+        </svg>
+        Explore Map
       </button>
       <button class="btn btn-outline" (click)="navigateToRegister()">
-        Join Local Hub
+        Join Towne Square
       </button>
     </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-value">{{ totalCities() }}</span>
+        <span class="stat-label">Cities</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ totalCommunities() }}</span>
+        <span class="stat-label">Communities</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ totalMembers() | number }}</span>
+        <span class="stat-label">Members</span>
+      </div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    @if (loading()) {
+    <div class="loading-placeholder">
+      <div class="loading-spinner"></div>
+    </div>
+    } @else {
+    <div class="visual-grid">
+      @for (city of cities().slice(0, 4); track city.id) {
+      <div class="visual-card" (click)="navigateToCity(city.slug)">
+        <img [src]="city.imageUrl" [alt]="city.name" />
+        <span>{{ city.name }}, {{ city.adminArea }}</span>
+      </div>
+      }
+    </div>
+    }
   </div>
 </section>
 
 <section class="features">
-  <h2 class="section-title">Why Local Hub?</h2>
+  <h2 class="section-title">Why Towne Square?</h2>
   <div class="feature-grid">
     <div class="feature-card">
-      <span class="feature-icon">🏘️</span>
-      <h3>City &amp; Town Communities</h3>
+      <div class="feature-icon">
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+          <line x1="8" y1="2" x2="8" y2="18" />
+          <line x1="16" y1="6" x2="16" y2="22" />
+        </svg>
+      </div>
+      <h3>City & Town Communities</h3>
       <p>
-        Every community is tied to a real place. Find your city, join your
-        town, and connect with people nearby.
+        Every community is tied to a real place. Find your city, join your town,
+        and connect with people nearby.
       </p>
     </div>
     <div class="feature-card">
-      <span class="feature-icon">🛍️</span>
+      <div class="feature-icon">
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+      </div>
       <h3>Local Classifieds</h3>
       <p>
-        Buy and sell locally within your community. Browse listings or post
-        your own — for free.
+        Buy and sell locally within your community. Browse listings or post your
+        own — for free.
       </p>
     </div>
     <div class="feature-card">
-      <span class="feature-icon">💬</span>
+      <div class="feature-icon">
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+          />
+        </svg>
+      </div>
       <h3>Direct Messaging</h3>
       <p>
         Contact sellers directly through in-app messaging. No third-party apps
@@ -44,11 +127,22 @@
       </p>
     </div>
     <div class="feature-card">
-      <span class="feature-icon">🛡️</span>
-      <h3>Safe &amp; Moderated</h3>
+      <div class="feature-icon">
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      </div>
+      <h3>Safe & Moderated</h3>
       <p>
-        Community moderators and a reputation-based system keep Local Hub safe
-        for everyone.
+        Community moderators and a reputation-based system keep Towne Square
+        safe for everyone.
       </p>
     </div>
   </div>
@@ -60,24 +154,27 @@
     <li class="step">
       <span class="step-number">1</span>
       <div class="step-content">
-        <h3>Browse Communities</h3>
-        <p>Explore communities in your area — no account required.</p>
+        <h3>Explore the Map</h3>
+        <p>
+          Browse our supported cities and discover communities in your area — no
+          account required.
+        </p>
       </div>
     </li>
     <li class="step">
       <span class="step-number">2</span>
       <div class="step-content">
-        <h3>Create an Account</h3>
+        <h3>Join a Community</h3>
         <p>Sign up to join communities and unlock all features.</p>
       </div>
     </li>
     <li class="step">
       <span class="step-number">3</span>
       <div class="step-content">
-        <h3>Join &amp; Participate</h3>
+        <h3>Connect & Trade</h3>
         <p>
-          Join your local community to post, comment, list classifieds, and
-          message other members.
+          Post classifieds, message neighbors, and become part of your local
+          community.
         </p>
       </div>
     </li>

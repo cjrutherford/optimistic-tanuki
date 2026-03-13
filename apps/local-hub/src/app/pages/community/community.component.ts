@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { CommunityService, LocalCommunity } from '../../services/community.service';
+import {
+  CommunityService,
+  LocalCommunity,
+} from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 
@@ -29,13 +32,30 @@ export class CommunityComponent implements OnInit, OnDestroy {
   isAuthenticated = signal(false);
   joiningInProgress = signal(false);
 
-  ngOnInit(): void {
-    this.authState.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe((auth) => {
-      this.isAuthenticated.set(auth);
-    });
+  Math = Math;
+
+  getMarkerPosition(): { x: number; y: number } {
+    const community = this.community();
+    if (!community) return { x: 100, y: 60 };
+
+    const lat = community.coordinates?.lat || community.lat || 0;
+    const lng = community.coordinates?.lng || community.lng || 0;
+
+    const x = ((lng + 180) / 360) * 200;
+    const y = ((90 - lat) / 180) * 120;
+
+    return { x, y };
+  }
+
+  async ngOnInit(): Promise<void> {
+    this.authState.isAuthenticated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((auth) => {
+        this.isAuthenticated.set(auth);
+      });
 
     const slug = this.route.snapshot.paramMap.get('slug') ?? '';
-    this.loadCommunity(slug);
+    await this.loadCommunity(slug);
   }
 
   ngOnDestroy(): void {
@@ -45,19 +65,29 @@ export class CommunityComponent implements OnInit, OnDestroy {
 
   async loadCommunity(slug: string): Promise<void> {
     try {
-      const data = await this.communityService.getCommunityBySlug(slug);
-      this.community.set(data);
+      const communities = await this.communityService.getMockCommunities();
+      const data = communities.find((c) => c.slug === slug);
 
-      if (this.isAuthenticated()) {
-        try {
-          const member = await this.communityService.isMember(data.id);
-          this.isMember.set(member);
-        } catch {
-          // membership check failing is non-fatal
+      if (!data) {
+        this.error.set(
+          'Community not found or unable to load. Please try again.'
+        );
+      } else {
+        this.community.set(data);
+
+        if (this.isAuthenticated()) {
+          try {
+            const member = await this.communityService.isMember(data.id);
+            this.isMember.set(member);
+          } catch {
+            // membership check failing is non-fatal
+          }
         }
       }
     } catch {
-      this.error.set('Community not found or unable to load. Please try again.');
+      this.error.set(
+        'Community not found or unable to load. Please try again.'
+      );
     } finally {
       this.loading.set(false);
     }
@@ -70,8 +100,19 @@ export class CommunityComponent implements OnInit, OnDestroy {
     }
   }
 
+  navigateToCity(): void {
+    const community = this.community();
+    if (community) {
+      const citySlug = community.city.toLowerCase().replace(/\s+/g, '-');
+      this.router.navigate(['/city', citySlug]);
+    }
+  }
+
+  navigateToCities(): void {
+    this.router.navigate(['/cities']);
+  }
+
   promptSignIn(action: string): void {
-    // Placeholder: redirect to login with a return URL
     this.router.navigate(['/login'], {
       queryParams: { returnUrl: this.router.url, action },
     });

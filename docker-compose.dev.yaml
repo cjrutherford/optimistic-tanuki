@@ -229,6 +229,8 @@ services:
     depends_on: # Added
       postgres:
         condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
 
   project-planning:
     container_name: ot_project_planning
