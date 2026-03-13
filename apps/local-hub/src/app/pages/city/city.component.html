@@ -215,6 +215,24 @@
                 class="community-image"
                 loading="lazy"
               />
+              @if (isAuthenticated()) {
+              <div class="card-actions">
+                @if (!isMember(node.community.id)) {
+                <button
+                  class="join-btn"
+                  (click)="
+                    joinCommunity(node.community.id);
+                    $event.stopPropagation()
+                  "
+                  [disabled]="expandingInProgress() === node.community.id"
+                >
+                  Join
+                </button>
+                } @else {
+                <span class="member-badge-small">Member</span>
+                }
+              </div>
+              }
             </div>
             <div class="community-content">
               <div class="community-header">

@@ -26,6 +26,7 @@ export interface CommunityDto {
   id: string;
   name: string;
   slug?: string | null;
+  parentId?: string | null;
   description: string;
   ownerId: string;
   ownerProfileId: string;
@@ -48,6 +49,7 @@ export interface CommunityDto {
 export interface CreateCommunityDto {
   name: string;
   slug?: string;
+  parentId?: string | null;
   description?: string;
   isPrivate?: boolean;
   joinPolicy?: CommunityJoinPolicy;
@@ -59,6 +61,7 @@ export interface CreateCommunityDto {
 export interface UpdateCommunityDto {
   name?: string;
   slug?: string;
+  parentId?: string | null;
   description?: string;
   isPrivate?: boolean;
   joinPolicy?: CommunityJoinPolicy;

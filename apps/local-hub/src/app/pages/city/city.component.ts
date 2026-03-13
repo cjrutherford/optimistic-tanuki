@@ -122,33 +122,28 @@ export class CityComponent implements OnInit, OnDestroy {
   private buildCommunityTree(
     communities: LocalCommunity[]
   ): CommunityTreeNode[] {
-    const cityCommunity = communities.find((c) => c.localityType === 'city');
+    // City community is the one with localityType === 'city' (no parentId)
+    const cityCommunity = communities.find(
+      (c) => c.localityType === 'city' && !c.parentId
+    );
     if (!cityCommunity) return [];
 
-    const otherCommunities = communities.filter(
-      (c) => c.localityType !== 'city'
-    );
+    // Sub-communities are those with parentId === city.id, or those sharing
+    // the same city name but not of type 'city' themselves (legacy support)
+    const subCommunities = communities.filter((c) => {
+      if (c.id === cityCommunity.id) return false;
+      return c.parentId === cityCommunity.id || !c.parentId;
+    });
 
     const rootNode: CommunityTreeNode = {
       community: cityCommunity,
-      children: [],
+      children: subCommunities.map((comm) => ({
+        community: comm,
+        children: [],
+        isExpanded: false,
+      })),
       isExpanded: true,
     };
-
-    const localityTypes = ['neighborhood', 'county', 'region', 'town'];
-
-    for (const type of localityTypes) {
-      const typeCommunities = otherCommunities.filter(
-        (c) => c.localityType === type
-      );
-      for (const comm of typeCommunities) {
-        rootNode.children.push({
-          community: comm,
-          children: [],
-          isExpanded: false,
-        });
-      }
-    }
 
     return [rootNode];
   }

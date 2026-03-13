@@ -13,6 +13,7 @@ module.exports = {
       additionalEntryPoints: [
         './src/seed-social.ts',
         './src/seed-local-communities.ts',
+        './src/seed-community-posts.ts',
       ],
       tsConfig: './tsconfig.app.json',
       assets: ['./src/assets'],

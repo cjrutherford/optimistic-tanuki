@@ -224,6 +224,11 @@ export class CreateCommunityDto {
   @IsOptional()
   @IsNumber()
   population?: number;
+
+  @ApiPropertyOptional({ description: 'Parent community ID for sub-communities' })
+  @IsOptional()
+  @IsUUID()
+  parentId?: string | null;
 }
 
 export class UpdateCommunityDto {

@@ -60,6 +60,19 @@ export class CommunitiesController {
     );
   }
 
+  @Public()
+  @Get(':id/sub-communities')
+  @ApiOperation({ summary: 'Get sub-communities of a locality community' })
+  @ApiResponse({ status: 200, description: 'Array of sub-communities.' })
+  getSubCommunities(@Param('id') id: string) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.GET_SUB_COMMUNITIES },
+        { parentId: id }
+      )
+    );
+  }
+
   @Post(':id/join')
   @ApiOperation({ summary: 'Join a community' })
   @ApiResponse({ status: 201, description: 'Successfully joined.' })
