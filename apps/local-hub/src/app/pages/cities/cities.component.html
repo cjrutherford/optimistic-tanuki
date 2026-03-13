@@ -1,0 +1,208 @@
+<div class="cities-page">
+  <header class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Explore Local Hubs</h1>
+      <p class="page-subtitle">
+        Discover communities across {{ cities().length }} supported cities
+      </p>
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-value">{{ cities().length }}</span>
+          <span class="stat-label">Cities</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{ getTotalCommunities() }}</span>
+          <span class="stat-label">Communities</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  @if (loading()) {
+  <div class="loading-state">
+    <div class="loading-spinner"></div>
+    <p>Loading cities...</p>
+  </div>
+  } @else {
+  <section class="map-section">
+    <div class="us-map">
+      <svg
+        viewBox="0 0 400 300"
+        class="map-svg"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <linearGradient id="mapGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.1" />
+            <stop
+              offset="100%"
+              stop-color="var(--tertiary)"
+              stop-opacity="0.05"
+            />
+          </linearGradient>
+          <radialGradient id="radiusGradient" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.15" />
+            <stop
+              offset="70%"
+              stop-color="var(--primary)"
+              stop-opacity="0.08"
+            />
+            <stop offset="100%" stop-color="var(--primary)" stop-opacity="0" />
+          </radialGradient>
+        </defs>
+
+        <rect
+          x="0"
+          y="0"
+          width="400"
+          height="300"
+          fill="var(--surface)"
+          rx="8"
+        />
+
+        <circle
+          [attr.cx]="getSavannahMarker().x"
+          [attr.cy]="getSavannahMarker().y"
+          [attr.r]="getRadiusRadius()"
+          fill="url(#radiusGradient)"
+          class="radius-circle"
+        />
+
+        <circle
+          [attr.cx]="getSavannahMarker().x"
+          [attr.cy]="getSavannahMarker().y"
+          [attr.r]="getRadiusRadius()"
+          fill="none"
+          stroke="var(--primary)"
+          stroke-width="1"
+          stroke-dasharray="4 4"
+          opacity="0.5"
+          class="radius-outline"
+        />
+
+        <circle
+          [attr.cx]="getSavannahMarker().x"
+          [attr.cy]="getSavannahMarker().y"
+          r="5"
+          fill="var(--primary)"
+          filter="url(#glow)"
+        />
+        <circle
+          [attr.cx]="getSavannahMarker().x"
+          [attr.cy]="getSavannahMarker().y"
+          r="2.5"
+          fill="white"
+        />
+        <text
+          [attr.x]="getSavannahMarker().x + 10"
+          [attr.y]="getSavannahMarker().y + 4"
+          class="center-label"
+        >
+          Savannah, GA
+        </text>
+
+        @for (city of cities(); track city.id) {
+        <g
+          class="city-marker"
+          [class.active]="hoveredCity()?.id === city.id"
+          (click)="navigateToCity(city.slug)"
+          (mouseenter)="onCityHover(city)"
+          (mouseleave)="onCityHover(null)"
+        >
+          <circle
+            [attr.cx]="getMarkerPosition(city).x"
+            [attr.cy]="getMarkerPosition(city).y"
+            r="8"
+            class="marker-pulse"
+          />
+          <circle
+            [attr.cx]="getMarkerPosition(city).x"
+            [attr.cy]="getMarkerPosition(city).y"
+            r="4"
+            class="marker-dot"
+          />
+          <text
+            [attr.x]="getMarkerPosition(city).x + 10"
+            [attr.y]="getMarkerPosition(city).y + 3"
+            class="marker-label"
+          >
+            {{ city.name }}
+          </text>
+        </g>
+        }
+      </svg>
+    </div>
+  </section>
+
+  <section class="cities-grid">
+    <h2 class="section-title">All Supported Cities</h2>
+    <div class="city-cards">
+      @for (city of cities(); track city.id) {
+      <article class="city-card" (click)="navigateToCity(city.slug)">
+        <div class="city-image-wrapper">
+          <img
+            [src]="city.imageUrl"
+            [alt]="city.name"
+            class="city-image"
+            loading="lazy"
+          />
+          <div class="city-image-overlay"></div>
+        </div>
+        <div class="city-content">
+          <div class="city-header">
+            <h3 class="city-name">{{ city.name }}</h3>
+            <span class="city-state">{{ city.adminArea }}</span>
+          </div>
+          <p class="city-description">{{ city.description }}</p>
+          <div class="city-meta">
+            <span class="city-population">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              {{ city.population | number }}
+            </span>
+            <span class="city-communities">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              {{ city.communities }}
+              {{ city.communities === 1 ? 'community' : 'communities' }}
+            </span>
+          </div>
+          <div class="city-highlights">
+            @for (highlight of city.highlights.slice(0, 2); track highlight) {
+            <span class="highlight-tag">{{ highlight }}</span>
+            }
+          </div>
+        </div>
+      </article>
+      }
+    </div>
+  </section>
+  }
+</div>

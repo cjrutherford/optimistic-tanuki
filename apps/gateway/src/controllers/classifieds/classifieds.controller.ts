@@ -18,7 +18,11 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ClassifiedCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  ClassifiedCommands,
+  CommunityCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
@@ -27,7 +31,8 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 
 export interface CreateClassifiedAdDto {
-  communityId: string;
+  communityId?: string | null;
+  communitySlug?: string;
   title: string;
   description: string;
   price: number;
@@ -49,6 +54,7 @@ export interface UpdateClassifiedAdDto {
 
 export interface SearchClassifiedsDto {
   communityId?: string;
+  communitySlug?: string;
   query?: string;
   category?: string;
   minPrice?: number;
@@ -66,8 +72,25 @@ export class ClassifiedsController {
 
   constructor(
     @Inject(ServiceTokens.CLASSIFIEDS_SERVICE)
-    private readonly classifiedsClient: ClientProxy
+    private readonly classifiedsClient: ClientProxy,
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialClient: ClientProxy
   ) {}
+
+  private async resolveCommunitySlugToId(slug: string): Promise<string | null> {
+    try {
+      const community = await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.FIND_BY_SLUG },
+          { slug }
+        )
+      );
+      return community?.id || null;
+    } catch (error) {
+      this.logger.warn(`Failed to resolve community slug "${slug}":`, error);
+      return null;
+    }
+  }
 
   // ─── Public read endpoints ────────────────────────────────────────────────
 
@@ -79,6 +102,28 @@ export class ClassifiedsController {
     @Param('communityId') communityId: string,
     @AppScope() appScope: string
   ) {
+    return firstValueFrom(
+      this.classifiedsClient.send(
+        { cmd: ClassifiedCommands.FIND_BY_COMMUNITY },
+        { communityId, appScope }
+      )
+    );
+  }
+
+  @Public()
+  @Get('community-slug/:slug')
+  @ApiOperation({
+    summary: 'List all classifieds for a community by slug (public)',
+  })
+  @ApiResponse({ status: 200, description: 'List of classified ads.' })
+  async findByCommunitySlug(
+    @Param('slug') slug: string,
+    @AppScope() appScope: string
+  ) {
+    const communityId = await this.resolveCommunitySlugToId(slug);
+    if (!communityId) {
+      return [];
+    }
     return firstValueFrom(
       this.classifiedsClient.send(
         { cmd: ClassifiedCommands.FIND_BY_COMMUNITY },
@@ -108,10 +153,15 @@ export class ClassifiedsController {
     @Body() dto: SearchClassifiedsDto,
     @AppScope() appScope: string
   ) {
+    let communityId = dto.communityId;
+    if (!communityId && dto.communitySlug) {
+      communityId = await this.resolveCommunitySlugToId(dto.communitySlug);
+    }
+
     return firstValueFrom(
       this.classifiedsClient.send(
         { cmd: ClassifiedCommands.SEARCH },
-        { ...dto, appScope }
+        { ...dto, communityId, appScope }
       )
     );
   }
@@ -128,10 +178,24 @@ export class ClassifiedsController {
     @AppScope() appScope: string
   ) {
     this.logger.log(`Creating classified for profile=${user.profileId}`);
+
+    let communityId = dto.communityId;
+    if (!communityId && dto.communitySlug) {
+      communityId = await this.resolveCommunitySlugToId(dto.communitySlug);
+      this.logger.log(
+        `Resolved communitySlug "${dto.communitySlug}" to communityId "${communityId}"`
+      );
+    }
+
     return firstValueFrom(
       this.classifiedsClient.send(
         { cmd: ClassifiedCommands.CREATE },
-        { dto, profileId: user.profileId, userId: user.userId, appScope }
+        {
+          dto: { ...dto, communityId },
+          profileId: user.profileId,
+          userId: user.userId,
+          appScope,
+        }
       )
     );
   }
@@ -187,7 +251,9 @@ export class ClassifiedsController {
 
   @Post(':id/feature')
   @RequirePermissions('classified.feature')
-  @ApiOperation({ summary: 'Feature a classified ad (requires payment / mod permission)' })
+  @ApiOperation({
+    summary: 'Feature a classified ad (requires payment / mod permission)',
+  })
   async feature(
     @User() user: UserDetails,
     @Param('id') id: string,
@@ -197,13 +263,18 @@ export class ClassifiedsController {
     return firstValueFrom(
       this.classifiedsClient.send(
         { cmd: ClassifiedCommands.FEATURE },
-        { id, durationDays: body.durationDays, profileId: user.profileId, appScope }
+        {
+          id,
+          durationDays: body.durationDays,
+          profileId: user.profileId,
+          appScope,
+        }
       )
     );
   }
 
   @Get('profile/my-ads')
-  @ApiOperation({ summary: 'Get current user\'s classified ads' })
+  @ApiOperation({ summary: "Get current user's classified ads" })
   async myAds(@User() user: UserDetails, @AppScope() appScope: string) {
     return firstValueFrom(
       this.classifiedsClient.send(

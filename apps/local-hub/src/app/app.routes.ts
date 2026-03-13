@@ -10,6 +10,16 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'cities',
+    loadComponent: () =>
+      import('./pages/cities/cities.component').then((m) => m.CitiesComponent),
+  },
+  {
+    path: 'city/:slug',
+    loadComponent: () =>
+      import('./pages/city/city.component').then((m) => m.CityComponent),
+  },
+  {
     path: 'communities',
     loadComponent: () =>
       import('./pages/communities/communities.component').then(

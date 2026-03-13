@@ -1,7 +1,10 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { CommunityService, LocalCommunity } from '../../services/community.service';
+import {
+  CommunityService,
+  LocalCommunity,
+} from '../../services/community.service';
 
 @Component({
   selector: 'app-communities',
@@ -33,8 +36,13 @@ export class CommunitiesComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     try {
-      const data = await this.communityService.getCommunities();
-      this.communities.set(data);
+      const data = await this.communityService.getMockCommunitiesForCity('');
+      if (data.length === 0) {
+        const communities = await this.communityService.getMockCommunities();
+        this.communities.set(communities);
+      } else {
+        this.communities.set(data);
+      }
     } catch {
       this.error.set('Unable to load communities. Please try again later.');
     } finally {
@@ -49,5 +57,9 @@ export class CommunitiesComponent implements OnInit {
 
   navigateToCommunity(slug: string): void {
     this.router.navigate(['/c', slug]);
+  }
+
+  navigateToCities(): void {
+    this.router.navigate(['/cities']);
   }
 }

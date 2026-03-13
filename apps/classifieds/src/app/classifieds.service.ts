@@ -104,10 +104,9 @@ export class ClassifiedsService {
       qb.andWhere('ad.appScope = :appScope', { appScope: dto.appScope });
     }
     if (dto.query) {
-      qb.andWhere(
-        '(ad.title ILIKE :query OR ad.description ILIKE :query)',
-        { query: `%${dto.query}%` }
-      );
+      qb.andWhere('(ad.title ILIKE :query OR ad.description ILIKE :query)', {
+        query: `%${dto.query}%`,
+      });
     }
     if (dto.category) {
       qb.andWhere('ad.category = :category', { category: dto.category });

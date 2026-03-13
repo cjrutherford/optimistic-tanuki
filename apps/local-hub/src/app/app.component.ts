@@ -64,10 +64,12 @@ export class AppComponent implements OnInit, OnDestroy {
       startWith(this.router.url)
     );
 
-    this.authState.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe((isAuthenticated) => {
-      this.isAuthenticated.set(isAuthenticated);
-      this.updateNavItems();
-    });
+    this.authState.isAuthenticated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((isAuthenticated) => {
+        this.isAuthenticated.set(isAuthenticated);
+        this.updateNavItems();
+      });
 
     this.currentUrl$.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.updateNavItems();
@@ -84,9 +86,17 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.isAuthenticated()) {
       this.navItems.set([
         {
+          label: 'Cities',
+          action: () => this.navigateTo('/cities'),
+          isActive:
+            currentUrl.startsWith('/cities') || currentUrl.startsWith('/city/'),
+        },
+        {
           label: 'Communities',
           action: () => this.navigateTo('/communities'),
-          isActive: currentUrl.startsWith('/communities') || currentUrl.startsWith('/c/'),
+          isActive:
+            currentUrl.startsWith('/communities') ||
+            currentUrl.startsWith('/c/'),
         },
         {
           label: 'Account',
@@ -101,9 +111,17 @@ export class AppComponent implements OnInit, OnDestroy {
     } else {
       this.navItems.set([
         {
+          label: 'Cities',
+          action: () => this.navigateTo('/cities'),
+          isActive:
+            currentUrl.startsWith('/cities') || currentUrl.startsWith('/city/'),
+        },
+        {
           label: 'Communities',
           action: () => this.navigateTo('/communities'),
-          isActive: currentUrl.startsWith('/communities') || currentUrl.startsWith('/c/'),
+          isActive:
+            currentUrl.startsWith('/communities') ||
+            currentUrl.startsWith('/c/'),
         },
         {
           label: 'Login',
