@@ -1,4 +1,26 @@
 /* Global styles with theme support */
+@import 'leaflet/dist/leaflet.css';
+
+:root {
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  --primary: #2d5a4a;
+  --primary-hover: #1e4035;
+  --secondary: #c9a66b;
+  --tertiary: #8b4513;
+  --accent: #d4724a;
+  --background: #faf6f0;
+  --surface: #ffffff;
+  --surface-elevated: #fefdfb;
+  --foreground: #2c2416;
+  --foreground-muted: #6b5d4d;
+  --muted: #ede8df;
+  --border: #d9ceb8;
+  --success: #4a7c59;
+  --warning: #c9852d;
+  --error: #b5463a;
+}
 
 * {
   margin: 0;

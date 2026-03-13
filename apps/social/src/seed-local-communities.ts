@@ -39,6 +39,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Savannah General',
+    slug: 'savannah-ga-general',
+    description:
+      'The official community for all things Savannah. Connect with locals, share local news, events, and discover the Hostess City together.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'GA',
+    city: 'Savannah',
+    lat: 31.9868,
+    lng: -81.0982,
+    population: 147780,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Local' },
+      { id: '3', name: 'Events' },
+    ],
+  },
+  {
     name: 'Savannah Foodies',
     slug: 'savannah-foodies',
     description:
@@ -111,6 +129,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Hilton Head General',
+    slug: 'hilton-head-general',
+    description:
+      'The official community for Hilton Head Island residents and visitors. Share local events, news, and connect with fellow islanders.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'SC',
+    city: 'Hilton Head Island',
+    lat: 32.2163,
+    lng: -80.7526,
+    population: 39945,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Local' },
+      { id: '3', name: 'Island Life' },
+    ],
+  },
+  {
     name: 'Hilton Head Outdoors',
     slug: 'hilton-head-outdoors',
     description:
@@ -144,6 +180,24 @@ const COMMUNITIES: Locality[] = [
       { id: '1', name: 'Military' },
       { id: '2', name: 'Family' },
       { id: '3', name: 'Growing' },
+    ],
+  },
+  {
+    name: 'Hinesville General',
+    slug: 'hinesville-ga-general',
+    description:
+      'The official community for Hinesville and Liberty County. Connect with neighbors, military families, and local businesses.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'GA',
+    city: 'Hinesville',
+    lat: 31.8468,
+    lng: -81.5957,
+    population: 33703,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Military' },
+      { id: '3', name: 'Local' },
     ],
   },
   {
@@ -183,6 +237,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Beaufort General',
+    slug: 'beaufort-sc-general',
+    description:
+      'The official community for Beaufort and the surrounding Sea Islands. Share local news, events, and connect with Lowcountry neighbors.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'SC',
+    city: 'Beaufort',
+    lat: 32.4316,
+    lng: -80.6698,
+    population: 14025,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Lowcountry' },
+      { id: '3', name: 'Gullah' },
+    ],
+  },
+  {
     name: 'Beaufort Waterfront',
     slug: 'beaufort-waterfront',
     description:
@@ -216,6 +288,24 @@ const COMMUNITIES: Locality[] = [
       { id: '1', name: 'College Town' },
       { id: '2', name: 'Education' },
       { id: '3', name: 'Young' },
+    ],
+  },
+  {
+    name: 'Statesboro General',
+    slug: 'statesboro-ga-general',
+    description:
+      'The official community for Statesboro and Bulloch County. Connect with locals, students, and the Georgia Southern community.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'GA',
+    city: 'Statesboro',
+    lat: 32.4488,
+    lng: -81.7832,
+    population: 33736,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'College' },
+      { id: '3', name: 'Local' },
     ],
   },
   {
@@ -273,6 +363,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Brunswick General',
+    slug: 'brunswick-ga-general',
+    description:
+      'The official community for Brunswick and Glynn County. Discover the Golden Isles and connect with coastal Georgia neighbors.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'GA',
+    city: 'Brunswick',
+    lat: 31.1499,
+    lng: -81.4915,
+    population: 21875,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Coastal' },
+      { id: '3', name: 'Golden Isles' },
+    ],
+  },
+  {
     name: 'Golden Isles Beach',
     slug: 'golden-isles-beach',
     description:
@@ -306,6 +414,24 @@ const COMMUNITIES: Locality[] = [
       { id: '1', name: 'Historic' },
       { id: '2', name: 'Food' },
       { id: '3', name: 'Culture' },
+    ],
+  },
+  {
+    name: 'Charleston General',
+    slug: 'charleston-sc-general',
+    description:
+      'The official community for Charleston. Share news, events, and connect with residents of the Holy City.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'SC',
+    city: 'Charleston',
+    lat: 32.7767,
+    lng: -79.9311,
+    population: 150277,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Historic' },
+      { id: '3', name: 'Lowcountry' },
     ],
   },
   {
@@ -399,6 +525,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Jacksonville General',
+    slug: 'jacksonville-fl-general',
+    description:
+      'The official community for Jacksonville. Connect with neighbors across the River City from the beaches to the suburbs.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'FL',
+    city: 'Jacksonville',
+    lat: 30.3322,
+    lng: -81.6557,
+    population: 949611,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'River City' },
+      { id: '3', name: 'First Coast' },
+    ],
+  },
+  {
     name: 'Jacksonville Beach',
     slug: 'jacksonville-beach',
     description:
@@ -450,6 +594,24 @@ const COMMUNITIES: Locality[] = [
       { id: '1', name: 'Golf' },
       { id: '2', name: 'Military' },
       { id: '3', name: 'Medical' },
+    ],
+  },
+  {
+    name: 'Augusta General',
+    slug: 'augusta-ga-general',
+    description:
+      'The official community for Augusta and the CSRA. Connect with neighbors from the Garden City to the Cyber Corridor.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'GA',
+    city: 'Augusta',
+    lat: 33.4735,
+    lng: -82.0105,
+    population: 202081,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'CSRA' },
+      { id: '3', name: 'Garden City' },
     ],
   },
   {
@@ -507,6 +669,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Aiken General',
+    slug: 'aiken-sc-general',
+    description:
+      'The official community for Aiken and horse country. Connect with equestrian enthusiasts and historic district neighbors.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'SC',
+    city: 'Aiken',
+    lat: 33.5601,
+    lng: -81.7198,
+    population: 30987,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Horse Country' },
+      { id: '3', name: 'Equestrian' },
+    ],
+  },
+  {
     name: 'Aiken Equestrian',
     slug: 'aiken-equestrian',
     description:
@@ -543,6 +723,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Dublin General',
+    slug: 'dublin-ga-general',
+    description:
+      'The official community for Dublin and Laurens County. Celebrate the Emerald City spirit and connect with neighbors.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'GA',
+    city: 'Dublin',
+    lat: 32.5402,
+    lng: -82.9038,
+    population: 15938,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Emerald City' },
+      { id: '3', name: 'Local' },
+    ],
+  },
+  {
     name: 'Vidalia, GA',
     slug: 'vidalia-ga',
     description:
@@ -557,6 +755,24 @@ const COMMUNITIES: Locality[] = [
     tags: [
       { id: '1', name: 'Agriculture' },
       { id: '2', name: 'Onions' },
+      { id: '3', name: 'Small Town' },
+    ],
+  },
+  {
+    name: 'Vidalia General',
+    slug: 'vidalia-ga-general',
+    description:
+      'The official community for Vidalia and Toombs County. Celebrating sweet onions and Southern hospitality.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'GA',
+    city: 'Vidalia',
+    lat: 32.2177,
+    lng: -82.4132,
+    population: 11024,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Agriculture' },
       { id: '3', name: 'Small Town' },
     ],
   },
@@ -576,6 +792,24 @@ const COMMUNITIES: Locality[] = [
       { id: '1', name: 'Nature' },
       { id: '2', name: 'Swamp' },
       { id: '3', name: 'Outdoor' },
+    ],
+  },
+  {
+    name: 'Waycross General',
+    slug: 'waycross-ga-general',
+    description:
+      'The official community for Waycross and the Okefenokee region. Discover swamp adventures and connect with outdoor enthusiasts.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'GA',
+    city: 'Waycross',
+    lat: 31.2135,
+    lng: -82.3549,
+    population: 14163,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Okefenokee' },
+      { id: '3', name: 'Nature' },
     ],
   },
   {
@@ -615,6 +849,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Jesup General',
+    slug: 'jesup-ga-general',
+    description:
+      'The official community for Jesup and Wayne County. Connect with neighbors in Southeast Georgia.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'GA',
+    city: 'Jesup',
+    lat: 31.5983,
+    lng: -81.8857,
+    population: 10214,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Southeast Georgia' },
+      { id: '3', name: 'Local' },
+    ],
+  },
+  {
     name: 'Fernandina Beach, FL',
     slug: 'fernandina-beach-fl',
     description:
@@ -630,6 +882,24 @@ const COMMUNITIES: Locality[] = [
       { id: '1', name: 'Beach' },
       { id: '2', name: 'Historic' },
       { id: '3', name: 'Amelia Island' },
+    ],
+  },
+  {
+    name: 'Fernandina Beach General',
+    slug: 'fernandina-beach-fl-general',
+    description:
+      'The official community for Fernandina Beach and Amelia Island. Discover island life and connect with neighbors.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'FL',
+    city: 'Fernandina Beach',
+    lat: 30.6696,
+    lng: -81.4626,
+    population: 12969,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Amelia Island' },
+      { id: '3', name: 'Island Life' },
     ],
   },
   {
@@ -669,6 +939,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Orangeburg General',
+    slug: 'orangeburg-sc-general',
+    description:
+      'The official community for Orangeburg and The Region. Connect with students, families, and local businesses.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'SC',
+    city: 'Orangeburg',
+    lat: 33.4918,
+    lng: -80.8548,
+    population: 13964,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'HBCU' },
+      { id: '3', name: 'The Region' },
+    ],
+  },
+  {
     name: 'Orangeburg Students',
     slug: 'orangeburg-students',
     description:
@@ -705,6 +993,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Douglas General',
+    slug: 'douglas-ga-general',
+    description:
+      'The official community for Douglas and Coffee County. Connect with South Georgia neighbors and local businesses.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'GA',
+    city: 'Douglas',
+    lat: 31.5088,
+    lng: -82.8499,
+    population: 11589,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'South Georgia' },
+      { id: '3', name: 'Local' },
+    ],
+  },
+  {
     name: 'Columbia, SC',
     slug: 'columbia-sc',
     description:
@@ -720,6 +1026,24 @@ const COMMUNITIES: Locality[] = [
       { id: '1', name: 'Capital' },
       { id: '2', name: 'College Town' },
       { id: '3', name: 'Government' },
+    ],
+  },
+  {
+    name: 'Columbia General',
+    slug: 'columbia-sc-general',
+    description:
+      'The official community for Columbia and the Midlands. Connect with neighbors from the Vista to Five Points.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'SC',
+    city: 'Columbia',
+    lat: 34.0007,
+    lng: -81.0348,
+    population: 127029,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'The Midlands' },
+      { id: '3', name: 'Capital City' },
     ],
   },
   {
@@ -777,6 +1101,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Greenville General',
+    slug: 'greenville-sc-general',
+    description:
+      'The official community for Greenville and the Upstate. Discover Falls Park, local events, and connect with neighbors.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'SC',
+    city: 'Greenville',
+    lat: 34.8526,
+    lng: -82.394,
+    population: 70720,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Upstate' },
+      { id: '3', name: 'Downtown' },
+    ],
+  },
+  {
     name: 'Greenville Downtown',
     slug: 'greenville-downtown',
     description:
@@ -831,6 +1173,24 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
+    name: 'Myrtle Beach General',
+    slug: 'myrtle-beach-sc-general',
+    description:
+      'The official community for the Grand Strand. Connect with locals from Myrtle Beach to North Myrtle Beach.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'SC',
+    city: 'Myrtle Beach',
+    lat: 33.689,
+    lng: -78.8869,
+    population: 341421,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Grand Strand' },
+      { id: '3', name: 'Beach Life' },
+    ],
+  },
+  {
     name: 'Myrtle Beach Golf',
     slug: 'myrtle-beach-golf',
     description:
@@ -867,39 +1227,21 @@ const COMMUNITIES: Locality[] = [
     ],
   },
   {
-    name: 'Wilmington Film',
-    slug: 'wilmington-film',
+    name: 'Wilmington General',
+    slug: 'wilmington-nc-general',
     description:
-      "Wilmington's film industry. Crew, casting, and local film productions.",
-    localityType: 'neighborhood',
+      'The official community for Wilmington and the Cape Fear region. Connect with neighbors from downtown to Wrightsville Beach.',
+    localityType: 'county',
     countryCode: 'US',
     adminArea: 'NC',
     city: 'Wilmington',
-    lat: 34.24,
-    lng: -77.94,
-    population: 45000,
+    lat: 34.2257,
+    lng: -77.9447,
+    population: 115382,
     tags: [
-      { id: '1', name: 'Film' },
-      { id: '2', name: 'Entertainment' },
-      { id: '3', name: 'Production' },
-    ],
-  },
-  {
-    name: 'Wrightsville Beach',
-    slug: 'wrightsville-beach-nc',
-    description:
-      "Wilmington's premier beach community. Surfing, beach living, and coastal lifestyle.",
-    localityType: 'neighborhood',
-    countryCode: 'US',
-    adminArea: 'NC',
-    city: 'Wilmington',
-    lat: 34.19,
-    lng: -77.79,
-    population: 4500,
-    tags: [
-      { id: '1', name: 'Beach' },
-      { id: '2', name: 'Surfing' },
-      { id: '3', name: 'Coastal' },
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Cape Fear' },
+      { id: '3', name: 'Port City' },
     ],
   },
 ];

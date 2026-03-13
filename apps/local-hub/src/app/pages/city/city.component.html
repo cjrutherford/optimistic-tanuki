@@ -90,88 +90,14 @@
     <div class="section-container">
       <h2 class="section-title">Location</h2>
       <div class="map-container">
-        <div class="mini-map">
-          <svg viewBox="0 0 200 120" class="map-svg">
-            <defs>
-              <filter id="mapGlow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="2" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <radialGradient id="cityRadiusGradient" cx="50%" cy="50%" r="50%">
-                <stop
-                  offset="0%"
-                  stop-color="var(--primary)"
-                  stop-opacity="0.15"
-                />
-                <stop
-                  offset="70%"
-                  stop-color="var(--primary)"
-                  stop-opacity="0.08"
-                />
-                <stop
-                  offset="100%"
-                  stop-color="var(--primary)"
-                  stop-opacity="0"
-                />
-              </radialGradient>
-            </defs>
-
-            <rect
-              x="0"
-              y="0"
-              width="200"
-              height="120"
-              fill="var(--surface)"
-              rx="8"
-            />
-
-            <circle
-              [attr.cx]="100"
-              [attr.cy]="60"
-              [attr.r]="getCityMarkerRadius()"
-              fill="url(#cityRadiusGradient)"
-            />
-
-            <circle
-              [attr.cx]="100"
-              [attr.cy]="60"
-              [attr.r]="getCityMarkerRadius()"
-              fill="none"
-              stroke="var(--primary)"
-              stroke-width="1"
-              stroke-dasharray="3 3"
-              opacity="0.5"
-            />
-
-            <path
-              d="M30,70 L50,60 L80,65 L100,50 L130,55 L160,45 L180,55 L190,70 L180,90 L150,95 L120,90 L90,100 L60,95 L30,85 Z"
-              fill="var(--muted)"
-              opacity="0.3"
-            />
-
-            <circle
-              [attr.cx]="100"
-              [attr.cy]="60"
-              r="8"
-              fill="var(--primary)"
-              filter="url(#mapGlow)"
-              class="map-marker"
-            />
-            <circle [attr.cx]="100" [attr.cy]="60" r="4" fill="white" />
-
-            <text [attr.x]="112" [attr.y]="64" class="map-label">
-              {{ city()!.name }}
-            </text>
-
-            <text x="100" y="110" class="coordinates" text-anchor="middle">
-              {{ city()!.coordinates.lat.toFixed(2) }}°N,
-              {{ Math.abs(city()!.coordinates.lng).toFixed(2) }}°W
-            </text>
-          </svg>
-        </div>
+        @if (city()) {
+        <app-map
+          [cities]="[city()!]"
+          [centerLat]="city()!.coordinates.lat"
+          [centerLng]="city()!.coordinates.lng"
+          [zoom]="10"
+        ></app-map>
+        }
         <div class="map-info">
           <div class="coord-item">
             <span class="coord-label">Latitude</span>
@@ -221,8 +147,7 @@
                 <button
                   class="join-btn"
                   (click)="
-                    joinCommunity(node.community.id);
-                    $event.stopPropagation()
+                    joinCommunity(node.community.id); $event.stopPropagation()
                   "
                   [disabled]="expandingInProgress() === node.community.id"
                 >
@@ -333,5 +258,84 @@
       }
     </div>
   </section>
+
+  @if (posts().length > 0) {
+  <section class="posts-section">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">Recent Discussions</h2>
+        <p class="section-subtitle">
+          See what people are talking about in {{ city()!.name }}
+        </p>
+      </div>
+
+      <div class="posts-grid">
+        @for (post of posts(); track post.id) {
+        <article
+          class="post-card"
+          (click)="navigateToCommunity(post.communitySlug)"
+        >
+          <div class="post-header">
+            <span class="post-community">{{ post.communityName }}</span>
+            <span class="post-date">{{
+              post.createdAt | date : 'MMM d, y'
+            }}</span>
+          </div>
+          <h3 class="post-title">{{ post.title }}</h3>
+          <p class="post-content">{{ post.content }}</p>
+          <div class="post-footer">
+            <span class="post-author">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              {{ post.authorName }}
+            </span>
+            <span class="post-stats">
+              <span class="post-likes">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
+                  ></path>
+                </svg>
+                {{ post.likes }}
+              </span>
+              <span class="post-comments">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                  ></path>
+                </svg>
+                {{ post.comments }}
+              </span>
+            </span>
+          </div>
+        </article>
+        }
+      </div>
+    </div>
+  </section>
+  }
 </div>
 }
