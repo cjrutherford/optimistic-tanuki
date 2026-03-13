@@ -149,6 +149,11 @@ export class AppComponent implements OnInit, OnDestroy {
           isActive: currentUrl === '/settings',
         },
         {
+          label: 'My Apps',
+          action: () => this.navigateTo('/my-apps'),
+          isActive: currentUrl === '/my-apps' || currentUrl === '/create-app',
+        },
+        {
           label: 'Feed',
           action: () => this.navigateTo('/feed'),
           isActive: currentUrl === '/feed',

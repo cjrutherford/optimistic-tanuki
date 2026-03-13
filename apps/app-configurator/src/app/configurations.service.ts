@@ -1,17 +1,31 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
 import {
   CreateAppConfigDto,
   UpdateAppConfigDto,
 } from '@optimistic-tanuki/app-config-models';
+import { 
+  ServiceTokens, 
+  AppScopeCommands, 
+  RoleCommands 
+} from '@optimistic-tanuki/constants';
+import {
+  CreateAppScopeDto,
+  CreateRoleDto,
+  AssignRoleDto,
+} from '@optimistic-tanuki/models';
 
 @Injectable()
 export class ConfigurationsService {
   constructor(
     @InjectRepository(AppConfigurationEntity)
     private readonly configRepository: Repository<AppConfigurationEntity>,
+    @Inject(ServiceTokens.PERMISSIONS_SERVICE)
+    private readonly permissionsClient: ClientProxy,
     private readonly logger: Logger
   ) {}
 
@@ -27,6 +41,78 @@ export class ConfigurationsService {
     entity.features = createDto.features as any;
     entity.theme = createDto.theme as any;
     entity.active = createDto.active ?? true;
+    entity.ownerId = createDto.ownerId;
+
+    // Create app scope if requested and ownerId is provided
+    if (createDto.createAppScope && createDto.ownerId) {
+      try {
+        this.logger.log(`Creating app scope for configuration: ${createDto.name}`);
+        
+        // Sanitize app scope name
+        const sanitizedName = createDto.name
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
+        
+        // Create the app scope
+        const appScopeDto: CreateAppScopeDto = {
+          name: sanitizedName,
+          description: `App scope for ${createDto.name}`,
+          active: true,
+        };
+
+        const appScope = await firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: AppScopeCommands.Create },
+            appScopeDto
+          )
+        );
+
+        this.logger.log(`App scope created with ID: ${appScope.id}`);
+        entity.appScopeId = appScope.id;
+
+        // Create an owner role for this app scope
+        const ownerRoleDto: CreateRoleDto = {
+          name: `${sanitizedName}-owner`,
+          description: `Owner role for ${createDto.name}`,
+          appScopeId: appScope.id,
+        };
+
+        const ownerRole = await firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: RoleCommands.Create },
+            ownerRoleDto
+          )
+        );
+
+        this.logger.log(`Owner role created with ID: ${ownerRole.id}`);
+
+        // Assign the owner role to the creator
+        const assignRoleDto: AssignRoleDto = {
+          profileId: createDto.ownerId,
+          roleId: ownerRole.id,
+          appScopeId: appScope.id,
+        };
+
+        await firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: RoleCommands.Assign },
+            assignRoleDto
+          )
+        );
+
+        this.logger.log(
+          `Owner role assigned to profile ${createDto.ownerId} for app scope ${appScope.id}`
+        );
+      } catch (error) {
+        this.logger.error('Failed to create app scope or assign owner role:', error);
+        // Fail the entire operation if scope/role creation fails
+        throw new Error(
+          'Failed to create app with permissions. Please try again or contact support.'
+        );
+      }
+    }
     
     return await this.configRepository.save(entity);
   }

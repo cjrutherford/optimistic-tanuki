@@ -19,6 +19,7 @@ import {
 } from '@optimistic-tanuki/app-config-models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { firstValueFrom } from 'rxjs';
+import { User, UserDetails } from '../../decorators/user.decorator';
 
 @ApiTags('app-config')
 @Controller('app-config')
@@ -33,10 +34,18 @@ export class AppConfigController {
   @ApiOperation({ summary: 'Create a new app configuration' })
   @ApiResponse({ status: 201, description: 'Configuration created successfully' })
   @Post()
-  async createConfiguration(@Body() createDto: CreateAppConfigDto) {
-    this.logger.log('Creating app configuration');
+  async createConfiguration(
+    @Body() createDto: CreateAppConfigDto,
+    @User() user: UserDetails
+  ) {
+    this.logger.log(`Creating app configuration for user ${user.profileId}`);
+    // Set ownerId to the current user's profileId
+    const dtoWithOwner = {
+      ...createDto,
+      ownerId: user.profileId,
+    };
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.Create }, createDto)
+      this.client.send({ cmd: AppConfigCommands.Create }, dtoWithOwner)
     );
   }
 

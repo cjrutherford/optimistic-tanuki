@@ -62,6 +62,18 @@ export const appRoutes: Route[] = [
       import('./components/login.component').then((m) => m.LoginComponent),
   },
   {
+    path: 'my-apps',
+    loadComponent: () =>
+      import('./components/my-apps.component').then((m) => m.MyAppsComponent),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
+    path: 'create-app',
+    loadComponent: () =>
+      import('./components/create-app.component').then((m) => m.CreateAppComponent),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
     path: 'feed',
     loadComponent: () =>
       import('./components/social/feed.component').then((m) => m.FeedComponent),

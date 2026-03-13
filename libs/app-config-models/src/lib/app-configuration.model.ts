@@ -24,6 +24,8 @@ export interface AppConfiguration {
   features: FeaturesConfig;
   theme: ThemeConfig;
   active: boolean;
+  ownerId?: string; // Profile ID of the user who created this app
+  appScopeId?: string; // Associated app scope ID for permissions
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -40,6 +42,8 @@ export interface CreateAppConfigDto {
   features: FeaturesConfig;
   theme: ThemeConfig;
   active?: boolean;
+  ownerId?: string; // Profile ID of the user creating this app
+  createAppScope?: boolean; // Whether to create an associated app scope
 }
 
 /**
