@@ -10,6 +10,7 @@ module.exports = {
       target: 'node',
       compiler: 'tsc',
       main: './src/main.ts',
+      additionalEntryPoints: ['./src/seed-classifieds.ts'],
       tsConfig: './tsconfig.app.json',
       assets: ['./src/assets'],
       optimization: false,

@@ -7,13 +7,11 @@ import {
   CommunityService,
   City,
   LocalCommunity,
+  CityPost,
 } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
-
-const VIEWBOX_WIDTH = 200;
-const VIEWBOX_HEIGHT = 120;
-const RADIUS_DEGREES = 3.6;
+import { MapComponent } from '../../components/map/map.component';
 
 interface CommunityTreeNode {
   community: LocalCommunity;
@@ -21,15 +19,10 @@ interface CommunityTreeNode {
   isExpanded: boolean;
 }
 
-interface MarkerPosition {
-  x: number;
-  y: number;
-}
-
 @Component({
   selector: 'app-city',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MapComponent],
   templateUrl: './city.component.html',
   styleUrls: ['./city.component.scss'],
 })
@@ -44,35 +37,12 @@ export class CityComponent implements OnInit, OnDestroy {
   city = signal<City | null>(null);
   communities = signal<LocalCommunity[]>([]);
   communityTree = signal<CommunityTreeNode[]>([]);
+  posts = signal<CityPost[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
   isAuthenticated = signal(false);
   memberCommunityIds = signal<Set<string>>(new Set());
   expandingInProgress = signal<string | null>(null);
-
-  Math = Math;
-
-  getCityMarker(): MarkerPosition {
-    const cityData = this.city();
-    if (!cityData) return { x: 100, y: 60 };
-
-    const lat = cityData.coordinates.lat;
-    const lng = cityData.coordinates.lng;
-
-    const latRange = RADIUS_DEGREES * 2;
-    const lngRange = RADIUS_DEGREES * 2.5;
-    const centerLat = 31.9;
-    const centerLng = -81.1;
-
-    const x = ((lng - centerLng + lngRange / 2) / lngRange) * VIEWBOX_WIDTH;
-    const y = ((centerLat + latRange / 2 - lat) / latRange) * VIEWBOX_HEIGHT;
-
-    return { x, y };
-  }
-
-  getCityMarkerRadius(): number {
-    return (RADIUS_DEGREES / (RADIUS_DEGREES * 2.5)) * VIEWBOX_WIDTH;
-  }
 
   async ngOnInit(): Promise<void> {
     this.authState.isAuthenticated$
@@ -108,6 +78,9 @@ export class CityComponent implements OnInit, OnDestroy {
 
       const tree = this.buildCommunityTree(communitiesData);
       this.communityTree.set(tree);
+
+      const postsData = await this.communityService.getPostsForCity(slug);
+      this.posts.set(postsData);
 
       if (this.isAuthenticated()) {
         await this.loadMembershipStatus(communitiesData);

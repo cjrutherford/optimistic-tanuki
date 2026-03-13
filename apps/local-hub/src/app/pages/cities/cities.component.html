@@ -1,6 +1,16 @@
 <div class="cities-page">
   <header class="page-header">
+    <div class="header-background">
+      <div class="header-pattern"></div>
+      <div class="header-gradient"></div>
+    </div>
     <div class="header-content">
+      <div class="header-top">
+        <div class="brand">
+          <span class="brand-icon">🏠</span>
+          <span class="brand-text">LocalHub</span>
+        </div>
+      </div>
       <h1 class="page-title">Explore Local Hubs</h1>
       <p class="page-subtitle">
         Discover communities across {{ cities().length }} supported cities
@@ -25,127 +35,44 @@
   </div>
   } @else {
   <section class="map-section">
-    <div class="us-map">
-      <svg
-        viewBox="0 0 400 300"
-        class="map-svg"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        <defs>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <linearGradient id="mapGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.1" />
-            <stop
-              offset="100%"
-              stop-color="var(--tertiary)"
-              stop-opacity="0.05"
-            />
-          </linearGradient>
-          <radialGradient id="radiusGradient" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.15" />
-            <stop
-              offset="70%"
-              stop-color="var(--primary)"
-              stop-opacity="0.08"
-            />
-            <stop offset="100%" stop-color="var(--primary)" stop-opacity="0" />
-          </radialGradient>
-        </defs>
-
-        <rect
-          x="0"
-          y="0"
-          width="400"
-          height="300"
-          fill="var(--surface)"
-          rx="8"
-        />
-
-        <circle
-          [attr.cx]="getSavannahMarker().x"
-          [attr.cy]="getSavannahMarker().y"
-          [attr.r]="getRadiusRadius()"
-          fill="url(#radiusGradient)"
-          class="radius-circle"
-        />
-
-        <circle
-          [attr.cx]="getSavannahMarker().x"
-          [attr.cy]="getSavannahMarker().y"
-          [attr.r]="getRadiusRadius()"
-          fill="none"
-          stroke="var(--primary)"
-          stroke-width="1"
-          stroke-dasharray="4 4"
-          opacity="0.5"
-          class="radius-outline"
-        />
-
-        <circle
-          [attr.cx]="getSavannahMarker().x"
-          [attr.cy]="getSavannahMarker().y"
-          r="5"
-          fill="var(--primary)"
-          filter="url(#glow)"
-        />
-        <circle
-          [attr.cx]="getSavannahMarker().x"
-          [attr.cy]="getSavannahMarker().y"
-          r="2.5"
-          fill="white"
-        />
-        <text
-          [attr.x]="getSavannahMarker().x + 10"
-          [attr.y]="getSavannahMarker().y + 4"
-          class="center-label"
-        >
-          Savannah, GA
-        </text>
-
-        @for (city of cities(); track city.id) {
-        <g
-          class="city-marker"
-          [class.active]="hoveredCity()?.id === city.id"
-          (click)="navigateToCity(city.slug)"
-          (mouseenter)="onCityHover(city)"
-          (mouseleave)="onCityHover(null)"
-        >
-          <circle
-            [attr.cx]="getMarkerPosition(city).x"
-            [attr.cy]="getMarkerPosition(city).y"
-            r="8"
-            class="marker-pulse"
-          />
-          <circle
-            [attr.cx]="getMarkerPosition(city).x"
-            [attr.cy]="getMarkerPosition(city).y"
-            r="4"
-            class="marker-dot"
-          />
-          <text
-            [attr.x]="getMarkerPosition(city).x + 10"
-            [attr.y]="getMarkerPosition(city).y + 3"
-            class="marker-label"
-          >
-            {{ city.name }}
-          </text>
-        </g>
-        }
-      </svg>
+    <div class="map-header">
+      <h2 class="section-title">
+        <span class="title-icon">🗺️</span>
+        Regional Map
+      </h2>
+      <p class="section-subtitle">
+        Interactive map showing supported cities within the Coastal Southeast
+        region
+      </p>
     </div>
+    <app-map
+      [cities]="cities()"
+      [centerLat]="31.9"
+      [centerLng]="-81.1"
+      [zoom]="7"
+      (citySelected)="onMapCitySelect($event)"
+    ></app-map>
   </section>
 
   <section class="cities-grid">
-    <h2 class="section-title">All Supported Cities</h2>
+    <div class="grid-header">
+      <h2 class="section-title">
+        <span class="title-icon">🏛️</span>
+        All Supported Cities
+      </h2>
+      <p class="section-subtitle">
+        Browse communities by city to find local groups and events
+      </p>
+    </div>
     <div class="city-cards">
-      @for (city of cities(); track city.id) {
-      <article class="city-card" (click)="navigateToCity(city.slug)">
+      @for (city of cities(); track city.id; let i = $index) {
+      <article
+        class="city-card"
+        (click)="navigateToCity(city.slug)"
+        (mouseenter)="onCityHover(city)"
+        (mouseleave)="onCityHover(null)"
+        [style.animation-delay]="i * 50 + 'ms'"
+      >
         <div class="city-image-wrapper">
           <img
             [src]="city.imageUrl"
@@ -154,12 +81,10 @@
             loading="lazy"
           />
           <div class="city-image-overlay"></div>
+          <span class="city-badge">{{ city.adminArea }}</span>
         </div>
         <div class="city-content">
-          <div class="city-header">
-            <h3 class="city-name">{{ city.name }}</h3>
-            <span class="city-state">{{ city.adminArea }}</span>
-          </div>
+          <h3 class="city-name">{{ city.name }}</h3>
           <p class="city-description">{{ city.description }}</p>
           <div class="city-meta">
             <span class="city-population">
@@ -195,9 +120,51 @@
             </span>
           </div>
           <div class="city-highlights">
-            @for (highlight of city.highlights.slice(0, 2); track highlight) {
+            @for (highlight of city.highlights.slice(0, 3); track highlight) {
             <span class="highlight-tag">{{ highlight }}</span>
             }
+          </div>
+        </div>
+      </article>
+      }
+    </div>
+  </section>
+
+  <section class="communities-section">
+    <div class="grid-header">
+      <h2 class="section-title">
+        <span class="title-icon">👥</span>
+        All Communities
+      </h2>
+      <p class="section-subtitle">Browse local communities across the region</p>
+    </div>
+    <div class="community-cards">
+      @for (community of communities(); track community.id) {
+      <article
+        class="community-card"
+        (click)="navigateToCommunity(community.slug)"
+      >
+        <div class="community-image-wrapper">
+          <img
+            [src]="community.imageUrl"
+            [alt]="community.name"
+            class="community-image"
+            loading="lazy"
+          />
+        </div>
+        <div class="community-content">
+          <div class="community-header">
+            <span class="community-type">{{ community.localityType }}</span>
+            <span class="community-location"
+              >{{ community.city }}, {{ community.adminArea }}</span
+            >
+          </div>
+          <h3 class="community-name">{{ community.name }}</h3>
+          <p class="community-description">{{ community.description }}</p>
+          <div class="community-meta">
+            <span class="community-members">
+              {{ community.memberCount | number }} members
+            </span>
           </div>
         </div>
       </article>
