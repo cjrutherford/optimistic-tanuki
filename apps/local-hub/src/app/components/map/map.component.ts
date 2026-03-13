@@ -69,7 +69,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   private async initMap(): Promise<void> {
-    const L = await import('leaflet');
+    const leafletModule = await import('leaflet');
+    const L: typeof import('leaflet') = (leafletModule as any).default ?? leafletModule;
 
     const primaryColor = this.getCssVariable('--primary', '#3b82f6');
     const primaryColorRgb = this.hexToRgba(primaryColor, 0.08);
