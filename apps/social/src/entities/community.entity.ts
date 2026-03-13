@@ -3,6 +3,8 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -26,6 +28,20 @@ export class Community {
   /** URL-safe slug; set only for locality-based communities. */
   @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
   slug: string | null;
+
+  /** Parent community ID for sub-communities (e.g. interest community under a city community). */
+  @Column({ type: 'uuid', nullable: true })
+  parentId: string | null;
+
+  @ManyToOne(() => Community, (community) => community.subCommunities, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'parentId' })
+  parent: Community | null;
+
+  @OneToMany(() => Community, (community) => community.parent)
+  subCommunities: Community[];
 
   /** When set, this community represents a real-world locality. */
   @Column({ type: 'varchar', length: 50, nullable: true })

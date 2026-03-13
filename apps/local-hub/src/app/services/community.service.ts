@@ -7,6 +7,7 @@ export interface LocalCommunity {
   id: string;
   name: string;
   slug: string;
+  parentId?: string | null;
   description: string;
   localityType: 'city' | 'town' | 'neighborhood' | 'county' | 'region';
   countryCode: string;
@@ -266,12 +267,50 @@ export class CommunityService {
   }
 
   getCommunities(): Promise<LocalCommunity[]> {
-    return firstValueFrom(this.http.get<LocalCommunity[]>(this.baseUrl));
+    return firstValueFrom(
+      this.http.get<LocalCommunity[]>(this.baseUrl)
+    ).then((communities) =>
+      communities.map((c) => ({
+        ...c,
+        imageUrl: c.imageUrl || this.getCityImageUrl(c.slug),
+        highlights: c.highlights?.length
+          ? c.highlights
+          : this.getCityHighlights(c.slug),
+        coordinates: c.coordinates || {
+          lat: c.lat || 0,
+          lng: c.lng || 0,
+        },
+      }))
+    );
   }
 
   getCommunityBySlug(slug: string): Promise<LocalCommunity> {
     return firstValueFrom(
       this.http.get<LocalCommunity>(`${this.baseUrl}/${slug}`)
+    ).then((c) => ({
+      ...c,
+      imageUrl: c.imageUrl || this.getCityImageUrl(c.slug),
+      highlights: c.highlights?.length
+        ? c.highlights
+        : this.getCityHighlights(c.slug),
+      coordinates: c.coordinates || { lat: c.lat || 0, lng: c.lng || 0 },
+    }));
+  }
+
+  getSubCommunities(parentId: string): Promise<LocalCommunity[]> {
+    return firstValueFrom(
+      this.http.get<LocalCommunity[]>(
+        `${this.baseUrl}/${parentId}/sub-communities`
+      )
+    ).then((communities) =>
+      communities.map((c) => ({
+        ...c,
+        imageUrl: c.imageUrl || this.getCityImageUrl(c.slug),
+        highlights: c.highlights?.length
+          ? c.highlights
+          : this.getCityHighlights(c.slug),
+        coordinates: c.coordinates || { lat: c.lat || 0, lng: c.lng || 0 },
+      }))
     );
   }
 
@@ -310,7 +349,7 @@ export class CommunityService {
               countryCode: community.countryCode || 'US',
               adminArea: community.adminArea || '',
               description: community.description || '',
-              imageUrl: this.getCityImageUrl(community.slug),
+              imageUrl: community.imageUrl || this.getCityImageUrl(community.slug),
               coordinates: {
                 lat: community.coordinates?.lat || community.lat || 0,
                 lng: community.coordinates?.lng || community.lng || 0,
@@ -352,7 +391,7 @@ export class CommunityService {
         countryCode: community.countryCode || 'US',
         adminArea: community.adminArea || '',
         description: community.description || '',
-        imageUrl: this.getCityImageUrl(community.slug),
+        imageUrl: community.imageUrl || this.getCityImageUrl(community.slug),
         coordinates: {
           lat: community.coordinates?.lat || community.lat || 0,
           lng: community.coordinates?.lng || community.lng || 0,
@@ -380,12 +419,43 @@ export class CommunityService {
     }
   }
 
-  getMockCommunitiesForCity(citySlug: string): Promise<LocalCommunity[]> {
-    return this.getMockCommunities().then((communities) =>
-      communities.filter((c) => {
+  /**
+   * Get all communities for a city page — includes the city community itself
+   * and its sub-communities fetched via the parent-child API.
+   */
+  async getCommunitiesForCity(citySlug: string): Promise<LocalCommunity[]> {
+    try {
+      const cityCommunity = await this.getCommunityBySlug(citySlug);
+      if (!cityCommunity) return [];
+
+      // Fetch sub-communities registered with this city as parent
+      const subCommunities = await this.getSubCommunities(cityCommunity.id);
+
+      // Also fetch any communities sharing the same city name without parentId
+      // (legacy data compatibility)
+      const allCommunities = await this.getCommunities();
+      const legacyChildren = allCommunities.filter((c) => {
+        if (c.id === cityCommunity.id) return false;
+        if (c.parentId) return false; // already handled via parentId path
         const communityCity = (c.city || '').toLowerCase().replace(/\s+/g, '-');
-        return communityCity === citySlug || c.slug === citySlug;
-      })
-    );
+        return communityCity === citySlug;
+      });
+
+      const combined = [cityCommunity, ...subCommunities, ...legacyChildren];
+      // Deduplicate by id
+      const seen = new Set<string>();
+      return combined.filter((c) => {
+        if (seen.has(c.id)) return false;
+        seen.add(c.id);
+        return true;
+      });
+    } catch (error) {
+      console.error('Failed to fetch communities for city:', error);
+      return [];
+    }
+  }
+
+  getMockCommunitiesForCity(citySlug: string): Promise<LocalCommunity[]> {
+    return this.getCommunitiesForCity(citySlug);
   }
 }

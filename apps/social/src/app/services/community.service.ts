@@ -107,6 +107,7 @@ export class CommunityService {
       lat: dto.lat ?? null,
       lng: dto.lng ?? null,
       population: dto.population ?? null,
+      parentId: dto.parentId ?? null,
     });
 
     const saved = await this.communityRepo.save(community);
@@ -141,6 +142,15 @@ export class CommunityService {
     }
     qb.orderBy('c.memberCount', 'DESC').addOrderBy('c.name', 'ASC');
     const communities = await qb.getMany();
+    return Promise.all(communities.map((c) => this.addMemberInfo(c)));
+  }
+
+  /** Return the direct sub-communities of a given parent community. */
+  async getSubCommunities(parentId: string): Promise<Community[]> {
+    const communities = await this.communityRepo.find({
+      where: { parentId },
+      order: { memberCount: 'DESC', name: 'ASC' },
+    });
     return Promise.all(communities.map((c) => this.addMemberInfo(c)));
   }
 

@@ -784,6 +784,11 @@ export class AppController {
     return await this.communityService.listLocality(data.appScope);
   }
 
+  @MessagePattern({ cmd: CommunityCommands.GET_SUB_COMMUNITIES })
+  async getSubCommunities(@Payload() data: { parentId: string }) {
+    return await this.communityService.getSubCommunities(data.parentId);
+  }
+
   @MessagePattern({ cmd: CommunityCommands.FIND_MANY })
   async findAllCommunities(
     @Payload() data: { criteria: SearchCommunityDto; appScope: string }

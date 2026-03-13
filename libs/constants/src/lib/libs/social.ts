@@ -100,6 +100,7 @@ export const CommunityCommands = {
   GET_PENDING_JOIN_REQUESTS: 'GET_PENDING_JOIN_REQUESTS',
   CANCEL_INVITE: 'CANCEL_INVITE',
   GET_FEED: 'GET_COMMUNITY_FEED',
+  GET_SUB_COMMUNITIES: 'GET_SUB_COMMUNITIES',
 };
 
 export const NotificationCommands = {
