@@ -65,8 +65,7 @@ export class CommunityComponent implements OnInit, OnDestroy {
 
   async loadCommunity(slug: string): Promise<void> {
     try {
-      const communities = await this.communityService.getMockCommunities();
-      const data = communities.find((c) => c.slug === slug);
+      const data = await this.communityService.getCommunityBySlug(slug);
 
       if (!data) {
         this.error.set(

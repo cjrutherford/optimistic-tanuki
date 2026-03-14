@@ -27,6 +27,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   @Input() centerLat = 31.9;
   @Input() centerLng = -81.1;
   @Input() zoom = 7;
+  @Input() centerLabel = 'Savannah, GA';
   @Output() citySelected = new EventEmitter<City>();
 
   private platformId = inject(PLATFORM_ID);
@@ -140,7 +141,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
     const savannahLabel = L.divIcon({
       className: 'map-label',
-      html: `<span class="label-text">Savannah, GA</span>`,
+      html: `<span class="label-text">${this.centerLabel}</span>`,
       iconAnchor: [50, 0],
     });
 
