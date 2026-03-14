@@ -6,6 +6,12 @@ const ChatCommands = {
   ADD_TO_COMMUNITY_CHAT: 'ADD_TO_COMMUNITY_CHAT',
   REMOVE_FROM_COMMUNITY_CHAT: 'REMOVE_FROM_COMMUNITY_CHAT',
   CREATE_ADDITIONAL_CHAT_ROOM: 'CREATE_ADDITIONAL_CHAT_ROOM',
+  /** REST-friendly: get or create a 1:1 direct conversation */
+  GET_OR_CREATE_DIRECT_CHAT: 'GET_OR_CREATE_DIRECT_CHAT',
+  /** REST-friendly: retrieve all messages in a conversation */
+  GET_MESSAGES: 'GET_MESSAGES',
+  /** REST-friendly: send a message to an existing conversation */
+  SEND_MESSAGE: 'SEND_MESSAGE',
 };
 
 export default ChatCommands;
