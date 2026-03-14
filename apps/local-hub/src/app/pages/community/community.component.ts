@@ -1,19 +1,21 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   CommunityService,
   LocalCommunity,
+  CityPost,
 } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { MapComponent } from '../../components/map/map.component';
 
 @Component({
   selector: 'app-community',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DatePipe, MapComponent],
   templateUrl: './community.component.html',
   styleUrls: ['./community.component.scss'],
 })
@@ -26,26 +28,12 @@ export class CommunityComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   community = signal<LocalCommunity | null>(null);
+  posts = signal<CityPost[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
   isMember = signal(false);
   isAuthenticated = signal(false);
   joiningInProgress = signal(false);
-
-  Math = Math;
-
-  getMarkerPosition(): { x: number; y: number } {
-    const community = this.community();
-    if (!community) return { x: 100, y: 60 };
-
-    const lat = community.coordinates?.lat || community.lat || 0;
-    const lng = community.coordinates?.lng || community.lng || 0;
-
-    const x = ((lng + 180) / 360) * 200;
-    const y = ((90 - lat) / 180) * 120;
-
-    return { x, y };
-  }
 
   async ngOnInit(): Promise<void> {
     this.authState.isAuthenticated$
@@ -73,6 +61,10 @@ export class CommunityComponent implements OnInit, OnDestroy {
         );
       } else {
         this.community.set(data);
+
+        // Load posts for this community
+        const communityPosts = await this.communityService.getPostsForCommunity(slug);
+        this.posts.set(communityPosts);
 
         if (this.isAuthenticated()) {
           try {

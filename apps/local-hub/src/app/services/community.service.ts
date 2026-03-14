@@ -799,4 +799,10 @@ export class CommunityService {
       )
     );
   }
+
+  getPostsForCommunity(communitySlug: string): Promise<CityPost[]> {
+    return Promise.resolve(
+      MOCK_POSTS.filter((post) => post.communitySlug === communitySlug)
+    );
+  }
 }
