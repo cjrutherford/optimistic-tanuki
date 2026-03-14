@@ -45,7 +45,12 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
     });
 
     const slug = this.route.snapshot.paramMap.get('slug') ?? '';
-    this.loadData(slug);
+    const openForm = this.route.snapshot.data?.['openForm'] === true;
+    this.loadData(slug).then(() => {
+      if (openForm && this.isAuthenticated() && this.isMember()) {
+        this.showPostForm.set(true);
+      }
+    });
   }
 
   ngOnDestroy(): void {

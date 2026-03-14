@@ -1,46 +1,69 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthStateService } from '../../services/auth-state.service';
+import {
+  CommunityService,
+  LocalCommunity,
+} from '../../services/community.service';
+import { MessageService } from '@optimistic-tanuki/message-ui';
 
 @Component({
   selector: 'app-account',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="account-page">
-      <h1>My Account</h1>
-      <p>Account management coming in Phase 2.</p>
-      <button class="btn" (click)="logout()">Logout</button>
-    </div>
-  `,
-  styles: [`
-    .account-page {
-      max-width: 600px;
-      margin: 48px auto;
-      padding: 0 16px;
-    }
-    h1 {
-      margin-bottom: 16px;
-    }
-    .btn {
-      margin-top: 24px;
-      padding: 10px 22px;
-      border-radius: 8px;
-      background: var(--primary, #3f51b5);
-      color: white;
-      border: none;
-      font-size: 0.95rem;
-      cursor: pointer;
-      &:hover {
-        background: var(--primary-dark, #303f9f);
-      }
-    }
-  `],
+  templateUrl: './account.component.html',
+  styleUrls: ['./account.component.scss'],
 })
-export class AccountComponent {
+export class AccountComponent implements OnInit {
   private authState = inject(AuthStateService);
-  private router = inject(Router);
+  private communityService = inject(CommunityService);
+  private messageService = inject(MessageService);
+  readonly router = inject(Router);
+
+  myCommunities = signal<LocalCommunity[]>([]);
+  loadingCommunities = signal(true);
+  leavingId = signal<string | null>(null);
+
+  ngOnInit(): void {
+    this.loadMyCommunities();
+  }
+
+  async loadMyCommunities(): Promise<void> {
+    try {
+      const communities = await this.communityService.getMyMemberships();
+      this.myCommunities.set(communities);
+    } catch {
+      // non-fatal — user may not be a member of any community yet
+    } finally {
+      this.loadingCommunities.set(false);
+    }
+  }
+
+  navigateToCommunity(slug: string): void {
+    this.router.navigate(['/c', slug]);
+  }
+
+  async leaveCommunity(community: LocalCommunity): Promise<void> {
+    this.leavingId.set(community.id);
+    try {
+      await this.communityService.leaveCommunity(community.id);
+      this.myCommunities.update((list) =>
+        list.filter((c) => c.id !== community.id)
+      );
+      this.messageService.addMessage({
+        content: `You have left ${community.name}.`,
+        type: 'success',
+      });
+    } catch {
+      this.messageService.addMessage({
+        content: 'Failed to leave community. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      this.leavingId.set(null);
+    }
+  }
 
   logout(): void {
     this.authState.logout();

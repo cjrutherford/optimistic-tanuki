@@ -1,5 +1,6 @@
 import { Route } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
+import { MemberGuard } from './guards/member.guard';
 
 export const appRoutes: Route[] = [
   {
@@ -39,6 +40,15 @@ export const appRoutes: Route[] = [
       import('./pages/classifieds/classifieds.component').then(
         (m) => m.ClassifiedsComponent
       ),
+  },
+  {
+    path: 'c/:slug/classifieds/new',
+    loadComponent: () =>
+      import('./pages/classifieds/classifieds.component').then(
+        (m) => m.ClassifiedsComponent
+      ),
+    canActivate: [MemberGuard],
+    data: { openForm: true },
   },
   {
     path: 'login',
