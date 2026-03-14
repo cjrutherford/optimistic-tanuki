@@ -558,6 +558,7 @@ export class CommunityService {
   private http = inject(HttpClient);
   private apiBaseUrl = inject(API_BASE_URL);
   private baseUrl = `${this.apiBaseUrl}/communities`;
+  private socialBaseUrl = `${this.apiBaseUrl}/social/community`;
 
   private getCityImageUrl(slug: string): string {
     return CITY_IMAGES[slug] || CITY_IMAGES['default'];
@@ -642,6 +643,22 @@ export class CommunityService {
     return firstValueFrom(
       this.http.get<boolean>(`${this.baseUrl}/${communityId}/membership`)
     );
+  }
+
+  getMyMemberships(): Promise<LocalCommunity[]> {
+    return firstValueFrom(
+      this.http.get<LocalCommunity[]>(`${this.socialBaseUrl}/user/communities`)
+    ).then((communities) => {
+      if (!Array.isArray(communities)) return [];
+      return communities.map((c) => ({
+        ...c,
+        imageUrl: c.imageUrl || this.getCityImageUrl(c.slug),
+        highlights: c.highlights?.length
+          ? c.highlights
+          : this.getCityHighlights(c.slug),
+        coordinates: c.coordinates || { lat: c.lat || 0, lng: c.lng || 0 },
+      }));
+    });
   }
 
   async getCities(): Promise<City[]> {

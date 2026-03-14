@@ -111,6 +111,15 @@
             </svg>
             You're a member
           </span>
+          <button
+            class="btn btn-outline btn-large"
+            (click)="leaveCommunity()"
+            [disabled]="joiningInProgress()"
+          >
+            @if (joiningInProgress()) {
+            <span class="btn-spinner"></span>
+            Leaving... } @else { Leave Community }
+          </button>
           }
 
           <button
@@ -119,6 +128,15 @@
           >
             View Classifieds
           </button>
+
+          @if (isMember()) {
+          <button
+            class="btn btn-primary btn-large"
+            (click)="navigateToNewClassified()"
+          >
+            + Post Classified
+          </button>
+          }
         </div>
       </div>
     </div>

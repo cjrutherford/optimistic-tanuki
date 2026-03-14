@@ -1,0 +1,50 @@
+<div class="account-page">
+  <header class="account-header">
+    <h1>My Account</h1>
+  </header>
+
+  <section class="communities-section">
+    <h2>My Communities</h2>
+
+    @if (loadingCommunities()) {
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading your communities…</p>
+    </div>
+    } @else if (myCommunities().length === 0) {
+    <div class="empty-state">
+      <p>You haven't joined any communities yet.</p>
+      <button class="btn btn-primary" (click)="router.navigate(['/communities'])">
+        Browse Communities
+      </button>
+    </div>
+    } @else {
+    <ul class="community-list">
+      @for (community of myCommunities(); track community.id) {
+      <li class="community-item">
+        <div class="community-info" (click)="navigateToCommunity(community.slug)" (keydown.enter)="navigateToCommunity(community.slug)" (keydown.space)="navigateToCommunity(community.slug)" role="button" tabindex="0">
+          @if (community.imageUrl) {
+          <img [src]="community.imageUrl" [alt]="community.name" class="community-thumb" loading="lazy" />
+          }
+          <div class="community-text">
+            <span class="community-name">{{ community.name }}</span>
+            <span class="community-meta">{{ community.localityType }} · {{ community.city }}, {{ community.adminArea }}</span>
+          </div>
+        </div>
+        <button
+          class="btn btn-outline btn-sm leave-btn"
+          (click)="leaveCommunity(community)"
+          [disabled]="leavingId() === community.id"
+        >
+          @if (leavingId() === community.id) { Leaving… } @else { Leave }
+        </button>
+      </li>
+      }
+    </ul>
+    }
+  </section>
+
+  <section class="account-actions">
+    <button class="btn btn-outline" (click)="logout()">Log Out</button>
+  </section>
+</div>

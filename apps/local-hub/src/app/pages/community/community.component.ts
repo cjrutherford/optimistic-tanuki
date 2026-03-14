@@ -145,4 +145,32 @@ export class CommunityComponent implements OnInit, OnDestroy {
       this.joiningInProgress.set(false);
     }
   }
+
+  async leaveCommunity(): Promise<void> {
+    const community = this.community();
+    if (!community) return;
+    this.joiningInProgress.set(true);
+    try {
+      await this.communityService.leaveCommunity(community.id);
+      this.isMember.set(false);
+      this.messageService.addMessage({
+        content: 'You have left the community.',
+        type: 'success',
+      });
+    } catch {
+      this.messageService.addMessage({
+        content: 'Failed to leave the community. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      this.joiningInProgress.set(false);
+    }
+  }
+
+  navigateToNewClassified(): void {
+    const community = this.community();
+    if (community) {
+      this.router.navigate(['/c', community.slug, 'classifieds', 'new']);
+    }
+  }
 }
