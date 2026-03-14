@@ -30,6 +30,14 @@ export enum CommunityJoinPolicy {
   INVITE_ONLY = 'invite_only',
 }
 
+export enum LocalityType {
+  CITY = 'city',
+  TOWN = 'town',
+  NEIGHBORHOOD = 'neighborhood',
+  COUNTY = 'county',
+  REGION = 'region',
+}
+
 export class CommunityTag {
   @ApiProperty()
   @IsString()
@@ -49,6 +57,12 @@ export class CommunityDto {
   @IsString()
   @MaxLength(255)
   name!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  slug?: string | null;
 
   @ApiProperty()
   @IsString()
@@ -82,6 +96,42 @@ export class CommunityDto {
   @ApiProperty()
   memberCount!: number;
 
+  /** Locality-only fields — null for non-locality communities */
+  @ApiPropertyOptional({ enum: LocalityType })
+  @IsOptional()
+  @IsEnum(LocalityType)
+  localityType?: LocalityType | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  countryCode?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  adminArea?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  city?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lat?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lng?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  population?: number | null;
+
   @ApiProperty()
   @IsDateString()
   createdAt!: Date;
@@ -96,6 +146,12 @@ export class CreateCommunityDto {
   @IsString()
   @MaxLength(255)
   name!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  slug?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -132,6 +188,47 @@ export class CreateCommunityDto {
   @ApiProperty()
   @IsBoolean()
   createChatRoom = true;
+
+  /** Locality-only fields — omit for non-locality communities */
+  @ApiPropertyOptional({ enum: LocalityType })
+  @IsOptional()
+  @IsEnum(LocalityType)
+  localityType?: LocalityType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  adminArea?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lat?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lng?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  population?: number;
+
+  @ApiPropertyOptional({ description: 'Parent community ID for sub-communities' })
+  @IsOptional()
+  @IsUUID()
+  parentId?: string | null;
 }
 
 export class UpdateCommunityDto {
@@ -140,6 +237,12 @@ export class UpdateCommunityDto {
   @IsString()
   @MaxLength(255)
   name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  slug?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -18,6 +18,7 @@ COPY --from=deps /usr/src/app/package.json ./package.json
 COPY ./dist/apps/social .
 RUN npm i --save typeorm pg
 COPY ./dist/apps/social/seed-social.js ./seed-social.js
+COPY ./dist/apps/social/seed-local-communities.js ./seed-local-communities.js
 RUN chown -R node:node .
 USER node
 EXPOSE 3003

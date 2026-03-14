@@ -1,0 +1,342 @@
+@if (loading()) {
+<div class="loading-state">
+  <div class="loading-spinner"></div>
+  <p>Loading city...</p>
+</div>
+} @if (error()) {
+<div class="error-container">
+  <div class="error-content">
+    <h2>Oops!</h2>
+    <p>{{ error() }}</p>
+    <button class="btn btn-primary" (click)="navigateToCities()">
+      Browse All Cities
+    </button>
+  </div>
+</div>
+} @if (!loading() && !error() && city()) {
+<div class="city-page">
+  <header class="city-hero">
+    <div class="hero-image-wrapper">
+      <img [src]="city()!.imageUrl" [alt]="city()!.name" class="hero-image" />
+      <div class="hero-overlay"></div>
+    </div>
+
+    <div class="hero-content">
+      <button class="back-link" (click)="navigateToCities()">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        All Cities
+      </button>
+
+      <div class="hero-text">
+        <span class="city-badge">{{ city()!.countryCode }}</span>
+        <h1 class="city-title">{{ city()!.name }}</h1>
+        <p class="city-tagline">{{ city()!.description }}</p>
+
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-number">{{ city()!.population | number }}</span>
+            <span class="stat-text">Population</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ communities().length }}</span>
+            <span class="stat-text">Communities</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ city()!.timezone }}</span>
+            <span class="stat-text">Timezone</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="city-highlights-section">
+    <div class="section-container">
+      <h2 class="section-title">Highlights</h2>
+      <div class="highlights-grid">
+        @for (highlight of city()!.highlights; track highlight) {
+        <div class="highlight-card">
+          <div class="highlight-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+              />
+            </svg>
+          </div>
+          <span class="highlight-text">{{ highlight }}</span>
+        </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="city-map-section">
+    <div class="section-container">
+      <h2 class="section-title">Location</h2>
+      <div class="map-container">
+        @if (city()) {
+        <app-map
+          [cities]="[city()!]"
+          [centerLat]="city()!.coordinates.lat"
+          [centerLng]="city()!.coordinates.lng"
+          [zoom]="10"
+          [centerLabel]="city()!.name"
+        ></app-map>
+        }
+        <div class="map-info">
+          <div class="coord-item">
+            <span class="coord-label">Latitude</span>
+            <span class="coord-value">{{ city()!.coordinates.lat }}°</span>
+          </div>
+          <div class="coord-item">
+            <span class="coord-label">Longitude</span>
+            <span class="coord-value">{{ city()!.coordinates.lng }}°</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="communities-section">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">Communities in {{ city()!.name }}</h2>
+        <p class="section-subtitle">
+          Join local groups and connect with people in your area
+        </p>
+      </div>
+
+      @if (communityTree().length === 0) {
+      <div class="empty-communities">
+        <p>No communities available yet. Check back soon!</p>
+      </div>
+      } @else {
+      <div class="community-tree">
+        @for (node of communityTree(); track node.community.id) {
+        <div class="tree-node">
+          <article
+            class="community-card"
+            [class.is-city]="node.community.localityType === 'city'"
+            (click)="navigateToCommunity(node.community.slug)"
+          >
+            <div class="community-image-wrapper">
+              <img
+                [src]="node.community.imageUrl"
+                [alt]="node.community.name"
+                class="community-image"
+                loading="lazy"
+              />
+              @if (isAuthenticated()) {
+              <div class="card-actions">
+                @if (!isMember(node.community.id)) {
+                <button
+                  class="join-btn"
+                  (click)="
+                    joinCommunity(node.community.id); $event.stopPropagation()
+                  "
+                  [disabled]="expandingInProgress() === node.community.id"
+                >
+                  Join
+                </button>
+                } @else {
+                <span class="member-badge-small">Member</span>
+                }
+              </div>
+              }
+            </div>
+            <div class="community-content">
+              <div class="community-header">
+                <span class="community-type">{{
+                  node.community.localityType
+                }}</span>
+                <span class="community-members"
+                  >{{ node.community.memberCount | number }} members</span
+                >
+              </div>
+              <h3 class="community-name">{{ node.community.name }}</h3>
+              <p class="community-description">
+                {{ node.community.description }}
+              </p>
+              <div class="community-tags">
+                @for (tag of node.community.highlights?.slice(0, 3) || []; track
+                tag) {
+                <span class="tag">{{ tag }}</span>
+                }
+              </div>
+            </div>
+          </article>
+
+          @if (node.children.length > 0) {
+          <button
+            class="expand-toggle"
+            (click)="toggleExpand(node.community.id); $event.stopPropagation()"
+            [attr.aria-expanded]="node.isExpanded"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              [class.rotated]="node.isExpanded"
+            >
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <span>{{ node.children.length }} sub-communities</span>
+          </button>
+
+          @if (node.isExpanded) {
+          <div class="sub-communities">
+            @for (child of node.children; track child.community.id) {
+            <article
+              class="community-card sub-community"
+              (click)="navigateToCommunity(child.community.slug)"
+            >
+              <div class="community-image-wrapper">
+                <img
+                  [src]="child.community.imageUrl"
+                  [alt]="child.community.name"
+                  class="community-image"
+                  loading="lazy"
+                />
+                @if (isAuthenticated()) {
+                <div class="card-actions">
+                  @if (!isMember(child.community.id)) {
+                  <button
+                    class="join-btn"
+                    (click)="
+                      joinCommunity(child.community.id);
+                      $event.stopPropagation()
+                    "
+                    [disabled]="expandingInProgress() === child.community.id"
+                  >
+                    Join
+                  </button>
+                  } @else {
+                  <span class="member-badge-small">Member</span>
+                  }
+                </div>
+                }
+              </div>
+              <div class="community-content">
+                <div class="community-header">
+                  <span class="community-type">{{
+                    child.community.localityType
+                  }}</span>
+                  <span class="community-members"
+                    >{{ child.community.memberCount | number }} members</span
+                  >
+                </div>
+                <h3 class="community-name">{{ child.community.name }}</h3>
+                <p class="community-description">
+                  {{ child.community.description }}
+                </p>
+              </div>
+            </article>
+            }
+          </div>
+          } }
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </section>
+
+  @if (posts().length > 0) {
+  <section class="posts-section">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">Recent Discussions</h2>
+        <p class="section-subtitle">
+          See what people are talking about in {{ city()!.name }}
+        </p>
+      </div>
+
+      <div class="posts-grid">
+        @for (post of posts(); track post.id) {
+        <article
+          class="post-card"
+          (click)="navigateToCommunity(post.communitySlug)"
+        >
+          <div class="post-header">
+            <span class="post-community">{{ post.communityName }}</span>
+            <span class="post-date">{{
+              post.createdAt | date : 'MMM d, y'
+            }}</span>
+          </div>
+          <h3 class="post-title">{{ post.title }}</h3>
+          <p class="post-content">{{ post.content }}</p>
+          <div class="post-footer">
+            <span class="post-author">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              {{ post.authorName }}
+            </span>
+            <span class="post-stats">
+              <span class="post-likes">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
+                  ></path>
+                </svg>
+                {{ post.likes }}
+              </span>
+              <span class="post-comments">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                  ></path>
+                </svg>
+                {{ post.comments }}
+              </span>
+            </span>
+          </div>
+        </article>
+        }
+      </div>
+    </div>
+  </section>
+  }
+</div>
+}

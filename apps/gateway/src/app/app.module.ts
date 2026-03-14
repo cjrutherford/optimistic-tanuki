@@ -38,6 +38,8 @@ import { ForumController } from '../controllers/forum/forum.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
+import { ClassifiedsController } from '../controllers/classifieds/classifieds.controller';
+import { CommunitiesController } from '../controllers/communities/communities.controller';
 import { NotificationController } from '../controllers/social/notification/notification.controller';
 import { SearchController } from '../controllers/social/search/search.controller';
 import { PrivacyController } from '../controllers/social/privacy/privacy.controller';
@@ -95,6 +97,8 @@ import { SocialEventController } from '../controllers/social/social-event/social
     AppConfigController,
     ForumController,
     WellnessController,
+    ClassifiedsController,
+    CommunitiesController,
     NotificationController,
     SearchController,
     PrivacyController,
@@ -342,6 +346,21 @@ import { SocialEventController } from '../controllers/social/social-event/social
       useFactory: (configService: ConfigService) => {
         const serviceConfig =
           configService.get<TcpServiceConfig>('services.wellness');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.CLASSIFIEDS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.classifieds');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

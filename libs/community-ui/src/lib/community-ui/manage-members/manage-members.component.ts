@@ -101,50 +101,68 @@ export class ManageMembersComponent extends Variantable implements OnInit {
     });
 
     this.route.params.subscribe((params) => {
-      this.communityId = params['communityId'];
-      if (this.communityId) {
-        this.loadData();
+      const communitySlug = params['communitySlug'];
+      if (communitySlug) {
+        this.loadDataBySlug(communitySlug);
       }
     });
   }
 
-  async loadData() {
+  async loadDataBySlug(slug: string) {
     this.loading.set(true);
     try {
-      const community = await this.communityService.findOne(this.communityId);
-      this.community.set(community);
-
-      const members = await this.communityService.getMembers(this.communityId);
-
-      const profileIds = [...new Set(members.map((m) => m.profileId))];
-      const profilesMap = new Map<string, any>();
-      if (profileIds.length > 0) {
-        const profiles = await this.communityService.getProfilesByIds(
-          profileIds
-        );
-        profiles.forEach((p) => profilesMap.set(p.id, p));
+      const community = await this.communityService.findBySlug(slug);
+      if (!community) {
+        this.error.set('Community not found');
+        return;
       }
-
-      const membersWithProfiles = members.map((m) => ({
-        ...m,
-        profile: profilesMap.get(m.profileId),
-      }));
-      this.members.set(membersWithProfiles);
-
-      const pendingRequests =
-        await this.communityService.getPendingJoinRequests(this.communityId);
-      this.pendingRequests.set(pendingRequests);
-
-      const pendingInvites = await this.communityService.getPendingInvites(
-        this.communityId
-      );
-      this.pendingInvites.set(pendingInvites);
+      this.community.set(community);
+      this.communityId = community.id;
+      await this.loadMembersData();
     } catch (err) {
       console.error('Error loading community data:', err);
       this.error.set('Failed to load community data');
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private async loadData() {
+    this.loading.set(true);
+    try {
+      await this.loadMembersData();
+    } catch (err) {
+      console.error('Error loading community data:', err);
+      this.error.set('Failed to load community data');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  private async loadMembersData() {
+    const members = await this.communityService.getMembers(this.communityId);
+
+    const profileIds = [...new Set(members.map((m) => m.profileId))];
+    const profilesMap = new Map<string, any>();
+    if (profileIds.length > 0) {
+      const profiles = await this.communityService.getProfilesByIds(profileIds);
+      profiles.forEach((p) => profilesMap.set(p.id, p));
+    }
+
+    const membersWithProfiles = members.map((m) => ({
+      ...m,
+      profile: profilesMap.get(m.profileId),
+    }));
+    this.members.set(membersWithProfiles);
+
+    const pendingRequests =
+      await this.communityService.getPendingJoinRequests(this.communityId);
+    this.pendingRequests.set(pendingRequests);
+
+    const pendingInvites = await this.communityService.getPendingInvites(
+      this.communityId
+    );
+    this.pendingInvites.set(pendingInvites);
   }
 
   isAdmin(): boolean {

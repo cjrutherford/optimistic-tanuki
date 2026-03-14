@@ -1,0 +1,26 @@
+<div class="container">
+  <otui-app-bar
+    appTitle="Towne Square"
+    logoAlt="Towne Square Logo"
+    [showThemeToggle]="true"
+    [useTile]="false"
+    (menuToggle)="toggleNav()"
+  >
+  </otui-app-bar>
+
+  <otui-nav-sidebar
+    [isOpen]="isNavExpanded()"
+    [navItems]="navItems()"
+    heading="Navigation"
+    (close)="isNavExpanded.set(false)"
+  >
+  </otui-nav-sidebar>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+
+  <otui-dev-info />
+
+  <lib-message />
+</div>

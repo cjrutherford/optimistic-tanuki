@@ -55,6 +55,36 @@ export class AppController {
     );
   }
 
+  @MessagePattern({ cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT })
+  async getOrCreateDirectChatTcp(
+    @Payload() data: { participantIds: string[] }
+  ) {
+    this.l.log(
+      `TCP: Get-or-create direct chat for participants: ${data.participantIds.join(', ')}`
+    );
+    return await this.appService.getOrCreateDirectChat(data.participantIds);
+  }
+
+  @MessagePattern({ cmd: ChatCommands.GET_MESSAGES })
+  async getMessagesTcp(@Payload() data: { conversationId: string }) {
+    this.l.log(`TCP: Retrieving messages for conversation: ${data.conversationId}`);
+    return await this.appService.getMessages(data.conversationId);
+  }
+
+  @MessagePattern({ cmd: ChatCommands.SEND_MESSAGE })
+  async sendMessageTcp(
+    @Payload()
+    data: {
+      conversationId: string;
+      content: string;
+      senderId: string;
+      recipientIds: string[];
+    }
+  ) {
+    this.l.log(`TCP: Sending message to conversation: ${data.conversationId}`);
+    return await this.appService.postMessageHttp(data);
+  }
+
   // REST Endpoints
   @Get('health')
   healthCheckHttp() {
