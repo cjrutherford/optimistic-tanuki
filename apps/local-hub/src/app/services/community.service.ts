@@ -800,9 +800,93 @@ export class CommunityService {
     );
   }
 
-  getPostsForCommunity(communitySlug: string): Promise<CityPost[]> {
-    return Promise.resolve(
-      MOCK_POSTS.filter((post) => post.communitySlug === communitySlug)
+  async getPostsForCommunity(communitySlug: string): Promise<CityPost[]> {
+    try {
+      // Resolve the slug → community object to get its ID
+      const community = await this.getCommunityBySlug(communitySlug);
+      if (!community?.id) {
+        return [];
+      }
+
+      const posts = await firstValueFrom(
+        this.http.post<
+          {
+            id: string;
+            title: string;
+            content: string;
+            profileId: string;
+            userId: string;
+            createdAt: string | Date;
+            communityId?: string;
+          }[]
+        >(`${this.apiBaseUrl}/social/post/find`, {
+          criteria: { communityId: community.id, appScope: 'local-hub' },
+        })
+      );
+
+      return (posts ?? []).map((p) => ({
+        id: p.id,
+        communityId: community.id,
+        communitySlug,
+        communityName: community.name,
+        title: p.title,
+        content: p.content,
+        authorName: 'Community Member',
+        createdAt:
+          typeof p.createdAt === 'string'
+            ? p.createdAt
+            : (p.createdAt as Date).toISOString(),
+        likes: 0,
+        comments: 0,
+      }));
+    } catch {
+      // Fall back to mock data while the backend is being seeded
+      return MOCK_POSTS.filter((post) => post.communitySlug === communitySlug);
+    }
+  }
+
+  /**
+   * Create a new community post via the social microservice.
+   * Returns the created post mapped to a `CityPost` so the caller can
+   * prepend it to the local feed signal without a round-trip.
+   */
+  async createPost(
+    communityId: string,
+    communitySlug: string,
+    communityName: string,
+    payload: { title: string; content: string; profileId: string }
+  ): Promise<CityPost> {
+    const created = await firstValueFrom(
+      this.http.post<{
+        id: string;
+        title: string;
+        content: string;
+        profileId: string;
+        userId: string;
+        createdAt: string | Date;
+      }>(`${this.apiBaseUrl}/social/post`, {
+        title: payload.title,
+        content: payload.content,
+        profileId: payload.profileId,
+        communityId,
+        appScope: 'local-hub',
+      })
     );
+
+    return {
+      id: created.id,
+      communityId,
+      communitySlug,
+      communityName,
+      title: created.title,
+      content: created.content,
+      authorName: 'You',
+      createdAt:
+        typeof created.createdAt === 'string'
+          ? created.createdAt
+          : (created.createdAt as Date).toISOString(),
+      likes: 0,
+      comments: 0,
+    };
   }
 }
