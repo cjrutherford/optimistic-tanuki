@@ -12,17 +12,17 @@ It is a sibling to `apps/client-interface` and reuses existing UI libs (`auth-ui
 
 ### Core Rules
 
-| Rule | Detail |
-|------|--------|
-| Public landing page at `/` | Explains the platform; entry points to browse communities |
-| All communities publicly visible | Any visitor (anonymous) can browse communities, posts, and classifieds (read-only) |
-| Interactions locked to logged-in users | Posting, commenting, messaging, creating classifieds, reacting require login |
-| Interactions additionally locked behind joining | A logged-in user must **join** a community before they can interact |
-| Communities are pre-seeded | Communities are curated by admins via seed scripts; users cannot create communities in MVP |
-| Each local community includes classifieds | A first-class classifieds module per community |
-| Buyer/seller communications | In-app messaging between buyers and sellers on classified listings |
-| First-class moderation + reputation-based banning | Full reputation scoring, automated restrictions, mod queue, audit log |
-| Payment processing | Featured listing fees; MVP: paid "feature this listing" via Stripe |
+| Rule                                              | Detail                                                                                     |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Public landing page at `/`                        | Explains the platform; entry points to browse communities                                  |
+| All communities publicly visible                  | Any visitor (anonymous) can browse communities, posts, and classifieds (read-only)         |
+| Interactions locked to logged-in users            | Posting, commenting, messaging, creating classifieds, reacting require login               |
+| Interactions additionally locked behind joining   | A logged-in user must **join** a community before they can interact                        |
+| Communities are pre-seeded                        | Communities are curated by admins via seed scripts; users cannot create communities in MVP |
+| Each local community includes classifieds         | A first-class classifieds module per community                                             |
+| Buyer/seller communications                       | In-app messaging between buyers and sellers on classified listings                         |
+| First-class moderation + reputation-based banning | Full reputation scoring, automated restrictions, mod queue, audit log                      |
+| Payment processing                                | Featured listing fees; MVP: paid "feature this listing" via Stripe                         |
 
 ### Locality Model
 
@@ -35,16 +35,16 @@ Communities are tied to physical places:
 
 ### Public vs. Gated UI Behavior
 
-| Action | Anonymous | Logged-in, not joined | Logged-in, joined |
-|--------|-----------|-----------------------|-------------------|
-| Browse community list | ✅ | ✅ | ✅ |
-| View community page | ✅ | ✅ | ✅ |
-| View posts / classifieds | ✅ | ✅ | ✅ |
-| Create post / comment | ❌ → prompt sign-in | ❌ → prompt join | ✅ |
-| Create classified | ❌ → prompt sign-in | ❌ → prompt join | ✅ |
-| Message a seller | ❌ → prompt sign-in | ❌ → prompt join | ✅ |
-| Vote / react | ❌ → prompt sign-in | ❌ → prompt join | ✅ |
-| Moderate | ❌ | ❌ | ✅ (if mod role) |
+| Action                   | Anonymous           | Logged-in, not joined | Logged-in, joined |
+| ------------------------ | ------------------- | --------------------- | ----------------- |
+| Browse community list    | ✅                  | ✅                    | ✅                |
+| View community page      | ✅                  | ✅                    | ✅                |
+| View posts / classifieds | ✅                  | ✅                    | ✅                |
+| Create post / comment    | ❌ → prompt sign-in | ❌ → prompt join      | ✅                |
+| Create classified        | ❌ → prompt sign-in | ❌ → prompt join      | ✅                |
+| Message a seller         | ❌ → prompt sign-in | ❌ → prompt join      | ✅                |
+| Vote / react             | ❌ → prompt sign-in | ❌ → prompt join      | ✅                |
+| Moderate                 | ❌                  | ❌                    | ✅ (if mod role)  |
 
 Placeholder buttons are visible but display a prompt modal/tooltip; deep-linking to write routes redirects to login.
 
@@ -79,7 +79,7 @@ interface LocalCommunity {
   description: string;
   localityType: 'city' | 'town' | 'neighborhood' | 'county' | 'region';
   countryCode: string;
-  adminArea: string;        // state / province
+  adminArea: string; // state / province
   city: string;
   postalCodes?: string[];
   geo?: { lat: number; lng: number };
@@ -112,14 +112,14 @@ interface ClassifiedAd {
   title: string;
   description: string;
   price: number;
-  currency: string;         // 'USD'
+  currency: string; // 'USD'
   category: string;
   condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor';
-  images: string[];         // asset URLs
+  images: string[]; // asset URLs
   status: 'active' | 'sold' | 'expired' | 'removed';
   featured: boolean;
   featuredUntil?: Date;
-  location?: string;        // more specific than community
+  location?: string; // more specific than community
   createdAt: Date;
   updatedAt: Date;
 }
@@ -158,29 +158,20 @@ interface ModerationAction {
 ```typescript
 interface ReputationScore {
   profileId: string;
-  communityId?: string;     // null = global score
-  score: number;            // baseline 0; positive/negative weighted events
+  communityId?: string; // null = global score
+  score: number; // baseline 0; positive/negative weighted events
   lastCalculated: Date;
   signals: ReputationSignal[];
 }
 
 interface ReputationSignal {
   type: ReputationSignalType;
-  weight: number;           // positive or negative
+  weight: number; // positive or negative
   occurredAt: Date;
-  decaysAt?: Date;          // time-based decay
+  decaysAt?: Date; // time-based decay
 }
 
-type ReputationSignalType =
-  | 'content_removed'
-  | 'report_received'
-  | 'report_validated'
-  | 'spam_detected'
-  | 'new_account'
-  | 'verified_email'
-  | 'positive_rating'
-  | 'successful_transaction'
-  | 'payment_chargeback';
+type ReputationSignalType = 'content_removed' | 'report_received' | 'report_validated' | 'spam_detected' | 'new_account' | 'verified_email' | 'positive_rating' | 'successful_transaction' | 'payment_chargeback';
 ```
 
 ---
@@ -194,30 +185,31 @@ type ReputationSignalType =
 - Events add/subtract weighted values. Weights decay over time (half-life configurable per event type).
 - Example weights:
 
-| Signal | Weight |
-|--------|--------|
-| Verified email | +10 |
-| Account age > 30 days | +5 |
-| Content removed by mod | -15 |
-| Validated report received | -10 |
-| Successful transaction / positive rating | +8 |
-| Payment chargeback | -25 |
-| Spam burst detected | -20 |
+| Signal                                   | Weight |
+| ---------------------------------------- | ------ |
+| Verified email                           | +10    |
+| Account age > 30 days                    | +5     |
+| Content removed by mod                   | -15    |
+| Validated report received                | -10    |
+| Successful transaction / positive rating | +8     |
+| Payment chargeback                       | -25    |
+| Spam burst detected                      | -20    |
 
 ### Thresholds & Actions (progressive)
 
-| Score range | Restriction |
-|-------------|-------------|
-| > -10 | None |
-| -10 to -25 | Slow mode (rate-limited posting) |
-| -25 to -40 | Require mod approval for posts/listings |
-| -40 to -60 | Shadow-limit classifieds visibility |
-| -60 to -80 | Temporary ban (community-level; duration scales with score) |
-| < -80 | Permanent ban (community-level; global ban requires human review) |
+| Score range | Restriction                                                       |
+| ----------- | ----------------------------------------------------------------- |
+| > -10       | None                                                              |
+| -10 to -25  | Slow mode (rate-limited posting)                                  |
+| -25 to -40  | Require mod approval for posts/listings                           |
+| -40 to -60  | Shadow-limit classifieds visibility                               |
+| -60 to -80  | Temporary ban (community-level; duration scales with score)       |
+| < -80       | Permanent ban (community-level; global ban requires human review) |
 
 ### Moderator Override
 
 Moderators can:
+
 - Manually adjust score with a reason (audited).
 - Override ban to pardon or extend duration.
 - View the full signal history for a user.
@@ -261,6 +253,7 @@ All moderation actions write to an immutable audit log.
 **Goal:** New app exists, compiles, and serves.
 
 **Deliverables:**
+
 - `apps/local-hub` Angular SSR app with Express proxy.
 - Minimal routes: `/`, `/communities`, `/c/:slug`, `/c/:slug/classifieds`.
 - Placeholder page components (no real data).
@@ -268,6 +261,7 @@ All moderation actions write to an immutable audit log.
 - `docs/plans/local-hub/README.md` (this document).
 
 **Acceptance Criteria:**
+
 - `npx nx build local-hub` succeeds.
 - `npx nx serve local-hub` serves the app on `localhost:4201`.
 - Anonymous users can see all placeholder pages.
@@ -280,6 +274,7 @@ All moderation actions write to an immutable audit log.
 **Goal:** Real data from the API; anonymous users see live communities/classifieds.
 
 **Deliverables:**
+
 - Community service (HTTP client wrapper) in local-hub.
 - Community directory page fetches `/api/communities` list.
 - Community page fetches `/api/communities/:slug`.
@@ -287,6 +282,7 @@ All moderation actions write to an immutable audit log.
 - Public read endpoints confirmed to work without auth token.
 
 **Acceptance Criteria:**
+
 - An anonymous visitor can browse all seeded communities and classifieds.
 - No auth-guarded API calls on read paths.
 
@@ -297,6 +293,7 @@ All moderation actions write to an immutable audit log.
 **Goal:** Login/register works; joining is enforced before interactions.
 
 **Deliverables:**
+
 - Login/register pages (reuse `auth-ui`).
 - Auth interceptor (reuse from client-interface pattern).
 - Join/unjoin community flow.
@@ -304,6 +301,7 @@ All moderation actions write to an immutable audit log.
 - Gated buttons check join status; show join-prompt modal if not joined.
 
 **Acceptance Criteria:**
+
 - Logged-in user who has not joined a community cannot create posts/classifieds.
 - Joining a community unlocks interaction UI.
 
@@ -314,6 +312,7 @@ All moderation actions write to an immutable audit log.
 **Goal:** Full classifieds lifecycle with in-app messaging.
 
 **Deliverables:**
+
 - Create/edit/delete classified ad (auth + joined).
 - Image upload via assets service.
 - Listing status management (active/sold/expired/removed).
@@ -321,6 +320,7 @@ All moderation actions write to an immutable audit log.
 - Messaging UI for classified conversations.
 
 **Acceptance Criteria:**
+
 - Joined user can create a classified with images.
 - Another joined user can send a message to the seller from the listing.
 - Seller receives and can reply to inquiries.
@@ -332,6 +332,7 @@ All moderation actions write to an immutable audit log.
 **Goal:** Full-featured, reputation-driven moderation.
 
 **Deliverables:**
+
 - Report flow for posts, comments, classifieds, users.
 - Reputation scoring service (event-driven, with decay).
 - Automated restrictions based on score thresholds.
@@ -341,6 +342,7 @@ All moderation actions write to an immutable audit log.
 - User-visible trust level (optional: show "trusted member" badge).
 
 **Acceptance Criteria:**
+
 - A user whose score drops below threshold is automatically restricted.
 - Mod can override restrictions and see the full signal history.
 - Every moderation action appears in the audit log.
@@ -352,6 +354,7 @@ All moderation actions write to an immutable audit log.
 **Goal:** Users can pay to feature a classified listing.
 
 **Deliverables:**
+
 - Stripe integration (backend payments service).
 - "Feature this listing" UI on the classified detail page.
 - Duration selection (3/7/14 days) + price display.
@@ -361,26 +364,73 @@ All moderation actions write to an immutable audit log.
 - Chargeback → negative reputation signal.
 
 **Acceptance Criteria:**
+
 - User completes payment; listing is marked featured.
 - System correctly processes webhook events even if browser is closed.
 - Chargebacks are logged and impact reputation score.
 
 ---
 
+## Implementation Status
+
+### Phase Summary
+
+| Phase                                          | Status         | Notes                                                                             |
+| ---------------------------------------------- | -------------- | --------------------------------------------------------------------------------- |
+| Phase 0 — Architecture & Scaffolding           | ✅ Complete    | App scaffolded, all routes implemented, placeholder pages built                   |
+| Phase 1 — Public Browsing (Read-Only Data)     | ✅ Complete    | Community service uses real API calls (`/api/communities`), pages fetch live data |
+| Phase 2 — Auth & Join-to-Interact              | 🔄 In Progress | Login/register pages exist, auth guard applied, join flow TBD                     |
+| Phase 3 — Classifieds & Buyer/Seller Messaging | ❌ Not Started | Create/edit/delete classifieds, messaging UI not implemented                      |
+| Phase 4 — Moderation & Reputation              | ❌ Not Started | Report flow, reputation scoring, mod queue not implemented                        |
+| Phase 5 — Payments (Featured Classifieds)      | ❌ Not Started | Stripe integration not implemented                                                |
+
+### Completed Deliverables
+
+**Phase 0:**
+
+- `apps/local-hub` Angular SSR app with Express proxy (`server.ts`)
+- Routes: `/`, `/cities`, `/city/:slug`, `/communities`, `/c/:slug`, `/c/:slug/classifieds`, `/login`, `/register`, `/account`
+- Page components: Landing, Cities, City, Communities, Community, Classifieds, Login, Register, Account
+- Auth guard (`guards/auth.guard.ts`) - protects `/account` route
+- Auth services: `auth-state.service.ts`, `authentication.service.ts`, `auth.interceptor.ts`
+- Community service (`services/community.service.ts`) with API integration
+- Theme toggle and map components
+
+**Phase 1:**
+
+- `CommunityService` fetches from `/api/communities`
+- Real data displayed on communities directory and community pages
+- Cities page with city data
+- Public read endpoints work without auth
+
+### Remaining Work
+
+- Join/unjoin community flow
+- Route guards for join-status checking on gated interactions
+- Classified CRUD operations (create/edit/delete)
+- Image upload integration
+- "Contact Seller" messaging flow
+- Report flow
+- Reputation scoring service
+- Mod queue UI
+- Stripe payments integration
+
+---
+
 ## Open Questions
 
-| # | Question | Notes |
-|---|----------|-------|
-| 1 | Payments geography | US-first (Stripe); international expansion later |
-| 2 | Free vs. paid listings | MVP: free listings; featured paid. Per-listing fee TBD |
-| 3 | Messaging attachments | MVP: text-only. Images in Phase 3+ |
-| 4 | Reputation transparency | Users see their own trust level; detailed signals are mod-only |
-| 5 | Appeals workflow | Post-MVP |
-| 6 | Community category taxonomy | To be defined before Phase 1 seed script |
-| 7 | Locality hierarchy | City-level for MVP; neighborhood sub-communities later |
-| 8 | Seeded community dataset | US cities first; need curated list |
-| 9 | Cross-community "near me" feed | Phase 2+ feature |
-| 10 | Automod / keyword filters | Phase 4+ feature |
+| #   | Question                       | Notes                                                          |
+| --- | ------------------------------ | -------------------------------------------------------------- |
+| 1   | Payments geography             | US-first (Stripe); international expansion later               |
+| 2   | Free vs. paid listings         | MVP: free listings; featured paid. Per-listing fee TBD         |
+| 3   | Messaging attachments          | MVP: text-only. Images in Phase 3+                             |
+| 4   | Reputation transparency        | Users see their own trust level; detailed signals are mod-only |
+| 5   | Appeals workflow               | Post-MVP                                                       |
+| 6   | Community category taxonomy    | To be defined before Phase 1 seed script                       |
+| 7   | Locality hierarchy             | City-level for MVP; neighborhood sub-communities later         |
+| 8   | Seeded community dataset       | US cities first; need curated list                             |
+| 9   | Cross-community "near me" feed | Phase 2+ feature                                               |
+| 10  | Automod / keyword filters      | Phase 4+ feature                                               |
 
 ---
 
@@ -418,17 +468,17 @@ apps/local-hub/
 
 ### Reused Libraries
 
-| Library | Usage |
-|---------|-------|
-| `@optimistic-tanuki/auth-ui` | Login/register blocks |
-| `@optimistic-tanuki/navigation-ui` | App bar, nav sidebar |
-| `@optimistic-tanuki/theme-lib` | Theme service + CSS variables |
-| `@optimistic-tanuki/common-ui` | Card, Button, DevInfo |
-| `@optimistic-tanuki/chat-ui` | Buyer/seller messaging (Phase 3) |
-| `@optimistic-tanuki/notification-ui` | Notification bell (Phase 2+) |
-| `@optimistic-tanuki/community-ui` | Community card components |
-| `@optimistic-tanuki/message-ui` | Toast/snack messages |
-| `@optimistic-tanuki/ui-models` | Shared DTOs |
+| Library                              | Usage                            |
+| ------------------------------------ | -------------------------------- |
+| `@optimistic-tanuki/auth-ui`         | Login/register blocks            |
+| `@optimistic-tanuki/navigation-ui`   | App bar, nav sidebar             |
+| `@optimistic-tanuki/theme-lib`       | Theme service + CSS variables    |
+| `@optimistic-tanuki/common-ui`       | Card, Button, DevInfo            |
+| `@optimistic-tanuki/chat-ui`         | Buyer/seller messaging (Phase 3) |
+| `@optimistic-tanuki/notification-ui` | Notification bell (Phase 2+)     |
+| `@optimistic-tanuki/community-ui`    | Community card components        |
+| `@optimistic-tanuki/message-ui`      | Toast/snack messages             |
+| `@optimistic-tanuki/ui-models`       | Shared DTOs                      |
 
 ### Proxy Configuration (server.ts)
 
