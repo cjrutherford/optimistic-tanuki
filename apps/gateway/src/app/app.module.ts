@@ -42,7 +42,6 @@ import { CommunityController } from '../controllers/social/community/community.c
 import { WellnessController } from '../controllers/wellness/wellness.controller';
 import { ClassifiedsController } from '../controllers/classifieds/classifieds.controller';
 import { CommunitiesController } from '../controllers/communities/communities.controller';
-import { ChatController } from '../controllers/chat/chat.controller';
 import { NotificationController } from '../controllers/social/notification/notification.controller';
 import { SearchController } from '../controllers/social/search/search.controller';
 import { PrivacyController } from '../controllers/social/privacy/privacy.controller';
@@ -104,7 +103,6 @@ import { SocialEventController } from '../controllers/social/social-event/social
     WellnessController,
     ClassifiedsController,
     CommunitiesController,
-    ChatController,
     NotificationController,
     SearchController,
     PrivacyController,
