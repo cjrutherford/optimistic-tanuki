@@ -87,6 +87,31 @@ import {
         </div>
       </div>
 
+      <div class="form-group">
+        <label>Images (optional, up to 5)</label>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          [disabled]="imageUploading()"
+          (change)="onFilesSelected($event)"
+          class="file-input"
+        />
+        @if (imageUploading()) {
+          <p class="upload-status">Uploading images…</p>
+        }
+        @if (imagePreviews().length > 0) {
+          <div class="image-previews">
+            @for (preview of imagePreviews(); track preview; let i = $index) {
+              <div class="preview-item">
+                <img [src]="preview" alt="Image preview" />
+                <button type="button" class="remove-image" (click)="removeImage(i)" aria-label="Remove image">✕</button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
       @if (error()) {
         <p class="form-error" role="alert">{{ error() }}</p>
       }
@@ -98,7 +123,7 @@ import {
         <button
           class="btn btn-primary"
           type="button"
-          [disabled]="submitting()"
+          [disabled]="submitting() || imageUploading()"
           (click)="onSubmit()"
         >
           {{ submitting() ? 'Saving…' : isEdit ? 'Update Listing' : 'Post Listing' }}
@@ -129,6 +154,12 @@ import {
       &:focus { outline: 2px solid var(--primary, #3f51b5); border-color: transparent; }
     }
     textarea { resize: vertical; }
+    .file-input { font-size: 0.85rem; }
+    .upload-status { font-size: 0.85rem; color: var(--primary, #3f51b5); margin: 4px 0 0; }
+    .image-previews { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .preview-item { position: relative; }
+    .preview-item img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border, #ccc); }
+    .remove-image { position: absolute; top: -6px; right: -6px; background: #d32f2f; color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; line-height: 18px; text-align: center; cursor: pointer; padding: 0; }
     .form-error { color: var(--error, #d32f2f); font-size: 0.9rem; }
     .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
     .btn { padding: 8px 20px; border-radius: 6px; border: none; font-size: 0.9rem; cursor: pointer; }
@@ -140,6 +171,12 @@ export class ClassifiedFormComponent implements OnInit {
   /** Optional existing ad for edit mode */
   @Input() existingAd?: ClassifiedAdDto;
   @Input({ required: true }) communityId!: string;
+  /**
+   * Optional callback to handle image upload. Receives a File and returns a
+   * Promise<string> with the uploaded image URL. When not provided, the form
+   * still works but image upload will be skipped.
+   */
+  @Input() uploadImage?: (file: File) => Promise<string>;
 
   @Output() submitForm = new EventEmitter<
     CreateClassifiedAdDto | UpdateClassifiedAdDto
@@ -157,10 +194,14 @@ export class ClassifiedFormComponent implements OnInit {
     currency: 'USD',
     category: '',
     condition: '',
+    imageUrls: [],
   };
 
   error = signal<string | null>(null);
   submitting = signal(false);
+  imageUploading = signal(false);
+  /** Data-URL previews for images selected by the user */
+  imagePreviews = signal<string[]>([]);
 
   get isEdit(): boolean {
     return !!this.existingAd;
@@ -169,6 +210,7 @@ export class ClassifiedFormComponent implements OnInit {
   ngOnInit(): void {
     this.formData.communityId = this.communityId;
     if (this.existingAd) {
+      const existingUrls = this.existingAd.imageUrls ?? [];
       this.formData = {
         communityId: this.communityId,
         title: this.existingAd.title,
@@ -177,8 +219,74 @@ export class ClassifiedFormComponent implements OnInit {
         currency: this.existingAd.currency,
         category: this.existingAd.category ?? '',
         condition: this.existingAd.condition ?? '',
-        imageUrls: this.existingAd.imageUrls ?? [],
+        imageUrls: [...existingUrls],
       };
+      // Show existing images as previews
+      this.imagePreviews.set([...existingUrls]);
+    }
+  }
+
+  async onFilesSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+
+    const files = Array.from(input.files).slice(0, 5 - (this.formData.imageUrls?.length ?? 0));
+    if (!files.length) return;
+
+    // Show local previews immediately
+    const previewPromises = files.map(
+      (f) =>
+        new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(f);
+        })
+    );
+    const newPreviews = await Promise.all(previewPromises);
+    this.imagePreviews.update((p) => [...p, ...newPreviews].slice(0, 5));
+
+    if (this.uploadImage) {
+      this.imageUploading.set(true);
+      const results = await Promise.allSettled(files.map((f) => this.uploadImage!(f)));
+      const uploadedUrls: string[] = [];
+      const failedNames: string[] = [];
+      results.forEach((result, i) => {
+        if (result.status === 'fulfilled') {
+          uploadedUrls.push(result.value);
+        } else {
+          failedNames.push(files[i].name);
+        }
+      });
+      if (uploadedUrls.length > 0) {
+        this.formData.imageUrls = [...(this.formData.imageUrls ?? []), ...uploadedUrls].slice(0, 5);
+      }
+      if (failedNames.length > 0) {
+        this.error.set(`Failed to upload: ${failedNames.join(', ')}. Please try again.`);
+        // Roll back previews for failed files only
+        const failedIndexes = new Set(results.map((r, i) => r.status === 'rejected' ? i : -1).filter((i) => i >= 0));
+        const successPreviews = newPreviews.filter((_, i) => !failedIndexes.has(i));
+        this.imagePreviews.update((p) => [
+          ...p.slice(0, (this.formData.imageUrls ?? []).length - successPreviews.length),
+          ...successPreviews,
+        ].slice(0, 5));
+      }
+      this.imageUploading.set(false);
+    } else {
+      // No upload callback provided — store data URLs directly (dev/fallback)
+      this.formData.imageUrls = [
+        ...(this.formData.imageUrls ?? []),
+        ...newPreviews,
+      ].slice(0, 5);
+    }
+
+    // Reset the file input so the same files can be re-selected
+    input.value = '';
+  }
+
+  removeImage(index: number): void {
+    this.imagePreviews.update((p) => p.filter((_, i) => i !== index));
+    if (this.formData.imageUrls) {
+      this.formData.imageUrls = this.formData.imageUrls.filter((_, i) => i !== index);
     }
   }
 

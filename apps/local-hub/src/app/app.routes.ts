@@ -51,6 +51,13 @@ export const appRoutes: Route[] = [
     data: { openForm: true },
   },
   {
+    path: 'c/:slug/classifieds/:id',
+    loadComponent: () =>
+      import('./pages/classified-detail/classified-detail.component').then(
+        (m) => m.ClassifiedDetailComponent
+      ),
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./pages/login/login.component').then((m) => m.LoginComponent),
