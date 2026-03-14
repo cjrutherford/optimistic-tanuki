@@ -346,6 +346,38 @@ export class ChatGateway {
     );
   }
 
+  @SubscribeMessage('get_or_create_direct_chat')
+  async handleGetOrCreateDirectChat(
+    @MessageBody() payload: { participantIds: string[] },
+    @ConnectedSocket() client: Socket
+  ): Promise<void> {
+    this.l.log(
+      `get_or_create_direct_chat for participants: ${payload.participantIds.join(', ')}`
+    );
+    const conversation = await firstValueFrom(
+      this.chatCollectorClient.send(
+        { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
+        { participantIds: payload.participantIds }
+      )
+    );
+    client.emit('conversation', conversation);
+  }
+
+  @SubscribeMessage('get_messages')
+  async handleGetMessages(
+    @MessageBody() payload: { conversationId: string },
+    @ConnectedSocket() client: Socket
+  ): Promise<void> {
+    this.l.log(`get_messages for conversation: ${payload.conversationId}`);
+    const messages = await firstValueFrom(
+      this.chatCollectorClient.send(
+        { cmd: ChatCommands.GET_MESSAGES },
+        { conversationId: payload.conversationId }
+      )
+    );
+    client.emit('messages', messages || []);
+  }
+
   @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
     const disconnectedClient = this.connectedClients.find(
