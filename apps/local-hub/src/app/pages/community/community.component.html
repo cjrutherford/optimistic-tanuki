@@ -169,73 +169,19 @@
     </div>
   </section>
 
+  <!-- ===== Leaflet map ===== -->
   @if (community()!.coordinates) {
   <section class="community-map-section">
     <div class="section-container">
       <h2 class="section-title">Location</h2>
       <div class="map-container">
-        <div class="location-map">
-          <svg viewBox="0 0 200 120" class="map-svg">
-            <defs>
-              <filter
-                id="commMapGlow"
-                x="-50%"
-                y="-50%"
-                width="200%"
-                height="200%"
-              >
-                <feGaussianBlur stdDeviation="2" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            <rect
-              x="0"
-              y="0"
-              width="200"
-              height="120"
-              fill="var(--surface)"
-              rx="8"
-            />
-
-            <path
-              d="M30,70 L50,60 L80,65 L100,50 L130,55 L160,45 L180,55 L190,70 L180,90 L150,95 L120,90 L90,100 L60,95 L30,85 Z"
-              fill="var(--muted)"
-              opacity="0.3"
-            />
-
-            <circle
-              [attr.cx]="getMarkerPosition().x"
-              [attr.cy]="getMarkerPosition().y"
-              r="8"
-              fill="var(--primary)"
-              filter="url(#commMapGlow)"
-              class="map-marker"
-            />
-            <circle
-              [attr.cx]="getMarkerPosition().x"
-              [attr.cy]="getMarkerPosition().y"
-              r="4"
-              fill="white"
-            />
-
-            <text
-              [attr.x]="getMarkerPosition().x + 12"
-              [attr.y]="getMarkerPosition().y + 4"
-              class="map-label"
-            >
-              {{ community()!.name }}
-            </text>
-
-            <text x="100" y="110" class="coordinates" text-anchor="middle">
-              {{ community()!.coordinates!.lat.toFixed(4) }}°N,
-              {{ Math.abs(community()!.coordinates!.lng).toFixed(4) }}°W
-            </text>
-          </svg>
-        </div>
+        <app-map
+          [cities]="[]"
+          [centerLat]="community()!.coordinates!.lat"
+          [centerLng]="community()!.coordinates!.lng"
+          [zoom]="12"
+          [centerLabel]="community()!.name"
+        ></app-map>
         <div class="map-details">
           <div class="detail-card">
             <span class="detail-label">City</span>
@@ -255,55 +201,110 @@
   </section>
   }
 
-  <section class="community-tabs">
+  <!-- ===== Discussion / Post feed ===== -->
+  <section class="community-feed-section">
     <div class="section-container">
-      <div class="tabs-header">
-        <h2>Discussion</h2>
+      <div class="section-header">
+        <h2 class="section-title">Recent Discussions</h2>
       </div>
 
-      <div class="tab-content">
-        @if (!isMember()) {
-        <div class="gated-notice">
-          <div class="gated-icon">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-          </div>
-          <p>
-            @if (!isAuthenticated()) {
-            <a href="/login" class="action-link">Sign in</a> and join this
-            community to post and comment. } @else { Join this community to post
-            and comment. }
-          </p>
+      @if (!isMember()) {
+      <div class="gated-notice">
+        <div class="gated-icon">
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
         </div>
-        } @else {
-        <div class="placeholder-content">
-          <div class="placeholder-icon">
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-            >
-              <path
-                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-              />
-            </svg>
+        <p>
+          @if (!isAuthenticated()) {
+          <a href="/login" class="action-link">Sign in</a> and join this
+          community to post and comment. } @else { Join this community to post
+          and comment. }
+        </p>
+      </div>
+      } @else if (posts().length === 0) {
+      <div class="empty-feed">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path
+            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+          />
+        </svg>
+        <p>No discussions yet. Be the first to post!</p>
+      </div>
+      } @else {
+      <div class="posts-grid">
+        @for (post of posts(); track post.id) {
+        <article class="post-card" role="article">
+          <div class="post-header">
+            <span class="post-date">{{ post.createdAt | date: 'MMM d, y' }}</span>
           </div>
-          <p>Post feed coming soon — Phase 2.</p>
-        </div>
+          <h3 class="post-title">{{ post.title }}</h3>
+          <p class="post-content">{{ post.content }}</p>
+          <div class="post-footer">
+            <span class="post-author">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              {{ post.authorName }}
+            </span>
+            <div class="post-stats">
+              <span class="post-stat">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                {{ post.likes }}
+              </span>
+              <span class="post-stat">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                  />
+                </svg>
+                {{ post.comments }}
+              </span>
+            </div>
+          </div>
+        </article>
         }
       </div>
+      }
     </div>
   </section>
 
