@@ -380,7 +380,7 @@ All moderation actions write to an immutable audit log.
 | Phase 0 — Architecture & Scaffolding           | ✅ Complete    | App scaffolded, all routes implemented, placeholder pages built                   |
 | Phase 1 — Public Browsing (Read-Only Data)     | ✅ Complete    | Community service uses real API calls (`/api/communities`), pages fetch live data |
 | Phase 2 — Auth & Join-to-Interact              | ✅ Complete    | Login/register, auth interceptor, join/unjoin flow, MemberGuard, account page with memberships |
-| Phase 3 — Classifieds & Buyer/Seller Messaging | ❌ Not Started | Create/edit/delete classifieds, messaging UI not implemented                      |
+| Phase 3 — Classifieds & Buyer/Seller Messaging | ✅ Complete    | Create/edit/delete classifieds with image upload; classified detail page; buyer-seller chat |
 | Phase 4 — Moderation & Reputation              | ❌ Not Started | Report flow, reputation scoring, mod queue not implemented                        |
 | Phase 5 — Payments (Featured Classifieds)      | ❌ Not Started | Stripe integration not implemented                                                |
 

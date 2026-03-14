@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { CommunityService, LocalCommunity } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
+import { AssetService } from '../../services/asset.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import {
   ClassifiedListComponent,
@@ -28,6 +29,7 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   private classifiedService = inject(ClassifiedService);
   private communityService = inject(CommunityService);
   private authState = inject(AuthStateService);
+  private assetService = inject(AssetService);
   private messageService = inject(MessageService);
   private destroy$ = new Subject<void>();
 
@@ -38,6 +40,20 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   isAuthenticated = signal(false);
   isMember = signal(false);
   showPostForm = signal(false);
+
+  /** Image upload callback passed to ClassifiedFormComponent */
+  uploadImage = async (file: File): Promise<string> => {
+    const profileId = this.authState.getActingProfileId();
+    const dataUrl = await this.assetService.fileToDataUrl(file);
+    const asset = await this.assetService.createAsset({
+      name: file.name,
+      profileId,
+      type: 'image',
+      content: dataUrl,
+      fileExtension: this.assetService.getFileExtension(dataUrl),
+    });
+    return this.assetService.getAssetUrl(asset.id);
+  };
 
   ngOnInit(): void {
     this.authState.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe((auth) => {
@@ -127,22 +143,15 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   }
 
   onContactSeller(classified: ClassifiedAdDto): void {
-    if (!this.isAuthenticated()) {
-      this.promptSignIn('contact-seller');
-      return;
+    // Navigate to the detail page — chat happens there
+    this.onViewAd(classified);
+  }
+
+  onViewAd(classified: ClassifiedAdDto): void {
+    const slug = this.community()?.slug;
+    if (slug) {
+      this.router.navigate(['/c', slug, 'classifieds', classified.id]);
     }
-    if (!this.isMember()) {
-      this.messageService.addMessage({
-        content: 'Please join this community first to contact sellers.',
-        type: 'info',
-      });
-      return;
-    }
-    // TODO: open buyer/seller chat (Phase 3)
-    this.messageService.addMessage({
-      content: `Buyer/seller messaging for "${classified.title}" coming in Phase 3!`,
-      type: 'info',
-    });
   }
 }
 
