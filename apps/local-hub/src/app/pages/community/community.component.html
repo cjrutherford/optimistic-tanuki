@@ -206,7 +206,25 @@
     <div class="section-container">
       <div class="section-header">
         <h2 class="section-title">Recent Discussions</h2>
+        @if (isMember()) {
+        <button
+          class="btn btn-primary"
+          (click)="toggleCompose()"
+          [disabled]="submittingPost()"
+        >
+          @if (showCompose()) { Cancel } @else { + New Post }
+        </button>
+        }
       </div>
+
+      @if (isMember() && showCompose()) {
+      <div class="compose-wrapper">
+        <lib-social-compose
+          [profileId]="authState.getActingProfileId()"
+          (postSubmitted)="onPostSubmitted($event)"
+        ></lib-social-compose>
+      </div>
+      }
 
       @if (!isMember()) {
       <div class="gated-notice">

@@ -385,6 +385,9 @@
 }
 
 .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 24px;
 }
 
@@ -573,4 +576,11 @@
   .community-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.compose-wrapper {
+  margin-bottom: 32px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--muted);
 }
