@@ -33,6 +33,8 @@ Core system architecture and design documentation:
 
 Step-by-step guides for specific tasks:
 
+- [Email Provider Setup](./guides/email-providers.md) - Configuring SMTP, API, and console email providers
+- [OAuth Provider Setup](./guides/oauth-providers.md) - Setting up Google, GitHub, Microsoft, Facebook, and X login
 - [Theme Designer Guide](./guides/theme-designer.md) - Using the theme designer component
 - [Theme Migration Guide](./guides/theme-migration.md) - Migrating to the new theme system
 - [MCP Tools Guide](./guides/mcp-tools.md) - Model Context Protocol tools usage
@@ -119,6 +121,7 @@ Shared libraries used across applications:
 
 - [Constants](../libs/constants/README.md) - Shared constants and tokens
 - [Database](../libs/database/README.md) - Database connection and TypeORM setup
+- [Email](./guides/email-providers.md) - Email service with plugin architecture
 - [Encryption](../libs/encryption/README.md) - Cryptographic operations
 - [Logger](../libs/logger/README.md) - Logging service
 - [Models](../libs/models/README.md) - Shared data models
