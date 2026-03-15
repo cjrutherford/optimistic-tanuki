@@ -98,7 +98,8 @@ Step-by-step guides for specific tasks:
 - [Forge of Will](../apps/forgeofwill/README.md)
 - [Christopher Rutherford Net](../apps/christopherrutherford-net/README.md)
 
-## 📦 Library Documentation
+## Library Documentation
+## Library Documentation
 
 Shared libraries used across applications:
 
@@ -137,7 +138,7 @@ Shared libraries used across applications:
 - [Compose Lib](../libs/compose-lib/README.md) - Composition utilities
 - [Prompt Generation](../libs/prompt-generation/README.md) - AI prompt generation
 
-## 🔧 Quick Links
+## Quick Links
 
 - [Main README](../README.md) - Project overview and quick start
 - [Build and Push Workflow](../.github/workflows/build-push.yml) - Deployment contract validation and image promotion
