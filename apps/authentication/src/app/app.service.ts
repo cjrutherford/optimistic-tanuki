@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken, InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { timingSafeEqual } from 'crypto';
@@ -21,6 +22,7 @@ import { authenticator } from 'otplib';
 export class AppService {
   constructor(
     private readonly l: Logger,
+    private readonly configService: ConfigService,
     @Inject(getRepositoryToken(UserEntity))
     private readonly userRepo: Repository<UserEntity>,
     @Inject(getRepositoryToken(TokenEntity))
@@ -401,8 +403,7 @@ export class AppService {
     }
   }
 
-  async issueToken(userId: string, profileId?: string) {
-    try {
+  async issueToken(userId: string, profileId?: string) {    try {
       this.l.debug(
         `Issuing token for userId: ${userId}, profileId: ${profileId}`
       );
@@ -443,5 +444,40 @@ export class AppService {
       if (e instanceof RpcException) throw e;
       throw new RpcException(e.message || e);
     }
+  }
+
+  /**
+   * Returns sanitized public OAuth provider config (no secrets).
+   * If a domain is provided and per-domain overrides exist in config,
+   * those are merged on top of the global provider settings.
+   */
+  getPublicOAuthConfig(domain?: string): Record<string, unknown> {
+    const providers = ['google', 'github', 'microsoft', 'facebook'];
+    const result: Record<string, unknown> = {};
+
+    const apps: Array<any> = this.configService.get('oauth.apps') ?? [];
+    const domainEntry = domain
+      ? apps.find((entry) => entry?.domain === domain)
+      : undefined;
+
+    for (const provider of providers) {
+      const global = this.configService.get<Record<string, any>>(`oauth.${provider}`);
+      if (!global) continue;
+
+      const domainOverride = domainEntry?.[provider] ?? {};
+      const merged = { ...global, ...domainOverride };
+
+      if (!merged.enabled || !merged.clientId) continue;
+
+      result[provider] = {
+        clientId: merged.clientId,
+        redirectUri: merged.redirectUri,
+        scopes: merged.scopes,
+        authorizationEndpoint: merged.authorizationEndpoint,
+        enabled: true,
+      };
+    }
+
+    return result;
   }
 }

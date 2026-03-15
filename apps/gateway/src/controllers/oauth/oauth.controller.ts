@@ -7,6 +7,8 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  Req,
+  Query,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -26,7 +28,7 @@ import { Public } from '../../decorators/public.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
-import { ConfigService } from '@nestjs/config';
+import { Request } from 'express';
 
 @ApiTags('oauth')
 @Controller('oauth')
@@ -37,8 +39,7 @@ export class OAuthController {
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
     private readonly logger: Logger,
-    private readonly roleInit: RoleInitService,
-    private readonly configService: ConfigService
+    private readonly roleInit: RoleInitService
   ) {
     this.authClient
       .connect()
@@ -204,35 +205,22 @@ export class OAuthController {
     status: 200,
     description: 'OAuth configuration retrieved successfully.',
   })
-  async getOAuthConfig() {
+  async getOAuthConfig(@Req() request: Request, @Query('domain') queryDomain?: string) {
     try {
-      this.logger.debug('Getting OAuth configuration');
+      const origin = (request.headers as any)['origin'] as string | undefined;
+      const host = (request.headers as any)['host'] as string | undefined;
+      const domain =
+        queryDomain ||
+        (origin ? new URL(origin).hostname : host?.split(':')[0]);
 
-      // Get OAuth config from authentication service config
-      const oauthConfig = this.configService.get('oauth') || {};
+      this.logger.debug(`Getting OAuth configuration for domain=${domain}`);
 
-      // Filter and sanitize config - only expose what's needed by the frontend
-      const sanitizedConfig: Record<string, any> = {};
-
-      for (const [provider, config] of Object.entries(oauthConfig)) {
-        const providerConfig = config as any;
-
-        // Only include providers that are explicitly enabled AND properly configured
-        if (
-          providerConfig?.enabled &&
-          this.isProviderProperlyConfigured(provider, providerConfig)
-        ) {
-          sanitizedConfig[provider] = {
-            clientId: providerConfig.clientId,
-            redirectUri: providerConfig.redirectUri,
-            scopes: providerConfig.scopes,
-            authorizationEndpoint: providerConfig.authorizationEndpoint,
-            enabled: true,
-          };
-        }
-      }
-
-      return sanitizedConfig;
+      return await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.GetOAuthConfig },
+          { domain }
+        )
+      );
     } catch (error) {
       this.logger.error('Error in getOAuthConfig:', error?.message || error);
       throw new HttpException(
@@ -240,43 +228,5 @@ export class OAuthController {
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
-  }
-
-  /**
-   * Check if a provider has all required configuration values set
-   */
-  private isProviderProperlyConfigured(provider: string, config: any): boolean {
-    const requiredFields = [
-      'clientId',
-      'clientSecret',
-      'redirectUri',
-      'authorizationEndpoint',
-      'tokenEndpoint',
-      'userInfoEndpoint',
-    ];
-
-    for (const field of requiredFields) {
-      const value = config[field];
-      if (!value || value.trim() === '' || value.startsWith('${')) {
-        this.logger.debug(
-          `OAuth provider ${provider} is missing or has invalid ${field} - excluding from public config`
-        );
-        return false;
-      }
-    }
-
-    // Check scopes
-    if (
-      !config.scopes ||
-      !Array.isArray(config.scopes) ||
-      config.scopes.length === 0
-    ) {
-      this.logger.debug(
-        `OAuth provider ${provider} has no scopes configured - excluding from public config`
-      );
-      return false;
-    }
-
-    return true;
   }
 }

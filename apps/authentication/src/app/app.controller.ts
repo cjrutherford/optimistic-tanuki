@@ -349,4 +349,9 @@ export class AppController {
       throw new RpcException(e);
     }
   }
+
+  @MessagePattern({ cmd: AuthCommands.GetOAuthConfig })
+  getOAuthConfig(@Payload() data: { domain?: string }) {
+    return this.appService.getPublicOAuthConfig(data?.domain);
+  }
 }

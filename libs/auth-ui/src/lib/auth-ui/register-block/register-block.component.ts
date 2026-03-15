@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -18,6 +18,7 @@ import {
   selector: 'lib-register-block',
   standalone: true,
   imports: [
+    CommonModule,
     ReactiveFormsModule,
     CardComponent,
     ButtonComponent,

@@ -58,3 +58,7 @@ storybook-static
 # Generated features breakdown report (regenerate with generate-features-report.sh)
 /FEATURES_BREAKDOWN.md.env
 .env
+.nx/polygraph
+.gemini/
+.github/skills/
+.opencode/

@@ -90,8 +90,8 @@ export class LoginComponent implements OnInit {
 
   private async loadOAuthConfig(): Promise<void> {
     try {
-      // Load OAuth configuration from the server
-      const config: any = await this.http.get('/api/config/oauth').toPromise();
+      const domain = window.location.hostname;
+      const config: any = await this.http.get(`/api/oauth/config?domain=${encodeURIComponent(domain)}`).toPromise();
       if (config) {
         this.oauthService.configureProviders(config);
       }

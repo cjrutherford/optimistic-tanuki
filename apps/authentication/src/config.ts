@@ -31,6 +31,8 @@ export declare type AuthConfigType = {
     github?: OAuthProviderConfig;
     microsoft?: OAuthProviderConfig;
     facebook?: OAuthProviderConfig;
+    /** Per-domain app overrides. Each entry matches requests by hostname. */
+    apps?: Array<{ domain: string } & Partial<Record<string, Partial<OAuthProviderConfig>>>>;
   };
 };
 

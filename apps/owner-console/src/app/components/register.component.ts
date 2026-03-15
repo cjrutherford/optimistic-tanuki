@@ -95,7 +95,8 @@ export class RegisterComponent implements OnInit {
 
   private async loadOAuthConfig(): Promise<void> {
     try {
-      const config: any = await this.http.get('/api/config/oauth').toPromise();
+      const domain = window.location.hostname;
+      const config: any = await this.http.get(`/api/oauth/config?domain=${encodeURIComponent(domain)}`).toPromise();
       if (config) {
         this.oauthService.configureProviders(config);
       }

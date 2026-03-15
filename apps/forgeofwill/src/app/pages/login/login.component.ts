@@ -40,7 +40,7 @@ export class LoginComponent implements OnInit {
 
   private async loadOAuthConfig(): Promise<void> {
     try {
-      const config: any = await this.http.get('/api/config/oauth').toPromise();
+      const config: any = await this.http.get('/api/oauth/config').toPromise();
       if (config) {
         this.oauthService.configureProviders(config);
       }

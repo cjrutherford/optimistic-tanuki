@@ -17,6 +17,8 @@ const AuthCommands = {
   // Email commands for MFA verification
   SendMfaSetupEmail: 'SendMfaSetupEmail',
   SendMfaVerificationEmail: 'SendMfaVerificationEmail',
+  // Returns sanitized public OAuth config for a given domain (no secrets)
+  GetOAuthConfig: 'GetOAuthConfig',
 };
 
 export default AuthCommands;
