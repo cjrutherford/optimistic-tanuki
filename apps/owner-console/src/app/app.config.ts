@@ -30,6 +30,10 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    {
+      provide: API_BASE_URL,
+      useValue: '/api',
+    },
     provideAnimationsAsync(),
     {
       provide: API_BASE_URL,

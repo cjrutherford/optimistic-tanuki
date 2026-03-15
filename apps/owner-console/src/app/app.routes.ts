@@ -1,6 +1,7 @@
 import { Route } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { OPERATOR_WORKSPACES } from './operator-workspaces';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 
 export const appRoutes: Route[] = [
   {
@@ -15,6 +16,7 @@ export const appRoutes: Route[] = [
         (m) => m.RegisterComponent
       ),
   },
+  { path: 'oauth/callback', component: OAuthCallbackComponent },
   {
     path: 'oauth/callback',
     loadComponent: () =>
