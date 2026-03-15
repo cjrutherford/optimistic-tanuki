@@ -10,7 +10,6 @@ The authentication service supports the following OAuth providers:
 - **GitHub**
 - **Microsoft**
 - **Facebook**
-- **Twitter (X)**
 
 Each provider requires its own set of credentials (Client ID and Client Secret) which must be obtained from the respective developer consoles.
 
@@ -44,11 +43,6 @@ services:
       - FACEBOOK_CLIENT_ID=your-facebook-app-id
       - FACEBOOK_CLIENT_SECRET=your-facebook-app-secret
       - FACEBOOK_REDIRECT_URI=https://your-domain.com/oauth/callback
-
-      # Twitter/X OAuth
-      - X_CLIENT_ID=your-twitter-client-id
-      - X_CLIENT_SECRET=your-twitter-client-secret
-      - X_REDIRECT_URI=https://your-domain.com/oauth/callback
 ```
 
 ### Method 2: Direct Configuration (Development)
@@ -135,22 +129,6 @@ oauth:
 - `email`
 - `public_profile`
 
-### Twitter/X OAuth 2.0
-
-1. Go to the [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
-2. Create a new project and app
-3. In the app settings, enable "OAuth 2.0"
-4. Set the callback URL:
-   - `https://your-domain.com/oauth/callback`
-5. Copy the Client ID and Client Secret
-
-**Required Scopes:**
-
-- `tweet.read`
-- `users.read`
-
-**Note:** Twitter/X requires PKCE (Proof Key for Code Exchange) which is automatically handled by the authentication service.
-
 ## Redirect URI Configuration
 
 The redirect URI must match exactly between:
@@ -222,9 +200,6 @@ Common causes:
 | `FACEBOOK_CLIENT_ID`      | Facebook App ID            | `1234567890123456`                            |
 | `FACEBOOK_CLIENT_SECRET`  | Facebook App Secret        | `abc123def456ghi789`                          |
 | `FACEBOOK_REDIRECT_URI`   | Facebook Redirect URI      | `https://app.example.com/oauth/callback`      |
-| `X_CLIENT_ID`             | Twitter/X Client ID        | `abc123def456`                                |
-| `X_CLIENT_SECRET`         | Twitter/X Client Secret    | `xyz789uvw456`                                |
-| `X_REDIRECT_URI`          | Twitter/X Redirect URI     | `https://app.example.com/oauth/callback`      |
 
 ## Support
 
@@ -234,7 +209,6 @@ For issues specific to OAuth provider configuration, refer to the official docum
 - [GitHub OAuth Documentation](https://docs.github.com/en/developers/apps/building-oauth-apps)
 - [Microsoft Identity Platform](https://docs.microsoft.com/en-us/azure/active-directory/develop/)
 - [Facebook Login](https://developers.facebook.com/docs/facebook-login/)
-- [Twitter/X OAuth 2.0](https://developer.twitter.com/en/docs/authentication/oauth-2-0)
 
 ## Step-by-Step Provider Setup
 

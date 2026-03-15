@@ -4,7 +4,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 export interface OAuthProviderEvent {
-  provider: 'google' | 'github' | 'microsoft' | 'facebook' | 'x';
+  provider: 'google' | 'github' | 'microsoft' | 'facebook';
 }
 
 const VALID_PROVIDERS = [
@@ -12,7 +12,6 @@ const VALID_PROVIDERS = [
   'github',
   'microsoft',
   'facebook',
-  'x',
 ] as const;
 
 @Component({
@@ -34,7 +33,6 @@ export class OAuthButtonsComponent extends Themeable {
     'github',
     'microsoft',
     'facebook',
-    'x',
   ];
   @Input() showDivider = true;
   @Output() providerSelected = new EventEmitter<OAuthProviderEvent>();
@@ -48,7 +46,6 @@ export class OAuthButtonsComponent extends Themeable {
       ariaLabel: 'Sign in with Microsoft',
     },
     { id: 'facebook', label: 'Facebook', ariaLabel: 'Sign in with Facebook' },
-    { id: 'x', label: 'Twitter', ariaLabel: 'Sign in with Twitter' },
   ];
 
   override applyTheme(colors: ThemeColors): void {

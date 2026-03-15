@@ -6,7 +6,6 @@ export enum OAuthProvider {
   GITHUB = 'github',
   MICROSOFT = 'microsoft',
   FACEBOOK = 'facebook',
-  X = 'x',
   CUSTOM = 'custom',
 }
 

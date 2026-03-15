@@ -25,7 +25,7 @@ export class OAuthConfigValidator implements OnModuleInit {
 
   private validateOAuthConfigurations(): void {
     const oauthConfig = this.configService.get('oauth') || {};
-    const providers = ['google', 'github', 'microsoft', 'facebook', 'x'];
+    const providers = ['google', 'github', 'microsoft', 'facebook'];
 
     this.logger.log('Validating OAuth provider configurations...');
 
@@ -167,7 +167,6 @@ export class OAuthConfigValidator implements OnModuleInit {
       github: 'GitHub',
       microsoft: 'Microsoft',
       facebook: 'Facebook',
-      x: 'Twitter/X',
     };
     return displayNames[provider] || provider;
   }

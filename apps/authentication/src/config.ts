@@ -31,7 +31,6 @@ export declare type AuthConfigType = {
     github?: OAuthProviderConfig;
     microsoft?: OAuthProviderConfig;
     facebook?: OAuthProviderConfig;
-    x?: OAuthProviderConfig;
   };
 };
 

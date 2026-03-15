@@ -1,6 +1,6 @@
 # OAuth Provider Setup Guide
 
-This guide covers how to configure OAuth and social login providers in Optimistic Tanuki. The platform supports Google, GitHub, Microsoft, Facebook, and X (formerly Twitter), along with any custom OAuth-compatible provider.
+This guide covers how to configure OAuth and social login providers in Optimistic Tanuki. The platform supports Google, GitHub, Microsoft, and Facebook, along with any custom OAuth-compatible provider.
 
 ## Table of Contents
 
@@ -11,7 +11,6 @@ This guide covers how to configure OAuth and social login providers in Optimisti
   - [GitHub](#github)
   - [Microsoft](#microsoft)
   - [Facebook](#facebook)
-  - [X (Twitter)](#x-twitter)
   - [Custom Provider](#custom-provider)
 - [Gateway API Endpoints](#gateway-api-endpoints)
 - [UI Integration](#ui-integration)
@@ -60,7 +59,6 @@ enum OAuthProvider {
   GITHUB = 'github',
   MICROSOFT = 'microsoft',
   FACEBOOK = 'facebook',
-  X = 'x',
   CUSTOM = 'custom',
 }
 ```
@@ -190,32 +188,6 @@ FACEBOOK_CALLBACK_URL=http://localhost:4200/auth/callback/facebook
 
 **Token exchange endpoint:** `https://graph.facebook.com/v18.0/oauth/access_token`
 **User info endpoint:** `https://graph.facebook.com/v18.0/me?fields=id,name,email`
-
-### X (Twitter)
-
-1. Go to the [X Developer Portal](https://developer.x.com/en/portal/dashboard).
-2. Create a new project and app.
-3. Under **User authentication settings**, enable **OAuth 2.0**.
-4. Set the callback URL:
-   - Development: `http://localhost:4200/auth/callback/x`
-   - Production: `https://yourdomain.com/auth/callback/x`
-5. Note the **Client ID** and **Client Secret**.
-
-**Required scopes:**
-- `tweet.read`
-- `users.read`
-- `offline.access`
-
-**Environment variables:**
-
-```bash
-X_CLIENT_ID=your-x-client-id
-X_CLIENT_SECRET=your-x-client-secret
-X_CALLBACK_URL=http://localhost:4200/auth/callback/x
-```
-
-**Token exchange endpoint:** `https://api.x.com/2/oauth2/token`
-**User info endpoint:** `https://api.x.com/2/users/me`
 
 ### Custom Provider
 
@@ -404,7 +376,7 @@ The login form component has built-in OAuth support:
 | Input | Type | Default | Description |
 |---|---|---|---|
 | `showOAuth` | `boolean` | `false` | Show OAuth buttons below the login form |
-| `enabledOAuthProviders` | `string[]` | `['google', 'github', 'microsoft', 'facebook', 'x']` | Which providers to enable |
+| `enabledOAuthProviders` | `string[]` | `['google', 'github', 'microsoft', 'facebook']` | Which providers to enable |
 
 **OAuth-related output:**
 
@@ -428,7 +400,6 @@ export class LoginComponent {
       github: `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user user:email`,
       microsoft: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MICROSOFT_CLIENT_ID}&redirect_uri=${MICROSOFT_CALLBACK_URL}&response_type=code&scope=openid email profile User.Read`,
       facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${FACEBOOK_CALLBACK_URL}&scope=email,public_profile`,
-      x: `https://x.com/i/oauth2/authorize?client_id=${X_CLIENT_ID}&redirect_uri=${X_CALLBACK_URL}&response_type=code&scope=tweet.read users.read offline.access&code_challenge=challenge&code_challenge_method=S256`,
     };
 
     const url = authUrls[event.provider];

@@ -47,7 +47,6 @@ export class LoginBlockComponent extends Themeable {
     'github',
     'microsoft',
     'facebook',
-    'x',
   ];
   @Output() submitEvent = new EventEmitter<LoginType>();
   @Output() oauthProviderSelected = new EventEmitter<OAuthProviderEvent>();

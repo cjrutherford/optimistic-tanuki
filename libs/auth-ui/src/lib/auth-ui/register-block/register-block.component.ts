@@ -49,7 +49,6 @@ export class RegisterBlockComponent extends Themeable {
     'github',
     'microsoft',
     'facebook',
-    'x',
   ];
   @Output() submitEvent = new EventEmitter<RegisterSubmitType>();
   @Output() oauthProviderSelected = new EventEmitter<OAuthProviderEvent>();

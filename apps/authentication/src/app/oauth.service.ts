@@ -271,7 +271,6 @@ export class OAuthService {
       github: 'GitHub',
       microsoft: 'Microsoft',
       facebook: 'Facebook',
-      x: 'Twitter/X',
     };
     return displayNames[provider] || provider;
   }

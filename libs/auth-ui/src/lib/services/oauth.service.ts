@@ -90,13 +90,6 @@ export class OAuthService {
       authorizationEndpoint: 'https://www.facebook.com/v18.0/dialog/oauth',
       enabled: true,
     },
-    x: {
-      clientId: '',
-      redirectUri: '',
-      scopes: ['tweet.read', 'users.read'],
-      authorizationEndpoint: 'https://twitter.com/i/oauth2/authorize',
-      enabled: true,
-  },
   };
   private readonly platformId: object = inject(PLATFORM_ID);
 
@@ -290,11 +283,6 @@ export class OAuthService {
       params.append('prompt', 'select_account');
     }
 
-    if (provider === 'x') {
-      params.append('code_challenge', this.generateCodeChallenge());
-      params.append('code_challenge_method', 'S256');
-    }
-
     return `${config.authorizationEndpoint}?${params.toString()}`;
   }
 
@@ -434,18 +422,6 @@ export class OAuthService {
     return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join(
       ''
     );
-  }
-
-  /**
-   * Generate PKCE code challenge for providers that require it (like X/Twitter)
-   */
-  private generateCodeChallenge(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode(...array))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
   }
 }
 
