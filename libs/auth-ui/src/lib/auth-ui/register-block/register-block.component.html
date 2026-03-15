@@ -40,6 +40,11 @@
               </otui-button>
             </div>
           </form>
+          <lib-oauth-buttons
+            *ngIf="showOAuth"
+            [enabledProviders]="enabledOAuthProviders"
+            (providerSelected)="onOAuthProvider($event)"
+          ></lib-oauth-buttons>
         </div>
       </div>
     </div>

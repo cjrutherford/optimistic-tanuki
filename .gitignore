@@ -56,4 +56,5 @@ storybook-static
 /tools/screenshots/playwright-report
 
 # Generated features breakdown report (regenerate with generate-features-report.sh)
-/FEATURES_BREAKDOWN.md
+/FEATURES_BREAKDOWN.md.env
+.env

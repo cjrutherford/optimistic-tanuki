@@ -24,6 +24,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { OAuthService } from './oauth.service';
 import { KeyService } from './key.service';
+import { OAuthConfigValidator } from './oauth-config.validator';
 import loadDatabase from './loadDatabase';
 import { JwtService } from '@nestjs/jwt';
 
@@ -77,6 +78,7 @@ import { JwtService } from '@nestjs/jwt';
     },
     AppService,
     OAuthService,
+    OAuthConfigValidator,
     SaltedHashService,
     KeyService,
     AsymmetricService,

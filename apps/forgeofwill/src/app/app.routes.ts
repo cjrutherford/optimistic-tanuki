@@ -4,13 +4,14 @@ import { ProfileGuard } from './profile.guard';
 import { inject } from '@angular/core';
 import { UserPermissionsService } from './user-permissions.service';
 import { AuthStateService } from './auth-state.service';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 
 const forumPermissionResolver = async () => {
   const permissionsService = inject(UserPermissionsService);
   const startsWith = 'forum.';
   const permissions = await permissionsService.searchPermissions(startsWith);
   return permissions;
-}
+};
 
 const forumIsLoggedInResolver: ResolveFn<boolean> = () => {
   const authState = inject(AuthStateService);
@@ -21,7 +22,6 @@ const forumUserIdResolver: ResolveFn<string> = () => {
   const authState = inject(AuthStateService);
   return authState.getDecodedTokenValue()?.userId || '';
 };
-
 
 export const appRoutes: Route[] = [
   {
@@ -35,7 +35,14 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'forum',
-    loadChildren: () => import('@optimistic-tanuki/forum-ui').then(m => m.provideForumRoutes(forumPermissionResolver, forumIsLoggedInResolver, forumUserIdResolver)),
+    loadChildren: () =>
+      import('@optimistic-tanuki/forum-ui').then((m) =>
+        m.provideForumRoutes(
+          forumPermissionResolver,
+          forumIsLoggedInResolver,
+          forumUserIdResolver
+        )
+      ),
   },
   // profile route removed; profile editing is available from Settings
   {
@@ -60,6 +67,10 @@ export const appRoutes: Route[] = [
         (m) => m.RegisterComponent
       ),
     title: 'Register',
+  },
+  {
+    path: 'oauth/callback',
+    component: OAuthCallbackComponent,
   },
   {
     path: '**',

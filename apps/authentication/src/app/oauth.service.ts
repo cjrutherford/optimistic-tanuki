@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
+import { OAuthConfigValidator } from './oauth-config.validator';
 
 @Injectable()
 export class OAuthService {
@@ -18,7 +19,8 @@ export class OAuthService {
     @Inject(getRepositoryToken(TokenEntity))
     private readonly tokenRepo: Repository<TokenEntity>,
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
-    private readonly jsonWebToken: JwtService
+    private readonly jsonWebToken: JwtService,
+    private readonly configValidator: OAuthConfigValidator
   ) {}
 
   async oauthLogin(
@@ -31,7 +33,20 @@ export class OAuthService {
     profileId?: string
   ) {
     try {
-      this.l.debug(`OAuth login attempt: provider=${provider}, providerUserId=${providerUserId}`);
+      // Check if the provider is enabled and properly configured
+      if (!this.configValidator.isProviderEnabled(provider)) {
+        const displayName = this.getProviderDisplayName(provider);
+        this.l.warn(
+          `OAuth login attempted for disabled/unconfigured provider: ${provider}`
+        );
+        throw new RpcException(
+          `${displayName} OAuth is not enabled. Please contact your administrator to configure OAuth providers. See OAUTH_SETUP.md for setup instructions.`
+        );
+      }
+
+      this.l.debug(
+        `OAuth login attempt: provider=${provider}, providerUserId=${providerUserId}`
+      );
 
       // Find existing linked account
       const linked = await this.oauthRepo.findOne({
@@ -112,7 +127,9 @@ export class OAuthService {
         where: { provider, userId },
       });
       if (existing) {
-        throw new RpcException(`Provider ${provider} is already linked to this account`);
+        throw new RpcException(
+          `Provider ${provider} is already linked to this account`
+        );
       }
 
       // Check if this provider account is linked to a different user
@@ -120,7 +137,9 @@ export class OAuthService {
         where: { provider, providerUserId },
       });
       if (linkedToOther && linkedToOther.userId !== userId) {
-        throw new RpcException(`This ${provider} account is already linked to another user`);
+        throw new RpcException(
+          `This ${provider} account is already linked to another user`
+        );
       }
 
       const saved = await this.oauthRepo.save({
@@ -158,7 +177,9 @@ export class OAuthService {
         where: { provider, userId },
       });
       if (!linked) {
-        throw new RpcException(`Provider ${provider} is not linked to this account`);
+        throw new RpcException(
+          `Provider ${provider} is not linked to this account`
+        );
       }
 
       // Ensure user has at least a password or another provider before unlinking
@@ -192,7 +213,13 @@ export class OAuthService {
 
       const providers = await this.oauthRepo.find({
         where: { userId },
-        select: ['id', 'provider', 'providerEmail', 'providerDisplayName', 'createdAt'],
+        select: [
+          'id',
+          'provider',
+          'providerEmail',
+          'providerDisplayName',
+          'createdAt',
+        ],
       });
 
       return {
@@ -231,6 +258,21 @@ export class OAuthService {
     // Return sanitized user data without sensitive fields
     const { password, keyData, ...sanitizedUser } = user;
 
-    return { message: 'OAuth login successful', code: 0, data: { newToken: tk } };
+    return {
+      message: 'OAuth login successful',
+      code: 0,
+      data: { newToken: tk },
+    };
+  }
+
+  private getProviderDisplayName(provider: string): string {
+    const displayNames: Record<string, string> = {
+      google: 'Google',
+      github: 'GitHub',
+      microsoft: 'Microsoft',
+      facebook: 'Facebook',
+      x: 'Twitter/X',
+    };
+    return displayNames[provider] || provider;
   }
 }

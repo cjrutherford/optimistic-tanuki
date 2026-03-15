@@ -1,16 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, PLATFORM_ID } from '@angular/core';
 import { Router } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { LoginRequest } from '@optimistic-tanuki/ui-models';
 import { AuthStateService } from '../state/auth-state.service';
 
 import { Subscription, filter } from 'rxjs';
-import { inject } from '@angular/core';
 import { MessageService } from '@optimistic-tanuki/message-ui';
-import { LoginBlockComponent, OAuthProviderEvent } from '@optimistic-tanuki/auth-ui';
+import {
+  LoginBlockComponent,
+  OAuthProviderEvent,
+  OAuthService,
+} from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from '../profile.service';
+import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-login',
@@ -19,8 +24,10 @@ import { ProfileService } from '../profile.service';
   standalone: true,
   imports: [LoginBlockComponent],
 })
-export class LoginComponent implements OnDestroy {
+export class LoginComponent implements OnDestroy, OnInit {
   private readonly messageService = inject(MessageService);
+  private readonly http = inject(HttpClient);
+  private readonly platformId = inject(PLATFORM_ID);
   themeSub: Subscription;
   themeStyles!: {
     backgroundColor: string;
@@ -32,6 +39,7 @@ export class LoginComponent implements OnDestroy {
     inject(AuthStateService);
   private readonly router: Router = inject(Router);
   private readonly profileService = inject(ProfileService);
+  private oauthService: OAuthService;
 
   constructor() {
     this.themeSub = this.themeService.themeColors$
@@ -43,10 +51,26 @@ export class LoginComponent implements OnDestroy {
           border: `1px solid ${colors.accent}`,
         };
       });
+    this.oauthService = new OAuthService(this.http, '/api');
+  }
+
+  ngOnInit() {
+    this.loadOAuthConfig();
   }
 
   ngOnDestroy() {
     this.themeSub.unsubscribe();
+  }
+
+  private async loadOAuthConfig(): Promise<void> {
+    try {
+      const config: any = await this.http.get('/api/config/oauth').toPromise();
+      if (config) {
+        this.oauthService.configureProviders(config);
+      }
+    } catch (e) {
+      console.log('OAuth config not loaded from server, using defaults');
+    }
   }
 
   async onSubmit($event: LoginType) {
@@ -70,10 +94,6 @@ export class LoginComponent implements OnDestroy {
               profileMessage: 'Please create your profile to continue.',
             },
           });
-          // this.messageService.addMessage({
-          //   content: 'Please create your profile to continue.',
-          //   type: 'warning',
-          // });
           return;
         }
         // Otherwise load profiles and redirect accordingly
@@ -105,11 +125,89 @@ export class LoginComponent implements OnDestroy {
     }
   }
 
-  onOAuthProvider(event: OAuthProviderEvent) {
-    console.log('OAuth provider selected:', event.provider);
-    this.messageService.addMessage({
-      content: `OAuth login with ${event.provider} is not yet configured. Please use email/password login.`,
-      type: 'warning',
-    });
+  async onOAuthProvider(event: OAuthProviderEvent) {
+    try {
+      const result = await this.oauthService.initiateOAuthLogin(event.provider);
+
+      if (result.success && result.token) {
+        this.authStateService.setToken(result.token);
+
+        if (this.authStateService.isAuthenticated) {
+          const decoded = this.authStateService.getDecodedTokenValue();
+          if (decoded && decoded.profileId === '') {
+            this.router.navigate(['/settings'], {
+              state: {
+                showProfileModal: false,
+                profileMessage: 'Please create your profile to continue.',
+              },
+            });
+            return;
+          }
+
+          await this.profileService.getAllProfiles();
+          const currentProfiles = this.profileService.getCurrentUserProfiles();
+          if (!currentProfiles.length) {
+            this.router.navigate(['/settings'], {
+              state: {
+                showProfileModal: true,
+                profileMessage:
+                  'No profiles found. Please create a profile to continue.',
+              },
+            });
+            this.messageService.addMessage({
+              content:
+                'No profiles found. Please create a profile to continue.',
+              type: 'warning',
+            });
+          } else {
+            this.profileService.selectProfile(currentProfiles[0]);
+            this.router.navigate(['/feed']);
+            this.messageService.addMessage({
+              content: 'Login successful! Welcome back.',
+              type: 'success',
+            });
+          }
+        }
+      } else if (result.needsRegistration && result.userData) {
+        // Handle auto-registration for new OAuth users
+        const names = result.userData.displayName.split(' ');
+        const firstName = names[0] || '';
+        const lastName = names.slice(1).join(' ') || '';
+
+        const regResult = await this.oauthService.completeOAuthRegistration(
+          result.userData.provider,
+          result.userData.providerUserId,
+          result.userData.email,
+          firstName,
+          lastName,
+          ''
+        );
+
+        if (regResult.success && regResult.token) {
+          this.authStateService.setToken(regResult.token);
+          this.router.navigate(['/feed']);
+          this.messageService.addMessage({
+            content: 'Account created and login successful! Welcome!',
+            type: 'success',
+          });
+        } else {
+          this.messageService.addMessage({
+            content:
+              regResult.error || 'Registration failed. Please try again.',
+            type: 'error',
+          });
+        }
+      } else {
+        this.messageService.addMessage({
+          content: result.error || 'OAuth login failed. Please try again.',
+          type: 'error',
+        });
+      }
+    } catch (err: any) {
+      this.messageService.addMessage({
+        content: err.message || 'OAuth login failed. Please try again.',
+        type: 'error',
+      });
+    }
   }
 }

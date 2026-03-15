@@ -4,6 +4,7 @@ import { ProfileGuard } from './guards/profile.guard';
 import { inject } from '@angular/core';
 import { UserPermissionsService } from './state/user-permissions.service';
 import { AuthStateService } from './state/auth-state.service';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 
 const forumPermissionResolver: ResolveFn<string[]> = async () => {
   const permissionsService = inject(UserPermissionsService);
@@ -45,6 +46,10 @@ export const appRoutes: Route[] = [
       import('./components/login.component').then((m) => m.LoginComponent),
   },
   {
+    path: 'oauth/callback',
+    component: OAuthCallbackComponent,
+  },
+  {
     path: 'feed',
     loadComponent: () =>
       import('./components/social/feed.component').then((m) => m.FeedComponent),
@@ -61,7 +66,14 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'forum',
-    loadChildren: () => import('@optimistic-tanuki/forum-ui').then(m => m.provideForumRoutes(forumPermissionResolver, forumIsLoggedInResolver, forumUserIdResolver)),
+    loadChildren: () =>
+      import('@optimistic-tanuki/forum-ui').then((m) =>
+        m.provideForumRoutes(
+          forumPermissionResolver,
+          forumIsLoggedInResolver,
+          forumUserIdResolver
+        )
+      ),
     canActivate: [AuthGuard, ProfileGuard], // Protect the forum route
   },
   {

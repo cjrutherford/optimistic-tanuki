@@ -9,23 +9,24 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import {
   LinkProviderRequest,
   OAuthCallbackRequest,
   UnlinkProviderRequest,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
-import {
-  AuthCommands,
-  ServiceTokens,
-} from '@optimistic-tanuki/constants';
+import { AuthCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { Public } from '../../decorators/public.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
-import {
-  RoleInitService,
-} from '@optimistic-tanuki/permission-lib';
+import { RoleInitService } from '@optimistic-tanuki/permission-lib';
+import { ConfigService } from '@nestjs/config';
 
 @ApiTags('oauth')
 @Controller('oauth')
@@ -36,7 +37,8 @@ export class OAuthController {
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
     private readonly logger: Logger,
-    private readonly roleInit: RoleInitService
+    private readonly roleInit: RoleInitService,
+    private readonly configService: ConfigService
   ) {
     this.authClient
       .connect()
@@ -53,7 +55,10 @@ export class OAuthController {
     description:
       'Processes the OAuth callback from a provider. If the user exists, returns a JWT. If not, returns registration info.',
   })
-  @ApiResponse({ status: 201, description: 'OAuth callback processed successfully.' })
+  @ApiResponse({
+    status: 201,
+    description: 'OAuth callback processed successfully.',
+  })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   async oauthCallback(
     @Body() data: OAuthCallbackRequest,
@@ -96,7 +101,7 @@ export class OAuthController {
   @ApiOperation({
     summary: 'Link an OAuth provider to the current user account',
     description:
-      'Links a new OAuth provider (Google, GitHub, etc.) to the authenticated user\'s account.',
+      "Links a new OAuth provider (Google, GitHub, etc.) to the authenticated user's account.",
   })
   @ApiResponse({ status: 201, description: 'Provider linked successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
@@ -128,7 +133,7 @@ export class OAuthController {
   @ApiOperation({
     summary: 'Unlink an OAuth provider from the current user account',
     description:
-      'Removes a linked OAuth provider from the authenticated user\'s account.',
+      "Removes a linked OAuth provider from the authenticated user's account.",
   })
   @ApiResponse({ status: 201, description: 'Provider unlinked successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
@@ -160,7 +165,7 @@ export class OAuthController {
   @ApiOperation({
     summary: 'Get linked OAuth providers for the current user',
     description:
-      'Returns a list of all OAuth providers linked to the authenticated user\'s account.',
+      "Returns a list of all OAuth providers linked to the authenticated user's account.",
   })
   @ApiResponse({
     status: 200,
@@ -186,5 +191,92 @@ export class OAuthController {
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
+  }
+
+  @Get('config')
+  @Public()
+  @ApiOperation({
+    summary: 'Get OAuth provider configurations',
+    description:
+      'Returns the OAuth client configuration for all enabled providers. This is safe to expose publicly as it only contains client IDs and endpoints.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OAuth configuration retrieved successfully.',
+  })
+  async getOAuthConfig() {
+    try {
+      this.logger.debug('Getting OAuth configuration');
+
+      // Get OAuth config from authentication service config
+      const oauthConfig = this.configService.get('oauth') || {};
+
+      // Filter and sanitize config - only expose what's needed by the frontend
+      const sanitizedConfig: Record<string, any> = {};
+
+      for (const [provider, config] of Object.entries(oauthConfig)) {
+        const providerConfig = config as any;
+
+        // Only include providers that are explicitly enabled AND properly configured
+        if (
+          providerConfig?.enabled &&
+          this.isProviderProperlyConfigured(provider, providerConfig)
+        ) {
+          sanitizedConfig[provider] = {
+            clientId: providerConfig.clientId,
+            redirectUri: providerConfig.redirectUri,
+            scopes: providerConfig.scopes,
+            authorizationEndpoint: providerConfig.authorizationEndpoint,
+            enabled: true,
+          };
+        }
+      }
+
+      return sanitizedConfig;
+    } catch (error) {
+      this.logger.error('Error in getOAuthConfig:', error?.message || error);
+      throw new HttpException(
+        `Failed to retrieve OAuth configuration: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  /**
+   * Check if a provider has all required configuration values set
+   */
+  private isProviderProperlyConfigured(provider: string, config: any): boolean {
+    const requiredFields = [
+      'clientId',
+      'clientSecret',
+      'redirectUri',
+      'authorizationEndpoint',
+      'tokenEndpoint',
+      'userInfoEndpoint',
+    ];
+
+    for (const field of requiredFields) {
+      const value = config[field];
+      if (!value || value.trim() === '' || value.startsWith('${')) {
+        this.logger.debug(
+          `OAuth provider ${provider} is missing or has invalid ${field} - excluding from public config`
+        );
+        return false;
+      }
+    }
+
+    // Check scopes
+    if (
+      !config.scopes ||
+      !Array.isArray(config.scopes) ||
+      config.scopes.length === 0
+    ) {
+      this.logger.debug(
+        `OAuth provider ${provider} has no scopes configured - excluding from public config`
+      );
+      return false;
+    }
+
+    return true;
   }
 }

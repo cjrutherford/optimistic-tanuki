@@ -1,9 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { LoginBlockComponent, OAuthProviderEvent } from '@optimistic-tanuki/auth-ui';
+import {
+  LoginBlockComponent,
+  OAuthProviderEvent,
+  OAuthService,
+} from '@optimistic-tanuki/auth-ui';
 import { AuthService } from '../services/auth.service';
 import { LoginType } from '@optimistic-tanuki/ui-models';
+import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-login',
@@ -66,10 +72,34 @@ import { LoginType } from '@optimistic-tanuki/ui-models';
     `,
   ],
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   error = '';
+  private oauthService: OAuthService;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private http: HttpClient
+  ) {
+    this.oauthService = new OAuthService(this.http, '/api');
+  }
+
+  ngOnInit(): void {
+    this.loadOAuthConfig();
+  }
+
+  private async loadOAuthConfig(): Promise<void> {
+    try {
+      // Load OAuth configuration from the server
+      const config: any = await this.http.get('/api/config/oauth').toPromise();
+      if (config) {
+        this.oauthService.configureProviders(config);
+      }
+    } catch (e) {
+      // Config endpoint might not exist, continue with defaults
+      console.log('OAuth config not loaded from server, using defaults');
+    }
+  }
 
   onLogin(loginData: LoginType): void {
     this.error = '';
@@ -84,8 +114,44 @@ export class LoginComponent {
     });
   }
 
-  onOAuthProvider(event: OAuthProviderEvent): void {
-    console.log('OAuth provider selected:', event.provider);
-    this.error = `OAuth login with ${event.provider} is not yet configured. Please use email/password login.`;
+  async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
+    this.error = '';
+
+    try {
+      const result = await this.oauthService.initiateOAuthLogin(event.provider);
+
+      if (result.success && result.token) {
+        // Store the token and navigate to dashboard
+        this.authService.setToken(result.token);
+        this.router.navigate(['/dashboard']);
+      } else if (result.needsRegistration && result.userData) {
+        // Handle auto-registration for new OAuth users
+        const names = result.userData.displayName.split(' ');
+        const firstName = names[0] || '';
+        const lastName = names.slice(1).join(' ') || '';
+
+        // Auto-complete registration
+        const regResult = await this.oauthService.completeOAuthRegistration(
+          result.userData.provider,
+          result.userData.providerUserId,
+          result.userData.email,
+          firstName,
+          lastName,
+          '' // code is already exchanged
+        );
+
+        if (regResult.success && regResult.token) {
+          this.authService.setToken(regResult.token);
+          this.router.navigate(['/dashboard']);
+        } else {
+          this.error =
+            regResult.error || 'Registration failed. Please try again.';
+        }
+      } else {
+        this.error = result.error || 'OAuth login failed. Please try again.';
+      }
+    } catch (err: any) {
+      this.error = err.message || 'OAuth login failed. Please try again.';
+    }
   }
 }

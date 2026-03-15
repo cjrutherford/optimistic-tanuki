@@ -40,6 +40,13 @@ export class AuthService {
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
+  setToken(token: string): void {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.TOKEN_KEY, token);
+      this.isAuthenticatedSubject.next(true);
+    }
+  }
+
   login(
     email: string,
     password: string,

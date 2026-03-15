@@ -16,10 +16,12 @@ import { AvailabilityManagementComponent } from './components/availability-manag
 import { authGuard } from './guards/auth.guard';
 import { AppConfigListComponent } from './components/app-config-designer/app-config-list.component';
 import { AppConfigDesignerComponent } from './components/app-config-designer/app-config-designer.component';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 
 export const appRoutes: Route[] = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+  { path: 'oauth/callback', component: OAuthCallbackComponent },
   {
     path: 'dashboard',
     component: DashboardComponent,
@@ -44,7 +46,10 @@ export const appRoutes: Route[] = [
         component: AppConfigDesignerComponent,
       },
       { path: 'store/appointments', component: AppointmentManagementComponent },
-      { path: 'store/availability', component: AvailabilityManagementComponent },
+      {
+        path: 'store/availability',
+        component: AvailabilityManagementComponent,
+      },
       { path: '', redirectTo: 'users', pathMatch: 'full' },
     ],
   },

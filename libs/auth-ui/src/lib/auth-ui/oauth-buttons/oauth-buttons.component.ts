@@ -1,16 +1,19 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
-import {
-  Themeable,
-  ThemeColors,
-} from '@optimistic-tanuki/theme-lib';
+import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 export interface OAuthProviderEvent {
   provider: 'google' | 'github' | 'microsoft' | 'facebook' | 'x';
 }
 
-const VALID_PROVIDERS = ['google', 'github', 'microsoft', 'facebook', 'x'] as const;
+const VALID_PROVIDERS = [
+  'google',
+  'github',
+  'microsoft',
+  'facebook',
+  'x',
+] as const;
 
 @Component({
   selector: 'lib-oauth-buttons',
@@ -39,9 +42,13 @@ export class OAuthButtonsComponent extends Themeable {
   providers = [
     { id: 'google', label: 'Google', ariaLabel: 'Sign in with Google' },
     { id: 'github', label: 'GitHub', ariaLabel: 'Sign in with GitHub' },
-    { id: 'microsoft', label: 'Microsoft', ariaLabel: 'Sign in with Microsoft' },
+    {
+      id: 'microsoft',
+      label: 'Microsoft',
+      ariaLabel: 'Sign in with Microsoft',
+    },
     { id: 'facebook', label: 'Facebook', ariaLabel: 'Sign in with Facebook' },
-    { id: 'x', label: 'X', ariaLabel: 'Sign in with X' },
+    { id: 'x', label: 'Twitter', ariaLabel: 'Sign in with Twitter' },
   ];
 
   override applyTheme(colors: ThemeColors): void {
@@ -52,13 +59,13 @@ export class OAuthButtonsComponent extends Themeable {
   }
 
   get visibleProviders() {
-    return this.providers.filter((p) =>
-      this.enabledProviders.includes(p.id)
-    );
+    return this.providers.filter((p) => this.enabledProviders.includes(p.id));
   }
 
   onProviderClick(providerId: string) {
-    if (VALID_PROVIDERS.includes(providerId as typeof VALID_PROVIDERS[number])) {
+    if (
+      VALID_PROVIDERS.includes(providerId as (typeof VALID_PROVIDERS)[number])
+    ) {
       this.providerSelected.emit({
         provider: providerId as OAuthProviderEvent['provider'],
       });

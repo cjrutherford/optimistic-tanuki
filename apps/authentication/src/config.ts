@@ -3,6 +3,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 import 'pg';
 
+export declare type OAuthProviderConfig = {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  scopes: string[];
+  enabled: boolean;
+  authorizationEndpoint: string;
+  tokenEndpoint: string;
+  userInfoEndpoint: string;
+};
+
 export declare type AuthConfigType = {
   listenPort: number;
   database: {
@@ -14,6 +25,13 @@ export declare type AuthConfigType = {
   };
   auth: {
     jwt_secret: string;
+  };
+  oauth: {
+    google?: OAuthProviderConfig;
+    github?: OAuthProviderConfig;
+    microsoft?: OAuthProviderConfig;
+    facebook?: OAuthProviderConfig;
+    x?: OAuthProviderConfig;
   };
 };
 

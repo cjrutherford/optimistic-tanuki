@@ -8,6 +8,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -16,5 +17,9 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimations(),
+    {
+      provide: API_BASE_URL,
+      useValue: '/api',
+    },
   ],
 };

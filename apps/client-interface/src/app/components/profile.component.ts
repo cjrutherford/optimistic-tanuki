@@ -1,4 +1,5 @@
-import { inject } from '@angular/core';
+import { inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import {
   MessageLevelType,
   MessageService,
@@ -31,33 +32,40 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 })
 export class ProfileComponent implements OnInit {
   private readonly messageService = inject(MessageService);
+  private readonly platformId = inject(PLATFORM_ID);
   profileService: ProfileService;
 
   constructor(readonly _profileService: ProfileService) {
     this.profileService = _profileService;
-    const profile = localStorage.getItem('selectedProfile');
-    if (profile) {
-      this.profileService.selectProfile(JSON.parse(profile));
+    if (isPlatformBrowser(this.platformId)) {
+      const profile = localStorage.getItem('selectedProfile');
+      if (profile) {
+        this.profileService.selectProfile(JSON.parse(profile));
+      }
     }
   }
 
   ngOnInit(): void {
     this.profileService.getAllProfiles().then(() => {
-      const profile = localStorage.getItem('selectedProfile');
-      if (profile) {
-        this.profileService.selectProfile(JSON.parse(profile));
+      if (isPlatformBrowser(this.platformId)) {
+        const profile = localStorage.getItem('selectedProfile');
+        if (profile) {
+          this.profileService.selectProfile(JSON.parse(profile));
+        }
       }
     });
     // Check router state for modal trigger and message (redirect to settings)
-    const nav = window?.history?.state;
-    if (nav?.showProfileModal) {
-      // navigate to settings where profile editor lives
-      setTimeout(() => {
-        window.location.href = '/settings';
-        if (nav.profileMessage) {
-          this.showMessage(nav.profileMessage, 'warning');
-        }
-      }, 100);
+    if (isPlatformBrowser(this.platformId)) {
+      const nav = window?.history?.state;
+      if (nav?.showProfileModal) {
+        // navigate to settings where profile editor lives
+        setTimeout(() => {
+          window.location.href = '/settings';
+          if (nav.profileMessage) {
+            this.showMessage(nav.profileMessage, 'warning');
+          }
+        }, 100);
+      }
     }
   }
 
@@ -73,7 +81,9 @@ export class ProfileComponent implements OnInit {
         this.profileService.getProfileById(id);
         this.showMessage('Profile updated and selected!', 'success');
         setTimeout(() => {
-          window.location.href = '/feed';
+          if (isPlatformBrowser(this.platformId)) {
+            window.location.href = '/feed';
+          }
         }, 500);
       });
   }
@@ -81,7 +91,9 @@ export class ProfileComponent implements OnInit {
     this.profileService.selectProfile(profile);
     this.showMessage('Profile selected!', 'success');
     setTimeout(() => {
-      window.location.href = '/feed';
+      if (isPlatformBrowser(this.platformId)) {
+        window.location.href = '/feed';
+      }
     }, 500);
   }
 
@@ -90,14 +102,18 @@ export class ProfileComponent implements OnInit {
       this.profileService.getAllProfiles().then(() => {
         this.showMessage('Profile created and selected!', 'success');
         setTimeout(() => {
-          window.location.href = '/feed';
+          if (isPlatformBrowser(this.platformId)) {
+            window.location.href = '/feed';
+          }
         }, 500);
       });
     });
   }
 
   goToSettings() {
-    window.location.href = '/settings';
+    if (isPlatformBrowser(this.platformId)) {
+      window.location.href = '/settings';
+    }
   }
 
   get profile() {

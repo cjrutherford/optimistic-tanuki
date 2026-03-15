@@ -8,3 +8,62 @@ database:
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=
+oauth:
+  google:
+    enabled: true
+    clientId: ${GOOGLE_CLIENT_ID}
+    clientSecret: ${GOOGLE_CLIENT_SECRET}
+    redirectUri: ${GOOGLE_REDIRECT_URI}
+    scopes:
+      - openid
+      - email
+      - profile
+    authorizationEndpoint: https://accounts.google.com/o/oauth2/v2/auth
+    tokenEndpoint: https://oauth2.googleapis.com/token
+    userInfoEndpoint: https://openidconnect.googleapis.com/v1/userinfo
+  github:
+    enabled: true
+    clientId: ${GITHUB_CLIENT_ID}
+    clientSecret: ${GITHUB_CLIENT_SECRET}
+    redirectUri: ${GITHUB_REDIRECT_URI}
+    scopes:
+      - read:user
+      - user:email
+    authorizationEndpoint: https://github.com/login/oauth/authorize
+    tokenEndpoint: https://github.com/login/oauth/access_token
+    userInfoEndpoint: https://api.github.com/user
+  microsoft:
+    enabled: true
+    clientId: ${MICROSOFT_CLIENT_ID}
+    clientSecret: ${MICROSOFT_CLIENT_SECRET}
+    redirectUri: ${MICROSOFT_REDIRECT_URI}
+    scopes:
+      - openid
+      - email
+      - profile
+      - User.Read
+    authorizationEndpoint: https://login.microsoftonline.com/common/oauth2/v2.0/authorize
+    tokenEndpoint: https://login.microsoftonline.com/common/oauth2/v2.0/token
+    userInfoEndpoint: https://graph.microsoft.com/v1.0/me
+  facebook:
+    enabled: true
+    clientId: ${FACEBOOK_CLIENT_ID}
+    clientSecret: ${FACEBOOK_CLIENT_SECRET}
+    redirectUri: ${FACEBOOK_REDIRECT_URI}
+    scopes:
+      - email
+      - public_profile
+    authorizationEndpoint: https://www.facebook.com/v18.0/dialog/oauth
+    tokenEndpoint: https://graph.facebook.com/v18.0/oauth/access_token
+    userInfoEndpoint: https://graph.facebook.com/v18.0/me
+  x:
+    enabled: true
+    clientId: ${X_CLIENT_ID}
+    clientSecret: ${X_CLIENT_SECRET}
+    redirectUri: ${X_REDIRECT_URI}
+    scopes:
+      - tweet.read
+      - users.read
+    authorizationEndpoint: https://twitter.com/i/oauth2/authorize
+    tokenEndpoint: https://api.twitter.com/2/oauth2/token
+    userInfoEndpoint: https://api.twitter.com/2/users/me

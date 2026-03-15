@@ -4,7 +4,6 @@
     "dbaeumer.vscode-eslint",
     "firsttris.vscode-jest-runner",
     "ms-playwright.playwright",
-    "prettier.prettier-vscode",
     "angular.ng-template",
     "orta.vscode-jest"
   ]
