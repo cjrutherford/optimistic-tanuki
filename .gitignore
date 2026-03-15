@@ -84,3 +84,4 @@ tmp/
 .opencode/
 .ruff_cache/
 worktrees/*
+apps/local-hub-e2e/test-results/
