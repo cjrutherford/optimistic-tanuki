@@ -6,21 +6,25 @@ import {
   City,
   LocalCommunity,
 } from '../../services/community.service';
+import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
+import { PaymentService, DonationGoal } from '../../services/payment.service';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DonationProgressComponent],
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.scss'],
 })
 export class LandingComponent implements OnInit {
   private router = inject(Router);
   private communityService = inject(CommunityService);
+  private paymentService = inject(PaymentService);
 
   cities = signal<City[]>([]);
   communities = signal<LocalCommunity[]>([]);
   loading = signal(true);
+  donationGoal = signal<DonationGoal | null>(null);
 
   totalCities = signal(0);
   totalCommunities = signal(0);
@@ -28,13 +32,15 @@ export class LandingComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     try {
-      const [citiesData, communitiesData] = await Promise.all([
+      const [citiesData, communitiesData, goalData] = await Promise.all([
         this.communityService.getCities(),
         this.communityService.getCommunities(),
+        this.paymentService.getDonationGoal(),
       ]);
 
       this.cities.set(citiesData);
       this.communities.set(communitiesData);
+      this.donationGoal.set(goalData);
 
       this.totalCities.set(citiesData.length);
       this.totalCommunities.set(communitiesData.length);
