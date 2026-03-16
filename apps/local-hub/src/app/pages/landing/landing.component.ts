@@ -32,11 +32,15 @@ export class LandingComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     try {
-      const [citiesData, communitiesData, goalData] = await Promise.all([
-        this.communityService.getCities(),
+      // Fetch communities once and derive cities from that list to avoid a
+      // redundant second HTTP request (getCities() calls getCommunities() internally).
+      const [communitiesData, goalData] = await Promise.all([
         this.communityService.getCommunities(),
         this.paymentService.getDonationGoal(),
       ]);
+
+      const citiesData =
+        this.communityService.getCitiesFromCommunities(communitiesData);
 
       this.cities.set(citiesData);
       this.communities.set(communitiesData);

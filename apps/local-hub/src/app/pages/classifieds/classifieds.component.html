@@ -1,12 +1,24 @@
 <div class="classifieds-page">
-  <div class="page-header">
-    <button class="btn-back" (click)="navigateToCommunity()">← Back to Community</button>
-    @if (community()) {
-      <h1>{{ community()!.name }} — Classifieds</h1>
-      <p class="community-desc">{{ community()!.description }}</p>
-    }
-  </div>
+  <header class="page-header">
+    <div class="header-background">
+      <div class="header-gradient"></div>
+    </div>
+    <div class="header-content">
+      <button class="btn-back" (click)="navigateToCommunity()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        Back to Community
+      </button>
+      @if (community()) {
+        <h1 class="page-title">{{ community()!.name }}</h1>
+        <p class="page-subtitle">{{ community()!.description }}</p>
+        <span class="page-badge">Classifieds</span>
+      }
+    </div>
+  </header>
 
+  <div class="inner-content">
   @if (error()) {
     <div class="error-banner" role="alert">{{ error() }}</div>
   }
@@ -43,4 +55,5 @@
       </div>
     }
   }
+  </div>
 </div>
