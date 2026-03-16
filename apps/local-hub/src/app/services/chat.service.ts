@@ -42,20 +42,24 @@ export class ChatService implements OnDestroy {
     if (this.socket?.connected) {
       return this.socket;
     }
-    const { io } = await import('socket.io-client');
-    this.socket = io('/chat', {
-      path: '/socket.io',
-      transports: ['websocket'],
-    });
-    this.socket.on('connect', () => {
-      console.log('[ChatService] Socket connected:', this.socket?.id);
-    });
-    this.socket.on('connect_error', (err: Error) => {
-      console.error('[ChatService] Socket connection error:', err.message);
-    });
-    this.socket.on('disconnect', (reason: string) => {
-      console.log('[ChatService] Socket disconnected:', reason);
-    });
+    // If a socket already exists (connecting but not yet connected), wait for
+    // its connect/error rather than creating a second connection.
+    if (!this.socket) {
+      const { io } = await import('socket.io-client');
+      this.socket = io('/chat', {
+        path: '/socket.io',
+        transports: ['websocket'],
+      });
+      this.socket.on('connect', () => {
+        console.log('[ChatService] Socket connected:', this.socket?.id);
+      });
+      this.socket.on('connect_error', (err: Error) => {
+        console.error('[ChatService] Socket connection error:', err.message);
+      });
+      this.socket.on('disconnect', (reason: string) => {
+        console.log('[ChatService] Socket disconnected:', reason);
+      });
+    }
     return new Promise<Socket>((resolve, reject) => {
       if (!this.socket) {
         reject(new Error('Socket not initialized'));
