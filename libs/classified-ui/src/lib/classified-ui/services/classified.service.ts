@@ -8,6 +8,19 @@ import {
   SearchClassifiedsDto,
 } from '../models/index';
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface PaginationParams {
+  page?: number;
+  pageSize?: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -27,7 +40,24 @@ export class ClassifiedService {
     );
   }
 
-  findByCommunity(communityId: string): Promise<ClassifiedAdDto[]> {
+  findByCommunity(
+    communityId: string,
+    params?: PaginationParams
+  ): Promise<PaginatedResponse<ClassifiedAdDto>> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.pageSize)
+      queryParams.set('pageSize', params.pageSize.toString());
+
+    const query = queryParams.toString();
+    return firstValueFrom(
+      this.http.get<PaginatedResponse<ClassifiedAdDto>>(
+        `${this.baseUrl}/community/${communityId}${query ? '?' + query : ''}`
+      )
+    );
+  }
+
+  findByCommunityFlat(communityId: string): Promise<ClassifiedAdDto[]> {
     return firstValueFrom(
       this.http.get<ClassifiedAdDto[]>(
         `${this.baseUrl}/community/${communityId}`

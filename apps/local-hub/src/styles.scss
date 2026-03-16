@@ -5,6 +5,15 @@
   --font-heading: 'Playfair Display', serif;
   --font-body: 'DM Sans', sans-serif;
 
+  /* Animation defaults */
+  --animation-speed: normal;
+  --animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --animation-duration-fast: 150ms;
+  --animation-duration-normal: 300ms;
+  --animation-duration-slow: 500ms;
+  --animation-stagger-delay: 50ms;
+
+  /* Light theme (default) */
   --primary: #2d5a4a;
   --primary-hover: #1e4035;
   --secondary: #c9a66b;
@@ -13,13 +22,68 @@
   --background: #faf6f0;
   --surface: #ffffff;
   --surface-elevated: #fefdfb;
+  --surface-variant: #f0ebe3;
   --foreground: #2c2416;
   --foreground-muted: #6b5d4d;
   --muted: #ede8df;
   --border: #d9ceb8;
   --success: #4a7c59;
+  --success-bg: #e8f5e9;
   --warning: #c9852d;
+  --warning-bg: #fff8e1;
   --error: #b5463a;
+  --error-bg: #ffebee;
+  --hover-bg: rgba(45, 90, 74, 0.08);
+
+  /* On colors for contrast */
+  --on-primary: #ffffff;
+  --on-secondary: #2c2416;
+  --on-tertiary: #ffffff;
+  --on-surface: #2c2416;
+  --on-surface-variant: #6b5d4d;
+  --on-background: #2c2416;
+  --on-success: #ffffff;
+  --on-warning: #ffffff;
+  --on-error: #ffffff;
+}
+
+/* Dark theme */
+[data-theme='dark'],
+.dark-theme {
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  --primary: #4a9a7a;
+  --primary-hover: #5fb896;
+  --secondary: #d4b88a;
+  --tertiary: #c9874d;
+  --accent: #e8956d;
+  --background: #121212;
+  --surface: #1e1e1e;
+  --surface-elevated: #2a2a2a;
+  --surface-variant: #2d2d2d;
+  --foreground: #e8e4dc;
+  --foreground-muted: #a89f8f;
+  --muted: #2d2d2d;
+  --border: #3d3d3d;
+  --success: #6aab82;
+  --success-bg: #1a3d2a;
+  --warning: #e0a850;
+  --warning-bg: #3d2e14;
+  --error: #d46a5e;
+  --error-bg: #3d1f1c;
+  --hover-bg: rgba(74, 154, 122, 0.15);
+
+  /* On colors for contrast */
+  --on-primary: #121212;
+  --on-secondary: #121212;
+  --on-tertiary: #121212;
+  --on-surface: #e8e4dc;
+  --on-surface-variant: #a89f8f;
+  --on-background: #e8e4dc;
+  --on-success: #121212;
+  --on-warning: #121212;
+  --on-error: #121212;
 }
 
 * {
@@ -52,11 +116,41 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth transitions for theme changes */
+/* Smooth transitions for theme changes - list properties explicitly */
 body,
 body * {
   transition: background-color 0.3s ease, color 0.3s ease,
     border-color 0.3s ease;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Touch optimizations for mobile */
+button,
+a,
+[role='button'],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Overscroll behavior for modals/drawers */
+.modal-content,
+.drawer-content,
+[role='dialog'],
+.sheet {
+  overscroll-behavior: contain;
 }
 
 /* Focus styles */
@@ -116,4 +210,141 @@ body * {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--foreground, #666666);
+}
+
+/* Staggered load animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--animation-duration-normal, normal)
+    var(--animation-easing) forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp var(--animation-duration-normal, normal)
+    var(--animation-easing) forwards;
+  opacity: 0;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft var(--animation-duration-normal, normal)
+    var(--animation-easing) forwards;
+  opacity: 0;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--animation-duration-normal, normal)
+    var(--animation-easing) forwards;
+  opacity: 0;
+}
+
+/* Stagger delays - use with animation classes */
+.stagger-1 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 1);
+}
+.stagger-2 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 2);
+}
+.stagger-3 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 3);
+}
+.stagger-4 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 4);
+}
+.stagger-5 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 5);
+}
+.stagger-6 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 6);
+}
+.stagger-7 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 7);
+}
+.stagger-8 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 8);
+}
+.stagger-9 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 9);
+}
+.stagger-10 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 10);
+}
+
+/* Card animations for lists */
+.card-list-animate > * {
+  opacity: 0;
+  animation: fadeInUp var(--animation-duration-normal, normal)
+    var(--animation-easing) forwards;
+}
+
+.card-list-animate > *:nth-child(1) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 1);
+}
+.card-list-animate > *:nth-child(2) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 2);
+}
+.card-list-animate > *:nth-child(3) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 3);
+}
+.card-list-animate > *:nth-child(4) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 4);
+}
+.card-list-animate > *:nth-child(5) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 5);
+}
+.card-list-animate > *:nth-child(6) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 6);
+}
+.card-list-animate > *:nth-child(7) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 7);
+}
+.card-list-animate > *:nth-child(8) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 8);
+}
+.card-list-animate > *:nth-child(9) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 9);
+}
+.card-list-animate > *:nth-child(10) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 10);
 }

@@ -30,7 +30,7 @@ export class LandingComponent implements OnInit {
     try {
       const [citiesData, communitiesData] = await Promise.all([
         this.communityService.getCities(),
-        this.communityService.getMockCommunities(),
+        this.communityService.getCommunities(),
       ]);
 
       this.cities.set(citiesData);
@@ -40,7 +40,8 @@ export class LandingComponent implements OnInit {
       this.totalCommunities.set(communitiesData.length);
 
       const totalMembers = communitiesData.reduce(
-        (sum, c) => sum + (c.memberCount || 0),
+        (sum: number, c: { memberCount?: number }) =>
+          sum + (c.memberCount || 0),
         0
       );
       this.totalMembers.set(totalMembers);

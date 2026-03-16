@@ -58,6 +58,8 @@ export class AppComponent implements OnInit, OnDestroy {
   title = 'local-hub';
 
   ngOnInit() {
+    this.themeService.setPersonality('bold');
+
     this.currentUrl$ = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       map((event: NavigationEnd) => event.urlAfterRedirects),
@@ -97,6 +99,16 @@ export class AppComponent implements OnInit, OnDestroy {
           isActive:
             currentUrl.startsWith('/communities') ||
             currentUrl.startsWith('/c/'),
+        },
+        {
+          label: 'Seller Dashboard',
+          action: () => this.navigateTo('/seller-dashboard'),
+          isActive: currentUrl.startsWith('/seller-dashboard'),
+        },
+        {
+          label: 'Messages',
+          action: () => this.navigateTo('/messages'),
+          isActive: currentUrl.startsWith('/messages'),
         },
         {
           label: 'Account',

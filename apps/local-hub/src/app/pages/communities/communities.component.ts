@@ -36,13 +36,11 @@ export class CommunitiesComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     try {
-      const data = await this.communityService.getMockCommunitiesForCity('');
-      if (data.length === 0) {
-        const communities = await this.communityService.getMockCommunities();
-        this.communities.set(communities);
-      } else {
-        this.communities.set(data);
-      }
+      const communities = await this.communityService.getCommunities();
+      const nonCityCommunities = communities.filter(
+        (c) => !c.localityType || c.localityType !== 'city'
+      );
+      this.communities.set(nonCityCommunities);
     } catch {
       this.error.set('Unable to load communities. Please try again later.');
     } finally {

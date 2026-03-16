@@ -10,6 +10,8 @@ import {
   Optional,
   Query,
   Logger,
+  Get,
+  Param,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -41,12 +43,12 @@ import {
   UpdatePostDto,
   VoteDto,
 } from '@optimistic-tanuki/models';
-import { Get, Param } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
+import { Public } from '../../decorators/public.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
@@ -149,7 +151,6 @@ export class SocialController {
     return result;
   }
 
-  @UseGuards(AuthGuard)
   @ApiTags('reaction')
   @ApiOperation({ summary: 'Get reactions for a post' })
   @ApiResponse({
@@ -157,6 +158,7 @@ export class SocialController {
     description: 'The reactions have been successfully retrieved.',
     type: [ReactionDto],
   })
+  @Public()
   @Get('reactions/post/:postId')
   async getReactionsByPost(
     @Param('postId') postId: string
@@ -166,13 +168,13 @@ export class SocialController {
     );
   }
 
-  @UseGuards(AuthGuard)
   @ApiTags('reaction')
   @ApiOperation({ summary: 'Get reaction counts for a post' })
   @ApiResponse({
     status: 200,
     description: 'The reaction counts have been successfully retrieved.',
   })
+  @Public()
   @Get('reactions/post/:postId/counts')
   async getReactionCounts(
     @Param('postId') postId: string
@@ -324,7 +326,6 @@ export class SocialController {
     );
   }
 
-  @UseGuards(AuthGuard)
   @ApiTags('post')
   @ApiOperation({ summary: 'Search for posts' })
   @ApiResponse({
@@ -332,6 +333,7 @@ export class SocialController {
     description: 'The posts have been successfully retrieved.',
     type: [PostDto],
   })
+  @Public()
   @Post('post/find')
   async searchPosts(
     @Body('criteria') searchCriteria: SearchPostDto,
@@ -379,7 +381,6 @@ export class SocialController {
     );
   }
 
-  @UseGuards(AuthGuard)
   @ApiTags('comment')
   @ApiOperation({ summary: 'Search for comments' })
   @ApiResponse({
@@ -387,6 +388,7 @@ export class SocialController {
     description: 'The comments have been successfully retrieved.',
     type: [CommentDto],
   })
+  @Public()
   @Post('comments/find')
   async searchComments(
     @Body() searchCriteria: SearchCommentDto

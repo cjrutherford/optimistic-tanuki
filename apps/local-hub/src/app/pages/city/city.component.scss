@@ -122,7 +122,7 @@
   letter-spacing: 0.15em;
   text-transform: uppercase;
   background: var(--primary);
-  color: white;
+  color: var(--on-primary, white);
   padding: 6px 12px;
   border-radius: 4px;
   margin-bottom: 16px;
@@ -141,8 +141,14 @@
   font-size: 1.25rem;
   color: rgba(255, 255, 255, 0.85);
   max-width: 600px;
-  margin: 0 0 32px;
+  margin: 0 0 24px;
   line-height: 1.6;
+}
+
+app-donation-progress {
+  display: block;
+  margin-bottom: 24px;
+  max-width: 400px;
 }
 
 .hero-stats {
@@ -217,13 +223,115 @@
   width: 40px;
   height: 40px;
   background: var(--primary);
-  color: white;
+  color: var(--on-primary, white);
   border-radius: 10px;
 }
 
 .highlight-text {
   font-weight: 500;
   color: var(--foreground);
+}
+
+.city-businesses-section {
+  padding: 40px 0;
+  background: var(--surface);
+}
+
+.businesses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.business-card {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  background: var(--background);
+  border-radius: 12px;
+  border: 1px solid var(--muted);
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.business-logo {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.business-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.business-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0 0 6px;
+}
+
+.business-description {
+  font-size: 0.875rem;
+  color: var(--foreground-muted);
+  margin: 0 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.business-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.business-tier {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--muted);
+  color: var(--foreground-muted);
+
+  &.pro {
+    background: #e3f2fd;
+    color: #1976d2;
+  }
+
+  &.enterprise {
+    background: #fff3e0;
+    color: #f57c00;
+  }
+}
+
+.business-link {
+  font-size: 0.875rem;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .city-map-section {
@@ -350,9 +458,8 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--primary);
   background: var(--primary);
-  color: white;
+  color: var(--on-primary, white);
   padding: 4px 8px;
   border-radius: 4px;
 }
@@ -390,10 +497,11 @@
 .tag {
   font-size: 0.7rem;
   font-weight: 500;
-  color: var(--foreground);
-  background: var(--muted);
+  color: var(--foreground-muted);
+  background: var(--surface-variant);
   padding: 4px 10px;
   border-radius: 20px;
+  border: 1px solid var(--border);
 }
 
 .community-tree {
@@ -469,7 +577,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     background: var(--primary);
-    color: white;
+    color: var(--on-primary, white);
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -491,7 +599,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     background: var(--success);
-    color: white;
+    color: var(--on-success, white);
     border-radius: 6px;
   }
 }
@@ -624,4 +732,255 @@
   .communities-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ====== Action Buttons ====== */
+.hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.btn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary, white);
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+
+  &:hover:not(:disabled) {
+    background: var(--hover-bg);
+  }
+}
+
+.btn-donate {
+  background: #10b981;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: #059669;
+  }
+}
+
+/* ====== Modals ====== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: var(--surface);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--foreground-muted);
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-subtitle {
+  color: var(--foreground-muted);
+  margin: 0 0 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  justify-content: flex-end;
+}
+
+.btn-secondary {
+  background: var(--surface-variant);
+  color: var(--foreground);
+
+  &:hover:not(:disabled) {
+    background: var(--hover-bg);
+  }
+}
+
+/* ====== Tier & Sponsorship Options ====== */
+.tier-options,
+.sponsorship-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tier-option,
+.sponsor-option {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  input[type='radio'] {
+    margin-top: 0.25rem;
+    margin-right: 0.75rem;
+    width: auto;
+  }
+
+  &:hover {
+    border-color: var(--primary);
+  }
+
+  &.selected {
+    border-color: var(--primary);
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  input {
+    margin-top: 0.25rem;
+    margin-right: 0.75rem;
+  }
+}
+
+.tier-content,
+.sponsor-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tier-name,
+.sponsor-name {
+  font-weight: 600;
+}
+
+.tier-price,
+.sponsor-price {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.tier-features,
+.sponsor-features {
+  font-size: 0.8125rem;
+  color: var(--foreground-muted);
+}
+
+/* ====== Donation Amounts ====== */
+.donation-amounts {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.amount-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--primary);
+  }
+
+  &.selected {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+}
+
+.amount-input {
+  margin-top: 0.5rem;
+}
+
+.donation-info {
+  font-size: 0.8125rem;
+  color: var(--foreground-muted);
+  margin: 0;
 }

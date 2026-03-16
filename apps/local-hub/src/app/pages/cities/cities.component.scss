@@ -217,7 +217,7 @@
     }
 
     .highlight-tag {
-      background: var(--primary);
+      background: var(--secondary);
       color: var(--primary-foreground, white);
     }
   }
@@ -333,7 +333,7 @@
   font-size: 0.7rem;
   font-weight: 500;
   color: var(--foreground);
-  background: var(--muted);
+  background: var(--background);
   padding: 5px 12px;
   border-radius: 20px;
   transition: all 0.25s ease;

@@ -3,6 +3,24 @@
     <h1>My Account</h1>
   </header>
 
+  <section class="theme-section">
+    <h2>Theme</h2>
+    <p class="theme-description">Choose your preferred visual style</p>
+    <div class="theme-grid">
+      @for (personality of availablePersonalities(); track personality.id) {
+      <button
+        class="theme-option"
+        [class.active]="currentPersonalityId() === personality.id"
+        (click)="changeTheme(personality.id)"
+        [attr.aria-pressed]="currentPersonalityId() === personality.id"
+      >
+        <span class="theme-name">{{ personality.name }}</span>
+        <span class="theme-tags">{{ personality.tags.join(', ') }}</span>
+      </button>
+      }
+    </div>
+  </section>
+
   <section class="communities-section">
     <h2>My Communities</h2>
 
@@ -14,7 +32,10 @@
     } @else if (myCommunities().length === 0) {
     <div class="empty-state">
       <p>You haven't joined any communities yet.</p>
-      <button class="btn btn-primary" (click)="router.navigate(['/communities'])">
+      <button
+        class="btn btn-primary"
+        (click)="router.navigate(['/communities'])"
+      >
         Browse Communities
       </button>
     </div>
@@ -22,13 +43,28 @@
     <ul class="community-list">
       @for (community of myCommunities(); track community.id) {
       <li class="community-item">
-        <div class="community-info" (click)="navigateToCommunity(community.slug)" (keydown.enter)="navigateToCommunity(community.slug)" (keydown.space)="navigateToCommunity(community.slug)" role="button" tabindex="0">
+        <div
+          class="community-info"
+          (click)="navigateToCommunity(community.slug)"
+          (keydown.enter)="navigateToCommunity(community.slug)"
+          (keydown.space)="navigateToCommunity(community.slug)"
+          role="button"
+          tabindex="0"
+        >
           @if (community.imageUrl) {
-          <img [src]="community.imageUrl" [alt]="community.name" class="community-thumb" loading="lazy" />
+          <img
+            [src]="community.imageUrl"
+            [alt]="community.name"
+            class="community-thumb"
+            loading="lazy"
+          />
           }
           <div class="community-text">
             <span class="community-name">{{ community.name }}</span>
-            <span class="community-meta">{{ community.localityType }} · {{ community.city }}, {{ community.adminArea }}</span>
+            <span class="community-meta"
+              >{{ community.localityType }} · {{ community.city }},
+              {{ community.adminArea }}</span
+            >
           </div>
         </div>
         <button
@@ -45,6 +81,15 @@
   </section>
 
   <section class="account-actions">
+    <button
+      class="btn btn-primary"
+      (click)="router.navigate(['/seller-dashboard'])"
+    >
+      Seller Dashboard
+    </button>
+    <button class="btn btn-outline" (click)="router.navigate(['/messages'])">
+      Messages
+    </button>
     <button class="btn btn-outline" (click)="logout()">Log Out</button>
   </section>
 </div>

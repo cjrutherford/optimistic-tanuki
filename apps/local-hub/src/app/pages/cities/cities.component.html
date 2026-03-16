@@ -66,9 +66,10 @@
     </div>
     <div class="city-cards">
       @for (city of cities(); track city.id; let i = $index) {
-      <article
+      <a
         class="city-card"
-        (click)="navigateToCity(city.slug)"
+        [href]="'/city/' + city.slug"
+        [attr.aria-label]="'View ' + city.name + ' city hub'"
         (mouseenter)="onCityHover(city)"
         (mouseleave)="onCityHover(null)"
         [style.animation-delay]="i * 50 + 'ms'"
@@ -79,6 +80,8 @@
             [alt]="city.name"
             class="city-image"
             loading="lazy"
+            width="400"
+            height="250"
           />
           <div class="city-image-overlay"></div>
           <span class="city-badge">{{ city.adminArea }}</span>
@@ -95,6 +98,7 @@
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
+                aria-hidden="true"
               >
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -111,6 +115,7 @@
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
+                aria-hidden="true"
               >
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                 <polyline points="9 22 9 12 15 12 15 22" />
@@ -125,7 +130,7 @@
             }
           </div>
         </div>
-      </article>
+      </a>
       }
     </div>
   </section>
@@ -140,9 +145,10 @@
     </div>
     <div class="community-cards">
       @for (community of communities(); track community.id) {
-      <article
+      <a
         class="community-card"
-        (click)="navigateToCommunity(community.slug)"
+        [href]="'/c/' + community.slug"
+        [attr.aria-label]="community.name + ' community'"
       >
         <div class="community-image-wrapper">
           <img
@@ -150,6 +156,8 @@
             [alt]="community.name"
             class="community-image"
             loading="lazy"
+            width="350"
+            height="200"
           />
         </div>
         <div class="community-content">
@@ -167,7 +175,7 @@
             </span>
           </div>
         </div>
-      </article>
+      </a>
       }
     </div>
   </section>

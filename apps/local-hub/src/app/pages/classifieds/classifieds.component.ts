@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { CommunityService, LocalCommunity } from '../../services/community.service';
+import {
+  CommunityService,
+  LocalCommunity,
+} from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { AssetService } from '../../services/asset.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
@@ -40,6 +43,8 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   isAuthenticated = signal(false);
   isMember = signal(false);
   showPostForm = signal(false);
+  retryCount = 0;
+  readonly maxRetries = 3;
 
   /** Image upload callback passed to ClassifiedFormComponent */
   uploadImage = async (file: File): Promise<string> => {
@@ -56,9 +61,11 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   };
 
   ngOnInit(): void {
-    this.authState.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe((auth) => {
-      this.isAuthenticated.set(auth);
-    });
+    this.authState.isAuthenticated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((auth) => {
+        this.isAuthenticated.set(auth);
+      });
 
     const slug = this.route.snapshot.paramMap.get('slug') ?? '';
     const openForm = this.route.snapshot.data?.['openForm'] === true;
@@ -79,8 +86,16 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
       const community = await this.communityService.getCommunityBySlug(slug);
       this.community.set(community);
 
-      const classifieds = await this.classifiedService.findByCommunity(community.id);
-      this.classifieds.set(classifieds);
+      try {
+        const result = await this.classifiedService.findByCommunity(
+          community.id
+        );
+        const ads = Array.isArray(result) ? result : result.data;
+        this.classifieds.set(ads);
+      } catch (classifiedErr) {
+        console.warn('Failed to load classifieds:', classifiedErr);
+        this.classifieds.set([]);
+      }
 
       if (this.isAuthenticated()) {
         try {
@@ -90,7 +105,15 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
           // non-fatal
         }
       }
-    } catch {
+    } catch (err) {
+      this.retryCount++;
+      if (this.retryCount < this.maxRetries) {
+        console.warn(
+          `Retrying load (${this.retryCount}/${this.maxRetries})...`
+        );
+        await new Promise((r) => setTimeout(r, 1000 * this.retryCount));
+        return this.loadData(slug);
+      }
       this.error.set('Unable to load classifieds. Please try again later.');
     } finally {
       this.loading.set(false);
@@ -125,9 +148,13 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
     this.showPostForm.set(true);
   }
 
-  async onFormSubmit(dto: CreateClassifiedAdDto | UpdateClassifiedAdDto): Promise<void> {
+  async onFormSubmit(
+    dto: CreateClassifiedAdDto | UpdateClassifiedAdDto
+  ): Promise<void> {
     try {
-      const created = await this.classifiedService.create(dto as CreateClassifiedAdDto);
+      const created = await this.classifiedService.create(
+        dto as CreateClassifiedAdDto
+      );
       this.classifieds.update((ads) => [created, ...ads]);
       this.showPostForm.set(false);
       this.messageService.addMessage({
@@ -154,4 +181,3 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
     }
   }
 }
-

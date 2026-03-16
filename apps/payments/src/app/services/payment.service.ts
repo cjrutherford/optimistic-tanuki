@@ -1,0 +1,409 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { Donation } from '../../entities/donation.entity';
+import { ClassifiedPayment } from '../../entities/classified-payment.entity';
+import {
+  BusinessPage,
+  BusinessTier,
+} from '../../entities/business-page.entity';
+import {
+  CommunitySponsorship,
+  SponsorshipType,
+} from '../../entities/community-sponsorship.entity';
+import {
+  Transaction,
+  TransactionType,
+  TransactionDirection,
+} from '../../entities/transaction.entity';
+import { ConfigService } from '@nestjs/config';
+import { calculateNetAmount } from '../utils/platform-fee.util';
+
+@Injectable()
+export class PaymentService {
+  private readonly logger = new Logger(PaymentService.name);
+  private readonly lemonSqueezyApiKey: string;
+  private readonly lemonSqueezyStoreId: string;
+
+  constructor(
+    @InjectRepository(Donation)
+    private readonly donationRepository: Repository<Donation>,
+    @InjectRepository(ClassifiedPayment)
+    private readonly classifiedPaymentRepository: Repository<ClassifiedPayment>,
+    @InjectRepository(BusinessPage)
+    private readonly businessPageRepository: Repository<BusinessPage>,
+    @InjectRepository(CommunitySponsorship)
+    private readonly sponsorshipRepository: Repository<CommunitySponsorship>,
+    @InjectRepository(Transaction)
+    private readonly transactionRepository: Repository<Transaction>,
+    private readonly configService: ConfigService
+  ) {
+    this.lemonSqueezyApiKey =
+      this.configService.get('lemonSqueezy.apiKey') || '';
+    this.lemonSqueezyStoreId =
+      this.configService.get('lemonSqueezy.storeId') || '';
+  }
+
+  async getDonationGoal(month: number, year: number) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    const donations = await this.donationRepository.find({
+      where: {
+        createdAt: Between(startDate, endDate),
+        status: 'completed',
+      },
+    });
+
+    const currentAmount = donations.reduce(
+      (sum, d) => sum + Number(d.amount),
+      0
+    );
+    const donorCount = new Set(donations.map((d) => d.userId)).size;
+
+    const activeSponsorships = await this.sponsorshipRepository.find({
+      where: {
+        status: 'active',
+      },
+    });
+
+    const sponsorshipAmount = activeSponsorships.reduce(
+      (sum, s) => sum + Number(s.amount),
+      0
+    );
+
+    return {
+      monthlyGoal: 5000,
+      currentAmount: currentAmount + sponsorshipAmount,
+      donorCount,
+      sponsorshipAmount,
+      month,
+      year,
+    };
+  }
+
+  async getDonations(month: number, year: number) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    return this.donationRepository.find({
+      where: {
+        createdAt: Between(startDate, endDate),
+      },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async createDonationCheckout(
+    userId: string,
+    profileId: string,
+    amount: number,
+    isRecurring: boolean,
+    appScope: string
+  ) {
+    const donation = this.donationRepository.create({
+      userId,
+      profileId,
+      amount,
+      isRecurring,
+      status: 'pending',
+      currency: 'USD',
+    });
+
+    const savedDonation = await this.donationRepository.save(donation);
+
+    const checkoutUrl = isRecurring
+      ? `https://store.lemonsqueezy.com/checkout/buy/${this.lemonSqueezyStoreId}?checkout[custom][donation_id]=${savedDonation.id}&checkout[custom][user_id]=${userId}&checkout[custom][profile_id]=${profileId}`
+      : `https://store.lemonsqueezy.com/checkout/buy/${this.lemonSqueezyStoreId}?checkout[custom][donation_id]=${savedDonation.id}&checkout[custom][user_id]=${userId}&checkout[custom][profile_id]=${profileId}`;
+
+    return {
+      checkoutUrl,
+      donationId: savedDonation.id,
+    };
+  }
+
+  async getUserDonations(userId: string) {
+    return this.donationRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async cancelSubscription(userId: string, subscriptionId: string) {
+    const donation = await this.donationRepository.findOne({
+      where: { lemonSqueezySubscriptionId: subscriptionId, userId },
+    });
+
+    if (!donation) {
+      return { success: false, message: 'Subscription not found' };
+    }
+
+    donation.status = 'cancelled';
+    donation.cancelledAt = new Date();
+    await this.donationRepository.save(donation);
+
+    return { success: true };
+  }
+
+  async createClassifiedPayment(
+    buyerId: string,
+    classifiedId: string,
+    paymentMethod: string,
+    amount?: number,
+    sellerId?: string,
+    offerId?: string
+  ) {
+    const feeBreakdown = calculateNetAmount(amount || 0);
+    const payment = this.classifiedPaymentRepository.create({
+      buyerId,
+      sellerId,
+      classifiedId,
+      offerId,
+      paymentMethod: paymentMethod as any,
+      amount: feeBreakdown.gross,
+      platformFeeAmount: feeBreakdown.fee,
+      sellerReceivesAmount: feeBreakdown.net,
+      status: 'pending',
+    });
+
+    return this.classifiedPaymentRepository.save(payment);
+  }
+
+  async confirmOutOfPlatformPayment(paymentId: string, proofImageUrl?: string) {
+    const payment = await this.classifiedPaymentRepository.findOne({
+      where: { id: paymentId },
+    });
+
+    if (!payment) {
+      return { success: false, message: 'Payment not found' };
+    }
+
+    payment.status = 'confirmed';
+    payment.proofImageUrl = proofImageUrl;
+    payment.confirmedAt = new Date();
+
+    await this.classifiedPaymentRepository.save(payment);
+
+    return { success: true, payment };
+  }
+
+  async releaseFunds(paymentId: string) {
+    const payment = await this.classifiedPaymentRepository.findOne({
+      where: { id: paymentId },
+    });
+
+    if (!payment) {
+      return { success: false, message: 'Payment not found' };
+    }
+
+    payment.status = 'released';
+    payment.releasedAt = new Date();
+
+    await this.classifiedPaymentRepository.save(payment);
+
+    return { success: true, payment };
+  }
+
+  async disputePayment(paymentId: string, reason: string) {
+    const payment = await this.classifiedPaymentRepository.findOne({
+      where: { id: paymentId },
+    });
+
+    if (!payment) {
+      return { success: false, message: 'Payment not found' };
+    }
+
+    payment.status = 'disputed';
+    payment.disputeReason = reason;
+
+    await this.classifiedPaymentRepository.save(payment);
+
+    return { success: true, payment };
+  }
+
+  async getPayment(paymentId: string) {
+    return this.classifiedPaymentRepository.findOne({
+      where: { id: paymentId },
+    });
+  }
+
+  async getUserPayments(userId: string) {
+    return this.classifiedPaymentRepository.find({
+      where: [{ buyerId: userId }, { sellerId: userId }],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async markInterestedBuyer(paymentId: string, interestedBuyerId: string) {
+    const payment = await this.classifiedPaymentRepository.findOne({
+      where: { id: paymentId },
+    });
+
+    if (!payment) {
+      return { success: false, message: 'Payment not found' };
+    }
+
+    payment.interestedBuyerId = interestedBuyerId;
+    await this.classifiedPaymentRepository.save(payment);
+
+    return { success: true, payment };
+  }
+
+  async markPaidOutsidePlatform(paymentId: string) {
+    const payment = await this.classifiedPaymentRepository.findOne({
+      where: { id: paymentId },
+    });
+
+    if (!payment) {
+      return { success: false, message: 'Payment not found' };
+    }
+
+    payment.status = 'released';
+    payment.releasedAt = new Date();
+    await this.classifiedPaymentRepository.save(payment);
+
+    return { success: true, payment };
+  }
+
+  async createBusinessCheckout(
+    userId: string,
+    communityId: string,
+    tier: string,
+    appScope: string
+  ) {
+    let businessPage = await this.businessPageRepository.findOne({
+      where: { communityId },
+    });
+
+    if (!businessPage) {
+      businessPage = this.businessPageRepository.create({
+        communityId,
+        ownerId: userId,
+        tier: tier as BusinessTier,
+        subscriptionStatus: 'inactive',
+      });
+      await this.businessPageRepository.save(businessPage);
+    }
+
+    const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${this.lemonSqueezyStoreId}?checkout[custom][business_page_id]=${businessPage.id}&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][tier]=${tier}`;
+
+    return {
+      checkoutUrl,
+      businessPageId: businessPage.id,
+    };
+  }
+
+  async getBusinessPage(communityId: string) {
+    return this.businessPageRepository.findOne({
+      where: { communityId },
+    });
+  }
+
+  async updateBusinessPage(
+    userId: string,
+    communityId: string,
+    data: {
+      name?: string;
+      description?: string;
+      logoUrl?: string;
+      website?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+      pinnedPostId?: string;
+    }
+  ) {
+    const businessPage = await this.businessPageRepository.findOne({
+      where: { communityId, ownerId: userId },
+    });
+
+    if (!businessPage) {
+      return { success: false, message: 'Business page not found' };
+    }
+
+    Object.assign(businessPage, data);
+    await this.businessPageRepository.save(businessPage);
+
+    return { success: true, businessPage };
+  }
+
+  async cancelBusinessSubscription(userId: string, communityId: string) {
+    const businessPage = await this.businessPageRepository.findOne({
+      where: { communityId, ownerId: userId },
+    });
+
+    if (!businessPage) {
+      return { success: false, message: 'Business page not found' };
+    }
+
+    businessPage.subscriptionStatus = 'cancelled';
+    await this.businessPageRepository.save(businessPage);
+
+    return { success: true };
+  }
+
+  async createSponsorshipCheckout(
+    userId: string,
+    communityId: string,
+    type: string,
+    adContent: string | undefined,
+    appScope: string,
+    months: number = 1,
+    businessPageId?: string
+  ) {
+    const durationMs = months * 30 * 24 * 60 * 60 * 1000;
+    const sponsorship = this.sponsorshipRepository.create({
+      communityId,
+      businessPageId,
+      userId,
+      type: type as SponsorshipType,
+      adContent,
+      amount: 0,
+      status: 'pending',
+      startsAt: new Date(),
+      expiresAt: new Date(Date.now() + durationMs),
+      months,
+    });
+
+    const savedSponsorship = await this.sponsorshipRepository.save(sponsorship);
+
+    const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${this.lemonSqueezyStoreId}?checkout[custom][sponsorship_id]=${savedSponsorship.id}&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][type]=${type}`;
+
+    return {
+      checkoutUrl,
+      sponsorshipId: savedSponsorship.id,
+    };
+  }
+
+  async getActiveSponsorships(communityId: string) {
+    const now = new Date();
+    return this.sponsorshipRepository.find({
+      where: {
+        communityId,
+        status: 'active',
+        startsAt: LessThanOrEqual(now),
+        expiresAt: MoreThanOrEqual(now),
+      },
+    });
+  }
+
+  async getUserSponsorships(userId: string) {
+    return this.sponsorshipRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async getUserTransactions(userId: string) {
+    return this.transactionRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async getPortalUrl(userId: string) {
+    return {
+      portalUrl: `https://my-store.lemonsqueezy.com/billing?user_id=${userId}`,
+    };
+  }
+}

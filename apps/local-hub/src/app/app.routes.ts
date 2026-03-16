@@ -21,6 +21,29 @@ export const appRoutes: Route[] = [
       import('./pages/city/city.component').then((m) => m.CityComponent),
   },
   {
+    path: 'city/:slug/classifieds',
+    loadComponent: () =>
+      import('./pages/classifieds/classifieds.component').then(
+        (m) => m.ClassifiedsComponent
+      ),
+  },
+  {
+    path: 'city/:slug/classifieds/new',
+    loadComponent: () =>
+      import('./pages/classifieds/classifieds.component').then(
+        (m) => m.ClassifiedsComponent
+      ),
+    canActivate: [MemberGuard],
+    data: { openForm: true },
+  },
+  {
+    path: 'city/:slug/classifieds/:id',
+    loadComponent: () =>
+      import('./pages/classified-detail/classified-detail.component').then(
+        (m) => m.ClassifiedDetailComponent
+      ),
+  },
+  {
     path: 'communities',
     loadComponent: () =>
       import('./pages/communities/communities.component').then(
@@ -74,6 +97,30 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/account/account.component').then(
         (m) => m.AccountComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'seller-dashboard',
+    loadComponent: () =>
+      import('./pages/seller-dashboard/seller-dashboard.component').then(
+        (m) => m.SellerDashboardComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'messages',
+    loadComponent: () =>
+      import('./pages/messages/messages.component').then(
+        (m) => m.MessagesComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'messages/new',
+    loadComponent: () =>
+      import('./pages/new-message/new-message.component').then(
+        (m) => m.NewMessageComponent
       ),
     canActivate: [AuthGuard],
   },
