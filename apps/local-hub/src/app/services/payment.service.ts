@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 export interface Donation {
   id: string;
@@ -135,10 +136,31 @@ export interface UserOffers {
 })
 export class PaymentService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/payments';
+  private readonly apiBaseUrl = inject(API_BASE_URL);
+  private readonly baseUrl = `${this.apiBaseUrl}/payments`;
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+
+  /** Begin a request: clear previous error and set loading. */
+  private begin(): void {
+    this.error.set(null);
+    this.loading.set(true);
+  }
+
+  /** End a request: always clear loading. */
+  private end(): void {
+    this.loading.set(false);
+  }
+
+  /** Handle an error: set the error signal, clear loading, re-throw. */
+  private fail(err: unknown): never {
+    const message =
+      err instanceof Error ? err.message : 'An unexpected error occurred.';
+    this.error.set(message);
+    this.loading.set(false);
+    throw err;
+  }
 
   async getDonationGoal(month?: number, year?: number): Promise<DonationGoal> {
     const params = new URLSearchParams();
@@ -146,9 +168,16 @@ export class PaymentService {
     if (year) params.set('year', year.toString());
 
     const query = params.toString() ? `?${params.toString()}` : '';
-    return firstValueFrom(
-      this.http.get<DonationGoal>(`${this.baseUrl}/donations/goal${query}`)
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<DonationGoal>(`${this.baseUrl}/donations/goal${query}`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getMonthlyDonations(
@@ -160,119 +189,190 @@ export class PaymentService {
     if (year) params.set('year', year.toString());
 
     const query = params.toString() ? `?${params.toString()}` : '';
-    return firstValueFrom(
-      this.http.get<Donation[]>(`${this.baseUrl}/donations${query}`)
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<Donation[]>(`${this.baseUrl}/donations${query}`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async createDonationCheckout(
     amount: number,
     isRecurring: boolean
   ): Promise<{ checkoutUrl: string }> {
-    return firstValueFrom(
-      this.http.post<{ checkoutUrl: string }>(
-        `${this.baseUrl}/donations/checkout`,
-        {
-          amount,
-          isRecurring,
-        }
-      )
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<{ checkoutUrl: string }>(
+          `${this.baseUrl}/donations/checkout`,
+          { amount, isRecurring }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getUserDonations(): Promise<Donation[]> {
-    return firstValueFrom(
-      this.http.get<Donation[]>(`${this.baseUrl}/donations/user`)
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<Donation[]>(`${this.baseUrl}/donations/user`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async cancelRecurringDonation(subscriptionId: string): Promise<void> {
-    return firstValueFrom(
-      this.http.delete<void>(
-        `${this.baseUrl}/donations/subscription/${subscriptionId}`
-      )
-    );
+    this.begin();
+    try {
+      await firstValueFrom(
+        this.http.delete<void>(
+          `${this.baseUrl}/donations/subscription/${subscriptionId}`
+        )
+      );
+      this.end();
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async createClassifiedPayment(
     classifiedId: string,
     paymentMethod: string
   ): Promise<Payment> {
-    return firstValueFrom(
-      this.http.post<Payment>(`${this.baseUrl}/classifieds/payment`, {
-        classifiedId,
-        paymentMethod,
-      })
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<Payment>(`${this.baseUrl}/classifieds/payment`, {
+          classifiedId,
+          paymentMethod,
+        })
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async confirmOutOfPlatformPayment(
     paymentId: string,
     proofImageUrl?: string
   ): Promise<Payment> {
-    return firstValueFrom(
-      this.http.post<Payment>(
-        `${this.baseUrl}/classifieds/payment/${paymentId}/confirm`,
-        {
-          proofImageUrl,
-        }
-      )
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<Payment>(
+          `${this.baseUrl}/classifieds/payment/${paymentId}/confirm`,
+          { proofImageUrl }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async confirmPaymentReceived(paymentId: string): Promise<Payment> {
-    return firstValueFrom(
-      this.http.post<Payment>(
-        `${this.baseUrl}/classifieds/payment/${paymentId}/release`,
-        {}
-      )
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<Payment>(
+          `${this.baseUrl}/classifieds/payment/${paymentId}/release`,
+          {}
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async disputePayment(paymentId: string, reason: string): Promise<Payment> {
-    return firstValueFrom(
-      this.http.post<Payment>(
-        `${this.baseUrl}/classifieds/payment/${paymentId}/dispute`,
-        {
-          reason,
-        }
-      )
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<Payment>(
+          `${this.baseUrl}/classifieds/payment/${paymentId}/dispute`,
+          { reason }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getPayment(paymentId: string): Promise<Payment> {
-    return firstValueFrom(
-      this.http.get<Payment>(`${this.baseUrl}/classifieds/payment/${paymentId}`)
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<Payment>(
+          `${this.baseUrl}/classifieds/payment/${paymentId}`
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getUserPayments(): Promise<Payment[]> {
-    return firstValueFrom(
-      this.http.get<Payment[]>(`${this.baseUrl}/classifieds/payments/user`)
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<Payment[]>(`${this.baseUrl}/classifieds/payments/user`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async createBusinessPage(
     communityId: string,
     tier: string
   ): Promise<{ checkoutUrl: string }> {
-    return firstValueFrom(
-      this.http.post<{ checkoutUrl: string }>(
-        `${this.baseUrl}/business/checkout`,
-        {
-          communityId,
-          tier,
-        }
-      )
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<{ checkoutUrl: string }>(
+          `${this.baseUrl}/business/checkout`,
+          { communityId, tier }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getBusinessPage(communityId: string): Promise<BusinessPage | null> {
-    return firstValueFrom(
-      this.http.get<BusinessPage | null>(
-        `${this.baseUrl}/business/${communityId}`
-      )
-    ).then((page) => {
+    this.begin();
+    try {
+      const page = await firstValueFrom(
+        this.http.get<BusinessPage | null>(
+          `${this.baseUrl}/business/${communityId}`
+        )
+      );
+      this.end();
       if (!page) return null;
       return {
         ...page,
@@ -285,22 +385,26 @@ export class PaymentService {
             ? 'trial'
             : 'active'),
       } as BusinessPage;
-    });
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async updateBusinessPage(
     communityId: string,
     data: Partial<BusinessPage>
   ): Promise<BusinessPage> {
-    return firstValueFrom(
-      this.http.patch<
-        { success: boolean; businessPage: BusinessPage } | BusinessPage
-      >(`${this.baseUrl}/business/${communityId}`, data)
-    ).then((result) => {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<
+          { success: boolean; businessPage: BusinessPage } | BusinessPage
+        >(`${this.baseUrl}/business/${communityId}`, data)
+      );
       const page =
         (result as { success: boolean; businessPage: BusinessPage })
           .businessPage ?? (result as BusinessPage);
-
+      this.end();
       return {
         ...page,
         userId: page.userId || page.ownerId || '',
@@ -312,15 +416,23 @@ export class PaymentService {
             ? 'trial'
             : 'active'),
       } as BusinessPage;
-    });
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async cancelBusinessSubscription(communityId: string): Promise<void> {
-    return firstValueFrom(
-      this.http.delete<void>(
-        `${this.baseUrl}/business/${communityId}/subscription`
-      )
-    );
+    this.begin();
+    try {
+      await firstValueFrom(
+        this.http.delete<void>(
+          `${this.baseUrl}/business/${communityId}/subscription`
+        )
+      );
+      this.end();
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async createSponsorship(
@@ -328,54 +440,94 @@ export class PaymentService {
     type: string,
     adContent?: string
   ): Promise<{ checkoutUrl: string }> {
-    return firstValueFrom(
-      this.http.post<{ checkoutUrl: string }>(
-        `${this.baseUrl}/sponsorship/checkout`,
-        {
-          communityId,
-          type,
-          adContent,
-        }
-      )
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<{ checkoutUrl: string }>(
+          `${this.baseUrl}/sponsorship/checkout`,
+          { communityId, type, adContent }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getActiveSponsorships(
     communityId: string
   ): Promise<CommunitySponsorship[]> {
-    return firstValueFrom(
-      this.http.get<CommunitySponsorship[]>(
-        `${this.baseUrl}/sponsorship/${communityId}/active`
-      )
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<CommunitySponsorship[]>(
+          `${this.baseUrl}/sponsorship/${communityId}/active`
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getCityBusinesses(cityId: string): Promise<BusinessPage[]> {
-    return firstValueFrom(
-      this.http.get<BusinessPage[]>(`${this.baseUrl}/business/city/${cityId}`)
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<BusinessPage[]>(
+          `${this.baseUrl}/business/city/${cityId}`
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getUserSponsorships(): Promise<CommunitySponsorship[]> {
-    return firstValueFrom(
-      this.http.get<CommunitySponsorship[]>(`${this.baseUrl}/sponsorship/user`)
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<CommunitySponsorship[]>(
+          `${this.baseUrl}/sponsorship/user`
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getTransactions(): Promise<Transaction[]> {
-    return firstValueFrom(
-      this.http.get<Transaction[]>(`${this.baseUrl}/transactions`)
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<Transaction[]>(`${this.baseUrl}/transactions`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getLemonSqueezyPortalUrl(): Promise<{ url: string }> {
-    return firstValueFrom(
-      this.http.get<{ url?: string; portalUrl?: string }>(
-        `${this.baseUrl}/portal`
-      )
-    ).then((result) => ({
-      url: result.url || result.portalUrl || '',
-    }));
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<{ url?: string; portalUrl?: string }>(
+          `${this.baseUrl}/portal`
+        )
+      );
+      this.end();
+      return { url: result.url || result.portalUrl || '' };
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async createOffer(
@@ -384,31 +536,55 @@ export class PaymentService {
     amount: number,
     message?: string
   ): Promise<Offer> {
-    return firstValueFrom(
-      this.http.post<Offer>(`${this.baseUrl}/offers`, {
-        classifiedId,
-        sellerId,
-        amount,
-        message,
-      })
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<Offer>(`${this.baseUrl}/offers`, {
+          classifiedId,
+          sellerId,
+          amount,
+          message,
+        })
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async acceptOffer(
     offerId: string
   ): Promise<{ offer: Offer; payment: Payment }> {
-    return firstValueFrom(
-      this.http.patch<{ offer: Offer; payment: Payment }>(
-        `${this.baseUrl}/offers/${offerId}/accept`,
-        {}
-      )
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<{ offer: Offer; payment: Payment }>(
+          `${this.baseUrl}/offers/${offerId}/accept`,
+          {}
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async rejectOffer(offerId: string): Promise<Offer> {
-    return firstValueFrom(
-      this.http.patch<Offer>(`${this.baseUrl}/offers/${offerId}/reject`, {})
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<Offer>(
+          `${this.baseUrl}/offers/${offerId}/reject`,
+          {}
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async counterOffer(
@@ -416,31 +592,62 @@ export class PaymentService {
     counterAmount: number,
     message?: string
   ): Promise<Offer> {
-    return firstValueFrom(
-      this.http.patch<Offer>(`${this.baseUrl}/offers/${offerId}/counter`, {
-        counterAmount,
-        message,
-      })
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<Offer>(`${this.baseUrl}/offers/${offerId}/counter`, {
+          counterAmount,
+          message,
+        })
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async withdrawOffer(offerId: string): Promise<Offer> {
-    return firstValueFrom(
-      this.http.patch<Offer>(`${this.baseUrl}/offers/${offerId}/withdraw`, {})
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<Offer>(
+          `${this.baseUrl}/offers/${offerId}/withdraw`,
+          {}
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getOffersForClassified(classifiedId: string): Promise<Offer[]> {
-    return firstValueFrom(
-      this.http.get<Offer[]>(
-        `${this.baseUrl}/offers/classified/${classifiedId}`
-      )
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<Offer[]>(
+          `${this.baseUrl}/offers/classified/${classifiedId}`
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 
   async getUserOffers(): Promise<UserOffers> {
-    return firstValueFrom(
-      this.http.get<UserOffers>(`${this.baseUrl}/offers/user`)
-    );
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<UserOffers>(`${this.baseUrl}/offers/user`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
   }
 }
