@@ -32,7 +32,7 @@
         "ssr": {
           "entry": "apps/local-hub/src/server.ts"
         },
-        "prerender": true
+        "prerender": false
       },
       "configurations": {
         "production": {
