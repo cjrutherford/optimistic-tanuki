@@ -63,6 +63,29 @@
         <h1 class="community-name">{{ community()!.name }}</h1>
         <p class="community-description">{{ community()!.description }}</p>
 
+        <!-- Community Manager badge (localities only) -->
+        @if (isLocality && communityManager()) {
+        <div class="manager-badge" title="Elected Community Manager">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          <span>Manager: <strong>{{ communityManager()!.name }}</strong></span>
+        </div>
+        }
+
+        <!-- Active election indicator (localities only) -->
+        @if (isLocality && activeElection() && activeElection()!.status === 'open') {
+        <button class="election-badge" (click)="openElectionModal()"
+                aria-label="View active election">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/>
+          </svg>
+          Election in Progress — Vote Now
+        </button>
+        }
+
         <div class="community-stats">
           <div class="stat-item">
             <svg
@@ -161,7 +184,13 @@
 
         <article class="support-card">
           <h2 class="section-title">Business Outreach Page</h2>
-          @if (loadingBusiness()) {
+          @if (!isLocality) {
+          <p class="support-copy subtle">
+            Business pages are connected to localities. Visit the
+            <button class="action-link" (click)="navigateToCity()">city page</button>
+            to create or view business listings.
+          </p>
+          } @else if (loadingBusiness()) {
           <p class="support-copy">Loading business profile...</p>
           } @else if (!businessPage()) {
           <p class="support-copy">
@@ -575,3 +604,56 @@
   </section>
   }
 </div>
+
+<!-- ── Election Modal (localities only) ──────────────────────────────────────── -->
+@if (isLocality && activeElection()) {
+<otui-modal
+  [visible]="showElectionModal()"
+  heading="Community Manager Election"
+  [closable]="true"
+  (close)="showElectionModal.set(false)"
+  size="md"
+>
+  <div class="election-panel">
+    <p class="election-description">
+      The community is electing a manager for {{ community()!.name }}.
+      Vote for a candidate below or nominate yourself to run.
+    </p>
+    <p class="election-ends">
+      Election ends:
+      <strong>{{ activeElection()!.endsAt | date : 'medium' }}</strong>
+    </p>
+
+    @if (activeElection()!.candidates.length === 0) {
+    <p class="no-candidates">No candidates yet. Be the first to run!</p>
+    } @else {
+    <ul class="candidate-list">
+      @for (candidate of activeElection()!.candidates; track candidate.userId) {
+      <li class="candidate-item">
+        <span class="candidate-name">{{ candidate.name }}</span>
+        <span class="candidate-votes">{{ candidate.votes }} votes</span>
+        @if (!activeElection()!.myVote) {
+        <button class="btn btn-sm btn-primary"
+                (click)="voteForCandidate(candidate.userId)"
+                [disabled]="votingInProgress()"
+                [attr.aria-label]="'Vote for ' + candidate.name">
+          Vote
+        </button>
+        } @else if (activeElection()!.myVote === candidate.userId) {
+        <span class="voted-badge">✓ Your vote</span>
+        }
+      </li>
+      }
+    </ul>
+    }
+
+    @if (!activeElection()!.myVote) {
+    <div class="election-actions">
+      <button class="btn btn-outline" (click)="selfNominate()">
+        Nominate Yourself
+      </button>
+    </div>
+    }
+  </div>
+</otui-modal>
+}

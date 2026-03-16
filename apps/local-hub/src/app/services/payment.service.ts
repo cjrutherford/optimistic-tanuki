@@ -52,6 +52,9 @@ export interface BusinessPage {
   id: string;
   userId: string;
   ownerId?: string;
+  /** The root locality (city/town/neighborhood) this business belongs to. */
+  localityId?: string;
+  /** Legacy/compat field kept for API responses that still return communityId. */
   communityId: string;
   name: string;
   description?: string;
@@ -345,8 +348,13 @@ export class PaymentService {
     }
   }
 
+  /**
+   * Start the business-page checkout flow.
+   * `localityId` should be the root locality (city/town/neighborhood) that the
+   * business belongs to. `communityId` is kept as an alias for API compat.
+   */
   async createBusinessPage(
-    communityId: string,
+    localityId: string,
     tier: string
   ): Promise<{ checkoutUrl: string }> {
     this.begin();
@@ -354,7 +362,7 @@ export class PaymentService {
       const result = await firstValueFrom(
         this.http.post<{ checkoutUrl: string }>(
           `${this.baseUrl}/business/checkout`,
-          { communityId, tier }
+          { localityId, communityId: localityId, tier }
         )
       );
       this.end();
