@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   CommunityService,
   City,
@@ -11,7 +11,7 @@ import { MapComponent } from '../../components/map/map.component';
 @Component({
   selector: 'app-cities',
   standalone: true,
-  imports: [CommonModule, MapComponent],
+  imports: [CommonModule, RouterLink, MapComponent],
   templateUrl: './cities.component.html',
   styleUrls: ['./cities.component.scss'],
 })
@@ -26,12 +26,13 @@ export class CitiesComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     try {
-      const [citiesData, communitiesData] = await Promise.all([
-        this.communityService.getCities(),
-        this.communityService.getCommunities(),
-      ]);
-      this.cities.set(citiesData);
+      // Fetch communities once, then derive the cities list from the same data
+      // to avoid a redundant second HTTP request.
+      const communitiesData = await this.communityService.getCommunities();
       this.communities.set(communitiesData);
+      this.cities.set(
+        this.communityService.getCitiesFromCommunities(communitiesData)
+      );
     } catch (e) {
       console.error('Failed to load cities', e);
     } finally {

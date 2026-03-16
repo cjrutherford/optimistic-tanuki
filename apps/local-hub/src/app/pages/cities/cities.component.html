@@ -68,7 +68,7 @@
       @for (city of cities(); track city.id; let i = $index) {
       <a
         class="city-card"
-        [href]="'/city/' + city.slug"
+        [routerLink]="['/city', city.slug]"
         [attr.aria-label]="'View ' + city.name + ' city hub'"
         (mouseenter)="onCityHover(city)"
         (mouseleave)="onCityHover(null)"
@@ -147,7 +147,7 @@
       @for (community of communities(); track community.id) {
       <a
         class="community-card"
-        [href]="'/c/' + community.slug"
+        [routerLink]="['/c', community.slug]"
         [attr.aria-label]="community.name + ' community'"
       >
         <div class="community-image-wrapper">
