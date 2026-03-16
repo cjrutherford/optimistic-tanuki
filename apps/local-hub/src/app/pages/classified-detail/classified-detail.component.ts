@@ -1,10 +1,4 @@
-import {
-  Component,
-  inject,
-  signal,
-  OnInit,
-  OnDestroy,
-} from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -17,10 +11,16 @@ import {
   UpdateClassifiedAdDto,
 } from '@optimistic-tanuki/classified-ui';
 import { AuthStateService } from '../../services/auth-state.service';
-import { CommunityService, LocalCommunity } from '../../services/community.service';
+import {
+  CommunityService,
+  LocalCommunity,
+} from '../../services/community.service';
 import { AssetService } from '../../services/asset.service';
 import { ChatService, ChatMessage } from '../../services/chat.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { PaymentService, Offer } from '../../services/payment.service';
+import { MakeOfferModalComponent } from '../../components/make-offer-modal/make-offer-modal.component';
+import { OfferListComponent } from '../../components/offer-list/offer-list.component';
 
 @Component({
   selector: 'app-classified-detail',
@@ -31,6 +31,8 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
     DatePipe,
     FormsModule,
     ClassifiedFormComponent,
+    MakeOfferModalComponent,
+    OfferListComponent,
   ],
   templateUrl: './classified-detail.component.html',
   styleUrls: ['./classified-detail.component.scss'],
@@ -44,6 +46,7 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   private chatService = inject(ChatService);
   readonly authState = inject(AuthStateService);
   private messageService = inject(MessageService);
+  private paymentService = inject(PaymentService);
   private destroy$ = new Subject<void>();
 
   ad = signal<ClassifiedAdDto | null>(null);
@@ -54,6 +57,12 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   isMember = signal(false);
   isOwner = signal(false);
   showEditForm = signal(false);
+
+  /** Offer state */
+  showMakeOfferModal = signal(false);
+  offers = signal<Offer[]>([]);
+  offersLoading = signal(false);
+  showOffersList = signal(false);
 
   /** Chat state */
   showChat = signal(false);
@@ -89,8 +98,7 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
       if (this.isAuthenticated()) {
         const myId = this.authState.getActingProfileId();
         this.isOwner.set(
-          !!myId &&
-            (ad.profileId === myId || ad.userId === myId)
+          !!myId && (ad.profileId === myId || ad.userId === myId)
         );
         try {
           this.isMember.set(await this.communityService.isMember(community.id));
@@ -131,7 +139,10 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
       const updated = await this.classifiedService.update(ad.id, dto);
       this.ad.set(updated);
       this.showEditForm.set(false);
-      this.messageService.addMessage({ content: 'Listing updated!', type: 'success' });
+      this.messageService.addMessage({
+        content: 'Listing updated!',
+        type: 'success',
+      });
     } catch {
       this.messageService.addMessage({
         content: 'Failed to update listing.',
@@ -146,9 +157,15 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
     try {
       const updated = await this.classifiedService.markSold(ad.id);
       this.ad.set(updated);
-      this.messageService.addMessage({ content: 'Listing marked as sold.', type: 'success' });
+      this.messageService.addMessage({
+        content: 'Listing marked as sold.',
+        type: 'success',
+      });
     } catch {
-      this.messageService.addMessage({ content: 'Failed to update status.', type: 'error' });
+      this.messageService.addMessage({
+        content: 'Failed to update status.',
+        type: 'error',
+      });
     }
   }
 
@@ -159,10 +176,16 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
     if (!confirm('Delete this listing? This cannot be undone.')) return;
     try {
       await this.classifiedService.remove(ad.id);
-      this.messageService.addMessage({ content: 'Listing deleted.', type: 'success' });
+      this.messageService.addMessage({
+        content: 'Listing deleted.',
+        type: 'success',
+      });
       this.router.navigate(['/c', slug, 'classifieds']);
     } catch {
-      this.messageService.addMessage({ content: 'Failed to delete listing.', type: 'error' });
+      this.messageService.addMessage({
+        content: 'Failed to delete listing.',
+        type: 'error',
+      });
     }
   }
 
@@ -202,13 +225,31 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
 
     this.chatLoading.set(true);
     try {
-      const conv = await this.chatService.getOrCreateDirectChat([
+      let conversation = await this.chatService.getOrCreateDirectChat([
         myProfileId,
         sellerProfileId,
       ]);
-      this.conversationId.set(conv.id);
 
-      const messages = await this.chatService.getMessages(conv.id);
+      let messages = await this.chatService.getMessages(conversation.id);
+
+      if (messages.length === 0) {
+        const listingUrl = `${window.location.origin}/c/${
+          this.community()?.slug
+        }/classifieds/${ad.id}`;
+        const initialMessage = `Classified Ad: "${ad.title}"\nPrice: $${ad.price}\n${listingUrl}\n\nHi! I'm interested in this listing.`;
+
+        await this.chatService.sendMessage({
+          conversationId: conversation.id,
+          content: initialMessage,
+          senderId: myProfileId,
+          recipientIds: [sellerProfileId],
+          type: 'system',
+        });
+
+        messages = await this.chatService.getMessages(conversation.id);
+      }
+
+      this.conversationId.set(conversation.id);
       this.chatMessages.set(
         messages.map((m) => ({ ...m, createdAt: new Date(m.createdAt) }))
       );
@@ -231,7 +272,9 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
 
     const myId = this.authState.getActingProfileId();
     const sellerId = ad.profileId || ad.userId;
-    const recipientIds = [sellerId].filter((id): id is string => !!id && id !== myId);
+    const recipientIds = [sellerId].filter(
+      (id): id is string => !!id && id !== myId
+    );
 
     if (!myId || recipientIds.length === 0) {
       this.messageService.addMessage({
@@ -259,5 +302,99 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
         type: 'error',
       });
     }
+  }
+
+  async loadOffers(): Promise<void> {
+    const ad = this.ad();
+    if (!ad) return;
+
+    this.offersLoading.set(true);
+    try {
+      const offers = await this.paymentService.getOffersForClassified(ad.id);
+      this.offers.set(offers);
+      this.showOffersList.set(true);
+    } catch {
+      this.messageService.addMessage({
+        content: 'Failed to load offers.',
+        type: 'error',
+      });
+    } finally {
+      this.offersLoading.set(false);
+    }
+  }
+
+  async onOfferSubmitted(offer: Offer): Promise<void> {
+    this.offers.update((offers) => [offer, ...offers]);
+  }
+
+  async onAcceptOffer(offer: Offer): Promise<void> {
+    try {
+      await this.paymentService.acceptOffer(offer.id);
+      this.messageService.addMessage({
+        content: 'Offer accepted! Payment has been initiated.',
+        type: 'success',
+      });
+      await this.loadOffers();
+    } catch {
+      this.messageService.addMessage({
+        content: 'Failed to accept offer.',
+        type: 'error',
+      });
+    }
+  }
+
+  async onRejectOffer(offer: Offer): Promise<void> {
+    try {
+      await this.paymentService.rejectOffer(offer.id);
+      this.messageService.addMessage({
+        content: 'Offer rejected.',
+        type: 'info',
+      });
+      await this.loadOffers();
+    } catch {
+      this.messageService.addMessage({
+        content: 'Failed to reject offer.',
+        type: 'error',
+      });
+    }
+  }
+
+  async onCounterOffer(data: {
+    offer: Offer;
+    amount: number;
+    message?: string;
+  }): Promise<void> {
+    try {
+      await this.paymentService.counterOffer(
+        data.offer.id,
+        data.amount,
+        data.message
+      );
+      this.messageService.addMessage({
+        content: 'Counter offer sent!',
+        type: 'success',
+      });
+      await this.loadOffers();
+    } catch {
+      this.messageService.addMessage({
+        content: 'Failed to send counter offer.',
+        type: 'error',
+      });
+    }
+  }
+
+  onMakeOffer(): void {
+    if (!this.isAuthenticated()) {
+      this.promptSignIn();
+      return;
+    }
+    if (!this.isMember()) {
+      this.messageService.addMessage({
+        content: 'Join this community to make an offer.',
+        type: 'info',
+      });
+      return;
+    }
+    this.showMakeOfferModal.set(true);
   }
 }

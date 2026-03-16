@@ -235,6 +235,24 @@
   }
 }
 
+.btn-secondary {
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--muted);
+
+  &:hover:not(:disabled) {
+    background: var(--background);
+    border-color: var(--primary);
+  }
+}
+
+.modal-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .btn-large {
   padding: 16px 32px;
   font-size: 1rem;
@@ -276,6 +294,81 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
+}
+
+.community-support-section {
+  padding: 40px 0;
+  background: var(--background);
+  border-top: 1px solid var(--muted);
+  border-bottom: 1px solid var(--muted);
+}
+
+.support-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.support-card {
+  background: var(--surface);
+  border: 1px solid var(--muted);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.support-copy {
+  margin: 0 0 14px;
+  color: var(--foreground-muted);
+  line-height: 1.5;
+}
+
+.support-copy.subtle {
+  font-size: 0.9rem;
+}
+
+.support-actions-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-group-full {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: 0.8rem;
+  color: var(--foreground-muted);
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.active-sponsorship-note {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--foreground-muted);
 }
 
 .community-highlights {
@@ -439,7 +532,10 @@
     opacity: 0.4;
   }
 
-  p { margin: 0; font-size: 1rem; }
+  p {
+    margin: 0;
+    font-size: 1rem;
+  }
 }
 
 .posts-grid {
@@ -514,7 +610,9 @@
   font-size: 0.8rem;
   color: var(--foreground-muted);
 
-  svg { flex-shrink: 0; }
+  svg {
+    flex-shrink: 0;
+  }
 }
 
 .post-stats {
@@ -574,6 +672,10 @@
   }
 
   .community-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
     grid-template-columns: 1fr;
   }
 }

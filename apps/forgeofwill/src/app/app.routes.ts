@@ -68,6 +68,24 @@ export const appRoutes: Route[] = [
     canActivate: [AuthenticationGuard],
   },
   {
+    path: 'messages',
+    loadComponent: () =>
+      import('./pages/messages/messages.component').then(
+        (m) => m.MessagesComponent
+      ),
+    title: 'Messages',
+    canActivate: [AuthenticationGuard, ProfileGuard],
+  },
+  {
+    path: 'messages/new',
+    loadComponent: () =>
+      import('./pages/new-message/new-message.component').then(
+        (m) => m.NewMessageComponent
+      ),
+    title: 'New Message',
+    canActivate: [AuthenticationGuard, ProfileGuard],
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./pages/login/login.component').then((m) => m.LoginComponent),

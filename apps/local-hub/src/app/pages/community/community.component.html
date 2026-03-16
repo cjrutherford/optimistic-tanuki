@@ -142,6 +142,243 @@
     </div>
   </header>
 
+  <app-sponsorship-banner
+    [communityId]="community()?.id ?? ''"
+    type="banner"
+  ></app-sponsorship-banner>
+
+  <section class="community-support-section">
+    <div class="section-container">
+      <div class="support-grid">
+        <article class="support-card">
+          <h2 class="section-title">Donate to Community Goals</h2>
+          <p class="support-copy">
+            Donations and sponsorships power local events, outreach, and city
+            improvement initiatives.
+          </p>
+          <app-donation-progress [monthlyGoal]="5000"></app-donation-progress>
+        </article>
+
+        <article class="support-card">
+          <h2 class="section-title">Business Outreach Page</h2>
+          @if (loadingBusiness()) {
+          <p class="support-copy">Loading business profile...</p>
+          } @else if (!businessPage()) {
+          <p class="support-copy">
+            Create a business page for this community to reach nearby customers.
+          </p>
+          <button class="btn btn-primary" (click)="showBusinessModal.set(true)">
+            Create Business Page
+          </button>
+
+          <otui-modal
+            [visible]="showBusinessModal()"
+            heading="Create Business Page"
+            [closable]="true"
+            (close)="showBusinessModal.set(false)"
+            size="md"
+          >
+            <div class="form-grid">
+              <div class="field-group field-group-full">
+                <label class="field-label" for="business-tier-modal"
+                  >Select Tier</label
+                >
+                <select
+                  id="business-tier-modal"
+                  class="input"
+                  [ngModel]="selectedBusinessTier()"
+                  (ngModelChange)="selectedBusinessTier.set($event)"
+                >
+                  <option value="basic">Basic</option>
+                  <option value="pro">Pro</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button
+                class="btn btn-primary"
+                (click)="startBusinessCheckout()"
+                [disabled]="businessCheckoutInProgress()"
+              >
+                @if (businessCheckoutInProgress()) { Starting checkout... }
+                @else { Create Business Page }
+              </button>
+            </div>
+          </otui-modal>
+          } @else {
+          <p class="support-copy">
+            Keep your business profile current so local members can discover and
+            contact you.
+          </p>
+          @if (!isBusinessOwner()) {
+          <p class="support-copy subtle">
+            This page is active. Only the owner can edit profile details.
+          </p>
+          } @else {
+          <button
+            class="btn btn-secondary"
+            (click)="showBusinessModal.set(true)"
+          >
+            Edit Business Profile
+          </button>
+
+          <otui-modal
+            [visible]="showBusinessModal()"
+            heading="Edit Business Profile"
+            [closable]="true"
+            (close)="showBusinessModal.set(false)"
+            size="lg"
+          >
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label" for="business-name">Name</label>
+                <input
+                  id="business-name"
+                  class="input"
+                  [ngModel]="businessName"
+                  (ngModelChange)="businessName = $event"
+                  placeholder="Neighborhood Market"
+                />
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="business-website"
+                  >Website</label
+                >
+                <input
+                  id="business-website"
+                  class="input"
+                  [ngModel]="businessWebsite"
+                  (ngModelChange)="businessWebsite = $event"
+                  placeholder="https://example.com"
+                />
+              </div>
+              <div class="field-group field-group-full">
+                <label class="field-label" for="business-description"
+                  >Description</label
+                >
+                <textarea
+                  id="business-description"
+                  class="input"
+                  rows="3"
+                  [ngModel]="businessDescription"
+                  (ngModelChange)="businessDescription = $event"
+                  placeholder="What your business offers"
+                ></textarea>
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="business-phone">Phone</label>
+                <input
+                  id="business-phone"
+                  class="input"
+                  [ngModel]="businessPhone"
+                  (ngModelChange)="businessPhone = $event"
+                />
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="business-email">Email</label>
+                <input
+                  id="business-email"
+                  class="input"
+                  [ngModel]="businessEmail"
+                  (ngModelChange)="businessEmail = $event"
+                />
+              </div>
+              <div class="field-group field-group-full">
+                <label class="field-label" for="business-address"
+                  >Address</label
+                >
+                <input
+                  id="business-address"
+                  class="input"
+                  [ngModel]="businessAddress"
+                  (ngModelChange)="businessAddress = $event"
+                />
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button
+                class="btn btn-primary"
+                (click)="saveBusinessProfile()"
+                [disabled]="savingBusinessProfile()"
+              >
+                @if (savingBusinessProfile()) { Saving... } @else { Save
+                Business Profile }
+              </button>
+            </div>
+          </otui-modal>
+          } }
+        </article>
+
+        <article class="support-card">
+          <h2 class="section-title">Sponsor This Community</h2>
+          <p class="support-copy">
+            Sponsorships increase visibility for your business and contribute to
+            this community's support goal.
+          </p>
+          <button
+            class="btn btn-primary"
+            (click)="showSponsorshipModal.set(true)"
+          >
+            Sponsor Community
+          </button>
+
+          <otui-modal
+            [visible]="showSponsorshipModal()"
+            heading="Sponsor This Community"
+            [closable]="true"
+            (close)="showSponsorshipModal.set(false)"
+            size="md"
+          >
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label" for="sponsorship-type">Type</label>
+                <select
+                  id="sponsorship-type"
+                  class="input"
+                  [ngModel]="selectedSponsorshipType()"
+                  (ngModelChange)="selectedSponsorshipType.set($event)"
+                >
+                  <option value="banner">Banner</option>
+                  <option value="sticky-ad">Sticky Ad</option>
+                  <option value="featured">Featured</option>
+                </select>
+              </div>
+              <div class="field-group field-group-full">
+                <label class="field-label" for="ad-content">Ad Copy</label>
+                <textarea
+                  id="ad-content"
+                  rows="3"
+                  class="input"
+                  [ngModel]="sponsorshipAdContent"
+                  (ngModelChange)="sponsorshipAdContent = $event"
+                  placeholder="Tell this community about your offer"
+                ></textarea>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button
+                class="btn btn-primary"
+                (click)="startSponsorshipCheckout()"
+                [disabled]="sponsorshipCheckoutInProgress()"
+              >
+                @if (sponsorshipCheckoutInProgress()) { Starting checkout... }
+                @else { Sponsor Community }
+              </button>
+            </div>
+          </otui-modal>
+
+          @if (activeSponsorships().length > 0) {
+          <div class="active-sponsorship-note">
+            {{ activeSponsorships().length }} active sponsorship(s) currently
+            supporting this community.
+          </div>
+          }
+        </article>
+      </div>
+    </div>
+  </section>
+
   <section class="community-highlights">
     <div class="section-container">
       <h2 class="section-title">Community Focus</h2>
@@ -224,9 +461,7 @@
           (postSubmitted)="onPostSubmitted($event)"
         ></lib-social-compose>
       </div>
-      }
-
-      @if (!isMember()) {
+      } @if (!isMember()) {
       <div class="gated-notice">
         <div class="gated-icon">
           <svg
@@ -269,7 +504,9 @@
         @for (post of posts(); track post.id) {
         <article class="post-card" role="article">
           <div class="post-header">
-            <span class="post-date">{{ post.createdAt | date: 'MMM d, y' }}</span>
+            <span class="post-date">{{
+              post.createdAt | date : 'MMM d, y'
+            }}</span>
           </div>
           <h3 class="post-title">{{ post.title }}</h3>
           <p class="post-content">{{ post.content }}</p>
@@ -298,7 +535,9 @@
                   stroke="currentColor"
                   stroke-width="2"
                 >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  <path
+                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                  />
                 </svg>
                 {{ post.likes }}
               </span>

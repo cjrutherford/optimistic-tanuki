@@ -2,6 +2,7 @@ import { Injectable, inject, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Subject } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
+import type { Socket } from 'socket.io-client';
 
 export interface ChatConversation {
   id: string;
@@ -30,11 +31,11 @@ export interface ChatMessage {
 })
 export class ChatService implements OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
-  private socket: any = null;
+  private socket: Socket | null = null;
   private readonly destroy$ = new Subject<void>();
 
   /** Lazily connect (browser only) and return the socket instance. */
-  private async getSocket(): Promise<any> {
+  private async getSocket(): Promise<Socket> {
     if (!isPlatformBrowser(this.platformId)) {
       throw new Error('Chat is not available during server-side rendering.');
     }
@@ -46,8 +47,21 @@ export class ChatService implements OnDestroy {
       path: '/socket.io',
       transports: ['websocket'],
     });
-    return new Promise((resolve, reject) => {
-      this.socket.once('connect', () => resolve(this.socket));
+    this.socket.on('connect', () => {
+      console.log('[ChatService] Socket connected:', this.socket?.id);
+    });
+    this.socket.on('connect_error', (err: Error) => {
+      console.error('[ChatService] Socket connection error:', err.message);
+    });
+    this.socket.on('disconnect', (reason: string) => {
+      console.log('[ChatService] Socket disconnected:', reason);
+    });
+    return new Promise<Socket>((resolve, reject) => {
+      if (!this.socket) {
+        reject(new Error('Socket not initialized'));
+        return;
+      }
+      this.socket.once('connect', () => resolve(this.socket!));
       this.socket.once('connect_error', (err: Error) => reject(err));
     });
   }
@@ -137,12 +151,12 @@ export class ChatService implements OnDestroy {
           };
           socket.once('conversations', onConversations);
           socket.once('connect_error', onError);
-          // The gateway's 'message' handler expects a ChatMessage shape
+          console.log('[ChatService] Sending message:', payload);
           socket.emit('message', {
             id: payload.id ?? uuidv4(),
             conversationId: payload.conversationId,
             senderId: payload.senderId,
-            recipientId: payload.recipientIds,   // gateway model field name
+            recipientId: payload.recipientIds, // gateway model field name
             recipientName: payload.recipientName ?? [],
             content: payload.content,
             type: payload.type ?? 'chat',

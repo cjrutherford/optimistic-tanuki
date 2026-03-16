@@ -51,6 +51,7 @@ import { ProfileAnalyticsController } from '../controllers/social/profile-analyt
 import { PollController } from '../controllers/social/poll/poll.controller';
 import { PostShareController } from '../controllers/social/post-share/post-share.controller';
 import { SocialEventController } from '../controllers/social/social-event/social-event.controller';
+import { PaymentsController } from '../controllers/payments/payments.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -112,6 +113,7 @@ import { SocialEventController } from '../controllers/social/social-event/social
     PollController,
     PostShareController,
     SocialEventController,
+    PaymentsController,
   ],
   providers: [
     {
@@ -379,8 +381,9 @@ import { SocialEventController } from '../controllers/social/social-event/social
     {
       provide: ServiceTokens.CLASSIFIEDS_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.classifieds');
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.classifieds'
+        );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

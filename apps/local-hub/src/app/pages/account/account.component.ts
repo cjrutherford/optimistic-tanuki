@@ -7,6 +7,8 @@ import {
   LocalCommunity,
 } from '../../services/community.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { Personality } from '@optimistic-tanuki/theme-models';
 
 @Component({
   selector: 'app-account',
@@ -19,14 +21,34 @@ export class AccountComponent implements OnInit {
   private authState = inject(AuthStateService);
   private communityService = inject(CommunityService);
   private messageService = inject(MessageService);
+  private themeService = inject(ThemeService);
   readonly router = inject(Router);
 
   myCommunities = signal<LocalCommunity[]>([]);
   loadingCommunities = signal(true);
   leavingId = signal<string | null>(null);
+  availablePersonalities = signal<Personality[]>([]);
+  currentPersonalityId = signal<string>('bold');
 
   ngOnInit(): void {
     this.loadMyCommunities();
+    this.loadPersonalities();
+  }
+
+  private loadPersonalities(): void {
+    this.themeService.availablePersonalities$.subscribe((personalities) => {
+      this.availablePersonalities.set(personalities);
+    });
+    this.currentPersonalityId.set(this.themeService.getCurrentPersonality().id);
+  }
+
+  async changeTheme(personalityId: string): Promise<void> {
+    await this.themeService.setPersonality(personalityId);
+    this.currentPersonalityId.set(personalityId);
+    this.messageService.addMessage({
+      content: `Theme changed to ${personalityId}`,
+      type: 'success',
+    });
   }
 
   async loadMyCommunities(): Promise<void> {

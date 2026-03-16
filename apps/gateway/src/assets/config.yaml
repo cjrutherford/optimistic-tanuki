@@ -84,6 +84,11 @@ services:
     transport: TCP
     host: ot_classifieds
     port: 3017
+  payments:
+    name: payments
+    transport: TCP
+    host: ot_payments
+    port: 3018
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

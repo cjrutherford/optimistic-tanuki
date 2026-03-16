@@ -41,6 +41,11 @@
         <h1 class="city-title">{{ city()!.name }}</h1>
         <p class="city-tagline">{{ city()!.description }}</p>
 
+        <app-donation-progress
+          [monthlyGoal]="5000"
+          [compact]="true"
+        ></app-donation-progress>
+
         <div class="hero-stats">
           <div class="stat-item">
             <span class="stat-number">{{ city()!.population | number }}</span>
@@ -86,6 +91,51 @@
     </div>
   </section>
 
+  @if (businesses().length > 0) {
+  <section class="city-businesses-section">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">Local Businesses</h2>
+        <p class="section-subtitle">
+          Discover businesses in {{ city()!.name }}
+        </p>
+      </div>
+      <div class="businesses-grid">
+        @for (business of businesses(); track business.id) {
+        <div class="business-card">
+          @if (business.logoUrl) {
+          <div class="business-logo">
+            <img [src]="business.logoUrl" [alt]="business.name" />
+          </div>
+          }
+          <div class="business-content">
+            <h3 class="business-name">{{ business.name }}</h3>
+            @if (business.description) {
+            <p class="business-description">{{ business.description }}</p>
+            }
+            <div class="business-meta">
+              <span class="business-tier" [class]="business.tier">
+                {{ business.tier | titlecase }}
+              </span>
+            </div>
+            @if (business.website) {
+            <a
+              [href]="business.website"
+              target="_blank"
+              rel="noopener"
+              class="business-link"
+            >
+              Visit Website
+            </a>
+            }
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+  </section>
+  }
+
   <section class="city-map-section">
     <div class="section-container">
       <h2 class="section-title">Location</h2>
@@ -116,10 +166,41 @@
   <section class="communities-section">
     <div class="section-container">
       <div class="section-header">
-        <h2 class="section-title">Communities in {{ city()!.name }}</h2>
-        <p class="section-subtitle">
-          Join local groups and connect with people in your area
-        </p>
+        <div class="section-header-content">
+          <h2 class="section-title">Communities in {{ city()!.name }}</h2>
+          <p class="section-subtitle">
+            Join local groups and connect with people in your area
+          </p>
+        </div>
+        <div class="section-header-actions">
+          <button class="btn btn-outline" (click)="openCreateBusinessModal()">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            Create Business Page
+          </button>
+          <button class="btn btn-primary" (click)="openCreateCommunityModal()">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M12 5v14M5 12h14"></path>
+            </svg>
+            Create Community
+          </button>
+        </div>
       </div>
 
       @if (communityTree().length === 0) {
@@ -130,10 +211,11 @@
       <div class="community-tree">
         @for (node of communityTree(); track node.community.id) {
         <div class="tree-node">
-          <article
+          <a
             class="community-card"
             [class.is-city]="node.community.localityType === 'city'"
-            (click)="navigateToCommunity(node.community.slug)"
+            [href]="'/c/' + node.community.slug"
+            [attr.aria-label]="node.community.name + ' community'"
           >
             <div class="community-image-wrapper">
               <img
@@ -143,14 +225,13 @@
                 loading="lazy"
               />
               @if (isAuthenticated()) {
-              <div class="card-actions">
+              <div class="card-actions" (click)="$event.stopPropagation()">
                 @if (!isMember(node.community.id)) {
                 <button
                   class="join-btn"
-                  (click)="
-                    joinCommunity(node.community.id); $event.stopPropagation()
-                  "
+                  (click)="joinCommunity(node.community.id)"
                   [disabled]="expandingInProgress() === node.community.id"
+                  [attr.aria-label]="'Join ' + node.community.name"
                 >
                   Join
                 </button>
@@ -180,13 +261,24 @@
                 }
               </div>
             </div>
-          </article>
+          </a>
 
           @if (node.children.length > 0) {
           <button
             class="expand-toggle"
             (click)="toggleExpand(node.community.id); $event.stopPropagation()"
+            (keydown.enter)="
+              toggleExpand(node.community.id); $event.stopPropagation()
+            "
+            (keydown.space)="
+              toggleExpand(node.community.id); $event.stopPropagation()
+            "
             [attr.aria-expanded]="node.isExpanded"
+            [attr.aria-label]="
+              node.isExpanded
+                ? 'Collapse sub-communities'
+                : 'Expand sub-communities'
+            "
           >
             <svg
               width="16"
@@ -195,6 +287,7 @@
               fill="none"
               stroke="currentColor"
               stroke-width="2"
+              aria-hidden="true"
               [class.rotated]="node.isExpanded"
             >
               <polyline points="9 18 15 12 9 6"></polyline>
@@ -205,9 +298,10 @@
           @if (node.isExpanded) {
           <div class="sub-communities">
             @for (child of node.children; track child.community.id) {
-            <article
+            <a
               class="community-card sub-community"
-              (click)="navigateToCommunity(child.community.slug)"
+              [href]="'/c/' + child.community.slug"
+              [attr.aria-label]="child.community.name + ' community'"
             >
               <div class="community-image-wrapper">
                 <img
@@ -217,15 +311,13 @@
                   loading="lazy"
                 />
                 @if (isAuthenticated()) {
-                <div class="card-actions">
+                <div class="card-actions" (click)="$event.stopPropagation()">
                   @if (!isMember(child.community.id)) {
                   <button
                     class="join-btn"
-                    (click)="
-                      joinCommunity(child.community.id);
-                      $event.stopPropagation()
-                    "
+                    (click)="joinCommunity(child.community.id)"
                     [disabled]="expandingInProgress() === child.community.id"
+                    [attr.aria-label]="'Join ' + child.community.name"
                   >
                     Join
                   </button>
@@ -248,8 +340,14 @@
                 <p class="community-description">
                   {{ child.community.description }}
                 </p>
+                <div class="community-tags">
+                  @for (tag of child.community.highlights?.slice(0, 3) || [];
+                  track tag) {
+                  <span class="tag">{{ tag }}</span>
+                  }
+                </div>
               </div>
-            </article>
+            </a>
             }
           </div>
           } }
@@ -272,9 +370,10 @@
 
       <div class="posts-grid">
         @for (post of posts(); track post.id) {
-        <article
+        <a
           class="post-card"
-          (click)="navigateToCommunity(post.communitySlug)"
+          [href]="'/c/' + post.communitySlug"
+          [attr.aria-label]="'View post: ' + post.title"
         >
           <div class="post-header">
             <span class="post-community">{{ post.communityName }}</span>
@@ -293,6 +392,7 @@
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
+                aria-hidden="true"
               >
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
@@ -308,6 +408,7 @@
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2"
+                  aria-hidden="true"
                 >
                   <path
                     d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
@@ -323,6 +424,7 @@
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2"
+                  aria-hidden="true"
                 >
                   <path
                     d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
@@ -332,11 +434,123 @@
               </span>
             </span>
           </div>
-        </article>
+        </a>
         }
       </div>
     </div>
   </section>
   }
 </div>
+
+<otui-modal
+  [visible]="showCreateCommunityModal()"
+  heading="Create New Community"
+  [closable]="true"
+  (close)="showCreateCommunityModal.set(false)"
+  size="md"
+>
+  <div class="create-community-form">
+    <div class="form-group">
+      <label for="community-name">Community Name</label>
+      <input
+        type="text"
+        id="community-name"
+        class="input"
+        [(ngModel)]="newCommunityName"
+        placeholder="e.g., Downtown Neighborhood Association"
+      />
+    </div>
+    <div class="form-group">
+      <label for="community-type">Community Type</label>
+      <select id="community-type" class="input" [(ngModel)]="newCommunityType">
+        <option value="neighborhood">Neighborhood</option>
+        <option value="town">Town</option>
+        <option value="county">County</option>
+        <option value="region">Region</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="community-description">Description</label>
+      <textarea
+        id="community-description"
+        class="input"
+        rows="3"
+        [(ngModel)]="newCommunityDescription"
+        placeholder="Describe what this community is about..."
+      ></textarea>
+    </div>
+    <div class="modal-actions">
+      <button
+        class="btn btn-primary"
+        (click)="createCommunity()"
+        [disabled]="creatingCommunity()"
+      >
+        @if (creatingCommunity()) {
+        <span class="btn-spinner"></span> Creating... } @else { Create Community
+        }
+      </button>
+    </div>
+  </div>
+</otui-modal>
+
+<otui-modal
+  [visible]="showCreateBusinessModal()"
+  heading="Create Business Page"
+  [closable]="true"
+  (close)="showCreateBusinessModal.set(false)"
+  size="md"
+>
+  <div class="create-business-form">
+    <p class="modal-description">
+      Create a business page for {{ city()!.name }} to reach local customers and
+      promote your products or services.
+    </p>
+    <div class="form-group">
+      <label for="business-tier">Select Tier</label>
+      <select
+        id="business-tier"
+        class="input"
+        [(ngModel)]="selectedBusinessTier"
+      >
+        <option value="basic">Basic - Free</option>
+        <option value="pro">Pro - $29/month</option>
+        <option value="enterprise">Enterprise - $99/month</option>
+      </select>
+    </div>
+    <div class="tier-features">
+      @switch (selectedBusinessTier()) { @case ('basic') {
+      <ul>
+        <li>Basic business listing</li>
+        <li>Contact information</li>
+      </ul>
+      } @case ('pro') {
+      <ul>
+        <li>Everything in Basic</li>
+        <li>Featured in search results</li>
+        <li>Analytics dashboard</li>
+        <li>Priority support</li>
+      </ul>
+      } @case ('enterprise') {
+      <ul>
+        <li>Everything in Pro</li>
+        <li>Custom branding</li>
+        <li>Multiple locations</li>
+        <li>API access</li>
+        <li>Dedicated account manager</li>
+      </ul>
+      } }
+    </div>
+    <div class="modal-actions">
+      <button
+        class="btn btn-primary"
+        (click)="createBusinessPage()"
+        [disabled]="creatingBusiness()"
+      >
+        @if (creatingBusiness()) {
+        <span class="btn-spinner"></span> Setting up... } @else { Continue to
+        Payment }
+      </button>
+    </div>
+  </div>
+</otui-modal>
 }

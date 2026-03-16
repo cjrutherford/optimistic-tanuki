@@ -71,6 +71,7 @@ export {
   SubscriptionCommands,
   DonationCommands,
   OrderCommands,
+  PaymentCommands,
 } from './lib/libs/store';
 
 export { AppConfigCommands } from './lib/libs/app-config';

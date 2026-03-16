@@ -64,7 +64,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-elevated);
+  background: var(--background);
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--foreground);
@@ -87,7 +87,7 @@
   flex-wrap: wrap;
   gap: 16px;
   padding: 12px 16px;
-  background: var(--surface-elevated);
+  background: var(--background);
   border: 1px solid var(--border);
   border-radius: 12px;
   z-index: 1000;
@@ -110,12 +110,12 @@
 
   &.center {
     background: var(--primary);
-    box-shadow: 0 0 0 3px rgba(45, 90, 74, 0.2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
   }
 
   &.city {
     background: var(--secondary);
-    box-shadow: 0 0 0 3px rgba(201, 166, 107, 0.2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--secondary) 20%, transparent);
   }
 }
 
@@ -243,7 +243,7 @@
     font-size: 11px;
     font-weight: 700;
     color: var(--primary);
-    background: var(--surface-elevated);
+    background: var(--background);
     padding: 4px 8px;
     border-radius: 4px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);

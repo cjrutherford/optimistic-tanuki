@@ -1,6 +1,8 @@
 <div class="detail-page">
   <div class="page-header">
-    <button class="btn-back" (click)="navigateToClassifieds()">← Back to Classifieds</button>
+    <button class="btn-back" (click)="navigateToClassifieds()">
+      ← Back to Classifieds
+    </button>
   </div>
 
   @if (loading()) {
@@ -19,7 +21,11 @@
       @if (ad()!.imageUrls && ad()!.imageUrls!.length > 0) {
       <div class="image-gallery">
         @for (img of ad()!.imageUrls!; track img; let i = $index) {
-        <img [src]="img" [alt]="ad()!.title + ' image ' + (i + 1)" loading="lazy" />
+        <img
+          [src]="img"
+          [alt]="ad()!.title + ' image ' + (i + 1)"
+          loading="lazy"
+        />
         }
       </div>
       } @else {
@@ -43,14 +49,17 @@
           @if (ad()!.isFeatured) {
           <span class="featured-badge">⭐ Featured</span>
           }
-          <span class="status-badge status-{{ ad()!.status }}">{{ ad()!.status }}</span>
+          <span class="status-badge status-{{ ad()!.status }}">{{
+            ad()!.status
+          }}</span>
           <h1>{{ ad()!.title }}</h1>
           <div class="price-row">
-            <span class="price">{{ ad()!.price | currency: ad()!.currency }}</span>
+            <span class="price">{{
+              ad()!.price | currency : ad()!.currency
+            }}</span>
             @if (ad()!.category) {
             <span class="category-badge">{{ ad()!.category }}</span>
-            }
-            @if (ad()!.condition) {
+            } @if (ad()!.condition) {
             <span class="condition-badge">{{ ad()!.condition }}</span>
             }
           </div>
@@ -59,21 +68,24 @@
         <p class="description">{{ ad()!.description }}</p>
 
         <div class="ad-meta">
-          <span>Posted {{ ad()!.createdAt | date: 'mediumDate' }}</span>
+          <span>Posted {{ ad()!.createdAt | date : 'mediumDate' }}</span>
           @if (ad()!.updatedAt !== ad()!.createdAt) {
-          <span>· Updated {{ ad()!.updatedAt | date: 'mediumDate' }}</span>
-          }
-          @if (ad()!.expiresAt) {
-          <span>· Expires {{ ad()!.expiresAt | date: 'mediumDate' }}</span>
+          <span>· Updated {{ ad()!.updatedAt | date : 'mediumDate' }}</span>
+          } @if (ad()!.expiresAt) {
+          <span>· Expires {{ ad()!.expiresAt | date : 'mediumDate' }}</span>
           }
         </div>
 
         <!-- Owner actions -->
         @if (isOwner()) {
         <div class="owner-actions">
-          <button class="btn btn-outline" (click)="showEditForm.set(true)">Edit Listing</button>
+          <button class="btn btn-outline" (click)="showEditForm.set(true)">
+            Edit Listing
+          </button>
           @if (ad()!.status === 'active') {
-          <button class="btn btn-outline" (click)="onMarkSold()">Mark as Sold</button>
+          <button class="btn btn-outline" (click)="onMarkSold()">
+            Mark as Sold
+          </button>
           }
           <button class="btn btn-danger" (click)="onDelete()">Delete</button>
         </div>
@@ -84,15 +96,32 @@
         <div class="contact-section">
           @if (!isAuthenticated()) {
           <p class="gated-note">
-            <a (click)="promptSignIn()" class="action-link">Sign in</a> to contact the seller.
+            <a (click)="promptSignIn()" class="action-link">Sign in</a> to
+            contact the seller.
           </p>
           } @else if (!isMember()) {
           <p class="gated-note">Join this community to contact the seller.</p>
           } @else {
-          <button class="btn btn-primary btn-contact" (click)="onContactSeller()" [disabled]="chatLoading()">
+          <button
+            class="btn btn-primary btn-contact"
+            (click)="onContactSeller()"
+            [disabled]="chatLoading()"
+          >
             @if (chatLoading()) { Opening chat… } @else { Contact Seller }
           </button>
+          <button class="btn btn-secondary btn-offer" (click)="onMakeOffer()">
+            Make an Offer
+          </button>
           }
+        </div>
+        }
+
+        <!-- Owner: View offers -->
+        @if (isOwner()) {
+        <div class="offers-section">
+          <button class="btn btn-secondary" (click)="loadOffers()">
+            View Offers
+          </button>
         </div>
         }
       </div>
@@ -104,17 +133,31 @@
     <aside class="chat-panel">
       <div class="chat-header">
         <h2>Conversation</h2>
-        <button class="close-chat" (click)="showChat.set(false)" aria-label="Close chat">✕</button>
+        <button
+          class="close-chat"
+          (click)="showChat.set(false)"
+          aria-label="Close chat"
+        >
+          ✕
+        </button>
       </div>
 
       <div class="message-list" role="log" aria-live="polite">
         @if (chatMessages().length === 0) {
         <p class="empty-chat">No messages yet. Say hello!</p>
-        }
-        @for (msg of chatMessages(); track msg.id) {
-        <div class="message" [class.mine]="msg.senderId === (authState.getUserData()?.profileId ?? authState.getUserData()?.userId)">
+        } @for (msg of chatMessages(); track msg.id) {
+        <div
+          class="message"
+          [class.mine]="
+            msg.senderId ===
+            (authState.getUserData()?.profileId ??
+              authState.getUserData()?.userId)
+          "
+        >
           <p class="message-content">{{ msg.content }}</p>
-          <span class="message-time">{{ msg.createdAt | date: 'shortTime' }}</span>
+          <span class="message-time">{{
+            msg.createdAt | date : 'shortTime'
+          }}</span>
         </div>
         }
       </div>
@@ -133,7 +176,9 @@
           class="btn btn-primary btn-send"
           (click)="sendChatMessage()"
           [disabled]="!chatInput().trim()"
-        >Send</button>
+        >
+          Send
+        </button>
       </div>
     </aside>
     }
@@ -141,3 +186,43 @@
 
   }
 </div>
+
+<!-- Make Offer Modal -->
+@if (showMakeOfferModal()) {
+<app-make-offer-modal
+  [classifiedId]="ad()!.id"
+  [sellerId]="ad()!.profileId || ad()!.userId"
+  [listingTitle]="ad()!.title"
+  [askingPrice]="ad()!.price"
+  (offerSubmitted)="onOfferSubmitted($event)"
+  (closed)="showMakeOfferModal.set(false)"
+></app-make-offer-modal>
+}
+
+<!-- Offers List -->
+@if (showOffersList()) {
+<div class="offers-modal-overlay" (click)="showOffersList.set(false)">
+  <div class="offers-modal" (click)="$event.stopPropagation()">
+    <div class="offers-modal-header">
+      <h2>Offers for "{{ ad()!.title }}"</h2>
+      <button
+        class="close-btn"
+        (click)="showOffersList.set(false)"
+        aria-label="Close"
+      >
+        ×
+      </button>
+    </div>
+    <div class="offers-modal-body">
+      <app-offer-list
+        [offers]="offers"
+        [loading]="offersLoading"
+        [canManage]="isOwner()"
+        (acceptOffer)="onAcceptOffer($event)"
+        (rejectOffer)="onRejectOffer($event)"
+        (counterOffer)="onCounterOffer($event)"
+      ></app-offer-list>
+    </div>
+  </div>
+</div>
+}
