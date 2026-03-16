@@ -28,6 +28,44 @@ export interface LocalCommunity {
   highlights?: string[];
   events?: string[];
   tags?: CommunityTag[];
+  /** ID of the currently elected community manager (localities only). */
+  managerId?: string | null;
+  /** Display name of the currently elected community manager. */
+  managerName?: string | null;
+  /** ISO timestamp when the current manager was elected. */
+  managerElectedAt?: string | null;
+  /** ISO timestamp when the current manager's term ends. */
+  managerTermEndsAt?: string | null;
+}
+
+/** Represents the currently elected manager of a locality. */
+export interface CommunityManager {
+  userId: string;
+  profileId: string;
+  name: string;
+  electedAt: string;
+  termEndsAt: string;
+}
+
+/** A candidate in an open community manager election. */
+export interface ElectionCandidate {
+  userId: string;
+  profileId: string;
+  name: string;
+  nominatedAt: string;
+  votes: number;
+}
+
+/** An active or recently concluded community manager election. */
+export interface CommunityElection {
+  id: string;
+  communityId: string;
+  status: 'open' | 'closed' | 'pending';
+  candidates: ElectionCandidate[];
+  startedAt: string;
+  endsAt: string;
+  /** The candidateUserId the current user has already voted for, if any. */
+  myVote?: string | null;
 }
 
 export interface City {
@@ -130,11 +168,16 @@ export class CommunityService {
     );
   }
 
+  /**
+   * Create a new LOCAL INTEREST COMMUNITY connected to a locality.
+   * `parentId` is required — root localities are system-managed and cannot be
+   * created by regular users.
+   */
   createCommunity(data: {
     name: string;
     description: string;
     parentId: string;
-    localityType: 'city' | 'town' | 'neighborhood' | 'county' | 'region';
+    localityType: 'neighborhood' | 'county' | 'region';
     isBusiness?: boolean;
   }): Promise<LocalCommunity> {
     return firstValueFrom(this.http.post<LocalCommunity>(this.baseUrl, data));
@@ -157,6 +200,77 @@ export class CommunityService {
       }));
     });
   }
+
+  // ── Community Manager & Election ────────────────────────────────────────────
+
+  /**
+   * Fetch the currently elected community manager for a locality.
+   * Returns `null` when the locality has no elected manager yet.
+   */
+  async getCommunityManager(
+    communityId: string
+  ): Promise<CommunityManager | null> {
+    try {
+      return await firstValueFrom(
+        this.http.get<CommunityManager | null>(
+          `${this.baseUrl}/${communityId}/manager`
+        )
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Fetch the active (or most recent) election for a locality.
+   * Returns `null` when no election is in progress.
+   */
+  async getActiveElection(
+    communityId: string
+  ): Promise<CommunityElection | null> {
+    try {
+      return await firstValueFrom(
+        this.http.get<CommunityElection | null>(
+          `${this.baseUrl}/${communityId}/election`
+        )
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Nominate a user as a candidate in the active election.
+   * Pass `nomineeId` to nominate another user, or omit to self-nominate.
+   */
+  nominateForManager(
+    communityId: string,
+    nomineeId?: string
+  ): Promise<ElectionCandidate> {
+    return firstValueFrom(
+      this.http.post<ElectionCandidate>(
+        `${this.baseUrl}/${communityId}/election/nominate`,
+        nomineeId ? { nomineeId } : {}
+      )
+    );
+  }
+
+  /**
+   * Cast a vote for a candidate in the active election.
+   */
+  voteForManager(
+    communityId: string,
+    candidateUserId: string
+  ): Promise<CommunityElection> {
+    return firstValueFrom(
+      this.http.post<CommunityElection>(
+        `${this.baseUrl}/${communityId}/election/vote`,
+        { candidateUserId }
+      )
+    );
+  }
+
+  // ── Cities ───────────────────────────────────────────────────────────────────
 
   async getCities(): Promise<City[]> {
     try {

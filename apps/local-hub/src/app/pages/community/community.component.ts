@@ -15,6 +15,8 @@ import {
   CommunityService,
   LocalCommunity,
   CityPost,
+  CommunityManager,
+  CommunityElection,
 } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
@@ -75,8 +77,15 @@ export class CommunityComponent implements OnInit, OnDestroy {
     'banner'
   );
 
+  /** Elected manager for this locality (only set when community is a locality). */
+  communityManager = signal<CommunityManager | null>(null);
+  /** Active election for this locality, if any. */
+  activeElection = signal<CommunityElection | null>(null);
+  votingInProgress = signal(false);
+
   showBusinessModal = signal(false);
   showSponsorshipModal = signal(false);
+  showElectionModal = signal(false);
 
   businessName = '';
   businessDescription = '';
@@ -85,6 +94,15 @@ export class CommunityComponent implements OnInit, OnDestroy {
   businessEmail = '';
   businessAddress = '';
   sponsorshipAdContent = '';
+
+  /**
+   * True when this community is a root locality (city/town/neighborhood with
+   * no parent).  Localities are system-managed; sub-communities are user-created.
+   */
+  get isLocality(): boolean {
+    const c = this.community();
+    return !!c && !c.parentId;
+  }
 
   async ngOnInit(): Promise<void> {
     this.authState.isAuthenticated$
@@ -100,6 +118,61 @@ export class CommunityComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // ── Elections ────────────────────────────────────────────────────────────────
+
+  openElectionModal(): void {
+    if (!this.isAuthenticated()) {
+      this.promptSignIn('election');
+      return;
+    }
+    this.showElectionModal.set(true);
+  }
+
+  async selfNominate(): Promise<void> {
+    const community = this.community();
+    if (!community) return;
+    try {
+      await this.communityService.nominateForManager(community.id);
+      const election = await this.communityService.getActiveElection(
+        community.id
+      );
+      this.activeElection.set(election);
+      this.messageService.addMessage({
+        content: 'You have been nominated as a candidate!',
+        type: 'success',
+      });
+    } catch {
+      this.messageService.addMessage({
+        content: 'Nomination failed. Please try again.',
+        type: 'error',
+      });
+    }
+  }
+
+  async voteForCandidate(candidateUserId: string): Promise<void> {
+    const community = this.community();
+    if (!community) return;
+    this.votingInProgress.set(true);
+    try {
+      const updated = await this.communityService.voteForManager(
+        community.id,
+        candidateUserId
+      );
+      this.activeElection.set(updated);
+      this.messageService.addMessage({
+        content: 'Your vote has been recorded!',
+        type: 'success',
+      });
+    } catch {
+      this.messageService.addMessage({
+        content: 'Failed to cast vote. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      this.votingInProgress.set(false);
+    }
   }
 
   async loadCommunity(slug: string): Promise<void> {
@@ -129,6 +202,16 @@ export class CommunityComponent implements OnInit, OnDestroy {
           }
 
           await this.loadBusinessSupportData(data.id);
+        }
+
+        // Load manager & election info for localities (non-fatal)
+        if (!data.parentId) {
+          const [manager, election] = await Promise.all([
+            this.communityService.getCommunityManager(data.id),
+            this.communityService.getActiveElection(data.id),
+          ]);
+          this.communityManager.set(manager);
+          this.activeElection.set(election);
         }
       }
     } catch {

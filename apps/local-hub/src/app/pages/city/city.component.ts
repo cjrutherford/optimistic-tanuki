@@ -10,6 +10,8 @@ import {
   City,
   LocalCommunity,
   CityPost,
+  CommunityManager,
+  CommunityElection,
 } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
@@ -50,7 +52,8 @@ export class CityComponent implements OnInit, OnDestroy {
 
   city = signal<City | null>(null);
   communities = signal<LocalCommunity[]>([]);
-  communityTree = signal<CommunityTreeNode[]>([]);
+  /** Only the user-created sub-communities (interest groups, etc.) */
+  interestCommunities = signal<LocalCommunity[]>([]);
   posts = signal<CityPost[]>([]);
   businesses = signal<BusinessPage[]>([]);
   loading = signal(true);
@@ -59,15 +62,22 @@ export class CityComponent implements OnInit, OnDestroy {
   memberCommunityIds = signal<Set<string>>(new Set());
   expandingInProgress = signal<string | null>(null);
 
+  /** Currently elected manager for the root locality. */
+  communityManager = signal<CommunityManager | null>(null);
+  /** Active election for the root locality, if any. */
+  activeElection = signal<CommunityElection | null>(null);
+  votingInProgress = signal(false);
+
   showCreateCommunityModal = signal(false);
   showCreateBusinessModal = signal(false);
+  showElectionModal = signal(false);
   creatingCommunity = signal(false);
   creatingBusiness = signal(false);
 
   newCommunityName = '';
   newCommunityDescription = '';
-  newCommunityType: 'town' | 'neighborhood' | 'county' | 'region' =
-    'neighborhood';
+  /** Locality-type options users may choose when creating an interest community. */
+  newCommunityType: 'neighborhood' | 'county' | 'region' = 'neighborhood';
   selectedBusinessTier = signal<'basic' | 'pro' | 'enterprise'>('basic');
 
   async ngOnInit(): Promise<void> {
@@ -104,13 +114,30 @@ export class CityComponent implements OnInit, OnDestroy {
       );
       this.communities.set(communitiesData);
 
-      const tree = this.buildCommunityTree(communitiesData);
-      this.communityTree.set(tree);
+      // Separate the root locality from user-created interest communities
+      const rootLocality = communitiesData.find(
+        (c) => c.localityType === 'city' && !c.parentId
+      );
+      const interest = communitiesData.filter((c) => {
+        if (rootLocality && c.id === rootLocality.id) return false;
+        return true;
+      });
+      this.interestCommunities.set(interest);
 
       const postsData = await this.communityService.getPostsForCity(slug);
       this.posts.set(postsData);
 
-      // Load businesses for this city
+      // Load manager & election info for the root locality
+      if (rootLocality) {
+        const [manager, election] = await Promise.all([
+          this.communityService.getCommunityManager(rootLocality.id),
+          this.communityService.getActiveElection(rootLocality.id),
+        ]);
+        this.communityManager.set(manager);
+        this.activeElection.set(election);
+      }
+
+      // Load businesses for this city (non-fatal)
       try {
         const businessesData = await this.paymentService.getCityBusinesses(
           cityData.id
@@ -120,7 +147,6 @@ export class CityComponent implements OnInit, OnDestroy {
         // Non-fatal - businesses are optional
       }
 
-      // Use synchronous auth check to avoid API call when not logged in
       if (this.authState.isAuthenticated) {
         await this.loadMembershipStatus(communitiesData);
       }
@@ -157,8 +183,6 @@ export class CityComponent implements OnInit, OnDestroy {
     );
     if (!cityCommunity) return [];
 
-    // Sub-communities are those with parentId === city.id, or those sharing
-    // the same city name but not of type 'city' themselves (legacy support)
     const subCommunities = communities.filter((c) => {
       if (c.id === cityCommunity.id) return false;
       return c.parentId === cityCommunity.id || !c.parentId;
@@ -197,22 +221,6 @@ export class CityComponent implements OnInit, OnDestroy {
   toggleExpand(communityId: string): void {
     this.expandingInProgress.set(communityId);
     setTimeout(() => {
-      this.communityTree.update((tree) => {
-        const toggleNode = (
-          nodes: CommunityTreeNode[]
-        ): CommunityTreeNode[] => {
-          return nodes.map((node) => {
-            if (node.community.id === communityId) {
-              return { ...node, isExpanded: !node.isExpanded };
-            }
-            if (node.children.length > 0) {
-              return { ...node, children: toggleNode(node.children) };
-            }
-            return node;
-          });
-        };
-        return toggleNode(tree);
-      });
       this.expandingInProgress.set(null);
     }, 0);
   }
@@ -334,6 +342,69 @@ export class CityComponent implements OnInit, OnDestroy {
       });
     } finally {
       this.creatingBusiness.set(false);
+    }
+  }
+
+  // ── Elections ────────────────────────────────────────────────────────────────
+
+  openElectionModal(): void {
+    if (!this.isAuthenticated()) {
+      this.promptSignIn('election');
+      return;
+    }
+    this.showElectionModal.set(true);
+  }
+
+  async selfNominate(): Promise<void> {
+    const communities = this.communities();
+    const rootLocality = communities.find(
+      (c) => c.localityType === 'city' && !c.parentId
+    );
+    if (!rootLocality) return;
+
+    try {
+      await this.communityService.nominateForManager(rootLocality.id);
+      const election = await this.communityService.getActiveElection(
+        rootLocality.id
+      );
+      this.activeElection.set(election);
+      this.messageService.addMessage({
+        content: 'You have been nominated as a candidate!',
+        type: 'success',
+      });
+    } catch {
+      this.messageService.addMessage({
+        content: 'Nomination failed. Please try again.',
+        type: 'error',
+      });
+    }
+  }
+
+  async voteForCandidate(candidateUserId: string): Promise<void> {
+    const communities = this.communities();
+    const rootLocality = communities.find(
+      (c) => c.localityType === 'city' && !c.parentId
+    );
+    if (!rootLocality) return;
+
+    this.votingInProgress.set(true);
+    try {
+      const updatedElection = await this.communityService.voteForManager(
+        rootLocality.id,
+        candidateUserId
+      );
+      this.activeElection.set(updatedElection);
+      this.messageService.addMessage({
+        content: 'Your vote has been recorded!',
+        type: 'success',
+      });
+    } catch {
+      this.messageService.addMessage({
+        content: 'Failed to cast vote. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      this.votingInProgress.set(false);
     }
   }
 }
