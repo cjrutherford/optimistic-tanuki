@@ -1,15 +1,79 @@
 .account-page {
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.account-header {
+  position: relative;
+  padding: 48px 24px 56px;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.header-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.header-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--tertiary) 60%,
+    var(--secondary) 100%
+  );
+  opacity: 0.9;
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
   max-width: 700px;
-  margin: 48px auto;
-  padding: 0 16px;
+  margin: 0 auto;
+}
+
+.header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  color: white;
+  margin-bottom: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.header-title {
+  font-family: var(--font-heading, 'Playfair Display', serif);
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 800;
+  color: white;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+}
+
+.header-subtitle {
+  font-family: var(--font-body, 'DM Sans', sans-serif);
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* Inner content wrapper (all sections below the header) */
+.account-inner {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
   display: flex;
   flex-direction: column;
   gap: 40px;
-}
-
-.account-header h1 {
-  font-size: 2rem;
-  margin: 0;
 }
 
 .communities-section h2,
