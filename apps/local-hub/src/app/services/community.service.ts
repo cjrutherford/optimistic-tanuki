@@ -272,39 +272,46 @@ export class CommunityService {
 
   // ── Cities ───────────────────────────────────────────────────────────────────
 
+  /**
+   * Derive `City[]` from an already-fetched list of `LocalCommunity[]`.
+   * This is a pure, synchronous operation — use it when you already have the
+   * communities list to avoid a redundant HTTP call.
+   */
+  getCitiesFromCommunities(communities: LocalCommunity[]): City[] {
+    const citiesMap = new Map<string, City>();
+
+    for (const community of communities) {
+      if (community.localityType === 'city' && community.slug) {
+        const key = community.city || community.name;
+        if (!citiesMap.has(key)) {
+          citiesMap.set(key, {
+            id: community.id,
+            name: community.city || community.name,
+            slug: community.slug,
+            countryCode: community.countryCode || 'US',
+            adminArea: community.adminArea || '',
+            description: community.description || '',
+            imageUrl: community.imageUrl || '',
+            coordinates: {
+              lat: community.coordinates?.lat || community.lat || 0,
+              lng: community.coordinates?.lng || community.lng || 0,
+            },
+            population: community.population || 0,
+            timezone: 'America/New_York',
+            highlights: community.highlights || [],
+            communities: 1,
+          });
+        }
+      }
+    }
+
+    return Array.from(citiesMap.values());
+  }
+
   async getCities(): Promise<City[]> {
     try {
       const communities = await this.getCommunities();
-
-      const citiesMap = new Map<string, City>();
-
-      for (const community of communities) {
-        if (community.localityType === 'city' && community.slug) {
-          const key = community.city || community.name;
-          if (!citiesMap.has(key)) {
-            citiesMap.set(key, {
-              id: community.id,
-              name: community.city || community.name,
-              slug: community.slug,
-              countryCode: community.countryCode || 'US',
-              adminArea: community.adminArea || '',
-              description: community.description || '',
-              imageUrl: community.imageUrl || '',
-              coordinates: {
-                lat: community.coordinates?.lat || community.lat || 0,
-                lng: community.coordinates?.lng || community.lng || 0,
-              },
-              population: community.population || 0,
-              timezone: 'America/New_York',
-              highlights: community.highlights || [],
-              communities: 1,
-            });
-          }
-        }
-      }
-
-      const cities = Array.from(citiesMap.values());
-      return cities;
+      return this.getCitiesFromCommunities(communities);
     } catch (error) {
       console.error('Failed to fetch cities:', error);
       return [];
