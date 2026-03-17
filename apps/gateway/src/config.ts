@@ -22,7 +22,8 @@ export type TcpServiceConfig = {
     | 'store'
     | 'forum'
     | 'wellness'
-    | 'classifieds';
+    | 'classifieds'
+    | 'payments';
   transport: Transport;
   options: TcpClientOptions;
   host: string;
@@ -67,6 +68,7 @@ export type Config = {
     forum: TcpServiceConfig;
     wellness: TcpServiceConfig;
     classifieds: TcpServiceConfig;
+    payments: TcpServiceConfig;
   };
 };
 

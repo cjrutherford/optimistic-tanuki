@@ -204,6 +204,10 @@ services:
         condition: service_started
       wellness:
         condition: service_started
+      classifieds:
+        condition: service_started
+      payments:
+        condition: service_started
 
   profile:
     container_name: ot_profile
@@ -306,6 +310,36 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  payments:
+    container_name: ot_payments
+    build:
+      context: .
+      dockerfile: ./apps/payments/Dockerfile
+    volumes:
+      - ./dist/apps/payments:/usr/src/app
+      - ./apps/payments/src/assets:/usr/src/app/apps/payments/src/assets
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9208',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '3018:3018'
+      - '9208:9208'
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   assets:
     container_name: ot_assets
     build:

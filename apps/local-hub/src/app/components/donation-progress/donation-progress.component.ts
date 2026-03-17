@@ -5,8 +5,9 @@ import {
   signal,
   OnDestroy,
   Input,
+  PLATFORM_ID,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '@optimistic-tanuki/common-ui';
@@ -472,6 +473,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 export class DonationProgressComponent implements OnInit, OnDestroy {
   private paymentService = inject(PaymentService);
   private authState = inject(AuthStateService);
+  private platformId = inject(PLATFORM_ID);
 
   @Input() monthlyGoal = 5000;
   @Input() compact = false;
@@ -496,11 +498,14 @@ export class DonationProgressComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.goal.set(this.monthlyGoal);
-    this.loadDonationProgress();
 
-    this.refreshInterval = setInterval(() => {
+    if (isPlatformBrowser(this.platformId)) {
       this.loadDonationProgress();
-    }, 60000);
+
+      this.refreshInterval = setInterval(() => {
+        this.loadDonationProgress();
+      }, 60000);
+    }
   }
 
   ngOnDestroy(): void {

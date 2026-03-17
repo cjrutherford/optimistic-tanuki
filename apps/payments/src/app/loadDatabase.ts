@@ -5,6 +5,7 @@ import { ClassifiedPayment } from '../entities/classified-payment.entity';
 import { BusinessPage } from '../entities/business-page.entity';
 import { CommunitySponsorship } from '../entities/community-sponsorship.entity';
 import { Transaction } from '../entities/transaction.entity';
+import { Offer } from '../entities/offer.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -14,6 +15,7 @@ const loadDatabase = (config: ConfigService) => {
     BusinessPage,
     CommunitySponsorship,
     Transaction,
+    Offer,
   ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',

@@ -148,6 +148,10 @@ services:
         condition: service_started
       wellness:
         condition: service_started
+      classifieds:
+        condition: service_started
+      payments:
+        condition: service_started
 
   profile:
     container_name: ot_profile
@@ -407,6 +411,19 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  payments:
+    container_name: ot_payments
+    build:
+      context: .
+      dockerfile: ./apps/payments/Dockerfile
+    ports:
+      - '3018:3018'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   local-hub-client-interface:
     container_name: ot_local_hub
     build:
@@ -414,6 +431,9 @@ services:
       dockerfile: ./apps/local-hub/Dockerfile
     ports:
       - '8087:4000'
+    environment:
+      - GATEWAY_URL=http://gateway:3000
+      - GATEWAY_WS_URL=http://gateway:3300
     depends_on:
       - gateway
 

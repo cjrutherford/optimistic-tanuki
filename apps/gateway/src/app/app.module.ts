@@ -50,6 +50,7 @@ import { PollController } from '../controllers/social/poll/poll.controller';
 import { PostShareController } from '../controllers/social/post-share/post-share.controller';
 import { SocialEventController } from '../controllers/social/social-event/social-event.controller';
 import { PaymentsController } from '../controllers/payments/payments.controller';
+import { DonationsController } from '../controllers/donations/donations.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -110,6 +111,7 @@ import { PaymentsController } from '../controllers/payments/payments.controller'
     PostShareController,
     SocialEventController,
     PaymentsController,
+    DonationsController,
   ],
   providers: [
     {

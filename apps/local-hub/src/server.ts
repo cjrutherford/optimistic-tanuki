@@ -24,6 +24,7 @@ app.use(
     changeOrigin: true,
   })
 );
+
 app.use(
   '/chat',
   createProxyMiddleware({
@@ -32,13 +33,27 @@ app.use(
     changeOrigin: true,
   })
 );
-app.use(
-  '/api',
-  createProxyMiddleware({
-    target: `${gatewayUrl}/api`,
-    changeOrigin: true,
-  })
-);
+
+app.use('/api', async (req, res) => {
+  const url = `${gatewayUrl}${req.originalUrl}`;
+  try {
+    const response = await fetch(url, {
+      method: req.method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.text();
+    res.status(response.status);
+    res.setHeader(
+      'content-type',
+      response.headers.get('content-type') || 'application/json'
+    );
+    res.send(data);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Proxy error', message: err.message });
+  }
+});
 
 /**
  * Serve static files from /browser
