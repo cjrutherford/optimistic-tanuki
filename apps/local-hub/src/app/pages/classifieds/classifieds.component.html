@@ -19,41 +19,41 @@
   </header>
 
   <div class="inner-content">
-  @if (error()) {
-    <div class="error-banner" role="alert">{{ error() }}</div>
-  }
-
-  @if (showPostForm()) {
-    <div class="post-form-wrapper">
-      <lib-classified-form
-        [communityId]="community()?.id ?? ''"
-        [uploadImage]="uploadImage"
-        (submitForm)="onFormSubmit($event)"
-        (cancel)="showPostForm.set(false)"
-      ></lib-classified-form>
-    </div>
-  } @else {
-    <lib-classified-list
-      [ads]="classifieds()"
-      [loading]="loading()"
-      [showPostButton]="isAuthenticated() && isMember()"
-      [showContact]="isAuthenticated() && isMember()"
-      (postNew)="onPostNew()"
-      (viewAd)="onViewAd($event)"
-      (contactSeller)="onContactSeller($event)"
-    ></lib-classified-list>
-
-    @if (!isAuthenticated()) {
-      <div class="auth-prompt">
-        <p>
-          <a href="/login">Sign in</a> to post classified ads and contact sellers.
-        </p>
-      </div>
-    } @else if (!isMember()) {
-      <div class="auth-prompt">
-        <p>Join this community to post ads and contact sellers.</p>
-      </div>
+    @if (error()) {
+      <div class="error-banner" role="alert">{{ error() }}</div>
     }
-  }
+
+    @if (showPostForm()) {
+      <div class="post-form-wrapper">
+        <lib-classified-form
+          [communityId]="community()?.id ?? ''"
+          [uploadImage]="uploadImage"
+          (submitForm)="onFormSubmit($event)"
+          (cancel)="showPostForm.set(false)"
+        ></lib-classified-form>
+      </div>
+    } @else {
+      <lib-classified-list
+        [ads]="classifieds()"
+        [loading]="loading()"
+        [showPostButton]="isAuthenticated() && isMember()"
+        [showContact]="isAuthenticated() && isMember()"
+        (postNew)="onPostNew()"
+        (viewAd)="onViewAd($event)"
+        (contactSeller)="onContactSeller($event)"
+      ></lib-classified-list>
+
+      @if (!isAuthenticated()) {
+        <div class="auth-prompt">
+          <p>
+            <a href="/login">Sign in</a> to post classified ads and contact sellers.
+          </p>
+        </div>
+      } @else if (!isMember()) {
+        <div class="auth-prompt">
+          <p>Join this community to post ads and contact sellers.</p>
+        </div>
+      }
+    }
   </div>
 </div>
