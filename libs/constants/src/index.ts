@@ -94,3 +94,10 @@ export { WellnessCommands } from './lib/libs/wellness';
 export { WellnessAiCommands } from './lib/libs/ai-orchestration';
 
 export { ClassifiedCommands } from './lib/libs/classifieds';
+
+export {
+  PLATFORM_FEE_PERCENTAGE,
+  LEMON_SQUEEZY_FEE_PERCENTAGE,
+  LEMON_SQUEEZY_FLAT_FEE,
+  TOTAL_FEE_PERCENTAGE,
+} from './lib/libs/payment-fees';
