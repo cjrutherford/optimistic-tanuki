@@ -123,11 +123,20 @@ export class SearchPostDto {
   communityIds?: string[];
 
   @ApiPropertyOptional({
-    description: "the profile id of the posts author",
+    description: 'the profile id of the posts author',
   })
   @IsOptional()
   @IsUUID()
   profileId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'App scope to filter posts (e.g., "local-hub", "client-interface")',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  appScope?: string;
 }
 
 export class SearchPostOptions {

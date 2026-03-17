@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Donation } from '../../entities/donation.entity';
@@ -11,11 +11,7 @@ import {
   CommunitySponsorship,
   SponsorshipType,
 } from '../../entities/community-sponsorship.entity';
-import {
-  Transaction,
-  TransactionType,
-  TransactionDirection,
-} from '../../entities/transaction.entity';
+import { Transaction } from '../../entities/transaction.entity';
 import { ConfigService } from '@nestjs/config';
 import { calculateNetAmount } from '../utils/platform-fee.util';
 
@@ -36,6 +32,7 @@ export class PaymentService {
     private readonly sponsorshipRepository: Repository<CommunitySponsorship>,
     @InjectRepository(Transaction)
     private readonly transactionRepository: Repository<Transaction>,
+    @Inject(ConfigService)
     private readonly configService: ConfigService
   ) {
     this.lemonSqueezyApiKey =

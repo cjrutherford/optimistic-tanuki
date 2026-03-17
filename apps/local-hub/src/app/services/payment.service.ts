@@ -174,7 +174,7 @@ export class PaymentService {
     this.begin();
     try {
       const result = await firstValueFrom(
-        this.http.get<DonationGoal>(`${this.baseUrl}/donations/goal${query}`)
+        this.http.get<DonationGoal>(`${this.apiBaseUrl}/donations/goal${query}`)
       );
       this.end();
       return result;
@@ -195,7 +195,7 @@ export class PaymentService {
     this.begin();
     try {
       const result = await firstValueFrom(
-        this.http.get<Donation[]>(`${this.baseUrl}/donations${query}`)
+        this.http.get<Donation[]>(`${this.apiBaseUrl}/donations${query}`)
       );
       this.end();
       return result;
@@ -484,9 +484,7 @@ export class PaymentService {
     this.begin();
     try {
       const result = await firstValueFrom(
-        this.http.get<BusinessPage[]>(
-          `${this.baseUrl}/business/city/${cityId}`
-        )
+        this.http.get<BusinessPage[]>(`${this.baseUrl}/business/city/${cityId}`)
       );
       this.end();
       return result;
@@ -583,10 +581,7 @@ export class PaymentService {
     this.begin();
     try {
       const result = await firstValueFrom(
-        this.http.patch<Offer>(
-          `${this.baseUrl}/offers/${offerId}/reject`,
-          {}
-        )
+        this.http.patch<Offer>(`${this.baseUrl}/offers/${offerId}/reject`, {})
       );
       this.end();
       return result;
@@ -619,10 +614,7 @@ export class PaymentService {
     this.begin();
     try {
       const result = await firstValueFrom(
-        this.http.patch<Offer>(
-          `${this.baseUrl}/offers/${offerId}/withdraw`,
-          {}
-        )
+        this.http.patch<Offer>(`${this.baseUrl}/offers/${offerId}/withdraw`, {})
       );
       this.end();
       return result;
