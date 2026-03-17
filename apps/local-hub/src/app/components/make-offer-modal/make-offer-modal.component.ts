@@ -10,6 +10,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaymentService, Offer } from '../../services/payment.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import {
+  PLATFORM_FEE_PERCENTAGE,
+  LEMON_SQUEEZY_FEE_PERCENTAGE,
+  LEMON_SQUEEZY_FLAT_FEE,
+} from '@optimistic-tanuki/payment-fees';
 
 @Component({
   selector: 'app-make-offer-modal',
@@ -48,8 +53,8 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
               />
             </div>
             <p class="fee-notice" *ngIf="offerAmount && offerAmount > 0">
-              Seller receives: \${{ getSellerReceives() | number : '1.2-2' }}
-              (5% platform fee deducted)
+              Platform fee (10% + $0.50): <strong>\${{ getTotalFee() | number : '1.2-2' }}</strong><br />
+              Seller receives: <strong>\${{ getSellerReceives() | number : '1.2-2' }}</strong>
             </p>
           </div>
 
@@ -266,12 +271,16 @@ export class MakeOfferModalComponent {
   loading = signal(false);
   error = signal<string | null>(null);
 
-  PLATFORM_FEE_PERCENTAGE = 0.05;
+  getTotalFee(): number {
+    if (!this.offerAmount) return 0;
+    const percentageFee =
+      this.offerAmount * (PLATFORM_FEE_PERCENTAGE + LEMON_SQUEEZY_FEE_PERCENTAGE);
+    return Math.round((percentageFee + LEMON_SQUEEZY_FLAT_FEE) * 100) / 100;
+  }
 
   getSellerReceives(): number {
     if (!this.offerAmount) return 0;
-    const fee = this.offerAmount * this.PLATFORM_FEE_PERCENTAGE;
-    return this.offerAmount - fee;
+    return Math.round((this.offerAmount - this.getTotalFee()) * 100) / 100;
   }
 
   onClose(): void {
