@@ -6,6 +6,7 @@ import {
   Post,
   Body,
   UseGuards,
+  OnModuleDestroy,
 } from '@nestjs/common';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -14,7 +15,7 @@ import { TcpServiceConfig } from '../../config';
 import { Public } from '../../decorators/public.decorator';
 
 @Controller('donations')
-export class DonationsController {
+export class DonationsController implements OnModuleDestroy {
   private readonly paymentsClient: ReturnType<typeof ClientProxyFactory.create>;
 
   private resolveMonthYear(month?: string, year?: string) {
@@ -44,6 +45,10 @@ export class DonationsController {
         port: serviceConfig.port,
       },
     });
+  }
+
+  onModuleDestroy(): void {
+    this.paymentsClient.close();
   }
 
   @Get('goal')

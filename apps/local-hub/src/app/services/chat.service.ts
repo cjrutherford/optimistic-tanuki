@@ -1,6 +1,5 @@
 import { Injectable, inject, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { Subject } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import type { Socket } from 'socket.io-client';
 
@@ -32,7 +31,6 @@ export interface ChatMessage {
 export class ChatService implements OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
   private socket: Socket | null = null;
-  private readonly destroy$ = new Subject<void>();
 
   /** Lazily connect (browser only) and return the socket instance. */
   private async getSocket(): Promise<Socket> {
@@ -172,8 +170,6 @@ export class ChatService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
