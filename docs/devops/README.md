@@ -102,13 +102,13 @@ Deployment and management scripts are located in the `scripts/` directory:
 
 ### Validation Scripts
 
-| Script                              | Description                                        |
-| ----------------------------------- | -------------------------------------------------- |
-| `validate-compose-k8s-parity.sh`    | Validate Docker Compose ↔ K8s parity               |
-| `validate-debug-config.sh`          | Validate debug configuration                       |
-| `validate-workflows.sh`             | Validate GitHub Actions workflow syntax/structure  |
-| `validate-workflow-references.sh`   | Validate files referenced by workflow definitions  |
-| `preflight-github-actions.sh`       | Run full pre-push workflow validation (both above) |
+| Script                            | Description                                        |
+| --------------------------------- | -------------------------------------------------- |
+| `validate-compose-k8s-parity.sh`  | Validate Docker Compose ↔ K8s parity               |
+| `validate-debug-config.sh`        | Validate debug configuration                       |
+| `validate-workflows.sh`           | Validate GitHub Actions workflow syntax/structure  |
+| `validate-workflow-references.sh` | Validate files referenced by workflow definitions  |
+| `preflight-github-actions.sh`     | Run full pre-push workflow validation (both above) |
 
 ### Usage
 

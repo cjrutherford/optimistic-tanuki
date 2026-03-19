@@ -96,6 +96,7 @@ jobs:
             coverage/
             dist/
             test-results/
+            !dist/**/*:Zone.Identifier
           retention-days: 7
 
   # Summary job

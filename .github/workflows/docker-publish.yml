@@ -122,4 +122,3 @@ jobs:
           push: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.push_images == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-

@@ -70,13 +70,13 @@ Runs a specific GitHub Actions workflow locally using [`act`](https://github.com
 
 Options:
 
-| Flag | Description |
-|------|-------------|
-| `--job <name>` | Run only a specific job within the workflow |
-| `--event <type>` | GitHub event to simulate (default: `push`) |
-| `--dry-run` | List what `act` would do without executing |
-| `--list` | Show all workflows with their tier classification |
-| `--help` | Show usage help |
+| Flag             | Description                                       |
+| ---------------- | ------------------------------------------------- |
+| `--job <name>`   | Run only a specific job within the workflow       |
+| `--event <type>` | GitHub event to simulate (default: `push`)        |
+| `--dry-run`      | List what `act` would do without executing        |
+| `--list`         | Show all workflows with their tier classification |
+| `--help`         | Show usage help                                   |
 
 Each workflow is classified into one of three tiers — see
 [Workflow Matrix](workflow-matrix.md) for the full classification table.
@@ -91,25 +91,25 @@ Orchestrates the full local validation flow. Run this before pushing workflow ch
 
 Options:
 
-| Flag | Description |
-|------|-------------|
-| `--skip-references` | Skip the file-reference validation step |
+| Flag                   | Description                                     |
+| ---------------------- | ----------------------------------------------- |
+| `--skip-references`    | Skip the file-reference validation step         |
 | `--act <workflow.yml>` | Run a specific workflow with `act` (repeatable) |
-| `--help` | Show usage help |
+| `--help`               | Show usage help                                 |
 
 ---
 
 ## npm Scripts
 
-| Command | What it runs |
-|---------|-------------|
-| `npm run ci:validate:workflows` | `scripts/validate-workflows.sh` |
-| `npm run ci:validate:references` | `scripts/validate-workflow-references.sh` |
-| `npm run ci:validate:act` | Shows workflow tier classification list |
-| `npm run ci:act:lint` | Runs `lint.yml` via `act` |
-| `npm run ci:act:build` | Runs `build.yml` via `act` |
-| `npm run ci:act:unit-tests` | Runs `unit-tests.yml` via `act` |
-| `npm run ci:prepush` | `scripts/preflight-github-actions.sh` (syntax + references) |
+| Command                          | What it runs                                                |
+| -------------------------------- | ----------------------------------------------------------- |
+| `npm run ci:validate:workflows`  | `scripts/validate-workflows.sh`                             |
+| `npm run ci:validate:references` | `scripts/validate-workflow-references.sh`                   |
+| `npm run ci:validate:act`        | Shows workflow tier classification list                     |
+| `npm run ci:act:lint`            | Runs `lint.yml` via `act`                                   |
+| `npm run ci:act:build`           | Runs `build.yml` via `act`                                  |
+| `npm run ci:act:unit-tests`      | Runs `unit-tests.yml` via `act`                             |
+| `npm run ci:prepush`             | `scripts/preflight-github-actions.sh` (syntax + references) |
 
 ---
 
@@ -224,16 +224,16 @@ The following improvements were made to the workflow files as part of Phase 3:
 All workflow files use the correct, current latest major versions of GitHub Actions
 (as of early 2026). These are the latest stable releases — do not downgrade them:
 
-| Action | Version used | Notes |
-|---|---|---|
-| `actions/checkout` | `@v6` | v6.0.2 released January 2026 |
-| `actions/setup-node` | `@v6` | v6.3.0 released March 2026 |
-| `actions/upload-artifact` | `@v7` | v7 adds direct file uploads without zipping |
-| `actions/download-artifact` | `@v7` | Matches upload-artifact version |
-| `docker/metadata-action` | `@v6` | v6 is the current stable release |
-| `docker/build-push-action` | `@v7` | v7 is the current stable release |
-| `actions/github-script` | `@v8` | v8.0.0 released September 2025 |
-| `actions/setup-python` | `@v6.2.0` | v6.2.0 released January 2026 |
+| Action                      | Version used | Notes                                       |
+| --------------------------- | ------------ | ------------------------------------------- |
+| `actions/checkout`          | `@v6`        | v6.0.2 released January 2026                |
+| `actions/setup-node`        | `@v6`        | v6.3.0 released March 2026                  |
+| `actions/upload-artifact`   | `@v7`        | v7 adds direct file uploads without zipping |
+| `actions/download-artifact` | `@v7`        | Matches upload-artifact version             |
+| `docker/metadata-action`    | `@v6`        | v6 is the current stable release            |
+| `docker/build-push-action`  | `@v7`        | v7 is the current stable release            |
+| `actions/github-script`     | `@v8`        | v8.0.0 released September 2025              |
+| `actions/setup-python`      | `@v6.2.0`    | v6.2.0 released January 2026                |
 
 ### docker-publish.yml trigger restriction
 
@@ -293,15 +293,15 @@ For changes unrelated to workflows (application code, configuration, docs), runn
 Local validation covers static analysis only. The following aspects **require a remote
 GitHub run** and cannot be validated locally:
 
-| Limitation | Notes |
-|---|---|
+| Limitation                        | Notes                                                                     |
+| --------------------------------- | ------------------------------------------------------------------------- |
 | Secrets and environment variables | `DOCKERHUB_TOKEN`, cloud credentials, OIDC tokens — not available locally |
-| GitHub-hosted runner behaviour | Exact OS, pre-installed tools, runner networking |
-| Artifact upload/download | `actions/upload-artifact`, `actions/download-artifact` semantics |
-| Deployment targets | Kubernetes cluster, Docker registry push, staging/production environments |
-| `$GITHUB_STEP_SUMMARY` writes | Job summaries only render on GitHub |
-| PR comments from workflows | `actions/github-script` PR comment steps require a real PR context |
-| Workflow interaction events | `workflow_run`, `workflow_call` triggered by other workflows |
+| GitHub-hosted runner behaviour    | Exact OS, pre-installed tools, runner networking                          |
+| Artifact upload/download          | `actions/upload-artifact`, `actions/download-artifact` semantics          |
+| Deployment targets                | Kubernetes cluster, Docker registry push, staging/production environments |
+| `$GITHUB_STEP_SUMMARY` writes     | Job summaries only render on GitHub                                       |
+| PR comments from workflows        | `actions/github-script` PR comment steps require a real PR context        |
+| Workflow interaction events       | `workflow_run`, `workflow_call` triggered by other workflows              |
 
 See [Workflow Matrix](workflow-matrix.md) for per-workflow local vs remote details.
 
@@ -316,4 +316,3 @@ workflow descriptions.
 - [CI/CD Pipeline Architecture](../architecture/cicd-pipeline.md)
 - [DevOps README](README.md)
 - [Docker Compose Guide](docker-compose.md)
-
