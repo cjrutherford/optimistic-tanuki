@@ -53,6 +53,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 TOTAL_STEPS=2
+[ "$SKIP_REFERENCES" = true ] && TOTAL_STEPS=$((TOTAL_STEPS - 1))
 [ ${#ACT_WORKFLOWS[@]} -gt 0 ] && TOTAL_STEPS=$((TOTAL_STEPS + 1))
 
 echo "========================================="
@@ -84,8 +85,8 @@ echo ""
 # -----------------------------------------------------------------------
 # Step 2: Workflow reference validation
 # -----------------------------------------------------------------------
-CURRENT_STEP=$((CURRENT_STEP + 1))
 if [ "$SKIP_REFERENCES" = false ]; then
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     echo ">>> Step $CURRENT_STEP/$TOTAL_STEPS: Validating workflow file references"
     echo ""
 
@@ -98,7 +99,7 @@ if [ "$SKIP_REFERENCES" = false ]; then
         OVERALL_ERRORS=$((OVERALL_ERRORS + 1))
     fi
 else
-    echo ">>> Step $CURRENT_STEP/$TOTAL_STEPS: Skipping reference validation (--skip-references)"
+    echo "ℹ️  Skipping reference validation (--skip-references)"
 fi
 
 echo ""

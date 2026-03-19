@@ -219,20 +219,21 @@ For Tier 1 workflows (`lint.yml`, `unit-tests.yml`, `yci.yml`) no secrets are re
 
 The following improvements were made to the workflow files as part of Phase 3:
 
-### Action version fixes
+### Action versions
 
-All workflow files have been updated to use the correct, current major versions of
-GitHub Actions:
+All workflow files use the correct, current latest major versions of GitHub Actions
+(as of early 2026). These are the latest stable releases — do not downgrade them:
 
-| Old version | Correct version |
-|---|---|
-| `actions/checkout@v6` | `actions/checkout@v4` |
-| `actions/setup-node@v6` | `actions/setup-node@v4` |
-| `actions/upload-artifact@v7` | `actions/upload-artifact@v4` |
-| `docker/metadata-action@v6` | `docker/metadata-action@v5` |
-| `docker/build-push-action@v7` | `docker/build-push-action@v6` |
-| `actions/github-script@v8` | `actions/github-script@v7` |
-| `actions/setup-python@v6.2.0` | `actions/setup-python@v5` |
+| Action | Version used | Notes |
+|---|---|---|
+| `actions/checkout` | `@v6` | v6.0.2 released January 2026 |
+| `actions/setup-node` | `@v6` | v6.3.0 released March 2026 |
+| `actions/upload-artifact` | `@v7` | v7 adds direct file uploads without zipping |
+| `actions/download-artifact` | `@v7` | Matches upload-artifact version |
+| `docker/metadata-action` | `@v6` | v6 is the current stable release |
+| `docker/build-push-action` | `@v7` | v7 is the current stable release |
+| `actions/github-script` | `@v8` | v8.0.0 released September 2025 |
+| `actions/setup-python` | `@v6.2.0` | v6.2.0 released January 2026 |
 
 ### docker-publish.yml trigger restriction
 
