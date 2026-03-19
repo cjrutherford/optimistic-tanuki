@@ -7,11 +7,12 @@ import {
   LocalCommunity,
 } from '../../services/community.service';
 import { MapComponent } from '../../components/map/map.component';
+import { CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'app-cities',
   standalone: true,
-  imports: [CommonModule, RouterLink, MapComponent],
+  imports: [CommonModule, RouterLink, MapComponent, CardComponent],
   templateUrl: './cities.component.html',
   styleUrls: ['./cities.component.scss'],
 })

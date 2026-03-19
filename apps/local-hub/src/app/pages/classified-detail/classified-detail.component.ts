@@ -76,7 +76,7 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((auth) => this.isAuthenticated.set(auth));
 
-    const slug = this.route.snapshot.paramMap.get('slug') ?? '';
+    const slug = this.route.snapshot.paramMap.get('communitySlug') ?? '';
     const id = this.route.snapshot.paramMap.get('id') ?? '';
     this.loadData(slug, id);
   }
@@ -233,9 +233,8 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
       let messages = await this.chatService.getMessages(conversation.id);
 
       if (messages.length === 0) {
-        const listingUrl = `${window.location.origin}/c/${
-          this.community()?.slug
-        }/classifieds/${ad.id}`;
+        const listingUrl = `${window.location.origin}/c/${this.community()?.slug
+          }/classifieds/${ad.id}`;
         const initialMessage = `Classified Ad: "${ad.title}"\nPrice: $${ad.price}\n${listingUrl}\n\nHi! I'm interested in this listing.`;
 
         await this.chatService.sendMessage({

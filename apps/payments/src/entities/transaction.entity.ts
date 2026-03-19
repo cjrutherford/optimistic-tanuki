@@ -11,7 +11,8 @@ export type TransactionType =
   | 'classified_payment'
   | 'business_subscription'
   | 'sponsorship'
-  | 'refund';
+  | 'refund'
+  | 'payout';
 export type TransactionDirection = 'incoming' | 'outgoing';
 
 @Entity('transactions')

@@ -132,6 +132,13 @@ export class CommunityDto {
   @IsNumber()
   population?: number | null;
 
+  /** Locality highlights: human-readable strings, may contain URLs. */
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  highlights?: string[] | null;
+
   @ApiProperty()
   @IsDateString()
   createdAt!: Date;
@@ -225,10 +232,19 @@ export class CreateCommunityDto {
   @IsNumber()
   population?: number;
 
-  @ApiPropertyOptional({ description: 'Parent community ID for sub-communities' })
+  @ApiPropertyOptional({
+    description: 'Parent community ID for sub-communities',
+  })
   @IsOptional()
   @IsUUID()
   parentId?: string | null;
+
+  /** Locality highlights: human-readable strings, may contain URLs. */
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  highlights?: string[];
 }
 
 export class UpdateCommunityDto {
@@ -420,4 +436,115 @@ export class CommunityFeedOptions {
   @IsOptional()
   @IsNumber()
   offset?: number;
+}
+
+export enum ElectionStatus {
+  PENDING = 'pending',
+  OPEN = 'open',
+  CLOSED = 'closed',
+  CANCELLED = 'cancelled',
+}
+
+export class ElectionCandidateDto {
+  @ApiProperty()
+  @IsUUID()
+  id!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  electionId!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  userId!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  profileId!: string;
+
+  @ApiProperty()
+  @IsNumber()
+  voteCount!: number;
+
+  @ApiProperty()
+  @IsBoolean()
+  isWithdrawn!: boolean;
+
+  @ApiProperty()
+  @IsDateString()
+  nominatedAt!: Date;
+}
+
+export class CommunityElectionDto {
+  @ApiProperty()
+  @IsUUID()
+  id!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  communityId!: string;
+
+  @ApiProperty({ enum: ElectionStatus })
+  @IsEnum(ElectionStatus)
+  status!: ElectionStatus;
+
+  @ApiProperty()
+  @IsDateString()
+  startedAt!: Date;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  endsAt?: Date | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  winnerId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  winnerProfileId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  initiatedBy?: string;
+
+  @ApiPropertyOptional({ type: [ElectionCandidateDto] })
+  @IsOptional()
+  @IsArray()
+  candidates?: ElectionCandidateDto[];
+}
+
+export class StartElectionDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  endsAt?: Date;
+}
+
+export class NominateDto {}
+
+export class VoteDto {
+  @ApiProperty()
+  @IsUUID()
+  candidateId!: string;
+}
+
+export class CloseElectionDto {
+  @ApiProperty()
+  @IsUUID()
+  electionId!: string;
+}
+
+export class AppointManagerDto {
+  @ApiProperty()
+  @IsUUID()
+  userId!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  profileId!: string;
 }

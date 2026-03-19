@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -21,6 +22,8 @@ import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { PermissionsGuard } from '../../guards/permissions.guard';
 
 @ApiTags('communities')
 @ApiBearerAuth()
@@ -53,10 +56,7 @@ export class CommunitiesController {
   @ApiResponse({ status: 200, description: 'Community.' })
   findCommunity(@Param('slug') slug: string) {
     return firstValueFrom(
-      this.socialClient.send(
-        { cmd: CommunityCommands.FIND_BY_SLUG },
-        { slug }
-      )
+      this.socialClient.send({ cmd: CommunityCommands.FIND_BY_SLUG }, { slug })
     );
   }
 
@@ -71,6 +71,32 @@ export class CommunitiesController {
         { parentId: id }
       )
     );
+  }
+
+  @Public()
+  @Get(':id/manager')
+  @ApiOperation({ summary: 'Get elected manager for a community' })
+  @ApiResponse({ status: 200, description: 'Community manager or null.' })
+  getCommunityManager(@Param('id') id: string) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.GET_MANAGER },
+        { communityId: id }
+      )
+    ).catch(() => null);
+  }
+
+  @Public()
+  @Get(':id/election')
+  @ApiOperation({ summary: 'Get active election for a community' })
+  @ApiResponse({ status: 200, description: 'Active election or null.' })
+  getCommunityElection(@Param('id') id: string) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.GET_ELECTION },
+        { communityId: id }
+      )
+    ).catch(() => null);
   }
 
   @Post(':id/join')
@@ -109,6 +135,105 @@ export class CommunitiesController {
       this.socialClient.send(
         { cmd: 'IS_COMMUNITY_MEMBER' },
         { communityId: id, userId: user.userId }
+      )
+    );
+  }
+
+  @Post(':id/election')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
+  @ApiOperation({ summary: 'Start an election for community manager' })
+  @ApiResponse({ status: 201, description: 'Election started.' })
+  startElection(
+    @Param('id') id: string,
+    @Body() body: { endsAt?: Date },
+    @User() user: UserDetails
+  ) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.START_ELECTION },
+        { communityId: id, initiatedBy: user.userId, endsAt: body.endsAt }
+      )
+    );
+  }
+
+  @Post(':id/election/nominate')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Nominate self for community manager' })
+  @ApiResponse({ status: 201, description: 'Nominated as candidate.' })
+  nominateForElection(@Param('id') id: string, @User() user: UserDetails) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.NOMINATE },
+        { communityId: id, userId: user.userId, profileId: user.profileId }
+      )
+    );
+  }
+
+  @Post(':id/election/vote')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Vote for a candidate' })
+  @ApiResponse({ status: 201, description: 'Vote recorded.' })
+  voteInElection(
+    @Param('id') id: string,
+    @Body() body: { candidateId: string },
+    @User() user: UserDetails
+  ) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.VOTE },
+        {
+          communityId: id,
+          voterId: user.userId,
+          voterProfileId: user.profileId,
+          candidateId: body.candidateId,
+        }
+      )
+    );
+  }
+
+  @Post(':id/election/close')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
+  @ApiOperation({ summary: 'Close the election and declare winner' })
+  @ApiResponse({ status: 200, description: 'Election closed.' })
+  closeElection(@Param('id') id: string, @Body() body: { electionId: string }) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.CLOSE_ELECTION },
+        { electionId: body.electionId }
+      )
+    );
+  }
+
+  @Post(':id/manager')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
+  @ApiOperation({ summary: 'Appoint a community manager' })
+  @ApiResponse({ status: 201, description: 'Manager appointed.' })
+  appointManager(
+    @Param('id') id: string,
+    @Body() body: { userId: string; profileId: string },
+    @User() user: UserDetails
+  ) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.APPOINT_MANAGER },
+        { communityId: id, userId: body.userId, profileId: body.profileId }
+      )
+    );
+  }
+
+  @Delete(':id/manager')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
+  @ApiOperation({ summary: 'Revoke community manager' })
+  @ApiResponse({ status: 200, description: 'Manager revoked.' })
+  revokeManager(@Param('id') id: string) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.REVOKE_MANAGER },
+        { communityId: id }
       )
     );
   }

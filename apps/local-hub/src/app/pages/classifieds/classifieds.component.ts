@@ -67,7 +67,7 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
         this.isAuthenticated.set(auth);
       });
 
-    const slug = this.route.snapshot.paramMap.get('slug') ?? '';
+    const slug = this.route.snapshot.paramMap.get('communitySlug') ?? '';
     const openForm = this.route.snapshot.data?.['openForm'] === true;
     this.loadData(slug).then(() => {
       if (openForm && this.isAuthenticated() && this.isMember()) {

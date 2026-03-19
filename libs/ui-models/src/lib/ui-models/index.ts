@@ -64,9 +64,16 @@ export {
   type CommunityInviteDto,
   type CommunityFeedOptions,
   type CommunityTag,
+  type CommunityElectionDto,
+  type ElectionCandidateDto,
+  type StartElectionDto,
+  type ElectionVoteDto,
+  type CloseElectionDto,
+  type AppointManagerDto,
   CommunityMembershipStatus,
   CommunityMemberRole,
   CommunityJoinPolicy,
+  ElectionStatus,
 } from './community';
 export { API_BASE_URL } from './api-config.tokens';
 export { type PersonaTelosDto } from './telos';

@@ -17,8 +17,13 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { MapComponent } from '../../components/map/map.component';
 import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
-import { ModalComponent } from '@optimistic-tanuki/common-ui';
+import { CardComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import { PaymentService, BusinessPage } from '../../services/payment.service';
+import {
+  ClassifiedListComponent,
+  ClassifiedService,
+  ClassifiedAdDto,
+} from '@optimistic-tanuki/classified-ui';
 
 interface CommunityTreeNode {
   community: LocalCommunity;
@@ -34,7 +39,9 @@ interface CommunityTreeNode {
     MapComponent,
     DonationProgressComponent,
     FormsModule,
+    CardComponent,
     ModalComponent,
+    ClassifiedListComponent,
   ],
   templateUrl: './city.component.html',
   styleUrls: ['./city.component.scss'],
@@ -49,6 +56,7 @@ export class CityComponent implements OnInit, OnDestroy {
   private meta = inject(Meta);
   private title = inject(Title);
   private destroy$ = new Subject<void>();
+  private classifiedService = inject(ClassifiedService);
 
   city = signal<City | null>(null);
   communities = signal<LocalCommunity[]>([]);
@@ -56,6 +64,8 @@ export class CityComponent implements OnInit, OnDestroy {
   interestCommunities = signal<LocalCommunity[]>([]);
   posts = signal<CityPost[]>([]);
   businesses = signal<BusinessPage[]>([]);
+  classifieds = signal<ClassifiedAdDto[]>([]);
+  classifiedsLoading = signal(false);
   loading = signal(true);
   error = signal<string | null>(null);
   isAuthenticated = signal(false);
@@ -127,24 +137,46 @@ export class CityComponent implements OnInit, OnDestroy {
       const postsData = await this.communityService.getPostsForCity(slug);
       this.posts.set(postsData);
 
-      // Load manager & election info for the root locality
+      // Load manager & election info for the root locality (non-fatal)
       if (rootLocality) {
-        const [manager, election] = await Promise.all([
-          this.communityService.getCommunityManager(rootLocality.id),
-          this.communityService.getActiveElection(rootLocality.id),
-        ]);
-        this.communityManager.set(manager);
-        this.activeElection.set(election);
+        try {
+          const [manager, election] = await Promise.all([
+            this.communityService.getCommunityManager(rootLocality.id),
+            this.communityService.getActiveElection(rootLocality.id),
+          ]);
+          this.communityManager.set(manager);
+          this.activeElection.set(election);
+        } catch {
+          // Non-fatal - manager/election info is optional
+        }
       }
 
       // Load businesses for this city (non-fatal)
       try {
+        const allCommunityIds = communitiesData.map((c) => c.id);
         const businessesData = await this.paymentService.getCityBusinesses(
-          cityData.id
+          cityData.id,
+          allCommunityIds
         );
         this.businesses.set(businessesData);
       } catch {
         // Non-fatal - businesses are optional
+      }
+
+      // Load classifieds for the root community (non-fatal)
+      if (rootLocality) {
+        this.classifiedsLoading.set(true);
+        try {
+          const classifiedsData = await this.classifiedService.findByCommunity(
+            rootLocality.id,
+            { pageSize: 12 }
+          );
+          this.classifieds.set(classifiedsData.data ?? []);
+        } catch {
+          // Non-fatal - classifieds are optional
+        } finally {
+          this.classifiedsLoading.set(false);
+        }
       }
 
       if (this.authState.isAuthenticated) {
@@ -264,6 +296,14 @@ export class CityComponent implements OnInit, OnDestroy {
 
   navigateToCommunity(slug: string): void {
     this.router.navigate(['/c', slug]);
+  }
+
+  navigateToCity(slug: string): void {
+    this.router.navigate(['/city', slug]);
+  }
+
+  navigateToPost(communitySlug: string): void {
+    this.router.navigate(['/c', communitySlug]);
   }
 
   navigateToCities(): void {

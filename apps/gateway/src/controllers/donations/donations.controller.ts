@@ -17,6 +17,23 @@ import { Public } from '../../decorators/public.decorator';
 export class DonationsController {
   private readonly paymentsClient: ReturnType<typeof ClientProxyFactory.create>;
 
+  private resolveMonthYear(month?: string, year?: string) {
+    const now = new Date();
+    const parsedMonth = Number(month);
+    const parsedYear = Number(year);
+
+    const targetMonth =
+      Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12
+        ? parsedMonth
+        : now.getMonth() + 1;
+    const targetYear =
+      Number.isInteger(parsedYear) && parsedYear >= 1970 && parsedYear <= 3000
+        ? parsedYear
+        : now.getFullYear();
+
+    return { targetMonth, targetYear };
+  }
+
   constructor(private readonly configService: ConfigService) {
     const serviceConfig =
       this.configService.get<TcpServiceConfig>('services.payments');
@@ -32,13 +49,14 @@ export class DonationsController {
   @Get('goal')
   @Public()
   async getDonationGoal(
-    @Query('month') month?: number,
-    @Query('year') year?: number
+    @Query('month') month?: string,
+    @Query('year') year?: string
   ) {
+    const { targetMonth, targetYear } = this.resolveMonthYear(month, year);
     return firstValueFrom(
       this.paymentsClient.send(
         { cmd: 'payments.getDonationGoal' },
-        { month, year }
+        { month: targetMonth, year: targetYear }
       )
     );
   }
@@ -46,13 +64,14 @@ export class DonationsController {
   @Get('')
   @Public()
   async getDonations(
-    @Query('month') month?: number,
-    @Query('year') year?: number
+    @Query('month') month?: string,
+    @Query('year') year?: string
   ) {
+    const { targetMonth, targetYear } = this.resolveMonthYear(month, year);
     return firstValueFrom(
       this.paymentsClient.send(
         { cmd: 'payments.listDonations' },
-        { month, year }
+        { month: targetMonth, year: targetYear }
       )
     );
   }

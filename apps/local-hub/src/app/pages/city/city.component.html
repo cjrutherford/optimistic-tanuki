@@ -24,8 +24,14 @@
 
     <div class="hero-content">
       <button class="back-link" (click)="navigateToCities()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
         All Cities
@@ -39,21 +45,44 @@
         <!-- Community Manager badge -->
         @if (communityManager()) {
         <div class="manager-badge" title="Elected Community Manager">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+            />
           </svg>
-          <span>Community Manager: <strong>{{ communityManager()!.name }}</strong></span>
+          <span
+            >Community Manager:
+            <strong>{{ communityManager()!.name }}</strong></span
+          >
         </div>
         }
 
         <!-- Active election indicator -->
         @if (activeElection() && activeElection()!.status === 'open') {
-        <button class="election-badge" (click)="openElectionModal()"
-                aria-label="View active election">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/>
+        <button
+          class="election-badge"
+          (click)="openElectionModal()"
+          aria-label="View active election"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M9 9h6M9 12h6M9 15h4" />
           </svg>
           Election in Progress — Vote Now
         </button>
@@ -90,9 +119,17 @@
         @for (highlight of city()!.highlights; track highlight) {
         <div class="highlight-card">
           <div class="highlight-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+              />
             </svg>
           </div>
           <span class="highlight-text">{{ highlight }}</span>
@@ -109,20 +146,28 @@
       <div class="section-header">
         <div class="section-header-content">
           <h2 class="section-title">Local Businesses</h2>
-          <p class="section-subtitle">Discover businesses in {{ city()!.name }}</p>
+          <p class="section-subtitle">
+            Discover businesses in {{ city()!.name }}
+          </p>
         </div>
         <button class="btn btn-outline" (click)="openCreateBusinessModal()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
           List Your Business
         </button>
       </div>
       <div class="businesses-grid">
         @for (business of businesses(); track business.id) {
-        <div class="business-card">
+        <otui-card class="business-card">
           @if (business.logoUrl) {
           <div class="business-logo">
             <img [src]="business.logoUrl" [alt]="business.name" />
@@ -139,11 +184,16 @@
               </span>
             </div>
             @if (business.website) {
-            <a [href]="business.website" target="_blank" rel="noopener"
-               class="business-link">Visit Website</a>
+            <a
+              [href]="business.website"
+              target="_blank"
+              rel="noopener"
+              class="business-link"
+              >Visit Website</a
+            >
             }
           </div>
-        </div>
+        </otui-card>
         }
       </div>
     </div>
@@ -160,10 +210,16 @@
           </p>
         </div>
         <button class="btn btn-outline" (click)="openCreateBusinessModal()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
           List Your Business
         </button>
@@ -171,6 +227,26 @@
     </div>
   </section>
   }
+
+  <!-- ── Classifieds ──────────────────────────────────────────────────────── -->
+  <section class="city-classifieds-section">
+    <div class="section-container">
+      <div class="section-header">
+        <div class="section-header-content">
+          <h2 class="section-title">Classifieds</h2>
+          <p class="section-subtitle">
+            Local listings from the {{ city()!.name }} community
+          </p>
+        </div>
+      </div>
+      <lib-classified-list
+        [ads]="classifieds()"
+        [loading]="classifiedsLoading()"
+        [showPostButton]="isAuthenticated()"
+        [showContact]="isAuthenticated()"
+      ></lib-classified-list>
+    </div>
+  </section>
 
   <!-- ── Location / Map ──────────────────────────────────────────────────── -->
   <section class="city-map-section">
@@ -212,9 +288,15 @@
           </p>
         </div>
         <button class="btn btn-primary" (click)="openCreateCommunityModal()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2">
-            <path d="M12 5v14M5 12h14"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M12 5v14M5 12h14" />
           </svg>
           Start a Community
         </button>
@@ -227,19 +309,28 @@
       } @else {
       <div class="communities-grid">
         @for (community of interestCommunities(); track community.id) {
-        <a class="community-card"
-           [href]="'/c/' + community.slug"
-           [attr.aria-label]="community.name + ' community'">
+        <otui-card
+          class="community-card"
+          (click)="navigateToCommunity(community.slug)"
+          role="button"
+          [attr.aria-label]="community.name + ' community'"
+        >
           <div class="community-image-wrapper">
-            <img [src]="community.imageUrl" [alt]="community.name"
-                 class="community-image" loading="lazy" />
+            <img
+              [src]="community.imageUrl"
+              [alt]="community.name"
+              class="community-image"
+              loading="lazy"
+            />
             @if (isAuthenticated()) {
             <div class="card-actions" (click)="$event.stopPropagation()">
               @if (!isMember(community.id)) {
-              <button class="join-btn"
-                      (click)="joinCommunity(community.id)"
-                      [disabled]="expandingInProgress() === community.id"
-                      [attr.aria-label]="'Join ' + community.name">
+              <button
+                class="join-btn"
+                (click)="joinCommunity(community.id)"
+                [disabled]="expandingInProgress() === community.id"
+                [attr.aria-label]="'Join ' + community.name"
+              >
                 Join
               </button>
               } @else {
@@ -263,7 +354,7 @@
               }
             </div>
           </div>
-        </a>
+        </otui-card>
         }
       </div>
       }
@@ -283,41 +374,77 @@
 
       <div class="posts-grid">
         @for (post of posts(); track post.id) {
-        <a class="post-card" [href]="'/c/' + post.communitySlug"
-           [attr.aria-label]="'View post: ' + post.title">
+        <otui-card
+          class="post-card"
+          role="article"
+          tabindex="0"
+          [attr.aria-label]="'View discussion: ' + post.title"
+          (click)="navigateToPost(post.communitySlug)"
+          (keydown.enter)="navigateToPost(post.communitySlug)"
+          (keydown.space)="
+            $event.preventDefault(); navigateToPost(post.communitySlug)
+          "
+        >
           <div class="post-header">
             <span class="post-community">{{ post.communityName }}</span>
-            <span class="post-date">{{ post.createdAt | date : 'MMM d, y' }}</span>
+            <span class="post-date">{{
+              post.createdAt | date : 'MMM d, y'
+            }}</span>
           </div>
           <h3 class="post-title">{{ post.title }}</h3>
           <p class="post-content">{{ post.content }}</p>
           <div class="post-footer">
             <span class="post-author">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
               </svg>
               {{ post.authorName }}
             </span>
             <span class="post-stats">
               <span class="post-likes">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
+                  />
                 </svg>
                 {{ post.likes }}
               </span>
               <span class="post-comments">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                  />
                 </svg>
                 {{ post.comments }}
               </span>
             </span>
           </div>
-        </a>
+        </otui-card>
         }
       </div>
     </div>
@@ -341,9 +468,13 @@
     </p>
     <div class="form-group">
       <label for="community-name">Community Name</label>
-      <input type="text" id="community-name" class="input"
-             [(ngModel)]="newCommunityName"
-             placeholder="e.g., Downtown Neighbours, Local Hikers Club" />
+      <input
+        type="text"
+        id="community-name"
+        class="input"
+        [(ngModel)]="newCommunityName"
+        placeholder="e.g., Downtown Neighbours, Local Hikers Club"
+      />
     </div>
     <div class="form-group">
       <label for="community-type">Community Scope</label>
@@ -355,17 +486,22 @@
     </div>
     <div class="form-group">
       <label for="community-description">Description</label>
-      <textarea id="community-description" class="input" rows="3"
-                [(ngModel)]="newCommunityDescription"
-                placeholder="Describe what this community is about..."></textarea>
+      <textarea
+        id="community-description"
+        class="input"
+        rows="3"
+        [(ngModel)]="newCommunityDescription"
+        placeholder="Describe what this community is about..."
+      ></textarea>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" (click)="createCommunity()"
-              [disabled]="creatingCommunity()">
+      <button
+        class="btn btn-primary"
+        (click)="createCommunity()"
+        [disabled]="creatingCommunity()"
+      >
         @if (creatingCommunity()) {
-        <span class="btn-spinner"></span> Creating...
-        } @else {
-        Create Community
+        <span class="btn-spinner"></span> Creating... } @else { Create Community
         }
       </button>
     </div>
@@ -388,29 +524,30 @@
     </p>
     <div class="form-group">
       <label for="business-tier">Select Tier</label>
-      <select id="business-tier" class="input" [(ngModel)]="selectedBusinessTier">
+      <select
+        id="business-tier"
+        class="input"
+        [(ngModel)]="selectedBusinessTier"
+      >
         <option value="basic">Basic — Free</option>
         <option value="pro">Pro — $29/month</option>
         <option value="enterprise">Enterprise — $99/month</option>
       </select>
     </div>
     <div class="tier-features">
-      @switch (selectedBusinessTier()) {
-      @case ('basic') {
+      @switch (selectedBusinessTier()) { @case ('basic') {
       <ul>
         <li>Basic business listing</li>
         <li>Contact information</li>
       </ul>
-      }
-      @case ('pro') {
+      } @case ('pro') {
       <ul>
         <li>Everything in Basic</li>
         <li>Featured in search results</li>
         <li>Analytics dashboard</li>
         <li>Priority support</li>
       </ul>
-      }
-      @case ('enterprise') {
+      } @case ('enterprise') {
       <ul>
         <li>Everything in Pro</li>
         <li>Custom branding</li>
@@ -418,17 +555,17 @@
         <li>API access</li>
         <li>Dedicated account manager</li>
       </ul>
-      }
-      }
+      } }
     </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" (click)="createBusinessPage()"
-              [disabled]="creatingBusiness()">
+      <button
+        class="btn btn-primary"
+        (click)="createBusinessPage()"
+        [disabled]="creatingBusiness()"
+      >
         @if (creatingBusiness()) {
-        <span class="btn-spinner"></span> Setting up...
-        } @else {
-        Continue to Payment
-        }
+        <span class="btn-spinner"></span> Setting up... } @else { Continue to
+        Payment }
       </button>
     </div>
   </div>
@@ -445,11 +582,12 @@
 >
   <div class="election-panel">
     <p class="election-description">
-      The community is currently electing a manager for {{ city()!.name }}.
-      Vote for a candidate or nominate yourself to run.
+      The community is currently electing a manager for {{ city()!.name }}. Vote
+      for a candidate or nominate yourself to run.
     </p>
     <p class="election-ends">
-      Election ends: <strong>{{ activeElection()!.endsAt | date : 'medium' }}</strong>
+      Election ends:
+      <strong>{{ activeElection()!.endsAt | date : 'medium' }}</strong>
     </p>
 
     @if (activeElection()!.candidates.length === 0) {
@@ -461,10 +599,12 @@
         <span class="candidate-name">{{ candidate.name }}</span>
         <span class="candidate-votes">{{ candidate.votes }} votes</span>
         @if (!activeElection()!.myVote) {
-        <button class="btn btn-sm btn-primary"
-                (click)="voteForCandidate(candidate.userId)"
-                [disabled]="votingInProgress()"
-                [attr.aria-label]="'Vote for ' + candidate.name">
+        <button
+          class="btn btn-sm btn-primary"
+          (click)="voteForCandidate(candidate.userId)"
+          [disabled]="votingInProgress()"
+          [attr.aria-label]="'Vote for ' + candidate.name"
+        >
           Vote
         </button>
         } @else if (activeElection()!.myVote === candidate.userId) {
@@ -473,9 +613,7 @@
       </li>
       }
     </ul>
-    }
-
-    @if (!activeElection()!.myVote) {
+    } @if (!activeElection()!.myVote) {
     <div class="election-actions">
       <button class="btn btn-outline" (click)="selfNominate()">
         Nominate Yourself
@@ -484,5 +622,4 @@
     }
   </div>
 </otui-modal>
-}
-}
+} }

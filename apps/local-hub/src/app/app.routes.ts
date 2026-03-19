@@ -51,21 +51,21 @@ export const appRoutes: Route[] = [
       ),
   },
   {
-    path: 'c/:slug',
+    path: 'c/:communitySlug',
     loadComponent: () =>
       import('./pages/community/community.component').then(
         (m) => m.CommunityComponent
       ),
   },
   {
-    path: 'c/:slug/classifieds',
+    path: 'c/:communitySlug/classifieds',
     loadComponent: () =>
       import('./pages/classifieds/classifieds.component').then(
         (m) => m.ClassifiedsComponent
       ),
   },
   {
-    path: 'c/:slug/classifieds/new',
+    path: 'c/:communitySlug/classifieds/new',
     loadComponent: () =>
       import('./pages/classifieds/classifieds.component').then(
         (m) => m.ClassifiedsComponent
@@ -74,7 +74,7 @@ export const appRoutes: Route[] = [
     data: { openForm: true },
   },
   {
-    path: 'c/:slug/classifieds/:id',
+    path: 'c/:communitySlug/classifieds/:id',
     loadComponent: () =>
       import('./pages/classified-detail/classified-detail.component').then(
         (m) => m.ClassifiedDetailComponent

@@ -16,6 +16,7 @@ type Locality = {
   lng: number;
   population: number;
   tags?: { id: string; name: string }[];
+  parentSlug?: string;
 };
 
 const COMMUNITIES: Locality[] = [
@@ -73,6 +74,7 @@ const COMMUNITIES: Locality[] = [
       { id: '2', name: 'Dining' },
       { id: '3', name: 'Reviews' },
     ],
+    parentSlug: 'savannah-ga',
   },
   {
     name: 'Savannah Tech',
@@ -91,6 +93,7 @@ const COMMUNITIES: Locality[] = [
       { id: '2', name: 'Startups' },
       { id: '3', name: 'Networking' },
     ],
+    parentSlug: 'savannah-ga',
   },
   {
     name: 'Savannah Parents',
@@ -109,6 +112,7 @@ const COMMUNITIES: Locality[] = [
       { id: '2', name: 'Parenting' },
       { id: '3', name: 'Education' },
     ],
+    parentSlug: 'savannah-ga',
   },
   {
     name: 'Hilton Head Island, SC',
@@ -1244,6 +1248,61 @@ const COMMUNITIES: Locality[] = [
       { id: '3', name: 'Port City' },
     ],
   },
+  {
+    name: 'Wilmington Film',
+    slug: 'wilmington-film',
+    description:
+      "Wilmington's thriving film industry community. Connect with filmmakers, actors, and film enthusiasts in the Port City.",
+    localityType: 'neighborhood',
+    countryCode: 'US',
+    adminArea: 'NC',
+    city: 'Wilmington',
+    lat: 34.23,
+    lng: -77.94,
+    population: 5000,
+    tags: [
+      { id: '1', name: 'Film' },
+      { id: '2', name: 'Entertainment' },
+      { id: '3', name: 'Production' },
+    ],
+    parentSlug: 'wilmington-nc',
+  },
+  {
+    name: 'Wrightsville Beach, NC',
+    slug: 'wrightsville-beach-nc',
+    description:
+      'A beautiful barrier island beach community just east of Wilmington, known for its stunning beaches and water activities.',
+    localityType: 'city',
+    countryCode: 'US',
+    adminArea: 'NC',
+    city: 'Wrightsville Beach',
+    lat: 34.2268,
+    lng: -77.8036,
+    population: 4700,
+    tags: [
+      { id: '1', name: 'Beach' },
+      { id: '2', name: 'Coastal' },
+      { id: '3', name: 'Water Sports' },
+    ],
+  },
+  {
+    name: 'Wrightsville Beach General',
+    slug: 'wrightsville-beach-nc-general',
+    description:
+      'The official community for Wrightsville Beach residents and visitors. Connect with locals and discover island life.',
+    localityType: 'county',
+    countryCode: 'US',
+    adminArea: 'NC',
+    city: 'Wrightsville Beach',
+    lat: 34.2268,
+    lng: -77.8036,
+    population: 4700,
+    tags: [
+      { id: '1', name: 'Community' },
+      { id: '2', name: 'Island Life' },
+      { id: '3', name: 'Beach' },
+    ],
+  },
 ];
 
 async function main() {
@@ -1292,7 +1351,6 @@ async function main() {
         updated++;
         console.log(`  Updated: ${data.name}`);
       } else {
-        // Set memberCount to 0 initially - actual member counts will be tracked when users join
         const community = communityRepo.create({
           ...data,
           ownerId: 'system',
@@ -1308,8 +1366,37 @@ async function main() {
       }
     }
 
+    console.log('\nLinking sub-communities to parents...');
+    let linked = 0;
+
+    for (const data of COMMUNITIES) {
+      if (!data.parentSlug) continue;
+
+      const parent = await communityRepo.findOne({
+        where: { slug: data.parentSlug },
+      });
+      if (!parent) {
+        console.log(
+          `  Warning: Parent not found for ${data.slug} (parent: ${data.parentSlug})`
+        );
+        continue;
+      }
+
+      const community = await communityRepo.findOne({
+        where: { slug: data.slug },
+      });
+      if (!community) continue;
+
+      if (community.parentId !== parent.id) {
+        community.parentId = parent.id;
+        await communityRepo.save(community);
+        linked++;
+        console.log(`  Linked: ${data.slug} -> ${data.parentSlug}`);
+      }
+    }
+
     console.log(
-      `\nDone. Created: ${created}, Updated: ${updated}, Total: ${COMMUNITIES.length}`
+      `\nDone. Created: ${created}, Updated: ${updated}, Linked: ${linked}, Total: ${COMMUNITIES.length}`
     );
     await app.close();
     process.exit(0);

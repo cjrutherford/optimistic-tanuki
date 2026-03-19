@@ -1,6 +1,8 @@
-import { Controller, Logger } from '@nestjs/common';
+import { Controller, Logger, Inject } from '@nestjs/common';
+import { PaymentCommands } from '@optimistic-tanuki/constants';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { PaymentService } from './services/payment.service';
+import { BusinessThemeService } from './services/business-theme.service';
 import { OfferService } from './services/offer.service';
 
 @Controller()
@@ -8,21 +10,25 @@ export class AppController {
   private readonly logger = new Logger(AppController.name);
 
   constructor(
+    @Inject(PaymentService)
     private readonly paymentService: PaymentService,
+    @Inject(BusinessThemeService)
+    private readonly businessThemeService: BusinessThemeService,
+    @Inject(OfferService)
     private readonly offerService: OfferService
   ) {}
 
-  @MessagePattern({ cmd: 'payments.getDonationGoal' })
+  @MessagePattern({ cmd: PaymentCommands.GET_DONATION_GOAL })
   async getDonationGoal(@Payload() data: { month: number; year: number }) {
     return this.paymentService.getDonationGoal(data.month, data.year);
   }
 
-  @MessagePattern({ cmd: 'payments.listDonations' })
+  @MessagePattern({ cmd: PaymentCommands.LIST_DONATIONS })
   async getDonations(@Payload() data: { month: number; year: number }) {
     return this.paymentService.getDonations(data.month, data.year);
   }
 
-  @MessagePattern({ cmd: 'payments.createDonationCheckout' })
+  @MessagePattern({ cmd: PaymentCommands.CREATE_DONATION_CHECKOUT })
   async createDonationCheckout(
     @Payload()
     data: {
@@ -42,12 +48,12 @@ export class AppController {
     );
   }
 
-  @MessagePattern({ cmd: 'payments.getUserDonations' })
+  @MessagePattern({ cmd: PaymentCommands.GET_USER_DONATIONS })
   async getUserDonations(@Payload() data: { userId: string }) {
     return this.paymentService.getUserDonations(data.userId);
   }
 
-  @MessagePattern({ cmd: 'payments.cancelSubscription' })
+  @MessagePattern({ cmd: PaymentCommands.CANCEL_SUBSCRIPTION })
   async cancelRecurringDonation(
     @Payload() data: { userId: string; subscriptionId: string }
   ) {
@@ -57,7 +63,7 @@ export class AppController {
     );
   }
 
-  @MessagePattern({ cmd: 'payments.createClassifiedPayment' })
+  @MessagePattern({ cmd: PaymentCommands.CREATE_CLASSIFIED_PAYMENT })
   async createClassifiedPayment(
     @Payload()
     data: {
@@ -75,7 +81,7 @@ export class AppController {
     );
   }
 
-  @MessagePattern({ cmd: 'payments.confirmOutOfPlatformPayment' })
+  @MessagePattern({ cmd: PaymentCommands.CONFIRM_OUT_OF_PLATFORM_PAYMENT })
   async confirmOutOfPlatformPayment(
     @Payload()
     data: {
@@ -90,29 +96,29 @@ export class AppController {
     );
   }
 
-  @MessagePattern({ cmd: 'payments.releaseFunds' })
+  @MessagePattern({ cmd: PaymentCommands.RELEASE_FUNDS })
   async releaseFunds(@Payload() data: { paymentId: string; sellerId: string }) {
     return this.paymentService.releaseFunds(data.paymentId);
   }
 
-  @MessagePattern({ cmd: 'payments.disputePayment' })
+  @MessagePattern({ cmd: PaymentCommands.DISPUTE_PAYMENT })
   async disputePayment(
     @Payload() data: { paymentId: string; userId: string; reason: string }
   ) {
     return this.paymentService.disputePayment(data.paymentId, data.reason);
   }
 
-  @MessagePattern({ cmd: 'payments.getPayment' })
+  @MessagePattern({ cmd: PaymentCommands.GET_PAYMENT })
   async getPayment(@Payload() data: { paymentId: string }) {
     return this.paymentService.getPayment(data.paymentId);
   }
 
-  @MessagePattern({ cmd: 'payments.getUserPayments' })
+  @MessagePattern({ cmd: PaymentCommands.GET_USER_PAYMENTS })
   async getUserPayments(@Payload() data: { userId: string }) {
     return this.paymentService.getUserPayments(data.userId);
   }
 
-  @MessagePattern({ cmd: 'payments.markInterestedBuyer' })
+  @MessagePattern({ cmd: PaymentCommands.MARK_INTERESTED_BUYER })
   async markInterestedBuyer(
     @Payload() data: { paymentId: string; interestedBuyerId: string }
   ) {
@@ -122,12 +128,12 @@ export class AppController {
     );
   }
 
-  @MessagePattern({ cmd: 'payments.markPaidOutsidePlatform' })
+  @MessagePattern({ cmd: PaymentCommands.MARK_PAID_OUTSIDE_PLATFORM })
   async markPaidOutsidePlatform(@Payload() data: { paymentId: string }) {
     return this.paymentService.markPaidOutsidePlatform(data.paymentId);
   }
 
-  @MessagePattern({ cmd: 'payments.createBusinessCheckout' })
+  @MessagePattern({ cmd: PaymentCommands.CREATE_BUSINESS_CHECKOUT })
   async createBusinessCheckout(
     @Payload()
     data: {
@@ -145,12 +151,12 @@ export class AppController {
     );
   }
 
-  @MessagePattern({ cmd: 'payments.getBusinessPage' })
+  @MessagePattern({ cmd: PaymentCommands.GET_BUSINESS_PAGE })
   async getBusinessPage(@Payload() data: { communityId: string }) {
     return this.paymentService.getBusinessPage(data.communityId);
   }
 
-  @MessagePattern({ cmd: 'payments.updateBusinessPage' })
+  @MessagePattern({ cmd: PaymentCommands.UPDATE_BUSINESS_PAGE })
   async updateBusinessPage(
     @Payload()
     data: {
@@ -182,7 +188,7 @@ export class AppController {
     );
   }
 
-  @MessagePattern({ cmd: 'payments.cancelBusinessSubscription' })
+  @MessagePattern({ cmd: PaymentCommands.CANCEL_BUSINESS_SUBSCRIPTION })
   async cancelBusinessSubscription(
     @Payload() data: { userId: string; communityId: string }
   ) {
@@ -192,7 +198,7 @@ export class AppController {
     );
   }
 
-  @MessagePattern({ cmd: 'payments.createSponsorshipCheckout' })
+  @MessagePattern({ cmd: PaymentCommands.CREATE_SPONSORSHIP_CHECKOUT })
   async createSponsorshipCheckout(
     @Payload()
     data: {
@@ -216,27 +222,27 @@ export class AppController {
     );
   }
 
-  @MessagePattern({ cmd: 'payments.getActiveSponsorships' })
+  @MessagePattern({ cmd: PaymentCommands.GET_ACTIVE_SPONSORSHIPS })
   async getActiveSponsorships(@Payload() data: { communityId: string }) {
     return this.paymentService.getActiveSponsorships(data.communityId);
   }
 
-  @MessagePattern({ cmd: 'payments.getUserSponsorships' })
+  @MessagePattern({ cmd: PaymentCommands.GET_USER_SPONSORSHIPS })
   async getUserSponsorships(@Payload() data: { userId: string }) {
     return this.paymentService.getUserSponsorships(data.userId);
   }
 
-  @MessagePattern({ cmd: 'payments.getUserTransactions' })
+  @MessagePattern({ cmd: PaymentCommands.GET_USER_TRANSACTIONS })
   async getUserTransactions(@Payload() data: { userId: string }) {
     return this.paymentService.getUserTransactions(data.userId);
   }
 
-  @MessagePattern({ cmd: 'payments.getPortalUrl' })
+  @MessagePattern({ cmd: PaymentCommands.GET_PORTAL_URL })
   async getPortalUrl(@Payload() data: { userId: string }) {
     return this.paymentService.getPortalUrl(data.userId);
   }
 
-  @MessagePattern({ cmd: 'payments.createOffer' })
+  @MessagePattern({ cmd: PaymentCommands.CREATE_OFFER })
   async createOffer(
     @Payload()
     data: {
@@ -256,17 +262,17 @@ export class AppController {
     });
   }
 
-  @MessagePattern({ cmd: 'payments.acceptOffer' })
+  @MessagePattern({ cmd: PaymentCommands.ACCEPT_OFFER })
   async acceptOffer(@Payload() data: { offerId: string; sellerId: string }) {
     return this.offerService.acceptOffer(data.offerId, data.sellerId);
   }
 
-  @MessagePattern({ cmd: 'payments.rejectOffer' })
+  @MessagePattern({ cmd: PaymentCommands.REJECT_OFFER })
   async rejectOffer(@Payload() data: { offerId: string; sellerId: string }) {
     return this.offerService.rejectOffer(data.offerId, data.sellerId);
   }
 
-  @MessagePattern({ cmd: 'payments.counterOffer' })
+  @MessagePattern({ cmd: PaymentCommands.COUNTER_OFFER })
   async counterOffer(
     @Payload()
     data: {
@@ -282,18 +288,148 @@ export class AppController {
     });
   }
 
-  @MessagePattern({ cmd: 'payments.withdrawOffer' })
+  @MessagePattern({ cmd: PaymentCommands.WITHDRAW_OFFER })
   async withdrawOffer(@Payload() data: { offerId: string; buyerId: string }) {
     return this.offerService.withdrawOffer(data.offerId, data.buyerId);
   }
 
-  @MessagePattern({ cmd: 'payments.getOffersForClassified' })
+  @MessagePattern({ cmd: PaymentCommands.GET_OFFERS_FOR_CLASSIFIED })
   async getOffersForClassified(@Payload() data: { classifiedId: string }) {
     return this.offerService.getOffersForClassified(data.classifiedId);
   }
 
-  @MessagePattern({ cmd: 'payments.getUserOffers' })
+  @MessagePattern({ cmd: PaymentCommands.GET_USER_OFFERS })
   async getUserOffers(@Payload() data: { userId: string }) {
     return this.offerService.getUserOffers(data.userId);
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.GET_SELLER_WALLET })
+  async getSellerWallet(@Payload() data: { sellerId: string }) {
+    return this.paymentService.getSellerWallet(data.sellerId);
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.UPDATE_SELLER_PAYOUT_INFO })
+  async updateSellerPayoutInfo(
+    @Payload()
+    data: {
+      sellerId: string;
+      payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle';
+      payoutEmail?: string;
+      bankAccountLast4?: string;
+      bankRoutingLast4?: string;
+    }
+  ) {
+    return this.paymentService.updateSellerPayoutInfo(
+      data.sellerId,
+      data.payoutMethod,
+      data.payoutEmail,
+      data.bankAccountLast4,
+      data.bankRoutingLast4
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.CREATE_PAYOUT_REQUEST })
+  async createPayoutRequest(
+    @Payload()
+    data: {
+      sellerId: string;
+      amount: number;
+      payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle';
+      payoutEmail?: string;
+      bankAccountLast4?: string;
+      bankRoutingLast4?: string;
+    }
+  ) {
+    return this.paymentService.createPayoutRequest(
+      data.sellerId,
+      data.amount,
+      data.payoutMethod,
+      data.payoutEmail,
+      data.bankAccountLast4,
+      data.bankRoutingLast4
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.GET_SELLER_PAYOUT_REQUESTS })
+  async getSellerPayoutRequests(@Payload() data: { sellerId: string }) {
+    return this.paymentService.getSellerPayoutRequests(data.sellerId);
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.CANCEL_PAYOUT_REQUEST })
+  async cancelPayoutRequest(
+    @Payload() data: { payoutRequestId: string; sellerId: string }
+  ) {
+    return this.paymentService.cancelPayoutRequest(
+      data.payoutRequestId,
+      data.sellerId
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.GET_SELLER_EARNINGS_SUMMARY })
+  async getSellerEarningsSummary(@Payload() data: { sellerId: string }) {
+    return this.paymentService.getSellerEarningsSummary(data.sellerId);
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.GET_BUSINESS_PAGES_BY_CITY })
+  async getBusinessPagesByCity(
+    @Payload() data: { cityId: string; communityIds: string[] }
+  ) {
+    return this.paymentService.getBusinessPagesByCity(
+      data.cityId,
+      data.communityIds || []
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.CREATE_BUSINESS_THEME })
+  async createBusinessTheme(
+    @Payload()
+    data: {
+      businessPageId: string;
+      personalityId?: string;
+      primaryColor?: string;
+      accentColor?: string;
+      backgroundColor?: string;
+      customCss?: string;
+      customFontFamily?: string;
+    }
+  ) {
+    return this.businessThemeService.createTheme(data.businessPageId, {
+      personalityId: data.personalityId,
+      primaryColor: data.primaryColor,
+      accentColor: data.accentColor,
+      backgroundColor: data.backgroundColor,
+      customCss: data.customCss,
+      customFontFamily: data.customFontFamily,
+    });
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.GET_BUSINESS_THEME })
+  async getBusinessTheme(@Payload() data: { businessPageId: string }) {
+    return this.businessThemeService.getThemeByBusinessPageId(
+      data.businessPageId
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.UPDATE_BUSINESS_THEME })
+  async updateBusinessTheme(
+    @Payload()
+    data: {
+      themeId: string;
+      personalityId?: string;
+      primaryColor?: string;
+      accentColor?: string;
+      backgroundColor?: string;
+      customCss?: string;
+      customFontFamily?: string;
+    }
+  ) {
+    return this.businessThemeService.updateTheme(data.themeId, {
+      personalityId: data.personalityId,
+      primaryColor: data.primaryColor,
+      accentColor: data.accentColor,
+      backgroundColor: data.backgroundColor,
+      customCss: data.customCss,
+      customFontFamily: data.customFontFamily,
+    });
   }
 }

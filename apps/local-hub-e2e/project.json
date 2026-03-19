@@ -7,14 +7,38 @@
   "targets": {
     "e2e": {
       "executor": "@nx/playwright:playwright",
-      "options": {},
+      "options": {
+        "config": "apps/local-hub-e2e/playwright.config.ts"
+      },
       "configurations": {
         "ci": {
           "env": {
-            "BASE_URL": "http://localhost:8081"
+            "CI": "true",
+            "BASE_URL": "http://localhost:8087",
+            "GATEWAY_URL": "http://localhost:3000"
+          }
+        },
+        "docker": {
+          "env": {
+            "E2E_DOCKER": "true",
+            "CI": "true",
+            "BASE_URL": "http://localhost:8087",
+            "GATEWAY_URL": "http://localhost:3000"
           }
         }
       }
+    },
+    "docker:up": {
+      "command": "docker compose -f docker-compose.local-hub-e2e.yaml up -d",
+      "dependsOn": []
+    },
+    "docker:down": {
+      "command": "docker compose -f docker-compose.local-hub-e2e.yaml down",
+      "dependsOn": []
+    },
+    "docker:test": {
+      "command": "docker compose -f docker-compose.local-hub-e2e.yaml run --rm e2e-test-runner",
+      "dependsOn": ["docker:up"]
     }
   }
 }

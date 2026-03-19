@@ -412,10 +412,14 @@ export class CommunityService {
 
   async getPostsForCity(citySlug: string): Promise<CityPost[]> {
     try {
-      const community = await this.getCommunityBySlug(citySlug);
-      if (!community?.id) {
+      // Fetch all communities for this city to filter posts by any community in the city
+      const communities = await this.getCommunitiesForCity(citySlug);
+      if (communities.length === 0) {
         return [];
       }
+
+      const communityIds = communities.map((c) => c.id);
+      const communityMap = new Map(communities.map((c) => [c.id, c]));
 
       const posts = await firstValueFrom(
         this.http.post<
@@ -429,25 +433,28 @@ export class CommunityService {
             communityId?: string;
           }[]
         >(`${this.apiBaseUrl}/social/post/find`, {
-          criteria: { communityId: community.id, appScope: 'local-hub' },
+          criteria: { communityIds, appScope: 'local-hub' },
         })
       );
 
-      return (posts ?? []).map((p) => ({
-        id: p.id,
-        communityId: community.id,
-        communitySlug: citySlug,
-        communityName: community.name,
-        title: p.title,
-        content: p.content,
-        authorName: 'Community Member',
-        createdAt:
-          typeof p.createdAt === 'string'
-            ? p.createdAt
-            : (p.createdAt as Date).toISOString(),
-        likes: 0,
-        comments: 0,
-      }));
+      return (posts ?? []).map((p) => {
+        const comm = p.communityId ? communityMap.get(p.communityId) : undefined;
+        return {
+          id: p.id,
+          communityId: p.communityId || communityIds[0],
+          communitySlug: comm?.slug || citySlug,
+          communityName: comm?.name || communities[0]?.name || '',
+          title: p.title,
+          content: p.content,
+          authorName: 'Community Member',
+          createdAt:
+            typeof p.createdAt === 'string'
+              ? p.createdAt
+              : (p.createdAt as Date).toISOString(),
+          likes: 0,
+          comments: 0,
+        };
+      });
     } catch (error) {
       console.error('Failed to fetch city posts:', error);
       return [];

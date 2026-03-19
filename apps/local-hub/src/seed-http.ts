@@ -47,6 +47,7 @@ interface Classified {
   price: number;
   category: string;
   description: string;
+  imageUrls?: string[];
 }
 
 interface UserCommunityConfig {
@@ -140,6 +141,9 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         category: 'Electronics',
         description:
           'Professional 5-quart stand mixer. Great for baking. Minor scratches on bowl.',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1585515320310-259814833e62?w=800&q=80',
+        ],
       },
       {
         title: 'Dining Table - Seats 6',
@@ -147,6 +151,9 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         category: 'Furniture',
         description:
           'Solid wood dining table. Excellent condition. Must pick up in Ardsley Park.',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80',
+        ],
       },
     ],
   },
@@ -184,6 +191,9 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         category: 'Electronics',
         description:
           'Like new, AppleCare+ until 2026. Selling because I need the Pro Max.',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80',
+        ],
       },
       {
         title: 'Standing Desk - Fully Electric',
@@ -191,6 +201,9 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         category: 'Furniture',
         description:
           'Electric standing desk, 60x30". Memory presets, cable management. Like new.',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&q=80',
+        ],
       },
     ],
   },
@@ -228,6 +241,10 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         category: 'Real Estate',
         description:
           'Beautiful Victorian home, restored hardwoods, updated kitchen. Walking distance to Forsyth Park.',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+          'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
+        ],
       },
       {
         title: 'Downtown Condo - 2BR/2BA',
@@ -235,6 +252,9 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         category: 'Real Estate',
         description:
           'Modern condo in the heart of downtown. Secure parking, rooftop access.',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+        ],
       },
     ],
   },
@@ -272,6 +292,9 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         category: 'Vehicles',
         description:
           'Single owner, military family. 45k miles. Excellent condition. Must sell for PCS move.',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
+        ],
       },
       {
         title: 'Kids Furniture Set',
@@ -279,6 +302,9 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         category: 'Furniture',
         description:
           'Twin beds, dresser, bookshelf. Growing kids need bigger stuff! Good condition.',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80',
+        ],
       },
     ],
   },
@@ -316,6 +342,9 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         category: 'Furniture',
         description:
           'Free to good home! Computer desk, great condition. You pick up.',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&q=80',
+        ],
       },
       {
         title: 'Boxes and Packing Supplies',
@@ -323,6 +352,9 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         category: 'Miscellaneous',
         description:
           'Moving boxes, bubble wrap, packing tape. Just finished moving. Take it all!',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+        ],
       },
     ],
   },
@@ -338,212 +370,611 @@ const CITY_COMMUNITIES: {
   lng: number;
   population: number;
   imageUrl: string;
+  description: string;
+  highlights: string[];
+  timezone: string;
 }[] = [
-  {
-    name: 'Savannah, GA',
-    slug: 'savannah-ga',
-    localityType: 'city',
-    city: 'Savannah',
-    state: 'GA',
-    lat: 32.0809,
-    lng: -81.0912,
-    population: 147088,
-    imageUrl:
-      'https://images.unsplash.com/photo-1573115627-3b4c593f2e9c?w=800&q=80',
-  },
-  {
-    name: 'Charleston, SC',
-    slug: 'charleston-sc',
-    localityType: 'city',
-    city: 'Charleston',
-    state: 'SC',
-    lat: 32.7765,
-    lng: -79.9311,
-    population: 155369,
-    imageUrl:
-      'https://images.unsplash.com/photo-1569974507005-6dc61f97fb5c?w=800&q=80',
-  },
-  {
-    name: 'Jacksonville, FL',
-    slug: 'jacksonville-fl',
-    localityType: 'city',
-    city: 'Jacksonville',
-    state: 'FL',
-    lat: 30.3322,
-    lng: -81.6557,
-    population: 911507,
-    imageUrl:
-      'https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=800&q=80',
-  },
-  {
-    name: 'Columbia, SC',
-    slug: 'columbia-sc',
-    localityType: 'city',
-    city: 'Columbia',
-    state: 'SC',
-    lat: 34.0007,
-    lng: -81.0348,
-    population: 127395,
-    imageUrl:
-      'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
-  },
-  {
-    name: 'Augusta, GA',
-    slug: 'augusta-ga',
-    localityType: 'city',
-    city: 'Augusta',
-    state: 'GA',
-    lat: 33.4404,
-    lng: -81.9618,
-    population: 197166,
-    imageUrl:
-      'https://images.unsplash.com/photo-1569582963977-45a36620935c?w=800&q=80',
-  },
-  {
-    name: 'Macon, GA',
-    slug: 'macon-ga',
-    localityType: 'city',
-    city: 'Macon',
-    state: 'GA',
-    lat: 32.8407,
-    lng: -83.6324,
-    population: 153095,
-    imageUrl:
-      'https://images.unsplash.com/photo-1575893788725-2d7b1bab84f3?w=800&q=80',
-  },
-  {
-    name: 'Columbus, GA',
-    slug: 'columbus-ga',
-    localityType: 'city',
-    city: 'Columbus',
-    state: 'GA',
-    lat: 32.5102,
-    lng: -84.8772,
-    population: 206922,
-    imageUrl:
-      'https://images.unsplash.com/photo-1555466861-1be2453f4f83?w=800&q=80',
-  },
-  {
-    name: 'Hilton Head Island, SC',
-    slug: 'hilton-head-island-sc',
-    localityType: 'city',
-    city: 'Hilton Head Island',
-    state: 'SC',
-    lat: 32.2163,
-    lng: -80.7526,
-    population: 39661,
-    imageUrl:
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
-  },
-  {
-    name: 'Wilmington, NC',
-    slug: 'wilmington-nc',
-    localityType: 'city',
-    city: 'Wilmington',
-    state: 'NC',
-    lat: 34.2257,
-    lng: -77.9447,
-    population: 123744,
-    imageUrl:
-      'https://images.unsplash.com/photo-1568515045052-58b946f85c08?w=800&q=80',
-  },
-  {
-    name: 'Orlando, FL',
-    slug: 'orlando-fl',
-    localityType: 'city',
-    city: 'Orlando',
-    state: 'FL',
-    lat: 28.5383,
-    lng: -81.3792,
-    population: 289457,
-    imageUrl:
-      'https://images.unsplash.com/photo-1594729095022-e2f6d2f63f45?w=800&q=80',
-  },
-  {
-    name: 'Charlotte, NC',
-    slug: 'charlotte-nc',
-    localityType: 'city',
-    city: 'Charlotte',
-    state: 'NC',
-    lat: 35.2271,
-    lng: -80.8431,
-    population: 885708,
-    imageUrl:
-      'https://images.unsplash.com/photo-1568527353631-7f02d8b0c4f5?w=800&q=80',
-  },
-  {
-    name: 'Atlanta, GA',
-    slug: 'atlanta-ga',
-    localityType: 'city',
-    city: 'Atlanta',
-    state: 'GA',
-    lat: 33.749,
-    lng: -84.388,
-    population: 496441,
-    imageUrl:
-      'https://images.unsplash.com/photo-1569974508324-0c4e5c2c1f1e?w=800&q=80',
-  },
-  {
-    name: 'Beaufort, SC',
-    slug: 'beaufort-sc',
-    localityType: 'city',
-    city: 'Beaufort',
-    state: 'SC',
-    lat: 32.4316,
-    lng: -80.6698,
-    population: 31317,
-    imageUrl:
-      'https://images.unsplash.com/photo-1540914124281-342587941389?w=800&q=80',
-  },
-  {
-    name: 'Brunswick, GA',
-    slug: 'brunswick-ga',
-    localityType: 'city',
-    city: 'Brunswick',
-    state: 'GA',
-    lat: 31.15,
-    lng: -81.4915,
-    population: 16257,
-    imageUrl:
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
-  },
-  {
-    name: 'Gainesville, FL',
-    slug: 'gainesville-fl',
-    localityType: 'city',
-    city: 'Gainesville',
-    state: 'FL',
-    lat: 29.6516,
-    lng: -82.3248,
-    population: 133997,
-    imageUrl:
-      'https://images.unsplash.com/photo-1562783487-623d90387097?w=800&q=80',
-  },
-  {
-    name: 'Tallahassee, FL',
-    slug: 'tallahassee-fl',
-    localityType: 'city',
-    city: 'Tallahassee',
-    state: 'FL',
-    lat: 30.4383,
-    lng: -84.2807,
-    population: 196165,
-    imageUrl:
-      'https://images.unsplash.com/photo-1574169208507-84376144848b?w=800&q=80',
-  },
-  {
-    name: 'Athens, GA',
-    slug: 'athens-ga',
-    localityType: 'city',
-    city: 'Athens',
-    state: 'GA',
-    lat: 33.9519,
-    lng: -83.3576,
-    population: 127315,
-    imageUrl:
-      'https://images.unsplash.com/photo-1568972547244-8a1e6cb4f9f9?w=800&q=80',
-  },
-];
+    {
+      name: 'Savannah, GA',
+      slug: 'savannah-ga',
+      localityType: 'city',
+      city: 'Savannah',
+      state: 'GA',
+      lat: 32.0809,
+      lng: -81.0912,
+      population: 147088,
+      imageUrl:
+        'https://images.unsplash.com/photo-1573115627-3b4c593f2e9c?w=800&q=80',
+      description:
+        "Georgia's first city enchants visitors with 22 moss-draped historic squares, cobblestone streets, stunning antebellum mansions, Forsyth Park, and a thriving arts and culinary scene.",
+      highlights: [
+        'https://images.unsplash.com/photo-1587578932405-7c740a762f3a?w=800&q=80',
+        'https://images.unsplash.com/photo-1579782558504-209a34106519?w=800&q=80',
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Charleston, SC',
+      slug: 'charleston-sc',
+      localityType: 'city',
+      city: 'Charleston',
+      state: 'SC',
+      lat: 32.7765,
+      lng: -79.9311,
+      population: 155369,
+      imageUrl:
+        'https://images.unsplash.com/photo-1569974507005-6dc61f97fb5c?w=800&q=80',
+      description:
+        "One of America's most beautiful cities, Charleston captivates with colorful antebellum homes on Rainbow Row, horse-drawn carriage tours, world-class dining, and the historic Battery waterfront.",
+      highlights: [
+        'https://images.unsplash.com/photo-1569974508324-0c4e5c2c1f1e?w=800&q=80',
+        'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Jacksonville, FL',
+      slug: 'jacksonville-fl',
+      localityType: 'city',
+      city: 'Jacksonville',
+      state: 'FL',
+      lat: 30.3322,
+      lng: -81.6557,
+      population: 911507,
+      imageUrl:
+        'https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=800&q=80',
+      description:
+        "Florida's largest city by area offers 22 miles of Atlantic beaches, a vibrant downtown riverfront along the St. Johns River, thriving arts districts, and year-round outdoor recreation.",
+      highlights: [
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1587578932405-7c740a762f3a?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Columbia, SC',
+      slug: 'columbia-sc',
+      localityType: 'city',
+      city: 'Columbia',
+      state: 'SC',
+      lat: 34.0007,
+      lng: -81.0348,
+      population: 127395,
+      imageUrl:
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+      description:
+        "South Carolina's capital blends state government, the University of South Carolina's campus energy, a growing food scene along the Congaree River, and rich Civil War history.",
+      highlights: [
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Augusta, GA',
+      slug: 'augusta-ga',
+      localityType: 'city',
+      city: 'Augusta',
+      state: 'GA',
+      lat: 33.4404,
+      lng: -81.9618,
+      population: 197166,
+      imageUrl:
+        'https://images.unsplash.com/photo-1569582963977-45a36620935c?w=800&q=80',
+      description:
+        'Host of the Masters Golf Tournament, Augusta combines world-class golf at Augusta National with a revitalized Riverwalk downtown, a growing medical district, and deep Southern charm.',
+      highlights: [
+        'https://images.unsplash.com/photo-1569582963977-45a36620935c?w=800&q=80',
+        'https://images.unsplash.com/photo-1587578932405-7c740a762f3a?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Macon, GA',
+      slug: 'macon-ga',
+      localityType: 'city',
+      city: 'Macon',
+      state: 'GA',
+      lat: 32.8407,
+      lng: -83.6324,
+      population: 153095,
+      imageUrl:
+        'https://images.unsplash.com/photo-1575893788725-2d7b1bab84f3?w=800&q=80',
+      description:
+        "Georgia's music city is the birthplace of Otis Redding, Little Richard, and the Allman Brothers Band, paired with the ancient Ocmulgee National Monument and world-famous cherry blossom festivals.",
+      highlights: [
+        'https://images.unsplash.com/photo-1575893788725-2d7b1bab84f3?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1587578932405-7c740a762f3a?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Columbus, GA',
+      slug: 'columbus-ga',
+      localityType: 'city',
+      city: 'Columbus',
+      state: 'GA',
+      lat: 32.5102,
+      lng: -84.8772,
+      population: 206922,
+      imageUrl:
+        'https://images.unsplash.com/photo-1555466861-1be2453f4f83?w=800&q=80',
+      description:
+        'Home to Fort Moore, Columbus features the world\'s longest urban whitewater rafting course on the Chattahoochee River, a thriving Midtown arts district, and the National Infantry Museum.',
+      highlights: [
+        'https://images.unsplash.com/photo-1555466861-1be2453f4f83?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Hilton Head Island, SC',
+      slug: 'hilton-head-island-sc',
+      localityType: 'city',
+      city: 'Hilton Head Island',
+      state: 'SC',
+      lat: 32.2163,
+      lng: -80.7526,
+      population: 39661,
+      imageUrl:
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+      description:
+        'A barrier island gem renowned for world-class golf resorts, 12 miles of pristine Atlantic beach, the iconic Harbour Town lighthouse, and abundant water sports and nature trails.',
+      highlights: [
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Wilmington, NC',
+      slug: 'wilmington-nc',
+      localityType: 'city',
+      city: 'Wilmington',
+      state: 'NC',
+      lat: 34.2257,
+      lng: -77.9447,
+      population: 123744,
+      imageUrl:
+        'https://images.unsplash.com/photo-1568515045052-58b946f85c08?w=800&q=80',
+      description:
+        "North Carolina's largest coastal city boasts a stunning riverfront historic district, three barrier island beaches, a booming film industry backdrop, and the WWII battleship USS North Carolina.",
+      highlights: [
+        'https://images.unsplash.com/photo-1568515045052-58b946f85c08?w=800&q=80',
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Orlando, FL',
+      slug: 'orlando-fl',
+      localityType: 'city',
+      city: 'Orlando',
+      state: 'FL',
+      lat: 28.5383,
+      lng: -81.3792,
+      population: 289457,
+      imageUrl:
+        'https://images.unsplash.com/photo-1594729095022-e2f6d2f63f45?w=800&q=80',
+      description:
+        "Beyond the theme parks, Orlando is a thriving metro hub with world-class dining, Lake Eola's scenic downtown, a booming tech industry, and easy access to the Space Coast.",
+      highlights: [
+        'https://images.unsplash.com/photo-1594729095022-e2f6d2f63f45?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Charlotte, NC',
+      slug: 'charlotte-nc',
+      localityType: 'city',
+      city: 'Charlotte',
+      state: 'NC',
+      lat: 35.2271,
+      lng: -80.8431,
+      population: 885708,
+      imageUrl:
+        'https://images.unsplash.com/photo-1568527353631-7f02d8b0c4f5?w=800&q=80',
+      description:
+        "The Queen City is the Southeast's banking capital with Uptown's gleaming skyline, the Panthers and Hornets franchises, vibrant South End and NoDa neighborhoods, and the US National Whitewater Center.",
+      highlights: [
+        'https://images.unsplash.com/photo-1568527353631-7f02d8b0c4f5?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1587578932405-7c740a762f3a?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Atlanta, GA',
+      slug: 'atlanta-ga',
+      localityType: 'city',
+      city: 'Atlanta',
+      state: 'GA',
+      lat: 33.749,
+      lng: -84.388,
+      population: 496441,
+      imageUrl:
+        'https://images.unsplash.com/photo-1569974508324-0c4e5c2c1f1e?w=800&q=80',
+      description:
+        "The cultural capital of the South is a cosmopolitan mega-city with world-class museums, the Georgia Aquarium, the birthplace of the civil-rights movement, top universities, and a legendary food and music scene.",
+      highlights: [
+        'https://images.unsplash.com/photo-1569974508324-0c4e5c2c1f1e?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Beaufort, SC',
+      slug: 'beaufort-sc',
+      localityType: 'city',
+      city: 'Beaufort',
+      state: 'SC',
+      lat: 32.4316,
+      lng: -80.6698,
+      population: 31317,
+      imageUrl:
+        'https://images.unsplash.com/photo-1540914124281-342587941389?w=800&q=80',
+      description:
+        "The jewel of the Lowcountry, Beaufort's antebellum mansions, Spanish moss-draped live oaks, Gullah Geechee cultural heritage, and waterfront setting make it one of the South's most picturesque small cities.",
+      highlights: [
+        'https://images.unsplash.com/photo-1540914124281-342587941389?w=800&q=80',
+        'https://images.unsplash.com/photo-1587578932405-7c740a762f3a?w=800&q=80',
+        'https://images.unsplash.com/photo-1579782558504-209a34106519?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Brunswick, GA',
+      slug: 'brunswick-ga',
+      localityType: 'city',
+      city: 'Brunswick',
+      state: 'GA',
+      lat: 31.15,
+      lng: -81.4915,
+      population: 16257,
+      imageUrl:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+      description:
+        'Gateway to the Golden Isles, Brunswick is a historic port city with a charming Victorian downtown, fresh seafood straight off the dock, and easy access to Jekyll, St. Simons, and Sea islands.',
+      highlights: [
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Gainesville, FL',
+      slug: 'gainesville-fl',
+      localityType: 'city',
+      city: 'Gainesville',
+      state: 'FL',
+      lat: 29.6516,
+      lng: -82.3248,
+      population: 133997,
+      imageUrl:
+        'https://images.unsplash.com/photo-1562783487-623d90387097?w=800&q=80',
+      description:
+        "Home to the University of Florida and Gator Nation, Gainesville is a dynamic college city surrounded by natural springs, Paynes Prairie State Preserve, and a lively arts and live-music scene.",
+      highlights: [
+        'https://images.unsplash.com/photo-1562783487-623d90387097?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Tallahassee, FL',
+      slug: 'tallahassee-fl',
+      localityType: 'city',
+      city: 'Tallahassee',
+      state: 'FL',
+      lat: 30.4383,
+      lng: -84.2807,
+      population: 196165,
+      imageUrl:
+        'https://images.unsplash.com/photo-1574169208507-84376144848b?w=800&q=80',
+      description:
+        "Florida's capital city is home to Florida State University and FAMU, the historic capitol buildings, Cascades Park, and a beautiful canopy road network of ancient oaks draped in Spanish moss.",
+      highlights: [
+        'https://images.unsplash.com/photo-1574169208507-84376144848b?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Athens, GA',
+      slug: 'athens-ga',
+      localityType: 'city',
+      city: 'Athens',
+      state: 'GA',
+      lat: 33.9519,
+      lng: -83.3576,
+      population: 127315,
+      imageUrl:
+        'https://images.unsplash.com/photo-1568972547244-8a1e6cb4f9f9?w=800&q=80',
+      description:
+        'The Classic City is the home of the UGA Bulldogs and one of the top music towns in America—birthplace of R.E.M. and the B-52s—with a thriving downtown bar scene, eclectic eateries, and classic collegiate energy.',
+      highlights: [
+        'https://images.unsplash.com/photo-1568972547244-8a1e6cb4f9f9?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Hinesville, GA',
+      slug: 'hinesville-ga',
+      localityType: 'city',
+      city: 'Hinesville',
+      state: 'GA',
+      lat: 31.8468,
+      lng: -81.5957,
+      population: 34249,
+      imageUrl:
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      description:
+        'Home to Fort Stewart, the largest Army installation east of the Mississippi, Hinesville is a welcoming military community with affordable living, growing retail, and easy access to the Georgia coast.',
+      highlights: [
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Richmond Hill, GA',
+      slug: 'richmond-hill-ga',
+      localityType: 'city',
+      city: 'Richmond Hill',
+      state: 'GA',
+      lat: 31.9385,
+      lng: -81.3018,
+      population: 14259,
+      imageUrl:
+        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+      description:
+        "One of the fastest-growing cities in Georgia, Richmond Hill offers scenic Ogeechee River access, excellent Bryan County schools, a charming downtown, and a short drive to both Savannah and the Golden Isles.",
+      highlights: [
+        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Rincon, GA',
+      slug: 'rincon-ga',
+      localityType: 'city',
+      city: 'Rincon',
+      state: 'GA',
+      lat: 32.2949,
+      lng: -81.2357,
+      population: 11039,
+      imageUrl:
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+      description:
+        'A rapidly expanding bedroom community in Effingham County northwest of Savannah, Rincon offers affordable new construction homes, top-rated public schools, and quiet suburban living with easy I-95 access.',
+      highlights: [
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Bluffton, SC',
+      slug: 'bluffton-sc',
+      localityType: 'city',
+      city: 'Bluffton',
+      state: 'SC',
+      lat: 32.2371,
+      lng: -80.8601,
+      population: 28204,
+      imageUrl:
+        'https://images.unsplash.com/photo-1540914124281-342587941389?w=800&q=80',
+      description:
+        "Tucked along the May River, Bluffton's charming Old Town district—lined with live oaks and artisan galleries—sits at the gateway to Hilton Head Island, offering authentic Lowcountry living with a small-town feel.",
+      highlights: [
+        'https://images.unsplash.com/photo-1540914124281-342587941389?w=800&q=80',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+        'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Statesboro, GA',
+      slug: 'statesboro-ga',
+      localityType: 'city',
+      city: 'Statesboro',
+      state: 'GA',
+      lat: 32.4488,
+      lng: -81.7832,
+      population: 33521,
+      imageUrl:
+        'https://images.unsplash.com/photo-1568972547244-8a1e6cb4f9f9?w=800&q=80',
+      description:
+        'Home to Georgia Southern University and the Eagle Nation, Statesboro is a vibrant college town with a growing local food and arts scene, surrounded by farmland just an hour from the Georgia coast.',
+      highlights: [
+        'https://images.unsplash.com/photo-1568972547244-8a1e6cb4f9f9?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'St. Simons Island, GA',
+      slug: 'st-simons-island-ga',
+      localityType: 'city',
+      city: 'St. Simons Island',
+      state: 'GA',
+      lat: 31.1535,
+      lng: -81.3966,
+      population: 13381,
+      imageUrl:
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+      description:
+        "One of Georgia's most beloved barrier islands features a storied lighthouse, bike-friendly roads through live oak canopies, the historic Fort Frederica National Monument, and a quaint Village dining district.",
+      highlights: [
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Fernandina Beach, FL',
+      slug: 'fernandina-beach-fl',
+      localityType: 'city',
+      city: 'Fernandina Beach',
+      state: 'FL',
+      lat: 30.6719,
+      lng: -81.4623,
+      population: 13490,
+      imageUrl:
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+      description:
+        "Amelia Island's charming Victorian seaport boasts the largest concentration of Victorian-era structures in Florida, pristine beaches, a booming craft-beer scene, and a proud shrimping heritage.",
+      highlights: [
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'St. Augustine, FL',
+      slug: 'st-augustine-fl',
+      localityType: 'city',
+      city: 'St. Augustine',
+      state: 'FL',
+      lat: 29.8944,
+      lng: -81.315,
+      population: 14479,
+      imageUrl:
+        'https://images.unsplash.com/photo-1579782558504-209a34106519?w=800&q=80',
+      description:
+        "The oldest continuously occupied European settlement in the U.S. enchants with Spanish Colonial architecture, the ancient Castillo de San Marcos, cobblestone St. George Street, and beautiful Atlantic beach communities.",
+      highlights: [
+        'https://images.unsplash.com/photo-1579782558504-209a34106519?w=800&q=80',
+        'https://images.unsplash.com/photo-1587578932405-7c740a762f3a?w=800&q=80',
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Valdosta, GA',
+      slug: 'valdosta-ga',
+      localityType: 'city',
+      city: 'Valdosta',
+      state: 'GA',
+      lat: 30.8327,
+      lng: -83.2785,
+      population: 57597,
+      imageUrl:
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+      description:
+        "Georgia's Azalea City near the Florida border is home to Valdosta State University, Wild Adventures Theme Park, a revitalized historic downtown, and a passionate community identity around Wildcat athletics.",
+      highlights: [
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Florence, SC',
+      slug: 'florence-sc',
+      localityType: 'city',
+      city: 'Florence',
+      state: 'SC',
+      lat: 34.1954,
+      lng: -79.7626,
+      population: 37756,
+      imageUrl:
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      description:
+        "A growing regional center in the Pee Dee region, Florence is known for its I-95 commerce, the McLeod Health medical campus, a vibrant arts center, and convenient access to both Columbia and the Grand Strand coast.",
+      highlights: [
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Myrtle Beach, SC',
+      slug: 'myrtle-beach-sc',
+      localityType: 'city',
+      city: 'Myrtle Beach',
+      state: 'SC',
+      lat: 33.6891,
+      lng: -78.8867,
+      population: 35682,
+      imageUrl:
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+      description:
+        'The Grand Strand stretches 60 miles of Atlantic coastline offering world-class golf, a vibrant Boardwalk, Broadway at the Beach entertainment complex, fresh seafood, and endless family and nightlife attractions.',
+      highlights: [
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Fayetteville, NC',
+      slug: 'fayetteville-nc',
+      localityType: 'city',
+      city: 'Fayetteville',
+      state: 'NC',
+      lat: 35.0527,
+      lng: -78.8784,
+      population: 211657,
+      imageUrl:
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+      description:
+        'Home to Fort Liberty (formerly Fort Bragg), the largest military installation in the world by population, Fayetteville is a patriotic community with a reborn downtown, the 82nd Airborne Division Museum, and Cape Fear River access.',
+      highlights: [
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+    {
+      name: 'Daytona Beach, FL',
+      slug: 'daytona-beach-fl',
+      localityType: 'city',
+      city: 'Daytona Beach',
+      state: 'FL',
+      lat: 29.2108,
+      lng: -81.0228,
+      population: 73782,
+      imageUrl:
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+      description:
+        'The World Center of Racing is famous for the Daytona 500, Bike Week, 23 miles of hard-packed Atlantic beach, the historic Daytona Beach Bandshell, and Daytona International Speedway.',
+      highlights: [
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+      ],
+      timezone: 'America/New_York',
+    },
+  ];
 
 interface NeighborhoodData {
   name: string;
@@ -558,17 +989,9 @@ const NEIGHBORHOOD_COMMUNITIES: Record<string, NeighborhoodData[]> = {
       name: 'Historic District',
       slug: 'savannah-historic-district',
       description:
-        'The heart of Savannah with historic squares and antebellum architecture.',
+        'The heart of Savannah with 22 historic squares, cobblestone streets, and antebellum architecture dating to 1733.',
       imageUrl:
         'https://images.unsplash.com/photo-1587578932405-7c740a762f3a?w=800&q=80',
-    },
-    {
-      name: 'Savannah Historic District',
-      slug: 'savannah-historic-district-neighborhood',
-      description:
-        "Browse historic homes and squares in America's first planned city.",
-      imageUrl:
-        'https://images.unsplash.com/photo-1579782558504-209a34106519?w=800&q=80',
     },
     {
       name: 'Tybee Island',
@@ -1567,6 +1990,488 @@ const NEIGHBORHOOD_COMMUNITIES: Record<string, NeighborhoodData[]> = {
         'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
     },
   ],
+  'hinesville-ga': [
+    {
+      name: 'Fort Stewart',
+      slug: 'fort-stewart-ga',
+      description:
+        'The largest Army installation east of the Mississippi, home to the 3rd Infantry Division.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    },
+    {
+      name: 'Downtown Hinesville',
+      slug: 'downtown-hinesville-ga',
+      description:
+        'A growing downtown with shops, restaurants, and family-friendly events near Memorial Drive.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+    },
+    {
+      name: 'Flemington',
+      slug: 'flemington-ga',
+      description:
+        'Family-friendly community adjacent to Hinesville with newer subdivisions and parks.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+    },
+    {
+      name: 'Midway',
+      slug: 'midway-ga',
+      description:
+        'Small historic town in Liberty County featuring the colonial-era Midway Church and museum.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1587578932405-7c740a762f3a?w=800&q=80',
+    },
+    {
+      name: 'Walthourville',
+      slug: 'walthourville-ga',
+      description:
+        'Quiet residential community in Liberty County near Fort Stewart.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+    },
+  ],
+  'richmond-hill-ga': [
+    {
+      name: 'Downtown Richmond Hill',
+      slug: 'downtown-richmond-hill-ga',
+      description:
+        'Charming small downtown with restaurants, boutiques, and community events along Ford Avenue.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+    },
+    {
+      name: 'Ford Plantation',
+      slug: 'ford-plantation-ga',
+      description:
+        "Henry Ford's historic winter estate, now an exclusive gated community with golf and equestrian facilities.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+    },
+    {
+      name: 'Sterling Creek',
+      slug: 'sterling-creek-richmond-hill',
+      description:
+        'A popular newer subdivision offering family-friendly amenities and excellent Bryan County schools.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+    },
+    {
+      name: 'Waterways',
+      slug: 'waterways-richmond-hill',
+      description:
+        'Upscale waterfront community with a marina and boat access to the Ogeechee River.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+    },
+  ],
+  'rincon-ga': [
+    {
+      name: 'Downtown Rincon',
+      slug: 'downtown-rincon-ga',
+      description:
+        'The commercial heart of Effingham County with local eateries, shops, and community festivals.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+    },
+    {
+      name: 'Goshen Plantation',
+      slug: 'goshen-plantation-rincon',
+      description:
+        'Established master-planned community with top-rated Effingham County schools and amenity center.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+    },
+    {
+      name: 'Springfield',
+      slug: 'springfield-ga',
+      description:
+        "Effingham County's seat, a quiet historic town with the Heritage Museum and courthouse square.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+    },
+  ],
+  'bluffton-sc': [
+    {
+      name: 'Old Town Bluffton',
+      slug: 'old-town-bluffton-sc',
+      description:
+        'A walkable, live-oak-shaded arts district along the May River with galleries, cafes, and the historic Church of the Cross.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1540914124281-342587941389?w=800&q=80',
+    },
+    {
+      name: 'Sun City Hilton Head',
+      slug: 'sun-city-hilton-head',
+      description:
+        'Del Webb active-adult community with three golf courses and a full amenity center.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+    },
+    {
+      name: 'Hampton Lake',
+      slug: 'hampton-lake-bluffton',
+      description:
+        'Luxury lakefront community featuring a 165-acre freshwater lake and floating boathouse.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
+    },
+    {
+      name: 'Palmetto Bluff',
+      slug: 'palmetto-bluff-sc',
+      description:
+        'Iconic 20,000-acre resort community with a village center, Inn at Palmetto Bluff, and nature trails.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    },
+    {
+      name: 'Buckwalter',
+      slug: 'buckwalter-bluffton',
+      description:
+        'Vibrant mixed-use corridor with the Bluffton Recreation Center and growing retail.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+    },
+  ],
+  'statesboro-ga': [
+    {
+      name: 'Downtown Statesboro',
+      slug: 'downtown-statesboro-ga',
+      description:
+        'College-town downtown with local restaurants, shops, and live music centered around Georgia Southern University.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1568972547244-8a1e6cb4f9f9?w=800&q=80',
+    },
+    {
+      name: 'Georgia Southern University',
+      slug: 'georgia-southern-statesboro',
+      description:
+        'The heart of Statesboro — home to the Eagle Nation, Paulson Stadium, and a thriving student community.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+    },
+    {
+      name: 'Statesboro Mall Area',
+      slug: 'statesboro-mall-area',
+      description:
+        'Major retail and dining corridor serving Bulloch County with national and local businesses.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    },
+    {
+      name: 'Portal',
+      slug: 'portal-ga',
+      description:
+        'Small Bulloch County community known for strong agriculture and close-knit community spirit.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+    },
+  ],
+  'st-simons-island-ga': [
+    {
+      name: 'St. Simons Village',
+      slug: 'st-simons-village-ga',
+      description:
+        'The charming village hub of the island with pier, shops, restaurants, and a classic seaside atmosphere.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+    },
+    {
+      name: 'East Beach',
+      slug: 'east-beach-st-simons',
+      description:
+        "The island's Atlantic-facing beach community with the historic Coast Guard Station.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+    },
+    {
+      name: 'Retreat Plantation',
+      slug: 'retreat-plantation-st-simons',
+      description:
+        'Historic plantation site now home to Sea Island Golf Club on the northern end of St. Simons.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+    },
+    {
+      name: 'Frederica',
+      slug: 'frederica-st-simons',
+      description:
+        'Upscale residential community near Fort Frederica National Monument and Christ Church.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+    },
+  ],
+  'fernandina-beach-fl': [
+    {
+      name: 'Historic Downtown Fernandina Beach',
+      slug: 'historic-downtown-fernandina-beach',
+      description:
+        'The Victorian heart of Amelia Island with Centre Street boutiques, seafood restaurants, and eight flags of history.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+    },
+    {
+      name: 'Amelia Island Plantation',
+      slug: 'amelia-island-plantation',
+      description:
+        'Landmark resort community on the south end with golf, tennis, beach access, and the Omni Amelia Island Resort.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+    },
+    {
+      name: 'Summer Beach',
+      slug: 'summer-beach-fl',
+      description:
+        'Quiet residential community on southern Amelia Island near Fort Clinch State Park.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+    },
+    {
+      name: 'Yulee',
+      slug: 'yulee-fl',
+      description:
+        'Fast-growing Nassau County mainland community with shopping and easy I-95 access to Jacksonville.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+    },
+  ],
+  'st-augustine-fl': [
+    {
+      name: 'St. George Street Historic District',
+      slug: 'st-george-street-st-augustine',
+      description:
+        "The pedestrian spine of the nation's oldest city, lined with colonial Spanish buildings, galleries, and restaurants.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1579782558504-209a34106519?w=800&q=80',
+    },
+    {
+      name: 'Anastasia Island',
+      slug: 'anastasia-island-fl',
+      description:
+        'Barrier island home to St. Augustine Beach, the Alligator Farm, and Anastasia State Park.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+    },
+    {
+      name: 'Vilano Beach',
+      slug: 'vilano-beach-fl',
+      description:
+        'A quiet beachfront community north of the inlet with stunning sunrise views and a growing dining scene.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+    },
+    {
+      name: 'Lincolnville',
+      slug: 'lincolnville-st-augustine',
+      description:
+        "Historic African American neighborhood listed on the National Register of Historic Places with the Lincolnville Museum.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1587578932405-7c740a762f3a?w=800&q=80',
+    },
+    {
+      name: 'Ponte Vedra',
+      slug: 'ponte-vedra-fl',
+      description:
+        'Upscale coastal community south of Jacksonville known for world-class golf and the PGA Tour headquarters.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+    },
+  ],
+  'valdosta-ga': [
+    {
+      name: 'Downtown Valdosta',
+      slug: 'downtown-valdosta-ga',
+      description:
+        'A revitalized historic downtown with the Ashley Street Corridor, local dining, and beautiful azalea gardens.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+    },
+    {
+      name: 'Valdosta State University',
+      slug: 'vsu-valdosta',
+      description:
+        'The campus community around VSU and Blazer athletics in the heart of South Georgia.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+    },
+    {
+      name: 'Lake Park',
+      slug: 'lake-park-ga',
+      description:
+        'Small community on I-75 near the Florida border, popular for outlet shopping and Eagle Lake.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    },
+    {
+      name: 'Lowndes County',
+      slug: 'lowndes-county-ga',
+      description:
+        'The greater county area surrounding Valdosta with agriculture, new development, and community events.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+    },
+  ],
+  'florence-sc': [
+    {
+      name: 'Downtown Florence',
+      slug: 'downtown-florence-sc',
+      description:
+        'A revitalized urban core with the Florence Center, boutique shops, and the Florence Railroad Museum.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    },
+    {
+      name: 'Palmetto Place',
+      slug: 'palmetto-place-florence',
+      description:
+        'Growing residential and commercial corridor in west Florence with new construction and retail.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+    },
+    {
+      name: 'Timrod Park',
+      slug: 'timrod-park-florence',
+      description:
+        "Florence's historic neighborhood park area with the Timrod Library and classic Southern homes.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+    },
+    {
+      name: 'Quinby',
+      slug: 'quinby-sc',
+      description:
+        'Small incorporated town within the greater Florence area with a tight-knit community feel.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+    },
+  ],
+  'myrtle-beach-sc': [
+    {
+      name: 'Downtown Myrtle Beach',
+      slug: 'downtown-myrtle-beach-sc',
+      description:
+        'The energetic center of the Grand Strand with the iconic Boardwalk, SkyWheel, and ocean boulevard entertainment.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+    },
+    {
+      name: 'North Myrtle Beach',
+      slug: 'north-myrtle-beach-sc',
+      description:
+        'Beloved beach city home to the Shag dance, Oak Island, and a quieter beachfront atmosphere.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+    },
+    {
+      name: 'Pawleys Island',
+      slug: 'pawleys-island-sc',
+      description:
+        'Arrogantly Shabby™ is the motto of this charming low-key barrier island south of Myrtle Beach on the Hammock Coast.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+    },
+    {
+      name: 'Conway',
+      slug: 'conway-sc',
+      description:
+        "Horry County's historic seat with a beautiful Waccamaw Riverfront Boardwalk and Coastal Carolina University.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+    },
+    {
+      name: 'Broadway at the Beach',
+      slug: 'broadway-at-the-beach',
+      description:
+        'The flagship entertainment complex with restaurants, nightlife, Ripley\'s Aquarium, and seasonal festivals.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    },
+  ],
+  'fayetteville-nc': [
+    {
+      name: 'Downtown Fayetteville',
+      slug: 'downtown-fayetteville-nc',
+      description:
+        'A redeveloped urban core with Segra Stadium, the Museum of the Cape Fear, and a growing restaurant scene.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+    },
+    {
+      name: 'Fort Liberty',
+      slug: 'fort-liberty-nc',
+      description:
+        "Formerly Fort Bragg, the world's largest military installation by population is home to the 82nd Airborne Division.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    },
+    {
+      name: 'Hope Mills',
+      slug: 'hope-mills-nc',
+      description:
+        'Suburban community south of Fayetteville known for Hope Mills Lake and a strong sense of community.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+    },
+    {
+      name: 'Spring Lake',
+      slug: 'spring-lake-nc',
+      description:
+        'Military-adjacent community north of Fayetteville with affordable housing and easy post access.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1566543079657-7756ff1b5d7c?w=800&q=80',
+    },
+    {
+      name: 'Haymount',
+      slug: 'haymount-fayetteville',
+      description:
+        "Fayetteville's most historic neighborhood with elegant homes, Haymount Hill, and the Cape Fear Valley Medical Center.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+    },
+  ],
+  'daytona-beach-fl': [
+    {
+      name: 'Daytona Beach Shores',
+      slug: 'daytona-beach-shores-fl',
+      description:
+        'Upscale oceanfront community south of Daytona with quieter beaches and luxury condos.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80',
+    },
+    {
+      name: 'Ormond Beach',
+      slug: 'ormond-beach-fl',
+      description:
+        "North of Daytona, Ormond Beach is known as the Birthplace of Speed and offers quieter beaches and Tomoka State Park.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=80',
+    },
+    {
+      name: 'Port Orange',
+      slug: 'port-orange-fl',
+      description:
+        'Fast-growing suburb south of Daytona with Dunlawton Avenue shopping and Spruce Creek Fly-In community.',
+      imageUrl:
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+    },
+    {
+      name: 'Daytona International Speedway',
+      slug: 'daytona-speedway-area',
+      description:
+        "The World Center of Racing area surrounds NASCAR's most iconic 2.5-mile superspeedway with year-round events.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+    },
+    {
+      name: 'New Smyrna Beach',
+      slug: 'new-smyrna-beach-fl',
+      description:
+        "Florida's most artsy beach town with a thriving Canal Street arts district and world-famous waves.",
+      imageUrl:
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    },
+  ],
 };
 
 const SLEEP_MS = 100;
@@ -1711,7 +2616,8 @@ async function main() {
         {
           name: cityData.name,
           slug: cityData.slug,
-          description: `Welcome to ${cityData.name}. Connect with locals, share news, and discover what's happening in your community.`,
+          description: cityData.description,
+          highlights: cityData.highlights,
           localityType: cityData.localityType,
           countryCode: 'US',
           adminArea: cityData.state,
@@ -1814,10 +2720,10 @@ async function main() {
       userConfig.community.city === 'Savannah'
         ? 'savannah-ga'
         : userConfig.community.city === 'Charleston'
-        ? 'charleston-sc'
-        : userConfig.community.city === 'Hinesville'
-        ? 'hinesville-ga'
-        : 'savannah-ga';
+          ? 'charleston-sc'
+          : userConfig.community.city === 'Hinesville'
+            ? 'hinesville-ga'
+            : 'savannah-ga';
     const parentCity = cityCommunities.get(citySlug);
 
     // Create user's community
@@ -1919,6 +2825,7 @@ async function main() {
             condition: 'Good',
             communityId: userCommunity.id,
             profileId: user.profileId,
+            imageUrls: classifiedData.imageUrls ?? [],
             appScope,
           },
           { headers: { Authorization: `Bearer ${user.token}` } }

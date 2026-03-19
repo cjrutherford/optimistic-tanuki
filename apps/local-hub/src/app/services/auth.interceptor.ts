@@ -20,7 +20,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(clonedRequest).pipe(
     catchError((error) => {
-      if (error.status === 401) {
+      if (error.status === 401 && token) {
+        // Only treat 401 as session expiry if a token was present.
+        // Anonymous users hitting auth-required endpoints should NOT be
+        // redirected to login.
         authStateService.logout();
         router.navigate(['/login']);
       }

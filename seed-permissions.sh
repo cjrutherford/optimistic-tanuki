@@ -32,7 +32,8 @@ INSERT INTO "app_scope" ("name", "description", "active") VALUES
 ('assets', 'Assets service', true),
 ('social', 'Social features', true),
 ('authentication', 'Authentication service', true),
-('profile', 'Profile service', true);
+('profile', 'Profile service', true),
+('local-hub', 'Local Hub - classifieds, communities, and city pages', true);
 SQL
 
 psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
@@ -73,6 +74,12 @@ VALUES
   ('social_user', 'Social user (follow/post)', (SELECT id FROM app_scope WHERE name = 'social'))
 ON CONFLICT ("name") DO NOTHING;
 
+-- Local Hub roles
+INSERT INTO "role" (name, description, "appScopeId")
+VALUES
+  ('local_hub_member', 'Local Hub community member with classifieds access', (SELECT id FROM app_scope WHERE name = 'local-hub'))
+ON CONFLICT ("name") DO NOTHING;
+
 -- Global scope roles
 INSERT INTO "role" (name, description, "appScopeId")
 VALUES
@@ -89,7 +96,8 @@ VALUES
   ('client_interface_user', 'Standard user for client interface', (SELECT id FROM app_scope WHERE name = 'client-interface')),
   ('digital_standard_user', 'Standard user for Digital Homestead', (SELECT id FROM app_scope WHERE name = 'digital-homestead')),
   ('christopherrutherford_standard_user', 'Standard user for Christopher Rutherford site', (SELECT id FROM app_scope WHERE name = 'christopherrutherford-net')),
-  ('christopherrutherford_owner_user', 'Owner user for Christopher Rutherford site', (SELECT id FROM app_scope WHERE name = 'christopherrutherford-net'))
+  ('christopherrutherford_owner_user', 'Owner user for Christopher Rutherford site', (SELECT id FROM app_scope WHERE name = 'christopherrutherford-net')),
+  ('local_hub_standard_user', 'Standard user for Local Hub', (SELECT id FROM app_scope WHERE name = 'local-hub'))
 ON CONFLICT ("name") DO NOTHING;
 
 COMMIT;
@@ -206,6 +214,22 @@ VALUES
   ('asset.delete', 'Delete asset (forgeofwill)', 'asset', 'delete', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill')),
   ('social.post.create', 'Create social post (forgeofwill)', 'post', 'create', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill')),
   ('social.post.read', 'Read social post (forgeofwill)', 'post', 'read', NULL, (SELECT id FROM app_scope WHERE name='forgeofwill'))
+ON CONFLICT (name, "appScopeId") DO NOTHING;
+
+-- Local Hub scope permissions (classifieds, community management)
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+VALUES
+  ('classified.create', 'Create classified ad', 'classified', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('classified.read', 'Read classified ad', 'classified', 'read', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('classified.update', 'Update classified ad', 'classified', 'update', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('classified.delete', 'Delete classified ad', 'classified', 'delete', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('community.join', 'Join community', 'community', 'join', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('community.leave', 'Leave community', 'community', 'leave', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('community.read', 'Read community', 'community', 'read', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('business.create', 'Create business page', 'business', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('business.update', 'Update business page', 'business', 'update', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('election.vote', 'Vote in community elections', 'election', 'vote', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('election.nominate', 'Nominate in community elections', 'election', 'nominate', NULL, (SELECT id FROM app_scope WHERE name='local-hub'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Map permissions to roles (role_permission)
@@ -389,6 +413,33 @@ FROM role r
 CROSS JOIN permission p 
 WHERE r.name = 'christopherrutherford_owner_user'
   AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='christopherrutherford-net')
+ON CONFLICT DO NOTHING;
+
+-- local_hub_member - full classifieds and community permissions
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name IN (
+  'classified.create',
+  'classified.read',
+  'classified.update',
+  'classified.delete',
+  'community.join',
+  'community.leave',
+  'community.read',
+  'election.vote',
+  'election.nominate'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='local-hub')
+WHERE r.name = 'local_hub_member'
+ON CONFLICT DO NOTHING;
+
+-- local_hub_standard_user - basic read permissions
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name IN (
+  'classified.read',
+  'community.read'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='local-hub')
+WHERE r.name = 'local_hub_standard_user'
 ON CONFLICT DO NOTHING;
 
 COMMIT;

@@ -1024,6 +1024,77 @@ export class AppController {
     return posts;
   }
 
+  @MessagePattern({ cmd: CommunityCommands.GET_MANAGER })
+  async getCommunityManager(@Payload() data: { communityId: string }) {
+    return await this.communityService.getCommunityManager(data.communityId);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.GET_ELECTION })
+  async getCommunityElection(@Payload() data: { communityId: string }) {
+    return await this.communityService.getActiveElection(data.communityId);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.START_ELECTION })
+  async startElection(
+    @Payload() data: { communityId: string; initiatedBy: string; endsAt?: Date }
+  ) {
+    return await this.communityService.startElection(
+      data.communityId,
+      data.initiatedBy,
+      data.endsAt
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.NOMINATE })
+  async nominateForElection(
+    @Payload() data: { communityId: string; userId: string; profileId: string }
+  ) {
+    return await this.communityService.nominateForElection(
+      data.communityId,
+      data.userId,
+      data.profileId
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.VOTE })
+  async voteInElection(
+    @Payload()
+    data: {
+      communityId: string;
+      voterId: string;
+      voterProfileId: string;
+      candidateId: string;
+    }
+  ) {
+    return await this.communityService.voteInElection(
+      data.communityId,
+      data.voterId,
+      data.voterProfileId,
+      data.candidateId
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.CLOSE_ELECTION })
+  async closeElection(@Payload() data: { electionId: string }) {
+    return await this.communityService.closeElection(data.electionId);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.APPOINT_MANAGER })
+  async appointManager(
+    @Payload() data: { communityId: string; userId: string; profileId: string }
+  ) {
+    return await this.communityService.appointManager(
+      data.communityId,
+      data.userId,
+      data.profileId
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.REVOKE_MANAGER })
+  async revokeManager(@Payload() data: { communityId: string }) {
+    return await this.communityService.revokeManager(data.communityId);
+  }
+
   // Notification handlers
   @MessagePattern({ cmd: NotificationCommands.CREATE })
   async createNotification(

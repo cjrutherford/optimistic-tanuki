@@ -40,6 +40,9 @@ const PaymentCommands = {
   GET_BUSINESS_PAGE: 'payments.getBusinessPage',
   UPDATE_BUSINESS_PAGE: 'payments.updateBusinessPage',
   CANCEL_BUSINESS_SUBSCRIPTION: 'payments.cancelBusinessSubscription',
+  CREATE_BUSINESS_THEME: 'payments.createBusinessTheme',
+  GET_BUSINESS_THEME: 'payments.getBusinessTheme',
+  UPDATE_BUSINESS_THEME: 'payments.updateBusinessTheme',
   CREATE_SPONSORSHIP_CHECKOUT: 'payments.createSponsorshipCheckout',
   GET_ACTIVE_SPONSORSHIPS: 'payments.getActiveSponsorships',
   GET_USER_SPONSORSHIPS: 'payments.getUserSponsorships',
@@ -52,6 +55,13 @@ const PaymentCommands = {
   WITHDRAW_OFFER: 'payments.withdrawOffer',
   GET_OFFERS_FOR_CLASSIFIED: 'payments.getOffersForClassified',
   GET_USER_OFFERS: 'payments.getUserOffers',
+  GET_SELLER_WALLET: 'payments.getSellerWallet',
+  UPDATE_SELLER_PAYOUT_INFO: 'payments.updateSellerPayoutInfo',
+  CREATE_PAYOUT_REQUEST: 'payments.createPayoutRequest',
+  GET_SELLER_PAYOUT_REQUESTS: 'payments.getSellerPayoutRequests',
+  CANCEL_PAYOUT_REQUEST: 'payments.cancelPayoutRequest',
+  GET_SELLER_EARNINGS_SUMMARY: 'payments.getSellerEarningsSummary',
+  GET_BUSINESS_PAGES_BY_CITY: 'payments.getBusinessPagesByCity',
 };
 
 const OrderCommands = {

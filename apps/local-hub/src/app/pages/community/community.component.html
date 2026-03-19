@@ -66,21 +66,44 @@
         <!-- Community Manager badge (localities only) -->
         @if (isLocality && communityManager()) {
         <div class="manager-badge" title="Elected Community Manager">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+            />
           </svg>
-          <span>Manager: <strong>{{ communityManager()!.name }}</strong></span>
+          <span
+            >Manager: <strong>{{ communityManager()!.name }}</strong></span
+          >
         </div>
         }
 
         <!-- Active election indicator (localities only) -->
-        @if (isLocality && activeElection() && activeElection()!.status === 'open') {
-        <button class="election-badge" (click)="openElectionModal()"
-                aria-label="View active election">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/>
+        @if (isLocality && activeElection() && activeElection()!.status ===
+        'open') {
+        <button
+          class="election-badge"
+          (click)="openElectionModal()"
+          aria-label="View active election"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M9 9h6M9 12h6M9 15h4" />
           </svg>
           Election in Progress — Vote Now
         </button>
@@ -151,15 +174,6 @@
           >
             View Classifieds
           </button>
-
-          @if (isMember()) {
-          <button
-            class="btn btn-primary btn-large"
-            (click)="navigateToNewClassified()"
-          >
-            + Post Classified
-          </button>
-          }
         </div>
       </div>
     </div>
@@ -187,7 +201,9 @@
           @if (!isLocality) {
           <p class="support-copy subtle">
             Business pages are connected to localities. Visit the
-            <button class="action-link" (click)="navigateToCity()">city page</button>
+            <button class="action-link" (click)="navigateToCity()">
+              city page
+            </button>
             to create or view business listings.
           </p>
           } @else if (loadingBusiness()) {
@@ -470,129 +486,28 @@
   <!-- ===== Discussion / Post feed ===== -->
   <section class="community-feed-section">
     <div class="section-container">
-      <div class="section-header">
-        <h2 class="section-title">Recent Discussions</h2>
-        @if (isMember()) {
-        <button
-          class="btn btn-primary"
-          (click)="toggleCompose()"
-          [disabled]="submittingPost()"
-        >
-          @if (showCompose()) { Cancel } @else { + New Post }
-        </button>
-        }
-      </div>
-
-      @if (isMember() && showCompose()) {
-      <div class="compose-wrapper">
-        <lib-social-compose
-          [profileId]="authState.getActingProfileId()"
-          (postSubmitted)="onPostSubmitted($event)"
-        ></lib-social-compose>
-      </div>
-      } @if (!isMember()) {
-      <div class="gated-notice">
-        <div class="gated-icon">
-          <svg
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-        </div>
-        <p>
-          @if (!isAuthenticated()) {
-          <a href="/login" class="action-link">Sign in</a> and join this
-          community to post and comment. } @else { Join this community to post
-          and comment. }
-        </p>
-      </div>
-      } @else if (posts().length === 0) {
-      <div class="empty-feed">
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-        >
-          <path
-            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-          />
-        </svg>
-        <p>No discussions yet. Be the first to post!</p>
-      </div>
-      } @else {
-      <div class="posts-grid">
-        @for (post of posts(); track post.id) {
-        <article class="post-card" role="article">
-          <div class="post-header">
-            <span class="post-date">{{
-              post.createdAt | date : 'MMM d, y'
-            }}</span>
-          </div>
-          <h3 class="post-title">{{ post.title }}</h3>
-          <p class="post-content">{{ post.content }}</p>
-          <div class="post-footer">
-            <span class="post-author">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              {{ post.authorName }}
-            </span>
-            <div class="post-stats">
-              <span class="post-stat">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                  />
-                </svg>
-                {{ post.likes }}
-              </span>
-              <span class="post-stat">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-                  />
-                </svg>
-                {{ post.comments }}
-              </span>
-            </div>
-          </div>
-        </article>
-        }
-      </div>
-      }
+      <lib-community-posts></lib-community-posts>
     </div>
   </section>
+
+  <!-- ===== Chat ===== -->
+  @if (isMember()) {
+  <section class="community-chat-section">
+    <div class="section-container">
+      <h2 class="section-title">Community Chat</h2>
+      <lib-community-chat></lib-community-chat>
+    </div>
+  </section>
+  }
+
+  <!-- ===== Members ===== -->
+  @if (isMember()) {
+  <section class="community-members-section">
+    <div class="section-container">
+      <lib-manage-members></lib-manage-members>
+    </div>
+  </section>
+  }
 
   <section class="community-about">
     <div class="section-container">
@@ -616,8 +531,8 @@
 >
   <div class="election-panel">
     <p class="election-description">
-      The community is electing a manager for {{ community()!.name }}.
-      Vote for a candidate below or nominate yourself to run.
+      The community is electing a manager for {{ community()!.name }}. Vote for
+      a candidate below or nominate yourself to run.
     </p>
     <p class="election-ends">
       Election ends:
@@ -633,10 +548,12 @@
         <span class="candidate-name">{{ candidate.name }}</span>
         <span class="candidate-votes">{{ candidate.votes }} votes</span>
         @if (!activeElection()!.myVote) {
-        <button class="btn btn-sm btn-primary"
-                (click)="voteForCandidate(candidate.userId)"
-                [disabled]="votingInProgress()"
-                [attr.aria-label]="'Vote for ' + candidate.name">
+        <button
+          class="btn btn-sm btn-primary"
+          (click)="voteForCandidate(candidate.userId)"
+          [disabled]="votingInProgress()"
+          [attr.aria-label]="'Vote for ' + candidate.name"
+        >
           Vote
         </button>
         } @else if (activeElection()!.myVote === candidate.userId) {
@@ -645,9 +562,7 @@
       </li>
       }
     </ul>
-    }
-
-    @if (!activeElection()!.myVote) {
+    } @if (!activeElection()!.myVote) {
     <div class="election-actions">
       <button class="btn btn-outline" (click)="selfNominate()">
         Nominate Yourself

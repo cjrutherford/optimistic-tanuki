@@ -2,6 +2,7 @@ import { APP_BASE_HREF } from '@angular/common';
 import { CommonEngine, isMainModule } from '@angular/ssr/node';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bootstrap from './main.server';
@@ -15,6 +16,8 @@ const commonEngine = new CommonEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+
+app.use(cookieParser());
 
 app.use(
   '/socket.io',
@@ -34,30 +37,87 @@ app.use(
   })
 );
 
-app.use('/api', async (req, res) => {
-  const url = `${gatewayUrl}${req.originalUrl}`;
-  try {
-    const response = await fetch(url, {
-      method: req.method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    const data = await response.text();
-    res.status(response.status);
-    res.setHeader(
-      'content-type',
-      response.headers.get('content-type') || 'application/json'
-    );
-    res.send(data);
-  } catch (err: any) {
-    res.status(500).json({ error: 'Proxy error', message: err.message });
+app.use(
+  '/api',
+  createProxyMiddleware({
+    target: `${gatewayUrl}/api`,
+    changeOrigin: true,
+  })
+);
+
+const PROTECTED_ROUTES = [
+  '/account',
+  '/seller-dashboard',
+  '/messages',
+  '/messages/new',
+];
+
+const MEMBER_ROUTES = [
+  '/city/:slug/classifieds/new',
+  '/c/:communitySlug/classifieds/new',
+];
+
+function isAuthenticated(req: express.Request): boolean {
+  const token =
+    req.cookies['ot-local-hub-authToken'] ||
+    req.headers.authorization?.replace('Bearer ', '');
+
+  if (!token) {
+    return false;
   }
+
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return false;
+    }
+    const payload = JSON.parse(atob(parts[1]));
+    const expiresAt = payload.exp * 1000;
+    return expiresAt > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+function isProtectedRoute(path: string): boolean {
+  return PROTECTED_ROUTES.some((route) => {
+    if (route.includes(':')) {
+      const pattern = route.replace(/:[^/]+/g, '[^/]+');
+      return new RegExp(`^${pattern}$`).test(path);
+    }
+    return path.startsWith(route);
+  });
+}
+
+function requiresMemberRoute(path: string): boolean {
+  return MEMBER_ROUTES.some((route) => {
+    const pattern = route.replace(/:[^/]+/g, '[^/]+');
+    return new RegExp(`^${pattern}$`).test(path);
+  });
+}
+
+function getReturnUrl(req: express.Request): string {
+  return (req.query['returnUrl'] as string) || req.originalUrl;
+}
+
+app.use((req, res, next) => {
+  const path = req.path;
+
+  if (isProtectedRoute(path) || requiresMemberRoute(path)) {
+    if (!isAuthenticated(req)) {
+      const returnUrl = getReturnUrl(req);
+      const loginUrl = `/login${
+        returnUrl && returnUrl !== '/'
+          ? `?returnUrl=${encodeURIComponent(returnUrl)}`
+          : ''
+      }`;
+      return res.redirect(loginUrl);
+    }
+  }
+
+  next();
 });
 
-/**
- * Serve static files from /browser
- */
 app.get(
   '**',
   express.static(browserDistFolder, {
@@ -66,9 +126,6 @@ app.get(
   })
 );
 
-/**
- * Handle all other requests by rendering the Angular application.
- */
 app.get('**', (req, res, next) => {
   const { protocol, originalUrl, baseUrl, headers } = req;
 
@@ -84,10 +141,6 @@ app.get('**', (req, res, next) => {
     .catch((err) => next(err));
 });
 
-/**
- * Start the server if this module is the main entry point.
- * The server listens on the port defined by the `PORT` environment variable, or defaults to 4201.
- */
 if (isMainModule(import.meta.url)) {
   const port = process.env['PORT'] || 4201;
   app.listen(port, () => {

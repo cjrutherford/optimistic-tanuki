@@ -3,7 +3,14 @@ import { CommonModule, DatePipe, CurrencyPipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthStateService } from '../../services/auth-state.service';
-import { PaymentService, Offer, Payment } from '../../services/payment.service';
+import {
+  PaymentService,
+  Offer,
+  Payment,
+  EarningsSummary,
+  PayoutRequest,
+  SellerWallet,
+} from '../../services/payment.service';
 import {
   CommunityService,
   LocalCommunity,
@@ -31,7 +38,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         <p>Loading dashboard...</p>
       </div>
       } @else {
-      
+
       <!-- Stats Overview -->
       <div class="stats-grid">
         <div class="stat-card">
@@ -52,6 +59,74 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         </div>
       </div>
 
+      <!-- Earnings & Wallet Section -->
+      @if (earningsSummary()) {
+      <section class="dashboard-section">
+        <h2>Earnings & Wallet</h2>
+        <div class="earnings-grid">
+          <div class="earning-card available">
+            <span class="earning-label">Available Balance</span>
+            <span class="earning-value">{{
+              earningsSummary()!.availableBalance | currency
+            }}</span>
+            @if (earningsSummary()!.availableBalance > 0) {
+            <button class="btn btn-primary" (click)="openCashoutModal()">
+              Request Cashout
+            </button>
+            }
+          </div>
+          <div class="earning-card pending">
+            <span class="earning-label">Pending</span>
+            <span class="earning-value">{{
+              earningsSummary()!.pendingBalance | currency
+            }}</span>
+          </div>
+          <div class="earning-card total">
+            <span class="earning-label">Total Earned</span>
+            <span class="earning-value">{{
+              earningsSummary()!.totalEarned | currency
+            }}</span>
+          </div>
+          <div class="earning-card payouts">
+            <span class="earning-label">Total Paid Out</span>
+            <span class="earning-value">{{
+              earningsSummary()!.totalPaidOut | currency
+            }}</span>
+          </div>
+        </div>
+      </section>
+      }
+
+      <!-- Payout History -->
+      @if (payoutRequests().length > 0) {
+      <section class="dashboard-section">
+        <h2>Payout Requests</h2>
+        <div class="payouts-list">
+          @for (payout of payoutRequests(); track payout.id) {
+          <div class="payout-card">
+            <div class="payout-info">
+              <span class="payout-amount">{{ payout.amount | currency }}</span>
+              <span class="payout-method">{{
+                payout.payoutMethod | titlecase
+              }}</span>
+              <span class="payout-date">{{
+                payout.createdAt | date : 'short'
+              }}</span>
+            </div>
+            <span class="payout-status" [class]="'status-' + payout.status">
+              {{ payout.status }}
+            </span>
+            @if (payout.status === 'pending') {
+            <button class="btn btn-reject" (click)="cancelPayout(payout)">
+              Cancel
+            </button>
+            }
+          </div>
+          }
+        </div>
+      </section>
+      }
+
       <!-- Pending Offers -->
       @if (sellerPendingOffers().length > 0) {
       <section class="dashboard-section">
@@ -60,17 +135,29 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
           @for (offer of sellerPendingOffers(); track offer.id) {
           <div class="offer-card">
             <div class="offer-info">
-              <span class="listing-title">{{ getListingTitle(offer.classifiedId) }}</span>
-              <span class="offer-amount">{{ offer.offeredAmount | currency }}</span>
+              <span class="listing-title">{{
+                getListingTitle(offer.classifiedId)
+              }}</span>
+              <span class="offer-amount">{{
+                offer.offeredAmount | currency
+              }}</span>
               @if (offer.message) {
               <p class="offer-message">"{{ offer.message }}"</p>
               }
-              <span class="offer-date">{{ offer.createdAt | date:'short' }}</span>
+              <span class="offer-date">{{
+                offer.createdAt | date : 'short'
+              }}</span>
             </div>
             <div class="offer-actions">
-              <button class="btn btn-accept" (click)="acceptOffer(offer)">Accept</button>
-              <button class="btn btn-reject" (click)="rejectOffer(offer)">Reject</button>
-              <button class="btn btn-counter" (click)="openCounterModal(offer)">Counter</button>
+              <button class="btn btn-accept" (click)="acceptOffer(offer)">
+                Accept
+              </button>
+              <button class="btn btn-reject" (click)="rejectOffer(offer)">
+                Reject
+              </button>
+              <button class="btn btn-counter" (click)="openCounterModal(offer)">
+                Counter
+              </button>
             </div>
           </div>
           }
@@ -84,7 +171,9 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         @if (myListings().length === 0) {
         <div class="empty-state">
           <p>You haven't posted any listings yet.</p>
-          <a routerLink="/communities" class="btn btn-primary">Browse Communities</a>
+          <a routerLink="/communities" class="btn btn-primary"
+            >Browse Communities</a
+          >
         </div>
         } @else {
         <div class="listings-table">
@@ -99,14 +188,22 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
           <div class="table-row">
             <span class="listing-name">{{ listing.title }}</span>
             <span class="listing-price">{{ listing.price | currency }}</span>
-            <span class="status-badge" [class]="'status-' + listing.status">{{ listing.status }}</span>
+            <span class="status-badge" [class]="'status-' + listing.status">{{
+              listing.status
+            }}</span>
             <span class="offer-count">{{ getOfferCount(listing.id) }}</span>
             <span class="row-actions">
-              <a [routerLink]="getListingRoute(listing)" class="btn-link">View</a>
+              <a [routerLink]="getListingRoute(listing)" class="btn-link"
+                >View</a
+              >
               @if (listing.status === 'active') {
-              <button class="btn-link" (click)="markListingSold(listing)">Mark Sold</button>
+              <button class="btn-link" (click)="markListingSold(listing)">
+                Mark Sold
+              </button>
               }
-              <button class="btn-link danger" (click)="deleteListing(listing)">Delete</button>
+              <button class="btn-link danger" (click)="deleteListing(listing)">
+                Delete
+              </button>
             </span>
           </div>
           }
@@ -124,11 +221,19 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
           @for (payment of recentPayments(); track payment.id) {
           <div class="payment-card">
             <div class="payment-info">
-              <span class="payment-amount">{{ payment.sellerReceivesAmount | currency }}</span>
-              <span class="payment-fee">({{ payment.platformFeeAmount | currency }} fee)</span>
+              <span class="payment-amount">{{
+                payment.sellerReceivesAmount | currency
+              }}</span>
+              <span class="payment-fee"
+                >({{ payment.platformFeeAmount | currency }} fee)</span
+              >
             </div>
-            <span class="payment-status" [class]="'status-' + payment.status">{{ payment.status }}</span>
-            <span class="payment-date">{{ payment.createdAt | date:'short' }}</span>
+            <span class="payment-status" [class]="'status-' + payment.status">{{
+              payment.status
+            }}</span>
+            <span class="payment-date">{{
+              payment.createdAt | date : 'short'
+            }}</span>
           </div>
           }
         </div>
@@ -148,16 +253,86 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         <div class="modal-body">
           <div class="form-group">
             <label>Your Counter Amount</label>
-            <input type="number" [(ngModel)]="counterAmount" class="form-input" />
+            <input
+              type="number"
+              [(ngModel)]="counterAmount"
+              class="form-input"
+            />
           </div>
           <div class="form-group">
             <label>Message (optional)</label>
-            <textarea [(ngModel)]="counterMessage" rows="3" class="form-input"></textarea>
+            <textarea
+              [(ngModel)]="counterMessage"
+              rows="3"
+              class="form-input"
+            ></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" (click)="closeCounterModal()">Cancel</button>
-          <button class="btn btn-primary" (click)="submitCounter()">Send Counter</button>
+          <button class="btn btn-secondary" (click)="closeCounterModal()">
+            Cancel
+          </button>
+          <button class="btn btn-primary" (click)="submitCounter()">
+            Send Counter
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+    <!-- Cashout Modal -->
+    @if (showCashoutModal()) {
+    <div class="modal-overlay" (click)="closeCashoutModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Request Cashout</h3>
+          <button class="close-btn" (click)="closeCashoutModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-balance">
+            Available: {{ earningsSummary()?.availableBalance | currency }}
+          </p>
+          <div class="form-group">
+            <label>Amount</label>
+            <input
+              type="number"
+              [(ngModel)]="cashoutAmount"
+              class="form-input"
+              [max]="earningsSummary()?.availableBalance ?? 0"
+              min="1"
+              step="0.01"
+            />
+          </div>
+          <div class="form-group">
+            <label>Payout Method</label>
+            <select [(ngModel)]="payoutMethod" class="form-input">
+              <option value="paypal">PayPal</option>
+              <option value="venmo">Venmo</option>
+              <option value="zelle">Zelle</option>
+              <option value="bank-transfer">Bank Transfer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Payout Email / Account</label>
+            <input
+              type="text"
+              [(ngModel)]="payoutEmail"
+              class="form-input"
+              placeholder="email@example.com"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeCashoutModal()">
+            Cancel
+          </button>
+          <button
+            class="btn btn-primary"
+            (click)="submitCashout()"
+            [disabled]="!cashoutAmount || cashoutAmount <= 0"
+          >
+            Request Payout
+          </button>
         </div>
       </div>
     </div>
@@ -231,6 +406,89 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       .stat-label {
         font-size: 0.8125rem;
         color: var(--foreground-muted);
+      }
+
+      .earnings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+      }
+
+      .earning-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1.25rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .earning-card.available {
+        border-color: #10b981;
+        background: linear-gradient(to bottom right, var(--surface), #10b98110);
+      }
+
+      .earning-card.available .earning-value {
+        color: #10b981;
+      }
+
+      .earning-label {
+        font-size: 0.8125rem;
+        color: var(--foreground-muted);
+      }
+
+      .earning-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .payouts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .payout-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+
+      .payout-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .payout-amount {
+        font-weight: 600;
+      }
+
+      .payout-method,
+      .payout-date {
+        font-size: 0.75rem;
+        color: var(--foreground-muted);
+      }
+
+      .payout-status {
+        font-size: 0.75rem;
+        padding: 0.125rem 0.5rem;
+        border-radius: 4px;
+      }
+
+      .modal-balance {
+        text-align: center;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #10b981;
+        margin-bottom: 1rem;
       }
 
       .dashboard-section {
@@ -536,11 +794,18 @@ export class SellerDashboardComponent implements OnInit {
   sellerOffers = signal<Offer[]>([]);
   userPayments = signal<Payment[]>([]);
   communityById = signal<Map<string, LocalCommunity>>(new Map());
+  earningsSummary = signal<EarningsSummary | null>(null);
+  payoutRequests = signal<PayoutRequest[]>([]);
 
   showCounterModal = signal(false);
+  showCashoutModal = signal(false);
   selectedOffer: Offer | null = null;
   counterAmount: number | null = null;
   counterMessage = '';
+
+  cashoutAmount: number | null = null;
+  payoutMethod: 'paypal' | 'venmo' | 'zelle' | 'bank-transfer' = 'paypal';
+  payoutEmail = '';
 
   async ngOnInit(): Promise<void> {
     const profileId = this.authState.getActingProfileId();
@@ -550,17 +815,22 @@ export class SellerDashboardComponent implements OnInit {
     }
 
     try {
-      const [offers, payments, listings, communities] = await Promise.all([
-        this.paymentService.getUserOffers(),
-        this.paymentService.getUserPayments(),
-        this.classifiedService.myAds(),
-        this.communityService.getCommunities(),
-      ]);
+      const [offers, payments, listings, communities, earnings, payouts] =
+        await Promise.all([
+          this.paymentService.getUserOffers(),
+          this.paymentService.getUserPayments(),
+          this.classifiedService.myAds(),
+          this.communityService.getCommunities(),
+          this.paymentService.getSellerEarningsSummary().catch(() => null),
+          this.paymentService.getSellerPayoutRequests().catch(() => []),
+        ]);
 
       this.myListings.set(listings);
       this.sellerOffers.set(offers.asSeller);
       this.userPayments.set(payments);
       this.communityById.set(new Map(communities.map((c) => [c.id, c])));
+      this.earningsSummary.set(earnings);
+      this.payoutRequests.set(payouts);
     } catch (err) {
       console.error('Failed to load dashboard:', err);
       this.messageService.addMessage({
@@ -722,6 +992,77 @@ export class SellerDashboardComponent implements OnInit {
         content: 'Failed to send counter',
         type: 'error',
       });
+    }
+  }
+
+  openCashoutModal(): void {
+    const summary = this.earningsSummary();
+    if (summary) {
+      this.cashoutAmount = summary.availableBalance;
+    }
+    this.payoutEmail = summary?.payoutEmail || '';
+    this.payoutMethod = (summary?.payoutMethod as any) || 'paypal';
+    this.showCashoutModal.set(true);
+  }
+
+  closeCashoutModal(): void {
+    this.showCashoutModal.set(false);
+    this.cashoutAmount = null;
+    this.payoutEmail = '';
+  }
+
+  async submitCashout(): Promise<void> {
+    if (!this.cashoutAmount || this.cashoutAmount <= 0) return;
+
+    try {
+      await this.paymentService.createPayoutRequest(
+        this.cashoutAmount,
+        this.payoutMethod,
+        this.payoutEmail || undefined
+      );
+      this.messageService.addMessage({
+        content: 'Payout request submitted!',
+        type: 'success',
+      });
+      this.closeCashoutModal();
+      this.refreshWalletData();
+    } catch (err: any) {
+      this.messageService.addMessage({
+        content: err.message || 'Failed to submit payout request',
+        type: 'error',
+      });
+    }
+  }
+
+  async cancelPayout(payout: PayoutRequest): Promise<void> {
+    const confirmed = confirm('Cancel this payout request?');
+    if (!confirmed) return;
+
+    try {
+      await this.paymentService.cancelPayoutRequest(payout.id);
+      this.messageService.addMessage({
+        content: 'Payout request cancelled.',
+        type: 'success',
+      });
+      this.refreshWalletData();
+    } catch {
+      this.messageService.addMessage({
+        content: 'Failed to cancel payout request',
+        type: 'error',
+      });
+    }
+  }
+
+  private async refreshWalletData(): Promise<void> {
+    try {
+      const [earnings, payouts] = await Promise.all([
+        this.paymentService.getSellerEarningsSummary().catch(() => null),
+        this.paymentService.getSellerPayoutRequests().catch(() => []),
+      ]);
+      this.earningsSummary.set(earnings);
+      this.payoutRequests.set(payouts);
+    } catch (err) {
+      console.error('Failed to refresh wallet data:', err);
     }
   }
 

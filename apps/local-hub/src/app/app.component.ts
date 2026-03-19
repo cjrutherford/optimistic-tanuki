@@ -53,9 +53,9 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: object
-  ) {}
+  ) { }
 
-  title = 'local-hub';
+  title = 'Towne Square';
 
   ngOnInit() {
     this.themeService.setPersonality('bold');
