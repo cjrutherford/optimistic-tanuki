@@ -11,6 +11,7 @@ This directory contains infrastructure and deployment documentation for the Opti
 - [Docker Compose](docker-compose.md) - Local development with Docker Compose
 - [ArgoCD](argocd.md) - GitOps deployment with ArgoCD
 - [GitHub Actions Validation](github-actions-validation.md) - Local workflow validation before pushing
+- [Workflow Matrix](workflow-matrix.md) - Workflow classification and remote hardening guide
 
 ## Quick Reference
 

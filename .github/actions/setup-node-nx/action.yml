@@ -1,0 +1,46 @@
+name: 'Setup Node.js and Nx'
+description: >
+  Composite action that performs the common bootstrap steps shared across
+  most CI workflows: checkout, Node.js setup, npm ci, and optional Nx
+  affected-SHA derivation.
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '20'
+  fetch-depth:
+    description: 'Number of commits to fetch (0 = full history, required for nx affected)'
+    required: false
+    default: '0'
+  install-deps:
+    description: 'Whether to run npm ci --legacy-peer-deps'
+    required: false
+    default: 'true'
+  derive-nx-shas:
+    description: 'Whether to run nrwl/nx-set-shas to set NX_BASE and NX_HEAD'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ inputs.fetch-depth }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      if: inputs.install-deps == 'true'
+      shell: bash
+      run: npm ci --legacy-peer-deps
+
+    - name: Derive Nx SHAs for affected commands
+      if: inputs.derive-nx-shas == 'true'
+      uses: nrwl/nx-set-shas@v4

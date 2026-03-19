@@ -57,8 +57,12 @@ if command -v actionlint &>/dev/null; then
     report_success "actionlint is installed: $(actionlint --version 2>/dev/null || echo 'version unknown')"
     echo ""
     echo "   Running actionlint on all workflow files..."
-    if actionlint "$WORKFLOWS_DIR"/*.yml "$WORKFLOWS_DIR"/*.yaml 2>/dev/null || \
-       actionlint "$WORKFLOWS_DIR"/*.yml 2>/dev/null; then
+    # Build the list of files to pass (only files that exist)
+    ACTIONLINT_FILES=()
+    for f in "$WORKFLOWS_DIR"/*.yml "$WORKFLOWS_DIR"/*.yaml; do
+        [ -f "$f" ] && ACTIONLINT_FILES+=("$f")
+    done
+    if actionlint "${ACTIONLINT_FILES[@]}"; then
         report_success "actionlint passed for all workflow files"
     else
         report_error "actionlint reported issues (see output above)"

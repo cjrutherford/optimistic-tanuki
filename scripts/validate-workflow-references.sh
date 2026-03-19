@@ -160,7 +160,7 @@ console.log(scripts.join('\n'));
             else
                 report_warning "$wf_name: npm script '$npm_script' not found in package.json (may be defined elsewhere or dynamic)"
             fi
-        done < <(grep -oE 'npm run [A-Za-z0-9:_-]+' "$wf" 2>/dev/null \
+        done < <(grep -oE 'npm run [A-Za-z0-9:._-]+' "$wf" 2>/dev/null \
             | sed 's/npm run //' || true)
     done
 fi

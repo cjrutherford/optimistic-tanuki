@@ -71,3 +71,7 @@ tf/*.tfstate.*
 tf/tfplan
 tmp/
 .env
+
+# Local act secrets (never commit)
+.act.secrets
+.act.env
