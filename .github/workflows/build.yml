@@ -108,6 +108,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build Nx project
+        run: npx nx build ${{ matrix.service }} --configuration=production
+        env:
+          CI: true
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -119,8 +133,12 @@ jobs:
 
       - name: Verify Docker image was created
         run: |
-          # docker compose images lists locally built images for the service
-          docker compose images ${{ matrix.service }}
+          # Check the image is present; docker compose images exits non-zero if service not found
+          IMAGE_COUNT=$(docker compose images -q ${{ matrix.service }} | wc -l)
+          if [ "$IMAGE_COUNT" -eq "0" ]; then
+            echo "❌ No Docker image found for ${{ matrix.service }}"
+            exit 1
+          fi
           echo "✅ Docker build check passed for ${{ matrix.service }}"
         env:
           CI: true
