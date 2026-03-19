@@ -131,9 +131,10 @@ export class CommunityPostsComponent extends Variantable {
       return;
     }
 
-    this.loadCurrentProfile().then(() => {
-      this.loadCommunityBySlug(communitySlug);
-    });
+    // Load profile and community independently so a 401 on profile/me
+    // (anonymous users) never blocks the public community data fetch.
+    this.loadCurrentProfile();
+    this.loadCommunityBySlug(communitySlug);
   }
 
   override ngOnDestroy(): void {
