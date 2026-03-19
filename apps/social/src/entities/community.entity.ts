@@ -89,6 +89,10 @@ export class Community {
   @Column({ type: 'jsonb', default: [] })
   tags: { id: string; name: string }[];
 
+  /** Locality highlights — links/POIs for locality communities. */
+  @Column({ type: 'jsonb', nullable: true, default: null })
+  highlights: string[] | null;
+
   @OneToMany(() => CommunityMember, (member) => member.community)
   members: CommunityMember[];
 
@@ -103,6 +107,12 @@ export class Community {
 
   @Column({ nullable: true })
   chatRoomId: string;
+
+  @Column({ nullable: true })
+  managerId: string | null;
+
+  @Column({ nullable: true })
+  managerProfileId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

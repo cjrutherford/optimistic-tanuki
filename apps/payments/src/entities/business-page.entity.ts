@@ -8,6 +8,12 @@ import {
 } from 'typeorm';
 
 export type BusinessTier = 'basic' | 'pro' | 'enterprise';
+export type FeaturedSpotType =
+  | 'hero'
+  | 'featured-carousel'
+  | 'sidebar'
+  | 'top-list'
+  | null;
 
 @Entity('business_pages')
 @Index(['communityId'], { unique: true })
@@ -66,4 +72,22 @@ export class BusinessPage {
 
   @Column({ type: 'boolean', default: false })
   isCommunity: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  isFeatured: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  featuredSpotType: FeaturedSpotType;
+
+  @Column({ type: 'text', nullable: true })
+  customSpotContent: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  customSpotImageUrl: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  customSpotGradient: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  businessThemeId: string;
 }

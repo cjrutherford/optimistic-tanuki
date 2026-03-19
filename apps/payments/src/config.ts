@@ -15,6 +15,11 @@ export type LemonSqueezyConfig = {
   apiKey: string;
   storeId: string;
   webhookSecret: string;
+  variants: {
+    basic: string;
+    pro: string;
+    enterprise: string;
+  };
 };
 
 export type PaymentsConfigType = {
@@ -35,7 +40,16 @@ export type PaymentsConfigType = {
 const loadConfig = () => {
   const configPath = path.resolve(__dirname, './assets/config.yaml');
   const configFile = fs.readFileSync(configPath, 'utf8');
-  return yaml.load(configFile) as PaymentsConfigType;
+  const yamlConfig = yaml.load(configFile) as PaymentsConfigType;
+  const finalConfig: PaymentsConfigType = {
+    ...yamlConfig,
+    lemonSqueezy: {
+      ...yamlConfig.lemonSqueezy,
+      apiKey:
+        process.env.LEMON_SQUEEZY_API_KEY || yamlConfig.lemonSqueezy.apiKey,
+    },
+  };
+  return finalConfig;
 };
 
 export default loadConfig;

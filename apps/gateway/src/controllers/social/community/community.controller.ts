@@ -170,10 +170,7 @@ export class CommunityController {
     @Param('slug') slug: string
   ): Promise<CommunityDto | null> {
     return await firstValueFrom(
-      this.socialClient.send(
-        { cmd: CommunityCommands.FIND_BY_SLUG },
-        { slug }
-      )
+      this.socialClient.send({ cmd: CommunityCommands.FIND_BY_SLUG }, { slug })
     );
   }
 

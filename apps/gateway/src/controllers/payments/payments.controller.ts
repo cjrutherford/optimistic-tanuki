@@ -74,11 +74,43 @@ export interface CounterOfferDto {
   message?: string;
 }
 
+export interface UpdatePayoutInfoDto {
+  payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle';
+  payoutEmail?: string;
+  bankAccountLast4?: string;
+  bankRoutingLast4?: string;
+}
+
+export interface CreatePayoutRequestDto {
+  amount: number;
+  payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle';
+  payoutEmail?: string;
+  bankAccountLast4?: string;
+  bankRoutingLast4?: string;
+}
+
 @ApiTags('payments')
 @Controller('payments')
 export class PaymentsController {
   private readonly paymentsClient: ReturnType<typeof ClientProxyFactory.create>;
   private readonly logger = new Logger(PaymentsController.name);
+
+  private resolveMonthYear(month?: string, year?: string) {
+    const now = new Date();
+    const parsedMonth = Number(month);
+    const parsedYear = Number(year);
+
+    const targetMonth =
+      Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12
+        ? parsedMonth
+        : now.getMonth() + 1;
+    const targetYear =
+      Number.isInteger(parsedYear) && parsedYear >= 1970 && parsedYear <= 3000
+        ? parsedYear
+        : now.getFullYear();
+
+    return { targetMonth, targetYear };
+  }
 
   constructor(private readonly configService: ConfigService) {
     const serviceConfig =
@@ -97,12 +129,10 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Get monthly donation goal progress' })
   @ApiResponse({ status: 200, description: 'Donation goal info' })
   async getDonationGoal(
-    @Query('month') month?: number,
-    @Query('year') year?: number
+    @Query('month') month?: string,
+    @Query('year') year?: string
   ) {
-    const now = new Date();
-    const targetMonth = month || now.getMonth() + 1;
-    const targetYear = year || now.getFullYear();
+    const { targetMonth, targetYear } = this.resolveMonthYear(month, year);
 
     try {
       return await firstValueFrom(
@@ -130,12 +160,10 @@ export class PaymentsController {
   @Public()
   @ApiOperation({ summary: 'Get donations for a month' })
   async getDonations(
-    @Query('month') month?: number,
-    @Query('year') year?: number
+    @Query('month') month?: string,
+    @Query('year') year?: string
   ) {
-    const now = new Date();
-    const targetMonth = month || now.getMonth() + 1;
-    const targetYear = year || now.getFullYear();
+    const { targetMonth, targetYear } = this.resolveMonthYear(month, year);
 
     try {
       return await firstValueFrom(
@@ -353,6 +381,25 @@ export class PaymentsController {
         { cmd: PaymentCommands.GET_BUSINESS_PAGE },
         {
           communityId,
+        }
+      )
+    );
+  }
+
+  @Get('business/city/:cityId')
+  @Public()
+  @ApiOperation({ summary: 'Get business pages for all communities in a city' })
+  async getBusinessPagesByCity(
+    @Param('cityId') cityId: string,
+    @Query('communityIds') communityIds?: string
+  ) {
+    const ids = communityIds ? communityIds.split(',') : [];
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.GET_BUSINESS_PAGES_BY_CITY },
+        {
+          cityId,
+          communityIds: ids,
         }
       )
     );
@@ -600,6 +647,109 @@ export class PaymentsController {
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_USER_OFFERS },
         { userId: user.userId }
+      )
+    );
+  }
+
+  @Get('seller/wallet')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get seller wallet' })
+  async getSellerWallet(@User() user: UserDetails) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.GET_SELLER_WALLET },
+        { sellerId: user.profileId || user.userId }
+      )
+    );
+  }
+
+  @Patch('seller/wallet/payout-info')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update seller payout information' })
+  async updateSellerPayoutInfo(
+    @User() user: UserDetails,
+    @Body() dto: UpdatePayoutInfoDto
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.UPDATE_SELLER_PAYOUT_INFO },
+        {
+          sellerId: user.profileId || user.userId,
+          payoutMethod: dto.payoutMethod,
+          payoutEmail: dto.payoutEmail,
+          bankAccountLast4: dto.bankAccountLast4,
+          bankRoutingLast4: dto.bankRoutingLast4,
+        }
+      )
+    );
+  }
+
+  @Post('seller/payout')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a payout request' })
+  async createPayoutRequest(
+    @User() user: UserDetails,
+    @Body() dto: CreatePayoutRequestDto
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.CREATE_PAYOUT_REQUEST },
+        {
+          sellerId: user.profileId || user.userId,
+          amount: dto.amount,
+          payoutMethod: dto.payoutMethod,
+          payoutEmail: dto.payoutEmail,
+          bankAccountLast4: dto.bankAccountLast4,
+          bankRoutingLast4: dto.bankRoutingLast4,
+        }
+      )
+    );
+  }
+
+  @Get('seller/payouts')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get seller payout requests' })
+  async getSellerPayoutRequests(@User() user: UserDetails) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.GET_SELLER_PAYOUT_REQUESTS },
+        { sellerId: user.profileId || user.userId }
+      )
+    );
+  }
+
+  @Delete('seller/payout/:payoutRequestId')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel a payout request' })
+  async cancelPayoutRequest(
+    @User() user: UserDetails,
+    @Param('payoutRequestId') payoutRequestId: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.CANCEL_PAYOUT_REQUEST },
+        {
+          payoutRequestId,
+          sellerId: user.profileId || user.userId,
+        }
+      )
+    );
+  }
+
+  @Get('seller/earnings')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get seller earnings summary' })
+  async getSellerEarningsSummary(@User() user: UserDetails) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.GET_SELLER_EARNINGS_SUMMARY },
+        { sellerId: user.profileId || user.userId }
       )
     );
   }

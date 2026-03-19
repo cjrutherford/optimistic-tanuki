@@ -984,3 +984,26 @@ app-donation-progress {
   color: var(--foreground-muted);
   margin: 0;
 }
+
+.city-classifieds-section {
+  padding: 40px 0;
+  background: var(--background);
+}
+
+.city-classifieds-section .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+
+  .view-all-link {
+    font-size: 0.875rem;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

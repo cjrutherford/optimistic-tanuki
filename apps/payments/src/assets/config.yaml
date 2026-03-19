@@ -15,3 +15,7 @@ lemonSqueezy:
   apiKey: ''
   storeId: ''
   webhookSecret: ''
+  variants:
+    basic: ''
+    pro: ''
+    enterprise: ''

@@ -31,6 +31,7 @@ export interface Payment {
   classifiedId: string;
   buyerId: string;
   sellerId: string;
+  checkoutUrl?: string;
   amount: number;
   platformFeeAmount: number;
   sellerReceivesAmount: number;
@@ -132,6 +133,47 @@ export interface Offer {
 export interface UserOffers {
   asBuyer: Offer[];
   asSeller: Offer[];
+}
+
+export interface SellerWallet {
+  id: string;
+  sellerId: string;
+  availableBalance: number;
+  pendingBalance: number;
+  totalEarned: number;
+  totalPaidOut: number;
+  payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle' | null;
+  payoutEmail: string | null;
+  bankAccountLast4: string | null;
+  bankRoutingLast4: string | null;
+  createdAt: string;
+  lastPayoutAt: string | null;
+}
+
+export interface PayoutRequest {
+  id: string;
+  sellerId: string;
+  amount: number;
+  status: 'pending' | 'processing' | 'completed' | 'rejected' | 'cancelled';
+  payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle';
+  payoutEmail: string | null;
+  bankAccountLast4: string | null;
+  bankRoutingLast4: string | null;
+  transactionId: string | null;
+  rejectionReason: string | null;
+  processedBy: string | null;
+  createdAt: string;
+  processedAt: string | null;
+}
+
+export interface EarningsSummary {
+  availableBalance: number;
+  pendingBalance: number;
+  totalEarned: number;
+  totalPaidOut: number;
+  salesCount: number;
+  payoutMethod: string | null;
+  payoutEmail: string | null;
 }
 
 @Injectable({
@@ -480,11 +522,21 @@ export class PaymentService {
     }
   }
 
-  async getCityBusinesses(cityId: string): Promise<BusinessPage[]> {
+  async getCityBusinesses(
+    cityId: string,
+    communityIds: string[] = []
+  ): Promise<BusinessPage[]> {
     this.begin();
     try {
+      const params = new URLSearchParams();
+      if (communityIds.length > 0) {
+        params.set('communityIds', communityIds.join(','));
+      }
+      const query = params.toString() ? `?${params.toString()}` : '';
       const result = await firstValueFrom(
-        this.http.get<BusinessPage[]>(`${this.baseUrl}/business/city/${cityId}`)
+        this.http.get<BusinessPage[]>(
+          `${this.baseUrl}/business/city/${cityId}${query}`
+        )
       );
       this.end();
       return result;
@@ -643,6 +695,111 @@ export class PaymentService {
     try {
       const result = await firstValueFrom(
         this.http.get<UserOffers>(`${this.baseUrl}/offers/user`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async getSellerWallet(): Promise<SellerWallet | null> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<SellerWallet>(`${this.baseUrl}/seller/wallet`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async updateSellerPayoutInfo(
+    payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle',
+    payoutEmail?: string,
+    bankAccountLast4?: string,
+    bankRoutingLast4?: string
+  ): Promise<SellerWallet> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<SellerWallet>(
+          `${this.baseUrl}/seller/wallet/payout-info`,
+          {
+            payoutMethod,
+            payoutEmail,
+            bankAccountLast4,
+            bankRoutingLast4,
+          }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async createPayoutRequest(
+    amount: number,
+    payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle',
+    payoutEmail?: string,
+    bankAccountLast4?: string,
+    bankRoutingLast4?: string
+  ): Promise<PayoutRequest> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<PayoutRequest>(`${this.baseUrl}/seller/payout`, {
+          amount,
+          payoutMethod,
+          payoutEmail,
+          bankAccountLast4,
+          bankRoutingLast4,
+        })
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async getSellerPayoutRequests(): Promise<PayoutRequest[]> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<PayoutRequest[]>(`${this.baseUrl}/seller/payouts`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async cancelPayoutRequest(payoutRequestId: string): Promise<PayoutRequest> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.delete<PayoutRequest>(
+          `${this.baseUrl}/seller/payout/${payoutRequestId}`
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async getSellerEarningsSummary(): Promise<EarningsSummary> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<EarningsSummary>(`${this.baseUrl}/seller/earnings`)
       );
       this.end();
       return result;

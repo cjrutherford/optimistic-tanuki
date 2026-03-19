@@ -38,8 +38,8 @@ export interface PaymentRequest {
       @if (step() === 'method') {
       <div class="modal-body">
         <div class="item-summary">
-          <h4>{{ request()?.title }}</h4>
-          <p class="price">\${{ request()?.amount | number : '1.2-2' }}</p>
+          <h4>{{ request?.title }}</h4>
+          <p class="price">\${{ request?.amount | number : '1.2-2' }}</p>
         </div>
 
         <div class="payment-methods">
@@ -135,7 +135,7 @@ export interface PaymentRequest {
           <div class="seller-info">
             <p class="instruction">
               Please send
-              <strong>\${{ request()?.amount | number : '1.2-2' }}</strong> to
+              <strong>\${{ request?.amount | number : '1.2-2' }}</strong> to
               the seller using {{ getMethodName(selectedMethod()!) }}.
             </p>
 
@@ -464,12 +464,14 @@ export class PaymentMethodSelectorComponent {
           this.request.classifiedId,
           method
         );
-        if (payment.paymentMethod === 'card') {
-          window.location.href = (payment as any).checkoutUrl;
+        const checkoutUrl = payment.checkoutUrl;
+        if (payment.paymentMethod === 'card' && checkoutUrl) {
+          window.location.href = checkoutUrl;
           return;
         }
-        this.payment.set(payment);
-        this.step.set('success');
+        throw new Error(
+          'Card checkout is not configured yet. Please choose another payment method.'
+        );
       } catch (error) {
         console.error('Payment failed:', error);
       } finally {

@@ -35,7 +35,7 @@ export class MemberGuard implements CanActivate {
       return false;
     }
 
-    const slug = route.paramMap.get('slug') ?? '';
+    const slug = route.paramMap.get('communitySlug') ?? '';
 
     try {
       const community = await this.communityService.getCommunityBySlug(slug);

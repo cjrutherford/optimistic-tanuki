@@ -66,9 +66,10 @@
     </div>
     <div class="city-cards">
       @for (city of cities(); track city.id; let i = $index) {
-      <a
+      <otui-card
         class="city-card"
-        [routerLink]="['/city', city.slug]"
+        (click)="navigateToCity(city.slug)"
+        role="button"
         [attr.aria-label]="'View ' + city.name + ' city hub'"
         (mouseenter)="onCityHover(city)"
         (mouseleave)="onCityHover(null)"
@@ -130,7 +131,7 @@
             }
           </div>
         </div>
-      </a>
+      </otui-card>
       }
     </div>
   </section>
@@ -145,9 +146,10 @@
     </div>
     <div class="community-cards">
       @for (community of communities(); track community.id) {
-      <a
+      <otui-card
         class="community-card"
-        [routerLink]="['/c', community.slug]"
+        (click)="navigateToCommunity(community.slug)"
+        role="button"
         [attr.aria-label]="community.name + ' community'"
       >
         <div class="community-image-wrapper">
@@ -175,7 +177,7 @@
             </span>
           </div>
         </div>
-      </a>
+      </otui-card>
       }
     </div>
   </section>

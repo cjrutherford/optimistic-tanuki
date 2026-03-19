@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Donation } from '../../entities/donation.entity';
 import { ClassifiedPayment } from '../../entities/classified-payment.entity';
+import { SellerWallet } from '../../entities/seller-wallet.entity';
+import { PayoutRequest } from '../../entities/payout-request.entity';
 import {
   BusinessPage,
   BusinessTier,
@@ -20,12 +22,51 @@ export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   private readonly lemonSqueezyApiKey: string;
   private readonly lemonSqueezyStoreId: string;
+  private readonly lemonSqueezyVariants: {
+    basic: string;
+    pro: string;
+    enterprise: string;
+  };
+
+  private normalizeMonthYear(month?: number | string, year?: number | string) {
+    const now = new Date();
+    const parsedMonth = Number(month);
+    const parsedYear = Number(year);
+
+    const safeMonth =
+      Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12
+        ? parsedMonth
+        : now.getMonth() + 1;
+    const safeYear =
+      Number.isInteger(parsedYear) && parsedYear >= 1970 && parsedYear <= 3000
+        ? parsedYear
+        : now.getFullYear();
+
+    if (safeMonth !== parsedMonth || safeYear !== parsedYear) {
+      this.logger.warn(
+        `Invalid donation period received (month=${String(
+          month
+        )}, year=${String(year)}); defaulting to ${safeMonth}/${safeYear}`
+      );
+    }
+
+    return {
+      month: safeMonth,
+      year: safeYear,
+      startDate: new Date(safeYear, safeMonth - 1, 1),
+      endDate: new Date(safeYear, safeMonth, 0, 23, 59, 59),
+    };
+  }
 
   constructor(
     @InjectRepository(Donation)
     private readonly donationRepository: Repository<Donation>,
     @InjectRepository(ClassifiedPayment)
     private readonly classifiedPaymentRepository: Repository<ClassifiedPayment>,
+    @InjectRepository(SellerWallet)
+    private readonly sellerWalletRepository: Repository<SellerWallet>,
+    @InjectRepository(PayoutRequest)
+    private readonly payoutRequestRepository: Repository<PayoutRequest>,
     @InjectRepository(BusinessPage)
     private readonly businessPageRepository: Repository<BusinessPage>,
     @InjectRepository(CommunitySponsorship)
@@ -39,15 +80,20 @@ export class PaymentService {
       this.configService.get('lemonSqueezy.apiKey') || '';
     this.lemonSqueezyStoreId =
       this.configService.get('lemonSqueezy.storeId') || '';
+    this.lemonSqueezyVariants = {
+      basic: this.configService.get('lemonSqueezy.variants.basic') || '',
+      pro: this.configService.get('lemonSqueezy.variants.pro') || '',
+      enterprise:
+        this.configService.get('lemonSqueezy.variants.enterprise') || '',
+    };
   }
 
-  async getDonationGoal(month: number, year: number) {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+  async getDonationGoal(month?: number | string, year?: number | string) {
+    const period = this.normalizeMonthYear(month, year);
 
     const donations = await this.donationRepository.find({
       where: {
-        createdAt: Between(startDate, endDate),
+        createdAt: Between(period.startDate, period.endDate),
         status: 'completed',
       },
     });
@@ -74,18 +120,17 @@ export class PaymentService {
       currentAmount: currentAmount + sponsorshipAmount,
       donorCount,
       sponsorshipAmount,
-      month,
-      year,
+      month: period.month,
+      year: period.year,
     };
   }
 
-  async getDonations(month: number, year: number) {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+  async getDonations(month?: number | string, year?: number | string) {
+    const period = this.normalizeMonthYear(month, year);
 
     return this.donationRepository.find({
       where: {
-        createdAt: Between(startDate, endDate),
+        createdAt: Between(period.startDate, period.endDate),
       },
       order: { createdAt: 'DESC' },
     });
@@ -193,10 +238,24 @@ export class PaymentService {
       return { success: false, message: 'Payment not found' };
     }
 
+    if (!payment.sellerId) {
+      return {
+        success: false,
+        message: 'No seller associated with this payment',
+      };
+    }
+
     payment.status = 'released';
     payment.releasedAt = new Date();
 
     await this.classifiedPaymentRepository.save(payment);
+
+    await this.creditSellerWallet(
+      payment.sellerId,
+      Number(payment.sellerReceivesAmount),
+      paymentId,
+      `Payment release for classified: ${payment.classifiedId}`
+    );
 
     return { success: true, payment };
   }
@@ -282,7 +341,11 @@ export class PaymentService {
       await this.businessPageRepository.save(businessPage);
     }
 
-    const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${this.lemonSqueezyStoreId}?checkout[custom][business_page_id]=${businessPage.id}&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][tier]=${tier}`;
+    const variantId =
+      this.lemonSqueezyVariants[
+        tier as keyof typeof this.lemonSqueezyVariants
+      ] || this.lemonSqueezyStoreId;
+    const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${variantId}?checkout[custom][business_page_id]=${businessPage.id}&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][tier]=${tier}`;
 
     return {
       checkoutUrl,
@@ -401,6 +464,264 @@ export class PaymentService {
   async getPortalUrl(userId: string) {
     return {
       portalUrl: `https://my-store.lemonsqueezy.com/billing?user_id=${userId}`,
+    };
+  }
+
+  async getOrCreateSellerWallet(sellerId: string): Promise<SellerWallet> {
+    let wallet = await this.sellerWalletRepository.findOne({
+      where: { sellerId },
+    });
+
+    if (!wallet) {
+      wallet = this.sellerWalletRepository.create({
+        sellerId,
+        availableBalance: 0,
+        pendingBalance: 0,
+        totalEarned: 0,
+        totalPaidOut: 0,
+      });
+      wallet = await this.sellerWalletRepository.save(wallet);
+    }
+
+    return wallet;
+  }
+
+  async getSellerWallet(sellerId: string): Promise<SellerWallet | null> {
+    return this.sellerWalletRepository.findOne({
+      where: { sellerId },
+    });
+  }
+
+  async updateSellerPayoutInfo(
+    sellerId: string,
+    payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle',
+    payoutEmail?: string,
+    bankAccountLast4?: string,
+    bankRoutingLast4?: string
+  ): Promise<SellerWallet> {
+    const wallet = await this.getOrCreateSellerWallet(sellerId);
+    wallet.payoutMethod = payoutMethod;
+    wallet.payoutEmail = payoutEmail || null;
+    wallet.bankAccountLast4 = bankAccountLast4 || null;
+    wallet.bankRoutingLast4 = bankRoutingLast4 || null;
+    return this.sellerWalletRepository.save(wallet);
+  }
+
+  async creditSellerWallet(
+    sellerId: string,
+    amount: number,
+    paymentId: string,
+    description: string
+  ): Promise<SellerWallet> {
+    const wallet = await this.getOrCreateSellerWallet(sellerId);
+    wallet.availableBalance = Number(wallet.availableBalance) + amount;
+    wallet.totalEarned = Number(wallet.totalEarned) + amount;
+
+    const transaction = this.transactionRepository.create({
+      type: 'payout',
+      direction: 'incoming',
+      amount,
+      platformFee: 0,
+      netAmount: amount,
+      currency: 'USD',
+      status: 'completed',
+      description,
+      referenceId: paymentId,
+      userId: sellerId,
+    });
+    await this.transactionRepository.save(transaction);
+
+    return this.sellerWalletRepository.save(wallet);
+  }
+
+  async createPayoutRequest(
+    sellerId: string,
+    amount: number,
+    payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle',
+    payoutEmail?: string,
+    bankAccountLast4?: string,
+    bankRoutingLast4?: string
+  ): Promise<PayoutRequest> {
+    const wallet = await this.getOrCreateSellerWallet(sellerId);
+
+    if (Number(wallet.availableBalance) < amount) {
+      throw new Error('Insufficient funds for payout');
+    }
+
+    wallet.availableBalance = Number(wallet.availableBalance) - amount;
+    await this.sellerWalletRepository.save(wallet);
+
+    const payoutRequest = this.payoutRequestRepository.create({
+      sellerId,
+      amount,
+      payoutMethod,
+      payoutEmail: payoutEmail || wallet.payoutEmail || undefined,
+      bankAccountLast4:
+        bankAccountLast4 || wallet.bankAccountLast4 || undefined,
+      bankRoutingLast4:
+        bankRoutingLast4 || wallet.bankRoutingLast4 || undefined,
+      status: 'pending',
+    });
+
+    return this.payoutRequestRepository.save(payoutRequest);
+  }
+
+  async getSellerPayoutRequests(sellerId: string): Promise<PayoutRequest[]> {
+    return this.payoutRequestRepository.find({
+      where: { sellerId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async cancelPayoutRequest(
+    payoutRequestId: string,
+    sellerId: string
+  ): Promise<PayoutRequest> {
+    const payoutRequest = await this.payoutRequestRepository.findOne({
+      where: { id: payoutRequestId, sellerId },
+    });
+
+    if (!payoutRequest) {
+      throw new Error('Payout request not found');
+    }
+
+    if (payoutRequest.status !== 'pending') {
+      throw new Error('Only pending payouts can be cancelled');
+    }
+
+    const wallet = await this.getOrCreateSellerWallet(sellerId);
+    wallet.availableBalance =
+      Number(wallet.availableBalance) + Number(payoutRequest.amount);
+    await this.sellerWalletRepository.save(wallet);
+
+    payoutRequest.status = 'cancelled';
+    return this.payoutRequestRepository.save(payoutRequest);
+  }
+
+  async processPayout(
+    payoutRequestId: string,
+    adminId: string,
+    transactionId?: string
+  ): Promise<PayoutRequest> {
+    const payoutRequest = await this.payoutRequestRepository.findOne({
+      where: { id: payoutRequestId },
+    });
+
+    if (!payoutRequest) {
+      throw new Error('Payout request not found');
+    }
+
+    if (payoutRequest.status !== 'pending') {
+      throw new Error('Only pending payouts can be processed');
+    }
+
+    payoutRequest.status = 'processing';
+    payoutRequest.processedBy = adminId;
+    payoutRequest.transactionId = transactionId || `payout-${Date.now()}`;
+    await this.payoutRequestRepository.save(payoutRequest);
+
+    const wallet = await this.getOrCreateSellerWallet(payoutRequest.sellerId);
+    wallet.totalPaidOut =
+      Number(wallet.totalPaidOut) + Number(payoutRequest.amount);
+    wallet.lastPayoutAt = new Date();
+    await this.sellerWalletRepository.save(wallet);
+
+    payoutRequest.status = 'completed';
+    payoutRequest.processedAt = new Date();
+    return this.payoutRequestRepository.save(payoutRequest);
+  }
+
+  async rejectPayout(
+    payoutRequestId: string,
+    adminId: string,
+    reason: string
+  ): Promise<PayoutRequest> {
+    const payoutRequest = await this.payoutRequestRepository.findOne({
+      where: { id: payoutRequestId },
+    });
+
+    if (!payoutRequest) {
+      throw new Error('Payout request not found');
+    }
+
+    if (payoutRequest.status !== 'pending') {
+      throw new Error('Only pending payouts can be rejected');
+    }
+
+    payoutRequest.status = 'rejected';
+    payoutRequest.processedBy = adminId;
+    payoutRequest.rejectionReason = reason;
+    payoutRequest.processedAt = new Date();
+    await this.payoutRequestRepository.save(payoutRequest);
+
+    const wallet = await this.getOrCreateSellerWallet(payoutRequest.sellerId);
+    wallet.availableBalance =
+      Number(wallet.availableBalance) + Number(payoutRequest.amount);
+    await this.sellerWalletRepository.save(wallet);
+
+    return payoutRequest;
+  }
+
+  async getAllPayoutRequests(status?: string): Promise<PayoutRequest[]> {
+    const where = status ? { status: status as any } : {};
+    return this.payoutRequestRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async getBusinessPagesByCity(cityId: string, communityIds: string[]) {
+    if (!communityIds || communityIds.length === 0) {
+      return [];
+    }
+
+    const allIds = [cityId, ...communityIds].filter((id) => id !== undefined);
+
+    const businesses = await this.businessPageRepository
+      .createQueryBuilder('business')
+      .where('business.communityId IN (:...ids)', { ids: allIds })
+      .andWhere('business.subscriptionStatus = :status', { status: 'active' })
+      .orderBy('business.isFeatured', 'DESC')
+      .addOrderBy(
+        "CASE business.tier WHEN 'enterprise' THEN 1 WHEN 'pro' THEN 2 WHEN 'basic' THEN 3 END"
+      )
+      .addOrderBy(
+        "CASE business.featuredSpotType WHEN 'hero' THEN 1 WHEN 'featured-carousel' THEN 2 WHEN 'sidebar' THEN 3 WHEN 'top-list' THEN 4 ELSE 5 END"
+      )
+      .addOrderBy('business.createdAt', 'ASC')
+      .getMany();
+
+    return businesses;
+  }
+
+  async getSellerEarningsSummary(sellerId: string) {
+    const wallet = await this.getOrCreateSellerWallet(sellerId);
+
+    const payments = await this.classifiedPaymentRepository.find({
+      where: { sellerId },
+    });
+
+    const salesCount = payments.filter(
+      (p) => p.status === 'released' || p.status === 'confirmed'
+    ).length;
+
+    const pendingPayments = payments.filter(
+      (p) => p.status === 'pending' || p.status === 'confirmed'
+    );
+
+    const pendingAmount = pendingPayments.reduce(
+      (sum, p) => sum + Number(p.sellerReceivesAmount || 0),
+      0
+    );
+
+    return {
+      availableBalance: wallet.availableBalance,
+      pendingBalance: pendingAmount,
+      totalEarned: wallet.totalEarned,
+      totalPaidOut: wallet.totalPaidOut,
+      salesCount,
+      payoutMethod: wallet.payoutMethod,
+      payoutEmail: wallet.payoutEmail,
     };
   }
 }
