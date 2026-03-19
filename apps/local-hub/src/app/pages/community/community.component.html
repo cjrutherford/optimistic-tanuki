@@ -1,0 +1,574 @@
+<div class="community-page">
+  @if (loading()) {
+  <div class="loading-state">
+    <div class="loading-spinner"></div>
+    <p>Loading community...</p>
+  </div>
+  } @if (error()) {
+  <div class="error-container">
+    <div class="error-content">
+      <h2>Oops!</h2>
+      <p>{{ error() }}</p>
+      <button class="btn btn-primary" (click)="navigateToCities()">
+        Browse All Cities
+      </button>
+    </div>
+  </div>
+  } @if (!loading() && !error() && community()) {
+  <header class="community-hero">
+    <div class="hero-image-wrapper">
+      <img
+        [src]="community()!.imageUrl"
+        [alt]="community()!.name"
+        class="hero-image"
+      />
+      <div class="hero-overlay"></div>
+    </div>
+
+    <div class="hero-content">
+      <button class="back-link" (click)="navigateToCities()">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        All Cities
+      </button>
+
+      <div class="hero-text">
+        <div class="hero-badges">
+          <span class="locality-badge">{{ community()!.localityType }}</span>
+          <button class="city-link" (click)="navigateToCity()">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            {{ community()!.city }}, {{ community()!.adminArea }},
+            {{ community()!.countryCode }}
+          </button>
+        </div>
+
+        <h1 class="community-name">{{ community()!.name }}</h1>
+        <p class="community-description">{{ community()!.description }}</p>
+
+        <!-- Community Manager badge (localities only) -->
+        @if (isLocality && communityManager()) {
+        <div class="manager-badge" title="Elected Community Manager">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+            />
+          </svg>
+          <span
+            >Manager: <strong>{{ communityManager()!.name }}</strong></span
+          >
+        </div>
+        }
+
+        <!-- Active election indicator (localities only) -->
+        @if (isLocality && activeElection() && activeElection()!.status ===
+        'open') {
+        <button
+          class="election-badge"
+          (click)="openElectionModal()"
+          aria-label="View active election"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M9 9h6M9 12h6M9 15h4" />
+          </svg>
+          Election in Progress — Vote Now
+        </button>
+        }
+
+        <div class="community-stats">
+          <div class="stat-item">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span class="stat-value">{{
+              community()!.memberCount | number
+            }}</span>
+            <span class="stat-label">Members</span>
+          </div>
+        </div>
+
+        <div class="community-actions">
+          @if (!isMember()) {
+          <button
+            class="btn btn-primary btn-large"
+            (click)="promptJoin()"
+            [disabled]="joiningInProgress()"
+          >
+            @if (joiningInProgress()) {
+            <span class="btn-spinner"></span>
+            Joining... } @else if (!isAuthenticated()) { Sign in to Join } @else
+            { Join Community }
+          </button>
+          } @else {
+          <span class="member-badge">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            You're a member
+          </span>
+          <button
+            class="btn btn-outline btn-large"
+            (click)="leaveCommunity()"
+            [disabled]="joiningInProgress()"
+          >
+            @if (joiningInProgress()) {
+            <span class="btn-spinner"></span>
+            Leaving... } @else { Leave Community }
+          </button>
+          }
+
+          <button
+            class="btn btn-outline btn-large"
+            (click)="navigateToClassifieds()"
+          >
+            View Classifieds
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <app-sponsorship-banner
+    [communityId]="community()?.id ?? ''"
+    type="banner"
+  ></app-sponsorship-banner>
+
+  <section class="community-support-section">
+    <div class="section-container">
+      <div class="support-grid">
+        <article class="support-card">
+          <h2 class="section-title">Donate to Community Goals</h2>
+          <p class="support-copy">
+            Donations and sponsorships power local events, outreach, and city
+            improvement initiatives.
+          </p>
+          <app-donation-progress [monthlyGoal]="5000"></app-donation-progress>
+        </article>
+
+        <article class="support-card">
+          <h2 class="section-title">Business Outreach Page</h2>
+          @if (!isLocality) {
+          <p class="support-copy subtle">
+            Business pages are connected to localities. Visit the
+            <button class="action-link" (click)="navigateToCity()">
+              city page
+            </button>
+            to create or view business listings.
+          </p>
+          } @else if (loadingBusiness()) {
+          <p class="support-copy">Loading business profile...</p>
+          } @else if (!businessPage()) {
+          <p class="support-copy">
+            Create a business page for this community to reach nearby customers.
+          </p>
+          <button class="btn btn-primary" (click)="showBusinessModal.set(true)">
+            Create Business Page
+          </button>
+
+          <otui-modal
+            [visible]="showBusinessModal()"
+            heading="Create Business Page"
+            [closable]="true"
+            (close)="showBusinessModal.set(false)"
+            size="md"
+          >
+            <div class="form-grid">
+              <div class="field-group field-group-full">
+                <label class="field-label" for="business-tier-modal"
+                  >Select Tier</label
+                >
+                <select
+                  id="business-tier-modal"
+                  class="input"
+                  [ngModel]="selectedBusinessTier()"
+                  (ngModelChange)="selectedBusinessTier.set($event)"
+                >
+                  <option value="basic">Basic</option>
+                  <option value="pro">Pro</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button
+                class="btn btn-primary"
+                (click)="startBusinessCheckout()"
+                [disabled]="businessCheckoutInProgress()"
+              >
+                @if (businessCheckoutInProgress()) { Starting checkout... }
+                @else { Create Business Page }
+              </button>
+            </div>
+          </otui-modal>
+          } @else {
+          <p class="support-copy">
+            Keep your business profile current so local members can discover and
+            contact you.
+          </p>
+          @if (!isBusinessOwner()) {
+          <p class="support-copy subtle">
+            This page is active. Only the owner can edit profile details.
+          </p>
+          } @else {
+          <button
+            class="btn btn-secondary"
+            (click)="showBusinessModal.set(true)"
+          >
+            Edit Business Profile
+          </button>
+
+          <otui-modal
+            [visible]="showBusinessModal()"
+            heading="Edit Business Profile"
+            [closable]="true"
+            (close)="showBusinessModal.set(false)"
+            size="lg"
+          >
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label" for="business-name">Name</label>
+                <input
+                  id="business-name"
+                  class="input"
+                  [ngModel]="businessName"
+                  (ngModelChange)="businessName = $event"
+                  placeholder="Neighborhood Market"
+                />
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="business-website"
+                  >Website</label
+                >
+                <input
+                  id="business-website"
+                  class="input"
+                  [ngModel]="businessWebsite"
+                  (ngModelChange)="businessWebsite = $event"
+                  placeholder="https://example.com"
+                />
+              </div>
+              <div class="field-group field-group-full">
+                <label class="field-label" for="business-description"
+                  >Description</label
+                >
+                <textarea
+                  id="business-description"
+                  class="input"
+                  rows="3"
+                  [ngModel]="businessDescription"
+                  (ngModelChange)="businessDescription = $event"
+                  placeholder="What your business offers"
+                ></textarea>
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="business-phone">Phone</label>
+                <input
+                  id="business-phone"
+                  class="input"
+                  [ngModel]="businessPhone"
+                  (ngModelChange)="businessPhone = $event"
+                />
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="business-email">Email</label>
+                <input
+                  id="business-email"
+                  class="input"
+                  [ngModel]="businessEmail"
+                  (ngModelChange)="businessEmail = $event"
+                />
+              </div>
+              <div class="field-group field-group-full">
+                <label class="field-label" for="business-address"
+                  >Address</label
+                >
+                <input
+                  id="business-address"
+                  class="input"
+                  [ngModel]="businessAddress"
+                  (ngModelChange)="businessAddress = $event"
+                />
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button
+                class="btn btn-primary"
+                (click)="saveBusinessProfile()"
+                [disabled]="savingBusinessProfile()"
+              >
+                @if (savingBusinessProfile()) { Saving... } @else { Save
+                Business Profile }
+              </button>
+            </div>
+          </otui-modal>
+          } }
+        </article>
+
+        <article class="support-card">
+          <h2 class="section-title">Sponsor This Community</h2>
+          <p class="support-copy">
+            Sponsorships increase visibility for your business and contribute to
+            this community's support goal.
+          </p>
+          <button
+            class="btn btn-primary"
+            (click)="showSponsorshipModal.set(true)"
+          >
+            Sponsor Community
+          </button>
+
+          <otui-modal
+            [visible]="showSponsorshipModal()"
+            heading="Sponsor This Community"
+            [closable]="true"
+            (close)="showSponsorshipModal.set(false)"
+            size="md"
+          >
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label" for="sponsorship-type">Type</label>
+                <select
+                  id="sponsorship-type"
+                  class="input"
+                  [ngModel]="selectedSponsorshipType()"
+                  (ngModelChange)="selectedSponsorshipType.set($event)"
+                >
+                  <option value="banner">Banner</option>
+                  <option value="sticky-ad">Sticky Ad</option>
+                  <option value="featured">Featured</option>
+                </select>
+              </div>
+              <div class="field-group field-group-full">
+                <label class="field-label" for="ad-content">Ad Copy</label>
+                <textarea
+                  id="ad-content"
+                  rows="3"
+                  class="input"
+                  [ngModel]="sponsorshipAdContent"
+                  (ngModelChange)="sponsorshipAdContent = $event"
+                  placeholder="Tell this community about your offer"
+                ></textarea>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button
+                class="btn btn-primary"
+                (click)="startSponsorshipCheckout()"
+                [disabled]="sponsorshipCheckoutInProgress()"
+              >
+                @if (sponsorshipCheckoutInProgress()) { Starting checkout... }
+                @else { Sponsor Community }
+              </button>
+            </div>
+          </otui-modal>
+
+          @if (activeSponsorships().length > 0) {
+          <div class="active-sponsorship-note">
+            {{ activeSponsorships().length }} active sponsorship(s) currently
+            supporting this community.
+          </div>
+          }
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="community-highlights">
+    <div class="section-container">
+      <h2 class="section-title">Community Focus</h2>
+      <div class="highlights-grid">
+        @for (highlight of community()!.highlights || []; track highlight) {
+        <div class="highlight-card">
+          <div class="highlight-icon">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+              />
+            </svg>
+          </div>
+          <span class="highlight-text">{{ highlight }}</span>
+        </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Leaflet map ===== -->
+  @if (community()!.coordinates) {
+  <section class="community-map-section">
+    <div class="section-container">
+      <h2 class="section-title">Location</h2>
+      <div class="map-container">
+        <app-map
+          [cities]="[]"
+          [centerLat]="community()!.coordinates!.lat"
+          [centerLng]="community()!.coordinates!.lng"
+          [zoom]="12"
+          [centerLabel]="community()!.name"
+        ></app-map>
+        <div class="map-details">
+          <div class="detail-card">
+            <span class="detail-label">City</span>
+            <span class="detail-value">{{ community()!.city }}</span>
+          </div>
+          <div class="detail-card">
+            <span class="detail-label">Region</span>
+            <span class="detail-value">{{ community()!.adminArea }}</span>
+          </div>
+          <div class="detail-card">
+            <span class="detail-label">Country</span>
+            <span class="detail-value">{{ community()!.countryCode }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  }
+
+  <!-- ===== Discussion / Post feed ===== -->
+  <section class="community-feed-section">
+    <div class="section-container">
+      <lib-community-posts></lib-community-posts>
+    </div>
+  </section>
+
+  <!-- ===== Chat ===== -->
+  @if (isMember()) {
+  <section class="community-chat-section">
+    <div class="section-container">
+      <h2 class="section-title">Community Chat</h2>
+      <lib-community-chat></lib-community-chat>
+    </div>
+  </section>
+  }
+
+  <!-- ===== Members ===== -->
+  @if (isMember()) {
+  <section class="community-members-section">
+    <div class="section-container">
+      <lib-manage-members></lib-manage-members>
+    </div>
+  </section>
+  }
+
+  <section class="community-about">
+    <div class="section-container">
+      <h2 class="section-title">About</h2>
+      <div class="about-content">
+        <p>{{ community()!.description }}</p>
+      </div>
+    </div>
+  </section>
+  }
+</div>
+
+<!-- ── Election Modal (localities only) ──────────────────────────────────────── -->
+@if (isLocality && activeElection()) {
+<otui-modal
+  [visible]="showElectionModal()"
+  heading="Community Manager Election"
+  [closable]="true"
+  (close)="showElectionModal.set(false)"
+  size="md"
+>
+  <div class="election-panel">
+    <p class="election-description">
+      The community is electing a manager for {{ community()!.name }}. Vote for
+      a candidate below or nominate yourself to run.
+    </p>
+    <p class="election-ends">
+      Election ends:
+      <strong>{{ activeElection()!.endsAt | date : 'medium' }}</strong>
+    </p>
+
+    @if (activeElection()!.candidates.length === 0) {
+    <p class="no-candidates">No candidates yet. Be the first to run!</p>
+    } @else {
+    <ul class="candidate-list">
+      @for (candidate of activeElection()!.candidates; track candidate.userId) {
+      <li class="candidate-item">
+        <span class="candidate-name">{{ candidate.name }}</span>
+        <span class="candidate-votes">{{ candidate.votes }} votes</span>
+        @if (!activeElection()!.myVote) {
+        <button
+          class="btn btn-sm btn-primary"
+          (click)="voteForCandidate(candidate.userId)"
+          [disabled]="votingInProgress()"
+          [attr.aria-label]="'Vote for ' + candidate.name"
+        >
+          Vote
+        </button>
+        } @else if (activeElection()!.myVote === candidate.userId) {
+        <span class="voted-badge">✓ Your vote</span>
+        }
+      </li>
+      }
+    </ul>
+    } @if (!activeElection()!.myVote) {
+    <div class="election-actions">
+      <button class="btn btn-outline" (click)="selfNominate()">
+        Nominate Yourself
+      </button>
+    </div>
+    }
+  </div>
+</otui-modal>
+}

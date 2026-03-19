@@ -30,6 +30,12 @@ export class CommunityService {
       .toPromise() as Promise<CommunityDto | null>;
   }
 
+  findBySlug(slug: string): Promise<CommunityDto | null> {
+    return this.http
+      .get<CommunityDto | null>(`${this.baseUrl}/slug/${slug}`)
+      .toPromise() as Promise<CommunityDto | null>;
+  }
+
   findAll(searchDto: SearchCommunityDto): Promise<CommunityDto[]> {
     return this.http
       .post<CommunityDto[]>(`${this.baseUrl}/search`, {

@@ -84,6 +84,11 @@
       "name": "community",
       "description": "Community/Groups feature",
       "active": true
+    },
+    {
+      "name": "local-hub",
+      "description": "Local Hub - local-centric communities platform",
+      "active": true
     }
   ],
   "roles": [
@@ -271,6 +276,21 @@
       "name": "community_manager",
       "description": "Manager of a community",
       "appScope": "community"
+    },
+    {
+      "name": "local_hub_member",
+      "description": "Standard member of a local-hub community",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "local_hub_moderator",
+      "description": "Community moderator for local-hub",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "local_hub_admin",
+      "description": "Community admin for local-hub",
+      "appScope": "local-hub"
     }
   ],
   "permissions": [
@@ -1777,6 +1797,86 @@
       "action": "manage",
       "targetId": null,
       "appScope": "community"
+    },
+    {
+      "name": "classified.create",
+      "description": "Create classified ad",
+      "active": true,
+      "resource": "classified",
+      "action": "create",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "classified.read",
+      "description": "Read classified ad",
+      "active": true,
+      "resource": "classified",
+      "action": "read",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "classified.update",
+      "description": "Update classified ad",
+      "active": true,
+      "resource": "classified",
+      "action": "update",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "classified.delete",
+      "description": "Delete classified ad",
+      "active": true,
+      "resource": "classified",
+      "action": "delete",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "classified.feature",
+      "description": "Feature classified ad",
+      "active": true,
+      "resource": "classified",
+      "action": "feature",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "community.join",
+      "description": "Join a local-hub community",
+      "active": true,
+      "resource": "community",
+      "action": "join",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "community.leave",
+      "description": "Leave a local-hub community",
+      "active": true,
+      "resource": "community",
+      "action": "leave",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "community.read",
+      "description": "Read local-hub community",
+      "active": true,
+      "resource": "community",
+      "action": "read",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "moderation.remove",
+      "description": "Remove content (mod)",
+      "active": true,
+      "resource": "moderation",
+      "action": "remove",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "moderation.ban",
+      "description": "Ban user (mod)",
+      "active": true,
+      "resource": "moderation",
+      "action": "ban",
+      "appScope": "local-hub"
     }
   ],
   "role_permissions": [
@@ -3984,6 +4084,171 @@
       "role": "social_user",
       "permission": "social.reaction.create",
       "permissionAppScope": "social"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.update",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.delete",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.join",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.leave",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "classified.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "classified.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "classified.update",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "classified.delete",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "classified.feature",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "community.join",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "community.leave",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "moderation.remove",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "moderation.ban",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "classified.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "classified.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "classified.update",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "classified.delete",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "classified.feature",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "community.join",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "community.leave",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "moderation.remove",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "moderation.ban",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.join",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.leave",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "store.create",
+      "permissionAppScope": "store"
     }
   ]
 }

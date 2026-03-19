@@ -28,7 +28,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    command: /bin/sh -c "apk add --no-cache postgresql-client && command -v pg_isready && npm run db:setup"
     restart: 'no'
   redis:
     image: redis:latest
@@ -147,6 +147,10 @@ services:
       forum:
         condition: service_started
       wellness:
+        condition: service_started
+      classifieds:
+        condition: service_started
+      payments:
         condition: service_started
 
   profile:
@@ -393,6 +397,45 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+
+  classifieds:
+    container_name: ot_classifieds
+    build:
+      context: .
+      dockerfile: ./apps/classifieds/Dockerfile
+    ports:
+      - '3017:3017'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  payments:
+    container_name: ot_payments
+    build:
+      context: .
+      dockerfile: ./apps/payments/Dockerfile
+    ports:
+      - '3018:3018'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  local-hub-client-interface:
+    container_name: ot_local_hub
+    build:
+      context: .
+      dockerfile: ./apps/local-hub/Dockerfile
+    ports:
+      - '8087:4000'
+    environment:
+      - GATEWAY_URL=http://gateway:3000
+      - GATEWAY_WS_URL=http://gateway:3300
+    depends_on:
+      - gateway
 
   d6:
     container_name: ot_d6

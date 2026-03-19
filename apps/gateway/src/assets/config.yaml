@@ -75,6 +75,16 @@ services:
     transport: TCP
     host: ot_wellness
     port: 3016
+  classifieds:
+    name: classifieds
+    transport: TCP
+    host: ot_classifieds
+    port: 3017
+  payments:
+    name: payments
+    transport: TCP
+    host: ot_payments
+    port: 3018
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

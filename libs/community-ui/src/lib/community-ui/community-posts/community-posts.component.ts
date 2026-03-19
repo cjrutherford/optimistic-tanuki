@@ -64,16 +64,16 @@ export class CommunityPostsComponent extends Variantable {
   }
 
   goToManage() {
-    const communityId = this.route.snapshot.paramMap.get('communityId');
-    if (communityId) {
-      this.router.navigate(['/communities/manage', communityId, 'members']);
+    const communitySlug = this.route.snapshot.paramMap.get('communitySlug');
+    if (communitySlug) {
+      this.router.navigate(['/communities/manage', communitySlug, 'members']);
     }
   }
 
   goToChat() {
-    const communityId = this.route.snapshot.paramMap.get('communityId');
-    if (communityId) {
-      this.router.navigate(['/communities', communityId, 'chat']);
+    const communitySlug = this.route.snapshot.paramMap.get('communitySlug');
+    if (communitySlug) {
+      this.router.navigate(['/communities', communitySlug, 'chat']);
     }
   }
 
@@ -124,17 +124,17 @@ export class CommunityPostsComponent extends Variantable {
   override ngOnInit(): void {
     super.ngOnInit();
 
-    const communityId = this.route.snapshot.paramMap.get('communityId');
-    if (!communityId) {
-      this.error.set('Community ID not found');
+    const communitySlug = this.route.snapshot.paramMap.get('communitySlug');
+    if (!communitySlug) {
+      this.error.set('Community not found');
       this.loading.set(false);
       return;
     }
 
-    this.loadCurrentProfile().then(() => {
-      this.loadCommunity(communityId);
-      this.loadPosts(communityId);
-    });
+    // Load profile and community independently so a 401 on profile/me
+    // (anonymous users) never blocks the public community data fetch.
+    this.loadCurrentProfile();
+    this.loadCommunityBySlug(communitySlug);
   }
 
   override ngOnDestroy(): void {
@@ -150,6 +150,48 @@ export class CommunityPostsComponent extends Variantable {
       this.currentProfileAvatar = profile.profilePic;
     } catch (err) {
       console.error('Error loading current profile:', err);
+    }
+  }
+
+  private async loadCommunityBySlug(slug: string) {
+    try {
+      const community = await this.communityService.findBySlug(slug);
+      if (community) {
+        const bannerUrl = community.bannerAssetId
+          ? `/api/asset/${community.bannerAssetId}`
+          : community.bannerUrl;
+        const logoUrl = community.logoAssetId
+          ? `/api/asset/${community.logoAssetId}`
+          : community.logoUrl;
+        const communityWithUrls = {
+          ...community,
+          bannerUrl,
+          logoUrl,
+        };
+        this.community.set(communityWithUrls);
+
+        const isOwner = community.ownerId === this.currentProfileId;
+
+        if (!isOwner && this.currentProfileId) {
+          const isAdminOrMod = community.ownerIds?.includes(
+            this.currentProfileId
+          );
+          if (isAdminOrMod) {
+            this.isOwnerOrManager.set(true);
+          }
+        } else if (isOwner) {
+          this.isOwnerOrManager.set(true);
+        }
+
+        await this.loadPosts(community.id);
+      } else {
+        this.error.set('Community not found');
+        this.loading.set(false);
+      }
+    } catch (err) {
+      console.error('Error loading community:', err);
+      this.error.set('Failed to load community');
+      this.loading.set(false);
     }
   }
 

@@ -136,6 +136,10 @@ export function postSearchDtoToFindManyOptions(
     where.communityId = In(searchDto.communityIds);
   }
 
+  if (searchDto?.appScope) {
+    where.appScope = searchDto.appScope;
+  }
+
   searchOptions.where = where;
   return searchOptions;
 }

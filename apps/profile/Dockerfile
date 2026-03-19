@@ -14,7 +14,8 @@ ENV NODE_ENV=production
 ENV PORT=3002
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
-RUN npm i typeorm pg nodemon
+RUN npm i -g nodemon
+RUN npm i pg typeorm
 COPY ./dist/apps/profile .
 RUN chown -R node:node .
 USER node

@@ -1,0 +1,21 @@
+listenPort: 3018
+database:
+  host: db
+  port: 5432
+  username: postgres
+  password: postgres
+  database: ot_payments
+services:
+  profile:
+    name: profile
+    transport: TCP
+    host: ot_profile
+    port: 3002
+lemonSqueezy:
+  apiKey: ''
+  storeId: ''
+  webhookSecret: ''
+  variants:
+    basic: ''
+    pro: ''
+    enterprise: ''

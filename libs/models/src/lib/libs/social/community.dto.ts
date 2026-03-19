@@ -30,6 +30,14 @@ export enum CommunityJoinPolicy {
   INVITE_ONLY = 'invite_only',
 }
 
+export enum LocalityType {
+  CITY = 'city',
+  TOWN = 'town',
+  NEIGHBORHOOD = 'neighborhood',
+  COUNTY = 'county',
+  REGION = 'region',
+}
+
 export class CommunityTag {
   @ApiProperty()
   @IsString()
@@ -49,6 +57,12 @@ export class CommunityDto {
   @IsString()
   @MaxLength(255)
   name!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  slug?: string | null;
 
   @ApiProperty()
   @IsString()
@@ -82,6 +96,49 @@ export class CommunityDto {
   @ApiProperty()
   memberCount!: number;
 
+  /** Locality-only fields — null for non-locality communities */
+  @ApiPropertyOptional({ enum: LocalityType })
+  @IsOptional()
+  @IsEnum(LocalityType)
+  localityType?: LocalityType | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  countryCode?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  adminArea?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  city?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lat?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lng?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  population?: number | null;
+
+  /** Locality highlights: human-readable strings, may contain URLs. */
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  highlights?: string[] | null;
+
   @ApiProperty()
   @IsDateString()
   createdAt!: Date;
@@ -96,6 +153,12 @@ export class CreateCommunityDto {
   @IsString()
   @MaxLength(255)
   name!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  slug?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -132,6 +195,56 @@ export class CreateCommunityDto {
   @ApiProperty()
   @IsBoolean()
   createChatRoom = true;
+
+  /** Locality-only fields — omit for non-locality communities */
+  @ApiPropertyOptional({ enum: LocalityType })
+  @IsOptional()
+  @IsEnum(LocalityType)
+  localityType?: LocalityType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  adminArea?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lat?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lng?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  population?: number;
+
+  @ApiPropertyOptional({
+    description: 'Parent community ID for sub-communities',
+  })
+  @IsOptional()
+  @IsUUID()
+  parentId?: string | null;
+
+  /** Locality highlights: human-readable strings, may contain URLs. */
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  highlights?: string[];
 }
 
 export class UpdateCommunityDto {
@@ -140,6 +253,12 @@ export class UpdateCommunityDto {
   @IsString()
   @MaxLength(255)
   name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  slug?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -317,4 +436,115 @@ export class CommunityFeedOptions {
   @IsOptional()
   @IsNumber()
   offset?: number;
+}
+
+export enum ElectionStatus {
+  PENDING = 'pending',
+  OPEN = 'open',
+  CLOSED = 'closed',
+  CANCELLED = 'cancelled',
+}
+
+export class ElectionCandidateDto {
+  @ApiProperty()
+  @IsUUID()
+  id!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  electionId!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  userId!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  profileId!: string;
+
+  @ApiProperty()
+  @IsNumber()
+  voteCount!: number;
+
+  @ApiProperty()
+  @IsBoolean()
+  isWithdrawn!: boolean;
+
+  @ApiProperty()
+  @IsDateString()
+  nominatedAt!: Date;
+}
+
+export class CommunityElectionDto {
+  @ApiProperty()
+  @IsUUID()
+  id!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  communityId!: string;
+
+  @ApiProperty({ enum: ElectionStatus })
+  @IsEnum(ElectionStatus)
+  status!: ElectionStatus;
+
+  @ApiProperty()
+  @IsDateString()
+  startedAt!: Date;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  endsAt?: Date | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  winnerId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  winnerProfileId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  initiatedBy?: string;
+
+  @ApiPropertyOptional({ type: [ElectionCandidateDto] })
+  @IsOptional()
+  @IsArray()
+  candidates?: ElectionCandidateDto[];
+}
+
+export class StartElectionDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  endsAt?: Date;
+}
+
+export class NominateDto {}
+
+export class VoteDto {
+  @ApiProperty()
+  @IsUUID()
+  candidateId!: string;
+}
+
+export class CloseElectionDto {
+  @ApiProperty()
+  @IsUUID()
+  electionId!: string;
+}
+
+export class AppointManagerDto {
+  @ApiProperty()
+  @IsUUID()
+  userId!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  profileId!: string;
 }

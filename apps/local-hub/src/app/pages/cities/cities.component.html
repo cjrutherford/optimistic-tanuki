@@ -1,0 +1,185 @@
+<div class="cities-page">
+  <header class="page-header">
+    <div class="header-background">
+      <div class="header-pattern"></div>
+      <div class="header-gradient"></div>
+    </div>
+    <div class="header-content">
+      <div class="header-top">
+        <div class="brand">
+          <span class="brand-icon">🏠</span>
+          <span class="brand-text">LocalHub</span>
+        </div>
+      </div>
+      <h1 class="page-title">Explore Local Hubs</h1>
+      <p class="page-subtitle">
+        Discover communities across {{ cities().length }} supported cities
+      </p>
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-value">{{ cities().length }}</span>
+          <span class="stat-label">Cities</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{ getTotalCommunities() }}</span>
+          <span class="stat-label">Communities</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  @if (loading()) {
+  <div class="loading-state">
+    <div class="loading-spinner"></div>
+    <p>Loading cities...</p>
+  </div>
+  } @else {
+  <section class="map-section">
+    <div class="map-header">
+      <h2 class="section-title">
+        <span class="title-icon">🗺️</span>
+        Regional Map
+      </h2>
+      <p class="section-subtitle">
+        Interactive map showing supported cities within the Coastal Southeast
+        region
+      </p>
+    </div>
+    <app-map
+      [cities]="cities()"
+      [centerLat]="31.9"
+      [centerLng]="-81.1"
+      [zoom]="7"
+      (citySelected)="onMapCitySelect($event)"
+    ></app-map>
+  </section>
+
+  <section class="cities-grid">
+    <div class="grid-header">
+      <h2 class="section-title">
+        <span class="title-icon">🏛️</span>
+        All Supported Cities
+      </h2>
+      <p class="section-subtitle">
+        Browse communities by city to find local groups and events
+      </p>
+    </div>
+    <div class="city-cards">
+      @for (city of cities(); track city.id; let i = $index) {
+      <otui-card
+        class="city-card"
+        (click)="navigateToCity(city.slug)"
+        role="button"
+        [attr.aria-label]="'View ' + city.name + ' city hub'"
+        (mouseenter)="onCityHover(city)"
+        (mouseleave)="onCityHover(null)"
+        [style.animation-delay]="i * 50 + 'ms'"
+      >
+        <div class="city-image-wrapper">
+          <img
+            [src]="city.imageUrl"
+            [alt]="city.name"
+            class="city-image"
+            loading="lazy"
+            width="400"
+            height="250"
+          />
+          <div class="city-image-overlay"></div>
+          <span class="city-badge">{{ city.adminArea }}</span>
+        </div>
+        <div class="city-content">
+          <h3 class="city-name">{{ city.name }}</h3>
+          <p class="city-description">{{ city.description }}</p>
+          <div class="city-meta">
+            <span class="city-population">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              {{ city.population | number }}
+            </span>
+            <span class="city-communities">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              {{ city.communities }}
+              {{ city.communities === 1 ? 'community' : 'communities' }}
+            </span>
+          </div>
+          <div class="city-highlights">
+            @for (highlight of city.highlights.slice(0, 3); track highlight) {
+            <span class="highlight-tag">{{ highlight }}</span>
+            }
+          </div>
+        </div>
+      </otui-card>
+      }
+    </div>
+  </section>
+
+  <section class="communities-section">
+    <div class="grid-header">
+      <h2 class="section-title">
+        <span class="title-icon">👥</span>
+        All Communities
+      </h2>
+      <p class="section-subtitle">Browse local communities across the region</p>
+    </div>
+    <div class="community-cards">
+      @for (community of communities(); track community.id) {
+      <otui-card
+        class="community-card"
+        (click)="navigateToCommunity(community.slug)"
+        role="button"
+        [attr.aria-label]="community.name + ' community'"
+      >
+        <div class="community-image-wrapper">
+          <img
+            [src]="community.imageUrl"
+            [alt]="community.name"
+            class="community-image"
+            loading="lazy"
+            width="350"
+            height="200"
+          />
+        </div>
+        <div class="community-content">
+          <div class="community-header">
+            <span class="community-type">{{ community.localityType }}</span>
+            <span class="community-location"
+              >{{ community.city }}, {{ community.adminArea }}</span
+            >
+          </div>
+          <h3 class="community-name">{{ community.name }}</h3>
+          <p class="community-description">{{ community.description }}</p>
+          <div class="community-meta">
+            <span class="community-members">
+              {{ community.memberCount | number }} members
+            </span>
+          </div>
+        </div>
+      </otui-card>
+      }
+    </div>
+  </section>
+  }
+</div>

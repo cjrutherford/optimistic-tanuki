@@ -71,6 +71,7 @@ export {
   SubscriptionCommands,
   DonationCommands,
   OrderCommands,
+  PaymentCommands,
 } from './lib/libs/store';
 
 export { AppConfigCommands } from './lib/libs/app-config';
@@ -90,3 +91,27 @@ export {
 export { WellnessCommands } from './lib/libs/wellness';
 
 export { WellnessAiCommands } from './lib/libs/ai-orchestration';
+
+export { ClassifiedCommands } from './lib/libs/classifieds';
+
+export {
+  PLATFORM_FEE_PERCENTAGE,
+  LEMON_SQUEEZY_FEE_PERCENTAGE,
+  LEMON_SQUEEZY_FLAT_FEE,
+  TOTAL_FEE_PERCENTAGE,
+} from './lib/libs/payment-fees';
+
+export {
+  BUSINESS_PLACEMENTS,
+  getPlacementForTier,
+  getDefaultPlacementForTier,
+  type BusinessPlacement,
+  type FeaturedSpotType,
+} from './lib/libs/business-placement';
+
+export {
+  BUSINESS_TIER_FEATURES,
+  getTierFromPrice,
+  type BusinessTierFeature,
+  type BusinessTierType,
+} from './lib/libs/business-tiers';

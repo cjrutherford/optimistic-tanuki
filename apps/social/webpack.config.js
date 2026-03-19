@@ -10,7 +10,11 @@ module.exports = {
       target: 'node',
       compiler: 'tsc',
       main: './src/main.ts',
-      additionalEntryPoints: ['./src/seed-social.ts'],
+      additionalEntryPoints: [
+        './src/seed-social.ts',
+        './src/seed-local-communities.ts',
+        './src/seed-community-posts.ts',
+      ],
       tsConfig: './tsconfig.app.json',
       assets: ['./src/assets'],
       optimization: false,

@@ -21,7 +21,9 @@ export type TcpServiceConfig = {
     | 'app_configurator'
     | 'store'
     | 'forum'
-    | 'wellness';
+    | 'wellness'
+    | 'classifieds'
+    | 'payments';
   transport: Transport;
   options: TcpClientOptions;
   host: string;
@@ -65,6 +67,8 @@ export type Config = {
     store: TcpServiceConfig;
     forum: TcpServiceConfig;
     wellness: TcpServiceConfig;
+    classifieds: TcpServiceConfig;
+    payments: TcpServiceConfig;
   };
 };
 

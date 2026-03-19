@@ -25,9 +25,13 @@ export interface CommunityTag {
 export interface CommunityDto {
   id: string;
   name: string;
+  slug?: string | null;
+  parentId?: string | null;
   description: string;
   ownerId: string;
   ownerProfileId: string;
+  managerId?: string | null;
+  managerProfileId?: string | null;
   appScope: string;
   isPrivate: boolean;
   joinPolicy: CommunityJoinPolicy;
@@ -46,6 +50,8 @@ export interface CommunityDto {
 
 export interface CreateCommunityDto {
   name: string;
+  slug?: string;
+  parentId?: string | null;
   description?: string;
   isPrivate?: boolean;
   joinPolicy?: CommunityJoinPolicy;
@@ -56,6 +62,8 @@ export interface CreateCommunityDto {
 
 export interface UpdateCommunityDto {
   name?: string;
+  slug?: string;
+  parentId?: string | null;
   description?: string;
   isPrivate?: boolean;
   joinPolicy?: CommunityJoinPolicy;
@@ -111,4 +119,50 @@ export interface CommunityFeedOptions {
   communityIds?: string[];
   limit?: number;
   offset?: number;
+}
+
+export enum ElectionStatus {
+  PENDING = 'pending',
+  OPEN = 'open',
+  CLOSED = 'closed',
+  CANCELLED = 'cancelled',
+}
+
+export interface ElectionCandidateDto {
+  id: string;
+  electionId: string;
+  userId: string;
+  profileId: string;
+  voteCount: number;
+  isWithdrawn: boolean;
+  nominatedAt: Date;
+}
+
+export interface CommunityElectionDto {
+  id: string;
+  communityId: string;
+  status: ElectionStatus;
+  startedAt: Date;
+  endsAt?: Date | null;
+  winnerId?: string | null;
+  winnerProfileId?: string | null;
+  initiatedBy?: string;
+  candidates?: ElectionCandidateDto[];
+}
+
+export interface StartElectionDto {
+  endsAt?: Date;
+}
+
+export interface ElectionVoteDto {
+  candidateId: string;
+}
+
+export interface CloseElectionDto {
+  electionId: string;
+}
+
+export interface AppointManagerDto {
+  userId: string;
+  profileId: string;
 }

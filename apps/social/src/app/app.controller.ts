@@ -774,6 +774,21 @@ export class AppController {
     return await this.communityService.findOne(id);
   }
 
+  @MessagePattern({ cmd: CommunityCommands.FIND_BY_SLUG })
+  async findCommunityBySlug(@Payload() data: { slug: string }) {
+    return await this.communityService.findBySlug(data.slug);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.LIST_LOCALITY })
+  async listLocalityCommunities(@Payload() data: { appScope?: string }) {
+    return await this.communityService.listLocality(data.appScope);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.GET_SUB_COMMUNITIES })
+  async getSubCommunities(@Payload() data: { parentId: string }) {
+    return await this.communityService.getSubCommunities(data.parentId);
+  }
+
   @MessagePattern({ cmd: CommunityCommands.FIND_MANY })
   async findAllCommunities(
     @Payload() data: { criteria: SearchCommunityDto; appScope: string }
@@ -828,6 +843,13 @@ export class AppController {
   @MessagePattern({ cmd: CommunityCommands.GET_MEMBERS })
   async getCommunityMembers(@Payload('communityId') communityId: string) {
     return await this.communityService.getMembers(communityId);
+  }
+
+  @MessagePattern({ cmd: 'IS_COMMUNITY_MEMBER' })
+  async isCommunityMember(
+    @Payload() data: { communityId: string; userId: string }
+  ) {
+    return await this.communityService.isMember(data.communityId, data.userId);
   }
 
   @MessagePattern({ cmd: CommunityCommands.GET_USER_COMMUNITIES })
@@ -1000,6 +1022,77 @@ export class AppController {
     }
 
     return posts;
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.GET_MANAGER })
+  async getCommunityManager(@Payload() data: { communityId: string }) {
+    return await this.communityService.getCommunityManager(data.communityId);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.GET_ELECTION })
+  async getCommunityElection(@Payload() data: { communityId: string }) {
+    return await this.communityService.getActiveElection(data.communityId);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.START_ELECTION })
+  async startElection(
+    @Payload() data: { communityId: string; initiatedBy: string; endsAt?: Date }
+  ) {
+    return await this.communityService.startElection(
+      data.communityId,
+      data.initiatedBy,
+      data.endsAt
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.NOMINATE })
+  async nominateForElection(
+    @Payload() data: { communityId: string; userId: string; profileId: string }
+  ) {
+    return await this.communityService.nominateForElection(
+      data.communityId,
+      data.userId,
+      data.profileId
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.VOTE })
+  async voteInElection(
+    @Payload()
+    data: {
+      communityId: string;
+      voterId: string;
+      voterProfileId: string;
+      candidateId: string;
+    }
+  ) {
+    return await this.communityService.voteInElection(
+      data.communityId,
+      data.voterId,
+      data.voterProfileId,
+      data.candidateId
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.CLOSE_ELECTION })
+  async closeElection(@Payload() data: { electionId: string }) {
+    return await this.communityService.closeElection(data.electionId);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.APPOINT_MANAGER })
+  async appointManager(
+    @Payload() data: { communityId: string; userId: string; profileId: string }
+  ) {
+    return await this.communityService.appointManager(
+      data.communityId,
+      data.userId,
+      data.profileId
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.REVOKE_MANAGER })
+  async revokeManager(@Payload() data: { communityId: string }) {
+    return await this.communityService.revokeManager(data.communityId);
   }
 
   // Notification handlers

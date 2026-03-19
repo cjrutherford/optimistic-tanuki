@@ -9,6 +9,9 @@ import {
   CommunityMembershipStatus,
 } from '../../entities/community-member.entity';
 import { CommunityInvite } from '../../entities/community-invite.entity';
+import { CommunityElection } from '../../entities/community-election.entity';
+import { ElectionCandidate } from '../../entities/election-candidate.entity';
+import { ElectionVote } from '../../entities/election-vote.entity';
 import {
   CreateCommunityDto,
   UpdateCommunityDto,
@@ -16,6 +19,16 @@ import {
   JoinCommunityDto,
   InviteToCommunityDto,
 } from '@optimistic-tanuki/models';
+
+/** Convert a community name to a URL-safe slug, e.g. "My Cool Community" → "my-cool-community" */
+function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 @Injectable()
 export class CommunityService {
@@ -27,8 +40,41 @@ export class CommunityService {
     @InjectRepository(CommunityMember)
     private readonly memberRepo: Repository<CommunityMember>,
     @InjectRepository(CommunityInvite)
-    private readonly inviteRepo: Repository<CommunityInvite>
+    private readonly inviteRepo: Repository<CommunityInvite>,
+    @InjectRepository(CommunityElection)
+    private readonly electionRepo: Repository<CommunityElection>,
+    @InjectRepository(ElectionCandidate)
+    private readonly candidateRepo: Repository<ElectionCandidate>,
+    @InjectRepository(ElectionVote)
+    private readonly voteRepo: Repository<ElectionVote>
   ) {}
+
+  /** Generate a slug from a name, appending a numeric suffix if the base slug is taken. */
+  private async generateUniqueSlug(base: string): Promise<string> {
+    const baseSlug = toSlug(base);
+    // Fetch all existing slugs that start with this base in one query
+    const conflicting = await this.communityRepo
+      .createQueryBuilder('c')
+      .select('c.slug')
+      .where('c.slug LIKE :pattern', { pattern: `${baseSlug}%` })
+      .getMany();
+
+    const existingSlugs = new Set(conflicting.map((c) => c.slug));
+
+    if (!existingSlugs.has(baseSlug)) {
+      return baseSlug;
+    }
+
+    for (let i = 2; i <= 999; i++) {
+      const candidate = `${baseSlug}-${i}`;
+      if (!existingSlugs.has(candidate)) {
+        return candidate;
+      }
+    }
+
+    // Fallback: append a short random suffix
+    return `${baseSlug}-${Date.now().toString(36)}`;
+  }
 
   async create(
     dto: CreateCommunityDto,
@@ -48,8 +94,11 @@ export class CommunityService {
       name,
     }));
 
+    const slug = dto.slug ? dto.slug : await this.generateUniqueSlug(dto.name);
+
     const community = this.communityRepo.create({
       name: dto.name,
+      slug,
       description: dto.description || '',
       ownerId: userId,
       ownerProfileId: profileId,
@@ -60,6 +109,15 @@ export class CommunityService {
       memberCount: 1,
       bannerAssetId: dto.bannerAssetId,
       logoAssetId: dto.logoAssetId,
+      localityType: dto.localityType ?? null,
+      countryCode: dto.countryCode ?? null,
+      adminArea: dto.adminArea ?? null,
+      city: dto.city ?? null,
+      lat: dto.lat ?? null,
+      lng: dto.lng ?? null,
+      population: dto.population ?? null,
+      parentId: dto.parentId ?? null,
+      highlights: dto.highlights ?? null,
     });
 
     const saved = await this.communityRepo.save(community);
@@ -74,6 +132,36 @@ export class CommunityService {
     await this.memberRepo.save(ownerMember);
 
     return saved;
+  }
+
+  async findBySlug(slug: string): Promise<Community | null> {
+    const community = await this.communityRepo.findOne({ where: { slug } });
+    if (community) {
+      return await this.addMemberInfo(community);
+    }
+    return null;
+  }
+
+  /** Return all communities that are locality-based (have a slug/localityType set). */
+  async listLocality(appScope?: string): Promise<Community[]> {
+    const qb = this.communityRepo
+      .createQueryBuilder('c')
+      .where('c.slug IS NOT NULL');
+    if (appScope) {
+      qb.andWhere('c.appScope = :appScope', { appScope });
+    }
+    qb.orderBy('c.memberCount', 'DESC').addOrderBy('c.name', 'ASC');
+    const communities = await qb.getMany();
+    return Promise.all(communities.map((c) => this.addMemberInfo(c)));
+  }
+
+  /** Return the direct sub-communities of a given parent community. */
+  async getSubCommunities(parentId: string): Promise<Community[]> {
+    const communities = await this.communityRepo.find({
+      where: { parentId },
+      order: { memberCount: 'DESC', name: 'ASC' },
+    });
+    return Promise.all(communities.map((c) => this.addMemberInfo(c)));
   }
 
   async findOne(id: string): Promise<Community | null> {
@@ -177,6 +265,16 @@ export class CommunityService {
         throw new RpcException('Community with this name already exists');
       }
       community.name = dto.name;
+    }
+
+    if (dto.slug) {
+      const slugConflict = await this.communityRepo.findOne({
+        where: { slug: dto.slug },
+      });
+      if (slugConflict && slugConflict.id !== id) {
+        throw new RpcException('A community with this slug already exists');
+      }
+      community.slug = dto.slug;
     }
 
     if (dto.description !== undefined) {
@@ -641,5 +739,214 @@ export class CommunityService {
 
     member.role = newRole;
     return await this.memberRepo.save(member);
+  }
+
+  async getCommunityManager(
+    communityId: string
+  ): Promise<{ userId: string; profileId: string } | null> {
+    const community = await this.communityRepo.findOne({
+      where: { id: communityId },
+    });
+    if (!community || !community.managerId) {
+      return null;
+    }
+    return {
+      userId: community.managerId,
+      profileId: community.managerProfileId || '',
+    };
+  }
+
+  async getActiveElection(
+    communityId: string
+  ): Promise<CommunityElection | null> {
+    const election = await this.electionRepo.findOne({
+      where: { communityId, status: 'open' },
+      relations: ['candidates'],
+    });
+    return election;
+  }
+
+  async startElection(
+    communityId: string,
+    initiatedBy: string,
+    endsAt?: Date
+  ): Promise<CommunityElection> {
+    const existingOpen = await this.electionRepo.findOne({
+      where: { communityId, status: 'open' },
+    });
+    if (existingOpen) {
+      throw new RpcException('An election is already in progress');
+    }
+
+    const community = await this.findOne(communityId);
+    if (!community) {
+      throw new RpcException('Community not found');
+    }
+
+    const member = await this.getMember(communityId, initiatedBy);
+    if (!member) {
+      throw new RpcException('Only community members can start an election');
+    }
+
+    if (
+      community.ownerId !== initiatedBy &&
+      member.role !== CommunityMemberRole.OWNER &&
+      member.role !== CommunityMemberRole.ADMIN &&
+      member.role !== CommunityMemberRole.MODERATOR
+    ) {
+      throw new RpcException('Only community admins can start an election');
+    }
+
+    const election = this.electionRepo.create({
+      communityId,
+      status: 'open',
+      endsAt: endsAt || null,
+      initiatedBy,
+    });
+
+    return await this.electionRepo.save(election);
+  }
+
+  async nominateForElection(
+    communityId: string,
+    userId: string,
+    profileId: string
+  ): Promise<ElectionCandidate> {
+    const election = await this.electionRepo.findOne({
+      where: { communityId, status: 'open' },
+    });
+    if (!election) {
+      throw new RpcException('No open election found');
+    }
+
+    const existingCandidate = await this.candidateRepo.findOne({
+      where: { electionId: election.id, userId },
+    });
+    if (existingCandidate) {
+      throw new RpcException('Already nominated');
+    }
+
+    const candidate = this.candidateRepo.create({
+      electionId: election.id,
+      userId,
+      profileId,
+      voteCount: 0,
+      isWithdrawn: false,
+    });
+
+    return await this.candidateRepo.save(candidate);
+  }
+
+  async voteInElection(
+    communityId: string,
+    voterId: string,
+    voterProfileId: string,
+    candidateId: string
+  ): Promise<CommunityElection> {
+    const election = await this.electionRepo.findOne({
+      where: { communityId, status: 'open' },
+      relations: ['candidates'],
+    });
+    if (!election) {
+      throw new RpcException('No open election found');
+    }
+
+    const member = await this.getMember(communityId, voterId);
+    if (!member || member.status !== CommunityMembershipStatus.APPROVED) {
+      throw new RpcException('Only community members can vote');
+    }
+
+    const candidate = election.candidates.find((c) => c.id === candidateId);
+    if (!candidate || candidate.isWithdrawn) {
+      throw new RpcException('Candidate not found or withdrawn');
+    }
+
+    if (candidate.userId === voterId) {
+      throw new RpcException('Cannot vote for yourself');
+    }
+
+    const existingVote = await this.voteRepo.findOne({
+      where: { electionId: election.id, voterId },
+    });
+    if (existingVote) {
+      throw new RpcException('Already voted in this election');
+    }
+
+    const vote = this.voteRepo.create({
+      electionId: election.id,
+      voterId,
+      voterProfileId,
+      candidateId,
+      candidateUserId: candidate.userId,
+    });
+    await this.voteRepo.save(vote);
+
+    candidate.voteCount += 1;
+    await this.candidateRepo.save(candidate);
+
+    return election;
+  }
+
+  async closeElection(electionId: string): Promise<CommunityElection> {
+    const election = await this.electionRepo.findOne({
+      where: { id: electionId },
+      relations: ['candidates'],
+    });
+    if (!election) {
+      throw new RpcException('Election not found');
+    }
+
+    if (election.status !== 'open') {
+      throw new RpcException('Election is not open');
+    }
+
+    let winner: ElectionCandidate | null = null;
+    let maxVotes = -1;
+
+    for (const candidate of election.candidates) {
+      if (!candidate.isWithdrawn && candidate.voteCount > maxVotes) {
+        maxVotes = candidate.voteCount;
+        winner = candidate;
+      }
+    }
+
+    election.status = 'closed';
+    if (winner) {
+      election.winnerId = winner.userId;
+      election.winnerProfileId = winner.profileId;
+
+      await this.communityRepo.update(election.communityId, {
+        managerId: winner.userId,
+        managerProfileId: winner.profileId,
+      });
+    }
+
+    return await this.electionRepo.save(election);
+  }
+
+  async appointManager(
+    communityId: string,
+    userId: string,
+    profileId: string
+  ): Promise<Community> {
+    const community = await this.findOne(communityId);
+    if (!community) {
+      throw new RpcException('Community not found');
+    }
+
+    community.managerId = userId;
+    community.managerProfileId = profileId;
+    return await this.communityRepo.save(community);
+  }
+
+  async revokeManager(communityId: string): Promise<Community> {
+    const community = await this.findOne(communityId);
+    if (!community) {
+      throw new RpcException('Community not found');
+    }
+
+    community.managerId = null;
+    community.managerProfileId = null;
+    return await this.communityRepo.save(community);
   }
 }

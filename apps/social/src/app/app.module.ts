@@ -20,6 +20,9 @@ import { SocialComponent } from '../entities/social-component.entity';
 import { Community } from '../entities/community.entity';
 import { CommunityMember } from '../entities/community-member.entity';
 import { CommunityInvite } from '../entities/community-invite.entity';
+import { CommunityElection } from '../entities/community-election.entity';
+import { ElectionCandidate } from '../entities/election-candidate.entity';
+import { ElectionVote } from '../entities/election-vote.entity';
 import { Notification } from '../entities/notification.entity';
 import { VoteService } from './services/vote.service';
 import { ReactionService } from './services/reaction.service';
@@ -154,6 +157,21 @@ import { EventService } from './services/event.service';
     {
       provide: getRepositoryToken(CommunityInvite),
       useFactory: (ds: DataSource) => ds.getRepository(CommunityInvite),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(CommunityElection),
+      useFactory: (ds: DataSource) => ds.getRepository(CommunityElection),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(ElectionCandidate),
+      useFactory: (ds: DataSource) => ds.getRepository(ElectionCandidate),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(ElectionVote),
+      useFactory: (ds: DataSource) => ds.getRepository(ElectionVote),
       inject: ['SOCIAL_CONNECTION'],
     },
     {

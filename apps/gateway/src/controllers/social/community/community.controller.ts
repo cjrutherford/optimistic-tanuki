@@ -38,6 +38,7 @@ import {
   AssignRoleDto,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../../auth/auth.guard';
+import { Public } from '../../../decorators/public.decorator';
 import { User, UserDetails } from '../../../decorators/user.decorator';
 import { AppScope } from '../../../decorators/appscope.decorator';
 import { PermissionsGuard } from '../../../guards/permissions.guard';
@@ -156,6 +157,22 @@ export class CommunityController {
         { cmd: CommunityCommands.GET_TOP_ACTIVE },
         { limit: limit || 10, appScope: appScope || 'social' }
       )
+    );
+  }
+
+  @Public()
+  @Get('slug/:slug')
+  @ApiOperation({ summary: 'Get a community by slug' })
+  @ApiResponse({
+    status: 200,
+    description: 'The community has been successfully retrieved.',
+    type: CommunityDto,
+  })
+  async getCommunityBySlug(
+    @Param('slug') slug: string
+  ): Promise<CommunityDto | null> {
+    return await firstValueFrom(
+      this.socialClient.send({ cmd: CommunityCommands.FIND_BY_SLUG }, { slug })
     );
   }
 

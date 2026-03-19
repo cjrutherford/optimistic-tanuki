@@ -48,12 +48,12 @@ export function provideCommunityRoutes(
             ),
         },
         {
-          path: 'manage/:communityId',
-          redirectTo: 'manage/:communityId/members',
+          path: 'manage/:communitySlug',
+          redirectTo: 'manage/:communitySlug/members',
           pathMatch: 'full',
         },
         {
-          path: 'manage/:communityId/members',
+          path: 'manage/:communitySlug/members',
           resolve: {
             userValidPermissions: permissionsResolver,
             userLoggedIn: isLoggedInResolver,
@@ -65,12 +65,12 @@ export function provideCommunityRoutes(
             ),
         },
         {
-          path: ':communityId',
-          redirectTo: ':communityId/posts',
+          path: ':communitySlug',
+          redirectTo: ':communitySlug/posts',
           pathMatch: 'full',
         },
         {
-          path: ':communityId/posts',
+          path: ':communitySlug/posts',
           resolve: {
             userValidPermissions: permissionsResolver,
             userLoggedIn: isLoggedInResolver,
@@ -82,7 +82,7 @@ export function provideCommunityRoutes(
             ),
         },
         {
-          path: ':communityId/chat',
+          path: ':communitySlug/chat',
           resolve: {
             userValidPermissions: permissionsResolver,
             userLoggedIn: isLoggedInResolver,
