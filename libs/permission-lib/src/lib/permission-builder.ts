@@ -425,7 +425,6 @@ export class RoleInitBuilder {
       case 'authentication':
       case 'profile':
       case 'blogging':
-      case 'social':
       case 'assets':
       case 'project-planning':
         // Backend services don't assign default roles

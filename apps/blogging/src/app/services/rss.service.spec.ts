@@ -45,9 +45,9 @@ describe('RssService', () => {
 
       const rssXml = service.generateRssFeed(posts, blogInfo);
 
-      expect(rssXml).toContain('<?xml version="1.0" encoding="utf-8"?>');
+      expect(rssXml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
       expect(rssXml).toContain('<rss');
-      expect(rssXml).toContain('<title>Test Blog</title>');
+      expect(rssXml).toContain('<title><![CDATA[Test Blog]]></title>');
       expect(rssXml).toContain('<title><![CDATA[Test Post]]></title>');
       expect(rssXml).toContain('This is test content');
     });
@@ -63,8 +63,8 @@ describe('RssService', () => {
 
       const rssXml = service.generateRssFeed(posts, blogInfo);
 
-      expect(rssXml).toContain('<?xml version="1.0" encoding="utf-8"?>');
-      expect(rssXml).toContain('<title>Empty Blog</title>');
+      expect(rssXml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
+      expect(rssXml).toContain('<title><![CDATA[Empty Blog]]></title>');
     });
 
     it('should extract description from HTML content', () => {

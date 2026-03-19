@@ -9,6 +9,9 @@ import {
   CommunityMembershipStatus,
 } from '../../entities/community-member.entity';
 import { CommunityInvite } from '../../entities/community-invite.entity';
+import { CommunityElection } from '../../entities/community-election.entity';
+import { ElectionCandidate } from '../../entities/election-candidate.entity';
+import { ElectionVote } from '../../entities/election-vote.entity';
 import { RpcException } from '@nestjs/microservices';
 
 describe('CommunityService', () => {
@@ -16,6 +19,9 @@ describe('CommunityService', () => {
   let communityRepo: jest.Mocked<Repository<Community>>;
   let memberRepo: jest.Mocked<Repository<CommunityMember>>;
   let inviteRepo: jest.Mocked<Repository<CommunityInvite>>;
+  let electionRepo: jest.Mocked<Repository<CommunityElection>>;
+  let candidateRepo: jest.Mocked<Repository<ElectionCandidate>>;
+  let voteRepo: jest.Mocked<Repository<ElectionVote>>;
 
   beforeEach(async () => {
     communityRepo = {
@@ -43,12 +49,45 @@ describe('CommunityService', () => {
       remove: jest.fn(),
     } as any;
 
+    electionRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
+    } as any;
+
+    candidateRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
+    } as any;
+
+    voteRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CommunityService,
         { provide: getRepositoryToken(Community), useValue: communityRepo },
         { provide: getRepositoryToken(CommunityMember), useValue: memberRepo },
         { provide: getRepositoryToken(CommunityInvite), useValue: inviteRepo },
+        {
+          provide: getRepositoryToken(CommunityElection),
+          useValue: electionRepo,
+        },
+        {
+          provide: getRepositoryToken(ElectionCandidate),
+          useValue: candidateRepo,
+        },
+        { provide: getRepositoryToken(ElectionVote), useValue: voteRepo },
       ],
     }).compile();
 
