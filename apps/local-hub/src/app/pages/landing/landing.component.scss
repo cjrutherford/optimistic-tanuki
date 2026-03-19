@@ -302,7 +302,7 @@
 
 .support-local {
   padding: 100px 24px;
-  background: var(--surface-variant);
+  background: var(--gradient-glow);
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
@@ -312,14 +312,16 @@
   margin: 0 auto;
 }
 
-.support-grid, .business-grid {
+.support-grid,
+.business-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 80px;
   align-items: center;
 }
 
-.support-content, .business-content {
+.support-content,
+.business-content {
   .section-title {
     text-align: left;
     margin-bottom: 24px;
