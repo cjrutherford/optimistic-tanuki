@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 import { AuthStateService } from '../../services/auth-state.service';
@@ -8,7 +8,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, LoginBlockComponent],
+  imports: [CommonModule, LoginBlockComponent, RouterModule],
   template: `
     <div class="login-page">
       <lib-login-block
@@ -21,7 +21,7 @@ import { AuthStateService } from '../../services/auth-state.service';
       }
       <p class="register-link">
         Don't have an account?
-        <a href="/register">Create one</a>
+        <a routerLink="/register">Create one</a>
       </p>
     </div>
   `,

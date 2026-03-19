@@ -105,6 +105,7 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
           // non-fatal
         }
       }
+      this.loading.set(false);
     } catch (err) {
       this.retryCount++;
       if (this.retryCount < this.maxRetries) {
@@ -115,7 +116,6 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
         return this.loadData(slug);
       }
       this.error.set('Unable to load classifieds. Please try again later.');
-    } finally {
       this.loading.set(false);
     }
   }

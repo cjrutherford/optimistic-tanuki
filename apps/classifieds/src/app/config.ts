@@ -16,7 +16,7 @@ export type ClassifiedsConfigType = {
 };
 
 const loadConfig = () => {
-  const configPath = path.resolve(__dirname, './assets/config.yaml');
+  const configPath = path.resolve(__dirname, '../assets/config.yaml');
   const configFile = fs.readFileSync(configPath, 'utf8');
   const configData = yaml.load(configFile) as ClassifiedsConfigType;
   return configData;

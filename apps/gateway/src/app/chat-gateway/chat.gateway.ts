@@ -142,7 +142,7 @@ export class ChatGateway {
     @ConnectedSocket() client: Socket
   ): Promise<void> {
     this.l.log('New Message Received');
-    console.log('[ChatGateway] handleMessage received payload:', payload);
+    console.log('[ChatGateway] handleMessage received payload id:', payload.id);
     const senderId = payload.senderId;
     const recipientIds = payload.recipientId;
     this.updateConnectedSockets(senderId, client, 'connect');

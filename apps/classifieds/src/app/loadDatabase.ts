@@ -13,7 +13,7 @@ const loadDatabase = (config: ConfigService) => {
     password: database.password,
     database: database.database || database.name,
     entities,
-    synchronize: true,
+    synchronize: process.env['NODE_ENV'] !== 'production',
   };
   return ormConfig;
 };

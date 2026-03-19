@@ -27,7 +27,7 @@ export default defineConfig({
     ? undefined
     : {
         command: 'npx nx run local-hub:serve',
-        url: 'http://localhost:4201',
+        url: 'http://localhost:4200',
         reuseExistingServer: !process.env['CI'],
         timeout: 120000,
       },
