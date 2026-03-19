@@ -122,9 +122,6 @@ jobs:
         env:
           CI: true
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build Docker image for ${{ matrix.service }}
         run: |
           docker compose build ${{ matrix.service }}
@@ -133,10 +130,11 @@ jobs:
 
       - name: Verify Docker image was created
         run: |
-          # Check the image is present; docker compose images exits non-zero if service not found
-          IMAGE_COUNT=$(docker compose images -q ${{ matrix.service }} | wc -l)
-          if [ "$IMAGE_COUNT" -eq "0" ]; then
+          # docker images checks the local daemon; works with the default docker driver
+          IMAGE_COUNT=$(docker images --filter "reference=*${{ matrix.service }}*" --quiet | wc -l)
+          if [ $IMAGE_COUNT -eq 0 ]; then
             echo "❌ No Docker image found for ${{ matrix.service }}"
+            docker images
             exit 1
           fi
           echo "✅ Docker build check passed for ${{ matrix.service }}"
