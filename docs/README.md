@@ -47,6 +47,7 @@ Step-by-step guides for specific tasks:
 
 - [Email Provider Setup](./guides/email-providers.md) - Configuring SMTP, API, and console email providers
 - [OAuth Provider Setup](./guides/oauth-providers.md) - Setting up Google, GitHub, Microsoft, and Facebook login
+- [Local Hub Guide](./guides/local-hub.md) - Complete guide to the Local Hub (Towne Square) app: pages, services, seeding, business pages, elections, image pipeline, and deployment
 - [Theme Designer Guide](./guides/theme-designer.md) - Using the theme designer component
 - [Theme Migration Guide](./guides/theme-migration.md) - Migrating to the new theme system
 - [MCP Tools Guide](./guides/mcp-tools.md) - Model Context Protocol tools usage
