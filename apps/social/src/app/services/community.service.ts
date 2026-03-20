@@ -118,6 +118,8 @@ export class CommunityService {
       population: dto.population ?? null,
       parentId: dto.parentId ?? null,
       highlights: dto.highlights ?? null,
+      imageUrl: dto.imageUrl ?? null,
+      timezone: dto.timezone ?? null,
     });
 
     const saved = await this.communityRepo.save(community);

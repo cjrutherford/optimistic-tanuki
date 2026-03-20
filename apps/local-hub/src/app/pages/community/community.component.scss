@@ -399,11 +399,26 @@
   border-radius: 12px;
   border: 1px solid var(--muted);
   transition: all 0.3s ease;
+  text-decoration: none;
 
   &:hover {
     border-color: var(--primary);
     transform: translateY(-2px);
   }
+}
+
+.highlight-image-wrapper {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.highlight-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .highlight-icon {

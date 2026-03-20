@@ -556,6 +556,7 @@ async function main() {
           joinPolicy: 'public',
           tags: ['Community', 'Local', 'Events'],
           imageUrl: cityData.imageUrl,
+          timezone: cityData.timezone,
           appScope,
         },
         { headers: { Authorization: `Bearer ${users[0].token}` } }

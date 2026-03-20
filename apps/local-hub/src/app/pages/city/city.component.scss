@@ -208,12 +208,27 @@ app-donation-progress {
   border-radius: 12px;
   border: 1px solid var(--muted);
   transition: all 0.3s ease;
+  text-decoration: none;
 
   &:hover {
     border-color: var(--primary);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
+}
+
+.highlight-image-wrapper {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.highlight-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .highlight-icon {

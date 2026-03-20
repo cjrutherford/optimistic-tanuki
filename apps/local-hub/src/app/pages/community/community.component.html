@@ -428,8 +428,13 @@
     <div class="section-container">
       <h2 class="section-title">Community Focus</h2>
       <div class="highlights-grid">
-        @for (highlight of community()!.highlights || []; track highlight) {
-        <div class="highlight-card">
+        @for (highlight of community()!.highlights || []; track highlight.headline) {
+        <a class="highlight-card" [href]="highlight.link" target="_blank" rel="noopener noreferrer">
+          @if (highlight.imageUrl) {
+          <div class="highlight-image-wrapper">
+            <img [src]="highlight.imageUrl" [alt]="highlight.headline" class="highlight-image" loading="lazy" />
+          </div>
+          } @else {
           <div class="highlight-icon">
             <svg
               width="20"
@@ -444,8 +449,9 @@
               />
             </svg>
           </div>
-          <span class="highlight-text">{{ highlight }}</span>
-        </div>
+          }
+          <span class="highlight-text">{{ highlight.headline }}</span>
+        </a>
         }
       </div>
     </div>

@@ -146,12 +146,21 @@ export class CommunityDto {
   @IsNumber()
   population?: number | null;
 
-  /** Locality highlights: human-readable strings, may contain URLs. */
-  @ApiPropertyOptional({ type: [String] })
+  /** Locality highlights: structured POIs with headline, link, and image. */
+  @ApiPropertyOptional({ type: [CityHighlight] })
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  highlights?: string[] | null;
+  highlights?: CityHighlight[] | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  imageUrl?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  timezone?: string | null;
 
   @ApiProperty()
   @IsDateString()
@@ -258,6 +267,16 @@ export class CreateCommunityDto {
   @IsOptional()
   @IsArray()
   highlights?: CityHighlight[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  timezone?: string;
 }
 
 export class UpdateCommunityDto {

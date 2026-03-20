@@ -114,8 +114,8 @@
         <p class="community-description">{{ community.description }}</p>
 
         <div class="community-tags">
-          @for (tag of community.highlights?.slice(0, 3) || []; track tag) {
-          <span class="tag">{{ tag }}</span>
+          @for (tag of community.highlights?.slice(0, 3) || []; track tag.headline) {
+          <span class="tag">{{ tag.headline }}</span>
           }
         </div>
 
