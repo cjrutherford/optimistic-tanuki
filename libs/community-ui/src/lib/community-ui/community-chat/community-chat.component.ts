@@ -195,7 +195,7 @@ export class CommunityChatComponent implements OnInit {
         {
           id: conversation.id,
           name: community.name,
-          profilePic: community.logoUrl,
+          profilePic: community.logoUrl || community.imageUrl,
         },
       ]);
 

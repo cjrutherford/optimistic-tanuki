@@ -159,10 +159,10 @@ export class CommunityPostsComponent extends Variantable {
       if (community) {
         const bannerUrl = community.bannerAssetId
           ? `/api/asset/${community.bannerAssetId}`
-          : community.bannerUrl;
+          : community.bannerUrl || community.imageUrl || undefined;
         const logoUrl = community.logoAssetId
           ? `/api/asset/${community.logoAssetId}`
-          : community.logoUrl;
+          : community.logoUrl || community.imageUrl || undefined;
         const communityWithUrls = {
           ...community,
           bannerUrl,
@@ -201,10 +201,10 @@ export class CommunityPostsComponent extends Variantable {
       if (community) {
         const bannerUrl = community.bannerAssetId
           ? `/api/asset/${community.bannerAssetId}`
-          : community.bannerUrl;
+          : community.bannerUrl || community.imageUrl || undefined;
         const logoUrl = community.logoAssetId
           ? `/api/asset/${community.logoAssetId}`
-          : community.logoUrl;
+          : community.logoUrl || community.imageUrl || undefined;
         const communityWithUrls = {
           ...community,
           bannerUrl,

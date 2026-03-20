@@ -17,11 +17,14 @@
   } @if (!loading() && !error() && community()) {
   <header class="community-hero">
     <div class="hero-image-wrapper">
+      @if (community()!.imageUrl) {
       <img
         [src]="community()!.imageUrl"
         [alt]="community()!.name"
         class="hero-image"
+        (error)="$event.target.style.display='none'"
       />
+      }
       <div class="hero-overlay"></div>
     </div>
 

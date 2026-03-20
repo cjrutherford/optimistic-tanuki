@@ -85,12 +85,15 @@
       tabindex="0"
     >
       <div class="card-image-wrapper">
+        @if (community.imageUrl) {
         <img
           [src]="community.imageUrl"
           [alt]="community.name"
           class="card-image"
           loading="lazy"
+          (error)="$event.target.style.display='none'"
         />
+        }
         <div class="card-image-overlay"></div>
         <span class="locality-badge">{{ community.localityType }}</span>
       </div>

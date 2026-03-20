@@ -18,7 +18,9 @@
   <!-- ── Hero ────────────────────────────────────────────────────────────── -->
   <header class="city-hero">
     <div class="hero-image-wrapper">
-      <img [src]="city()!.imageUrl" [alt]="city()!.name" class="hero-image" />
+      @if (city()!.imageUrl) {
+      <img [src]="city()!.imageUrl" [alt]="city()!.name" class="hero-image" (error)="$event.target.style.display='none'" />
+      }
       <div class="hero-overlay"></div>
     </div>
 
@@ -322,12 +324,15 @@
           [attr.aria-label]="community.name + ' community'"
         >
           <div class="community-image-wrapper">
+            @if (community.imageUrl) {
             <img
               [src]="community.imageUrl"
               [alt]="community.name"
               class="community-image"
               loading="lazy"
+              (error)="$event.target.style.display='none'"
             />
+            }
             @if (isAuthenticated()) {
             <div class="card-actions" (click)="$event.stopPropagation()">
               @if (!isMember(community.id)) {

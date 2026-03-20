@@ -76,6 +76,7 @@
         [style.animation-delay]="i * 50 + 'ms'"
       >
         <div class="city-image-wrapper">
+          @if (city.imageUrl) {
           <img
             [src]="city.imageUrl"
             [alt]="city.name"
@@ -83,7 +84,9 @@
             loading="lazy"
             width="400"
             height="250"
+            (error)="$event.target.style.display='none'"
           />
+          }
           <div class="city-image-overlay"></div>
           <span class="city-badge">{{ city.adminArea }}</span>
         </div>
