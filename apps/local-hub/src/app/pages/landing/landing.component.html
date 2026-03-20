@@ -52,7 +52,9 @@
     <div class="visual-grid">
       @for (city of cities().slice(0, 4); track city.id) {
       <div class="visual-card" (click)="navigateToCity(city.slug)">
-        <img [src]="city.imageUrl" [alt]="city.name" />
+        @if (city.imageUrl) {
+        <img [src]="city.imageUrl" [alt]="city.name" (error)="$event.target.style.display='none'" />
+        }
         <span>{{ city.name }}, {{ city.adminArea }}</span>
       </div>
       }

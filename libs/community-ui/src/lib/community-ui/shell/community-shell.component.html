@@ -19,9 +19,9 @@
       <p class="no-groups">You haven't joined any groups yet.</p>
       } @else { @for (community of userCommunities(); track community.id) {
       <button class="group-item" (click)="navigateToCommunity(community)">
-        @if (community.logoUrl || community.logoAssetId) {
+        @if (community.logoUrl || community.logoAssetId || community.imageUrl) {
         <img
-          [src]="community.logoUrl || '/api/asset/' + community.logoAssetId"
+          [src]="community.logoUrl || (community.logoAssetId ? '/api/asset/' + community.logoAssetId : community.imageUrl)"
           alt=""
           class="community-logo"
         />

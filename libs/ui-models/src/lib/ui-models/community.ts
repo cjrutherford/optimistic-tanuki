@@ -37,6 +37,8 @@ export interface CommunityDto {
   joinPolicy: CommunityJoinPolicy;
   tags: CommunityTag[];
   memberCount: number;
+  /** Direct cover image URL (stored on locality communities from seed data). */
+  imageUrl?: string;
   bannerAssetId?: string;
   bannerUrl?: string;
   logoAssetId?: string;
