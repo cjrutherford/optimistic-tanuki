@@ -34,6 +34,8 @@ export interface LocalCommunity {
   highlights?: CityHighlight[];
   events?: string[];
   tags?: CommunityTag[];
+  /** IANA timezone identifier, e.g. "America/New_York". */
+  timezone?: string | null;
   /** ID of the currently elected community manager (localities only). */
   managerId?: string | null;
   /** Display name of the currently elected community manager. */
@@ -303,7 +305,7 @@ export class CommunityService {
               lng: community.coordinates?.lng || community.lng || 0,
             },
             population: community.population || 0,
-            timezone: 'America/New_York',
+            timezone: community.timezone || '',
             highlights: community.highlights || [],
             communities: 1,
           });
@@ -350,7 +352,7 @@ export class CommunityService {
           lng: community.coordinates?.lng || community.lng || 0,
         },
         population: community.population || 0,
-        timezone: 'America/New_York',
+        timezone: community.timezone || '',
         highlights: community.highlights || [],
         communities: cityCommunities.length,
       };

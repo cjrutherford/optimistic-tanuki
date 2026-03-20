@@ -99,6 +99,14 @@ export class Community {
   @Column({ type: 'jsonb', nullable: true, default: null })
   highlights: CityHighlight[] | null;
 
+  /** Cover image URL for the locality community (Unsplash or similar). */
+  @Column({ type: 'varchar', nullable: true })
+  imageUrl: string | null;
+
+  /** IANA timezone identifier for the locality, e.g. "America/New_York". */
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  timezone: string | null;
+
   @OneToMany(() => CommunityMember, (member) => member.community)
   members: CommunityMember[];
 

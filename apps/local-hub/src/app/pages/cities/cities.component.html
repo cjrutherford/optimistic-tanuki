@@ -126,8 +126,8 @@
             </span>
           </div>
           <div class="city-highlights">
-            @for (highlight of city.highlights.slice(0, 3); track highlight) {
-            <span class="highlight-tag">{{ highlight }}</span>
+            @for (highlight of city.highlights.slice(0, 3); track highlight.headline) {
+            <span class="highlight-tag">{{ highlight.headline }}</span>
             }
           </div>
         </div>
