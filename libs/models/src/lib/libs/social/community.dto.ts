@@ -48,6 +48,20 @@ export class CommunityTag {
   name!: string;
 }
 
+export class CityHighlight {
+  @ApiProperty()
+  @IsString()
+  headline!: string;
+
+  @ApiProperty()
+  @IsString()
+  link!: string;
+
+  @ApiProperty()
+  @IsString()
+  imageUrl!: string;
+}
+
 export class CommunityDto {
   @ApiProperty()
   @IsUUID()
@@ -239,12 +253,11 @@ export class CreateCommunityDto {
   @IsUUID()
   parentId?: string | null;
 
-  /** Locality highlights: human-readable strings, may contain URLs. */
-  @ApiPropertyOptional({ type: [String] })
+  /** Locality highlights: structured POIs with headline, link, and image */
+  @ApiPropertyOptional({ type: [CityHighlight] })
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  highlights?: string[];
+  highlights?: CityHighlight[];
 }
 
 export class UpdateCommunityDto {

@@ -10,6 +10,12 @@ import {
 } from 'typeorm';
 import { CommunityMember } from './community-member.entity';
 
+export interface CityHighlight {
+  headline: string;
+  link: string;
+  imageUrl: string;
+}
+
 export type LocalityType =
   | 'city'
   | 'town'
@@ -89,9 +95,9 @@ export class Community {
   @Column({ type: 'jsonb', default: [] })
   tags: { id: string; name: string }[];
 
-  /** Locality highlights — links/POIs for locality communities. */
+  /** Locality highlights — structured POIs for locality communities with headline, link, and image. */
   @Column({ type: 'jsonb', nullable: true, default: null })
-  highlights: string[] | null;
+  highlights: CityHighlight[] | null;
 
   @OneToMany(() => CommunityMember, (member) => member.community)
   members: CommunityMember[];

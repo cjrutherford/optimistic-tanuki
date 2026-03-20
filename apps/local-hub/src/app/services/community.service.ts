@@ -3,6 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { API_BASE_URL, CommunityTag } from '@optimistic-tanuki/ui-models';
 import { firstValueFrom } from 'rxjs';
 
+export interface CityHighlight {
+  headline: string;
+  link: string;
+  imageUrl: string;
+}
+
 export interface LocalCommunity {
   id: string;
   name: string;
@@ -25,7 +31,7 @@ export interface LocalCommunity {
     lat: number;
     lng: number;
   };
-  highlights?: string[];
+  highlights?: CityHighlight[];
   events?: string[];
   tags?: CommunityTag[];
   /** ID of the currently elected community manager (localities only). */
@@ -82,7 +88,7 @@ export interface City {
   };
   population: number;
   timezone: string;
-  highlights: string[];
+  highlights: CityHighlight[];
   communities: number;
 }
 
@@ -438,7 +444,9 @@ export class CommunityService {
       );
 
       return (posts ?? []).map((p) => {
-        const comm = p.communityId ? communityMap.get(p.communityId) : undefined;
+        const comm = p.communityId
+          ? communityMap.get(p.communityId)
+          : undefined;
         return {
           id: p.id,
           communityId: p.communityId || communityIds[0],
