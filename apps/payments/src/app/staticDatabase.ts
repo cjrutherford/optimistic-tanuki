@@ -9,6 +9,8 @@ import { BusinessTheme } from '../entities/business-theme.entity';
 import { CommunitySponsorship } from '../entities/community-sponsorship.entity';
 import { Transaction } from '../entities/transaction.entity';
 import { Offer } from '../entities/offer.entity';
+import { SellerWallet } from '../entities/seller-wallet.entity';
+import { PayoutRequest } from '../entities/payout-request.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -35,6 +37,8 @@ const entities = [
   CommunitySponsorship,
   Transaction,
   Offer,
+  SellerWallet,
+  PayoutRequest,
 ];
 
 const staticSource = new DataSource({

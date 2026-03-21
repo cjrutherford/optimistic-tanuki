@@ -62,6 +62,7 @@ const PaymentCommands = {
   CANCEL_PAYOUT_REQUEST: 'payments.cancelPayoutRequest',
   GET_SELLER_EARNINGS_SUMMARY: 'payments.getSellerEarningsSummary',
   GET_BUSINESS_PAGES_BY_CITY: 'payments.getBusinessPagesByCity',
+  PROCESS_WEBHOOK: 'payments.processWebhook',
 };
 
 const OrderCommands = {

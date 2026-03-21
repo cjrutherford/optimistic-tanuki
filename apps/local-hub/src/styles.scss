@@ -45,6 +45,50 @@
   --on-success: #ffffff;
   --on-warning: #ffffff;
   --on-error: #ffffff;
+
+  /* Elevation shadows — warm-tinted for light theme */
+  --shadow-xs: 0 1px 2px rgba(44, 36, 22, 0.05);
+  --shadow-sm: 0 2px 8px rgba(44, 36, 22, 0.06),
+    0 1px 2px rgba(44, 36, 22, 0.04);
+  --shadow-md: 0 4px 16px rgba(44, 36, 22, 0.08),
+    0 2px 4px rgba(44, 36, 22, 0.04);
+  --shadow-lg: 0 8px 32px rgba(44, 36, 22, 0.1),
+    0 4px 8px rgba(44, 36, 22, 0.05);
+  --shadow-xl: 0 16px 48px rgba(44, 36, 22, 0.12),
+    0 8px 16px rgba(44, 36, 22, 0.06);
+
+  /* Card & interactive element elevation */
+  --shadow-card: 0 1px 3px rgba(44, 36, 22, 0.04),
+    0 1px 2px rgba(44, 36, 22, 0.03);
+  --shadow-card-hover: 0 8px 24px rgba(44, 36, 22, 0.1),
+    0 4px 8px rgba(44, 36, 22, 0.05);
+  --shadow-card-active: 0 2px 8px rgba(44, 36, 22, 0.08);
+
+  /* Glow accent for focused/active interactive elements */
+  --ring-primary: 0 0 0 3px rgba(45, 90, 74, 0.12);
+  --ring-accent: 0 0 0 3px rgba(212, 114, 74, 0.12);
+
+  /* Glass / overlay tokens */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: 12px;
+  --overlay-light: rgba(250, 246, 240, 0.85);
+
+  /* Tier semantic colors — theme aware */
+  --tier-basic-bg: var(--surface-variant);
+  --tier-basic-fg: var(--foreground-muted);
+  --tier-pro-bg: #dbeafe;
+  --tier-pro-fg: #1e5a9e;
+  --tier-enterprise-bg: #fde9d0;
+  --tier-enterprise-fg: #9a5e18;
+
+  /* Status semantic colors */
+  --status-active-bg: var(--success-bg);
+  --status-active-fg: var(--success);
+  --status-past-due-bg: var(--warning-bg);
+  --status-past-due-fg: var(--warning);
+  --status-canceled-bg: var(--error-bg);
+  --status-canceled-fg: var(--error);
 }
 
 /* Dark theme */
@@ -84,6 +128,43 @@
   --on-success: #121212;
   --on-warning: #121212;
   --on-error: #121212;
+
+  /* Elevation shadows — cool-tinted for dark theme */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.25);
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.25);
+  --shadow-card-active: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  --ring-primary: 0 0 0 3px rgba(74, 154, 122, 0.25);
+  --ring-accent: 0 0 0 3px rgba(232, 149, 109, 0.25);
+
+  /* Glass / overlay tokens — frosted dark glass */
+  --glass-bg: rgba(30, 30, 30, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 16px;
+  --overlay-light: rgba(18, 18, 18, 0.9);
+
+  /* Tier semantic colors — dark theme aware */
+  --tier-basic-bg: var(--surface-variant);
+  --tier-basic-fg: var(--foreground-muted);
+  --tier-pro-bg: #1a3050;
+  --tier-pro-fg: #6eb5ff;
+  --tier-enterprise-bg: #3a2a1a;
+  --tier-enterprise-fg: #ffb86e;
+
+  /* Status semantic colors */
+  --status-active-bg: var(--success-bg);
+  --status-active-fg: var(--success);
+  --status-past-due-bg: var(--warning-bg);
+  --status-past-due-fg: var(--warning);
+  --status-canceled-bg: var(--error-bg);
+  --status-canceled-fg: var(--error);
 }
 
 * {

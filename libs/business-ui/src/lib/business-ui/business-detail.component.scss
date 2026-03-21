@@ -1,0 +1,83 @@
+.business-detail {
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    object-fit: cover;
+  }
+
+  &__title {
+    flex: 1;
+    h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.5rem;
+    }
+  }
+
+  &__tier,
+  &__status {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 100px;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .tier--basic {
+    background: var(--tier-basic-bg);
+    color: var(--tier-basic-fg);
+  }
+  .tier--pro {
+    background: var(--tier-pro-bg);
+    color: var(--tier-pro-fg);
+  }
+  .tier--enterprise {
+    background: var(--tier-enterprise-bg);
+    color: var(--tier-enterprise-fg);
+  }
+  .status--active {
+    background: var(--status-active-bg);
+    color: var(--status-active-fg);
+  }
+  .status--past-due {
+    background: var(--status-past-due-bg);
+    color: var(--status-past-due-fg);
+  }
+  .status--canceled {
+    background: var(--status-canceled-bg);
+    color: var(--status-canceled-fg);
+  }
+
+  &__description {
+    font-size: 0.9375rem;
+    color: var(--foreground-muted);
+    margin-bottom: 1.5rem;
+  }
+
+  &__contact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--foreground);
+    text-decoration: none;
+
+    a& {
+      color: var(--primary);
+    }
+  }
+}

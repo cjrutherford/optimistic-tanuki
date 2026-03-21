@@ -37,6 +37,11 @@ export { DropdownComponent } from './dropdown/dropdown.component';
 export { ChipComponent } from './chip/chip.component';
 export { TooltipDirective } from './tooltip/tooltip.directive';
 export { DevInfoComponent } from './dev-info/dev-info.component';
+export {
+  BadgeComponent,
+  type BadgeVariant,
+  type BadgeSize,
+} from './badge.component';
 
 // Export interfaces
 export type { ListItem } from './interfaces/component.interface';

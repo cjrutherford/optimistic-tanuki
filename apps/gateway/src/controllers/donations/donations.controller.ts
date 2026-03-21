@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   OnModuleDestroy,
+  Logger,
 } from '@nestjs/common';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -16,6 +17,7 @@ import { Public } from '../../decorators/public.decorator';
 
 @Controller('donations')
 export class DonationsController implements OnModuleDestroy {
+  private readonly logger = new Logger(DonationsController.name);
   private readonly paymentsClient: ReturnType<typeof ClientProxyFactory.create>;
 
   private resolveMonthYear(month?: string, year?: string) {
@@ -58,12 +60,22 @@ export class DonationsController implements OnModuleDestroy {
     @Query('year') year?: string
   ) {
     const { targetMonth, targetYear } = this.resolveMonthYear(month, year);
-    return firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: 'payments.getDonationGoal' },
-        { month: targetMonth, year: targetYear }
-      )
-    );
+    try {
+      return await firstValueFrom(
+        this.paymentsClient.send(
+          { cmd: 'payments.getDonationGoal' },
+          { month: targetMonth, year: targetYear }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to get donation goal:', error);
+      return {
+        monthlyGoal: 5000,
+        currentAmount: 0,
+        donorCount: 0,
+        percentage: 0,
+      };
+    }
   }
 
   @Get('')
@@ -73,11 +85,16 @@ export class DonationsController implements OnModuleDestroy {
     @Query('year') year?: string
   ) {
     const { targetMonth, targetYear } = this.resolveMonthYear(month, year);
-    return firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: 'payments.listDonations' },
-        { month: targetMonth, year: targetYear }
-      )
-    );
+    try {
+      return await firstValueFrom(
+        this.paymentsClient.send(
+          { cmd: 'payments.listDonations' },
+          { month: targetMonth, year: targetYear }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to list donations:', error);
+      return [];
+    }
   }
 }

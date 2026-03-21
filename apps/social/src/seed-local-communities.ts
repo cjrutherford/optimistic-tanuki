@@ -1359,6 +1359,7 @@ async function main() {
           isPrivate: false,
           joinPolicy: 'public',
           memberCount: 0,
+          isSystemCommunity: true,
         });
         await communityRepo.save(community);
         created++;

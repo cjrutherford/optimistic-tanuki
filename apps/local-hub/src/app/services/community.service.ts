@@ -44,6 +44,8 @@ export interface LocalCommunity {
   managerElectedAt?: string | null;
   /** ISO timestamp when the current manager's term ends. */
   managerTermEndsAt?: string | null;
+  /** Whether this community is system-managed (no individual owner). */
+  isSystemCommunity?: boolean;
 }
 
 /** Represents the currently elected manager of a locality. */
@@ -187,8 +189,18 @@ export class CommunityService {
     parentId: string;
     localityType: 'neighborhood' | 'county' | 'region';
     isBusiness?: boolean;
+    isPrivate?: boolean;
+    joinPolicy?: string;
+    tags?: string[];
+    bannerAssetId?: string;
+    logoAssetId?: string;
   }): Promise<LocalCommunity> {
-    return firstValueFrom(this.http.post<LocalCommunity>(this.baseUrl, data));
+    return firstValueFrom(
+      this.http.post<LocalCommunity>(this.baseUrl, {
+        ...data,
+        createChatRoom: true,
+      })
+    );
   }
 
   isMember(communityId: string): Promise<boolean> {

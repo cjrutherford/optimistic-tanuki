@@ -1,0 +1,100 @@
+<div class="create-business">
+  <h2>List Your Business</h2>
+  <p class="subtitle">
+    Create a business page for {{ localityName() || 'this locality' }}
+  </p>
+
+  <div class="form-group">
+    <label for="biz-name">Business Name</label>
+    <input
+      type="text"
+      id="biz-name"
+      class="input"
+      [(ngModel)]="name"
+      placeholder="Your business name"
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="biz-description">Description</label>
+    <textarea
+      id="biz-description"
+      class="input"
+      rows="3"
+      [(ngModel)]="description"
+      placeholder="Describe your business..."
+    ></textarea>
+  </div>
+
+  <div class="form-group">
+    <label for="biz-website">Website</label>
+    <input
+      type="url"
+      id="biz-website"
+      class="input"
+      [(ngModel)]="website"
+      placeholder="https://"
+    />
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="biz-phone">Phone</label>
+      <input
+        type="tel"
+        id="biz-phone"
+        class="input"
+        [(ngModel)]="phone"
+        placeholder="Phone number"
+      />
+    </div>
+    <div class="form-group">
+      <label for="biz-email">Email</label>
+      <input
+        type="email"
+        id="biz-email"
+        class="input"
+        [(ngModel)]="email"
+        placeholder="business@example.com"
+      />
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="biz-address">Address</label>
+    <input
+      type="text"
+      id="biz-address"
+      class="input"
+      [(ngModel)]="address"
+      placeholder="Street address"
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="biz-tier">Select Tier</label>
+    <select
+      id="biz-tier"
+      class="input"
+      [ngModel]="tier()"
+      (ngModelChange)="tier.set($event)"
+    >
+      <option value="basic">Basic — Free</option>
+      <option value="pro">Pro — $29/month</option>
+      <option value="enterprise">Enterprise — $99/month</option>
+    </select>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn-outline" (click)="onCancel()">Cancel</button>
+    <button
+      class="btn btn-primary"
+      (click)="onSubmit()"
+      [disabled]="submitting() || !name.trim()"
+    >
+      @if (submitting()) {
+      <span class="btn-spinner"></span> Creating... } @else { Continue to
+      Payment }
+    </button>
+  </div>
+</div>

@@ -25,15 +25,13 @@
       ],
       "@optimistic-tanuki/auth-ui": ["libs/auth-ui/src/index.ts"],
       "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
+      "@optimistic-tanuki/business-ui": ["libs/business-ui/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
       "@optimistic-tanuki/classified-ui": ["libs/classified-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
       "@optimistic-tanuki/community-ui": ["libs/community-ui/src/index.ts"],
       "@optimistic-tanuki/compose-lib": ["libs/compose-lib/src/index.ts"],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
-      "@optimistic-tanuki/payment-fees": [
-        "libs/constants/src/lib/libs/payment-fees.ts"
-      ],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
       "@optimistic-tanuki/encryption": ["libs/encryption/src/index.ts"],
       "@optimistic-tanuki/form-ui": ["libs/form-ui/src/index.ts"],
@@ -44,6 +42,9 @@
       "@optimistic-tanuki/navigation-ui": ["libs/navigation-ui/src/index.ts"],
       "@optimistic-tanuki/notification-ui": [
         "libs/notification-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/payment-fees": [
+        "libs/constants/src/lib/libs/payment-fees.ts"
       ],
       "@optimistic-tanuki/permission-lib": ["libs/permission-lib/src/index.ts"],
       "@optimistic-tanuki/persona-ui": ["libs/persona-ui/src/index.ts"],

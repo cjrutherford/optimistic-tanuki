@@ -1,0 +1,26 @@
+.business-list {
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+
+  &__loading,
+  &__empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--foreground-muted);
+  }
+}

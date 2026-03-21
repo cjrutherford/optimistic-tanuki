@@ -1,0 +1,37 @@
+<div class="business-list">
+  <div class="business-list__header">
+    <h2>Local Businesses</h2>
+    @if (showCreateButton()) {
+    <button class="btn btn-outline" (click)="createClicked.emit()">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      List Your Business
+    </button>
+    }
+  </div>
+
+  @if (loading()) {
+  <div class="business-list__loading">
+    <div class="loading-spinner"></div>
+    <p>Loading businesses...</p>
+  </div>
+  } @else if (businesses().length === 0) {
+  <div class="business-list__empty">
+    <p>No businesses listed yet. Be the first!</p>
+  </div>
+  } @else {
+  <div class="business-list__grid">
+    @for (biz of businesses(); track biz.id) {
+    <lib-business-card [business]="biz" (click)="businessClicked.emit(biz)" />
+    }
+  </div>
+  }
+</div>

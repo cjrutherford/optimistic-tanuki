@@ -83,6 +83,13 @@ export class Community {
   @Column({ type: 'varchar', default: 'social' })
   appScope: string;
 
+  /**
+   * System communities are locality-level communities seeded by the platform.
+   * They have no individual owner — global-scope admins manage them instead.
+   */
+  @Column({ default: false })
+  isSystemCommunity: boolean;
+
   @Column({ default: false })
   isPrivate: boolean;
 
