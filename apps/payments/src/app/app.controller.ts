@@ -16,7 +16,7 @@ export class AppController {
     private readonly businessThemeService: BusinessThemeService,
     @Inject(OfferService)
     private readonly offerService: OfferService
-  ) {}
+  ) { }
 
   @MessagePattern({ cmd: PaymentCommands.GET_DONATION_GOAL })
   async getDonationGoal(@Payload() data: { month: number; year: number }) {
@@ -72,12 +72,16 @@ export class AppController {
       classifiedId: string;
       paymentMethod: string;
       appScope: string;
+      sellerId?: string;
+      amount?: number;
     }
   ) {
     return this.paymentService.createClassifiedPayment(
       data.buyerId,
       data.classifiedId,
-      data.paymentMethod
+      data.paymentMethod,
+      data.amount,
+      data.sellerId
     );
   }
 
@@ -431,5 +435,12 @@ export class AppController {
       customCss: data.customCss,
       customFontFamily: data.customFontFamily,
     });
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.PROCESS_WEBHOOK })
+  async processWebhook(
+    @Payload() data: { eventType: string; data: Record<string, unknown> }
+  ) {
+    return this.paymentService.processWebhook(data.eventType, data.data);
   }
 }

@@ -82,6 +82,7 @@ import { ProfileAnalyticsService } from './services/profile-analytics.service';
 import { PollService } from './services/poll.service';
 import { PostShareService } from './services/post-share.service';
 import { EventService } from './services/event.service';
+import { LinkService } from './services/link.service';
 import { Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { firstValueFrom } from 'rxjs';
@@ -115,9 +116,10 @@ export class AppController {
     private readonly pollService: PollService,
     private readonly postShareService: PostShareService,
     private readonly eventService: EventService,
+    private readonly linkService: LinkService,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy
-  ) {}
+  ) { }
 
   private extractMentions(text: string): string[] {
     if (!text) return [];
@@ -538,7 +540,7 @@ export class AppController {
 
   @MessagePattern({ cmd: LinkCommands.CREATE })
   async createLink(@Payload() dto: CreateLinkDto) {
-    throw new RpcException('Link Object Not implemented');
+    return this.linkService.create(dto);
   }
 
   @MessagePattern({ cmd: LinkCommands.UPDATE })
@@ -546,17 +548,17 @@ export class AppController {
     @Payload('id') id: string,
     @Payload('link') dto: UpdateLinkDto
   ) {
-    throw new Error('Link Object Not Implemented');
+    return this.linkService.update(Number(id), dto);
   }
 
   @MessagePattern({ cmd: LinkCommands.FIND })
   async findLink(@Payload('id') id: string) {
-    throw new Error('Link Object Not Implemented');
+    return this.linkService.findOne(Number(id));
   }
 
   @MessagePattern({ cmd: LinkCommands.FIND_MANY })
   async findAllLinks(@Payload() options: FindOptions) {
-    throw new Error('Link Object Not Implemented');
+    return this.linkService.findAll(options as FindManyOptions);
   }
 
   @MessagePattern({ cmd: FollowCommands.FOLLOW })
@@ -1077,6 +1079,16 @@ export class AppController {
   @MessagePattern({ cmd: CommunityCommands.CLOSE_ELECTION })
   async closeElection(@Payload() data: { electionId: string }) {
     return await this.communityService.closeElection(data.electionId);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.WITHDRAW_CANDIDATE })
+  async withdrawFromElection(
+    @Payload() data: { communityId: string; userId: string }
+  ) {
+    return await this.communityService.withdrawCandidate(
+      data.communityId,
+      data.userId
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.APPOINT_MANAGER })

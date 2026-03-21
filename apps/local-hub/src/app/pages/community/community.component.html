@@ -22,7 +22,13 @@
         [src]="community()!.imageUrl"
         [alt]="community()!.name"
         class="hero-image"
-        (error)="$event.target.style.display='none'"
+        (error)="$event.target.src = 'assets/placeholder-hero.svg'"
+      />
+      } @else {
+      <img
+        src="assets/placeholder-hero.svg"
+        [alt]="community()!.name"
+        class="hero-image"
       />
       }
       <div class="hero-overlay"></div>
@@ -147,19 +153,9 @@
             { Join Community }
           </button>
           } @else {
-          <span class="member-badge">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            You're a member
-          </span>
+          <otui-badge variant="success" size="lg" icon="check"
+            >You're a member</otui-badge
+          >
           <button
             class="btn btn-outline btn-large"
             (click)="leaveCommunity()"
@@ -431,11 +427,22 @@
     <div class="section-container">
       <h2 class="section-title">Community Focus</h2>
       <div class="highlights-grid">
-        @for (highlight of community()!.highlights || []; track highlight.headline) {
-        <a class="highlight-card" [href]="highlight.link" target="_blank" rel="noopener noreferrer">
+        @for (highlight of community()!.highlights || []; track
+        highlight.headline) {
+        <a
+          class="highlight-card"
+          [href]="highlight.link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           @if (highlight.imageUrl) {
           <div class="highlight-image-wrapper">
-            <img [src]="highlight.imageUrl" [alt]="highlight.headline" class="highlight-image" loading="lazy" />
+            <img
+              [src]="highlight.imageUrl"
+              [alt]="highlight.headline"
+              class="highlight-image"
+              loading="lazy"
+            />
           </div>
           } @else {
           <div class="highlight-icon">

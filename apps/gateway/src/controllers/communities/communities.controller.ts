@@ -35,42 +35,57 @@ export class CommunitiesController {
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy
-  ) {}
+  ) { }
 
   @Public()
   @Get()
   @ApiOperation({ summary: 'List all locality-based communities' })
   @ApiResponse({ status: 200, description: 'Array of locality communities.' })
-  listCommunities(@AppScope() appScope: string) {
-    return firstValueFrom(
-      this.socialClient.send(
-        { cmd: CommunityCommands.LIST_LOCALITY },
-        { appScope }
-      )
-    );
+  async listCommunities(@AppScope() appScope: string) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.LIST_LOCALITY },
+          { appScope }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to list communities:', error);
+      return [];
+    }
   }
 
   @Public()
   @Get(':slug')
   @ApiOperation({ summary: 'Get a locality community by slug' })
   @ApiResponse({ status: 200, description: 'Community.' })
-  findCommunity(@Param('slug') slug: string) {
-    return firstValueFrom(
-      this.socialClient.send({ cmd: CommunityCommands.FIND_BY_SLUG }, { slug })
-    );
+  async findCommunity(@Param('slug') slug: string) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send({ cmd: CommunityCommands.FIND_BY_SLUG }, { slug })
+      );
+    } catch (error) {
+      this.logger.error('Failed to find community %s:', slug, error);
+      return null;
+    }
   }
 
   @Public()
   @Get(':id/sub-communities')
   @ApiOperation({ summary: 'Get sub-communities of a locality community' })
   @ApiResponse({ status: 200, description: 'Array of sub-communities.' })
-  getSubCommunities(@Param('id') id: string) {
-    return firstValueFrom(
-      this.socialClient.send(
-        { cmd: CommunityCommands.GET_SUB_COMMUNITIES },
-        { parentId: id }
-      )
-    );
+  async getSubCommunities(@Param('id') id: string) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.GET_SUB_COMMUNITIES },
+          { parentId: id }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to get sub-communities for %s:', id, error);
+      return [];
+    }
   }
 
   @Public()

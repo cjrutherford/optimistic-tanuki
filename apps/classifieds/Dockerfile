@@ -23,7 +23,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs
 
 COPY --from=builder /app/dist/apps/classifieds ./classifieds
-COPY --from=builder /app/apps/classifieds/src/assets ./classifieds/assets
+COPY --from=builder /app/apps/classifieds/src/assets ./assets
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 

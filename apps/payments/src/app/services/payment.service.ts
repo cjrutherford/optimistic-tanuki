@@ -343,7 +343,7 @@ export class PaymentService {
 
     const variantId =
       this.lemonSqueezyVariants[
-        tier as keyof typeof this.lemonSqueezyVariants
+      tier as keyof typeof this.lemonSqueezyVariants
       ] || this.lemonSqueezyStoreId;
     const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${variantId}?checkout[custom][business_page_id]=${businessPage.id}&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][tier]=${tier}`;
 
@@ -723,5 +723,68 @@ export class PaymentService {
       payoutMethod: wallet.payoutMethod,
       payoutEmail: wallet.payoutEmail,
     };
+  }
+
+  async processWebhook(
+    eventType: string,
+    payload: Record<string, unknown>
+  ): Promise<{ received: boolean }> {
+    try {
+      const meta = (payload?.meta as Record<string, unknown>) ?? {};
+      const customData =
+        (meta?.custom_data as Record<string, string>) ??
+        (meta?.customData as Record<string, string>) ??
+        {};
+
+      this.logger.log(`Lemon Squeezy webhook: event=${eventType}`);
+
+      if (
+        eventType === 'subscription_created' ||
+        eventType === 'subscription_updated'
+      ) {
+        const communityId = customData.community_id;
+        if (communityId) {
+          const businessPage = await this.businessPageRepository.findOne({
+            where: { communityId },
+          });
+          if (businessPage) {
+            businessPage.subscriptionStatus = 'active';
+            await this.businessPageRepository.save(businessPage);
+            this.logger.log(
+              `Activated business page for community ${communityId}`
+            );
+          }
+        }
+      } else if (
+        eventType === 'subscription_cancelled' ||
+        eventType === 'subscription_expired'
+      ) {
+        const communityId = customData.community_id;
+        if (communityId) {
+          const businessPage = await this.businessPageRepository.findOne({
+            where: { communityId },
+          });
+          if (businessPage) {
+            businessPage.subscriptionStatus = 'cancelled';
+            await this.businessPageRepository.save(businessPage);
+          }
+        }
+      } else if (eventType === 'order_created') {
+        const sponsorshipId = customData.sponsorship_id;
+        if (sponsorshipId) {
+          const sponsorship = await this.sponsorshipRepository.findOne({
+            where: { id: sponsorshipId },
+          });
+          if (sponsorship) {
+            sponsorship.status = 'active';
+            await this.sponsorshipRepository.save(sponsorship);
+          }
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Webhook processing error: ${err?.message}`, err);
+    }
+
+    return { received: true };
   }
 }

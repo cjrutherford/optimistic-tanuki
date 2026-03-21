@@ -19,7 +19,18 @@
   <header class="city-hero">
     <div class="hero-image-wrapper">
       @if (city()!.imageUrl) {
-      <img [src]="city()!.imageUrl" [alt]="city()!.name" class="hero-image" (error)="$event.target.style.display='none'" />
+      <img
+        [src]="city()!.imageUrl"
+        [alt]="city()!.name"
+        class="hero-image"
+        (error)="$event.target.src = 'assets/placeholder-hero.svg'"
+      />
+      } @else {
+      <img
+        src="assets/placeholder-hero.svg"
+        [alt]="city()!.name"
+        class="hero-image"
+      />
       }
       <div class="hero-overlay"></div>
     </div>
@@ -119,10 +130,20 @@
       <h2 class="section-title">Local Highlights</h2>
       <div class="highlights-grid">
         @for (highlight of city()!.highlights; track highlight.headline) {
-        <a class="highlight-card" [href]="highlight.link" target="_blank" rel="noopener noreferrer">
+        <a
+          class="highlight-card"
+          [href]="highlight.link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           @if (highlight.imageUrl) {
           <div class="highlight-image-wrapper">
-            <img [src]="highlight.imageUrl" [alt]="highlight.headline" class="highlight-image" loading="lazy" />
+            <img
+              [src]="highlight.imageUrl"
+              [alt]="highlight.headline"
+              class="highlight-image"
+              loading="lazy"
+            />
           </div>
           } @else {
           <div class="highlight-icon">
@@ -330,10 +351,16 @@
               [alt]="community.name"
               class="community-image"
               loading="lazy"
-              (error)="$event.target.style.display='none'"
+              (error)="$event.target.src = 'assets/placeholder-hero.svg'"
             />
-            }
-            @if (isAuthenticated()) {
+            } @else {
+            <img
+              src="assets/placeholder-hero.svg"
+              [alt]="community.name"
+              class="community-image"
+              loading="lazy"
+            />
+            } @if (isAuthenticated()) {
             <div class="card-actions" (click)="$event.stopPropagation()">
               @if (!isMember(community.id)) {
               <button
@@ -345,7 +372,9 @@
                 Join
               </button>
               } @else {
-              <span class="member-badge-small">Member</span>
+              <otui-badge variant="success" size="sm" icon="check"
+                >Member</otui-badge
+              >
               }
             </div>
             }
@@ -360,7 +389,8 @@
             <h3 class="community-name">{{ community.name }}</h3>
             <p class="community-description">{{ community.description }}</p>
             <div class="community-tags">
-              @for (tag of community.highlights?.slice(0, 3) || []; track tag.headline) {
+              @for (tag of community.highlights?.slice(0, 3) || []; track
+              tag.headline) {
               <span class="tag">{{ tag.headline }}</span>
               }
             </div>
@@ -505,15 +535,102 @@
         placeholder="Describe what this community is about..."
       ></textarea>
     </div>
+    <div class="form-group">
+      <label for="community-join-policy">Join Policy</label>
+      <select
+        id="community-join-policy"
+        class="input"
+        [(ngModel)]="newCommunityJoinPolicy"
+      >
+        <option value="public">Public — Anyone can join</option>
+        <option value="approval_required">
+          Approval Required — Admins must approve
+        </option>
+        <option value="invite_only">
+          Invite Only — Only invited users can join
+        </option>
+      </select>
+    </div>
+    <div class="form-group form-group--checkbox">
+      <label>
+        <input type="checkbox" [(ngModel)]="newCommunityIsPrivate" />
+        Private Community
+      </label>
+      <p class="help-text">Private communities are only visible to members</p>
+    </div>
+    <div class="form-group">
+      <label for="community-tags">Tags</label>
+      <input
+        type="text"
+        id="community-tags"
+        class="input"
+        [(ngModel)]="newCommunityTags"
+        placeholder="e.g., gaming, technology, music"
+      />
+      <p class="help-text">Separate tags with commas</p>
+    </div>
+
+    <div class="image-uploads">
+      <div class="form-group">
+        <label>Community Logo</label>
+        <div class="image-upload">
+          @if (logoPreview()) {
+          <div class="image-preview">
+            <img [src]="logoPreview()" alt="Logo preview" />
+            <button type="button" class="remove-btn" (click)="removeLogo()">
+              ×
+            </button>
+          </div>
+          } @else {
+          <div class="upload-placeholder">
+            <span>Click to upload logo</span>
+            <input
+              type="file"
+              accept="image/*"
+              (change)="onLogoSelect($event)"
+              class="file-input"
+            />
+          </div>
+          }
+        </div>
+        <p class="help-text">Recommended: Square image, at least 200×200px</p>
+      </div>
+      <div class="form-group">
+        <label>Community Banner</label>
+        <div class="image-upload">
+          @if (bannerPreview()) {
+          <div class="image-preview banner-preview">
+            <img [src]="bannerPreview()" alt="Banner preview" />
+            <button type="button" class="remove-btn" (click)="removeBanner()">
+              ×
+            </button>
+          </div>
+          } @else {
+          <div class="upload-placeholder banner-placeholder">
+            <span>Click to upload banner</span>
+            <input
+              type="file"
+              accept="image/*"
+              (change)="onBannerSelect($event)"
+              class="file-input"
+            />
+          </div>
+          }
+        </div>
+        <p class="help-text">Recommended: Wide image, at least 1200×400px</p>
+      </div>
+    </div>
+
     <div class="modal-actions">
       <button
         class="btn btn-primary"
         (click)="createCommunity()"
-        [disabled]="creatingCommunity()"
+        [disabled]="creatingCommunity() || uploading()"
       >
-        @if (creatingCommunity()) {
-        <span class="btn-spinner"></span> Creating... } @else { Create Community
-        }
+        @if (uploading()) {
+        <span class="btn-spinner"></span> Uploading images... } @else if
+        (creatingCommunity()) { <span class="btn-spinner"></span> Creating... }
+        @else { Create Community }
       </button>
     </div>
   </div>

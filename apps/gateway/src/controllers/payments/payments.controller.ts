@@ -11,7 +11,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, defaultIfEmpty } from 'rxjs';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -34,6 +34,8 @@ export interface CreateDonationDto {
 export interface CreateClassifiedPaymentDto {
   classifiedId: string;
   paymentMethod: 'card' | 'cash-app' | 'venmo' | 'zelle' | 'cash';
+  sellerId?: string;
+  amount?: number;
 }
 
 export interface ConfirmOutOfPlatformDto {
@@ -255,6 +257,8 @@ export class PaymentsController {
           profileId: user.profileId,
           classifiedId: dto.classifiedId,
           paymentMethod: dto.paymentMethod,
+          sellerId: dto.sellerId,
+          amount: dto.amount,
           appScope,
         }
       )
@@ -377,12 +381,14 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Get business page for community' })
   async getBusinessPage(@Param('communityId') communityId: string) {
     return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.GET_BUSINESS_PAGE },
-        {
-          communityId,
-        }
-      )
+      this.paymentsClient
+        .send(
+          { cmd: PaymentCommands.GET_BUSINESS_PAGE },
+          {
+            communityId,
+          }
+        )
+        .pipe(defaultIfEmpty(null))
     );
   }
 
@@ -751,6 +757,71 @@ export class PaymentsController {
         { cmd: PaymentCommands.GET_SELLER_EARNINGS_SUMMARY },
         { sellerId: user.profileId || user.userId }
       )
+    );
+  }
+
+  @Post('business/:businessPageId/theme')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create business page theme' })
+  async createBusinessTheme(
+    @User() user: UserDetails,
+    @Param('businessPageId') businessPageId: string,
+    @Body() dto: Record<string, unknown>
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.CREATE_BUSINESS_THEME },
+        { userId: user.userId, businessPageId, ...dto }
+      )
+    );
+  }
+
+  @Get('business/:businessPageId/theme')
+  @Public()
+  @ApiOperation({ summary: 'Get business page theme' })
+  async getBusinessTheme(@Param('businessPageId') businessPageId: string) {
+    return await firstValueFrom(
+      this.paymentsClient
+        .send(
+          { cmd: PaymentCommands.GET_BUSINESS_THEME },
+          { businessPageId }
+        )
+        .pipe(defaultIfEmpty(null))
+    );
+  }
+
+  @Patch('business/theme/:themeId')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update business page theme' })
+  async updateBusinessTheme(
+    @User() user: UserDetails,
+    @Param('themeId') themeId: string,
+    @Body() dto: Record<string, unknown>
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.UPDATE_BUSINESS_THEME },
+        { userId: user.userId, themeId, ...dto }
+      )
+    );
+  }
+
+  @Post('webhook')
+  @Public()
+  @ApiOperation({ summary: 'Lemon Squeezy webhook receiver' })
+  async handleWebhook(
+    @Body() body: Record<string, unknown>,
+    @Query('signature') signatureHeader?: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient
+        .send(
+          { cmd: PaymentCommands.PROCESS_WEBHOOK },
+          { eventType: (body?.meta as any)?.event_name, data: body }
+        )
+        .pipe(defaultIfEmpty({ received: true }))
     );
   }
 }
