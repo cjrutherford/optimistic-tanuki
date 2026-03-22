@@ -12,7 +12,7 @@ import { AuthenticationService } from '../../services/authentication.service';
   template: `
     <div class="register-page">
       <lib-register-block
-        registerHeader="Join Local Hub"
+        registerHeader="Join Towne Square"
         callToAction="Create an account to join local communities"
         (submitEvent)="onRegister($event)"
       ></lib-register-block>

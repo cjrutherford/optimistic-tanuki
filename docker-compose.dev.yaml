@@ -311,6 +311,33 @@ services:
       postgres:
         condition: service_healthy
 
+  classifieds:
+    container_name: ot_classifieds
+    build:
+      context: .
+      dockerfile: ./apps/classifieds/Dockerfile
+    volumes:
+      - ./dist/apps/classifieds:/usr/src/app
+      - ./apps/classifieds/src/assets:/usr/src/app/assets
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9217',
+        '-L',
+        'classifieds/main.js',
+      ]
+    ports:
+      - '9217:9217'
+      - '3017:3017'
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   payments:
     container_name: ot_payments
     build:

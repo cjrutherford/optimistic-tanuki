@@ -3,6 +3,23 @@ import { AppModule } from './app/app.module';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Community } from './entities/community.entity';
+import seedData from '../../local-hub/src/data/seed-cities.json';
+
+type CityHighlight = {
+  headline: string;
+  link: string;
+  imageUrl: string;
+};
+
+type CanonicalCitySeed = {
+  slug: string;
+  localityType: string;
+  city: string;
+  state: string;
+  imageUrl: string;
+  highlights: CityHighlight[];
+  timezone: string;
+};
 
 type Locality = {
   name: string;
@@ -15,11 +32,93 @@ type Locality = {
   lat: number;
   lng: number;
   population: number;
+  imageUrl?: string;
+  highlights?: CityHighlight[];
+  timezone?: string;
   tags?: { id: string; name: string }[];
   parentSlug?: string;
 };
 
-const COMMUNITIES: Locality[] = [
+const canonicalCitySeeds =
+  ((seedData.localities as CanonicalCitySeed[]) ?? []).filter(
+    (city) => city.localityType === 'city'
+  );
+
+const canonicalCitySeedBySlug = new Map(
+  canonicalCitySeeds.map((city) => [city.slug, city])
+);
+
+const canonicalCitySeedByLocation = new Map(
+  canonicalCitySeeds.map((city) => [`${city.city}|${city.state}`, city])
+);
+
+function getLocationKey(city: string, adminArea: string) {
+  return `${city}|${adminArea}`;
+}
+
+function toSeedFragment(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
+function buildFallbackImageUrl(seedKey: string) {
+  return `https://picsum.photos/seed/${toSeedFragment(seedKey)}/1200/800`;
+}
+
+function buildFallbackHighlights(locality: Locality): CityHighlight[] {
+  const seedBase = toSeedFragment(locality.slug);
+  const cityLabel = locality.city;
+
+  return [
+    {
+      headline: `${cityLabel} downtown favorites`,
+      link: `https://example.com/${seedBase}/downtown`,
+      imageUrl: `https://picsum.photos/seed/${seedBase}-downtown/800/600`,
+    },
+    {
+      headline: `${cityLabel} local dining`,
+      link: `https://example.com/${seedBase}/food`,
+      imageUrl: `https://picsum.photos/seed/${seedBase}-food/800/600`,
+    },
+    {
+      headline: `${cityLabel} parks and outdoors`,
+      link: `https://example.com/${seedBase}/outdoors`,
+      imageUrl: `https://picsum.photos/seed/${seedBase}-outdoors/800/600`,
+    },
+  ];
+}
+
+function enrichLocality(locality: Locality): Locality {
+  const exactCitySeed = canonicalCitySeedBySlug.get(locality.slug);
+  const relatedCitySeed =
+    exactCitySeed ||
+    (locality.parentSlug
+      ? canonicalCitySeedBySlug.get(locality.parentSlug)
+      : undefined) ||
+    canonicalCitySeedByLocation.get(
+      getLocationKey(locality.city, locality.adminArea)
+    );
+  const fallbackLocationSeed = `${locality.city}-${locality.adminArea}`;
+
+  return {
+    ...locality,
+    imageUrl:
+      locality.imageUrl ??
+      relatedCitySeed?.imageUrl ??
+      buildFallbackImageUrl(
+        locality.localityType === 'city' ? locality.slug : fallbackLocationSeed
+      ),
+    highlights:
+      locality.localityType === 'city'
+        ? locality.highlights ??
+        exactCitySeed?.highlights ??
+        buildFallbackHighlights(locality)
+        : locality.highlights ?? null,
+    timezone:
+      locality.timezone ?? relatedCitySeed?.timezone ?? 'America/New_York',
+  };
+}
+
+const COMMUNITIES: Locality[] = ([
   // ── Georgia ──────────────────────────────────────────────────────────────
   {
     name: 'Savannah, GA',
@@ -1303,7 +1402,7 @@ const COMMUNITIES: Locality[] = [
       { id: '3', name: 'Beach' },
     ],
   },
-];
+] satisfies Locality[]).map(enrichLocality);
 
 async function main() {
   const app = await NestFactory.createApplicationContext(AppModule);
@@ -1333,6 +1432,9 @@ async function main() {
           lat,
           lng,
           population,
+          imageUrl,
+          highlights,
+          timezone,
           tags,
         } = data;
         Object.assign(existing, {
@@ -1345,6 +1447,9 @@ async function main() {
           lat,
           lng,
           population,
+          imageUrl: imageUrl ?? null,
+          highlights: highlights ?? null,
+          timezone: timezone ?? null,
           tags,
         });
         await communityRepo.save(existing);
@@ -1359,6 +1464,7 @@ async function main() {
           isPrivate: false,
           joinPolicy: 'public',
           memberCount: 0,
+          isSystemCommunity: true,
         });
         await communityRepo.save(community);
         created++;

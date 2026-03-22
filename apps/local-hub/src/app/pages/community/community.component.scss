@@ -278,18 +278,6 @@
   animation: spin 1s linear infinite;
 }
 
-.member-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(76, 175, 80, 0.9);
-  color: white;
-  font-size: 0.95rem;
-  font-weight: 600;
-  padding: 14px 24px;
-  border-radius: 10px;
-}
-
 .section-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -314,6 +302,12 @@
   border: 1px solid var(--muted);
   border-radius: 14px;
   padding: 18px;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.3s var(--animation-easing);
+
+  &:hover {
+    box-shadow: var(--shadow-card-hover);
+  }
 }
 
 .support-copy {
@@ -357,12 +351,25 @@
 
 .input {
   width: 100%;
-  border: 1px solid var(--muted);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
   background: var(--background);
   color: var(--foreground);
   font: inherit;
+  transition: border-color var(--animation-duration-fast) ease,
+    box-shadow var(--animation-duration-fast) ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: var(--ring-primary);
+  }
+
+  &::placeholder {
+    color: var(--foreground-muted);
+    opacity: 0.6;
+  }
 }
 
 .active-sponsorship-note {
@@ -395,15 +402,32 @@
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: var(--background);
+  background: var(--surface);
   border-radius: 12px;
   border: 1px solid var(--muted);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.3s var(--animation-easing);
+  text-decoration: none;
 
   &:hover {
     border-color: var(--primary);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
   }
+}
+
+.highlight-image-wrapper {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.highlight-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .highlight-icon {
@@ -436,7 +460,7 @@
     overflow: hidden;
     min-height: 280px;
     border: 1px solid var(--muted);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-md);
   }
 }
 
@@ -454,6 +478,7 @@
   background: var(--surface);
   border-radius: 10px;
   border: 1px solid var(--muted);
+  box-shadow: var(--shadow-xs);
 }
 
 .detail-label {
@@ -490,9 +515,10 @@
   align-items: center;
   text-align: center;
   padding: 40px 20px;
-  background: var(--background);
+  background: var(--surface);
   border-radius: 16px;
   border: 1px solid var(--muted);
+  box-shadow: var(--shadow-sm);
 }
 
 .gated-icon {
@@ -523,9 +549,10 @@
   text-align: center;
   padding: 40px 20px;
   color: var(--foreground-muted);
-  background: var(--background);
+  background: var(--surface);
   border-radius: 16px;
   border: 1px solid var(--muted);
+  box-shadow: var(--shadow-xs);
 
   svg {
     margin-bottom: 16px;
@@ -545,16 +572,20 @@
 }
 
 .post-card {
-  background: var(--background);
+  background: var(--surface);
   border: 1px solid var(--muted);
   border-radius: 12px;
   padding: 20px;
+  box-shadow: var(--shadow-card);
   cursor: pointer;
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition: box-shadow 0.3s var(--animation-easing),
+    border-color 0.3s var(--animation-easing),
+    transform 0.3s var(--animation-easing);
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-card-hover);
     border-color: var(--primary);
+    transform: translateY(-2px);
   }
 }
 
@@ -637,6 +668,7 @@
   border-radius: 16px;
   padding: 32px;
   border: 1px solid var(--muted);
+  box-shadow: var(--shadow-card);
 
   p {
     font-size: 1.05rem;

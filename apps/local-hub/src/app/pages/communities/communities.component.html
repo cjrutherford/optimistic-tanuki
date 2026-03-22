@@ -45,6 +45,48 @@
         />
       </div>
     </div>
+
+    <div class="filters-bar">
+      <div class="filter-group">
+        <span class="filter-label">State:</span>
+        <div class="filter-buttons">
+          @for (state of states; track state) {
+          <button
+            class="filter-chip"
+            [class.active]="selectedStates().includes(state)"
+            (click)="toggleState(state)"
+          >
+            {{ state }}
+          </button>
+          }
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-label">Type:</span>
+        <div class="filter-buttons">
+          @for (type of localityTypes; track type.value) {
+          <button
+            class="filter-chip"
+            [class.active]="selectedLocalityTypes().includes(type.value)"
+            (click)="setLocalityType(type.value)"
+          >
+            {{ type.label }}
+          </button>
+          }
+        </div>
+      </div>
+
+      @if (activeFiltersCount > 0) {
+      <button class="clear-filters" (click)="clearFilters()">
+        Clear all filters ({{ activeFiltersCount }})
+      </button>
+      }
+
+      <span class="results-count"
+        >{{ filteredCommunities.length }} results</span
+      >
+    </div>
   </header>
 
   @if (loading()) {
@@ -85,12 +127,15 @@
       tabindex="0"
     >
       <div class="card-image-wrapper">
+        @if (community.imageUrl) {
         <img
           [src]="community.imageUrl"
           [alt]="community.name"
           class="card-image"
           loading="lazy"
+          (error)="$event.target.style.display = 'none'"
         />
+        }
         <div class="card-image-overlay"></div>
         <span class="locality-badge">{{ community.localityType }}</span>
       </div>
@@ -114,8 +159,9 @@
         <p class="community-description">{{ community.description }}</p>
 
         <div class="community-tags">
-          @for (tag of community.highlights?.slice(0, 3) || []; track tag) {
-          <span class="tag">{{ tag }}</span>
+          @for (tag of community.highlights?.slice(0, 3) || []; track
+          tag.headline) {
+          <span class="tag">{{ tag.headline }}</span>
           }
         </div>
 

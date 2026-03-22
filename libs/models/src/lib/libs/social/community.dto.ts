@@ -48,6 +48,20 @@ export class CommunityTag {
   name!: string;
 }
 
+export class CityHighlight {
+  @ApiProperty()
+  @IsString()
+  headline!: string;
+
+  @ApiProperty()
+  @IsString()
+  link!: string;
+
+  @ApiProperty()
+  @IsString()
+  imageUrl!: string;
+}
+
 export class CommunityDto {
   @ApiProperty()
   @IsUUID()
@@ -132,12 +146,21 @@ export class CommunityDto {
   @IsNumber()
   population?: number | null;
 
-  /** Locality highlights: human-readable strings, may contain URLs. */
-  @ApiPropertyOptional({ type: [String] })
+  /** Locality highlights: structured POIs with headline, link, and image. */
+  @ApiPropertyOptional({ type: [CityHighlight] })
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  highlights?: string[] | null;
+  highlights?: CityHighlight[] | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  imageUrl?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  timezone?: string | null;
 
   @ApiProperty()
   @IsDateString()
@@ -239,12 +262,21 @@ export class CreateCommunityDto {
   @IsUUID()
   parentId?: string | null;
 
-  /** Locality highlights: human-readable strings, may contain URLs. */
-  @ApiPropertyOptional({ type: [String] })
+  /** Locality highlights: structured POIs with headline, link, and image */
+  @ApiPropertyOptional({ type: [CityHighlight] })
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  highlights?: string[];
+  highlights?: CityHighlight[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  timezone?: string;
 }
 
 export class UpdateCommunityDto {
@@ -265,6 +297,63 @@ export class UpdateCommunityDto {
   @IsString()
   @MaxLength(2000)
   description?: string;
+
+  @ApiPropertyOptional({ enum: LocalityType })
+  @IsOptional()
+  @IsEnum(LocalityType)
+  localityType?: LocalityType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  adminArea?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lat?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lng?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  population?: number;
+
+  @ApiPropertyOptional({ type: [CityHighlight] })
+  @IsOptional()
+  @IsArray()
+  highlights?: CityHighlight[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  imageUrl?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  timezone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Parent community ID for sub-communities',
+  })
+  @IsOptional()
+  @IsUUID()
+  parentId?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -525,7 +614,7 @@ export class StartElectionDto {
   endsAt?: Date;
 }
 
-export class NominateDto {}
+export class NominateDto { }
 
 export class VoteDto {
   @ApiProperty()

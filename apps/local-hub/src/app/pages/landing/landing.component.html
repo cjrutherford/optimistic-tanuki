@@ -48,14 +48,83 @@
     <div class="loading-placeholder">
       <div class="loading-spinner"></div>
     </div>
-    } @else {
-    <div class="visual-grid">
-      @for (city of cities().slice(0, 4); track city.id) {
-      <div class="visual-card" (click)="navigateToCity(city.slug)">
-        <img [src]="city.imageUrl" [alt]="city.name" />
-        <span>{{ city.name }}, {{ city.adminArea }}</span>
+    } @else if (cities().length > 0) {
+    <div class="visual-carousel">
+      <div class="carousel-header">
+        <div>
+          <p class="carousel-eyebrow">Featured cities</p>
+          <p class="carousel-meta">
+            Showing {{ visibleCities.length }} of {{ cities().length }}
+          </p>
+        </div>
+        <div class="carousel-controls" aria-label="City carousel controls">
+          <button
+            type="button"
+            class="carousel-control"
+            [disabled]="!canScrollCitiesBackward"
+            (click)="scrollCities('previous')"
+            aria-label="Show previous cities"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="carousel-control"
+            [disabled]="!canScrollCitiesForward"
+            (click)="scrollCities('next')"
+            aria-label="Show next cities"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+        </div>
       </div>
-      }
+
+      <div class="visual-row" [style.--visible-cards]="visibleCityCount()">
+        @for (city of visibleCities; track city.id) {
+        <article class="visual-card" (click)="navigateToCity(city.slug)">
+          <div class="visual-card-media">
+            @if (city.imageUrl) {
+            <img
+              [src]="city.imageUrl"
+              [alt]="city.name"
+              (error)="$event.target.style.display = 'none'"
+            />
+            }
+            <div class="visual-card-overlay"></div>
+            <div class="visual-card-copy">
+              <span class="visual-card-title"
+                >{{ city.name }}, {{ city.adminArea }}</span
+              >
+              <span class="visual-card-subtitle"
+                >{{ city.population | number }} residents</span
+              >
+            </div>
+          </div>
+        </article>
+        }
+      </div>
+    </div>
+    } @else {
+    <div class="loading-placeholder">
+      <p>No cities available yet.</p>
     </div>
     }
   </div>
@@ -159,25 +228,61 @@
         </p>
         <ul class="support-list">
           <li>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+              ></path>
+            </svg>
             Monthly goals for community projects
           </li>
           <li>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
             Transparent tracking of contributions
           </li>
           <li>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
             Secure one-time or recurring donations
           </li>
         </ul>
-        <button class="btn btn-primary" (click)="navigateToCities()">View Community Goals</button>
+        <button class="btn btn-primary" (click)="navigateToCities()">
+          View Community Goals
+        </button>
       </div>
       <div class="support-visual">
         <div class="goal-card">
           <h3>Community Funding Goal</h3>
-          <app-donation-progress [monthlyGoal]="donationGoal()?.monthlyGoal || 5000"></app-donation-progress>
-          <p class="goal-note">Supported by {{ donationGoal()?.donorCount || 0 }} neighbors this month</p>
+          <app-donation-progress
+            [monthlyGoal]="donationGoal()?.monthlyGoal || 5000"
+          ></app-donation-progress>
+          <p class="goal-note">
+            Supported by {{ donationGoal()?.donorCount || 0 }} neighbors this
+            month
+          </p>
         </div>
       </div>
     </div>
@@ -198,7 +303,10 @@
             </div>
           </div>
           <div class="demo-body">
-            <p>Fresh local produce and artisanal sandwiches delivered to your door.</p>
+            <p>
+              Fresh local produce and artisanal sandwiches delivered to your
+              door.
+            </p>
           </div>
           <div class="demo-footer">
             <span class="demo-tag">Featured</span>
@@ -209,7 +317,8 @@
       <div class="business-content">
         <h2 class="section-title">Grow Your Local Business</h2>
         <p class="section-subtitle">
-          Connect with customers right in your neighborhood. Create a professional business page and reach your local audience.
+          Connect with customers right in your neighborhood. Create a
+          professional business page and reach your local audience.
         </p>
         <div class="tier-preview">
           <div class="tier">
@@ -221,7 +330,9 @@
             <span>Featured placement & analytics</span>
           </div>
         </div>
-        <button class="btn btn-outline" (click)="navigateToRegister()">Start My Business Page</button>
+        <button class="btn btn-outline" (click)="navigateToRegister()">
+          Start My Business Page
+        </button>
       </div>
     </div>
   </div>

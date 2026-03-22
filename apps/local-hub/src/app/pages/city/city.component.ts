@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
-import { Subject } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   CommunityService,
@@ -17,8 +18,9 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { MapComponent } from '../../components/map/map.component';
 import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
-import { CardComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
+import { CardComponent, ModalComponent, BadgeComponent } from '@optimistic-tanuki/common-ui';
 import { PaymentService, BusinessPage } from '../../services/payment.service';
+import { API_BASE_URL, CreateAssetDto } from '@optimistic-tanuki/ui-models';
 import {
   ClassifiedListComponent,
   ClassifiedService,
@@ -41,6 +43,7 @@ interface CommunityTreeNode {
     FormsModule,
     CardComponent,
     ModalComponent,
+    BadgeComponent,
     ClassifiedListComponent,
   ],
   templateUrl: './city.component.html',
@@ -57,6 +60,8 @@ export class CityComponent implements OnInit, OnDestroy {
   private title = inject(Title);
   private destroy$ = new Subject<void>();
   private classifiedService = inject(ClassifiedService);
+  private http = inject(HttpClient);
+  private apiBaseUrl = inject(API_BASE_URL);
 
   city = signal<City | null>(null);
   communities = signal<LocalCommunity[]>([]);
@@ -86,9 +91,18 @@ export class CityComponent implements OnInit, OnDestroy {
 
   newCommunityName = '';
   newCommunityDescription = '';
+  newCommunityIsPrivate = false;
+  newCommunityJoinPolicy: 'public' | 'approval_required' | 'invite_only' = 'public';
+  newCommunityTags = '';
   /** Locality-type options users may choose when creating an interest community. */
   newCommunityType: 'neighborhood' | 'county' | 'region' = 'neighborhood';
   selectedBusinessTier = signal<'basic' | 'pro' | 'enterprise'>('basic');
+
+  bannerPreview = signal<string | null>(null);
+  logoPreview = signal<string | null>(null);
+  bannerAssetId = signal<string | null>(null);
+  logoAssetId = signal<string | null>(null);
+  uploading = signal(false);
 
   async ngOnInit(): Promise<void> {
     this.authState.isAuthenticated$
@@ -190,7 +204,7 @@ export class CityComponent implements OnInit, OnDestroy {
   }
 
   private updateMetaTags(city: City): void {
-    const fullTitle = `${city.name} - Local Hub`;
+    const fullTitle = `${city.name} - Towne Square`;
     this.title.setTitle(fullTitle);
 
     this.meta.updateTag({ name: 'description', content: city.description });
@@ -332,19 +346,39 @@ export class CityComponent implements OnInit, OnDestroy {
 
     this.creatingCommunity.set(true);
     try {
+      // Wait for any pending image uploads
+      if (this.uploading()) {
+        await new Promise<void>((resolve) => {
+          const check = setInterval(() => {
+            if (!this.uploading()) {
+              clearInterval(check);
+              resolve();
+            }
+          }, 200);
+        });
+      }
+
+      const tags = this.newCommunityTags
+        ? this.newCommunityTags.split(',').map((t) => t.trim()).filter((t) => t)
+        : [];
+
       const newCommunity = await this.communityService.createCommunity({
         name: this.newCommunityName.trim(),
         description: this.newCommunityDescription.trim(),
         parentId: cityData.id,
         localityType: this.newCommunityType,
+        isPrivate: this.newCommunityIsPrivate,
+        joinPolicy: this.newCommunityJoinPolicy,
+        tags,
+        bannerAssetId: this.bannerAssetId() || undefined,
+        logoAssetId: this.logoAssetId() || undefined,
       });
       this.showCreateCommunityModal.set(false);
       this.messageService.addMessage({
         content: 'Community created successfully!',
         type: 'success',
       });
-      this.newCommunityName = '';
-      this.newCommunityDescription = '';
+      this.resetCommunityForm();
       this.router.navigate(['/c', newCommunity.slug]);
     } catch {
       this.messageService.addMessage({
@@ -354,6 +388,83 @@ export class CityComponent implements OnInit, OnDestroy {
     } finally {
       this.creatingCommunity.set(false);
     }
+  }
+
+  private resetCommunityForm(): void {
+    this.newCommunityName = '';
+    this.newCommunityDescription = '';
+    this.newCommunityIsPrivate = false;
+    this.newCommunityJoinPolicy = 'public';
+    this.newCommunityTags = '';
+    this.newCommunityType = 'neighborhood';
+    this.bannerPreview.set(null);
+    this.logoPreview.set(null);
+    this.bannerAssetId.set(null);
+    this.logoAssetId.set(null);
+  }
+
+  async onBannerSelect(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.[0]) return;
+    const file = input.files[0];
+    this.bannerPreview.set(await this.fileToDataUrl(file));
+    this.uploading.set(true);
+    try {
+      this.bannerAssetId.set(await this.uploadImage(file));
+    } finally {
+      this.uploading.set(false);
+    }
+  }
+
+  async onLogoSelect(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.[0]) return;
+    const file = input.files[0];
+    this.logoPreview.set(await this.fileToDataUrl(file));
+    this.uploading.set(true);
+    try {
+      this.logoAssetId.set(await this.uploadImage(file));
+    } finally {
+      this.uploading.set(false);
+    }
+  }
+
+  removeBanner(): void {
+    this.bannerPreview.set(null);
+    this.bannerAssetId.set(null);
+  }
+
+  removeLogo(): void {
+    this.logoPreview.set(null);
+    this.logoAssetId.set(null);
+  }
+
+  private fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  private async uploadImage(file: File): Promise<string> {
+    const dataUrl = await this.fileToDataUrl(file);
+    const ext = file.name.split('.').pop() || 'png';
+    const profile = await firstValueFrom(
+      this.http.get<{ id: string }>(`${this.apiBaseUrl}/profile/me`)
+    );
+    const assetDto: CreateAssetDto = {
+      name: file.name,
+      profileId: profile.id,
+      type: 'image',
+      content: dataUrl,
+      fileExtension: ext,
+    };
+    const asset = await firstValueFrom(
+      this.http.post<{ id: string }>(`${this.apiBaseUrl}/asset`, assetDto)
+    );
+    return asset.id;
   }
 
   openCreateBusinessModal(): void {

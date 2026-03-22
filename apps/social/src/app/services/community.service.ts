@@ -47,7 +47,7 @@ export class CommunityService {
     private readonly candidateRepo: Repository<ElectionCandidate>,
     @InjectRepository(ElectionVote)
     private readonly voteRepo: Repository<ElectionVote>
-  ) {}
+  ) { }
 
   /** Generate a slug from a name, appending a numeric suffix if the base slug is taken. */
   private async generateUniqueSlug(base: string): Promise<string> {
@@ -118,6 +118,8 @@ export class CommunityService {
       population: dto.population ?? null,
       parentId: dto.parentId ?? null,
       highlights: dto.highlights ?? null,
+      imageUrl: dto.imageUrl ?? null,
+      timezone: dto.timezone ?? null,
     });
 
     const saved = await this.communityRepo.save(community);
@@ -253,8 +255,18 @@ export class CommunityService {
     }
 
     const member = await this.getMember(id, userId);
-    if (!member || member.role !== CommunityMemberRole.OWNER) {
-      throw new RpcException('Only the owner can update the community');
+    const isOwner = member?.role === CommunityMemberRole.OWNER;
+    const isAdmin = member?.role === CommunityMemberRole.ADMIN;
+
+    // System communities can be managed by ADMIN or OWNER role members
+    if (community.isSystemCommunity) {
+      if (!member || !(isOwner || isAdmin)) {
+        throw new RpcException('Only admins can update a system community');
+      }
+    } else {
+      if (!member || !isOwner) {
+        throw new RpcException('Only the owner can update the community');
+      }
     }
 
     if (dto.name) {
@@ -280,6 +292,39 @@ export class CommunityService {
     if (dto.description !== undefined) {
       community.description = dto.description;
     }
+    if (dto.localityType !== undefined) {
+      community.localityType = dto.localityType;
+    }
+    if (dto.countryCode !== undefined) {
+      community.countryCode = dto.countryCode;
+    }
+    if (dto.adminArea !== undefined) {
+      community.adminArea = dto.adminArea;
+    }
+    if (dto.city !== undefined) {
+      community.city = dto.city;
+    }
+    if (dto.lat !== undefined) {
+      community.lat = dto.lat;
+    }
+    if (dto.lng !== undefined) {
+      community.lng = dto.lng;
+    }
+    if (dto.population !== undefined) {
+      community.population = dto.population;
+    }
+    if (dto.highlights !== undefined) {
+      community.highlights = dto.highlights;
+    }
+    if (dto.imageUrl !== undefined) {
+      community.imageUrl = dto.imageUrl;
+    }
+    if (dto.timezone !== undefined) {
+      community.timezone = dto.timezone;
+    }
+    if (dto.parentId !== undefined) {
+      community.parentId = dto.parentId;
+    }
     if (dto.isPrivate !== undefined) {
       community.isPrivate = dto.isPrivate;
     }
@@ -302,7 +347,17 @@ export class CommunityService {
       throw new RpcException('Community not found');
     }
 
-    if (community.ownerId !== userId) {
+    if (community.isSystemCommunity) {
+      const member = await this.getMember(id, userId);
+      if (
+        !member ||
+        ![CommunityMemberRole.OWNER, CommunityMemberRole.ADMIN].includes(
+          member.role
+        )
+      ) {
+        throw new RpcException('Only admins can delete a system community');
+      }
+    } else if (community.ownerId !== userId) {
       throw new RpcException('Only the owner can delete the community');
     }
 
@@ -948,5 +1003,27 @@ export class CommunityService {
     community.managerId = null;
     community.managerProfileId = null;
     return await this.communityRepo.save(community);
+  }
+
+  async withdrawCandidate(
+    communityId: string,
+    userId: string
+  ): Promise<ElectionCandidate> {
+    const election = await this.electionRepo.findOne({
+      where: { communityId, status: 'open' },
+    });
+    if (!election) {
+      throw new RpcException('No open election found');
+    }
+
+    const candidate = await this.candidateRepo.findOne({
+      where: { electionId: election.id, userId },
+    });
+    if (!candidate) {
+      throw new RpcException('Candidate not found');
+    }
+
+    candidate.isWithdrawn = true;
+    return await this.candidateRepo.save(candidate);
   }
 }

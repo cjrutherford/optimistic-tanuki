@@ -3,6 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { API_BASE_URL, CommunityTag } from '@optimistic-tanuki/ui-models';
 import { firstValueFrom } from 'rxjs';
 
+export interface CityHighlight {
+  headline: string;
+  link: string;
+  imageUrl: string;
+}
+
 export interface LocalCommunity {
   id: string;
   name: string;
@@ -25,9 +31,11 @@ export interface LocalCommunity {
     lat: number;
     lng: number;
   };
-  highlights?: string[];
+  highlights?: CityHighlight[];
   events?: string[];
   tags?: CommunityTag[];
+  /** IANA timezone identifier, e.g. "America/New_York". */
+  timezone?: string | null;
   /** ID of the currently elected community manager (localities only). */
   managerId?: string | null;
   /** Display name of the currently elected community manager. */
@@ -36,6 +44,8 @@ export interface LocalCommunity {
   managerElectedAt?: string | null;
   /** ISO timestamp when the current manager's term ends. */
   managerTermEndsAt?: string | null;
+  /** Whether this community is system-managed (no individual owner). */
+  isSystemCommunity?: boolean;
 }
 
 /** Represents the currently elected manager of a locality. */
@@ -82,7 +92,7 @@ export interface City {
   };
   population: number;
   timezone: string;
-  highlights: string[];
+  highlights: CityHighlight[];
   communities: number;
 }
 
@@ -179,8 +189,18 @@ export class CommunityService {
     parentId: string;
     localityType: 'neighborhood' | 'county' | 'region';
     isBusiness?: boolean;
+    isPrivate?: boolean;
+    joinPolicy?: string;
+    tags?: string[];
+    bannerAssetId?: string;
+    logoAssetId?: string;
   }): Promise<LocalCommunity> {
-    return firstValueFrom(this.http.post<LocalCommunity>(this.baseUrl, data));
+    return firstValueFrom(
+      this.http.post<LocalCommunity>(this.baseUrl, {
+        ...data,
+        createChatRoom: true,
+      })
+    );
   }
 
   isMember(communityId: string): Promise<boolean> {
@@ -297,7 +317,7 @@ export class CommunityService {
               lng: community.coordinates?.lng || community.lng || 0,
             },
             population: community.population || 0,
-            timezone: 'America/New_York',
+            timezone: community.timezone || '',
             highlights: community.highlights || [],
             communities: 1,
           });
@@ -305,7 +325,14 @@ export class CommunityService {
       }
     }
 
-    return Array.from(citiesMap.values());
+    return Array.from(citiesMap.values()).sort((left, right) => {
+      const byName = left.name.localeCompare(right.name);
+      if (byName !== 0) {
+        return byName;
+      }
+
+      return left.adminArea.localeCompare(right.adminArea);
+    });
   }
 
   async getCities(): Promise<City[]> {
@@ -344,7 +371,7 @@ export class CommunityService {
           lng: community.coordinates?.lng || community.lng || 0,
         },
         population: community.population || 0,
-        timezone: 'America/New_York',
+        timezone: community.timezone || '',
         highlights: community.highlights || [],
         communities: cityCommunities.length,
       };
@@ -438,7 +465,9 @@ export class CommunityService {
       );
 
       return (posts ?? []).map((p) => {
-        const comm = p.communityId ? communityMap.get(p.communityId) : undefined;
+        const comm = p.communityId
+          ? communityMap.get(p.communityId)
+          : undefined;
         return {
           id: p.id,
           communityId: p.communityId || communityIds[0],
