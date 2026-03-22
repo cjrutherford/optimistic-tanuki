@@ -77,7 +77,8 @@ ON CONFLICT ("name") DO NOTHING;
 -- Local Hub roles
 INSERT INTO "role" (name, description, "appScopeId")
 VALUES
-  ('local_hub_member', 'Local Hub community member with classifieds access', (SELECT id FROM app_scope WHERE name = 'local-hub'))
+  ('local_hub_member', 'Local Hub community member with classifieds access', (SELECT id FROM app_scope WHERE name = 'local-hub')),
+  ('local_hub_community_poster', 'Community-scoped poster for local-hub communities', (SELECT id FROM app_scope WHERE name = 'local-hub'))
 ON CONFLICT ("name") DO NOTHING;
 
 -- Global scope roles
@@ -230,6 +231,20 @@ VALUES
   ('business.update', 'Update business page', 'business', 'update', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
   ('election.vote', 'Vote in community elections', 'election', 'vote', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
   ('election.nominate', 'Nominate in community elections', 'election', 'nominate', NULL, (SELECT id FROM app_scope WHERE name='local-hub'))
+ON CONFLICT (name, "appScopeId") DO NOTHING;
+
+-- Local Hub social permissions
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+VALUES
+  ('social.follow', 'Follow/unfollow users (local-hub)', 'follow', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('social.post.create', 'Create social post (local-hub)', 'post', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('social.post.read', 'Read social post (local-hub)', 'post', 'read', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('social.post.update', 'Update social post (local-hub)', 'post', 'update', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('social.post.delete', 'Delete social post (local-hub)', 'post', 'delete', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('social.comment.create', 'Create comment (local-hub)', 'comment', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('social.vote.create', 'Vote (local-hub)', 'vote', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('social.reaction.create', 'Create reaction (local-hub)', 'reaction', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('social.reaction.read', 'Read reaction (local-hub)', 'reaction', 'read', NULL, (SELECT id FROM app_scope WHERE name='local-hub'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Map permissions to roles (role_permission)
@@ -415,7 +430,7 @@ WHERE r.name = 'christopherrutherford_owner_user'
   AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='christopherrutherford-net')
 ON CONFLICT DO NOTHING;
 
--- local_hub_member - full classifieds and community permissions
+-- local_hub_member - full classifieds, community, and social permissions
 INSERT INTO "role_permission" ("roleId", "permissionId")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
@@ -427,17 +442,35 @@ FROM role r JOIN permission p ON p.name IN (
   'community.leave',
   'community.read',
   'election.vote',
-  'election.nominate'
+  'election.nominate',
+  'social.follow',
+  'social.post.create',
+  'social.post.read',
+  'social.post.update',
+  'social.post.delete',
+  'social.comment.create',
+  'social.vote.create',
+  'social.reaction.create',
+  'social.reaction.read'
 ) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='local-hub')
 WHERE r.name = 'local_hub_member'
 ON CONFLICT DO NOTHING;
 
--- local_hub_standard_user - basic read permissions
+-- local_hub_community_poster - community posting via local-hub social permissions
+INSERT INTO "role_permission" ("roleId", "permissionId")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name = 'social.post.create' AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='local-hub')
+WHERE r.name = 'local_hub_community_poster'
+ON CONFLICT DO NOTHING;
+
+-- local_hub_standard_user - basic read permissions + social read permissions
 INSERT INTO "role_permission" ("roleId", "permissionId")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'classified.read',
-  'community.read'
+  'community.read',
+  'social.post.read',
+  'social.reaction.read'
 ) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='local-hub')
 WHERE r.name = 'local_hub_standard_user'
 ON CONFLICT DO NOTHING;

@@ -28,14 +28,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   @Input() centerLng = -81.1;
   @Input() zoom = 7;
   @Input() centerLabel = 'Savannah, GA';
+  @Input() showRadius = true;
   @Output() citySelected = new EventEmitter<City>();
 
   private platformId = inject(PLATFORM_ID);
   private document = inject(DOCUMENT);
   private map: any;
   private markers: any[] = [];
-  private radiusCircle: any;
-
   isBrowser = signal(false);
   isLoading = signal(true);
 
@@ -74,8 +73,6 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     const L: typeof import('leaflet') = (leafletModule as any).default ?? leafletModule;
 
     const primaryColor = this.getCssVariable('--primary', '#3b82f6');
-    const primaryColorRgb = this.hexToRgba(primaryColor, 0.08);
-    const primaryColorRgb15 = this.hexToRgba(primaryColor, 0.15);
 
     this.map = L.map(this.mapContainer.nativeElement, {
       center: [this.centerLat, this.centerLng],
@@ -96,21 +93,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       })
       .addTo(this.map);
 
-    this.addRadiusCircle(L, primaryColor, primaryColorRgb, primaryColorRgb15);
+    if (this.showRadius) {
+      this.addRadiusCircle(L, primaryColor);
+    }
     this.addMarkers(L);
     this.isLoading.set(false);
   }
 
-  private addRadiusCircle(
-    L: any,
-    primaryColor: string,
-    primaryColorRgb: string,
-    primaryColorRgb15: string
-  ): void {
+  private addRadiusCircle(L: any, primaryColor: string): void {
     const radiusMiles = 250;
     const radiusKm = radiusMiles * 1.60934;
 
-    this.radiusCircle = L.circle([this.centerLat, this.centerLng], {
+    L.circle([this.centerLat, this.centerLng], {
       radius: radiusKm * 1000,
       color: primaryColor,
       weight: 2,
@@ -199,12 +193,5 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     const computedStyle =
       root.ownerDocument.defaultView?.getComputedStyle(root);
     return computedStyle?.getPropertyValue(variable).trim() || fallback;
-  }
-
-  private hexToRgba(hex: string, alpha: number): string {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 }

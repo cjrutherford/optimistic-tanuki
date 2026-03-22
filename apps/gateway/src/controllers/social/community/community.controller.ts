@@ -36,6 +36,7 @@ import {
   InviteToCommunityDto,
   CommunityInviteDto,
   AssignRoleDto,
+  CommunityMembershipStatus,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../../auth/auth.guard';
 import { Public } from '../../../decorators/public.decorator';
@@ -50,6 +51,7 @@ import { RequirePermissions } from '../../../decorators/permissions.decorator';
 @Controller('social/community')
 export class CommunityController {
   private readonly logger = new Logger(CommunityController.name);
+  private readonly localHubCommunityPosterRole = 'local_hub_community_poster';
 
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
@@ -58,7 +60,7 @@ export class CommunityController {
     private readonly permissionsClient: ClientProxy,
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
     private readonly chatClient: ClientProxy
-  ) {}
+  ) { }
 
   @Post()
   @RequirePermissions('community.create')
@@ -276,9 +278,10 @@ export class CommunityController {
   })
   async joinCommunity(
     @Param('id') id: string,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ): Promise<CommunityMemberDto> {
-    return await firstValueFrom(
+    const member = await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.JOIN },
         {
@@ -288,6 +291,12 @@ export class CommunityController {
         }
       )
     );
+
+    if (member?.status === CommunityMembershipStatus.APPROVED) {
+      await this.assignCommunityPostingRole(user.profileId, id, appScope);
+    }
+
+    return member;
   }
 
   @Post(':id/leave')
@@ -298,7 +307,8 @@ export class CommunityController {
   })
   async leaveCommunity(
     @Param('id') id: string,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ): Promise<void> {
     await firstValueFrom(
       this.socialClient.send(
@@ -306,6 +316,8 @@ export class CommunityController {
         { communityId: id, userId: user.userId }
       )
     );
+
+    await this.unassignCommunityPostingRole(user.profileId, id, appScope);
   }
 
   @Get(':id/members')
@@ -437,14 +449,25 @@ export class CommunityController {
   })
   async approveMember(
     @Param('memberId') memberId: string,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ): Promise<CommunityMemberDto> {
-    return await firstValueFrom(
+    const member = await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.APPROVE_MEMBER },
         { memberId, approverId: user.userId }
       )
     );
+
+    if (member?.status === CommunityMembershipStatus.APPROVED) {
+      await this.assignCommunityPostingRole(
+        member.profileId,
+        member.communityId,
+        appScope
+      );
+    }
+
+    return member;
   }
 
   @Post('members/:memberId/reject')
@@ -475,7 +498,9 @@ export class CommunityController {
   })
   async removeMember(
     @Param('memberId') memberId: string,
-    @User() user: UserDetails
+    @Body() body: { profileId?: string; communityId?: string },
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ): Promise<void> {
     await firstValueFrom(
       this.socialClient.send(
@@ -483,6 +508,14 @@ export class CommunityController {
         { memberId, removerId: user.userId }
       )
     );
+
+    if (body.profileId && body.communityId) {
+      await this.unassignCommunityPostingRole(
+        body.profileId,
+        body.communityId,
+        appScope
+      );
+    }
   }
 
   @Delete('invites/:inviteId')
@@ -603,6 +636,99 @@ export class CommunityController {
     } catch (err) {
       this.logger.error(`Failed to get chat room: ${err}`);
       return null;
+    }
+  }
+
+  private async assignCommunityPostingRole(
+    profileId: string,
+    communityId: string,
+    appScope: string
+  ): Promise<void> {
+    if (appScope !== 'local-hub') {
+      return;
+    }
+
+    try {
+      const role = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetByName },
+          { name: this.localHubCommunityPosterRole, appScope }
+        )
+      );
+
+      if (!role) {
+        return;
+      }
+
+      const existingAssignments = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetUserRoles },
+          { profileId, appScope }
+        )
+      );
+
+      const alreadyAssigned = Array.isArray(existingAssignments)
+        ? existingAssignments.some(
+          (assignment: any) =>
+            assignment.role?.id === role.id && assignment.targetId === communityId
+        )
+        : false;
+
+      if (alreadyAssigned) {
+        return;
+      }
+
+      await firstValueFrom(
+        this.permissionsClient.send({ cmd: RoleCommands.Assign }, {
+          roleId: role.id,
+          profileId,
+          appScopeId: role.appScope?.id || appScope,
+          targetId: communityId,
+        } as AssignRoleDto)
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to assign ${this.localHubCommunityPosterRole} for community ${communityId}: ${error}`
+      );
+    }
+  }
+
+  private async unassignCommunityPostingRole(
+    profileId: string,
+    communityId: string,
+    appScope: string
+  ): Promise<void> {
+    if (appScope !== 'local-hub') {
+      return;
+    }
+
+    try {
+      const role = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetByName },
+          { name: this.localHubCommunityPosterRole, appScope }
+        )
+      );
+
+      if (!role) {
+        return;
+      }
+
+      await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: 'Unassign:Role:ByTarget' },
+          {
+            profileId,
+            roleId: role.id,
+            appScopeId: role.appScope?.id || appScope,
+            targetId: communityId,
+          }
+        )
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to unassign ${this.localHubCommunityPosterRole} for community ${communityId}: ${error}`
+      );
     }
   }
 }

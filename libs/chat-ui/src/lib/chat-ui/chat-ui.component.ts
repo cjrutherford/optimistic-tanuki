@@ -155,6 +155,7 @@ export class ChatUiComponent implements OnInit, OnChanges {
       updatedAt: new Date('2023-10-01T12:10:00Z'),
     },
   ];
+  @Input() autoOpenFirstConversation = false;
   /**
    * A signal that holds the state of each chat window.
    */
@@ -254,6 +255,15 @@ export class ChatUiComponent implements OnInit, OnChanges {
         };
       }
     });
+
+    if (this.autoOpenFirstConversation && this.contacts.length > 0) {
+      const firstContactId = this.contacts[0].id;
+      const firstState = currentStates[firstContactId];
+      if (firstState) {
+        firstState.windowState = 'popout';
+      }
+    }
+
     this.windowStates.set(currentStates);
   }
 

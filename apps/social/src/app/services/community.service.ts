@@ -159,10 +159,67 @@ export class CommunityService {
 
   /** Return the direct sub-communities of a given parent community. */
   async getSubCommunities(parentId: string): Promise<Community[]> {
-    const communities = await this.communityRepo.find({
-      where: { parentId },
-      order: { memberCount: 'DESC', name: 'ASC' },
+    const parentCommunity = await this.communityRepo.findOne({
+      where: { id: parentId },
     });
+
+    const [directChildren, legacyCityCommunities] = await Promise.all([
+      this.communityRepo.find({
+        where: { parentId },
+        order: { memberCount: 'DESC', name: 'ASC' },
+      }),
+      parentCommunity?.city
+        ? this.communityRepo.find({
+          where: {
+            appScope: parentCommunity.appScope,
+            city: parentCommunity.city,
+            parentId: null,
+          },
+          order: { memberCount: 'DESC', name: 'ASC' },
+        })
+        : Promise.resolve([]),
+    ]);
+
+    const normalizedLegacyCommunities = legacyCityCommunities.filter(
+      (community) => {
+        if (community.id === parentId) {
+          return false;
+        }
+
+        if (community.localityType === 'city') {
+          return false;
+        }
+
+        if (
+          parentCommunity?.adminArea &&
+          community.adminArea !== parentCommunity.adminArea
+        ) {
+          return false;
+        }
+
+        if (
+          parentCommunity?.countryCode &&
+          community.countryCode !== parentCommunity.countryCode
+        ) {
+          return false;
+        }
+
+        return true;
+      }
+    );
+
+    const seen = new Set<string>();
+    const communities = [...directChildren, ...normalizedLegacyCommunities].filter(
+      (community) => {
+        if (seen.has(community.id)) {
+          return false;
+        }
+
+        seen.add(community.id);
+        return true;
+      }
+    );
+
     return Promise.all(communities.map((c) => this.addMemberInfo(c)));
   }
 

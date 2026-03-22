@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, Input, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -44,6 +44,15 @@ export class CommunityPostsComponent extends Variantable {
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
 
+  override theme: 'light' | 'dark' = 'light';
+  override background = 'var(--background, #ffffff)';
+  override foreground = 'var(--foreground, #212121)';
+  override accent = 'var(--accent, #3f51b5)';
+  override complement = 'var(--complement, #c0af4b)';
+  override borderColor = 'var(--complement, #c0af4b)';
+  override borderGradient =
+    'var(--complement-gradient-light, linear-gradient(135deg, #c0af4b, #3f51b5))';
+
   community = signal<CommunityDto | null>(null);
   posts = signal<PostDto[]>([]);
   profiles = signal<{ [key: string]: PostProfileStub }>({});
@@ -58,6 +67,9 @@ export class CommunityPostsComponent extends Variantable {
   reactionCounts = signal<{ [postId: string]: { [value: number]: number } }>(
     {}
   );
+  @Input() showCommunityHeader = true;
+  @Input() showNavigation = true;
+  @Input() showComposer = false;
 
   setActiveTab(tab: 'posts' | 'create' | 'manage') {
     this.activeTab.set(tab);
@@ -286,7 +298,10 @@ export class CommunityPostsComponent extends Variantable {
           );
           this.voteCounts.update((counts) => ({
             ...counts,
-            [post.id]: votes.length,
+            [post.id]: votes.reduce(
+              (sum: number, v: any) => sum + (v.value || 0),
+              0
+            ),
           }));
 
           const userVote = votes.find(
@@ -468,5 +483,39 @@ export class CommunityPostsComponent extends Variantable {
 
   getReactionCounts(postId: string): { [value: number]: number } {
     return this.reactionCounts()[postId] || {};
+  }
+
+  getShareUrl(postId: string): string {
+    const comm = this.community();
+    if (!comm) return '';
+    const slug =
+      comm.slug ||
+      (comm.name ? comm.name.toLowerCase().replace(/\s+/g, '-') : '');
+    return `/c/${slug}/post/${postId}`;
+  }
+
+  onCommentAdded(event: {
+    postId: string;
+    content: string;
+    profileId: string;
+    parentId?: string;
+  }) {
+    if (!event.profileId) {
+      console.error('No profile found for commenting');
+      return;
+    }
+
+    firstValueFrom(
+      this.http.post('/api/social/comment', {
+        postId: event.postId,
+        content: event.content,
+        profileId: event.profileId,
+        parentId: event.parentId,
+      })
+    )
+      .then(() => {
+        this.loadPosts(this.community()!.id);
+      })
+      .catch((err) => console.error('Error adding comment:', err));
   }
 }
