@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: christopherrutherford-net
-          image: cjrutherford/optimistic_tanuki_christopherrutherford-net:sha-16495963767600ee0647133d884b3879b4c08e1e
+          image: cjrutherford/optimistic_tanuki_christopherrutherford-net:sha-f253bf119a08bf9f32e1e738ef393dae93af078e
           imagePullPolicy: Always
           ports:
             - containerPort: 4000
