@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: telos-docs-service
-          image: cjrutherford/optimistic_tanuki_telos-docs-service:sha-16495963767600ee0647133d884b3879b4c08e1e
+          image: cjrutherford/optimistic_tanuki_telos-docs-service:sha-f253bf119a08bf9f32e1e738ef393dae93af078e
           imagePullPolicy: Always
           ports:
             - containerPort: 3008
