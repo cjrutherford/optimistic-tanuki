@@ -38,7 +38,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
         <div class="notification-header">
           <h3>Notifications</h3>
           @if (unreadCount() > 0) {
-          <otui-button class="text-button" [variant]="'outlined'" (click)="onMarkAllRead.emit()">
+          <otui-button class="text-button" [variant]="'outlined'" (click)="markAllRead.emit()">
             Mark all read
           </otui-button>
           }
@@ -234,7 +234,7 @@ export class NotificationBellComponent {
   @Input() notifications = signal<any[]>([]);
   @Input() unreadCount = signal(0);
   @Output() notificationClick = new EventEmitter<any>();
-  @Output() onMarkAllRead = new EventEmitter<void>();
+  @Output() markAllRead = new EventEmitter<void>();
 
   isOpen = signal(false);
 

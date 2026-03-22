@@ -40,9 +40,6 @@ jobs:
       - name: Check formatting
         run: npx nx format:check --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
 
-      - name: Validate nx workspace
-        run: npx nx workspace-lint
-
   # Main CI job with affected commands
   affected:
     name: Affected Build & Test
@@ -96,6 +93,8 @@ jobs:
             coverage/
             dist/
             test-results/
+            # Exclude Windows security zone marker files — upload-artifact@v7 rejects colons in filenames
+            !dist/**/*:Zone.Identifier
           retention-days: 7
 
   # Summary job
