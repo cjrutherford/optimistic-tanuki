@@ -8,22 +8,45 @@
       <div class="header-top">
         <div class="brand">
           <span class="brand-icon">🏠</span>
-          <span class="brand-text">LocalHub</span>
+          <span class="brand-text">Towne Square</span>
         </div>
       </div>
       <h1 class="page-title">Explore Local Hubs</h1>
       <p class="page-subtitle">
-        Discover communities across {{ cities().length }} supported cities
+        Discover communities across {{ filteredCities.length }} supported
+        localities
       </p>
       <div class="stats-bar">
         <div class="stat">
-          <span class="stat-value">{{ cities().length }}</span>
-          <span class="stat-label">Cities</span>
+          <span class="stat-value">{{ filteredCities.length }}</span>
+          <span class="stat-label">Localities</span>
         </div>
         <div class="stat">
           <span class="stat-value">{{ getTotalCommunities() }}</span>
           <span class="stat-label">Communities</span>
         </div>
+      </div>
+
+      <div class="filters-bar">
+        <div class="filter-group">
+          <span class="filter-label">Filter by State:</span>
+          <div class="filter-buttons">
+            @for (state of states; track state) {
+            <button
+              class="filter-chip"
+              [class.active]="selectedStates().includes(state)"
+              (click)="toggleState(state)"
+            >
+              {{ state }}
+            </button>
+            }
+          </div>
+        </div>
+        @if (activeFiltersCount > 0) {
+        <button class="clear-filters" (click)="clearFilters()">
+          Clear filters ({{ activeFiltersCount }})
+        </button>
+        }
       </div>
     </div>
   </header>
@@ -46,7 +69,7 @@
       </p>
     </div>
     <app-map
-      [cities]="cities()"
+      [cities]="filteredCities"
       [centerLat]="31.9"
       [centerLng]="-81.1"
       [zoom]="7"
@@ -65,7 +88,7 @@
       </p>
     </div>
     <div class="city-cards">
-      @for (city of cities(); track city.id; let i = $index) {
+      @for (city of filteredCities; track city.id; let i = $index) {
       <otui-card
         class="city-card"
         (click)="navigateToCity(city.slug)"
@@ -84,7 +107,7 @@
             loading="lazy"
             width="400"
             height="250"
-            (error)="$event.target.style.display='none'"
+            (error)="$event.target.style.display = 'none'"
           />
           }
           <div class="city-image-overlay"></div>
@@ -129,7 +152,8 @@
             </span>
           </div>
           <div class="city-highlights">
-            @for (highlight of city.highlights.slice(0, 3); track highlight.headline) {
+            @for (highlight of city.highlights.slice(0, 3); track
+            highlight.headline) {
             <span class="highlight-tag">{{ highlight.headline }}</span>
             }
           </div>
@@ -148,7 +172,7 @@
       <p class="section-subtitle">Browse local communities across the region</p>
     </div>
     <div class="community-cards">
-      @for (community of communities(); track community.id) {
+      @for (community of filteredCommunities; track community.id) {
       <otui-card
         class="community-card"
         (click)="navigateToCommunity(community.slug)"
@@ -156,6 +180,7 @@
         [attr.aria-label]="community.name + ' community'"
       >
         <div class="community-image-wrapper">
+          @if (community.imageUrl) {
           <img
             [src]="community.imageUrl"
             [alt]="community.name"
@@ -163,7 +188,9 @@
             loading="lazy"
             width="350"
             height="200"
+            (error)="$event.target.style.display = 'none'"
           />
+          }
         </div>
         <div class="community-content">
           <div class="community-header">
