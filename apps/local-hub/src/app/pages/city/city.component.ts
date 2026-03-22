@@ -288,16 +288,23 @@ export class CityComponent implements OnInit, OnDestroy {
     }
     this.expandingInProgress.set(communityId);
     try {
-      await this.communityService.joinCommunity(communityId);
-      this.memberCommunityIds.update((ids) => {
-        const newIds = new Set(ids);
-        newIds.add(communityId);
-        return newIds;
-      });
-      this.messageService.addMessage({
-        content: 'You have joined the community!',
-        type: 'success',
-      });
+      const membership = await this.communityService.joinCommunity(communityId);
+      if (membership?.status === 'approved') {
+        this.memberCommunityIds.update((ids) => {
+          const newIds = new Set(ids);
+          newIds.add(communityId);
+          return newIds;
+        });
+        this.messageService.addMessage({
+          content: 'You have joined the community!',
+          type: 'success',
+        });
+      } else {
+        this.messageService.addMessage({
+          content: 'Your join request has been submitted for review.',
+          type: 'info',
+        });
+      }
     } catch {
       this.messageService.addMessage({
         content: 'Failed to join the community. Please try again.',

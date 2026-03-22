@@ -15,6 +15,7 @@ export interface LocalCommunity {
   slug: string;
   parentId?: string | null;
   description: string;
+  joinPolicy?: string | null;
   localityType: 'city' | 'town' | 'neighborhood' | 'county' | 'region';
   countryCode: string;
   adminArea: string;
@@ -46,6 +47,16 @@ export interface LocalCommunity {
   managerTermEndsAt?: string | null;
   /** Whether this community is system-managed (no individual owner). */
   isSystemCommunity?: boolean;
+  ownerId?: string;
+  ownerProfileId?: string;
+}
+
+export interface RoleAssignmentSummary {
+  targetId?: string | null;
+  role?: {
+    id?: string;
+    name?: string;
+  };
 }
 
 /** Represents the currently elected manager of a locality. */
@@ -166,9 +177,9 @@ export class CommunityService {
     });
   }
 
-  joinCommunity(communityId: string): Promise<void> {
+  joinCommunity(communityId: string): Promise<{ status?: string }> {
     return firstValueFrom(
-      this.http.post<void>(`${this.baseUrl}/${communityId}/join`, {})
+      this.http.post<{ status?: string }>(`${this.baseUrl}/${communityId}/join`, {})
     );
   }
 
@@ -196,7 +207,7 @@ export class CommunityService {
     logoAssetId?: string;
   }): Promise<LocalCommunity> {
     return firstValueFrom(
-      this.http.post<LocalCommunity>(this.baseUrl, {
+      this.http.post<LocalCommunity>(this.socialBaseUrl, {
         ...data,
         createChatRoom: true,
       })
@@ -219,6 +230,19 @@ export class CommunityService {
         coordinates: c.coordinates || { lat: c.lat || 0, lng: c.lng || 0 },
       }));
     });
+  }
+
+  getUserRoles(
+    profileId: string,
+    appScope = 'global'
+  ): Promise<RoleAssignmentSummary[]> {
+    return firstValueFrom(
+      this.http.get<RoleAssignmentSummary[]>(
+        `${this.apiBaseUrl}/permissions/user-roles/${encodeURIComponent(
+          profileId
+        )}?appScope=${encodeURIComponent(appScope)}`
+      )
+    ).catch(() => []);
   }
 
   // ── Community Manager & Election ────────────────────────────────────────────

@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { HttpTestingController } from '@angular/common/http/testing';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { CommunityService, LocalCommunity } from './community.service';
 
 describe('CommunityService', () => {
     let service: CommunityService;
+    let httpMock: HttpTestingController;
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -13,6 +15,11 @@ describe('CommunityService', () => {
         });
 
         service = TestBed.inject(CommunityService);
+        httpMock = TestBed.inject(HttpTestingController);
+    });
+
+    afterEach(() => {
+        httpMock.verify();
     });
 
     it('derives cities from communities in alphabetical order', () => {
@@ -103,5 +110,53 @@ describe('CommunityService', () => {
                 communities: 1,
             },
         ]);
+    });
+
+    it('creates communities through the social community endpoint', async () => {
+        const createPromise = service.createCommunity({
+            name: 'Starland Makers',
+            description: 'Neighborhood community',
+            parentId: 'city-123',
+            localityType: 'neighborhood',
+            isPrivate: false,
+            joinPolicy: 'public',
+            tags: ['makers', 'events'],
+            bannerAssetId: 'banner-1',
+            logoAssetId: 'logo-1',
+        });
+
+        const request = httpMock.expectOne('/api/social/community');
+        expect(request.request.method).toBe('POST');
+        expect(request.request.body).toEqual({
+            name: 'Starland Makers',
+            description: 'Neighborhood community',
+            parentId: 'city-123',
+            localityType: 'neighborhood',
+            isPrivate: false,
+            joinPolicy: 'public',
+            tags: ['makers', 'events'],
+            bannerAssetId: 'banner-1',
+            logoAssetId: 'logo-1',
+            createChatRoom: true,
+        });
+
+        request.flush({
+            id: 'community-123',
+            name: 'Starland Makers',
+            slug: 'starland-makers',
+            description: 'Neighborhood community',
+            parentId: 'city-123',
+            localityType: 'neighborhood',
+            countryCode: 'US',
+            adminArea: 'GA',
+            city: 'Savannah',
+            memberCount: 1,
+            createdAt: '2024-01-01T00:00:00.000Z',
+        });
+
+        await expect(createPromise).resolves.toMatchObject({
+            id: 'community-123',
+            slug: 'starland-makers',
+        });
     });
 });

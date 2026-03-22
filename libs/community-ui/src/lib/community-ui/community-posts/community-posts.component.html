@@ -1,4 +1,5 @@
 <div class="community-posts">
+  @if (showCommunityHeader) {
   <header class="community-header">
     @if (community()) {
     <div class="community-banner">
@@ -28,7 +29,7 @@
     </div>
     }
   </header>
-
+  } @if (showNavigation) {
   <nav class="posts-nav">
     <button
       class="nav-tab"
@@ -55,33 +56,44 @@
     }
     <button class="nav-tab" (click)="goToChat()">Chat</button>
   </nav>
+  }
 
   <main class="posts-content">
     @if (loading()) {
     <div class="loading">Loading posts...</div>
     } @else if (error()) {
     <div class="error-message">{{ error() }}</div>
-    } @else { @if (activeTab() === 'create') {
+    } @else { @if (showComposer || activeTab() === 'create') {
     <div class="create-post">
+      @if (currentProfileId) {
       <lib-social-compose
         [title]="'Create Post'"
+        [profileId]="currentProfileId"
         (postSubmitted)="createdPost($event)"
       ></lib-social-compose>
+      } @else {
+      <div class="no-posts">
+        <p>Sign in to create a post in this community.</p>
+      </div>
+      }
     </div>
-    } @if (activeTab() === 'posts') {
+    } @if (activeTab() === 'posts' || showComposer) {
     <div class="posts-list">
       @for (post of posts(); track post.id) {
       <lib-post
         [content]="post"
         [profile]="profiles()[post.profileId]"
         [currentUserId]="currentUserId"
+        [profileId]="currentProfileId"
         [userVote]="getUserVote(post.id)"
         [voteCount]="getVoteCount(post.id)"
         [userReaction]="getUserReaction(post.id)"
         [reactionCounts]="getReactionCounts(post.id)"
+        [shareUrl]="getShareUrl(post.id)"
         (voteChange)="onVoteChanged($event)"
         (reactionChange)="onReactionChanged($event)"
         (startChat)="onStartChat($event)"
+        (newCommentAdded)="onCommentAdded($event)"
       ></lib-post>
       } @empty {
       <div class="no-posts">

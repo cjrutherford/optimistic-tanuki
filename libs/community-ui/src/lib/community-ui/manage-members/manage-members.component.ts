@@ -198,7 +198,10 @@ export class ManageMembersComponent extends Variantable implements OnInit {
     }
 
     try {
-      await this.communityService.removeMember(member.id);
+      await this.communityService.removeMember(member.id, {
+        profileId: member.profileId,
+        communityId: this.communityId,
+      });
       await this.loadData();
     } catch (err: any) {
       this.error.set(err.message || 'Failed to remove member');
@@ -258,8 +261,7 @@ export class ManageMembersComponent extends Variantable implements OnInit {
   async appointAsManager(member: CommunityMemberDto & { profile?: any }) {
     if (
       !confirm(
-        `Appoint ${
-          member.profile?.profileName || member.profileId
+        `Appoint ${member.profile?.profileName || member.profileId
         } as a community manager?`
       )
     ) {
@@ -280,8 +282,7 @@ export class ManageMembersComponent extends Variantable implements OnInit {
   async revokeManagerRole(member: CommunityMemberDto & { profile?: any }) {
     if (
       !confirm(
-        `Revoke manager role from ${
-          member.profile?.profileName || member.profileId
+        `Revoke manager role from ${member.profile?.profileName || member.profileId
         }?`
       )
     ) {

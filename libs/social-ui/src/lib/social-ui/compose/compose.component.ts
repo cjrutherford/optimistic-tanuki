@@ -762,7 +762,24 @@ export class ComposeComponent
     return components;
   }
 
+  titleError = '';
+  contentError = '';
+
   async onPostSubmit(): Promise<void> {
+    this.titleError = '';
+    this.contentError = '';
+
+    if (!this.title || this.title.trim().length < 5) {
+      this.titleError = 'Title must be at least 5 characters';
+      return;
+    }
+
+    const plainContent = this.content.replace(/<[^>]*>/g, '').trim();
+    if (!plainContent || plainContent.length < 20) {
+      this.contentError = 'Content must be at least 20 characters';
+      return;
+    }
+
     let finalContent = this.content;
 
     // If an image upload callback is provided, process images

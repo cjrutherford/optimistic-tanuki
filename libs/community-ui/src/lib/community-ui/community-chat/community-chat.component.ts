@@ -46,6 +46,7 @@ interface ChatConversationResponse {
       <lib-chat-ui
         [contacts]="chatContacts()"
         [conversations]="chatConversations()"
+        [autoOpenFirstConversation]="true"
       ></lib-chat-ui>
       }
     </div>

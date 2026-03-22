@@ -350,7 +350,7 @@ describe('RolesService', () => {
       expect(result).toBe(true);
     });
 
-    it('should return true if user has permission by targetId', async () => {
+    it('should return true if user has permission by permission targetId', async () => {
       const permission = new Permission();
       permission.name = 'test:read';
       permission.targetId = 'target';
@@ -365,9 +365,54 @@ describe('RolesService', () => {
         '1',
         'test:read',
         '1',
+        undefined,
         'target'
       );
       expect(result).toBe(true);
+    });
+
+    it('should return true if role assignment target matches the requested target', async () => {
+      const permission = new Permission();
+      permission.name = 'test:read';
+      const role = new Role();
+      role.permissions = [permission];
+      const assignment = new RoleAssignment();
+      assignment.role = role;
+      assignment.targetId = 'community-1';
+
+      jest.spyOn(service, 'getUserRoles').mockResolvedValue([assignment]);
+
+      const result = await service.checkPermission(
+        '1',
+        'test:read',
+        '1',
+        undefined,
+        'community-1'
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false if role assignment target does not match the requested target', async () => {
+      const permission = new Permission();
+      permission.name = 'test:read';
+      const role = new Role();
+      role.permissions = [permission];
+      const assignment = new RoleAssignment();
+      assignment.role = role;
+      assignment.targetId = 'community-1';
+
+      jest.spyOn(service, 'getUserRoles').mockResolvedValue([assignment]);
+
+      const result = await service.checkPermission(
+        '1',
+        'test:read',
+        '1',
+        undefined,
+        'community-2'
+      );
+
+      expect(result).toBe(false);
     });
 
     it('should return false if user does not have permission', async () => {

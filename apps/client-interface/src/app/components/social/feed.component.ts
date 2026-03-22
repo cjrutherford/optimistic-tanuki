@@ -795,6 +795,27 @@ export class FeedComponent implements OnInit, OnDestroy {
             [post.id]: reaction ? reaction.value : 0,
           }));
         });
+
+      this.voteService
+        .getVotesByPostId(post.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((votes) => {
+          const netCount = votes.reduce((sum, v) => sum + (v.value || 0), 0);
+          this.voteCounts.update((counts) => ({
+            ...counts,
+            [post.id]: netCount,
+          }));
+        });
+
+      this.voteService
+        .getUserVoteForPost(post.id, this.getCurrentUserId())
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((vote) => {
+          this.userVotes.update((votes) => ({
+            ...votes,
+            [post.id]: vote ? vote.value : 0,
+          }));
+        });
     }
   }
 

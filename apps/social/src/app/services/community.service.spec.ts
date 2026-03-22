@@ -9,6 +9,9 @@ import {
   CommunityMembershipStatus,
 } from '../../entities/community-member.entity';
 import { CommunityInvite } from '../../entities/community-invite.entity';
+import { CommunityElection } from '../../entities/community-election.entity';
+import { ElectionCandidate } from '../../entities/election-candidate.entity';
+import { ElectionVote } from '../../entities/election-vote.entity';
 import { RpcException } from '@nestjs/microservices';
 
 describe('CommunityService', () => {
@@ -16,8 +19,17 @@ describe('CommunityService', () => {
   let communityRepo: jest.Mocked<Repository<Community>>;
   let memberRepo: jest.Mocked<Repository<CommunityMember>>;
   let inviteRepo: jest.Mocked<Repository<CommunityInvite>>;
+  let electionRepo: jest.Mocked<Repository<CommunityElection>>;
+  let candidateRepo: jest.Mocked<Repository<ElectionCandidate>>;
+  let voteRepo: jest.Mocked<Repository<ElectionVote>>;
 
   beforeEach(async () => {
+    const queryBuilderMock = {
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
+
     communityRepo = {
       findOne: jest.fn(),
       find: jest.fn(),
@@ -25,6 +37,7 @@ describe('CommunityService', () => {
       save: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock),
     } as any;
 
     memberRepo = {
@@ -43,12 +56,48 @@ describe('CommunityService', () => {
       remove: jest.fn(),
     } as any;
 
+    electionRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
+    } as any;
+
+    candidateRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
+    } as any;
+
+    voteRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
+    } as any;
+
+    memberRepo.find.mockResolvedValue([] as any);
+    communityRepo.find.mockResolvedValue([] as any);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CommunityService,
         { provide: getRepositoryToken(Community), useValue: communityRepo },
         { provide: getRepositoryToken(CommunityMember), useValue: memberRepo },
         { provide: getRepositoryToken(CommunityInvite), useValue: inviteRepo },
+        {
+          provide: getRepositoryToken(CommunityElection),
+          useValue: electionRepo,
+        },
+        {
+          provide: getRepositoryToken(ElectionCandidate),
+          useValue: candidateRepo,
+        },
+        { provide: getRepositoryToken(ElectionVote), useValue: voteRepo },
       ],
     }).compile();
 
@@ -237,6 +286,70 @@ describe('CommunityService', () => {
         },
       });
       expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('getSubCommunities', () => {
+    it('should include direct children and legacy city-linked communities', async () => {
+      const rootCommunity = {
+        id: 'city-1',
+        city: 'Savannah',
+        adminArea: 'GA',
+        countryCode: 'US',
+        appScope: 'local-hub',
+        localityType: 'city',
+      } as any;
+      const directChild = {
+        id: 'community-1',
+        parentId: 'city-1',
+        city: 'Savannah',
+        adminArea: 'GA',
+        countryCode: 'US',
+        localityType: 'neighborhood',
+      } as any;
+      const legacyCityLinked = {
+        id: 'community-2',
+        parentId: null,
+        city: 'Savannah',
+        adminArea: 'GA',
+        countryCode: 'US',
+        appScope: 'local-hub',
+        localityType: 'region',
+      } as any;
+      const duplicateLocality = {
+        id: 'other-city-root',
+        parentId: null,
+        city: 'Savannah',
+        adminArea: 'GA',
+        countryCode: 'US',
+        appScope: 'local-hub',
+        localityType: 'city',
+      } as any;
+
+      communityRepo.findOne.mockResolvedValue(rootCommunity);
+      communityRepo.find
+        .mockResolvedValueOnce([directChild] as any)
+        .mockResolvedValueOnce([legacyCityLinked, duplicateLocality] as any);
+      memberRepo.find.mockResolvedValue([] as any);
+
+      const result = await service.getSubCommunities('city-1');
+
+      expect(communityRepo.find).toHaveBeenNthCalledWith(1, {
+        where: { parentId: 'city-1' },
+        order: { memberCount: 'DESC', name: 'ASC' },
+      });
+      expect(communityRepo.find).toHaveBeenNthCalledWith(2, {
+        where: {
+          appScope: 'local-hub',
+          city: 'Savannah',
+          parentId: null,
+        },
+        order: { memberCount: 'DESC', name: 'ASC' },
+      });
+      expect(result.map((community) => community.id)).toEqual([
+        'community-1',
+        'community-2',
+      ]);
     });
   });
 

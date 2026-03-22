@@ -127,7 +127,7 @@ export class CommunityService {
   approveMember(memberId: string): Promise<CommunityMemberDto> {
     return this.http
       .post<CommunityMemberDto>(
-        `${this.baseUrl}/member/${memberId}/approve`,
+        `${this.baseUrl}/members/${memberId}/approve`,
         {}
       )
       .toPromise() as Promise<CommunityMemberDto>;
@@ -135,13 +135,18 @@ export class CommunityService {
 
   rejectMember(memberId: string): Promise<void> {
     return this.http
-      .delete<void>(`${this.baseUrl}/member/${memberId}/reject`)
+      .post<void>(`${this.baseUrl}/members/${memberId}/reject`, {})
       .toPromise() as Promise<void>;
   }
 
-  removeMember(memberId: string): Promise<void> {
+  removeMember(
+    memberId: string,
+    payload?: { profileId?: string; communityId?: string }
+  ): Promise<void> {
     return this.http
-      .delete<void>(`${this.baseUrl}/member/${memberId}`)
+      .delete<void>(`${this.baseUrl}/members/${memberId}`, {
+        body: payload,
+      })
       .toPromise() as Promise<void>;
   }
 

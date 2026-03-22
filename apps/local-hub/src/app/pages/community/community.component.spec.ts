@@ -6,11 +6,14 @@ import { CommunityService } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ActivatedRoute } from '@angular/router';
+import { PaymentService } from '../../services/payment.service';
 import { of } from 'rxjs';
 
 const authStateMock = {
   isAuthenticated$: of(false),
   isAuthenticated: false,
+  getUserData: jest.fn().mockReturnValue(null),
+  getActingProfileId: jest.fn().mockReturnValue(null),
   logout: jest.fn(),
 };
 
@@ -24,15 +27,29 @@ const communityServiceMock = {
     countryCode: 'US',
     adminArea: 'TX',
     city: 'Test City',
+    joinPolicy: 'public',
     memberCount: 0,
     createdAt: new Date().toISOString(),
   }),
   isMember: jest.fn().mockResolvedValue(false),
-  joinCommunity: jest.fn().mockResolvedValue(undefined),
+  joinCommunity: jest.fn().mockResolvedValue({ status: 'approved' }),
+  leaveCommunity: jest.fn().mockResolvedValue(undefined),
+  getUserRoles: jest.fn().mockResolvedValue([]),
+  getCommunityManager: jest.fn().mockResolvedValue(null),
+  getActiveElection: jest.fn().mockResolvedValue(null),
+  getCitySlugForCommunity: jest.fn().mockResolvedValue('test-city'),
 };
 
 const messageServiceMock = {
   addMessage: jest.fn(),
+};
+
+const paymentServiceMock = {
+  getBusinessPage: jest.fn().mockResolvedValue(null),
+  getActiveSponsorships: jest.fn().mockResolvedValue([]),
+  createBusinessPage: jest.fn(),
+  updateBusinessPage: jest.fn(),
+  createSponsorship: jest.fn(),
 };
 
 describe('CommunityComponent', () => {
@@ -50,6 +67,7 @@ describe('CommunityComponent', () => {
         { provide: CommunityService, useValue: communityServiceMock },
         { provide: AuthStateService, useValue: authStateMock },
         { provide: MessageService, useValue: messageServiceMock },
+        { provide: PaymentService, useValue: paymentServiceMock },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: { get: () => 'test-city' } } },
