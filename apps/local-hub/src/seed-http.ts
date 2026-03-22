@@ -64,6 +64,11 @@ interface Community {
   id: string;
   name: string;
   slug: string;
+  description?: string;
+  imageUrl?: string | null;
+  highlights?: CityHighlight[] | null;
+  timezone?: string | null;
+  parentId?: string | null;
 }
 
 interface Post {
@@ -87,6 +92,7 @@ interface UserCommunityConfig {
     description: string;
     localityType: string;
     city: string;
+    imageUrl: string;
   };
   posts: Post[];
   classifieds: Classified[];
@@ -145,6 +151,7 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         'A community for Savannah residents who love good food, cooking, and discovering new restaurants.',
       localityType: 'neighborhood',
       city: 'Savannah',
+      imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80',
     },
     posts: [
       {
@@ -195,6 +202,7 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         "Connecting Savannah's tech professionals, startups, and remote workers.",
       localityType: 'neighborhood',
       city: 'Savannah',
+      imageUrl: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1200&q=80',
     },
     posts: [
       {
@@ -245,6 +253,7 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         'Buying, selling, and renting in the Savannah area. Market insights and neighborhood guides.',
       localityType: 'neighborhood',
       city: 'Savannah',
+      imageUrl: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?w=1200&q=80',
     },
     posts: [
       {
@@ -296,6 +305,7 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         'Supporting military families in the Hinesville and Fort Stewart area.',
       localityType: 'neighborhood',
       city: 'Hinesville',
+      imageUrl: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=1200&q=80',
     },
     posts: [
       {
@@ -346,6 +356,7 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
         'Welcome to newcomers! Share tips, ask questions, and connect with fellow new Savannahians.',
       localityType: 'neighborhood',
       city: 'Savannah',
+      imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200&q=80',
     },
     posts: [
       {
@@ -389,7 +400,10 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
   },
 ];
 
-const CITY_COMMUNITIES: SeedCity[] = seedData.cities;
+const CITY_COMMUNITIES: SeedCity[] =
+  (seedData as any).cities ||
+  (seedData as any).localities?.filter((l: any) => l.localityType === 'city') ||
+  [];
 
 interface NeighborhoodData {
   name: string;
@@ -399,12 +413,46 @@ interface NeighborhoodData {
 }
 
 const NEIGHBORHOOD_COMMUNITIES: Record<string, NeighborhoodData[]> =
-  seedData.communities;
+  (seedData as any).communities || {};
 
 const SLEEP_MS = 100;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function hasCityChanges(existing: Community, cityData: SeedCity): boolean {
+  return (
+    existing.description !== cityData.description ||
+    existing.imageUrl !== cityData.imageUrl ||
+    existing.timezone !== cityData.timezone ||
+    JSON.stringify(existing.highlights ?? []) !==
+    JSON.stringify(cityData.highlights ?? [])
+  );
+}
+
+function hasNeighborhoodChanges(
+  existing: Community,
+  neighborhood: NeighborhoodData,
+  parentId: string
+): boolean {
+  return (
+    existing.description !== neighborhood.description ||
+    existing.imageUrl !== neighborhood.imageUrl ||
+    existing.parentId !== parentId
+  );
+}
+
+function hasUserCommunityChanges(
+  existing: Community,
+  community: UserCommunityConfig['community'],
+  parentId?: string
+): boolean {
+  return (
+    existing.description !== community.description ||
+    existing.imageUrl !== community.imageUrl ||
+    existing.parentId !== (parentId ?? null)
+  );
 }
 
 async function main() {
@@ -529,6 +577,35 @@ async function main() {
       const existing = await http.get(`/communities/${cityData.slug}`);
       const c = existing.data?.data || existing.data;
       if (c?.id) {
+        if (hasCityChanges(c, cityData)) {
+          try {
+            const updated = await http.put(
+              `/social/community/${c.id}`,
+              {
+                description: cityData.description,
+                highlights: cityData.highlights,
+                imageUrl: cityData.imageUrl,
+                localityType: cityData.localityType,
+                countryCode: 'US',
+                adminArea: cityData.state,
+                city: cityData.city,
+                lat: cityData.lat,
+                lng: cityData.lng,
+                population: cityData.population,
+                timezone: cityData.timezone,
+              },
+              { headers: { Authorization: `Bearer ${users[0].token}` } }
+            );
+            const updatedCommunity: Community =
+              updated.data?.data || updated.data;
+            cityCommunities.set(cityData.slug, updatedCommunity);
+            console.log(`  ✓ Updated: ${cityData.name}`);
+            await sleep(SLEEP_MS);
+            continue;
+          } catch (err: any) {
+            console.warn(`  ! Update failed for ${cityData.name}: ${err.message}`);
+          }
+        }
         cityCommunities.set(cityData.slug, c);
         console.log(`  ✓ Exists: ${c.name}`);
         continue;
@@ -586,6 +663,31 @@ async function main() {
         const existing = await http.get(`/communities/${neighborhood.slug}`);
         const n = existing.data?.data || existing.data;
         if (n?.id) {
+          if (hasNeighborhoodChanges(n, neighborhood, parentCity.id)) {
+            try {
+              const updated = await http.put(
+                `/social/community/${n.id}`,
+                {
+                  description: neighborhood.description,
+                  imageUrl: neighborhood.imageUrl,
+                  localityType: 'neighborhood',
+                  countryCode: 'US',
+                  adminArea: cityData.state,
+                  city: cityData.city,
+                  parentId: parentCity.id,
+                },
+                { headers: { Authorization: `Bearer ${users[0].token}` } }
+              );
+              const updatedNeighborhood: Community =
+                updated.data?.data || updated.data;
+              neighborhoodCommunities.set(neighborhood.slug, updatedNeighborhood);
+              console.log(`  ✓ Updated: ${neighborhood.name}`);
+              await sleep(SLEEP_MS);
+              continue;
+            } catch (err: any) {
+              console.warn(`  ! Update failed for ${neighborhood.name}: ${err.message}`);
+            }
+          }
           neighborhoodCommunities.set(neighborhood.slug, n);
           console.log(`  ✓ Exists: ${neighborhood.name}`);
           continue;
@@ -648,10 +750,10 @@ async function main() {
       userConfig.community.city === 'Savannah'
         ? 'savannah-ga'
         : userConfig.community.city === 'Charleston'
-        ? 'charleston-sc'
-        : userConfig.community.city === 'Hinesville'
-        ? 'hinesville-ga'
-        : 'savannah-ga';
+          ? 'charleston-sc'
+          : userConfig.community.city === 'Hinesville'
+            ? 'hinesville-ga'
+            : 'savannah-ga';
     const parentCity = cityCommunities.get(citySlug);
 
     // Create user's community
@@ -661,8 +763,32 @@ async function main() {
       const existing = await http.get(`/communities/${slug}`);
       const c = existing.data?.data || existing.data;
       if (c?.id) {
-        userCommunity = c;
-        console.log(`  ✓ Exists: ${userConfig.community.name}`);
+        if (hasUserCommunityChanges(c, userConfig.community, parentCity?.id)) {
+          try {
+            const updated = await http.put(
+              `/social/community/${c.id}`,
+              {
+                description: userConfig.community.description,
+                imageUrl: userConfig.community.imageUrl,
+                localityType: userConfig.community.localityType,
+                countryCode: 'US',
+                adminArea: 'GA',
+                city: userConfig.community.city,
+                parentId: parentCity?.id ?? null,
+              },
+              { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+            userCommunity = updated.data?.data || updated.data;
+            console.log(`  ✓ Updated community: ${userConfig.community.name}`);
+          } catch (err: any) {
+            console.warn(`  ! Update community failed: ${err.message}`);
+            userCommunity = c;
+            console.log(`  ✓ Exists: ${userConfig.community.name}`);
+          }
+        } else {
+          userCommunity = c;
+          console.log(`  ✓ Exists: ${userConfig.community.name}`);
+        }
       }
     } catch {
       /* doesn't exist */
@@ -686,6 +812,7 @@ async function main() {
             isPrivate: false,
             joinPolicy: 'public',
             tags: ['Community', 'Local', 'Interest'],
+            imageUrl: userConfig.community.imageUrl,
             parentId: parentCity?.id,
             appScope,
           },

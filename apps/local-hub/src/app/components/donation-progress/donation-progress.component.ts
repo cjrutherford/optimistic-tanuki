@@ -22,7 +22,7 @@ import { AuthStateService } from '../../services/auth-state.service';
     <div class="donation-widget" [class.compact]="compact">
       @if (!compact) {
       <div class="donation-header">
-        <h3>Support Local Hub</h3>
+        <h3>Support Towne Square</h3>
         <p class="donation-subtitle">Help us keep this community thriving</p>
       </div>
       } @if (loading()) {

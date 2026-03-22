@@ -325,7 +325,14 @@ export class CommunityService {
       }
     }
 
-    return Array.from(citiesMap.values());
+    return Array.from(citiesMap.values()).sort((left, right) => {
+      const byName = left.name.localeCompare(right.name);
+      if (byName !== 0) {
+        return byName;
+      }
+
+      return left.adminArea.localeCompare(right.adminArea);
+    });
   }
 
   async getCities(): Promise<City[]> {

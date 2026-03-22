@@ -298,6 +298,63 @@ export class UpdateCommunityDto {
   @MaxLength(2000)
   description?: string;
 
+  @ApiPropertyOptional({ enum: LocalityType })
+  @IsOptional()
+  @IsEnum(LocalityType)
+  localityType?: LocalityType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  adminArea?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lat?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lng?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  population?: number;
+
+  @ApiPropertyOptional({ type: [CityHighlight] })
+  @IsOptional()
+  @IsArray()
+  highlights?: CityHighlight[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  imageUrl?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  timezone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Parent community ID for sub-communities',
+  })
+  @IsOptional()
+  @IsUUID()
+  parentId?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
@@ -557,7 +614,7 @@ export class StartElectionDto {
   endsAt?: Date;
 }
 
-export class NominateDto {}
+export class NominateDto { }
 
 export class VoteDto {
   @ApiProperty()

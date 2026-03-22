@@ -24,11 +24,30 @@ export class CitiesComponent implements OnInit {
   communities = signal<LocalCommunity[]>([]);
   loading = signal(true);
   hoveredCity = signal<City | null>(null);
+  selectedStates = signal<string[]>([]);
+
+  states = ['GA', 'SC', 'FL', 'NC'];
+
+  get filteredCities(): City[] {
+    const states = this.selectedStates();
+    if (states.length === 0) return this.cities();
+    return this.cities().filter((city) => states.includes(city.adminArea));
+  }
+
+  get filteredCommunities(): LocalCommunity[] {
+    const states = this.selectedStates();
+    if (states.length === 0) return this.communities();
+    return this.communities().filter((community) =>
+      states.includes(community.adminArea)
+    );
+  }
+
+  get activeFiltersCount(): number {
+    return this.selectedStates().length;
+  }
 
   async ngOnInit(): Promise<void> {
     try {
-      // Fetch communities once, then derive the cities list from the same data
-      // to avoid a redundant second HTTP request.
       const communitiesData = await this.communityService.getCommunities();
       this.communities.set(communitiesData);
       this.cities.set(
@@ -39,6 +58,19 @@ export class CitiesComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  toggleState(state: string): void {
+    const current = this.selectedStates();
+    if (current.includes(state)) {
+      this.selectedStates.set(current.filter((s) => s !== state));
+    } else {
+      this.selectedStates.set([...current, state]);
+    }
+  }
+
+  clearFilters(): void {
+    this.selectedStates.set([]);
   }
 
   navigateToCity(slug: string): void {
@@ -58,6 +90,6 @@ export class CitiesComponent implements OnInit {
   }
 
   getTotalCommunities(): number {
-    return this.cities().reduce((sum, city) => sum + city.communities, 0);
+    return this.filteredCities.reduce((sum, city) => sum + city.communities, 0);
   }
 }

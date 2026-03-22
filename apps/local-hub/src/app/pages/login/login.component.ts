@@ -12,7 +12,7 @@ import { AuthStateService } from '../../services/auth-state.service';
   template: `
     <div class="login-page">
       <lib-login-block
-        title="Welcome to Local Hub"
+        title="Welcome to Towne Square"
         description="Sign in to join communities and connect with your neighbors."
         (submitEvent)="onLogin($event)"
       ></lib-login-block>

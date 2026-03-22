@@ -204,7 +204,7 @@ export class CityComponent implements OnInit, OnDestroy {
   }
 
   private updateMetaTags(city: City): void {
-    const fullTitle = `${city.name} - Local Hub`;
+    const fullTitle = `${city.name} - Towne Square`;
     this.title.setTitle(fullTitle);
 
     this.meta.updateTag({ name: 'description', content: city.description });
