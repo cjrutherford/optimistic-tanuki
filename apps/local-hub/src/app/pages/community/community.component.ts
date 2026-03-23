@@ -109,11 +109,15 @@ export class CommunityComponent implements OnInit, OnDestroy {
     const currentCommunity = this.community();
     const userData = this.authState.getUserData();
 
-    return !!currentCommunity && !!userData && (
-      currentCommunity.ownerId === userData.userId ||
-      this.hasGlobalOwnerRole()
+    return (
+      !!currentCommunity &&
+      !!userData &&
+      (currentCommunity.ownerId === userData.userId ||
+        this.hasGlobalOwnerRole())
     );
   });
+
+  canCompose = computed(() => this.isAuthenticated() && this.isMember());
 
   /**
    * True when this community is a root locality (city/town/neighborhood with
@@ -253,7 +257,8 @@ export class CommunityComponent implements OnInit, OnDestroy {
   private async loadManagementAccess(): Promise<void> {
     const currentCommunity = this.community();
     const userData = this.authState.getUserData();
-    const currentProfileId = userData?.profileId || this.authState.getActingProfileId();
+    const currentProfileId =
+      userData?.profileId || this.authState.getActingProfileId();
 
     if (!currentCommunity || !userData) {
       this.hasGlobalOwnerRole.set(false);

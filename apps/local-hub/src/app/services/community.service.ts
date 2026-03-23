@@ -179,7 +179,10 @@ export class CommunityService {
 
   joinCommunity(communityId: string): Promise<{ status?: string }> {
     return firstValueFrom(
-      this.http.post<{ status?: string }>(`${this.baseUrl}/${communityId}/join`, {})
+      this.http.post<{ status?: string }>(
+        `${this.baseUrl}/${communityId}/join`,
+        {}
+      )
     );
   }
 
@@ -510,6 +513,53 @@ export class CommunityService {
       });
     } catch (error) {
       console.error('Failed to fetch city posts:', error);
+      return [];
+    }
+  }
+
+  async getPostsForRootCommunity(citySlug: string): Promise<CityPost[]> {
+    try {
+      const communities = await this.getCommunitiesForCity(citySlug);
+      const rootLocality = communities.find(
+        (c) => c.localityType === 'city' && !c.parentId
+      );
+      if (!rootLocality) {
+        return [];
+      }
+
+      const posts = await firstValueFrom(
+        this.http.post<
+          {
+            id: string;
+            title: string;
+            content: string;
+            profileId: string;
+            userId: string;
+            createdAt: string | Date;
+            communityId?: string;
+          }[]
+        >(`${this.apiBaseUrl}/social/post/find`, {
+          criteria: { communityId: rootLocality.id, appScope: 'local-hub' },
+        })
+      );
+
+      return (posts ?? []).map((p) => ({
+        id: p.id,
+        communityId: rootLocality.id,
+        communitySlug: citySlug,
+        communityName: rootLocality.name,
+        title: p.title,
+        content: p.content,
+        authorName: 'Community Member',
+        createdAt:
+          typeof p.createdAt === 'string'
+            ? p.createdAt
+            : (p.createdAt as Date).toISOString(),
+        likes: 0,
+        comments: 0,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch root community posts:', error);
       return [];
     }
   }
