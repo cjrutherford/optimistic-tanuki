@@ -2,6 +2,8 @@ import {
   ApplicationConfig,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
+  APP_INITIALIZER,
+  inject,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import {
@@ -13,7 +15,14 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideClientHydration } from '@angular/platform-browser';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
-import { ThemeService, FontLoadingService } from '@optimistic-tanuki/theme-lib';
+
+function initializeTheme() {
+  // Lazy load ThemeService to avoid SSR issues
+  // This function will be called after app initialization
+  return () => {
+    // ThemeService will be initialized lazily when needed
+  };
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -23,7 +32,10 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
     provideClientHydration(),
-    ThemeService,
-    FontLoadingService,
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeTheme,
+      multi: true,
+    },
   ],
 };
