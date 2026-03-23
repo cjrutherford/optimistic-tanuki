@@ -571,7 +571,7 @@
             <lib-community-posts
               [showCommunityHeader]="false"
               [showNavigation]="false"
-              [showComposer]="true"
+              [showComposer]="canCompose()"
             ></lib-community-posts>
           </div>
           } @if (activeTab() === 'chat') {

@@ -1,4 +1,11 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  signal,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -18,14 +25,22 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { MapComponent } from '../../components/map/map.component';
 import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
-import { CardComponent, ModalComponent, BadgeComponent } from '@optimistic-tanuki/common-ui';
+import {
+  CardComponent,
+  ModalComponent,
+  BadgeComponent,
+} from '@optimistic-tanuki/common-ui';
 import { PaymentService, BusinessPage } from '../../services/payment.service';
 import { API_BASE_URL, CreateAssetDto } from '@optimistic-tanuki/ui-models';
 import {
   ClassifiedListComponent,
   ClassifiedService,
   ClassifiedAdDto,
+  ClassifiedFormComponent,
+  CreateClassifiedAdDto,
+  UpdateClassifiedAdDto,
 } from '@optimistic-tanuki/classified-ui';
+import { SelectComponent } from '@optimistic-tanuki/form-ui';
 
 interface CommunityTreeNode {
   community: LocalCommunity;
@@ -45,6 +60,8 @@ interface CommunityTreeNode {
     ModalComponent,
     BadgeComponent,
     ClassifiedListComponent,
+    ClassifiedFormComponent,
+    SelectComponent,
   ],
   templateUrl: './city.component.html',
   styleUrls: ['./city.component.scss'],
@@ -86,17 +103,29 @@ export class CityComponent implements OnInit, OnDestroy {
   showCreateCommunityModal = signal(false);
   showCreateBusinessModal = signal(false);
   showElectionModal = signal(false);
+  showClassifiedForm = signal(false);
   creatingCommunity = signal(false);
   creatingBusiness = signal(false);
+
+  canPostClassified = computed(() => {
+    const rootId = this.getRootLocalityId();
+    return this.isAuthenticated() && !!rootId && this.isMember(rootId);
+  });
 
   newCommunityName = '';
   newCommunityDescription = '';
   newCommunityIsPrivate = false;
-  newCommunityJoinPolicy: 'public' | 'approval_required' | 'invite_only' = 'public';
+  newCommunityJoinPolicy: 'public' | 'approval_required' | 'invite_only' =
+    'public';
   newCommunityTags = '';
   /** Locality-type options users may choose when creating an interest community. */
   newCommunityType: 'neighborhood' | 'county' | 'region' = 'neighborhood';
-  selectedBusinessTier = signal<'basic' | 'pro' | 'enterprise'>('basic');
+  selectedBusinessTier: 'basic' | 'pro' | 'enterprise' = 'basic';
+  businessTierOptions = [
+    { value: 'basic', label: 'Basic — Free' },
+    { value: 'pro', label: 'Pro — $29/month' },
+    { value: 'enterprise', label: 'Enterprise — $99/month' },
+  ];
 
   bannerPreview = signal<string | null>(null);
   logoPreview = signal<string | null>(null);
@@ -148,7 +177,9 @@ export class CityComponent implements OnInit, OnDestroy {
       });
       this.interestCommunities.set(interest);
 
-      const postsData = await this.communityService.getPostsForCity(slug);
+      const postsData = await this.communityService.getPostsForRootCommunity(
+        slug
+      );
       this.posts.set(postsData);
 
       // Load manager & election info for the root locality (non-fatal)
@@ -366,7 +397,10 @@ export class CityComponent implements OnInit, OnDestroy {
       }
 
       const tags = this.newCommunityTags
-        ? this.newCommunityTags.split(',').map((t) => t.trim()).filter((t) => t)
+        ? this.newCommunityTags
+            .split(',')
+            .map((t) => t.trim())
+            .filter((t) => t)
         : [];
 
       const newCommunity = await this.communityService.createCommunity({
@@ -490,7 +524,7 @@ export class CityComponent implements OnInit, OnDestroy {
     try {
       const { checkoutUrl } = await this.paymentService.createBusinessPage(
         cityData.id,
-        this.selectedBusinessTier()
+        this.selectedBusinessTier
       );
       window.location.href = checkoutUrl;
     } catch {
@@ -563,6 +597,68 @@ export class CityComponent implements OnInit, OnDestroy {
       });
     } finally {
       this.votingInProgress.set(false);
+    }
+  }
+
+  openClassifiedForm(): void {
+    if (!this.isAuthenticated()) {
+      this.promptSignIn('post-classified');
+      return;
+    }
+    this.showClassifiedForm.set(true);
+  }
+
+  getRootLocalityId(): string | null {
+    const rootLocality = this.communities().find(
+      (c) => c.localityType === 'city' && !c.parentId
+    );
+    return rootLocality?.id ?? null;
+  }
+
+  async onClassifiedSubmit(
+    data: CreateClassifiedAdDto | UpdateClassifiedAdDto
+  ): Promise<void> {
+    try {
+      const payload = data as CreateClassifiedAdDto;
+      await firstValueFrom(
+        this.http.post(`${this.apiBaseUrl}/classifieds`, {
+          ...payload,
+          appScope: 'local-hub',
+        })
+      );
+      this.showClassifiedForm.set(false);
+      this.messageService.addMessage({
+        content: 'Your listing has been posted!',
+        type: 'success',
+      });
+      await this.reloadClassifieds();
+    } catch {
+      this.messageService.addMessage({
+        content: 'Failed to post listing. Please try again.',
+        type: 'error',
+      });
+    }
+  }
+
+  onClassifiedCancel(): void {
+    this.showClassifiedForm.set(false);
+  }
+
+  private async reloadClassifieds(): Promise<void> {
+    const communities = this.communities();
+    const rootLocality = communities.find(
+      (c) => c.localityType === 'city' && !c.parentId
+    );
+    if (!rootLocality) return;
+    this.classifiedsLoading.set(true);
+    try {
+      const classifiedsData = await this.classifiedService.findByCommunity(
+        rootLocality.id,
+        { pageSize: 12 }
+      );
+      this.classifieds.set(classifiedsData.data ?? []);
+    } finally {
+      this.classifiedsLoading.set(false);
     }
   }
 }
