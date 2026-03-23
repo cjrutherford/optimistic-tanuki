@@ -1,8 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
 
-/* Import theme mixins for SCSS-driven theming */
-@import '@optimistic-tanuki/theme-ui/styles/mixins';
-
 /* AG Grid base styles */
 @import 'ag-grid-community/styles/ag-grid.css';
 @import 'ag-grid-community/styles/ag-theme-quartz.css';
