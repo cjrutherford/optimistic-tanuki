@@ -1,8 +1,71 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* Import theme mixins for SCSS-driven theming */
+@import '@optimistic-tanuki/theme-ui/styles/mixins';
+
 /* AG Grid base styles */
 @import 'ag-grid-community/styles/ag-grid.css';
 @import 'ag-grid-community/styles/ag-theme-quartz.css';
+
+/* Theme-driven CSS variables (these are set by ThemeService) */
+:root {
+  /* Theme will inject these via CSS custom properties */
+  /* Core colors */
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  --surface: #f5f5f5;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+
+  /* Primary palette */
+  --primary: #3f51b5;
+  --primary-foreground: #ffffff;
+
+  /* Semantic colors */
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+
+  /* Design tokens defaults */
+  --font-heading: system-ui, -apple-system, sans-serif;
+  --font-body: system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode overrides */
+[data-theme='dark'] {
+  --background: #1a1a1a;
+  --foreground: #f5f5f5;
+  --surface: #2d2d2d;
+  --muted: #9ca3af;
+  --border: #404040;
+}
+
+/* Legacy variable mappings for backward compatibility */
+:root {
+  --accent: var(--primary);
+  --bg-primary: var(--background);
+  --text-primary: var(--foreground);
+  --text-secondary: var(--muted);
+  --border-color: var(--border);
+  --accent-darken-10: color-mix(in srgb, var(--accent) 90%, black);
+  --danger-darken-10: color-mix(in srgb, var(--danger) 90%, black);
+}
 
 /* AG Grid action button styles */
 .ag-grid-action-button {
