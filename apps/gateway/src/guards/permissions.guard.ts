@@ -18,6 +18,8 @@ import { firstValueFrom } from 'rxjs';
 import {
   PERMISSIONS_KEY,
   PermissionRequirement,
+  PERMISSION_TARGET_KEY,
+  PermissionTargetRequirement,
 } from '../decorators/permissions.decorator';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { ProfileDto } from '@optimistic-tanuki/models';
@@ -32,13 +34,18 @@ export class PermissionsGuard implements CanActivate {
     private readonly cacheService: PermissionsCacheService,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileService: ClientProxy
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requirement = this.reflector.getAllAndOverride<PermissionRequirement>(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()]
     );
+    const targetRequirement =
+      this.reflector.getAllAndOverride<PermissionTargetRequirement>(
+        PERMISSION_TARGET_KEY,
+        [context.getHandler(), context.getClass()]
+      );
 
     if (!requirement) {
       return true; // No permissions required
@@ -122,19 +129,18 @@ export class PermissionsGuard implements CanActivate {
     // Get the global scope for permission checking
     const globalScope = checkGlobalFirst
       ? await firstValueFrom(
-          this.permissionsClient.send(
-            { cmd: AppScopeCommands.GetByName },
-            { name: 'global' }
-          )
+        this.permissionsClient.send(
+          { cmd: AppScopeCommands.GetByName },
+          { name: 'global' }
         )
+      )
       : null;
 
     const { permissions } = requirement;
 
-    // Extract targetId from route params (e.g., community ID from :id param)
-    const targetId = request.params?.id || null;
+    const targetId = this.resolveTargetId(request, targetRequirement);
     if (targetId) {
-      this.logger.debug(`Extracted targetId from route params: ${targetId}`);
+      this.logger.debug(`Resolved permission targetId: ${targetId}`);
     }
 
     // First, try to authorize with global scope permissions (if user has global profile)
@@ -145,7 +151,8 @@ export class PermissionsGuard implements CanActivate {
         let hasPermission = await this.cacheService.get(
           user.profileId,
           permission,
-          globalScope.id
+          globalScope.id,
+          targetId
         );
 
         if (hasPermission === null) {
@@ -169,7 +176,8 @@ export class PermissionsGuard implements CanActivate {
             user.profileId,
             permission,
             globalScope.id,
-            hasPermission
+            hasPermission,
+            targetId
           );
         }
 
@@ -202,7 +210,8 @@ export class PermissionsGuard implements CanActivate {
       let hasPermission = await this.cacheService.get(
         user.profileId,
         permission,
-        appScope.id
+        appScope.id,
+        targetId
       );
 
       // If not in cache, check with permissions service
@@ -231,7 +240,8 @@ export class PermissionsGuard implements CanActivate {
           user.profileId,
           permission,
           appScope.id,
-          hasPermission
+          hasPermission,
+          targetId
         );
       } else {
         this.logger.debug(
@@ -250,5 +260,38 @@ export class PermissionsGuard implements CanActivate {
     }
 
     return true;
+  }
+
+  private resolveTargetId(
+    request: Record<string, any>,
+    targetRequirement?: PermissionTargetRequirement
+  ): string | null {
+    if (targetRequirement) {
+      const source = request[targetRequirement.source];
+      const resolved = this.getValueByPath(source, targetRequirement.path);
+
+      if (typeof resolved === 'string' && resolved.trim()) {
+        return resolved;
+      }
+    }
+
+    const routeTargetId = request.params?.id;
+    return typeof routeTargetId === 'string' && routeTargetId.trim()
+      ? routeTargetId
+      : null;
+  }
+
+  private getValueByPath(source: unknown, path: string): unknown {
+    if (!source || !path) {
+      return undefined;
+    }
+
+    return path.split('.').reduce<unknown>((current, segment) => {
+      if (current && typeof current === 'object' && segment in current) {
+        return (current as Record<string, unknown>)[segment];
+      }
+
+      return undefined;
+    }, source);
   }
 }

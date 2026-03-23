@@ -72,7 +72,6 @@
         <h1 class="community-name">{{ community()!.name }}</h1>
         <p class="community-description">{{ community()!.description }}</p>
 
-        <!-- Community Manager badge (localities only) -->
         @if (isLocality && communityManager()) {
         <div class="manager-badge" title="Elected Community Manager">
           <svg
@@ -92,10 +91,7 @@
             >Manager: <strong>{{ communityManager()!.name }}</strong></span
           >
         </div>
-        }
-
-        <!-- Active election indicator (localities only) -->
-        @if (isLocality && activeElection() && activeElection()!.status ===
+        } @if (isLocality && activeElection() && activeElection()!.status ===
         'open') {
         <button
           class="election-badge"
@@ -183,360 +179,427 @@
     type="banner"
   ></app-sponsorship-banner>
 
-  <section class="community-support-section">
-    <div class="section-container">
-      <div class="support-grid">
-        <article class="support-card">
-          <h2 class="section-title">Donate to Community Goals</h2>
-          <p class="support-copy">
-            Donations and sponsorships power local events, outreach, and city
-            improvement initiatives.
-          </p>
-          <app-donation-progress [monthlyGoal]="5000"></app-donation-progress>
-        </article>
-
-        <article class="support-card">
-          <h2 class="section-title">Business Outreach Page</h2>
-          @if (!isLocality) {
-          <p class="support-copy subtle">
-            Business pages are connected to localities. Visit the
-            <button class="action-link" (click)="navigateToCity()">
-              city page
-            </button>
-            to create or view business listings.
-          </p>
-          } @else if (loadingBusiness()) {
-          <p class="support-copy">Loading business profile...</p>
-          } @else if (!businessPage()) {
-          <p class="support-copy">
-            Create a business page for this community to reach nearby customers.
-          </p>
-          <button class="btn btn-primary" (click)="showBusinessModal.set(true)">
-            Create Business Page
-          </button>
-
-          <otui-modal
-            [visible]="showBusinessModal()"
-            heading="Create Business Page"
-            [closable]="true"
-            (close)="showBusinessModal.set(false)"
-            size="md"
-          >
-            <div class="form-grid">
-              <div class="field-group field-group-full">
-                <label class="field-label" for="business-tier-modal"
-                  >Select Tier</label
-                >
-                <select
-                  id="business-tier-modal"
-                  class="input"
-                  [ngModel]="selectedBusinessTier()"
-                  (ngModelChange)="selectedBusinessTier.set($event)"
-                >
-                  <option value="basic">Basic</option>
-                  <option value="pro">Pro</option>
-                  <option value="enterprise">Enterprise</option>
-                </select>
-              </div>
+  <section class="community-workbench">
+    <div class="section-container community-layout">
+      <aside class="community-sidebar">
+        <article class="community-info-card">
+          <p class="card-eyebrow">Community Information</p>
+          <h2 class="sidebar-title">At a Glance</h2>
+          <div class="community-quick-facts">
+            <div class="fact-pill">
+              <span class="fact-label">Join Policy</span>
+              <strong>{{ community()!.joinPolicy || 'public' }}</strong>
             </div>
-            <div class="modal-actions">
-              <button
-                class="btn btn-primary"
-                (click)="startBusinessCheckout()"
-                [disabled]="businessCheckoutInProgress()"
+            <div class="fact-pill">
+              <span class="fact-label">Scope</span>
+              <strong>{{ community()!.city || community()!.name }}</strong>
+            </div>
+            <div class="fact-pill">
+              <span class="fact-label">Access</span>
+              <strong>
+                @if (canManageCommunity()) { Manage } @else if (isMember()) {
+                Member } @else { Visitor }
+              </strong>
+            </div>
+          </div>
+
+          @if ((community()!.highlights || []).length > 0) {
+          <div class="sidebar-highlights">
+            <h3 class="sidebar-subtitle">Community Focus</h3>
+            <div class="highlights-grid compact">
+              @for (highlight of community()!.highlights || []; track
+              highlight.headline) {
+              <a
+                class="highlight-card"
+                [href]="highlight.link"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                @if (businessCheckoutInProgress()) { Starting checkout... }
-                @else { Create Business Page }
-              </button>
+                @if (highlight.imageUrl) {
+                <div class="highlight-image-wrapper">
+                  <img
+                    [src]="highlight.imageUrl"
+                    [alt]="highlight.headline"
+                    class="highlight-image"
+                    loading="lazy"
+                  />
+                </div>
+                } @else {
+                <div class="highlight-icon">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                    />
+                  </svg>
+                </div>
+                }
+                <span class="highlight-text">{{ highlight.headline }}</span>
+              </a>
+              }
             </div>
-          </otui-modal>
-          } @else {
-          <p class="support-copy">
-            Keep your business profile current so local members can discover and
-            contact you.
-          </p>
-          @if (!isBusinessOwner()) {
-          <p class="support-copy subtle">
-            This page is active. Only the owner can edit profile details.
-          </p>
-          } @else {
-          <button
-            class="btn btn-secondary"
-            (click)="showBusinessModal.set(true)"
-          >
-            Edit Business Profile
-          </button>
-
-          <otui-modal
-            [visible]="showBusinessModal()"
-            heading="Edit Business Profile"
-            [closable]="true"
-            (close)="showBusinessModal.set(false)"
-            size="lg"
-          >
-            <div class="form-grid">
-              <div class="field-group">
-                <label class="field-label" for="business-name">Name</label>
-                <input
-                  id="business-name"
-                  class="input"
-                  [ngModel]="businessName"
-                  (ngModelChange)="businessName = $event"
-                  placeholder="Neighborhood Market"
-                />
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="business-website"
-                  >Website</label
-                >
-                <input
-                  id="business-website"
-                  class="input"
-                  [ngModel]="businessWebsite"
-                  (ngModelChange)="businessWebsite = $event"
-                  placeholder="https://example.com"
-                />
-              </div>
-              <div class="field-group field-group-full">
-                <label class="field-label" for="business-description"
-                  >Description</label
-                >
-                <textarea
-                  id="business-description"
-                  class="input"
-                  rows="3"
-                  [ngModel]="businessDescription"
-                  (ngModelChange)="businessDescription = $event"
-                  placeholder="What your business offers"
-                ></textarea>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="business-phone">Phone</label>
-                <input
-                  id="business-phone"
-                  class="input"
-                  [ngModel]="businessPhone"
-                  (ngModelChange)="businessPhone = $event"
-                />
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="business-email">Email</label>
-                <input
-                  id="business-email"
-                  class="input"
-                  [ngModel]="businessEmail"
-                  (ngModelChange)="businessEmail = $event"
-                />
-              </div>
-              <div class="field-group field-group-full">
-                <label class="field-label" for="business-address"
-                  >Address</label
-                >
-                <input
-                  id="business-address"
-                  class="input"
-                  [ngModel]="businessAddress"
-                  (ngModelChange)="businessAddress = $event"
-                />
-              </div>
-            </div>
-            <div class="modal-actions">
-              <button
-                class="btn btn-primary"
-                (click)="saveBusinessProfile()"
-                [disabled]="savingBusinessProfile()"
-              >
-                @if (savingBusinessProfile()) { Saving... } @else { Save
-                Business Profile }
-              </button>
-            </div>
-          </otui-modal>
-          } }
-        </article>
-
-        <article class="support-card">
-          <h2 class="section-title">Sponsor This Community</h2>
-          <p class="support-copy">
-            Sponsorships increase visibility for your business and contribute to
-            this community's support goal.
-          </p>
-          <button
-            class="btn btn-primary"
-            (click)="showSponsorshipModal.set(true)"
-          >
-            Sponsor Community
-          </button>
-
-          <otui-modal
-            [visible]="showSponsorshipModal()"
-            heading="Sponsor This Community"
-            [closable]="true"
-            (close)="showSponsorshipModal.set(false)"
-            size="md"
-          >
-            <div class="form-grid">
-              <div class="field-group">
-                <label class="field-label" for="sponsorship-type">Type</label>
-                <select
-                  id="sponsorship-type"
-                  class="input"
-                  [ngModel]="selectedSponsorshipType()"
-                  (ngModelChange)="selectedSponsorshipType.set($event)"
-                >
-                  <option value="banner">Banner</option>
-                  <option value="sticky-ad">Sticky Ad</option>
-                  <option value="featured">Featured</option>
-                </select>
-              </div>
-              <div class="field-group field-group-full">
-                <label class="field-label" for="ad-content">Ad Copy</label>
-                <textarea
-                  id="ad-content"
-                  rows="3"
-                  class="input"
-                  [ngModel]="sponsorshipAdContent"
-                  (ngModelChange)="sponsorshipAdContent = $event"
-                  placeholder="Tell this community about your offer"
-                ></textarea>
-              </div>
-            </div>
-            <div class="modal-actions">
-              <button
-                class="btn btn-primary"
-                (click)="startSponsorshipCheckout()"
-                [disabled]="sponsorshipCheckoutInProgress()"
-              >
-                @if (sponsorshipCheckoutInProgress()) { Starting checkout... }
-                @else { Sponsor Community }
-              </button>
-            </div>
-          </otui-modal>
-
-          @if (activeSponsorships().length > 0) {
-          <div class="active-sponsorship-note">
-            {{ activeSponsorships().length }} active sponsorship(s) currently
-            supporting this community.
           </div>
           }
         </article>
-      </div>
-    </div>
-  </section>
 
-  <section class="community-highlights">
-    <div class="section-container">
-      <h2 class="section-title">Community Focus</h2>
-      <div class="highlights-grid">
-        @for (highlight of community()!.highlights || []; track
-        highlight.headline) {
-        <a
-          class="highlight-card"
-          [href]="highlight.link"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          @if (highlight.imageUrl) {
-          <div class="highlight-image-wrapper">
-            <img
-              [src]="highlight.imageUrl"
-              [alt]="highlight.headline"
-              class="highlight-image"
-              loading="lazy"
-            />
+        @if (community()!.coordinates) {
+        <article class="community-section-card map-card">
+          <p class="card-eyebrow">Map</p>
+          <h2 class="sidebar-title">Location</h2>
+          <div class="map-container sidebar-map-container">
+            <app-map
+              [cities]="[]"
+              [centerLat]="community()!.coordinates!.lat"
+              [centerLng]="community()!.coordinates!.lng"
+              [zoom]="12"
+              [centerLabel]="community()!.name"
+              [showRadius]="false"
+            ></app-map>
+            <div class="map-details">
+              <div class="detail-card">
+                <span class="detail-label">City</span>
+                <span class="detail-value">{{ community()!.city }}</span>
+              </div>
+              <div class="detail-card">
+                <span class="detail-label">Region</span>
+                <span class="detail-value">{{ community()!.adminArea }}</span>
+              </div>
+              <div class="detail-card">
+                <span class="detail-label">Country</span>
+                <span class="detail-value">{{ community()!.countryCode }}</span>
+              </div>
+            </div>
           </div>
-          } @else {
-          <div class="highlight-icon">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-              />
-            </svg>
-          </div>
-          }
-          <span class="highlight-text">{{ highlight.headline }}</span>
-        </a>
+        </article>
         }
-      </div>
-    </div>
-  </section>
 
-  <!-- ===== Leaflet map ===== -->
-  @if (community()!.coordinates) {
-  <section class="community-map-section">
-    <div class="section-container">
-      <h2 class="section-title">Location</h2>
-      <div class="map-container">
-        <app-map
-          [cities]="[]"
-          [centerLat]="community()!.coordinates!.lat"
-          [centerLng]="community()!.coordinates!.lng"
-          [zoom]="12"
-          [centerLabel]="community()!.name"
-        ></app-map>
-        <div class="map-details">
-          <div class="detail-card">
-            <span class="detail-label">City</span>
-            <span class="detail-value">{{ community()!.city }}</span>
-          </div>
-          <div class="detail-card">
-            <span class="detail-label">Region</span>
-            <span class="detail-value">{{ community()!.adminArea }}</span>
-          </div>
-          <div class="detail-card">
-            <span class="detail-label">Country</span>
-            <span class="detail-value">{{ community()!.countryCode }}</span>
-          </div>
+        <div class="sidebar-support-stack">
+          <article class="support-card">
+            <h2 class="section-title">Donate to Community Goals</h2>
+            <p class="support-copy">
+              Donations and sponsorships power local events, outreach, and city
+              improvement initiatives.
+            </p>
+            <app-donation-progress [monthlyGoal]="5000"></app-donation-progress>
+          </article>
+
+          <article class="support-card">
+            <h2 class="section-title">Business Outreach Page</h2>
+            @if (!isLocality) {
+            <p class="support-copy subtle">
+              Business pages are connected to localities. Visit the
+              <button class="action-link" (click)="navigateToCity()">
+                city page
+              </button>
+              to create or view business listings.
+            </p>
+            } @else if (loadingBusiness()) {
+            <p class="support-copy">Loading business profile...</p>
+            } @else if (!businessPage()) {
+            <p class="support-copy">
+              Create a business page for this community to reach nearby
+              customers.
+            </p>
+            <button
+              class="btn btn-primary"
+              (click)="showBusinessModal.set(true)"
+            >
+              Create Business Page
+            </button>
+
+            <otui-modal
+              [visible]="showBusinessModal()"
+              heading="Create Business Page"
+              [closable]="true"
+              (close)="showBusinessModal.set(false)"
+              size="md"
+            >
+              <div class="form-grid">
+                <div class="field-group field-group-full">
+                  <label class="field-label" for="business-tier-modal"
+                    >Select Tier</label
+                  >
+                  <select
+                    id="business-tier-modal"
+                    class="input"
+                    [ngModel]="selectedBusinessTier()"
+                    (ngModelChange)="selectedBusinessTier.set($event)"
+                  >
+                    <option value="basic">Basic</option>
+                    <option value="pro">Pro</option>
+                    <option value="enterprise">Enterprise</option>
+                  </select>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button
+                  class="btn btn-primary"
+                  (click)="startBusinessCheckout()"
+                  [disabled]="businessCheckoutInProgress()"
+                >
+                  @if (businessCheckoutInProgress()) { Starting checkout... }
+                  @else { Create Business Page }
+                </button>
+              </div>
+            </otui-modal>
+            } @else {
+            <p class="support-copy">
+              Keep your business profile current so local members can discover
+              and contact you.
+            </p>
+            @if (!isBusinessOwner()) {
+            <p class="support-copy subtle">
+              This page is active. Only the owner can edit profile details.
+            </p>
+            } @else {
+            <button
+              class="btn btn-secondary"
+              (click)="showBusinessModal.set(true)"
+            >
+              Edit Business Profile
+            </button>
+
+            <otui-modal
+              [visible]="showBusinessModal()"
+              heading="Edit Business Profile"
+              [closable]="true"
+              (close)="showBusinessModal.set(false)"
+              size="lg"
+            >
+              <div class="form-grid">
+                <div class="field-group">
+                  <label class="field-label" for="business-name">Name</label>
+                  <input
+                    id="business-name"
+                    class="input"
+                    [ngModel]="businessName"
+                    (ngModelChange)="businessName = $event"
+                    placeholder="Neighborhood Market"
+                  />
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="business-website"
+                    >Website</label
+                  >
+                  <input
+                    id="business-website"
+                    class="input"
+                    [ngModel]="businessWebsite"
+                    (ngModelChange)="businessWebsite = $event"
+                    placeholder="https://example.com"
+                  />
+                </div>
+                <div class="field-group field-group-full">
+                  <label class="field-label" for="business-description"
+                    >Description</label
+                  >
+                  <textarea
+                    id="business-description"
+                    class="input"
+                    rows="3"
+                    [ngModel]="businessDescription"
+                    (ngModelChange)="businessDescription = $event"
+                    placeholder="What your business offers"
+                  ></textarea>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="business-phone">Phone</label>
+                  <input
+                    id="business-phone"
+                    class="input"
+                    [ngModel]="businessPhone"
+                    (ngModelChange)="businessPhone = $event"
+                  />
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="business-email">Email</label>
+                  <input
+                    id="business-email"
+                    class="input"
+                    [ngModel]="businessEmail"
+                    (ngModelChange)="businessEmail = $event"
+                  />
+                </div>
+                <div class="field-group field-group-full">
+                  <label class="field-label" for="business-address"
+                    >Address</label
+                  >
+                  <input
+                    id="business-address"
+                    class="input"
+                    [ngModel]="businessAddress"
+                    (ngModelChange)="businessAddress = $event"
+                  />
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button
+                  class="btn btn-primary"
+                  (click)="saveBusinessProfile()"
+                  [disabled]="savingBusinessProfile()"
+                >
+                  @if (savingBusinessProfile()) { Saving... } @else { Save
+                  Business Profile }
+                </button>
+              </div>
+            </otui-modal>
+            } }
+          </article>
+
+          <article class="support-card">
+            <h2 class="section-title">Sponsor This Community</h2>
+            <p class="support-copy">
+              Sponsorships increase visibility for your business and contribute
+              to this community's support goal.
+            </p>
+            <button
+              class="btn btn-primary"
+              (click)="showSponsorshipModal.set(true)"
+            >
+              Sponsor Community
+            </button>
+
+            <otui-modal
+              [visible]="showSponsorshipModal()"
+              heading="Sponsor This Community"
+              [closable]="true"
+              (close)="showSponsorshipModal.set(false)"
+              size="md"
+            >
+              <div class="form-grid">
+                <div class="field-group">
+                  <label class="field-label" for="sponsorship-type">Type</label>
+                  <select
+                    id="sponsorship-type"
+                    class="input"
+                    [ngModel]="selectedSponsorshipType()"
+                    (ngModelChange)="selectedSponsorshipType.set($event)"
+                  >
+                    <option value="banner">Banner</option>
+                    <option value="sticky-ad">Sticky Ad</option>
+                    <option value="featured">Featured</option>
+                  </select>
+                </div>
+                <div class="field-group field-group-full">
+                  <label class="field-label" for="ad-content">Ad Copy</label>
+                  <textarea
+                    id="ad-content"
+                    rows="3"
+                    class="input"
+                    [ngModel]="sponsorshipAdContent"
+                    (ngModelChange)="sponsorshipAdContent = $event"
+                    placeholder="Tell this community about your offer"
+                  ></textarea>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button
+                  class="btn btn-primary"
+                  (click)="startSponsorshipCheckout()"
+                  [disabled]="sponsorshipCheckoutInProgress()"
+                >
+                  @if (sponsorshipCheckoutInProgress()) { Starting checkout... }
+                  @else { Sponsor Community }
+                </button>
+              </div>
+            </otui-modal>
+
+            @if (activeSponsorships().length > 0) {
+            <div class="active-sponsorship-note">
+              {{ activeSponsorships().length }} active sponsorship(s) currently
+              supporting this community.
+            </div>
+            }
+          </article>
         </div>
-      </div>
-    </div>
-  </section>
-  }
 
-  <!-- ===== Discussion / Post feed ===== -->
-  <section class="community-feed-section">
-    <div class="section-container">
-      <lib-community-posts></lib-community-posts>
-    </div>
-  </section>
+        <article class="community-section-card about-card">
+          <p class="card-eyebrow">About</p>
+          <h2 class="sidebar-title">Background</h2>
+          <div class="about-content">
+            <p>{{ community()!.description }}</p>
+          </div>
+        </article>
+      </aside>
 
-  <!-- ===== Chat ===== -->
-  @if (isMember()) {
-  <section class="community-chat-section">
-    <div class="section-container">
-      <h2 class="section-title">Community Chat</h2>
-      <lib-community-chat></lib-community-chat>
-    </div>
-  </section>
-  }
+      <div class="community-main">
+        <section class="community-main-panel">
+          <div class="community-tabs-header">
+            <div>
+              <p class="card-eyebrow">Main Content</p>
+              <h2 class="sidebar-title">Community Activity</h2>
+            </div>
+            <nav class="community-tabs-nav" aria-label="Community sections">
+              <button
+                type="button"
+                class="community-tab-button"
+                [class.active]="activeTab() === 'posts'"
+                (click)="setActiveTab('posts')"
+              >
+                Posts
+              </button>
+              <button
+                type="button"
+                class="community-tab-button"
+                [class.active]="activeTab() === 'chat'"
+                [disabled]="!isMember()"
+                (click)="setActiveTab('chat')"
+              >
+                Chat
+              </button>
+              @if (canManageCommunity()) {
+              <button
+                type="button"
+                class="community-tab-button"
+                [class.active]="activeTab() === 'manage'"
+                (click)="setActiveTab('manage')"
+              >
+                Manage
+              </button>
+              }
+            </nav>
+          </div>
 
-  <!-- ===== Members ===== -->
-  @if (isMember()) {
-  <section class="community-members-section">
-    <div class="section-container">
-      <lib-manage-members></lib-manage-members>
-    </div>
-  </section>
-  }
-
-  <section class="community-about">
-    <div class="section-container">
-      <h2 class="section-title">About</h2>
-      <div class="about-content">
-        <p>{{ community()!.description }}</p>
+          @if (activeTab() === 'posts') {
+          <div class="community-tab-panel">
+            <lib-community-posts
+              [showCommunityHeader]="false"
+              [showNavigation]="false"
+              [showComposer]="canCompose()"
+            ></lib-community-posts>
+          </div>
+          } @if (activeTab() === 'chat') {
+          <div class="community-tab-panel">
+            @if (isMember()) {
+            <lib-community-chat></lib-community-chat>
+            } @else {
+            <div class="tab-empty-state">
+              <h3>Join to unlock community chat</h3>
+              <p>
+                Approved members can coordinate in real time once they are part
+                of the community.
+              </p>
+            </div>
+            }
+          </div>
+          } @if (activeTab() === 'manage' && canManageCommunity()) {
+          <div class="community-tab-panel">
+            <lib-manage-members></lib-manage-members>
+          </div>
+          }
+        </section>
       </div>
     </div>
   </section>
   }
 </div>
 
-<!-- ── Election Modal (localities only) ──────────────────────────────────────── -->
 @if (isLocality && activeElection()) {
 <otui-modal
   [visible]="showElectionModal()"

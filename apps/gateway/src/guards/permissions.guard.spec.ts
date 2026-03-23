@@ -116,13 +116,17 @@ describe('PermissionsGuard', () => {
 
   const createMockContext = (
     user: any,
-    headers: any = {}
+    headers: any = {},
+    extras: Partial<Record<'params' | 'body' | 'query', any>> = {}
   ): ExecutionContext => {
     return {
       switchToHttp: () => ({
         getRequest: () => ({
           user,
           headers,
+          params: extras.params || {},
+          body: extras.body || {},
+          query: extras.query || {},
         }),
       }),
       getHandler: jest.fn(),
@@ -239,6 +243,41 @@ describe('PermissionsGuard', () => {
 
       expect(result).toBe(true);
       expect(permissionsClient.send).toHaveBeenCalledTimes(3);
+    });
+
+    it('should pass a DTO-derived targetId when permission target metadata is configured', async () => {
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockImplementation((key: string) => {
+          if (key === 'permissions') {
+            return { permissions: ['test.permission'] };
+          }
+
+          if (key === 'permission-target') {
+            return { source: 'body', path: 'communityId' };
+          }
+
+          return undefined;
+        });
+
+      permissionsClient.send
+        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' }))
+        .mockReturnValueOnce(of({ id: 'scope-global', name: 'global' }))
+        .mockReturnValueOnce(of(true));
+
+      const context = createMockContext(
+        { profileId: 'user1', userId: 'user1' },
+        { 'x-ot-appscope': 'test-scope' },
+        { body: { communityId: 'community-123' } }
+      );
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(permissionsClient.send).toHaveBeenLastCalledWith(
+        { cmd: 'CheckPermission:Role' },
+        expect.objectContaining({ targetId: 'community-123' })
+      );
     });
 
     it('should throw ForbiddenException when permission check fails', async () => {

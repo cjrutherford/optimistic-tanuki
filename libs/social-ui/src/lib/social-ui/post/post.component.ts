@@ -95,6 +95,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   };
   @Input() availableProfiles: { [key: string]: PostProfileStub } = {};
   @Input() currentUserId: string = '';
+  @Input() profileId: string = '';
   @Input() userVote: number = 0;
   @Input() voteCount: number = 0;
   @Input() userReaction: number = 0;
@@ -185,7 +186,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
     const comment: CreateCommentDto = {
       content: $event.content,
       postId: this.content.id,
-      profileId: '',
+      profileId: this.profileId,
       parentId: $event.parentId,
     };
     this.newCommentAdded.emit(comment);
@@ -195,7 +196,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
     const comment: CreateCommentDto = {
       content: $event,
       postId: this.content.id,
-      profileId: '',
+      profileId: this.profileId,
     };
     this.newCommentAdded.emit(comment);
   }

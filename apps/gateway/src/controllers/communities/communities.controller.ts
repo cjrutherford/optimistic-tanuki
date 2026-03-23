@@ -17,7 +17,15 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CommunityCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  CommunityCommands,
+  RoleCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
+import {
+  AssignRoleDto,
+  CommunityMembershipStatus,
+} from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
@@ -31,10 +39,13 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 @Controller('communities')
 export class CommunitiesController {
   private readonly logger = new Logger(CommunitiesController.name);
+  private readonly localHubCommunityPosterRole = 'local_hub_community_poster';
 
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
-    private readonly socialClient: ClientProxy
+    private readonly socialClient: ClientProxy,
+    @Inject(ServiceTokens.PERMISSIONS_SERVICE)
+    private readonly permissionsClient: ClientProxy
   ) { }
 
   @Public()
@@ -117,8 +128,12 @@ export class CommunitiesController {
   @Post(':id/join')
   @ApiOperation({ summary: 'Join a community' })
   @ApiResponse({ status: 201, description: 'Successfully joined.' })
-  joinCommunity(@Param('id') id: string, @User() user: UserDetails) {
-    return firstValueFrom(
+  async joinCommunity(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    const member = await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.JOIN },
         {
@@ -128,18 +143,30 @@ export class CommunitiesController {
         }
       )
     );
+
+    if (member?.status === CommunityMembershipStatus.APPROVED) {
+      await this.assignCommunityPostingRole(user.profileId, id, appScope);
+    }
+
+    return member;
   }
 
   @Delete(':id/membership')
   @ApiOperation({ summary: 'Leave a community' })
   @ApiResponse({ status: 200, description: 'Successfully left.' })
-  leaveCommunity(@Param('id') id: string, @User() user: UserDetails) {
-    return firstValueFrom(
+  async leaveCommunity(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.LEAVE },
         { communityId: id, userId: user.userId }
       )
     );
+
+    await this.unassignCommunityPostingRole(user.profileId, id, appScope);
   }
 
   @Get(':id/membership')
@@ -251,5 +278,104 @@ export class CommunitiesController {
         { communityId: id }
       )
     );
+  }
+
+  private async assignCommunityPostingRole(
+    profileId: string,
+    communityId: string,
+    appScope: string
+  ): Promise<void> {
+    if (appScope !== 'local-hub') {
+      return;
+    }
+
+    try {
+      const role = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetByName },
+          { name: this.localHubCommunityPosterRole, appScope }
+        )
+      );
+
+      if (!role) {
+        this.logger.warn(
+          `Role ${this.localHubCommunityPosterRole} was not found for scope ${appScope}`
+        );
+        return;
+      }
+
+      const existingAssignments = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetUserRoles },
+          { profileId, appScope }
+        )
+      );
+
+      const alreadyAssigned = Array.isArray(existingAssignments)
+        ? existingAssignments.some(
+          (assignment: any) =>
+            assignment.role?.id === role.id && assignment.targetId === communityId
+        )
+        : false;
+
+      if (alreadyAssigned) {
+        return;
+      }
+
+      await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.Assign },
+          {
+            roleId: role.id,
+            profileId,
+            appScopeId: role.appScope?.id || appScope,
+            targetId: communityId,
+          } as AssignRoleDto
+        )
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to assign ${this.localHubCommunityPosterRole} for community ${communityId}: ${error}`
+      );
+    }
+  }
+
+  private async unassignCommunityPostingRole(
+    profileId: string,
+    communityId: string,
+    appScope: string
+  ): Promise<void> {
+    if (appScope !== 'local-hub') {
+      return;
+    }
+
+    try {
+      const role = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetByName },
+          { name: this.localHubCommunityPosterRole, appScope }
+        )
+      );
+
+      if (!role) {
+        return;
+      }
+
+      await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: 'Unassign:Role:ByTarget' },
+          {
+            profileId,
+            roleId: role.id,
+            appScopeId: role.appScope?.id || appScope,
+            targetId: communityId,
+          }
+        )
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to unassign ${this.localHubCommunityPosterRole} for community ${communityId}: ${error}`
+      );
+    }
   }
 }

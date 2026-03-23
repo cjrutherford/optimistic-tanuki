@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   inject,
   signal,
   OnInit,
@@ -15,6 +16,7 @@ import {
   LocalCommunity,
   CommunityManager,
   CommunityElection,
+  RoleAssignmentSummary,
 } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
@@ -67,6 +69,8 @@ export class CommunityComponent implements OnInit, OnDestroy {
   isMember = signal(false);
   isAuthenticated = signal(false);
   joiningInProgress = signal(false);
+  activeTab = signal<'posts' | 'chat' | 'manage'>('posts');
+  hasGlobalOwnerRole = signal(false);
   loadingBusiness = signal(false);
   businessCheckoutInProgress = signal(false);
   savingBusinessProfile = signal(false);
@@ -95,6 +99,25 @@ export class CommunityComponent implements OnInit, OnDestroy {
   businessEmail = '';
   businessAddress = '';
   sponsorshipAdContent = '';
+  private readonly globalOwnerRoleNames = new Set([
+    'owner_console_owner',
+    'global_admin',
+    'system_admin',
+  ]);
+
+  canManageCommunity = computed(() => {
+    const currentCommunity = this.community();
+    const userData = this.authState.getUserData();
+
+    return (
+      !!currentCommunity &&
+      !!userData &&
+      (currentCommunity.ownerId === userData.userId ||
+        this.hasGlobalOwnerRole())
+    );
+  });
+
+  canCompose = computed(() => this.isAuthenticated() && this.isMember());
 
   /**
    * True when this community is a root locality (city/town/neighborhood with
@@ -197,6 +220,7 @@ export class CommunityComponent implements OnInit, OnDestroy {
           }
 
           await this.loadBusinessSupportData(data.id);
+          await this.loadManagementAccess();
         }
 
         // Load manager & election info for localities (non-fatal)
@@ -216,6 +240,51 @@ export class CommunityComponent implements OnInit, OnDestroy {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  setActiveTab(tab: 'posts' | 'chat' | 'manage'): void {
+    if (tab === 'chat' && !this.isMember()) {
+      return;
+    }
+
+    if (tab === 'manage' && !this.canManageCommunity()) {
+      return;
+    }
+
+    this.activeTab.set(tab);
+  }
+
+  private async loadManagementAccess(): Promise<void> {
+    const currentCommunity = this.community();
+    const userData = this.authState.getUserData();
+    const currentProfileId =
+      userData?.profileId || this.authState.getActingProfileId();
+
+    if (!currentCommunity || !userData) {
+      this.hasGlobalOwnerRole.set(false);
+      return;
+    }
+
+    if (currentCommunity.ownerId === userData.userId) {
+      this.hasGlobalOwnerRole.set(false);
+      return;
+    }
+
+    if (!currentProfileId) {
+      this.hasGlobalOwnerRole.set(false);
+      return;
+    }
+
+    const assignments = await this.communityService.getUserRoles(
+      currentProfileId,
+      'global'
+    );
+
+    this.hasGlobalOwnerRole.set(
+      assignments.some((assignment: RoleAssignmentSummary) =>
+        this.globalOwnerRoleNames.has(assignment.role?.name || '')
+      )
+    );
   }
 
   private async loadBusinessSupportData(communityId: string): Promise<void> {
@@ -407,12 +476,19 @@ export class CommunityComponent implements OnInit, OnDestroy {
   async joinCommunity(communityId: string): Promise<void> {
     this.joiningInProgress.set(true);
     try {
-      await this.communityService.joinCommunity(communityId);
-      this.isMember.set(true);
-      this.messageService.addMessage({
-        content: 'You have joined the community!',
-        type: 'success',
-      });
+      const membership = await this.communityService.joinCommunity(communityId);
+      if (membership?.status === 'approved') {
+        this.isMember.set(true);
+        this.messageService.addMessage({
+          content: 'You have joined the community!',
+          type: 'success',
+        });
+      } else {
+        this.messageService.addMessage({
+          content: 'Your join request has been submitted for review.',
+          type: 'info',
+        });
+      }
     } catch {
       this.messageService.addMessage({
         content: 'Failed to join the community. Please try again.',
@@ -430,6 +506,9 @@ export class CommunityComponent implements OnInit, OnDestroy {
     try {
       await this.communityService.leaveCommunity(community.id);
       this.isMember.set(false);
+      if (this.activeTab() === 'chat') {
+        this.activeTab.set('posts');
+      }
       this.messageService.addMessage({
         content: 'You have left the community.',
         type: 'success',

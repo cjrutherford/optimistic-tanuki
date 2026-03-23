@@ -50,7 +50,10 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { Public } from '../../decorators/public.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
-import { RequirePermissions } from '../../decorators/permissions.decorator';
+import {
+  PermissionTarget,
+  RequirePermissions,
+} from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
 
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -75,6 +78,7 @@ export class SocialController {
   })
   @Post('post')
   @RequirePermissions('social.post.create')
+  @PermissionTarget('body', 'communityId')
   @Throttle({ default: { limit: 100, ttl: 60000 } }) // Increased for E2E
   async post(@User() user, @Body() postDto: CreatePostDto) {
     this.l.log(`Creating post for user: ${user.userId}`);

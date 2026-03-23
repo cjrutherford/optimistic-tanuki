@@ -15,6 +15,7 @@ export interface LocalCommunity {
   slug: string;
   parentId?: string | null;
   description: string;
+  joinPolicy?: string | null;
   localityType: 'city' | 'town' | 'neighborhood' | 'county' | 'region';
   countryCode: string;
   adminArea: string;
@@ -46,6 +47,16 @@ export interface LocalCommunity {
   managerTermEndsAt?: string | null;
   /** Whether this community is system-managed (no individual owner). */
   isSystemCommunity?: boolean;
+  ownerId?: string;
+  ownerProfileId?: string;
+}
+
+export interface RoleAssignmentSummary {
+  targetId?: string | null;
+  role?: {
+    id?: string;
+    name?: string;
+  };
 }
 
 /** Represents the currently elected manager of a locality. */
@@ -166,9 +177,12 @@ export class CommunityService {
     });
   }
 
-  joinCommunity(communityId: string): Promise<void> {
+  joinCommunity(communityId: string): Promise<{ status?: string }> {
     return firstValueFrom(
-      this.http.post<void>(`${this.baseUrl}/${communityId}/join`, {})
+      this.http.post<{ status?: string }>(
+        `${this.baseUrl}/${communityId}/join`,
+        {}
+      )
     );
   }
 
@@ -196,7 +210,7 @@ export class CommunityService {
     logoAssetId?: string;
   }): Promise<LocalCommunity> {
     return firstValueFrom(
-      this.http.post<LocalCommunity>(this.baseUrl, {
+      this.http.post<LocalCommunity>(this.socialBaseUrl, {
         ...data,
         createChatRoom: true,
       })
@@ -219,6 +233,19 @@ export class CommunityService {
         coordinates: c.coordinates || { lat: c.lat || 0, lng: c.lng || 0 },
       }));
     });
+  }
+
+  getUserRoles(
+    profileId: string,
+    appScope = 'global'
+  ): Promise<RoleAssignmentSummary[]> {
+    return firstValueFrom(
+      this.http.get<RoleAssignmentSummary[]>(
+        `${this.apiBaseUrl}/permissions/user-roles/${encodeURIComponent(
+          profileId
+        )}?appScope=${encodeURIComponent(appScope)}`
+      )
+    ).catch(() => []);
   }
 
   // ── Community Manager & Election ────────────────────────────────────────────
@@ -486,6 +513,53 @@ export class CommunityService {
       });
     } catch (error) {
       console.error('Failed to fetch city posts:', error);
+      return [];
+    }
+  }
+
+  async getPostsForRootCommunity(citySlug: string): Promise<CityPost[]> {
+    try {
+      const communities = await this.getCommunitiesForCity(citySlug);
+      const rootLocality = communities.find(
+        (c) => c.localityType === 'city' && !c.parentId
+      );
+      if (!rootLocality) {
+        return [];
+      }
+
+      const posts = await firstValueFrom(
+        this.http.post<
+          {
+            id: string;
+            title: string;
+            content: string;
+            profileId: string;
+            userId: string;
+            createdAt: string | Date;
+            communityId?: string;
+          }[]
+        >(`${this.apiBaseUrl}/social/post/find`, {
+          criteria: { communityId: rootLocality.id, appScope: 'local-hub' },
+        })
+      );
+
+      return (posts ?? []).map((p) => ({
+        id: p.id,
+        communityId: rootLocality.id,
+        communitySlug: citySlug,
+        communityName: rootLocality.name,
+        title: p.title,
+        content: p.content,
+        authorName: 'Community Member',
+        createdAt:
+          typeof p.createdAt === 'string'
+            ? p.createdAt
+            : (p.createdAt as Date).toISOString(),
+        likes: 0,
+        comments: 0,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch root community posts:', error);
       return [];
     }
   }

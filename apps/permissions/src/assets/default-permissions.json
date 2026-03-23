@@ -283,6 +283,11 @@
       "appScope": "local-hub"
     },
     {
+      "name": "local_hub_community_poster",
+      "description": "Community-scoped poster for local-hub communities",
+      "appScope": "local-hub"
+    },
+    {
       "name": "local_hub_moderator",
       "description": "Community moderator for local-hub",
       "appScope": "local-hub"
@@ -4083,6 +4088,11 @@
     {
       "role": "social_user",
       "permission": "social.reaction.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "local_hub_community_poster",
+      "permission": "social.post.create",
       "permissionAppScope": "social"
     },
     {
