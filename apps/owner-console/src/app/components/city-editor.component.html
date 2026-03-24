@@ -1,0 +1,93 @@
+<otui-card>
+  <otui-heading level="2">{{
+    isEditMode ? 'Edit City' : 'Create City'
+  }}</otui-heading>
+
+  <div *ngIf="loading">Loading...</div>
+
+  <form *ngIf="!loading" [formGroup]="cityForm" (ngSubmit)="save()">
+    <lib-text-input
+      formControlName="name"
+      label="City Name"
+      placeholder="Enter city name"
+      [required]="true"
+    ></lib-text-input>
+
+    <lib-text-input
+      formControlName="slug"
+      label="Slug"
+      placeholder="Enter URL slug"
+    ></lib-text-input>
+
+    <lib-text-input
+      formControlName="description"
+      label="Description"
+      placeholder="Enter city description"
+      [required]="true"
+    ></lib-text-input>
+
+    <div class="form-row">
+      <lib-text-input
+        formControlName="countryCode"
+        label="Country Code"
+        placeholder="e.g., US"
+        [required]="true"
+      ></lib-text-input>
+
+      <lib-text-input
+        formControlName="adminArea"
+        label="Admin Area"
+        placeholder="e.g., California"
+        [required]="true"
+      ></lib-text-input>
+    </div>
+
+    <div class="form-row">
+      <lib-text-input
+        formControlName="city"
+        label="City"
+        placeholder="Enter city name"
+        [required]="true"
+      ></lib-text-input>
+
+      <lib-text-input
+        formControlName="population"
+        label="Population"
+        placeholder="Enter population"
+      ></lib-text-input>
+    </div>
+
+    <div class="form-row">
+      <lib-text-input
+        formControlName="lat"
+        label="Latitude"
+        placeholder="Enter latitude"
+      ></lib-text-input>
+
+      <lib-text-input
+        formControlName="lng"
+        label="Longitude"
+        placeholder="Enter longitude"
+      ></lib-text-input>
+    </div>
+
+    <lib-text-input
+      formControlName="imageUrl"
+      label="Image URL"
+      placeholder="Enter image URL"
+    ></lib-text-input>
+
+    <lib-text-input
+      formControlName="timezone"
+      label="Timezone"
+      placeholder="e.g., America/Los_Angeles"
+    ></lib-text-input>
+
+    <div class="form-actions">
+      <otui-button variant="primary" type="submit" [disabled]="saving">
+        {{ saving ? 'Saving...' : isEditMode ? 'Update' : 'Create' }}
+      </otui-button>
+      <otui-button variant="secondary" (click)="cancel()">Cancel</otui-button>
+    </div>
+  </form>
+</otui-card>

@@ -16,6 +16,11 @@ import { AvailabilityManagementComponent } from './components/availability-manag
 import { authGuard } from './guards/auth.guard';
 import { AppConfigListComponent } from './components/app-config-designer/app-config-list.component';
 import { AppConfigDesignerComponent } from './components/app-config-designer/app-config-designer.component';
+import { CommunityManagementComponent } from './components/community-management.component';
+import { CommunityEditorComponent } from './components/community-editor.component';
+import { CityManagementComponent } from './components/city-management.component';
+import { CityEditorComponent } from './components/city-editor.component';
+import { CommunityMembersComponent } from './components/community-members.component';
 
 export const appRoutes: Route[] = [
   { path: 'login', component: LoginComponent },
@@ -44,7 +49,17 @@ export const appRoutes: Route[] = [
         component: AppConfigDesignerComponent,
       },
       { path: 'store/appointments', component: AppointmentManagementComponent },
-      { path: 'store/availability', component: AvailabilityManagementComponent },
+      {
+        path: 'store/availability',
+        component: AvailabilityManagementComponent,
+      },
+      { path: 'communities', component: CommunityManagementComponent },
+      { path: 'communities/new', component: CommunityEditorComponent },
+      { path: 'communities/:id', component: CommunityEditorComponent },
+      { path: 'communities/:id/members', component: CommunityMembersComponent },
+      { path: 'cities', component: CityManagementComponent },
+      { path: 'cities/new', component: CityEditorComponent },
+      { path: 'cities/:id', component: CityEditorComponent },
       { path: '', redirectTo: 'users', pathMatch: 'full' },
     ],
   },

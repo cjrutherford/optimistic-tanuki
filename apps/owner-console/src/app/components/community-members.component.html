@@ -1,0 +1,99 @@
+<otui-card>
+  <div
+    style="display: flex; justify-content: space-between; align-items: center"
+  >
+    <otui-heading level="2">Community Members</otui-heading>
+    <div style="display: flex; gap: 8px">
+      <otui-button variant="primary" (click)="openAddMemberModal()"
+        >Add Member</otui-button
+      >
+      <otui-button variant="secondary" (click)="back()"
+        >Back to Community</otui-button
+      >
+    </div>
+  </div>
+
+  <div *ngIf="loading">Loading...</div>
+
+  <table *ngIf="!loading && members.length > 0" class="members-table">
+    <thead>
+      <tr>
+        <th>User ID</th>
+        <th>Profile ID</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Joined</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let member of members">
+        <td>{{ member.userId }}</td>
+        <td>{{ member.profileId }}</td>
+        <td>
+          <span class="role-badge" [ngClass]="getRoleClass(member.role)">
+            {{ member.role }}
+          </span>
+        </td>
+        <td>{{ member.status }}</td>
+        <td>{{ member.joinedAt | date : 'short' }}</td>
+        <td>
+          <div class="member-actions">
+            <otui-button
+              *ngIf="member.role !== 'owner'"
+              variant="secondary"
+              (click)="updateRole(member, 'admin')"
+            >
+              Make Admin
+            </otui-button>
+            <otui-button
+              *ngIf="member.role !== 'member' && member.role !== 'owner'"
+              variant="secondary"
+              (click)="updateRole(member, 'member')"
+            >
+              Demote
+            </otui-button>
+            <otui-button
+              *ngIf="member.role !== 'owner'"
+              variant="danger"
+              (click)="removeMember(member)"
+            >
+              Remove
+            </otui-button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && members.length === 0" class="empty-state">
+    <p>No members found in this community.</p>
+  </div>
+</otui-card>
+
+<otui-modal
+  [visible]="showAddMemberModal"
+  [heading]="'Invite Member'"
+  (close)="closeAddMemberModal()"
+>
+  <form [formGroup]="inviteForm" (ngSubmit)="inviteMember()">
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <otui-text-input
+        formControlName="inviteeUserId"
+        label="User ID"
+        placeholder="Enter user ID to invite"
+      ></otui-text-input>
+      <div style="display: flex; gap: 8px; justify-content: flex-end">
+        <otui-button
+          variant="secondary"
+          type="button"
+          (click)="closeAddMemberModal()"
+          >Cancel</otui-button
+        >
+        <otui-button variant="primary" type="submit" [disabled]="inviting">
+          {{ inviting ? 'Inviting...' : 'Invite' }}
+        </otui-button>
+      </div>
+    </div>
+  </form>
+</otui-modal>

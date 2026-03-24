@@ -7,6 +7,8 @@ import {
   Logger,
   Param,
   Post,
+  Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -25,6 +27,11 @@ import {
 import {
   AssignRoleDto,
   CommunityMembershipStatus,
+  CommunityMemberRole,
+  CreateCommunityDto,
+  UpdateCommunityDto,
+  CommunityMemberDto,
+  InviteToCommunityDto,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
@@ -46,23 +53,228 @@ export class CommunitiesController {
     private readonly socialClient: ClientProxy,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly permissionsClient: ClientProxy
-  ) { }
+  ) {}
 
   @Public()
   @Get()
   @ApiOperation({ summary: 'List all locality-based communities' })
   @ApiResponse({ status: 200, description: 'Array of locality communities.' })
-  async listCommunities(@AppScope() appScope: string) {
+  async listCommunities(
+    @AppScope() appScope: string,
+    @Query('localityType') localityType?: string
+  ) {
     try {
+      const scopeForQuery = appScope === 'owner-console' ? undefined : appScope;
       return await firstValueFrom(
         this.socialClient.send(
           { cmd: CommunityCommands.LIST_LOCALITY },
-          { appScope }
+          { appScope: scopeForQuery, localityType }
         )
       );
     } catch (error) {
       this.logger.error('Failed to list communities:', error);
       return [];
+    }
+  }
+
+  @Public()
+  @Get('my')
+  @ApiOperation({ summary: 'Get communities for current user' })
+  @ApiResponse({ status: 200, description: 'Array of user communities.' })
+  async getMyCommunities(@User() user: UserDetails) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.GET_USER_COMMUNITIES },
+          { userId: user.userId }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to get user communities:', error);
+      return [];
+    }
+  }
+
+  @Post()
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Create a new community' })
+  @ApiResponse({ status: 201, description: 'Community created.' })
+  async createCommunity(
+    @Body() createCommunityDto: CreateCommunityDto,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.CREATE },
+          {
+            dto: {
+              ...createCommunityDto,
+              appScope,
+              ownerId: user.userId,
+              ownerProfileId: user.profileId,
+            },
+            userId: user.userId,
+          }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to create community:', error);
+      throw error;
+    }
+  }
+
+  @Get(':id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get a community by ID' })
+  @ApiResponse({ status: 200, description: 'Community.' })
+  async getCommunity(@Param('id') id: string) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send({ cmd: CommunityCommands.FIND }, { id })
+      );
+    } catch (error) {
+      this.logger.error('Failed to get community %s:', id, error);
+      return null;
+    }
+  }
+
+  @Put(':id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Update a community' })
+  @ApiResponse({ status: 200, description: 'Community updated.' })
+  async updateCommunity(
+    @Param('id') id: string,
+    @Body() updateCommunityDto: UpdateCommunityDto,
+    @User() user: UserDetails
+  ) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.UPDATE },
+          {
+            id,
+            dto: updateCommunityDto,
+            userId: user.userId,
+          }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to update community %s:', id, error);
+      throw error;
+    }
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Delete a community' })
+  @ApiResponse({ status: 200, description: 'Community deleted.' })
+  async deleteCommunity(@Param('id') id: string, @User() user: UserDetails) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.DELETE },
+          { id, userId: user.userId }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to delete community %s:', id, error);
+      throw error;
+    }
+  }
+
+  @Get(':id/members')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get community members' })
+  @ApiResponse({ status: 200, description: 'Array of community members.' })
+  async getMembers(@Param('id') id: string) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.GET_MEMBERS },
+          { communityId: id }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to get members for community %s:', id, error);
+      return [];
+    }
+  }
+
+  @Put(':id/members/:memberId/role')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Update member role' })
+  @ApiResponse({ status: 200, description: 'Member role updated.' })
+  async updateMemberRole(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @Body() body: { role: CommunityMemberRole },
+    @User() user: UserDetails
+  ) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: 'UPDATE_COMMUNITY_MEMBER_ROLE' },
+          {
+            communityId: id,
+            memberId,
+            role: body.role,
+            userId: user.userId,
+          }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to update member role:', error);
+      throw error;
+    }
+  }
+
+  @Delete(':id/members/:memberId')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Remove member from community' })
+  @ApiResponse({ status: 200, description: 'Member removed.' })
+  async removeMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @User() user: UserDetails
+  ) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.REMOVE_MEMBER },
+          { communityId: id, memberId, userId: user.userId }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to remove member:', error);
+      throw error;
+    }
+  }
+
+  @Post(':id/members/invite')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Invite user to community' })
+  @ApiResponse({ status: 201, description: 'User invited.' })
+  async inviteMember(
+    @Param('id') id: string,
+    @Body() body: { inviteeUserId: string },
+    @User() user: UserDetails
+  ) {
+    try {
+      const inviteDto: InviteToCommunityDto = {
+        communityId: id,
+        inviteeUserId: body.inviteeUserId,
+      };
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.INVITE },
+          { dto: inviteDto, userId: user.userId }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to invite member:', error);
+      throw error;
     }
   }
 
@@ -73,7 +285,10 @@ export class CommunitiesController {
   async findCommunity(@Param('slug') slug: string) {
     try {
       return await firstValueFrom(
-        this.socialClient.send({ cmd: CommunityCommands.FIND_BY_SLUG }, { slug })
+        this.socialClient.send(
+          { cmd: CommunityCommands.FIND_BY_SLUG },
+          { slug }
+        )
       );
     } catch (error) {
       this.logger.error('Failed to find community %s:', slug, error);
@@ -313,9 +528,10 @@ export class CommunitiesController {
 
       const alreadyAssigned = Array.isArray(existingAssignments)
         ? existingAssignments.some(
-          (assignment: any) =>
-            assignment.role?.id === role.id && assignment.targetId === communityId
-        )
+            (assignment: any) =>
+              assignment.role?.id === role.id &&
+              assignment.targetId === communityId
+          )
         : false;
 
       if (alreadyAssigned) {
@@ -323,15 +539,12 @@ export class CommunitiesController {
       }
 
       await firstValueFrom(
-        this.permissionsClient.send(
-          { cmd: RoleCommands.Assign },
-          {
-            roleId: role.id,
-            profileId,
-            appScopeId: role.appScope?.id || appScope,
-            targetId: communityId,
-          } as AssignRoleDto
-        )
+        this.permissionsClient.send({ cmd: RoleCommands.Assign }, {
+          roleId: role.id,
+          profileId,
+          appScopeId: role.appScope?.id || appScope,
+          targetId: communityId,
+        } as AssignRoleDto)
       );
     } catch (error) {
       this.logger.error(

@@ -100,12 +100,12 @@ const CITY_POSTS = [
   {
     title: 'Savannah Housing Market Update',
     content:
-      "<p>The Savannah housing market continues to attract attention from out-of-state buyers. Here are some observations from the community:</p><ul><li>Median home prices are up 8% year over year</li><li>The Victorian District is seeing significant renovation activity</li><li>New developments near SCAD continue to drive rental demand</li></ul><p>How has this impacted your neighborhood? Share your thoughts below.</p>",
+      '<p>The Savannah housing market continues to attract attention from out-of-state buyers. Here are some observations from the community:</p><ul><li>Median home prices are up 8% year over year</li><li>The Victorian District is seeing significant renovation activity</li><li>New developments near SCAD continue to drive rental demand</li></ul><p>How has this impacted your neighborhood? Share your thoughts below.</p>',
   },
   {
     title: 'Favorite Spots to Watch the Sunset',
     content:
-      '<p>One of the best things about Savannah is the scenery at golden hour. My top picks:</p><ol><li>Forsyth Park fountain area - magical in the evening light</li><li>River Street looking west over the Savannah River</li><li>Bonaventure Cemetery - hauntingly beautiful</li><li>Tybee Island Beach for the full coastal experience</li></ol><p>Where\'s your favorite sunset spot in or around Savannah?</p>',
+      "<p>One of the best things about Savannah is the scenery at golden hour. My top picks:</p><ol><li>Forsyth Park fountain area - magical in the evening light</li><li>River Street looking west over the Savannah River</li><li>Bonaventure Cemetery - hauntingly beautiful</li><li>Tybee Island Beach for the full coastal experience</li></ol><p>Where's your favorite sunset spot in or around Savannah?</p>",
   },
 ];
 
@@ -138,7 +138,7 @@ const SAMPLE_COMMENTS = [
   'Great post, thanks for sharing with the community!',
   'I had no idea about this! Definitely checking it out.',
   'The Savannah community is the best. Love seeing posts like this.',
-  "Adding this to my weekend plans for sure!",
+  'Adding this to my weekend plans for sure!',
   'Born and raised in Savannah - this is 100% accurate.',
   'New to the area and this is so helpful, thank you!',
   'My family has been going there for generations. Great recommendation.',
@@ -204,7 +204,10 @@ async function bootstrap() {
       logger.log(`Registered: ${userData.email}`);
     } catch (err: any) {
       const status = err.response?.status;
-      if (status === 409 || err.response?.data?.message?.includes('already exists')) {
+      if (
+        status === 409 ||
+        err.response?.data?.message?.includes('already exists')
+      ) {
         logger.log(`User ${userData.email} already exists, logging in...`);
       } else {
         logger.warn(`Register failed for ${userData.email}: ${err.message}`);
@@ -227,7 +230,9 @@ async function bootstrap() {
           });
           const me = meRes.data?.data || meRes.data;
           userId = me?.userId || me?.id;
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
 
         if (!profileId && token) {
           try {
@@ -237,14 +242,25 @@ async function bootstrap() {
             const p = profileRes.data?.data || profileRes.data;
             profileId = p?.id;
             if (!userId) userId = p?.userId;
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         }
 
         if (userId && profileId && token) {
-          authenticatedUsers.push({ userId, profileId, token, email: userData.email });
-          logger.log(`Authenticated: ${userData.email} (profile: ${profileId})`);
+          authenticatedUsers.push({
+            userId,
+            profileId,
+            token,
+            email: userData.email,
+          });
+          logger.log(
+            `Authenticated: ${userData.email} (profile: ${profileId})`
+          );
         } else {
-          logger.warn(`Could not get full details for ${userData.email} – skipping`);
+          logger.warn(
+            `Could not get full details for ${userData.email} – skipping`
+          );
         }
       }
     } catch (err: any) {
@@ -259,6 +275,46 @@ async function bootstrap() {
   }
   logger.log(`Authenticated ${authenticatedUsers.length} users`);
 
+  // ── Step 1.5: Assign local_hub_admin role to seed user ────────────────────
+  logger.log('=== Step 1.5: Assign local_hub_admin Role ===');
+  const seedUser = authenticatedUsers[0];
+
+  try {
+    const rolesRes = await httpClient.get('/permissions/role', {
+      headers: { Authorization: `Bearer ${seedUser.token}` },
+    });
+    const roles = rolesRes.data?.data || rolesRes.data;
+    const localHubAdminRole = Array.isArray(roles)
+      ? roles.find((r: any) => r.name === 'local_hub_admin')
+      : null;
+
+    if (localHubAdminRole?.id) {
+      try {
+        await httpClient.post(
+          '/permissions/assignment',
+          {
+            roleId: localHubAdminRole.id,
+            profileId: seedUser.profileId,
+            appScopeId: localHubAdminRole.appScope?.id || 'local-hub',
+            targetId: null,
+          },
+          { headers: { Authorization: `Bearer ${seedUser.token}` } }
+        );
+        logger.log(`Assigned local_hub_admin role to ${seedUser.email}`);
+      } catch (assignErr: any) {
+        if (assignErr.response?.status === 409) {
+          logger.log(`User already has local_hub_admin role`);
+        } else {
+          logger.warn(`Failed to assign role: ${assignErr.message}`);
+        }
+      }
+    } else {
+      logger.warn(`local_hub_admin role not found`);
+    }
+  } catch (roleErr: any) {
+    logger.warn(`Failed to get roles: ${roleErr.message}`);
+  }
+
   // ── Step 2: Ensure city community (Savannah, GA) exists ──────────────────
   logger.log('=== Step 2: Ensure City Community (Savannah, GA) ===');
   const owner = authenticatedUsers[0];
@@ -266,14 +322,16 @@ async function bootstrap() {
   let cityCommSlug: string | undefined;
 
   try {
-    const existing = await httpClient.get('/communities/savannah-ga');
+    const existing = await httpClient.get('/social/community/slug/savannah-ga');
     const c = existing.data?.data || existing.data;
     if (c?.id) {
       cityCommId = c.id;
       cityCommSlug = c.slug;
       logger.log(`City community already exists: ${c.name} (${c.id})`);
     }
-  } catch { /* doesn't exist yet */ }
+  } catch {
+    /* doesn't exist yet */
+  }
 
   if (!cityCommId) {
     try {
@@ -316,13 +374,17 @@ async function bootstrap() {
   let foodieCommId: string | undefined;
 
   try {
-    const existing = await httpClient.get('/communities/savannah-foodies');
+    const existing = await httpClient.get(
+      '/social/community/slug/savannah-foodies'
+    );
     const c = existing.data?.data || existing.data;
     if (c?.id) {
       foodieCommId = c.id;
       logger.log(`Foodies community already exists: ${c.name} (${c.id})`);
     }
-  } catch { /* doesn't exist yet */ }
+  } catch {
+    /* doesn't exist yet */
+  }
 
   if (!foodieCommId) {
     try {
@@ -372,7 +434,9 @@ async function bootstrap() {
         if (err.response?.status === 409) {
           logger.log(`${user.email} already in community ${commId}`);
         } else {
-          logger.debug(`Could not join ${user.email} to ${commId}: ${err.message}`);
+          logger.debug(
+            `Could not join ${user.email} to ${commId}: ${err.message}`
+          );
         }
       }
       await sleep(30);
@@ -404,7 +468,9 @@ async function bootstrap() {
         logger.log(`Created city post: "${post.title}" (${post.id})`);
       }
     } catch (err: any) {
-      logger.warn(`Failed to create city post "${postData.title}": ${err.message}`);
+      logger.warn(
+        `Failed to create city post "${postData.title}": ${err.message}`
+      );
     }
     await sleep(50);
   }
@@ -433,7 +499,9 @@ async function bootstrap() {
           logger.log(`Created foodies post: "${post.title}" (${post.id})`);
         }
       } catch (err: any) {
-        logger.warn(`Failed to create foodies post "${postData.title}": ${err.message}`);
+        logger.warn(
+          `Failed to create foodies post "${postData.title}": ${err.message}`
+        );
       }
       await sleep(50);
     }
@@ -446,8 +514,12 @@ async function bootstrap() {
   for (const post of allPosts) {
     const numComments = Math.floor(Math.random() * 4) + 2; // 2–5 comments per post
     for (let i = 0; i < numComments; i++) {
-      const user = authenticatedUsers[Math.floor(Math.random() * authenticatedUsers.length)];
-      const content = SAMPLE_COMMENTS[Math.floor(Math.random() * SAMPLE_COMMENTS.length)];
+      const user =
+        authenticatedUsers[
+          Math.floor(Math.random() * authenticatedUsers.length)
+        ];
+      const content =
+        SAMPLE_COMMENTS[Math.floor(Math.random() * SAMPLE_COMMENTS.length)];
       try {
         const res = await httpClient.post(
           '/social/comment',
@@ -473,8 +545,10 @@ async function bootstrap() {
   // ── Step 8: Add reactions to posts ────────────────────────────────────────
   logger.log('=== Step 8: Add Reactions to Posts ===');
   for (const post of allPosts) {
-    const user = authenticatedUsers[Math.floor(Math.random() * authenticatedUsers.length)];
-    const reactionValue = REACTION_VALUES[Math.floor(Math.random() * REACTION_VALUES.length)];
+    const user =
+      authenticatedUsers[Math.floor(Math.random() * authenticatedUsers.length)];
+    const reactionValue =
+      REACTION_VALUES[Math.floor(Math.random() * REACTION_VALUES.length)];
     try {
       await httpClient.post(
         '/social/reaction',
@@ -496,8 +570,10 @@ async function bootstrap() {
   logger.log('=== Step 9: Add Reactions to Comments ===');
   for (const comment of createdComments) {
     if (Math.random() < 0.5) continue; // react to ~50% of comments
-    const user = authenticatedUsers[Math.floor(Math.random() * authenticatedUsers.length)];
-    const reactionValue = REACTION_VALUES[Math.floor(Math.random() * REACTION_VALUES.length)];
+    const user =
+      authenticatedUsers[Math.floor(Math.random() * authenticatedUsers.length)];
+    const reactionValue =
+      REACTION_VALUES[Math.floor(Math.random() * REACTION_VALUES.length)];
     try {
       await httpClient.post(
         '/social/reaction',
@@ -518,7 +594,8 @@ async function bootstrap() {
   // ── Step 10: Add votes to posts ────────────────────────────────────────────
   logger.log('=== Step 10: Add Votes to Posts ===');
   for (const post of allPosts) {
-    const user = authenticatedUsers[Math.floor(Math.random() * authenticatedUsers.length)];
+    const user =
+      authenticatedUsers[Math.floor(Math.random() * authenticatedUsers.length)];
     const voteValue = Math.random() > 0.2 ? 1 : -1; // mostly upvotes
     try {
       await httpClient.post(
