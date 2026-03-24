@@ -47,7 +47,7 @@ export class CommunityService {
     private readonly candidateRepo: Repository<ElectionCandidate>,
     @InjectRepository(ElectionVote)
     private readonly voteRepo: Repository<ElectionVote>
-  ) { }
+  ) {}
 
   /** Generate a slug from a name, appending a numeric suffix if the base slug is taken. */
   private async generateUniqueSlug(base: string): Promise<string> {
@@ -145,12 +145,18 @@ export class CommunityService {
   }
 
   /** Return all communities that are locality-based (have a slug/localityType set). */
-  async listLocality(appScope?: string): Promise<Community[]> {
+  async listLocality(
+    appScope?: string,
+    localityType?: string
+  ): Promise<Community[]> {
     const qb = this.communityRepo
       .createQueryBuilder('c')
       .where('c.slug IS NOT NULL');
     if (appScope) {
       qb.andWhere('c.appScope = :appScope', { appScope });
+    }
+    if (localityType) {
+      qb.andWhere('c.localityType = :localityType', { localityType });
     }
     qb.orderBy('c.memberCount', 'DESC').addOrderBy('c.name', 'ASC');
     const communities = await qb.getMany();
@@ -170,13 +176,13 @@ export class CommunityService {
       }),
       parentCommunity?.city
         ? this.communityRepo.find({
-          where: {
-            appScope: parentCommunity.appScope,
-            city: parentCommunity.city,
-            parentId: null,
-          },
-          order: { memberCount: 'DESC', name: 'ASC' },
-        })
+            where: {
+              appScope: parentCommunity.appScope,
+              city: parentCommunity.city,
+              parentId: null,
+            },
+            order: { memberCount: 'DESC', name: 'ASC' },
+          })
         : Promise.resolve([]),
     ]);
 
@@ -209,16 +215,17 @@ export class CommunityService {
     );
 
     const seen = new Set<string>();
-    const communities = [...directChildren, ...normalizedLegacyCommunities].filter(
-      (community) => {
-        if (seen.has(community.id)) {
-          return false;
-        }
-
-        seen.add(community.id);
-        return true;
+    const communities = [
+      ...directChildren,
+      ...normalizedLegacyCommunities,
+    ].filter((community) => {
+      if (seen.has(community.id)) {
+        return false;
       }
-    );
+
+      seen.add(community.id);
+      return true;
+    });
 
     return Promise.all(communities.map((c) => this.addMemberInfo(c)));
   }

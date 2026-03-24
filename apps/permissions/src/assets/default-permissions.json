@@ -1868,6 +1868,14 @@
       "appScope": "local-hub"
     },
     {
+      "name": "community.create",
+      "description": "Create local-hub community",
+      "active": true,
+      "resource": "community",
+      "action": "create",
+      "appScope": "local-hub"
+    },
+    {
       "name": "moderation.remove",
       "description": "Remove content (mod)",
       "active": true,
@@ -4178,6 +4186,11 @@
     {
       "role": "local_hub_moderator",
       "permission": "moderation.ban",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "community.create",
       "permissionAppScope": "local-hub"
     },
     {

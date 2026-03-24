@@ -1,0 +1,29 @@
+<div class="dashboard-container">
+  <otui-app-bar
+    appTitle="Owner Console"
+    [showThemeToggle]="true"
+    [useTile]="false"
+    (menuToggle)="toggleSidebar()"
+    logoSrc="/tempest-in-a-teacup.png"
+    logoAlt="Owner Console Logo"
+  >
+    <button
+      class="theme-toggle"
+      (click)="toggleTheme()"
+      aria-label="Toggle theme"
+    >
+      {{ (theme$ | async) === 'dark' ? '☀️' : '🌙' }}
+    </button>
+  </otui-app-bar>
+
+  <otui-nav-sidebar
+    [isOpen]="sidebarOpen"
+    [navItems]="navItems"
+    heading="Management"
+    (close)="closeSidebar()"
+  ></otui-nav-sidebar>
+
+  <div class="content" [class.sidebar-open]="sidebarOpen">
+    <router-outlet></router-outlet>
+  </div>
+</div>

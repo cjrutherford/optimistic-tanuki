@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import {
   AppBarComponent,
   NavSidebarComponent,
@@ -12,62 +14,29 @@ import { AuthService } from '../services/auth.service';
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule, AppBarComponent, NavSidebarComponent],
-  template: `
-    <div class="dashboard-container">
-      <otui-app-bar
-        appTitle="Owner Console"
-        [showThemeToggle]="true"
-        [useTile]="false"
-        (menuToggle)="toggleSidebar()"
-        [logoSrc]="'/tempest-in-a-teacup.png'"
-        logoAlt="Owner Console Logo"
-      ></otui-app-bar>
-
-      <otui-nav-sidebar
-        [isOpen]="sidebarOpen"
-        [navItems]="navItems"
-        heading="Management"
-        (close)="closeSidebar()"
-      ></otui-nav-sidebar>
-
-      <div class="content" [class.sidebar-open]="sidebarOpen">
-        <router-outlet></router-outlet>
-      </div>
-    </div>
-  `,
-  styles: [
-    `
-      .dashboard-container {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-      }
-
-      .content {
-        flex: 1;
-        padding: 2rem;
-        transition: margin-left 0.3s ease;
-      }
-
-      .content.sidebar-open {
-        margin-left: 250px;
-      }
-
-      @media (max-width: 768px) {
-        .content.sidebar-open {
-          margin-left: 0;
-        }
-      }
-    `,
-  ],
+  templateUrl: './dashboard.component.html',
+  styleUrl: './dashboard.component.scss',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
+  private themeService = inject(ThemeService);
+  private destroy$ = new Subject<void>();
+  private authService: AuthService;
+  private router: Router;
+
   sidebarOpen = false;
   navItems: NavItem[] = [];
+  theme$ = this.themeService.theme;
 
-  constructor(private authService: AuthService, private router: Router) { }
+  constructor(authService: AuthService, router: Router) {
+    this.authService = authService;
+    this.router = router;
+  }
 
   ngOnInit(): void {
+    this.theme$.pipe(takeUntil(this.destroy$)).subscribe((theme) => {
+      // Theme changes are handled by ThemeService via CSS variables
+    });
+
     this.navItems = [
       {
         label: 'Users',
@@ -133,6 +102,18 @@ export class DashboardComponent implements OnInit {
         isActive: this.router.url.includes('/app-config'),
       },
       {
+        label: 'Communities',
+        action: () => this.router.navigate(['/dashboard/communities']),
+        variant: 'text',
+        isActive: this.router.url.includes('/communities'),
+      },
+      {
+        label: 'Cities',
+        action: () => this.router.navigate(['/dashboard/cities']),
+        variant: 'text',
+        isActive: this.router.url.includes('/cities'),
+      },
+      {
         label: 'Logout',
         action: () => this.logout(),
         variant: 'danger',
@@ -145,6 +126,11 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
   }
@@ -155,5 +141,9 @@ export class DashboardComponent implements OnInit {
 
   logout(): void {
     this.authService.logout();
+  }
+
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
   }
 }

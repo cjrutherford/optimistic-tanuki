@@ -74,6 +74,7 @@ export {
   CommunityMemberRole,
   CommunityJoinPolicy,
   ElectionStatus,
+  LocalityType,
 } from './community';
 export { API_BASE_URL } from './api-config.tokens';
 export { type PersonaTelosDto } from './telos';
