@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: profile
-          image: cjrutherford/optimistic_tanuki_profile:sha-ba689a99eff55870a8e7b676867b4679f6355306
+          image: cjrutherford/optimistic_tanuki_profile:sha-f2dbda1e9be6f29394a63a46fec51b9f82517e41
           imagePullPolicy: Always
           ports:
             - containerPort: 3002
