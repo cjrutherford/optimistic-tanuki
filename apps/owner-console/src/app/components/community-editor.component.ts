@@ -14,7 +14,10 @@ import {
   HeadingComponent,
   ButtonComponent,
 } from '@optimistic-tanuki/common-ui';
-import { TextInputComponent } from '@optimistic-tanuki/form-ui';
+import {
+  TextInputComponent,
+  SelectComponent,
+} from '@optimistic-tanuki/form-ui';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import {
   CommunityDto,
@@ -36,6 +39,7 @@ import { CommunityService } from '../services/community.service';
     HeadingComponent,
     ButtonComponent,
     TextInputComponent,
+    SelectComponent,
   ],
   templateUrl: './community-editor.component.html',
   styles: [
@@ -96,6 +100,29 @@ import { CommunityService } from '../services/community.service';
       .checkbox-group input[type='checkbox'] {
         width: 18px;
         height: 18px;
+      }
+      .checkbox-field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+      }
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+      .checkbox-label input[type='checkbox'] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+      .checkbox-hint {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin: 0;
       }
       .form-actions {
         display: flex;

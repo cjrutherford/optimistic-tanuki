@@ -49,6 +49,7 @@ import {
   UpdateCommunityDto,
   JoinCommunityDto,
   InviteToCommunityDto,
+  CommunityMemberRole,
   CreatePostDto,
   UpdatePostDto,
   SearchPostDto,
@@ -119,7 +120,7 @@ export class AppController {
     private readonly linkService: LinkService,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy
-  ) { }
+  ) {}
 
   private extractMentions(text: string): string[] {
     if (!text) return [];
@@ -782,8 +783,13 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: CommunityCommands.LIST_LOCALITY })
-  async listLocalityCommunities(@Payload() data: { appScope?: string }) {
-    return await this.communityService.listLocality(data.appScope);
+  async listLocalityCommunities(
+    @Payload() data: { appScope?: string; localityType?: string }
+  ) {
+    return await this.communityService.listLocality(
+      data.appScope,
+      data.localityType
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.GET_SUB_COMMUNITIES })
@@ -929,6 +935,23 @@ export class AppController {
   async removeMember(@Payload() data: { memberId: string; removerId: string }) {
     await this.communityService.removeMember(data.memberId, data.removerId);
     return { success: true };
+  }
+
+  @MessagePattern({ cmd: 'UPDATE_COMMUNITY_MEMBER_ROLE' })
+  async updateMemberRole(
+    @Payload()
+    data: {
+      communityId: string;
+      memberId: string;
+      role: CommunityMemberRole;
+      userId: string;
+    }
+  ) {
+    return await this.communityService.updateMemberRole(
+      data.memberId,
+      data.role,
+      data.userId
+    );
   }
 
   @MessagePattern({ cmd: 'GET_COMMUNITY_CHAT_ROOM' })

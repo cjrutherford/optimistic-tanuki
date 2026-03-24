@@ -79,3 +79,4 @@ tf/*.tfstate.*
 tf/tfplan
 tmp/
 .env
+.kilo/

@@ -48,6 +48,15 @@ export interface CommunityDto {
   memberIds?: string[];
   memberUserIds?: string[];
   ownerIds?: string[];
+  /** Locality-only fields — null for non-locality communities */
+  localityType?: LocalityType | null;
+  countryCode?: string | null;
+  adminArea?: string | null;
+  city?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  population?: number | null;
+  timezone?: string | null;
 }
 
 export interface CreateCommunityDto {
@@ -60,6 +69,16 @@ export interface CreateCommunityDto {
   tags?: string[];
   bannerAssetId?: string;
   logoAssetId?: string;
+  /** Locality-only fields — omit for non-locality communities */
+  localityType?: LocalityType;
+  countryCode?: string;
+  adminArea?: string;
+  city?: string;
+  lat?: number;
+  lng?: number;
+  population?: number;
+  imageUrl?: string;
+  timezone?: string;
 }
 
 export interface UpdateCommunityDto {
@@ -72,6 +91,16 @@ export interface UpdateCommunityDto {
   tags?: string[];
   bannerAssetId?: string;
   logoAssetId?: string;
+  /** Locality-only fields */
+  localityType?: LocalityType;
+  countryCode?: string;
+  adminArea?: string;
+  city?: string;
+  lat?: number;
+  lng?: number;
+  population?: number;
+  imageUrl?: string | null;
+  timezone?: string;
 }
 
 export interface SearchCommunityDto {
@@ -128,6 +157,14 @@ export enum ElectionStatus {
   OPEN = 'open',
   CLOSED = 'closed',
   CANCELLED = 'cancelled',
+}
+
+export enum LocalityType {
+  CITY = 'city',
+  TOWN = 'town',
+  NEIGHBORHOOD = 'neighborhood',
+  COUNTY = 'county',
+  REGION = 'region',
 }
 
 export interface ElectionCandidateDto {

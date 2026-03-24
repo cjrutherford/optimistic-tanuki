@@ -1,0 +1,64 @@
+<otui-card>
+  <div
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    "
+  >
+    <otui-heading level="2">Cities</otui-heading>
+    <otui-button variant="primary" (click)="createNew()"
+      >Create City</otui-button
+    >
+  </div>
+
+  <div class="filters">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Search cities..."
+      [(ngModel)]="searchQuery"
+      (ngModelChange)="onSearchChange()"
+    />
+    <select
+      class="filter-select"
+      [(ngModel)]="filterLocalityType"
+      (ngModelChange)="onFilterChange()"
+    >
+      <option *ngFor="let option of localityTypeOptions" [value]="option.value">
+        {{ option.label }}
+      </option>
+    </select>
+  </div>
+
+  <div *ngIf="loading">Loading...</div>
+
+  <div *ngIf="!loading && filteredCities.length === 0" class="empty-state">
+    <p>No cities found. Create your first city to get started.</p>
+  </div>
+
+  <div *ngIf="!loading && filteredCities.length > 0" class="city-grid">
+    <div
+      *ngFor="let city of filteredCities"
+      class="city-card"
+      (click)="editCity(city)"
+    >
+      <h3>{{ city.name }}</h3>
+      <p>
+        {{ city.description | slice : 0 : 100
+        }}{{ city.description.length > 100 ? '...' : '' }}
+      </p>
+      <p><strong>Population:</strong> {{ city.population | number }}</p>
+      <p>
+        <strong>Location:</strong> {{ city.city }}, {{ city.adminArea }},
+        {{ city.countryCode }}
+      </p>
+      <div class="city-actions" (click)="$event.stopPropagation()">
+        <otui-button variant="danger" (click)="deleteCity(city, $event)"
+          >Delete</otui-button
+        >
+      </div>
+    </div>
+  </div>
+</otui-card>
