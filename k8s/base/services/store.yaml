@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: store
-          image: cjrutherford/optimistic_tanuki_store:sha-f2dbda1e9be6f29394a63a46fec51b9f82517e41
+          image: cjrutherford/optimistic_tanuki_store:sha-d72bb2e9ab4f08d92d24b313be33ac0df87ba408
           imagePullPolicy: Always
           ports:
             - containerPort: 3009
