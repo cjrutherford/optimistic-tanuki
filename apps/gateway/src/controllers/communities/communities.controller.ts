@@ -125,6 +125,7 @@ export class CommunitiesController {
     }
   }
 
+  @Public()
   @Get(':id')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get a community by ID' })
@@ -279,7 +280,7 @@ export class CommunitiesController {
   }
 
   @Public()
-  @Get(':slug')
+  @Get('slug/:slug')
   @ApiOperation({ summary: 'Get a locality community by slug' })
   @ApiResponse({ status: 200, description: 'Community.' })
   async findCommunity(@Param('slug') slug: string) {

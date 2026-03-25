@@ -12,10 +12,7 @@ services:
     host: ot_profile
     port: 3002
 lemonSqueezy:
-  apiKey: ''
-  storeId: ''
-  webhookSecret: ''
-  variants:
-    basic: ''
-    pro: ''
-    enterprise: ''
+  default:
+    apiKey: ''
+    storeId: ''
+  stores: {}

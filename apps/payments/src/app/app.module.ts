@@ -18,6 +18,7 @@ import { BusinessTheme } from '../entities/business-theme.entity';
 import { CommunitySponsorship } from '../entities/community-sponsorship.entity';
 import { Transaction } from '../entities/transaction.entity';
 import { Offer } from '../entities/offer.entity';
+import { LemonSqueezyProduct } from '../entities/lemon-squeezy-product.entity';
 import { PaymentService } from './services/payment.service';
 import { BusinessThemeService } from './services/business-theme.service';
 import { OfferService } from './services/offer.service';
@@ -79,6 +80,11 @@ import { OfferService } from './services/offer.service';
     {
       provide: getRepositoryToken(BusinessTheme),
       useFactory: (ds: DataSource) => ds.getRepository(BusinessTheme),
+      inject: ['PAYMENTS_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(LemonSqueezyProduct),
+      useFactory: (ds: DataSource) => ds.getRepository(LemonSqueezyProduct),
       inject: ['PAYMENTS_CONNECTION'],
     },
     BusinessThemeService,

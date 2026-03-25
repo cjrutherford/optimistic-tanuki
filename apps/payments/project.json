@@ -6,34 +6,20 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "@nx/esbuild:esbuild",
-      "outputs": ["{options.outputPath}"],
-      "defaultConfiguration": "production",
+      "executor": "nx:run-commands",
       "options": {
-        "platform": "node",
-        "outputPath": "dist/apps/payments",
-        "format": ["cjs"],
-        "bundle": false,
-        "main": "apps/payments/src/main.ts",
-        "tsConfig": "apps/payments/tsconfig.app.json",
-        "assets": ["apps/payments/src/assets"],
-        "generatePackageJson": true,
-        "esbuildOptions": {
-          "sourcemap": true,
-          "outExtension": {
-            ".js": ".js"
+        "command": "webpack-cli build",
+        "args": ["node-env=production"],
+        "additionalEntrypoints": ["./src/seed-products.ts"],
+        "packageJson": {
+          "dependencies": {
+            "pg": "^8.16.0"
           }
         }
       },
       "configurations": {
-        "development": {},
-        "production": {
-          "esbuildOptions": {
-            "sourcemap": false,
-            "outExtension": {
-              ".js": ".js"
-            }
-          }
+        "development": {
+          "args": ["node-env=development"]
         }
       }
     },

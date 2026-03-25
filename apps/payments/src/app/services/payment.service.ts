@@ -14,19 +14,37 @@ import {
   SponsorshipType,
 } from '../../entities/community-sponsorship.entity';
 import { Transaction } from '../../entities/transaction.entity';
+import { LemonSqueezyProduct } from '../../entities/lemon-squeezy-product.entity';
 import { ConfigService } from '@nestjs/config';
 import { calculateNetAmount } from '../utils/platform-fee.util';
+import type { LemonSqueezyStoreConfig } from '../../config';
 
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
-  private readonly lemonSqueezyApiKey: string;
-  private readonly lemonSqueezyStoreId: string;
-  private readonly lemonSqueezyVariants: {
-    basic: string;
-    pro: string;
-    enterprise: string;
-  };
+  private readonly defaultStoreConfig: LemonSqueezyStoreConfig;
+  private readonly storeConfigs: Record<string, LemonSqueezyStoreConfig>;
+
+  private getStoreConfig(appScope: string): LemonSqueezyStoreConfig {
+    if (appScope && this.storeConfigs[appScope]) {
+      return this.storeConfigs[appScope];
+    }
+    return this.defaultStoreConfig;
+  }
+
+  private getStoreConfigByStoreId(
+    storeId: string
+  ): LemonSqueezyStoreConfig | null {
+    if (this.defaultStoreConfig.storeId === storeId) {
+      return this.defaultStoreConfig;
+    }
+    for (const scope of Object.keys(this.storeConfigs)) {
+      if (this.storeConfigs[scope].storeId === storeId) {
+        return this.storeConfigs[scope];
+      }
+    }
+    return null;
+  }
 
   private normalizeMonthYear(month?: number | string, year?: number | string) {
     const now = new Date();
@@ -73,19 +91,23 @@ export class PaymentService {
     private readonly sponsorshipRepository: Repository<CommunitySponsorship>,
     @InjectRepository(Transaction)
     private readonly transactionRepository: Repository<Transaction>,
+    @InjectRepository(LemonSqueezyProduct)
+    private readonly lsProductRepository: Repository<LemonSqueezyProduct>,
     @Inject(ConfigService)
     private readonly configService: ConfigService
   ) {
-    this.lemonSqueezyApiKey =
-      this.configService.get('lemonSqueezy.apiKey') || '';
-    this.lemonSqueezyStoreId =
-      this.configService.get('lemonSqueezy.storeId') || '';
-    this.lemonSqueezyVariants = {
-      basic: this.configService.get('lemonSqueezy.variants.basic') || '',
-      pro: this.configService.get('lemonSqueezy.variants.pro') || '',
-      enterprise:
-        this.configService.get('lemonSqueezy.variants.enterprise') || '',
+    const defaultConfig = this.configService.get('lemonSqueezy.default') as
+      | LemonSqueezyStoreConfig
+      | undefined;
+    const storesConfig = this.configService.get('lemonSqueezy.stores') as
+      | Record<string, LemonSqueezyStoreConfig>
+      | undefined;
+
+    this.defaultStoreConfig = defaultConfig || {
+      apiKey: '',
+      storeId: '',
     };
+    this.storeConfigs = storesConfig || {};
   }
 
   async getDonationGoal(month?: number | string, year?: number | string) {
@@ -154,9 +176,10 @@ export class PaymentService {
 
     const savedDonation = await this.donationRepository.save(donation);
 
+    const storeConfig = this.getStoreConfig(appScope);
     const checkoutUrl = isRecurring
-      ? `https://store.lemonsqueezy.com/checkout/buy/${this.lemonSqueezyStoreId}?checkout[custom][donation_id]=${savedDonation.id}&checkout[custom][user_id]=${userId}&checkout[custom][profile_id]=${profileId}`
-      : `https://store.lemonsqueezy.com/checkout/buy/${this.lemonSqueezyStoreId}?checkout[custom][donation_id]=${savedDonation.id}&checkout[custom][user_id]=${userId}&checkout[custom][profile_id]=${profileId}`;
+      ? `https://store.lemonsqueezy.com/checkout/buy/${storeConfig.storeId}?checkout[custom][donation_id]=${savedDonation.id}&checkout[custom][user_id]=${userId}&checkout[custom][profile_id]=${profileId}&checkout[custom][app_scope]=${appScope}`
+      : `https://store.lemonsqueezy.com/checkout/buy/${storeConfig.storeId}?checkout[custom][donation_id]=${savedDonation.id}&checkout[custom][user_id]=${userId}&checkout[custom][profile_id]=${profileId}&checkout[custom][app_scope]=${appScope}`;
 
     return {
       checkoutUrl,
@@ -341,11 +364,24 @@ export class PaymentService {
       await this.businessPageRepository.save(businessPage);
     }
 
-    const variantId =
-      this.lemonSqueezyVariants[
-      tier as keyof typeof this.lemonSqueezyVariants
-      ] || this.lemonSqueezyStoreId;
-    const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${variantId}?checkout[custom][business_page_id]=${businessPage.id}&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][tier]=${tier}`;
+    const lsProduct = await this.lsProductRepository.findOne({
+      where: { appScope, tier: tier as any, isActive: true },
+    });
+
+    const variantId = lsProduct?.lemonSqueezyVariantId;
+
+    if (!variantId) {
+      this.logger.warn(
+        `No Lemon Squeezy variant found for appScope=${appScope}, tier=${tier}. Using storeId as fallback.`
+      );
+    }
+
+    const storeConfig = this.getStoreConfig(appScope);
+    const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${
+      variantId || storeConfig.storeId
+    }?checkout[custom][business_page_id]=${
+      businessPage.id
+    }&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][tier]=${tier}&checkout[custom][app_scope]=${appScope}`;
 
     return {
       checkoutUrl,
@@ -427,7 +463,8 @@ export class PaymentService {
 
     const savedSponsorship = await this.sponsorshipRepository.save(sponsorship);
 
-    const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${this.lemonSqueezyStoreId}?checkout[custom][sponsorship_id]=${savedSponsorship.id}&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][type]=${type}`;
+    const storeConfig = this.getStoreConfig(appScope);
+    const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${storeConfig.storeId}?checkout[custom][sponsorship_id]=${savedSponsorship.id}&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][type]=${type}&checkout[custom][app_scope]=${appScope}`;
 
     return {
       checkoutUrl,
@@ -786,5 +823,128 @@ export class PaymentService {
     }
 
     return { received: true };
+  }
+
+  async syncLemonSqueezyProducts(appScope?: string): Promise<void> {
+    const configsToSync =
+      appScope && this.storeConfigs[appScope]
+        ? [{ appScope, config: this.storeConfigs[appScope] }]
+        : [
+            { appScope: 'default', config: this.defaultStoreConfig },
+            ...Object.entries(this.storeConfigs).map(([scope, config]) => ({
+              appScope: scope,
+              config,
+            })),
+          ];
+
+    for (const { appScope, config } of configsToSync) {
+      if (!config.apiKey || !config.storeId) {
+        this.logger.warn(
+          `Skipping product sync for ${appScope}: missing apiKey or storeId`
+        );
+        continue;
+      }
+
+      try {
+        const response = await fetch(
+          `https://api.lemonsqueezy.com/v1/products?filter[store]=${config.storeId}`,
+          {
+            headers: {
+              Accept: 'application/vnd.api+json',
+              'Content-Type': 'application/vnd.api+json',
+              Authorization: `Bearer ${config.apiKey}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          this.logger.error(
+            `Failed to fetch products for store ${config.storeId}: ${response.status} ${response.statusText}`
+          );
+          continue;
+        }
+
+        const data = (await response.json()) as {
+          data: Array<{
+            id: string;
+            attributes: {
+              name: string;
+              status: string;
+            };
+            relationships?: {
+              variants?: {
+                data: Array<{ id: string }>;
+              };
+            };
+          }>;
+        };
+
+        for (const product of data.data) {
+          const variants = product.relationships?.variants?.data || [];
+
+          for (const variant of variants) {
+            const variantResponse = await fetch(
+              `https://api.lemonsqueezy.com/v1/variants/${variant.id}`,
+              {
+                headers: {
+                  Accept: 'application/vnd.api+json',
+                  'Content-Type': 'application/vnd.api+json',
+                  Authorization: `Bearer ${config.apiKey}`,
+                },
+              }
+            );
+
+            if (!variantResponse.ok) continue;
+
+            const variantData = (await variantResponse.json()) as {
+              data: {
+                attributes: {
+                  name: string;
+                  price_formatted: string;
+                };
+              };
+            };
+
+            const variantName = variantData.data.attributes.name;
+            let tier: 'basic' | 'pro' | 'enterprise' = 'basic';
+
+            const nameLower = variantName.toLowerCase();
+            if (nameLower.includes('pro')) {
+              tier = 'pro';
+            } else if (nameLower.includes('enterprise')) {
+              tier = 'enterprise';
+            }
+
+            const existingProduct = await this.lsProductRepository.findOne({
+              where: { appScope, tier },
+            });
+
+            const productData = {
+              appScope,
+              tier,
+              lemonSqueezyProductId: product.id,
+              lemonSqueezyVariantId: variant.id,
+              name: product.attributes.name,
+              isActive: product.attributes.status === 'published',
+            };
+
+            if (existingProduct) {
+              Object.assign(existingProduct, productData);
+              await this.lsProductRepository.save(existingProduct);
+            } else {
+              const newProduct = this.lsProductRepository.create(productData);
+              await this.lsProductRepository.save(newProduct);
+            }
+          }
+        }
+
+        this.logger.log(`Synced products for ${appScope}`);
+      } catch (err) {
+        this.logger.error(
+          `Error syncing products for ${appScope}: ${err?.message}`,
+          err
+        );
+      }
+    }
   }
 }
