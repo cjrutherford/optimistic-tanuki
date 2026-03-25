@@ -11,15 +11,14 @@ export type TcpServiceConfig = {
   port: number;
 };
 
-export type LemonSqueezyConfig = {
+export type LemonSqueezyStoreConfig = {
   apiKey: string;
   storeId: string;
-  webhookSecret: string;
-  variants: {
-    basic: string;
-    pro: string;
-    enterprise: string;
-  };
+};
+
+export type LemonSqueezyConfig = {
+  default: LemonSqueezyStoreConfig;
+  stores: Record<string, LemonSqueezyStoreConfig>;
 };
 
 export type PaymentsConfigType = {
@@ -41,14 +40,29 @@ const loadConfig = () => {
   const configPath = path.resolve(__dirname, './assets/config.yaml');
   const configFile = fs.readFileSync(configPath, 'utf8');
   const yamlConfig = yaml.load(configFile) as PaymentsConfigType;
+
+  const defaultConfig = yamlConfig.lemonSqueezy?.default || {
+    apiKey: '',
+    storeId: '',
+  };
+
+  const storesConfig = yamlConfig.lemonSqueezy?.stores || {};
+
+  const envOverride = (key: string, defaultValue: string): string => {
+    return process.env[key] || defaultValue;
+  };
+
   const finalConfig: PaymentsConfigType = {
     ...yamlConfig,
     lemonSqueezy: {
-      ...yamlConfig.lemonSqueezy,
-      apiKey:
-        process.env.LEMON_SQUEEZY_API_KEY || yamlConfig.lemonSqueezy.apiKey,
+      default: {
+        apiKey: envOverride('LEMON_SQUEEZY_API_KEY', defaultConfig.apiKey),
+        storeId: envOverride('LEMON_SQUEEZY_STORE_ID', defaultConfig.storeId),
+      },
+      stores: storesConfig,
     },
   };
+
   return finalConfig;
 };
 

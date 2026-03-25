@@ -9,6 +9,7 @@ import { Transaction } from '../entities/transaction.entity';
 import { Offer } from '../entities/offer.entity';
 import { SellerWallet } from '../entities/seller-wallet.entity';
 import { PayoutRequest } from '../entities/payout-request.entity';
+import { LemonSqueezyProduct } from '../entities/lemon-squeezy-product.entity';
 import * as path from 'path';
 
 const loadDatabase = (config: ConfigService) => {
@@ -23,6 +24,7 @@ const loadDatabase = (config: ConfigService) => {
     Offer,
     SellerWallet,
     PayoutRequest,
+    LemonSqueezyProduct,
   ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',

@@ -63,6 +63,7 @@ const PaymentCommands = {
   GET_SELLER_EARNINGS_SUMMARY: 'payments.getSellerEarningsSummary',
   GET_BUSINESS_PAGES_BY_CITY: 'payments.getBusinessPagesByCity',
   PROCESS_WEBHOOK: 'payments.processWebhook',
+  SYNC_LEMON_SQUEEZY_PRODUCTS: 'payments.syncLemonSqueezyProducts',
 };
 
 const OrderCommands = {

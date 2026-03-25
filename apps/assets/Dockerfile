@@ -16,7 +16,7 @@ RUN npm i -g nodemon pg
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 RUN npm i --save pg
-COPY dist/apps/assets .
+COPY ./dist/apps/assets .
 RUN chown -R node:node .
 USER node
 EXPOSE 3005

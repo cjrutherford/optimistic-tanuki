@@ -150,7 +150,7 @@ export class CommunityService {
 
   getCommunityBySlug(slug: string): Promise<LocalCommunity> {
     return firstValueFrom(
-      this.http.get<LocalCommunity>(`${this.baseUrl}/${slug}`)
+      this.http.get<LocalCommunity>(`${this.baseUrl}/slug/${slug}`)
     ).then((c) => ({
       ...c,
       coordinates: c.coordinates || { lat: c.lat || 0, lng: c.lng || 0 },

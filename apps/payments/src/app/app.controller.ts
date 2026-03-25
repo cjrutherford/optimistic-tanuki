@@ -16,7 +16,7 @@ export class AppController {
     private readonly businessThemeService: BusinessThemeService,
     @Inject(OfferService)
     private readonly offerService: OfferService
-  ) { }
+  ) {}
 
   @MessagePattern({ cmd: PaymentCommands.GET_DONATION_GOAL })
   async getDonationGoal(@Payload() data: { month: number; year: number }) {
@@ -442,5 +442,10 @@ export class AppController {
     @Payload() data: { eventType: string; data: Record<string, unknown> }
   ) {
     return this.paymentService.processWebhook(data.eventType, data.data);
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.SYNC_LEMON_SQUEEZY_PRODUCTS })
+  async syncLemonSqueezyProducts(@Payload() data: { appScope?: string }) {
+    return this.paymentService.syncLemonSqueezyProducts(data.appScope);
   }
 }
