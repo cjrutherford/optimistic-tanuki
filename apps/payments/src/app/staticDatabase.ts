@@ -11,6 +11,7 @@ import { Transaction } from '../entities/transaction.entity';
 import { Offer } from '../entities/offer.entity';
 import { SellerWallet } from '../entities/seller-wallet.entity';
 import { PayoutRequest } from '../entities/payout-request.entity';
+import { LemonSqueezyProduct } from '../entities/lemon-squeezy-product.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -39,6 +40,7 @@ const entities = [
   Offer,
   SellerWallet,
   PayoutRequest,
+  LemonSqueezyProduct,
 ];
 
 const staticSource = new DataSource({
@@ -49,6 +51,6 @@ const staticSource = new DataSource({
   password,
   database: database,
   entities,
-  migrations: [path.resolve(__dirname, '../../src/migrations/*.js')],
+  migrations: ['./migrations/*.ts'],
 });
 export default staticSource;
