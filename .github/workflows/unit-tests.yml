@@ -34,7 +34,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Derive appropriate SHAs for base and head for nx affected commands
-        uses: nrwl/nx-set-shas@v4
+        uses: nrwl/nx-set-shas@v5
 
       - name: Run affected unit tests
         run: npx nx affected -t test --configuration=ci --parallel=3 --maxParallel=3

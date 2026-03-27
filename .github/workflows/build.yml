@@ -33,7 +33,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Derive appropriate SHAs for base and head for nx affected commands
-        uses: nrwl/nx-set-shas@v4
+        uses: nrwl/nx-set-shas@v5
 
       - name: Build all projects
         run: npx nx run-many --all -t build --configuration=production --parallel=3 --maxParallel=3
