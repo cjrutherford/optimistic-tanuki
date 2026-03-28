@@ -51,6 +51,9 @@ import { PostShareController } from '../controllers/social/post-share/post-share
 import { SocialEventController } from '../controllers/social/social-event/social-event.controller';
 import { PaymentsController } from '../controllers/payments/payments.controller';
 import { DonationsController } from '../controllers/donations/donations.controller';
+import { HardwareChassisController } from '../controllers/hardware/hardware-chassis.controller';
+import { HardwarePricingController } from '../controllers/hardware/hardware-pricing.controller';
+import { HardwareOrdersController } from '../controllers/hardware/hardware-orders.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -112,6 +115,9 @@ import { DonationsController } from '../controllers/donations/donations.controll
     SocialEventController,
     PaymentsController,
     DonationsController,
+    HardwareChassisController,
+    HardwarePricingController,
+    HardwareOrdersController,
   ],
   providers: [
     {
@@ -366,6 +372,21 @@ import { DonationsController } from '../controllers/donations/donations.controll
         const serviceConfig = configService.get<TcpServiceConfig>(
           'services.classifieds'
         );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.HARDWARE_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.hardware');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

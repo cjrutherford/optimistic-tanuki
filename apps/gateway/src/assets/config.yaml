@@ -85,6 +85,11 @@ services:
     transport: TCP
     host: ot_payments
     port: 3018
+  hardware:
+    name: hardware
+    transport: TCP
+    host: ot_hardware
+    port: 3021
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

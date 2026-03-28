@@ -115,3 +115,5 @@ export {
   type BusinessTierFeature,
   type BusinessTierType,
 } from './lib/libs/business-tiers';
+
+export { HardwareCommands } from './lib/libs/hardware-commands';

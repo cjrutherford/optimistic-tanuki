@@ -353,6 +353,24 @@
         "${workspaceFolder}/apps/payments/dist/**/*.(m|c|)js",
         "!**/node_modules/**"
       ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug hardware-service with Nx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nx", "serve", "hardware-service"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9234"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/apps/hardware-service/dist/**/*.(m|c|)js",
+        "!**/node_modules/**"
+      ]
     }
   ]
 }

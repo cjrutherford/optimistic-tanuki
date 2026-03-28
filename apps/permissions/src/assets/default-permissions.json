@@ -89,6 +89,11 @@
       "name": "local-hub",
       "description": "Local Hub - local-centric communities platform",
       "active": true
+    },
+    {
+      "name": "hardware",
+      "description": "Hardware portal - custom server builder",
+      "active": true
     }
   ],
   "roles": [
@@ -296,6 +301,16 @@
       "name": "local_hub_admin",
       "description": "Community admin for local-hub",
       "appScope": "local-hub"
+    },
+    {
+      "name": "hardware_customer",
+      "description": "Customer of the hardware portal",
+      "appScope": "hardware"
+    },
+    {
+      "name": "hardware_admin",
+      "description": "Administrator for hardware portal",
+      "appScope": "hardware"
     }
   ],
   "permissions": [
@@ -1650,6 +1665,54 @@
       "action": "update",
       "targetId": null,
       "appScope": "store"
+    },
+    {
+      "name": "hardware.chassis.read",
+      "description": "Read hardware chassis options",
+      "resource": "hardware.chassis",
+      "action": "read",
+      "targetId": null,
+      "appScope": "hardware"
+    },
+    {
+      "name": "hardware.component.read",
+      "description": "Read hardware component options",
+      "resource": "hardware.component",
+      "action": "read",
+      "targetId": null,
+      "appScope": "hardware"
+    },
+    {
+      "name": "hardware.pricing.calculate",
+      "description": "Calculate hardware pricing",
+      "resource": "hardware.pricing",
+      "action": "calculate",
+      "targetId": null,
+      "appScope": "hardware"
+    },
+    {
+      "name": "hardware.order.create",
+      "description": "Create hardware orders",
+      "resource": "hardware.order",
+      "action": "create",
+      "targetId": null,
+      "appScope": "hardware"
+    },
+    {
+      "name": "hardware.order.read",
+      "description": "Read hardware orders",
+      "resource": "hardware.order",
+      "action": "read",
+      "targetId": null,
+      "appScope": "hardware"
+    },
+    {
+      "name": "hardware.order.update",
+      "description": "Update hardware orders",
+      "resource": "hardware.order",
+      "action": "update",
+      "targetId": null,
+      "appScope": "hardware"
     },
     {
       "name": "daily-four.create",
@@ -3892,6 +3955,61 @@
       "role": "store_customer",
       "permission": "order.read",
       "permissionAppScope": "store"
+    },
+    {
+      "role": "hardware_customer",
+      "permission": "hardware.chassis.read",
+      "permissionAppScope": "hardware"
+    },
+    {
+      "role": "hardware_customer",
+      "permission": "hardware.component.read",
+      "permissionAppScope": "hardware"
+    },
+    {
+      "role": "hardware_customer",
+      "permission": "hardware.pricing.calculate",
+      "permissionAppScope": "hardware"
+    },
+    {
+      "role": "hardware_customer",
+      "permission": "hardware.order.create",
+      "permissionAppScope": "hardware"
+    },
+    {
+      "role": "hardware_customer",
+      "permission": "hardware.order.read",
+      "permissionAppScope": "hardware"
+    },
+    {
+      "role": "hardware_admin",
+      "permission": "hardware.chassis.read",
+      "permissionAppScope": "hardware"
+    },
+    {
+      "role": "hardware_admin",
+      "permission": "hardware.component.read",
+      "permissionAppScope": "hardware"
+    },
+    {
+      "role": "hardware_admin",
+      "permission": "hardware.pricing.calculate",
+      "permissionAppScope": "hardware"
+    },
+    {
+      "role": "hardware_admin",
+      "permission": "hardware.order.create",
+      "permissionAppScope": "hardware"
+    },
+    {
+      "role": "hardware_admin",
+      "permission": "hardware.order.read",
+      "permissionAppScope": "hardware"
+    },
+    {
+      "role": "hardware_admin",
+      "permission": "hardware.order.update",
+      "permissionAppScope": "hardware"
     },
     {
       "role": "d6_user",
