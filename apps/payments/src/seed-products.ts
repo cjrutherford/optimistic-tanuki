@@ -1,9 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import fs from 'fs';
-import path from 'path';
-import * as yaml from 'js-yaml';
 import { LemonSqueezyProduct } from './entities/lemon-squeezy-product.entity';
+import { readPaymentsConfig } from './config';
 
 interface SeedProduct {
   appScope: string;
@@ -114,38 +112,10 @@ Examples:
 }
 
 async function getDataSource(): Promise<DataSource> {
-  const possiblePaths = [
-    path.resolve(__dirname, './assets/config.yaml'),
-    path.resolve(__dirname, '../assets/config.yaml'),
-    path.resolve(__dirname, './apps/payments/src/assets/config.yaml'),
-  ];
-
-  let configContent: string | null = null;
-  let configPath = '';
-
-  for (const p of possiblePaths) {
-    try {
-      if (fs.existsSync(p)) {
-        configContent = fs.readFileSync(p, 'utf8');
-        configPath = p;
-        break;
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  if (!configContent) {
-    throw new Error(
-      `Could not find config.yaml in any of: ${possiblePaths.join(', ')}`
-    );
-  }
-
-  const config = yaml.load(configContent) as Record<string, any>;
-
+  const { config, configPath } = readPaymentsConfig();
   const { database } = config;
   const host = process.env.POSTGRES_HOST || database.host;
-  const dbName = process.env.POSTGRES_DB || database.database || database.name;
+  const dbName = process.env.POSTGRES_DB || database.database;
   console.log(`Using config from: ${configPath}`);
   console.log(
     `Connecting to database at ${host}:${database.port} to ${dbName}...`
@@ -223,8 +193,8 @@ async function listProducts() {
       )
         .slice(0, 12)
         .padEnd(12)} | ${(p.lemonSqueezyVariantId || 'N/A')
-        .slice(0, 12)
-        .padEnd(12)} | ${p.isActive ? 'Yes' : 'No'} |`
+          .slice(0, 12)
+          .padEnd(12)} | ${p.isActive ? 'Yes' : 'No'} |`
     );
   }
 

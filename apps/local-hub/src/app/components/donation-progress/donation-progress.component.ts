@@ -11,8 +11,18 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '@optimistic-tanuki/common-ui';
-import { PaymentService, DonationGoal } from '../../services/payment.service';
+import {
+  PaymentService,
+  HelcimPaymentResponse,
+} from '../../services/payment.service';
 import { AuthStateService } from '../../services/auth-state.service';
+
+declare global {
+  interface Window {
+    appendHelcimPayIframe?: (checkoutToken: string, allowExit?: boolean) => void;
+    removeHelcimPayIframe?: () => void;
+  }
+}
 
 @Component({
   selector: 'app-donation-progress',
@@ -495,6 +505,8 @@ export class DonationProgressComponent implements OnInit, OnDestroy {
   customAmount = 0;
 
   private refreshInterval: ReturnType<typeof setInterval> | null = null;
+  private helcimScriptPromise: Promise<void> | null = null;
+  private activeCheckoutListener: ((event: MessageEvent) => void) | null = null;
 
   ngOnInit(): void {
     this.goal.set(this.monthlyGoal);
@@ -511,6 +523,13 @@ export class DonationProgressComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
+    }
+
+    if (
+      isPlatformBrowser(this.platformId) &&
+      this.activeCheckoutListener
+    ) {
+      window.removeEventListener('message', this.activeCheckoutListener);
     }
   }
 
@@ -540,15 +559,35 @@ export class DonationProgressComponent implements OnInit, OnDestroy {
     const amount = this.selectedAmount() ?? this.customAmount;
     if (!amount || amount <= 0) return;
 
+    if (!this.authState.isAuthenticated) {
+      this.error.set('Please sign in before making a donation.');
+      return;
+    }
+
     this.donating.set(true);
     this.error.set(null);
 
     try {
-      const { checkoutUrl } = await this.paymentService.createDonationCheckout(
+      const checkout = await this.paymentService.initializeDonationCheckout(
         amount,
         this.isRecurring()
       );
-      window.location.href = checkoutUrl;
+
+      if (checkout.provider === 'helcim' && checkout.checkoutToken) {
+        this.showDonationModal.set(false);
+        await this.launchHelcimCheckout(
+          checkout.donationId,
+          checkout.checkoutToken
+        );
+        return;
+      }
+
+      if (checkout.checkoutUrl) {
+        window.location.href = checkout.checkoutUrl;
+        return;
+      }
+
+      throw new Error('Payment checkout was not initialized correctly.');
     } catch (err: any) {
       this.error.set(
         err.error?.message || 'Failed to create donation. Please try again.'
@@ -565,6 +604,121 @@ export class DonationProgressComponent implements OnInit, OnDestroy {
     } catch (err) {
       console.error('Failed to open portal:', err);
     }
+  }
+
+  private async launchHelcimCheckout(
+    donationId: string,
+    checkoutToken: string
+  ): Promise<void> {
+    await this.ensureHelcimScript();
+
+    if (this.activeCheckoutListener) {
+      window.removeEventListener('message', this.activeCheckoutListener);
+    }
+
+    this.activeCheckoutListener = async (event: MessageEvent) => {
+      const identifier = `helcim-pay-js-${checkoutToken}`;
+      if (event.data?.eventName !== identifier) {
+        return;
+      }
+
+      if (event.data.eventStatus === 'ABORTED') {
+        this.error.set(
+          event.data?.eventMessage || 'The payment was declined or cancelled.'
+        );
+        this.donating.set(false);
+        return;
+      }
+
+      if (event.data.eventStatus === 'HIDE') {
+        this.donating.set(false);
+        return;
+      }
+
+      if (event.data.eventStatus === 'SUCCESS') {
+        try {
+          const response = this.normalizeHelcimResponse(event.data.eventMessage);
+          await this.paymentService.validateDonationCheckout(
+            donationId,
+            checkoutToken,
+            response
+          );
+          window.removeHelcimPayIframe?.();
+          await this.loadDonationProgress();
+          this.showDonationModal.set(false);
+          this.error.set(null);
+        } catch (error: any) {
+          this.error.set(
+            error?.error?.message ||
+            error?.message ||
+            'Donation validation failed. Please contact support.'
+          );
+        } finally {
+          this.donating.set(false);
+        }
+      }
+    };
+
+    window.addEventListener('message', this.activeCheckoutListener);
+    window.appendHelcimPayIframe?.(checkoutToken, true);
+  }
+
+  private async ensureHelcimScript(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      throw new Error('Helcim checkout requires a browser environment.');
+    }
+
+    if (window.appendHelcimPayIframe) {
+      return;
+    }
+
+    if (!this.helcimScriptPromise) {
+      this.helcimScriptPromise = new Promise<void>((resolve, reject) => {
+        const existing = document.querySelector(
+          'script[data-helcim-pay="true"]'
+        ) as HTMLScriptElement | null;
+
+        if (existing) {
+          existing.addEventListener('load', () => resolve(), { once: true });
+          existing.addEventListener(
+            'error',
+            () => reject(new Error('Failed to load Helcim checkout script.')),
+            { once: true }
+          );
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://secure.helcim.app/helcim-pay/services/start.js';
+        script.dataset['helcimPay'] = 'true';
+        script.onload = () => resolve();
+        script.onerror = () =>
+          reject(new Error('Failed to load Helcim checkout script.'));
+        document.head.appendChild(script);
+      });
+    }
+
+    return this.helcimScriptPromise;
+  }
+
+  private normalizeHelcimResponse(
+    eventMessage: unknown
+  ): HelcimPaymentResponse {
+    const parsedMessage =
+      typeof eventMessage === 'string' ? JSON.parse(eventMessage) : eventMessage;
+
+    const hash = (parsedMessage as { hash?: string })?.hash;
+    const data = (parsedMessage as { data?: Record<string, unknown> })?.data;
+
+    if (!hash || !data) {
+      throw new Error('Helcim response payload was incomplete.');
+    }
+
+    return {
+      hash,
+      data,
+    };
   }
 
   private async loadDonationProgress(): Promise<void> {

@@ -1,4 +1,3 @@
-
 export const PermissionCommands = {
   Create: 'Create:Permission',
   Update: 'Update:Permission',
@@ -21,6 +20,7 @@ export const RoleCommands = {
   Unassign: 'Unassign:Role',
   GetUserRoles: 'GetUserRoles:Role',
   CheckPermission: 'CheckPermission:Role',
+  GetAllAssignments: 'GetAllAssignments:Role',
 };
 
 export const AppScopeCommands = {

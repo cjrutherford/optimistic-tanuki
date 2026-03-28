@@ -16,13 +16,17 @@ export type FeaturedSpotType =
   | null;
 
 @Entity('business_pages')
-@Index(['communityId'], { unique: true })
+@Index(['appScope', 'communityId'], { unique: true })
+@Index(['appScope'])
 @Index(['ownerId'])
 export class BusinessPage {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', unique: true })
+  @Column({ type: 'varchar' })
+  appScope: string;
+
+  @Column({ type: 'uuid' })
   communityId: string;
 
   @Column({ type: 'uuid' })
@@ -54,6 +58,18 @@ export class BusinessPage {
 
   @Column({ type: 'varchar', nullable: true })
   lemonSqueezySubscriptionId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  stripeSubscriptionId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  stripeCustomerId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  externalProvider: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  paymentIntentId: string;
 
   @Column({ type: 'varchar', default: 'inactive' })
   subscriptionStatus: 'active' | 'inactive' | 'cancelled' | 'past_due';

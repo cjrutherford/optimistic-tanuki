@@ -5,17 +5,325 @@
     </div>
     <div class="header-content">
       <div class="header-icon" aria-hidden="true">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
         </svg>
       </div>
       <h1 class="header-title">My Account</h1>
-      <p class="header-subtitle">Manage your profile, communities, and preferences</p>
+      <p class="header-subtitle">
+        Manage your profile, communities, and preferences
+      </p>
     </div>
   </header>
 
   <div class="account-inner">
+    <section class="billing-section">
+      <div class="section-heading">
+        <div>
+          <h2>Billing</h2>
+          <p class="section-description">
+            Review your donations and recent payment activity.
+          </p>
+        </div>
+        <button class="btn btn-outline btn-sm" (click)="loadBillingData()">
+          Refresh
+        </button>
+      </div>
+
+      @if (loadingBilling()) {
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading your billing activity…</p>
+      </div>
+      } @else {
+      <div class="billing-summary-grid">
+        <article class="billing-card">
+          <span class="billing-label">Completed Donations</span>
+          <strong class="billing-value">{{ donations().length }}</strong>
+          <span class="billing-meta"
+            >${{
+              totalCompletedDonations() | number : '1.2-2'
+            }}
+            contributed</span
+          >
+        </article>
+
+        <article class="billing-card">
+          <span class="billing-label">Processed Activity</span>
+          <strong class="billing-value">{{ transactions().length }}</strong>
+          <span class="billing-meta"
+            >${{ totalProcessedTransactions() | number : '1.2-2' }} total
+            volume</span
+          >
+        </article>
+
+        <article class="billing-card">
+          <span class="billing-label">Recent Activity</span>
+          <strong class="billing-value">{{
+            recentBillingActivity().length
+          }}</strong>
+          <span class="billing-meta">Latest 6 donation and payment events</span>
+        </article>
+
+        <article class="billing-card">
+          <span class="billing-label">Default Method</span>
+          <strong class="billing-value billing-value-sm">{{
+            defaultPaymentMethodLabel()
+          }}</strong>
+          <span class="billing-meta">
+            {{ billingProfile()?.email || 'No billing email on file yet' }}
+          </span>
+        </article>
+      </div>
+
+      @if (billingError()) {
+      <div class="billing-error">{{ billingError() }}</div>
+      }
+
+      <div class="billing-columns">
+        <div class="billing-panel">
+          <h3>Billing Profile</h3>
+          <div class="profile-stack">
+            <label class="billing-field">
+              <span>Name</span>
+              <input
+                type="text"
+                [ngModel]="billingProfileName()"
+                (ngModelChange)="billingProfileName.set($event)"
+                placeholder="Name on billing account"
+              />
+            </label>
+
+            <label class="billing-field">
+              <span>Email</span>
+              <input
+                type="email"
+                [ngModel]="billingProfileEmail()"
+                (ngModelChange)="billingProfileEmail.set($event)"
+                placeholder="Billing email"
+              />
+            </label>
+
+            <label class="billing-field">
+              <span>Default Payment Method</span>
+              <select
+                [ngModel]="billingProfileDefaultPaymentMethodId()"
+                (ngModelChange)="
+                  billingProfileDefaultPaymentMethodId.set($event)
+                "
+                [disabled]="savedPaymentMethods().length === 0"
+              >
+                <option value="">No saved payment method</option>
+                @for (method of savedPaymentMethods(); track method.id) {
+                <option [value]="method.externalPaymentMethodId || ''">
+                  {{ method.brand || 'Card' }} ending in
+                  {{ method.last4 || '----' }}
+                </option>
+                }
+              </select>
+            </label>
+
+            <div class="profile-row">
+              <span>Customer Ref</span>
+              <strong>{{
+                billingProfile()?.externalCustomerId || 'Pending sync'
+              }}</strong>
+            </div>
+
+            <button
+              class="btn btn-primary btn-sm billing-save-button"
+              (click)="saveBillingProfile()"
+              [disabled]="savingBillingProfile()"
+            >
+              {{ savingBillingProfile() ? 'Saving…' : 'Save Billing Profile' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="billing-panel">
+          <h3>Saved Payment Methods</h3>
+          @if (savedPaymentMethods().length === 0) {
+          <p class="panel-empty">
+            Saved cards will appear here after a completed Helcim checkout.
+          </p>
+          } @else {
+          <ul class="billing-list">
+            @for (method of savedPaymentMethods().slice(0, 4); track method.id)
+            {
+            <li class="billing-list-item">
+              <div>
+                <span class="billing-item-title">
+                  {{ method.brand || 'Card' }} ending in
+                  {{ method.last4 || '----' }}
+                </span>
+                <span class="billing-item-meta">
+                  Expires {{ method.expiryMonth || '--' }}/{{
+                    method.expiryYear || '----'
+                  }}
+                </span>
+              </div>
+              <div class="billing-item-side">
+                <span class="status-chip" [class.pending]="!method.isDefault">
+                  {{ method.isDefault ? 'default' : 'saved' }}
+                </span>
+              </div>
+            </li>
+            }
+          </ul>
+          }
+        </div>
+
+        <div class="billing-panel">
+          <h3>Donations</h3>
+          <p class="billing-panel-note">
+            Refunds are currently available for completed one-time Helcim
+            donations.
+          </p>
+          @if (donations().length === 0) {
+          <p class="panel-empty">You have not completed any donations yet.</p>
+          } @else {
+          <ul class="billing-list">
+            @for (donation of donations().slice(0, 5); track donation.id) {
+            <li class="billing-list-item">
+              <div>
+                <span class="billing-item-title">
+                  {{ donation.isRecurring ? 'Recurring donation' : 'Donation' }}
+                </span>
+                <span class="billing-item-meta">
+                  {{ donation.createdAt | date : 'mediumDate' }}
+                  @if (donation.externalInvoiceId) { · Invoice
+                  {{ donation.externalInvoiceId }}
+                  } @if (donation.refundReason) { · Reason
+                  {{ donation.refundReason }}
+                  }
+                </span>
+              </div>
+              <div class="billing-item-side">
+                <strong>${{ donation.amount | number : '1.2-2' }}</strong>
+                <span
+                  class="status-chip"
+                  [class.pending]="donation.status === 'pending'"
+                  [class.refunded]="donation.status === 'refunded'"
+                  [class.failed]="
+                    donation.status === 'failed' ||
+                    donation.status === 'cancelled'
+                  "
+                >
+                  {{ donation.status }}
+                </span>
+                @if (canRefundDonation(donation)) {
+                <label class="billing-field billing-inline-field">
+                  <span>Refund reason</span>
+                  <textarea
+                    [ngModel]="donationRefundReason(donation.id)"
+                    (ngModelChange)="
+                      updateDonationRefundReason(donation.id, $event)
+                    "
+                    rows="2"
+                    placeholder="Tell us why this donation is being refunded"
+                  ></textarea>
+                </label>
+                <button
+                  class="btn btn-outline btn-sm billing-action-button"
+                  (click)="refundDonation(donation)"
+                  [disabled]="
+                    refundingDonationId() === donation.id ||
+                    !donationRefundReason(donation.id).trim()
+                  "
+                >
+                  {{
+                    refundingDonationId() === donation.id
+                      ? 'Refunding…'
+                      : 'Refund'
+                  }}
+                </button>
+                }
+              </div>
+            </li>
+            }
+          </ul>
+          }
+        </div>
+
+        <div class="billing-panel">
+          <h3>Transactions</h3>
+          <p class="billing-panel-note">
+            Only unreleased Helcim card purchases can be refunded from this
+            billing view.
+          </p>
+          @if (transactions().length === 0) {
+          <p class="panel-empty">No payment activity has been recorded yet.</p>
+          } @else {
+          <ul class="billing-list">
+            @for (transaction of transactions().slice(0, 5); track
+            transaction.id) {
+            <li class="billing-list-item">
+              <div>
+                <span class="billing-item-title">{{
+                  transaction.description || transaction.type
+                }}</span>
+                <span class="billing-item-meta">
+                  {{ transaction.createdAt | date : 'mediumDate' }}
+                  @if (transaction.externalInvoiceId) { · Invoice
+                  {{ transaction.externalInvoiceId }}
+                  }
+                </span>
+              </div>
+              <div class="billing-item-side">
+                <strong>${{ transaction.amount | number : '1.2-2' }}</strong>
+                <span
+                  class="status-chip"
+                  [class.pending]="transaction.status === 'pending'"
+                  [class.refunded]="transaction.status === 'refunded'"
+                  [class.failed]="transaction.status === 'failed'"
+                >
+                  {{ transaction.status }}
+                </span>
+                @if (canRefundTransaction(transaction)) {
+                <label class="billing-field billing-inline-field">
+                  <span>Refund reason</span>
+                  <textarea
+                    [ngModel]="transactionRefundReason(transaction.id)"
+                    (ngModelChange)="
+                      updateTransactionRefundReason(transaction.id, $event)
+                    "
+                    rows="2"
+                    placeholder="Tell us why this payment is being refunded"
+                  ></textarea>
+                </label>
+                <button
+                  class="btn btn-outline btn-sm billing-action-button"
+                  (click)="refundTransaction(transaction)"
+                  [disabled]="
+                    refundingTransactionId() === transaction.id ||
+                    !transactionRefundReason(transaction.id).trim()
+                  "
+                >
+                  {{
+                    refundingTransactionId() === transaction.id
+                      ? 'Refunding…'
+                      : 'Refund'
+                  }}
+                </button>
+                }
+              </div>
+            </li>
+            }
+          </ul>
+          }
+        </div>
+      </div>
+      }
+    </section>
+
     <section class="theme-section">
       <h2>Theme</h2>
       <p class="theme-description">Choose your preferred visual style</p>

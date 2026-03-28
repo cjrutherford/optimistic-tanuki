@@ -9,13 +9,32 @@ export interface Donation {
   profileId?: string;
   amount: number;
   currency: string;
+  isRecurring?: boolean;
   type: 'one-time' | 'recurring';
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: 'pending' | 'completed' | 'failed' | 'refunded' | 'cancelled';
   lemonSqueezyOrderId?: string;
   subscriptionId?: string;
+  externalProvider?: string;
+  externalTransactionId?: string;
+  externalCustomerId?: string;
+  externalInvoiceId?: string;
+  refundReason?: string;
+  refundedAt?: string;
   createdAt: string;
   month: number;
   year: number;
+}
+
+export interface DonationCheckoutInitialization {
+  provider: 'helcim' | 'lemon-squeezy';
+  donationId: string;
+  checkoutUrl?: string;
+  checkoutToken?: string;
+}
+
+export interface HelcimPaymentResponse {
+  hash: string;
+  data: Record<string, unknown>;
 }
 
 export interface DonationGoal {
@@ -32,21 +51,36 @@ export interface Payment {
   buyerId: string;
   sellerId: string;
   checkoutUrl?: string;
+  checkoutToken?: string;
   amount: number;
   platformFeeAmount: number;
   sellerReceivesAmount: number;
   currency: string;
+  externalProvider?: string;
+  externalTransactionId?: string;
+  externalCustomerId?: string;
+  externalInvoiceId?: string;
+  refundReason?: string;
+  refundedAt?: string;
   paymentMethod: 'card' | 'cash-app' | 'venmo' | 'zelle' | 'cash';
   status:
-    | 'pending'
-    | 'confirmed'
-    | 'released'
-    | 'disputed'
-    | 'refunded'
-    | 'cancelled';
+  | 'pending'
+  | 'confirmed'
+  | 'released'
+  | 'disputed'
+  | 'refunded'
+  | 'cancelled';
   proofImageUrl?: string;
   completedAt?: string;
   createdAt: string;
+}
+
+export interface ClassifiedPaymentCheckoutInitialization {
+  provider: 'helcim' | 'offline' | 'stripe-connect';
+  paymentId: string;
+  checkoutToken: string | null;
+  clientSecret?: string | null;
+  publishableKey?: string | null;
 }
 
 export interface BusinessPage {
@@ -92,20 +126,57 @@ export interface CommunitySponsorship {
 export interface Transaction {
   id: string;
   type:
-    | 'donation'
-    | 'classified-payment'
-    | 'business-page'
-    | 'sponsorship'
-    | 'payout';
+  | 'donation'
+  | 'classified_payment'
+  | 'business_subscription'
+  | 'sponsorship'
+  | 'refund'
+  | 'payout';
   amount: number;
   platformFee?: number;
   netAmount?: number;
   currency: string;
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   description: string;
+  referenceId?: string;
   relatedId?: string;
   userId: string;
+  externalProvider?: string;
+  externalTransactionId?: string;
+  externalCustomerId?: string;
+  externalInvoiceId?: string;
   createdAt: string;
+}
+
+export interface BillingProfile {
+  id: string;
+  userId: string;
+  profileId?: string;
+  appScope: string;
+  externalProvider?: string;
+  externalCustomerId?: string;
+  email?: string;
+  name?: string;
+  defaultPaymentMethodId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SavedPaymentMethod {
+  id: string;
+  billingProfileId?: string;
+  userId: string;
+  appScope: string;
+  externalProvider?: string;
+  externalCustomerId?: string;
+  externalPaymentMethodId?: string;
+  brand?: string;
+  last4?: string;
+  expiryMonth?: number;
+  expiryYear?: number;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Offer {
@@ -115,12 +186,12 @@ export interface Offer {
   sellerId: string;
   offeredAmount: number;
   status:
-    | 'pending'
-    | 'accepted'
-    | 'rejected'
-    | 'countered'
-    | 'withdrawn'
-    | 'expired';
+  | 'pending'
+  | 'accepted'
+  | 'rejected'
+  | 'countered'
+  | 'withdrawn'
+  | 'expired';
   message?: string;
   counterOfferAmount?: number;
   counterMessage?: string;
@@ -146,8 +217,22 @@ export interface SellerWallet {
   payoutEmail: string | null;
   bankAccountLast4: string | null;
   bankRoutingLast4: string | null;
+  stripeAccountId: string | null;
+  stripeAccountStatus: 'not-connected' | 'pending' | 'restricted' | 'enabled';
+  stripeDetailsSubmitted: boolean;
+  stripeChargesEnabled: boolean;
+  stripePayoutsEnabled: boolean;
+  stripeOnboardingCompletedAt: string | null;
+  stripeLastSyncedAt: string | null;
   createdAt: string;
   lastPayoutAt: string | null;
+}
+
+export interface SellerStripeConnectOnboardingLink {
+  onboardingUrl: string;
+  accountId: string;
+  status: 'not-connected' | 'pending' | 'restricted' | 'enabled';
+  expiresAt: string | null;
 }
 
 export interface PayoutRequest {
@@ -265,11 +350,69 @@ export class PaymentService {
     }
   }
 
+  async initializeDonationCheckout(
+    amount: number,
+    isRecurring: boolean
+  ): Promise<DonationCheckoutInitialization> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<DonationCheckoutInitialization>(
+          `${this.baseUrl}/donations/checkout/initialize`,
+          { amount, isRecurring }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async validateDonationCheckout(
+    donationId: string,
+    checkoutToken: string,
+    response: HelcimPaymentResponse
+  ): Promise<{ success: boolean; donation: Donation }> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<{ success: boolean; donation: Donation }>(
+          `${this.baseUrl}/donations/checkout/validate`,
+          { donationId, checkoutToken, response }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
   async getUserDonations(): Promise<Donation[]> {
     this.begin();
     try {
       const result = await firstValueFrom(
         this.http.get<Donation[]>(`${this.baseUrl}/donations/user`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async refundDonation(
+    donationId: string,
+    reason: string
+  ): Promise<{ success: boolean; donation: Donation }> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<{ success: boolean; donation: Donation }>(
+          `${this.baseUrl}/donations/${donationId}/refund`,
+          { reason }
+        )
       );
       this.end();
       return result;
@@ -294,7 +437,10 @@ export class PaymentService {
 
   async createClassifiedPayment(
     classifiedId: string,
-    paymentMethod: string
+    paymentMethod: string,
+    amount?: number,
+    sellerId?: string,
+    offerId?: string
   ): Promise<Payment> {
     this.begin();
     try {
@@ -302,7 +448,76 @@ export class PaymentService {
         this.http.post<Payment>(`${this.baseUrl}/classifieds/payment`, {
           classifiedId,
           paymentMethod,
+          amount,
+          sellerId,
+          offerId,
         })
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async initializeClassifiedPayment(
+    classifiedId: string,
+    amount: number,
+    sellerId?: string,
+    offerId?: string
+  ): Promise<ClassifiedPaymentCheckoutInitialization> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<ClassifiedPaymentCheckoutInitialization>(
+          `${this.baseUrl}/classifieds/payment/initialize`,
+          {
+            classifiedId,
+            paymentMethod: 'card',
+            amount,
+            sellerId,
+            offerId,
+          }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async validateClassifiedPayment(
+    paymentId: string,
+    checkoutToken: string,
+    response: HelcimPaymentResponse
+  ): Promise<{ success: boolean; payment: Payment }> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<{ success: boolean; payment: Payment }>(
+          `${this.baseUrl}/classifieds/payment/validate`,
+          { paymentId, checkoutToken, response }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async confirmStripeClassifiedPayment(
+    paymentId: string,
+    paymentIntentId?: string
+  ): Promise<{ success: boolean; payment: Payment }> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<{ success: boolean; payment: Payment }>(
+          `${this.baseUrl}/classifieds/payment/${paymentId}/confirm-card`,
+          { paymentIntentId }
+        )
       );
       this.end();
       return result;
@@ -352,6 +567,25 @@ export class PaymentService {
       const result = await firstValueFrom(
         this.http.post<Payment>(
           `${this.baseUrl}/classifieds/payment/${paymentId}/dispute`,
+          { reason }
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async refundClassifiedPayment(
+    paymentId: string,
+    reason: string
+  ): Promise<{ success: boolean; payment: Payment }> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<{ success: boolean; payment: Payment }>(
+          `${this.baseUrl}/classifieds/payment/${paymentId}/refund`,
           { reason }
         )
       );
@@ -432,8 +666,8 @@ export class PaymentService {
           (page.subscriptionStatus === 'cancelled'
             ? 'canceled'
             : page.subscriptionStatus === 'inactive'
-            ? 'trial'
-            : 'active'),
+              ? 'trial'
+              : 'active'),
       } as BusinessPage;
     } catch (err) {
       return this.fail(err);
@@ -463,8 +697,8 @@ export class PaymentService {
           (page.subscriptionStatus === 'cancelled'
             ? 'canceled'
             : page.subscriptionStatus === 'inactive'
-            ? 'trial'
-            : 'active'),
+              ? 'trial'
+              : 'active'),
       } as BusinessPage;
     } catch (err) {
       return this.fail(err);
@@ -565,6 +799,49 @@ export class PaymentService {
     try {
       const result = await firstValueFrom(
         this.http.get<Transaction[]>(`${this.baseUrl}/transactions`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async getBillingProfile(): Promise<BillingProfile | null> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<BillingProfile | null>(`${this.baseUrl}/billing/profile`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async updateBillingProfile(
+    data: Partial<Pick<BillingProfile, 'name' | 'email' | 'defaultPaymentMethodId'>>
+  ): Promise<BillingProfile> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<BillingProfile>(`${this.baseUrl}/billing/profile`, data)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async getSavedPaymentMethods(): Promise<SavedPaymentMethod[]> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.get<SavedPaymentMethod[]>(
+          `${this.baseUrl}/billing/payment-methods`
+        )
       );
       this.end();
       return result;
@@ -708,6 +985,38 @@ export class PaymentService {
     try {
       const result = await firstValueFrom(
         this.http.get<SellerWallet>(`${this.baseUrl}/seller/wallet`)
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async createSellerStripeConnectOnboardingLink(): Promise<SellerStripeConnectOnboardingLink> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<SellerStripeConnectOnboardingLink>(
+          `${this.baseUrl}/seller/stripe-connect/onboarding`,
+          {}
+        )
+      );
+      this.end();
+      return result;
+    } catch (err) {
+      return this.fail(err);
+    }
+  }
+
+  async refreshSellerStripeConnectStatus(): Promise<SellerWallet> {
+    this.begin();
+    try {
+      const result = await firstValueFrom(
+        this.http.post<SellerWallet>(
+          `${this.baseUrl}/seller/stripe-connect/refresh`,
+          {}
+        )
       );
       this.end();
       return result;

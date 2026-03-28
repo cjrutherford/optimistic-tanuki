@@ -11,13 +11,12 @@ FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3018
-RUN npm i -g nodemon pg
 WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 COPY ./dist/apps/payments .
-COPY ./apps/payments/src/assets ./apps/payments/src/assets
 RUN npm i --save typeorm
+RUN npm i -g nodemon pg
 RUN chown -R node:node .
 USER node
 EXPOSE 3018

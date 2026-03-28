@@ -101,6 +101,14 @@ export const appRoutes: Route[] = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'account/payments/stripe/:action',
+    loadComponent: () =>
+      import('./pages/stripe-connect-return/stripe-connect-return.component').then(
+        (m) => m.StripeConnectReturnComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'seller-dashboard',
     loadComponent: () =>
       import('./pages/seller-dashboard/seller-dashboard.component').then(

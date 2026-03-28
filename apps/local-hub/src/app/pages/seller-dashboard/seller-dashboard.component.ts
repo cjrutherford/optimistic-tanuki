@@ -97,6 +97,50 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       </section>
       }
 
+      @if (sellerWallet()) {
+      <section class="dashboard-section">
+        <h2>Stripe Marketplace Payouts</h2>
+        <div class="stripe-connect-card">
+          <div class="stripe-connect-copy">
+            <span
+              class="stripe-status-badge"
+              [class]="'stripe-status-badge status-' + sellerWallet()!.stripeAccountStatus"
+            >
+              {{ stripeStatusLabel(sellerWallet()!) }}
+            </span>
+            <p>
+              Connected sellers now receive automatic Stripe transfers when a
+              classifieds payment is released. Manual cashout remains available
+              until Stripe setup is complete.
+            </p>
+            @if (sellerWallet()!.stripeAccountId) {
+            <p class="stripe-connect-meta">
+              Account ID: {{ sellerWallet()!.stripeAccountId }}
+            </p>
+            }
+          </div>
+          <div class="stripe-connect-actions">
+            <button
+              class="btn btn-primary"
+              (click)="startStripeOnboarding()"
+              [disabled]="stripeOnboardingBusy()"
+            >
+              {{ stripeConnectButtonLabel() }}
+            </button>
+            @if (sellerWallet()!.stripeLastSyncedAt) {
+            <button
+              class="btn btn-secondary"
+              (click)="refreshStripeStatus()"
+              [disabled]="stripeOnboardingBusy()"
+            >
+              Refresh Status
+            </button>
+            }
+          </div>
+        </div>
+      </section>
+      }
+
       <!-- Payout History -->
       @if (payoutRequests().length > 0) {
       <section class="dashboard-section">
@@ -444,6 +488,71 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         font-weight: 700;
       }
 
+      .stripe-connect-card {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.25rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background:
+          linear-gradient(135deg, color-mix(in srgb, var(--surface) 92%, #0ea5e9 8%), var(--surface)),
+          var(--surface);
+      }
+
+      .stripe-connect-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-width: 42rem;
+      }
+
+      .stripe-connect-copy p {
+        margin: 0;
+        color: var(--foreground-muted);
+      }
+
+      .stripe-connect-meta {
+        font-size: 0.75rem;
+      }
+
+      .stripe-connect-actions {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .stripe-status-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 0.25rem 0.625rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .stripe-status-badge.status-not-connected {
+        background: #e5e7eb;
+        color: #374151;
+      }
+
+      .stripe-status-badge.status-pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .stripe-status-badge.status-restricted {
+        background: #fde68a;
+        color: #92400e;
+      }
+
+      .stripe-status-badge.status-enabled {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
       .payouts-list {
         display: flex;
         flex-direction: column;
@@ -778,6 +887,12 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         border-top: 1px solid var(--border);
         justify-content: flex-end;
       }
+
+      @media (max-width: 768px) {
+        .stripe-connect-card {
+          flex-direction: column;
+        }
+      }
     `,
   ],
 })
@@ -796,6 +911,8 @@ export class SellerDashboardComponent implements OnInit {
   communityById = signal<Map<string, LocalCommunity>>(new Map());
   earningsSummary = signal<EarningsSummary | null>(null);
   payoutRequests = signal<PayoutRequest[]>([]);
+  sellerWallet = signal<SellerWallet | null>(null);
+  stripeOnboardingBusy = signal(false);
 
   showCounterModal = signal(false);
   showCashoutModal = signal(false);
@@ -815,7 +932,7 @@ export class SellerDashboardComponent implements OnInit {
     }
 
     try {
-      const [offers, payments, listings, communities, earnings, payouts] =
+      const [offers, payments, listings, communities, earnings, payouts, wallet] =
         await Promise.all([
           this.paymentService.getUserOffers(),
           this.paymentService.getUserPayments(),
@@ -823,6 +940,7 @@ export class SellerDashboardComponent implements OnInit {
           this.communityService.getCommunities(),
           this.paymentService.getSellerEarningsSummary().catch(() => null),
           this.paymentService.getSellerPayoutRequests().catch(() => []),
+          this.paymentService.getSellerWallet().catch(() => null),
         ]);
 
       this.myListings.set(listings);
@@ -831,6 +949,7 @@ export class SellerDashboardComponent implements OnInit {
       this.communityById.set(new Map(communities.map((c) => [c.id, c])));
       this.earningsSummary.set(earnings);
       this.payoutRequests.set(payouts);
+      this.sellerWallet.set(wallet);
     } catch (err) {
       console.error('Failed to load dashboard:', err);
       this.messageService.addMessage({
@@ -856,6 +975,33 @@ export class SellerDashboardComponent implements OnInit {
     return this.userPayments()
       .filter((p) => p.status === 'released' || p.status === 'confirmed')
       .reduce((sum, p) => sum + Number(p.sellerReceivesAmount || 0), 0);
+  }
+
+  stripeStatusLabel(wallet: SellerWallet): string {
+    switch (wallet.stripeAccountStatus) {
+      case 'enabled':
+        return 'Stripe Connected';
+      case 'restricted':
+        return 'Needs Attention';
+      case 'pending':
+        return 'Setup In Progress';
+      default:
+        return 'Not Connected';
+    }
+  }
+
+  stripeConnectButtonLabel(): string {
+    const wallet = this.sellerWallet();
+
+    if (!wallet || wallet.stripeAccountStatus === 'not-connected') {
+      return 'Connect Stripe';
+    }
+
+    if (wallet.stripeAccountStatus === 'enabled') {
+      return 'Update Stripe Details';
+    }
+
+    return 'Resume Stripe Setup';
   }
 
   recentPayments(): Payment[] {
@@ -1053,14 +1199,55 @@ export class SellerDashboardComponent implements OnInit {
     }
   }
 
+  async startStripeOnboarding(): Promise<void> {
+    this.stripeOnboardingBusy.set(true);
+
+    try {
+      const result = await this.paymentService.createSellerStripeConnectOnboardingLink();
+      if (typeof window !== 'undefined') {
+        window.location.assign(result.onboardingUrl);
+        return;
+      }
+    } catch (err: any) {
+      this.messageService.addMessage({
+        content: err.message || 'Failed to start Stripe onboarding.',
+        type: 'error',
+      });
+    } finally {
+      this.stripeOnboardingBusy.set(false);
+    }
+  }
+
+  async refreshStripeStatus(): Promise<void> {
+    this.stripeOnboardingBusy.set(true);
+
+    try {
+      const wallet = await this.paymentService.refreshSellerStripeConnectStatus();
+      this.sellerWallet.set(wallet);
+      this.messageService.addMessage({
+        content: 'Stripe account status refreshed.',
+        type: 'success',
+      });
+    } catch (err: any) {
+      this.messageService.addMessage({
+        content: err.message || 'Failed to refresh Stripe status.',
+        type: 'error',
+      });
+    } finally {
+      this.stripeOnboardingBusy.set(false);
+    }
+  }
+
   private async refreshWalletData(): Promise<void> {
     try {
-      const [earnings, payouts] = await Promise.all([
+      const [earnings, payouts, wallet] = await Promise.all([
         this.paymentService.getSellerEarningsSummary().catch(() => null),
         this.paymentService.getSellerPayoutRequests().catch(() => []),
+        this.paymentService.getSellerWallet().catch(() => null),
       ]);
       this.earningsSummary.set(earnings);
       this.payoutRequests.set(payouts);
+      this.sellerWallet.set(wallet);
     } catch (err) {
       console.error('Failed to refresh wallet data:', err);
     }

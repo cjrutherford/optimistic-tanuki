@@ -5,6 +5,18 @@
   "sourceRoot": "apps/local-hub-e2e/src",
   "implicitDependencies": ["local-hub"],
   "targets": {
+    "up": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f docker-compose.local-hub-e2e.yaml up -d --build"
+      }
+    },
+    "down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f docker-compose.local-hub-e2e.yaml down -v"
+      }
+    },
     "e2e": {
       "executor": "@nx/playwright:playwright",
       "options": {
@@ -15,7 +27,8 @@
           "env": {
             "CI": "true",
             "BASE_URL": "http://localhost:8087",
-            "GATEWAY_URL": "http://localhost:3000"
+            "GATEWAY_URL": "http://localhost:3000",
+            "MOCK_PAYMENT_URL": "http://localhost:3019"
           }
         },
         "docker": {
@@ -23,22 +36,24 @@
             "E2E_DOCKER": "true",
             "CI": "true",
             "BASE_URL": "http://localhost:8087",
-            "GATEWAY_URL": "http://localhost:3000"
+            "GATEWAY_URL": "http://localhost:3000",
+            "MOCK_PAYMENT_URL": "http://localhost:3019"
           }
         }
       }
     },
-    "docker:up": {
-      "command": "docker compose -f docker-compose.local-hub-e2e.yaml up -d",
-      "dependsOn": []
-    },
-    "docker:down": {
-      "command": "docker compose -f docker-compose.local-hub-e2e.yaml down",
-      "dependsOn": []
-    },
-    "docker:test": {
-      "command": "docker compose -f docker-compose.local-hub-e2e.yaml run --rm e2e-test-runner",
-      "dependsOn": ["docker:up"]
+    "e2e-docker": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx run local-hub-e2e:up",
+          "echo 'Stack started. Waiting for services...'",
+          "sleep 60",
+          "docker compose -f docker-compose.local-hub-e2e.yaml run --rm e2e-test-runner npx playwright test --config=apps/local-hub-e2e/playwright.config.ts",
+          "nx run local-hub-e2e:down"
+        ],
+        "parallel": false
+      }
     }
   }
 }

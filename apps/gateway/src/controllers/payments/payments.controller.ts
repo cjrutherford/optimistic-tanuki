@@ -31,15 +31,48 @@ export interface CreateDonationDto {
   isRecurring: boolean;
 }
 
+export interface ValidateDonationCheckoutDto {
+  donationId: string;
+  checkoutToken: string;
+  response: {
+    hash: string;
+    data: Record<string, unknown>;
+  };
+}
+
 export interface CreateClassifiedPaymentDto {
   classifiedId: string;
   paymentMethod: 'card' | 'cash-app' | 'venmo' | 'zelle' | 'cash';
   sellerId?: string;
   amount?: number;
+  offerId?: string;
+}
+
+export interface ValidateClassifiedCheckoutDto {
+  paymentId: string;
+  checkoutToken: string;
+  response: {
+    hash: string;
+    data: Record<string, unknown>;
+  };
+}
+
+export interface UpdateBillingProfileDto {
+  name?: string;
+  email?: string;
+  defaultPaymentMethodId?: string;
 }
 
 export interface ConfirmOutOfPlatformDto {
   proofImageUrl?: string;
+}
+
+export interface ConfirmStripeClassifiedPaymentDto {
+  paymentIntentId?: string;
+}
+
+export interface RefundPaymentDto {
+  reason: string;
 }
 
 export interface CreateBusinessPageDto {
@@ -91,6 +124,13 @@ export interface CreatePayoutRequestDto {
   bankRoutingLast4?: string;
 }
 
+export interface SellerStripeConnectOnboardingLinkDto {
+  onboardingUrl: string;
+  accountId: string;
+  status: 'not-connected' | 'pending' | 'restricted' | 'enabled';
+  expiresAt: string | null;
+}
+
 @ApiTags('payments')
 @Controller('payments')
 export class PaymentsController {
@@ -131,6 +171,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Get monthly donation goal progress' })
   @ApiResponse({ status: 200, description: 'Donation goal info' })
   async getDonationGoal(
+    @AppScope() appScope: string,
     @Query('month') month?: string,
     @Query('year') year?: string
   ) {
@@ -143,6 +184,7 @@ export class PaymentsController {
           {
             month: targetMonth,
             year: targetYear,
+            appScope,
           }
         )
       );
@@ -162,6 +204,7 @@ export class PaymentsController {
   @Public()
   @ApiOperation({ summary: 'Get donations for a month' })
   async getDonations(
+    @AppScope() appScope: string,
     @Query('month') month?: string,
     @Query('year') year?: string
   ) {
@@ -174,6 +217,7 @@ export class PaymentsController {
           {
             month: targetMonth,
             year: targetYear,
+            appScope,
           }
         )
       );
@@ -206,16 +250,91 @@ export class PaymentsController {
     );
   }
 
+  @Post('donations/checkout/initialize')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Initialize Helcim donation checkout session' })
+  async initializeDonationCheckout(
+    @User() user: UserDetails,
+    @Body() dto: CreateDonationDto,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.INITIALIZE_DONATION_CHECKOUT },
+        {
+          userId: user.userId,
+          profileId: user.profileId,
+          amount: dto.amount,
+          isRecurring: dto.isRecurring,
+          appScope,
+          email: user.email,
+          name: user.name,
+        }
+      )
+    );
+  }
+
+  @Post('donations/checkout/validate')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Validate completed Helcim donation checkout' })
+  async validateDonationCheckout(
+    @User() user: UserDetails,
+    @Body() dto: ValidateDonationCheckoutDto,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.VALIDATE_DONATION_CHECKOUT },
+        {
+          userId: user.userId,
+          donationId: dto.donationId,
+          checkoutToken: dto.checkoutToken,
+          response: dto.response,
+          appScope,
+        }
+      )
+    );
+  }
+
+  @Post('donations/:donationId/refund')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Refund a completed Helcim donation' })
+  async refundDonation(
+    @User() user: UserDetails,
+    @Param('donationId') donationId: string,
+    @Body() dto: RefundPaymentDto,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.REFUND_DONATION },
+        {
+          userId: user.userId,
+          donationId,
+          reason: dto.reason,
+          appScope,
+        }
+      )
+    );
+  }
+
   @Get('donations/user')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user donations' })
-  async getUserDonations(@User() user: UserDetails) {
+  async getUserDonations(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_USER_DONATIONS },
         {
           userId: user.userId,
+          appScope,
         }
       )
     );
@@ -227,6 +346,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Cancel recurring donation' })
   async cancelRecurringDonation(
     @User() user: UserDetails,
+    @AppScope() appScope: string,
     @Param('subscriptionId') subscriptionId: string
   ) {
     return await firstValueFrom(
@@ -235,6 +355,7 @@ export class PaymentsController {
         {
           userId: user.userId,
           subscriptionId,
+          appScope,
         }
       )
     );
@@ -265,12 +386,106 @@ export class PaymentsController {
     );
   }
 
+  @Post('classifieds/payment/initialize')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Initialize Helcim payment for classified card checkout' })
+  async initializeClassifiedPayment(
+    @User() user: UserDetails,
+    @Body() dto: CreateClassifiedPaymentDto,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.INITIALIZE_CLASSIFIED_PAYMENT },
+        {
+          buyerId: user.userId,
+          classifiedId: dto.classifiedId,
+          amount: dto.amount,
+          sellerId: dto.sellerId,
+          offerId: dto.offerId,
+          appScope,
+        }
+      )
+    );
+  }
+
+  @Post('classifieds/payment/validate')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Validate completed Helcim classified checkout' })
+  async validateClassifiedPayment(
+    @User() user: UserDetails,
+    @Body() dto: ValidateClassifiedCheckoutDto,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.VALIDATE_CLASSIFIED_PAYMENT },
+        {
+          buyerId: user.userId,
+          paymentId: dto.paymentId,
+          checkoutToken: dto.checkoutToken,
+          response: dto.response,
+          appScope,
+        }
+      )
+    );
+  }
+
+  @Post('classifieds/payment/:paymentId/refund')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Refund a completed Helcim classified payment' })
+  async refundClassifiedPayment(
+    @User() user: UserDetails,
+    @Param('paymentId') paymentId: string,
+    @Body() dto: RefundPaymentDto,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.REFUND_CLASSIFIED_PAYMENT },
+        {
+          userId: user.userId,
+          paymentId,
+          reason: dto.reason,
+          appScope,
+        }
+      )
+    );
+  }
+
+  @Post('classifieds/payment/:paymentId/confirm-card')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirm completed Stripe classified card checkout' })
+  async confirmStripeClassifiedPayment(
+    @User() user: UserDetails,
+    @Param('paymentId') paymentId: string,
+    @Body() dto: ConfirmStripeClassifiedPaymentDto,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.CONFIRM_STRIPE_CLASSIFIED_PAYMENT },
+        {
+          buyerId: user.userId,
+          paymentId,
+          paymentIntentId: dto.paymentIntentId,
+          appScope,
+        }
+      )
+    );
+  }
+
   @Post('classifieds/payment/:paymentId/confirm')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirm out-of-platform payment' })
   async confirmOutOfPlatformPayment(
     @User() user: UserDetails,
+    @AppScope() appScope: string,
     @Param('paymentId') paymentId: string,
     @Body() dto: ConfirmOutOfPlatformDto
   ) {
@@ -281,6 +496,7 @@ export class PaymentsController {
           paymentId,
           userId: user.userId,
           proofImageUrl: dto.proofImageUrl,
+          appScope,
         }
       )
     );
@@ -292,6 +508,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Confirm payment received and release funds' })
   async confirmPaymentReceived(
     @User() user: UserDetails,
+    @AppScope() appScope: string,
     @Param('paymentId') paymentId: string
   ) {
     return await firstValueFrom(
@@ -300,6 +517,7 @@ export class PaymentsController {
         {
           paymentId,
           sellerId: user.userId,
+          appScope,
         }
       )
     );
@@ -311,6 +529,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Dispute a payment' })
   async disputePayment(
     @User() user: UserDetails,
+    @AppScope() appScope: string,
     @Param('paymentId') paymentId: string,
     @Body('reason') reason: string
   ) {
@@ -321,6 +540,7 @@ export class PaymentsController {
           paymentId,
           userId: user.userId,
           reason,
+          appScope,
         }
       )
     );
@@ -330,11 +550,14 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get payment details' })
-  async getPayment(@Param('paymentId') paymentId: string) {
+  async getPayment(
+    @Param('paymentId') paymentId: string,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_PAYMENT },
-        { paymentId }
+        { paymentId, appScope }
       )
     );
   }
@@ -343,12 +566,16 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user payments' })
-  async getUserPayments(@User() user: UserDetails) {
+  async getUserPayments(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_USER_PAYMENTS },
         {
           userId: user.userId,
+          appScope,
         }
       )
     );
@@ -379,13 +606,17 @@ export class PaymentsController {
   @Get('business/:communityId')
   @Public()
   @ApiOperation({ summary: 'Get business page for community' })
-  async getBusinessPage(@Param('communityId') communityId: string) {
+  async getBusinessPage(
+    @Param('communityId') communityId: string,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient
         .send(
           { cmd: PaymentCommands.GET_BUSINESS_PAGE },
           {
             communityId,
+            appScope,
           }
         )
         .pipe(defaultIfEmpty(null))
@@ -397,6 +628,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Get business pages for all communities in a city' })
   async getBusinessPagesByCity(
     @Param('cityId') cityId: string,
+    @AppScope() appScope: string,
     @Query('communityIds') communityIds?: string
   ) {
     const ids = communityIds ? communityIds.split(',') : [];
@@ -406,6 +638,7 @@ export class PaymentsController {
         {
           cityId,
           communityIds: ids,
+          appScope,
         }
       )
     );
@@ -417,6 +650,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Update business page' })
   async updateBusinessPage(
     @User() user: UserDetails,
+    @AppScope() appScope: string,
     @Param('communityId') communityId: string,
     @Body() dto: UpdateBusinessPageDto
   ) {
@@ -426,6 +660,7 @@ export class PaymentsController {
         {
           userId: user.userId,
           communityId,
+          appScope,
           ...dto,
         }
       )
@@ -438,6 +673,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Cancel business subscription' })
   async cancelBusinessSubscription(
     @User() user: UserDetails,
+    @AppScope() appScope: string,
     @Param('communityId') communityId: string
   ) {
     return await firstValueFrom(
@@ -446,6 +682,7 @@ export class PaymentsController {
         {
           userId: user.userId,
           communityId,
+          appScope,
         }
       )
     );
@@ -477,12 +714,16 @@ export class PaymentsController {
   @Get('sponsorship/:communityId/active')
   @Public()
   @ApiOperation({ summary: 'Get active sponsorships for community' })
-  async getActiveSponsorships(@Param('communityId') communityId: string) {
+  async getActiveSponsorships(
+    @Param('communityId') communityId: string,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_ACTIVE_SPONSORSHIPS },
         {
           communityId,
+          appScope,
         }
       )
     );
@@ -492,12 +733,16 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user sponsorships' })
-  async getUserSponsorships(@User() user: UserDetails) {
+  async getUserSponsorships(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_USER_SPONSORSHIPS },
         {
           userId: user.userId,
+          appScope,
         }
       )
     );
@@ -507,12 +752,75 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user transactions' })
-  async getTransactions(@User() user: UserDetails) {
+  async getTransactions(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_USER_TRANSACTIONS },
         {
           userId: user.userId,
+          appScope,
+        }
+      )
+    );
+  }
+
+  @Get('billing/profile')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user billing profile' })
+  async getBillingProfile(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.GET_BILLING_PROFILE },
+        {
+          userId: user.userId,
+          appScope,
+        }
+      )
+    );
+  }
+
+  @Patch('billing/profile')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update user billing profile' })
+  async updateBillingProfile(
+    @User() user: UserDetails,
+    @Body() dto: UpdateBillingProfileDto,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.UPDATE_BILLING_PROFILE },
+        {
+          userId: user.userId,
+          appScope,
+          ...dto,
+        }
+      )
+    );
+  }
+
+  @Get('billing/payment-methods')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List saved payment methods' })
+  async listSavedPaymentMethods(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.LIST_SAVED_PAYMENT_METHODS },
+        {
+          userId: user.userId,
+          appScope,
         }
       )
     );
@@ -522,12 +830,13 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get Lemon Squeezy customer portal URL' })
-  async getPortal(@User() user: UserDetails) {
+  async getPortal(@User() user: UserDetails, @AppScope() appScope: string) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_PORTAL_URL },
         {
           userId: user.userId,
+          appScope,
         }
       )
     );
@@ -661,11 +970,53 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get seller wallet' })
-  async getSellerWallet(@User() user: UserDetails) {
+  async getSellerWallet(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_SELLER_WALLET },
-        { sellerId: user.profileId || user.userId }
+        { sellerId: user.profileId || user.userId, appScope }
+      )
+    );
+  }
+
+  @Post('seller/stripe-connect/onboarding')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create or resume seller Stripe Connect onboarding' })
+  async createSellerStripeConnectOnboardingLink(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.CREATE_SELLER_STRIPE_CONNECT_ONBOARDING_LINK },
+        {
+          sellerId: user.profileId || user.userId,
+          email: user.email,
+          appScope,
+        }
+      )
+    );
+  }
+
+  @Post('seller/stripe-connect/refresh')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Refresh seller Stripe Connect status' })
+  async refreshSellerStripeConnectStatus(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.REFRESH_SELLER_STRIPE_CONNECT_STATUS },
+        {
+          sellerId: user.profileId || user.userId,
+          appScope,
+        }
       )
     );
   }
@@ -676,6 +1027,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Update seller payout information' })
   async updateSellerPayoutInfo(
     @User() user: UserDetails,
+    @AppScope() appScope: string,
     @Body() dto: UpdatePayoutInfoDto
   ) {
     return await firstValueFrom(
@@ -683,6 +1035,7 @@ export class PaymentsController {
         { cmd: PaymentCommands.UPDATE_SELLER_PAYOUT_INFO },
         {
           sellerId: user.profileId || user.userId,
+          appScope,
           payoutMethod: dto.payoutMethod,
           payoutEmail: dto.payoutEmail,
           bankAccountLast4: dto.bankAccountLast4,
@@ -698,6 +1051,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Create a payout request' })
   async createPayoutRequest(
     @User() user: UserDetails,
+    @AppScope() appScope: string,
     @Body() dto: CreatePayoutRequestDto
   ) {
     return await firstValueFrom(
@@ -705,6 +1059,7 @@ export class PaymentsController {
         { cmd: PaymentCommands.CREATE_PAYOUT_REQUEST },
         {
           sellerId: user.profileId || user.userId,
+          appScope,
           amount: dto.amount,
           payoutMethod: dto.payoutMethod,
           payoutEmail: dto.payoutEmail,
@@ -719,11 +1074,14 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get seller payout requests' })
-  async getSellerPayoutRequests(@User() user: UserDetails) {
+  async getSellerPayoutRequests(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_SELLER_PAYOUT_REQUESTS },
-        { sellerId: user.profileId || user.userId }
+        { sellerId: user.profileId || user.userId, appScope }
       )
     );
   }
@@ -734,6 +1092,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Cancel a payout request' })
   async cancelPayoutRequest(
     @User() user: UserDetails,
+    @AppScope() appScope: string,
     @Param('payoutRequestId') payoutRequestId: string
   ) {
     return await firstValueFrom(
@@ -742,6 +1101,7 @@ export class PaymentsController {
         {
           payoutRequestId,
           sellerId: user.profileId || user.userId,
+          appScope,
         }
       )
     );
@@ -751,11 +1111,14 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get seller earnings summary' })
-  async getSellerEarningsSummary(@User() user: UserDetails) {
+  async getSellerEarningsSummary(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_SELLER_EARNINGS_SUMMARY },
-        { sellerId: user.profileId || user.userId }
+        { sellerId: user.profileId || user.userId, appScope }
       )
     );
   }

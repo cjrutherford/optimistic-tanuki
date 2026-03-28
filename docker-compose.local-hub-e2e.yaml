@@ -45,8 +45,6 @@ services:
         condition: service_healthy
     command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
     restart: 'no'
-    profiles:
-      - setup
 
   authentication:
     build:
@@ -65,6 +63,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
 
   profile:
     build:
@@ -82,6 +82,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
       authentication:
         condition: service_started
 
@@ -101,6 +103,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
 
   assets:
     build:
@@ -122,6 +126,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
 
   classifieds:
     build:
@@ -139,6 +145,27 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  mock-payment-server:
+    build:
+      context: .
+      dockerfile: ./e2e/mock-payment-server/Dockerfile
+    container_name: local_hub_e2e_mock_payment
+    ports:
+      - '3019:3019'
+    environment:
+      - MOCK_PORT=3019
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3019/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   payments:
     build:
@@ -153,8 +180,20 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=ot_local_hub
+      - HELCIM_BASE_URL=http://mock-payment-server:3019
+      - HELCIM_API_TOKEN=e2e-test-helcim-token
+      - HELCIM_WEBHOOK_SECRET=e2e-test-webhook-secret
+      - STRIPE_SECRET_KEY=sk_test_mock_stripe_key
+      - STRIPE_PUBLISHABLE_KEY=pk_test_mock_stripe_key
+      - STRIPE_WEBHOOK_SECRET=e2e-test-stripe-webhook-secret
+      - STRIPE_CONNECT_RETURN_URL=http://localhost:4200/stripe-connect-return
+      - STRIPE_CONNECT_REFRESH_URL=http://localhost:4200/stripe-connect-refresh
     depends_on:
       postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      mock-payment-server:
         condition: service_healthy
 
   gateway:
@@ -181,10 +220,10 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - node -e "require('http').get('http://localhost:3000/api/mcp/sse', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }).on('error', (err) => process.exit(1));"
+        - node -e "require('http').get('http://localhost:3000/api/communities', (res) => { if (res.statusCode < 500) process.exit(0); else process.exit(1); }).on('error', (err) => process.exit(1));"
       interval: 10s
       timeout: 5s
-      retries: 15
+      retries: 30
     depends_on:
       postgres:
         condition: service_healthy
@@ -231,6 +270,7 @@ services:
       - CI=true
       - BASE_URL=http://local-hub-frontend:4000
       - GATEWAY_URL=http://gateway:3000
+      - MOCK_PAYMENT_URL=http://mock-payment-server:3019
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_USER=postgres

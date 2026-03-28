@@ -14,6 +14,8 @@ export type PayoutStatus =
   | 'cancelled';
 
 @Entity('payout_requests')
+@Index(['appScope'])
+@Index(['appScope', 'sellerId'])
 @Index(['sellerId'])
 @Index(['status'])
 export class PayoutRequest {
@@ -22,6 +24,9 @@ export class PayoutRequest {
 
   @Column({ type: 'uuid' })
   sellerId: string;
+
+  @Column({ type: 'varchar' })
+  appScope: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;

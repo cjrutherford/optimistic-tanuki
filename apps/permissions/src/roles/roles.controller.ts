@@ -118,4 +118,9 @@ export class RolesController {
       data.checkGlobalFallback ?? false
     );
   }
+
+  @MessagePattern({ cmd: RoleCommands.GetAllAssignments })
+  async getAllAssignments(@Payload() data: { appScopeId?: string }) {
+    return await this.rolesService.getAllAssignments(data.appScopeId);
+  }
 }

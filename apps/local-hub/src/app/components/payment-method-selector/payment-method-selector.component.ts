@@ -1,14 +1,34 @@
 import {
   Component,
+  ElementRef,
   inject,
+  OnDestroy,
   signal,
   Input,
   Output,
   EventEmitter,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PaymentService, Payment } from '../../services/payment.service';
+import {
+  ClassifiedPaymentCheckoutInitialization,
+  PaymentService,
+  Payment,
+} from '../../services/payment.service';
+import {
+  loadStripe,
+  Stripe,
+  StripeElements,
+  StripePaymentElement,
+} from '@stripe/stripe-js';
+
+declare global {
+  interface Window {
+    appendHelcimPayIframe?: (checkoutToken: string, allowExit?: boolean) => void;
+    removeHelcimPayIframe?: () => void;
+  }
+}
 
 export type PaymentMethodOption =
   | 'card'
@@ -32,7 +52,7 @@ export interface PaymentRequest {
     <div class="payment-modal">
       <div class="modal-header">
         <h3>Complete Your Purchase</h3>
-        <button class="close-btn" (click)="cancel.emit()">×</button>
+        <button class="close-btn" (click)="close()">×</button>
       </div>
 
       @if (step() === 'method') {
@@ -115,16 +135,62 @@ export interface PaymentRequest {
           </div>
         </div>
         }
+
+        @if (checkoutError()) {
+        <div class="checkout-error">{{ checkoutError() }}</div>
+        }
       </div>
 
       <div class="modal-footer">
-        <button class="btn-secondary" (click)="cancel.emit()">Cancel</button>
+        <button class="btn-secondary" (click)="close()">Cancel</button>
         <button
           class="btn-primary"
           [disabled]="!selectedMethod()"
           (click)="proceed()"
         >
           Continue
+        </button>
+      </div>
+      } @if (step() === 'stripe-checkout') {
+      <div class="modal-body">
+        <div class="item-summary">
+          <h4>{{ request?.title }}</h4>
+          <p class="price">\${{ request?.amount | number : '1.2-2' }}</p>
+        </div>
+
+        <div class="stripe-panel">
+          <h5>Secure Card Checkout</h5>
+          <p class="stripe-copy">
+            Enter your card details below to complete this purchase through
+            Stripe.
+          </p>
+
+          <div
+            #stripePaymentElement
+            class="stripe-payment-element"
+            [class.loading]="!stripeReady()"
+          ></div>
+
+          @if (!stripeReady()) {
+          <p class="stripe-status">Preparing secure checkout...</p>
+          }
+
+          @if (checkoutError()) {
+          <div class="checkout-error">{{ checkoutError() }}</div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="backToMethodSelection()">
+          Back
+        </button>
+        <button
+          class="btn-primary"
+          [disabled]="processing() || !stripeReady()"
+          (click)="submitStripePayment()"
+        >
+          @if (processing()) { Processing... } @else { Pay Now }
         </button>
       </div>
       } @if (step() === 'out-of-platform') {
@@ -304,6 +370,15 @@ export interface PaymentRequest {
         border-radius: 8px;
       }
 
+      .checkout-error {
+        margin-top: 16px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: #fff1f0;
+        color: #c0392b;
+        font-size: 0.875rem;
+      }
+
       .info-box h5 {
         margin: 0 0 12px;
       }
@@ -392,6 +467,42 @@ export interface PaymentRequest {
         cursor: not-allowed;
       }
 
+      .stripe-panel {
+        padding: 18px;
+        border: 1px solid #dfe8df;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #fbfdfb 0%, #f4f8f4 100%);
+      }
+
+      .stripe-panel h5 {
+        margin: 0 0 8px;
+        font-size: 0.95rem;
+      }
+
+      .stripe-copy {
+        margin: 0 0 16px;
+        color: #4d5b4d;
+        font-size: 0.9rem;
+      }
+
+      .stripe-payment-element {
+        min-height: 180px;
+        padding: 12px;
+        border-radius: 12px;
+        background: white;
+        border: 1px solid #d9e2d9;
+      }
+
+      .stripe-payment-element.loading {
+        opacity: 0.7;
+      }
+
+      .stripe-status {
+        margin: 12px 0 0;
+        font-size: 0.85rem;
+        color: #5f6c5f;
+      }
+
       .success-state {
         text-align: center;
         padding: 48px 24px;
@@ -412,22 +523,38 @@ export interface PaymentRequest {
     `,
   ],
 })
-export class PaymentMethodSelectorComponent {
+export class PaymentMethodSelectorComponent implements OnDestroy {
   private paymentService = inject(PaymentService);
+
+  @ViewChild('stripePaymentElement')
+  private stripePaymentElementHost?: ElementRef<HTMLDivElement>;
 
   @Input() request: PaymentRequest | null = null;
   @Output() cancel = new EventEmitter<void>();
   @Output() complete = new EventEmitter<Payment>();
 
-  readonly step = signal<'method' | 'out-of-platform' | 'success'>('method');
+  readonly step = signal<
+    'method' | 'stripe-checkout' | 'out-of-platform' | 'success'
+  >('method');
   readonly selectedMethod = signal<PaymentMethodOption | null>(null);
   readonly processing = signal(false);
   readonly proofImage = signal<string | null>(null);
   readonly payment = signal<Payment | null>(null);
+  readonly checkoutError = signal<string | null>(null);
+  readonly stripeReady = signal(false);
 
   paymentSent = false;
+  private stripe: Stripe | null = null;
+  private stripeElements: StripeElements | null = null;
+  private stripePaymentElement: StripePaymentElement | null = null;
+  private stripePaymentId: string | null = null;
+
+  ngOnDestroy(): void {
+    this.destroyStripeCheckout();
+  }
 
   selectMethod(method: PaymentMethodOption): void {
+    this.checkoutError.set(null);
     this.selectedMethod.set(method);
   }
 
@@ -457,23 +584,35 @@ export class PaymentMethodSelectorComponent {
     const method = this.selectedMethod();
     if (!method || !this.request) return;
 
+    this.checkoutError.set(null);
+
     if (method === 'card') {
       this.processing.set(true);
       try {
-        const payment = await this.paymentService.createClassifiedPayment(
+        const session = await this.paymentService.initializeClassifiedPayment(
           this.request.classifiedId,
-          method
+          this.request.amount,
+          this.request.sellerId
         );
-        const checkoutUrl = payment.checkoutUrl;
-        if (payment.paymentMethod === 'card' && checkoutUrl) {
-          window.location.href = checkoutUrl;
+
+        if (session.provider === 'stripe-connect') {
+          await this.launchStripeCheckout(session);
           return;
         }
-        throw new Error(
-          'Card checkout is not configured yet. Please choose another payment method.'
-        );
+
+        if (session.provider !== 'helcim' || !session.checkoutToken) {
+          this.checkoutError.set(
+            'Card checkout is not available for this listing yet. Please choose another payment method.'
+          );
+          return;
+        }
+
+        await this.launchHelcimCheckout(session.paymentId, session.checkoutToken);
       } catch (error) {
         console.error('Payment failed:', error);
+        this.checkoutError.set(
+          'Unable to start card checkout right now. Please try again or choose another method.'
+        );
       } finally {
         this.processing.set(false);
       }
@@ -486,14 +625,17 @@ export class PaymentMethodSelectorComponent {
     if (!this.request || !this.selectedMethod()) return;
 
     this.processing.set(true);
+    this.checkoutError.set(null);
     try {
-      const payment = await this.paymentService.createClassifiedPayment(
+      let payment = await this.paymentService.createClassifiedPayment(
         this.request.classifiedId,
-        this.selectedMethod()!
+        this.selectedMethod()!,
+        this.request.amount,
+        this.request.sellerId
       );
 
       if (this.proofImage()) {
-        await this.paymentService.confirmOutOfPlatformPayment(
+        payment = await this.paymentService.confirmOutOfPlatformPayment(
           payment.id,
           this.proofImage() || undefined
         );
@@ -506,5 +648,208 @@ export class PaymentMethodSelectorComponent {
     } finally {
       this.processing.set(false);
     }
+  }
+
+  async submitStripePayment(): Promise<void> {
+    if (!this.stripe || !this.stripeElements || !this.stripePaymentId) {
+      this.checkoutError.set(
+        'Stripe checkout is not ready yet. Please try again.'
+      );
+      return;
+    }
+
+    this.processing.set(true);
+    this.checkoutError.set(null);
+
+    try {
+      const result = await this.stripe.confirmPayment({
+        elements: this.stripeElements,
+        redirect: 'if_required',
+      });
+
+      if (result.error) {
+        this.checkoutError.set(
+          result.error.message ||
+            'Unable to confirm your card right now. Please check your details and try again.'
+        );
+        return;
+      }
+
+      const confirmation = await this.paymentService.confirmStripeClassifiedPayment(
+        this.stripePaymentId,
+        result.paymentIntent?.id
+      );
+
+      this.payment.set(confirmation.payment);
+      this.destroyStripeCheckout();
+      this.step.set('success');
+    } catch (error) {
+      console.error('Stripe payment confirmation failed:', error);
+      this.checkoutError.set(
+        'Unable to complete card checkout right now. Please try again or choose another method.'
+      );
+    } finally {
+      this.processing.set(false);
+    }
+  }
+
+  backToMethodSelection(): void {
+    this.destroyStripeCheckout();
+    this.checkoutError.set(null);
+    this.step.set('method');
+  }
+
+  close(): void {
+    this.destroyStripeCheckout();
+    this.cancel.emit();
+  }
+
+  private async ensureHelcimScript(): Promise<void> {
+    if (typeof window === 'undefined') {
+      throw new Error('Helcim checkout is only available in the browser');
+    }
+
+    if (window.appendHelcimPayIframe) {
+      return;
+    }
+
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      'script[data-helcim-pay="true"]'
+    );
+
+    if (existingScript) {
+      await new Promise<void>((resolve, reject) => {
+        existingScript.addEventListener('load', () => resolve(), { once: true });
+        existingScript.addEventListener('error', () => reject(new Error('Failed to load Helcim checkout')), {
+          once: true,
+        });
+      });
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://secure.helcim.app/helcim-pay/services/start.js';
+      script.async = true;
+      script.dataset['helcimPay'] = 'true';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Helcim checkout'));
+      document.body.appendChild(script);
+    });
+  }
+
+  private async launchHelcimCheckout(
+    paymentId: string,
+    checkoutToken: string
+  ): Promise<void> {
+    await this.ensureHelcimScript();
+
+    const eventName = `helcim-pay-js-${checkoutToken}`;
+
+    await new Promise<void>((resolve, reject) => {
+      const onMessage = async (event: MessageEvent) => {
+        if (!event.data || event.data.eventName !== eventName) {
+          return;
+        }
+
+        window.removeEventListener('message', onMessage);
+
+        if (event.data.eventStatus === 'ABORTED' || event.data.eventStatus === 'HIDE') {
+          this.checkoutError.set('Card checkout was closed before the payment was completed.');
+          resolve();
+          return;
+        }
+
+        if (event.data.eventStatus !== 'SUCCESS' || !event.data.eventMessage) {
+          reject(new Error('Unexpected Helcim checkout response'));
+          return;
+        }
+
+        try {
+          const result = await this.paymentService.validateClassifiedPayment(
+            paymentId,
+            checkoutToken,
+            event.data.eventMessage
+          );
+
+          this.payment.set(result.payment);
+          this.step.set('success');
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      window.addEventListener('message', onMessage);
+
+      try {
+        window.appendHelcimPayIframe?.(checkoutToken, true);
+      } catch (error) {
+        window.removeEventListener('message', onMessage);
+        reject(error);
+      }
+    });
+  }
+
+  private async launchStripeCheckout(
+    session: ClassifiedPaymentCheckoutInitialization
+  ): Promise<void> {
+    if (typeof window === 'undefined') {
+      throw new Error('Stripe checkout is only available in the browser');
+    }
+
+    if (!session.clientSecret || !session.publishableKey) {
+      throw new Error('Stripe checkout session is missing required configuration');
+    }
+
+    this.destroyStripeCheckout();
+    this.stripeReady.set(false);
+    this.step.set('stripe-checkout');
+    this.stripePaymentId = session.paymentId;
+
+    const stripe = await loadStripe(session.publishableKey);
+
+    if (!stripe) {
+      throw new Error('Unable to initialize Stripe checkout');
+    }
+
+    this.stripe = stripe;
+    const container = await this.waitForStripeContainer();
+
+    this.stripeElements = stripe.elements({
+      clientSecret: session.clientSecret,
+      appearance: {
+        variables: {
+          colorPrimary: '#6b8e6b',
+          borderRadius: '12px',
+        },
+      },
+    });
+    this.stripePaymentElement = this.stripeElements.create('payment', {
+      layout: 'tabs',
+    });
+    this.stripePaymentElement.mount(container);
+    this.stripeReady.set(true);
+  }
+
+  private async waitForStripeContainer(): Promise<HTMLDivElement> {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const container = this.stripePaymentElementHost?.nativeElement;
+      if (container) {
+        return container;
+      }
+    }
+
+    throw new Error('Stripe checkout container was not rendered');
+  }
+
+  private destroyStripeCheckout(): void {
+    this.stripePaymentElement?.unmount();
+    this.stripePaymentElement = null;
+    this.stripeElements = null;
+    this.stripe = null;
+    this.stripePaymentId = null;
+    this.stripeReady.set(false);
   }
 }

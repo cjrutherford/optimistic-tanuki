@@ -12,6 +12,8 @@ import { Offer } from '../entities/offer.entity';
 import { SellerWallet } from '../entities/seller-wallet.entity';
 import { PayoutRequest } from '../entities/payout-request.entity';
 import { LemonSqueezyProduct } from '../entities/lemon-squeezy-product.entity';
+import { BillingProfile } from '../entities/billing-profile.entity';
+import { SavedPaymentMethod } from '../entities/saved-payment-method.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -41,6 +43,8 @@ const entities = [
   SellerWallet,
   PayoutRequest,
   LemonSqueezyProduct,
+  BillingProfile,
+  SavedPaymentMethod,
 ];
 
 const staticSource = new DataSource({

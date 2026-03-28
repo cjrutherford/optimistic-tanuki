@@ -63,32 +63,32 @@ User Browser
 
 All routes are lazily loaded. File: `apps/local-hub/src/app/app.routes.ts`.
 
-| Route | Component | Guard | Description |
-|-------|-----------|-------|-------------|
-| `/` | `LandingComponent` | — | Homepage: hero cities grid, stats, feature highlights |
-| `/cities` | `CitiesComponent` | — | Interactive map + card grid of all supported cities |
-| `/city/:slug` | `CityComponent` | — | City detail: hero image, highlights, posts, businesses, sub-communities, map |
-| `/city/:slug/classifieds` | `ClassifiedsComponent` | — | Browse classifieds scoped to a city |
-| `/city/:slug/classifieds/new` | `ClassifiedsComponent` | `MemberGuard` | Post a new classified (requires membership) |
-| `/city/:slug/classifieds/:id` | `ClassifiedDetailComponent` | — | View classified item, make/manage offers |
-| `/communities` | `CommunitiesComponent` | — | Browse non-city communities (interest groups) |
-| `/c/:communitySlug` | `CommunityComponent` | — | Community detail: join, posts, chat, members, business, election |
-| `/c/:communitySlug/classifieds` | `ClassifiedsComponent` | — | Browse classifieds within a community |
-| `/c/:communitySlug/classifieds/new` | `ClassifiedsComponent` | `MemberGuard` | Post classified within community |
-| `/c/:communitySlug/classifieds/:id` | `ClassifiedDetailComponent` | — | View classified in community context |
-| `/login` | `LoginComponent` | — | User login |
-| `/register` | `RegisterComponent` | — | New user registration |
-| `/account` | `AccountComponent` | `AuthGuard` | Manage profile, memberships, theme |
-| `/seller-dashboard` | `SellerDashboardComponent` | `AuthGuard` | Seller earnings, wallet, payout settings |
-| `/messages` | `MessagesComponent` | `AuthGuard` | Direct-message inbox |
-| `/messages/new` | `NewMessageComponent` | `AuthGuard` | Start a new DM conversation |
-| `**` | redirect to `/` | — | 404 catch-all |
+| Route                               | Component                   | Guard         | Description                                                                  |
+| ----------------------------------- | --------------------------- | ------------- | ---------------------------------------------------------------------------- |
+| `/`                                 | `LandingComponent`          | —             | Homepage: hero cities grid, stats, feature highlights                        |
+| `/cities`                           | `CitiesComponent`           | —             | Interactive map + card grid of all supported cities                          |
+| `/city/:slug`                       | `CityComponent`             | —             | City detail: hero image, highlights, posts, businesses, sub-communities, map |
+| `/city/:slug/classifieds`           | `ClassifiedsComponent`      | —             | Browse classifieds scoped to a city                                          |
+| `/city/:slug/classifieds/new`       | `ClassifiedsComponent`      | `MemberGuard` | Post a new classified (requires membership)                                  |
+| `/city/:slug/classifieds/:id`       | `ClassifiedDetailComponent` | —             | View classified item, make/manage offers                                     |
+| `/communities`                      | `CommunitiesComponent`      | —             | Browse non-city communities (interest groups)                                |
+| `/c/:communitySlug`                 | `CommunityComponent`        | —             | Community detail: join, posts, chat, members, business, election             |
+| `/c/:communitySlug/classifieds`     | `ClassifiedsComponent`      | —             | Browse classifieds within a community                                        |
+| `/c/:communitySlug/classifieds/new` | `ClassifiedsComponent`      | `MemberGuard` | Post classified within community                                             |
+| `/c/:communitySlug/classifieds/:id` | `ClassifiedDetailComponent` | —             | View classified in community context                                         |
+| `/login`                            | `LoginComponent`            | —             | User login                                                                   |
+| `/register`                         | `RegisterComponent`         | —             | New user registration                                                        |
+| `/account`                          | `AccountComponent`          | `AuthGuard`   | Manage profile, memberships, theme                                           |
+| `/seller-dashboard`                 | `SellerDashboardComponent`  | `AuthGuard`   | Seller earnings, wallet, payout settings                                     |
+| `/messages`                         | `MessagesComponent`         | `AuthGuard`   | Direct-message inbox                                                         |
+| `/messages/new`                     | `NewMessageComponent`       | `AuthGuard`   | Start a new DM conversation                                                  |
+| `**`                                | redirect to `/`             | —             | 404 catch-all                                                                |
 
 ### Guards
 
-| Guard | File | Purpose |
-|-------|------|---------|
-| `AuthGuard` | `guards/auth.guard.ts` | Redirects unauthenticated users to `/login` |
+| Guard         | File                     | Purpose                                                                             |
+| ------------- | ------------------------ | ----------------------------------------------------------------------------------- |
+| `AuthGuard`   | `guards/auth.guard.ts`   | Redirects unauthenticated users to `/login`                                         |
 | `MemberGuard` | `guards/member.guard.ts` | Ensures user is a member of the target community before allowing classified posting |
 
 ---
@@ -103,42 +103,42 @@ The core data-access layer for localities, sub-communities, posts, cities, and e
 
 **Locality / Community Methods**
 
-| Method | HTTP | Endpoint | Description |
-|--------|------|----------|-------------|
-| `getCommunities()` | GET | `/communities` | All locality communities |
-| `getCommunityBySlug(slug)` | GET | `/communities/:slug` | Single community by slug |
-| `getSubCommunities(parentId)` | GET | `/communities/:id/sub-communities` | Child communities |
-| `joinCommunity(id)` | POST | `/communities/:id/join` | Join a community |
-| `leaveCommunity(id)` | DELETE | `/communities/:id/membership` | Leave a community |
-| `isMember(id)` | GET | `/communities/:id/membership` | Membership check |
-| `createCommunity(data)` | POST | `/communities` | Create interest community (requires `parentId`) |
-| `getMyMemberships()` | GET | `/social/community/user/communities` | Authenticated user's communities |
+| Method                        | HTTP   | Endpoint                             | Description                                     |
+| ----------------------------- | ------ | ------------------------------------ | ----------------------------------------------- |
+| `getCommunities()`            | GET    | `/communities`                       | All locality communities                        |
+| `getCommunityBySlug(slug)`    | GET    | `/communities/:slug`                 | Single community by slug                        |
+| `getSubCommunities(parentId)` | GET    | `/communities/:id/sub-communities`   | Child communities                               |
+| `joinCommunity(id)`           | POST   | `/communities/:id/join`              | Join a community                                |
+| `leaveCommunity(id)`          | DELETE | `/communities/:id/membership`        | Leave a community                               |
+| `isMember(id)`                | GET    | `/communities/:id/membership`        | Membership check                                |
+| `createCommunity(data)`       | POST   | `/communities`                       | Create interest community (requires `parentId`) |
+| `getMyMemberships()`          | GET    | `/social/community/user/communities` | Authenticated user's communities                |
 
 **City Helper Methods** (pure, no extra HTTP round-trip)
 
-| Method | Description |
-|--------|-------------|
-| `getCitiesFromCommunities(list)` | Derives `City[]` from an existing community list |
-| `getCities()` | Fetches communities then derives cities |
-| `getCityBySlug(slug)` | Gets a single `City` by slug |
+| Method                            | Description                                                                |
+| --------------------------------- | -------------------------------------------------------------------------- |
+| `getCitiesFromCommunities(list)`  | Derives `City[]` from an existing community list                           |
+| `getCities()`                     | Fetches communities then derives cities                                    |
+| `getCityBySlug(slug)`             | Gets a single `City` by slug                                               |
 | `getCommunitiesForCity(citySlug)` | All communities belonging to a city (city + sub-communities + legacy data) |
 
 **Post Methods**
 
-| Method | HTTP | Endpoint | Description |
-|--------|------|----------|-------------|
-| `getPostsForCity(citySlug)` | POST | `/social/post/find` | Posts for all communities in a city |
-| `getPostsForCommunity(slug)` | POST | `/social/post/find` | Posts for a single community |
-| `createPost(data)` | POST | `/social/post` | Create a new post |
+| Method                       | HTTP | Endpoint            | Description                         |
+| ---------------------------- | ---- | ------------------- | ----------------------------------- |
+| `getPostsForCity(citySlug)`  | POST | `/social/post/find` | Posts for all communities in a city |
+| `getPostsForCommunity(slug)` | POST | `/social/post/find` | Posts for a single community        |
+| `createPost(data)`           | POST | `/social/post`      | Create a new post                   |
 
 **Election Methods**
 
-| Method | HTTP | Endpoint | Description |
-|--------|------|----------|-------------|
-| `getCommunityManager(id)` | GET | `/communities/:id/manager` | Currently elected manager |
-| `getActiveElection(id)` | GET | `/communities/:id/election` | Active election or `null` |
-| `nominateForManager(id, nomineeId?)` | POST | `/communities/:id/election/nominate` | Self-nominate or nominate another |
-| `voteForManager(id, candidateUserId)` | POST | `/communities/:id/election/vote` | Cast a vote |
+| Method                                | HTTP | Endpoint                             | Description                       |
+| ------------------------------------- | ---- | ------------------------------------ | --------------------------------- |
+| `getCommunityManager(id)`             | GET  | `/communities/:id/manager`           | Currently elected manager         |
+| `getActiveElection(id)`               | GET  | `/communities/:id/election`          | Active election or `null`         |
+| `nominateForManager(id, nomineeId?)`  | POST | `/communities/:id/election/nominate` | Self-nominate or nominate another |
+| `voteForManager(id, candidateUserId)` | POST | `/communities/:id/election/vote`     | Cast a vote                       |
 
 ### 3.2 `PaymentService`
 
@@ -147,47 +147,65 @@ Handles all monetary operations. See also [Section 5 (Business Pages)](#5-busine
 
 **Donation Methods**
 
-| Method | HTTP | Endpoint | Description |
-|--------|------|----------|-------------|
-| `getDonationGoal(month?, year?)` | GET | `/donations/goal` | Current donation goal |
-| `getMonthlyDonations(month?, year?)` | GET | `/donations` | Donations for a month |
-| `createDonationCheckout(amount, recurring)` | POST | `/payments/donations/checkout` | Initiate donation checkout |
-| `getUserDonations()` | GET | `/payments/donations/user` | User's donation history |
-| `cancelRecurringDonation(subscriptionId)` | DELETE | `/payments/donations/subscription/:id` | Cancel recurring donation |
+| Method                                                          | HTTP   | Endpoint                                  | Description                                 |
+| --------------------------------------------------------------- | ------ | ----------------------------------------- | ------------------------------------------- |
+| `getDonationGoal(month?, year?)`                                | GET    | `/donations/goal`                         | Current donation goal                       |
+| `getMonthlyDonations(month?, year?)`                            | GET    | `/donations`                              | Donations for a month                       |
+| `createDonationCheckout(amount, recurring)`                     | POST   | `/payments/donations/checkout`            | Legacy hosted-checkout fallback             |
+| `initializeDonationCheckout(amount, recurring)`                 | POST   | `/payments/donations/checkout/initialize` | Start Helcim embedded donation checkout     |
+| `validateDonationCheckout(donationId, checkoutToken, response)` | POST   | `/payments/donations/checkout/validate`   | Finalize a Helcim donation                  |
+| `refundDonation(donationId, reason)`                            | POST   | `/payments/donations/:id/refund`          | Refund a completed one-time Helcim donation |
+| `getUserDonations()`                                            | GET    | `/payments/donations/user`                | User's donation history                     |
+| `cancelRecurringDonation(subscriptionId)`                       | DELETE | `/payments/donations/subscription/:id`    | Cancel recurring donation                   |
 
 **Classified Payment Methods**
 
-| Method | HTTP | Endpoint | Description |
-|--------|------|----------|-------------|
-| `createClassifiedPayment(classifiedId, method)` | POST | `/payments/classifieds/payment` | Initiate classified transaction |
-| `confirmOutOfPlatformPayment(paymentId, proofUrl?)` | POST | `/payments/classifieds/payment/:id/confirm` | Mark as paid (cash/external) |
-| `confirmPaymentReceived(paymentId)` | POST | `/payments/classifieds/payment/:id/release` | Seller confirms receipt |
-| `disputePayment(paymentId, reason)` | POST | `/payments/classifieds/payment/:id/dispute` | Dispute a transaction |
-| `getPayment(id)` | GET | `/payments/classifieds/payment/:id` | Fetch transaction |
-| `getUserPayments()` | GET | `/payments/classifieds/payments/user` | All user transactions |
+| Method                                                                   | HTTP | Endpoint                                         | Description                                                                             |
+| ------------------------------------------------------------------------ | ---- | ------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `createClassifiedPayment(classifiedId, method)`                          | POST | `/payments/classifieds/payment`                  | Initiate classified transaction                                                         |
+| `initializeClassifiedPayment(classifiedId, amount, sellerId?, offerId?)` | POST | `/payments/classifieds/payment/initialize`       | Start the configured classified card checkout, currently Stripe Connect for Local Hub   |
+| `validateClassifiedPayment(paymentId, checkoutToken, response)`          | POST | `/payments/classifieds/payment/validate`         | Finalize a Helcim classified checkout when the flow is Helcim                           |
+| `confirmStripeClassifiedPayment(paymentId, paymentIntentId?)`            | POST | `/payments/classifieds/payment/:id/confirm-card` | Finalize a Stripe Connect classified checkout                                           |
+| `refundClassifiedPayment(paymentId, reason)`                             | POST | `/payments/classifieds/payment/:id/refund`       | Refund a buyer-owned classified card payment and reverse settlement if already released |
+| `confirmOutOfPlatformPayment(paymentId, proofUrl?)`                      | POST | `/payments/classifieds/payment/:id/confirm`      | Mark as paid (cash/external)                                                            |
+| `confirmPaymentReceived(paymentId)`                                      | POST | `/payments/classifieds/payment/:id/release`      | Seller confirms receipt and triggers release settlement                                 |
+| `disputePayment(paymentId, reason)`                                      | POST | `/payments/classifieds/payment/:id/dispute`      | Dispute a transaction                                                                   |
+| `getPayment(id)`                                                         | GET  | `/payments/classifieds/payment/:id`              | Fetch transaction                                                                       |
+| `getUserPayments()`                                                      | GET  | `/payments/classifieds/payments/user`            | All user transactions                                                                   |
+
+**Billing Methods**
+
+| Method                       | HTTP  | Endpoint                            | Description                                          |
+| ---------------------------- | ----- | ----------------------------------- | ---------------------------------------------------- |
+| `getTransactions()`          | GET   | `/payments/transactions`            | User transaction ledger                              |
+| `getBillingProfile()`        | GET   | `/payments/billing/profile`         | Billing profile and customer linkage                 |
+| `updateBillingProfile(data)` | PATCH | `/payments/billing/profile`         | Update billing name, email, and default saved method |
+| `getSavedPaymentMethods()`   | GET   | `/payments/billing/payment-methods` | List Helcim-synced saved payment methods             |
 
 **Offer Methods**
 
-| Method | HTTP | Endpoint | Description |
-|--------|------|----------|-------------|
-| `createOffer(classifiedId, sellerId, amount, msg?)` | POST | `/payments/offers` | Make an offer |
-| `acceptOffer(offerId)` | PATCH | `/payments/offers/:id/accept` | Accept offer |
-| `rejectOffer(offerId)` | PATCH | `/payments/offers/:id/reject` | Reject offer |
-| `counterOffer(offerId, amount, msg?)` | PATCH | `/payments/offers/:id/counter` | Counter-offer |
-| `withdrawOffer(offerId)` | PATCH | `/payments/offers/:id/withdraw` | Withdraw offer |
-| `getOffersForClassified(id)` | GET | `/payments/offers/classified/:id` | All offers on a listing |
-| `getUserOffers()` | GET | `/payments/offers/user` | User's sent/received offers |
+| Method                                              | HTTP  | Endpoint                          | Description                 |
+| --------------------------------------------------- | ----- | --------------------------------- | --------------------------- |
+| `createOffer(classifiedId, sellerId, amount, msg?)` | POST  | `/payments/offers`                | Make an offer               |
+| `acceptOffer(offerId)`                              | PATCH | `/payments/offers/:id/accept`     | Accept offer                |
+| `rejectOffer(offerId)`                              | PATCH | `/payments/offers/:id/reject`     | Reject offer                |
+| `counterOffer(offerId, amount, msg?)`               | PATCH | `/payments/offers/:id/counter`    | Counter-offer               |
+| `withdrawOffer(offerId)`                            | PATCH | `/payments/offers/:id/withdraw`   | Withdraw offer              |
+| `getOffersForClassified(id)`                        | GET   | `/payments/offers/classified/:id` | All offers on a listing     |
+| `getUserOffers()`                                   | GET   | `/payments/offers/user`           | User's sent/received offers |
 
 **Seller Wallet Methods**
 
-| Method | HTTP | Endpoint | Description |
-|--------|------|----------|-------------|
-| `getSellerWallet()` | GET | `/payments/seller/wallet` | Wallet balance and info |
-| `updateSellerPayoutInfo(method, ...)` | PATCH | `/payments/seller/wallet/payout-info` | Set payout method |
-| `createPayoutRequest(amount, method, ...)` | POST | `/payments/seller/payout` | Request a payout |
-| `getSellerPayoutRequests()` | GET | `/payments/seller/payouts` | Payout request history |
-| `cancelPayoutRequest(id)` | DELETE | `/payments/seller/payout/:id` | Cancel payout request |
-| `getSellerEarningsSummary()` | GET | `/payments/seller/earnings` | Earnings totals |
+| Method                                      | HTTP   | Endpoint                                     | Description                               |
+| ------------------------------------------- | ------ | -------------------------------------------- | ----------------------------------------- |
+| `getSellerWallet()`                         | GET    | `/payments/seller/wallet`                    | Wallet balance and info                   |
+| `createSellerStripeConnectOnboardingLink()` | POST   | `/payments/seller/stripe-connect/onboarding` | Create or resume Stripe seller onboarding |
+| `refreshSellerStripeConnectStatus()`        | POST   | `/payments/seller/stripe-connect/refresh`    | Refresh Stripe seller status              |
+| `updateSellerPayoutInfo(method, ...)`       | PATCH  | `/payments/seller/wallet/payout-info`        | Set payout method                         |
+| `createPayoutRequest(amount, method, ...)`  | POST   | `/payments/seller/payout`                    | Request a payout                          |
+| `getSellerPayoutRequests()`                 | GET    | `/payments/seller/payouts`                   | Payout request history                    |
+| `cancelPayoutRequest(id)`                   | DELETE | `/payments/seller/payout/:id`                | Cancel payout request                     |
+| `getSellerEarningsSummary()`                | GET    | `/payments/seller/earnings`                  | Earnings totals                           |
 
 ### 3.3 `ChatService`
 
@@ -196,24 +214,24 @@ WebSocket-based real-time messaging using `socket.io`.
 - **Connection URL**: `/chat` with path `/socket.io` and `websocket` transport
 - Uses `GATEWAY_WS_URL` environment variable
 
-| Method | Socket Event | Description |
-|--------|-------------|-------------|
-| `getOrCreateDirectChat(participantIds)` | `get_or_create_direct_chat` | Open / fetch a DM conversation |
-| `getCommunityChat(communityId)` | `get_or_create_community_chat` | Community group chat |
-| `sendMessage(convId, content, recipients)` | `send_message` | Send a message |
-| `getMessages(convId, limit?, offset?)` | `get_messages` | Fetch message history |
-| `getConversations()` | `get_conversations` | List all conversations |
-| `subscribeToMessages(convId)` | `new_message` | Observable of incoming messages |
-| `deleteConversation(convId)` | `delete_conversation` | Remove a conversation |
+| Method                                     | Socket Event                   | Description                     |
+| ------------------------------------------ | ------------------------------ | ------------------------------- |
+| `getOrCreateDirectChat(participantIds)`    | `get_or_create_direct_chat`    | Open / fetch a DM conversation  |
+| `getCommunityChat(communityId)`            | `get_or_create_community_chat` | Community group chat            |
+| `sendMessage(convId, content, recipients)` | `send_message`                 | Send a message                  |
+| `getMessages(convId, limit?, offset?)`     | `get_messages`                 | Fetch message history           |
+| `getConversations()`                       | `get_conversations`            | List all conversations          |
+| `subscribeToMessages(convId)`              | `new_message`                  | Observable of incoming messages |
+| `deleteConversation(convId)`               | `delete_conversation`          | Remove a conversation           |
 
 ### 3.4 `AssetService`
 
 Handles file uploads for community images, classifieds, business logos, etc.
 
-| Method | HTTP | Endpoint | Description |
-|--------|------|----------|-------------|
-| `createAsset(dto)` | POST | `/asset` | Upload a file (base64 encoded) |
-| `getAssetUrl(id)` | GET | `/asset/:id` | Get the served URL of an asset |
+| Method             | HTTP | Endpoint     | Description                    |
+| ------------------ | ---- | ------------ | ------------------------------ |
+| `createAsset(dto)` | POST | `/asset`     | Upload a file (base64 encoded) |
+| `getAssetUrl(id)`  | GET  | `/asset/:id` | Get the served URL of an asset |
 
 Supported types: `png`, `jpg`, `jpeg`, `gif`, `webp`.
 
@@ -226,24 +244,24 @@ Persists authentication state in `localStorage` under the key `ot-local-hub-auth
 
 Key members:
 
-| Method / Property | Description |
-|-------------------|-------------|
-| `login(email, password)` | Authenticates and stores the JWT |
-| `logout()` | Clears token and auth state |
-| `setToken(token)` | Decodes and stores a JWT |
-| `getToken()` | Retrieves the stored JWT |
-| `getUserData()` | Returns `{userId, profileId, name, email}` from the decoded token |
-| `isAuthenticated$` | Observable boolean — subscribe for real-time auth state changes |
-| `getActingProfileId()` | Returns `profileId` (or `userId` as fallback) |
+| Method / Property        | Description                                                       |
+| ------------------------ | ----------------------------------------------------------------- |
+| `login(email, password)` | Authenticates and stores the JWT                                  |
+| `logout()`               | Clears token and auth state                                       |
+| `setToken(token)`        | Decodes and stores a JWT                                          |
+| `getToken()`             | Retrieves the stored JWT                                          |
+| `getUserData()`          | Returns `{userId, profileId, name, email}` from the decoded token |
+| `isAuthenticated$`       | Observable boolean — subscribe for real-time auth state changes   |
+| `getActingProfileId()`   | Returns `profileId` (or `userId` as fallback)                     |
 
 ### 3.6 `AuthenticationService`
 
 Thin wrapper around the authentication microservice for register/login flows.
 
-| Method | HTTP | Endpoint |
-|--------|------|----------|
+| Method           | HTTP | Endpoint                   |
+| ---------------- | ---- | -------------------------- |
 | `register(data)` | POST | `/authentication/register` |
-| `login(data)` | POST | `/authentication/login` |
+| `login(data)`    | POST | `/authentication/login`    |
 
 ---
 
@@ -256,26 +274,29 @@ data for all local-hub features. It reads geographic data from
 ### 4.1 Running the Seed Script
 
 **Locally (TypeScript):**
+
 ```bash
 GATEWAY_URL=http://localhost:3000/api npx ts-node apps/local-hub/src/seed-http.ts
 ```
 
 **In Docker (after building):**
+
 ```bash
 docker compose exec local-hub-client-interface node /usr/src/app/seed-http.js
 ```
 
 **Environment variables:**
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GATEWAY_URL` | `http://localhost:3000/api` | Base URL for all API calls |
-| `API_URL` | (fallback) | Alternative API base URL |
-| `APP_SCOPE` | `local-hub` | App scope sent on every post/community request |
+| Variable      | Default                     | Description                                    |
+| ------------- | --------------------------- | ---------------------------------------------- |
+| `GATEWAY_URL` | `http://localhost:3000/api` | Base URL for all API calls                     |
+| `API_URL`     | (fallback)                  | Alternative API base URL                       |
+| `APP_SCOPE`   | `local-hub`                 | App scope sent on every post/community request |
 
 ### 4.2 Seed Data File (`seed-cities.json`)
 
 Structure:
+
 ```json
 {
   "cities": [
@@ -315,13 +336,13 @@ Structure:
 
 **Included cities:**
 
-| City | State | Population | Timezone |
-|------|-------|-----------|---------|
-| Savannah | GA | 147,088 | America/New_York |
-| Charleston | SC | 155,369 | America/New_York |
-| Jacksonville | FL | 911,507 | America/New_York |
-| Columbia | SC | — | America/New_York |
-| Hinesville | GA | — | America/New_York |
+| City         | State | Population | Timezone         |
+| ------------ | ----- | ---------- | ---------------- |
+| Savannah     | GA    | 147,088    | America/New_York |
+| Charleston   | SC    | 155,369    | America/New_York |
+| Jacksonville | FL    | 911,507    | America/New_York |
+| Columbia     | SC    | —          | America/New_York |
+| Hinesville   | GA    | —          | America/New_York |
 
 Each city has 4–6 neighborhood entries in the `communities` object.
 
@@ -331,15 +352,16 @@ Each city has 4–6 neighborhood entries in the `communities` object.
 
 The script creates 5 users in sequence:
 
-| Index | Name | Email | Community |
-|-------|------|-------|-----------|
-| 0 | Alex Rivera | alex.rivera@example.com | Savannah Foodie Network |
-| 1 | Jordan Chen | jordan.chen@example.com | Savannah Tech Hub |
-| 2 | Maya Williams | maya.williams@example.com | Charleston Beach Lovers |
-| 3 | Carlos Martinez | carlos.martinez@example.com | Hinesville Military Veterans |
-| 4 | Emma Johnson | emma.johnson@example.com | Savannah Book Club |
+| Index | Name            | Email                       | Community                    |
+| ----- | --------------- | --------------------------- | ---------------------------- |
+| 0     | Alex Rivera     | alex.rivera@example.com     | Savannah Foodie Network      |
+| 1     | Jordan Chen     | jordan.chen@example.com     | Savannah Tech Hub            |
+| 2     | Maya Williams   | maya.williams@example.com   | Charleston Beach Lovers      |
+| 3     | Carlos Martinez | carlos.martinez@example.com | Hinesville Military Veterans |
+| 4     | Emma Johnson    | emma.johnson@example.com    | Savannah Book Club           |
 
 For each user:
+
 1. `POST /authentication/register` — create account with name, email, password, bio
 2. `POST /authentication/login` — obtain JWT token
 3. `GET /authentication/me` — retrieve `userId`
@@ -383,22 +405,27 @@ For each city's neighborhood list:
 For each of the 5 demo users:
 
 **3a. Create user-owned interest community**
+
 - `POST /social/community` with the user's JWT
 - `localityType: 'neighborhood'` (user communities use this type)
 - `parentId` pointing to the appropriate city community
 - No `imageUrl` — user communities rely on `bannerAssetId`/`logoAssetId` for images
 
 **3b. Join the community**
+
 - `POST /social/community/:id/join`
 
 **3c. Create 3 posts in the community**
+
 - `POST /social/post` with `title`, `content` (HTML allowed), `communityId`, `profileId`, `appScope`
 
 **3d. Create 2–3 classifieds**
+
 - `POST /classifieds` with `title`, `description`, `price`, `currency`, `category`,
   `condition`, `communityId`, `profileId`, `imageUrls` (Unsplash URLs), `appScope`
 
 **3e. Join the parent city community**
+
 - `POST /social/community/:id/join`
 
 #### Final Output
@@ -421,10 +448,10 @@ Business pages allow local businesses to create a discoverable presence within t
 
 ### 5.1 Tiers
 
-| Tier | Price | Features |
-|------|-------|---------|
-| **basic** | Free | Standard listing with name, description, contact info |
-| **pro** | $29/mo | Featured placement, promoted posts, analytics dashboard |
+| Tier           | Price  | Features                                                              |
+| -------------- | ------ | --------------------------------------------------------------------- |
+| **basic**      | Free   | Standard listing with name, description, contact info                 |
+| **pro**        | $29/mo | Featured placement, promoted posts, analytics dashboard               |
 | **enterprise** | $99/mo | Custom branding, multi-location support, API access, priority support |
 
 ### 5.2 Creating a Business Page
@@ -434,7 +461,7 @@ Business pages allow local businesses to create a discoverable presence within t
 3. Select a subscription tier and click **Checkout**.
 4. Frontend calls `PaymentService.createBusinessPage(localityId, tier)`.
    - `POST /payments/business/checkout` → returns `{ checkoutUrl: string }`
-5. User is redirected to the Lemon Squeezy checkout page.
+5. User is redirected to the current subscription checkout provider. Business page subscriptions still use the legacy hosted checkout path today, even if the flow is Helcim-configured in payments config.
 6. On successful payment the backend creates the `BusinessPage` record and associates it
    with the locality.
 
@@ -451,7 +478,7 @@ After creation, the owner edits the business profile from the **Community** page
 
 - `PaymentService.cancelBusinessSubscription(communityId)`.
 - `DELETE /payments/business/:id/subscription`
-- Cancels the Lemon Squeezy subscription; the `BusinessPage` record remains but its
+- Cancels the current business subscription provider entry; the `BusinessPage` record remains but its
   `subscriptionStatus` changes to `cancelled`.
 
 ### 5.5 `BusinessPage` Data Shape
@@ -459,12 +486,12 @@ After creation, the owner edits the business profile from the **Community** page
 ```typescript
 interface BusinessPage {
   id: string;
-  userId: string;                                         // Owner
-  localityId?: string;                                    // Associated locality
-  communityId: string;                                    // Legacy compat field
+  userId: string; // Owner
+  localityId?: string; // Associated locality
+  communityId: string; // Legacy compat field
   name: string;
   description?: string;
-  logoUrl?: string;                                       // Hosted logo image
+  logoUrl?: string; // Hosted logo image
   website?: string;
   phone?: string;
   email?: string;
@@ -472,9 +499,9 @@ interface BusinessPage {
   tier: 'basic' | 'pro' | 'enterprise';
   status: 'active' | 'past-due' | 'canceled' | 'trial';
   subscriptionStatus?: 'active' | 'inactive' | 'cancelled' | 'past-due';
-  pinnedPostId?: string;                                  // Featured post
-  badge?: string;                                         // Verification badge
-  locations: string[];                                    // Multiple locations
+  pinnedPostId?: string; // Featured post
+  badge?: string; // Verification badge
+  locations: string[]; // Multiple locations
   createdAt: string;
   updatedAt: string;
 }
@@ -501,10 +528,12 @@ isBusinessOwner(): boolean {
 ### 5.7 City Business Directory
 
 The **City** page fetches all business pages for a city via:
+
 ```typescript
 PaymentService.getCityBusinesses(cityId, communityIds?)
 // GET /payments/business/city/:id
 ```
+
 and renders them in a grid with logo, name, description, tier badge, and website link.
 
 ---
@@ -516,11 +545,11 @@ for a time-limited period.
 
 ### 6.1 Sponsorship Types
 
-| Type | Display | Description |
-|------|---------|-------------|
-| `banner` | Full-width banner at top of community feed | Large visual placement |
-| `sticky-ad` | Persistent top-of-feed sticky post | Fixed position as user scrolls |
-| `featured` | "⭐ Featured Partner" badge in community header | Highlighted partnership mention |
+| Type        | Display                                         | Description                     |
+| ----------- | ----------------------------------------------- | ------------------------------- |
+| `banner`    | Full-width banner at top of community feed      | Large visual placement          |
+| `sticky-ad` | Persistent top-of-feed sticky post              | Fixed position as user scrolls  |
+| `featured`  | "⭐ Featured Partner" badge in community header | Highlighted partnership mention |
 
 ### 6.2 Creating a Sponsorship
 
@@ -528,7 +557,7 @@ for a time-limited period.
 2. Select type and optionally enter ad content.
 3. Frontend calls `PaymentService.createSponsorship(communityId, type, adContent?)`.
    - `POST /payments/sponsorship/checkout` → returns `{ checkoutUrl: string }`
-4. User completes payment in Lemon Squeezy.
+4. User completes payment in the currently configured sponsorship checkout provider. Sponsorship checkout still uses the legacy hosted checkout path today, even if the flow is Helcim-configured in payments config.
 5. Backend creates `CommunitySponsorship` with `paidAt` and `expiresAt` timestamps.
 
 ### 6.3 `CommunitySponsorship` Data Shape
@@ -552,10 +581,12 @@ interface CommunitySponsorship {
 
 The `SponsorshipBannerComponent` (shared component in `apps/local-hub/`) renders active
 sponsorships by querying:
+
 ```typescript
-PaymentService.getActiveSponsorships(communityId)
+PaymentService.getActiveSponsorships(communityId);
 // GET /payments/sponsorship/:id/active
 ```
+
 Only sponsorships with `status === 'active'` and `expiresAt > now` are displayed.
 
 ---
@@ -568,17 +599,19 @@ community manager.
 ### 7.1 Roles and Interfaces
 
 **Currently Elected Manager:**
+
 ```typescript
 interface CommunityManager {
   userId: string;
   profileId: string;
   name: string;
-  electedAt: string;    // ISO timestamp
-  termEndsAt: string;   // When the term expires
+  electedAt: string; // ISO timestamp
+  termEndsAt: string; // When the term expires
 }
 ```
 
 **Election:**
+
 ```typescript
 interface CommunityElection {
   id: string;
@@ -587,11 +620,12 @@ interface CommunityElection {
   candidates: ElectionCandidate[];
   startedAt: string;
   endsAt: string;
-  myVote?: string | null;   // candidateUserId the current user voted for
+  myVote?: string | null; // candidateUserId the current user voted for
 }
 ```
 
 **Candidate:**
+
 ```typescript
 interface ElectionCandidate {
   userId: string;
@@ -636,8 +670,9 @@ interface ElectionCandidate {
 ### 7.3 Checking Current Manager
 
 On the **City** and **Community** pages the manager badge is displayed if set:
+
 ```typescript
-CommunityService.getCommunityManager(communityId)
+CommunityService.getCommunityManager(communityId);
 // GET /communities/:id/manager
 // Returns CommunityManager | null
 ```
@@ -646,24 +681,26 @@ CommunityService.getCommunityManager(communityId)
 
 Admins with the `community.manage` permission can appoint a manager directly without an
 election:
+
 ```
 POST /communities/:id/manager  { userId, profileId }
 ```
 
 To revoke:
+
 ```
 DELETE /communities/:id/manager
 ```
 
 ### 7.5 Required Permissions
 
-| Action | Permission |
-|--------|-----------|
-| Start election | `community.manage` |
-| Close election | `community.manage` |
-| Appoint manager directly | `community.manage` |
-| Revoke manager | `community.manage` |
-| Nominate / Vote | Authenticated member |
+| Action                   | Permission           |
+| ------------------------ | -------------------- |
+| Start election           | `community.manage`   |
+| Close election           | `community.manage`   |
+| Appoint manager directly | `community.manage`   |
+| Revoke manager           | `community.manage`   |
+| Nominate / Vote          | Authenticated member |
 
 ---
 
@@ -737,16 +774,12 @@ guard plus an `(error)` handler to prevent broken-image requests:
 
 ```html
 @if (community()!.imageUrl) {
-  <img
-    [src]="community()!.imageUrl"
-    [alt]="community()!.name"
-    class="hero-image"
-    (error)="$event.target.style.display='none'"
-  />
+<img [src]="community()!.imageUrl" [alt]="community()!.name" class="hero-image" (error)="$event.target.style.display='none'" />
 }
 ```
 
 This pattern is applied in:
+
 - `apps/local-hub/src/app/pages/community/community.component.html`
 - `apps/local-hub/src/app/pages/city/city.component.html`
 - `apps/local-hub/src/app/pages/cities/cities.component.html`
@@ -777,79 +810,92 @@ These are seeded from `seed-cities.json` and displayed as cards on the **City** 
 
 File: `apps/gateway/src/controllers/communities/communities.controller.ts`
 
-| Method | Path | Auth | Permission | Description |
-|--------|------|------|-----------|-------------|
-| GET | `/communities` | Public | — | List all locality communities |
-| GET | `/communities/:slug` | Public | — | Community by slug |
-| GET | `/communities/:id/sub-communities` | Public | — | Child communities |
-| GET | `/communities/:id/manager` | Public | — | Current elected manager |
-| GET | `/communities/:id/election` | Public | — | Active election |
-| GET | `/communities/:id/membership` | AuthGuard | — | Membership check |
-| POST | `/communities/:id/join` | AuthGuard | — | Join community |
-| DELETE | `/communities/:id/membership` | AuthGuard | — | Leave community |
-| POST | `/communities/:id/election` | AuthGuard | `community.manage` | Start election |
-| POST | `/communities/:id/election/nominate` | AuthGuard | — | Nominate candidate |
-| POST | `/communities/:id/election/vote` | AuthGuard | — | Vote in election |
-| POST | `/communities/:id/election/close` | AuthGuard | `community.manage` | Close election |
-| POST | `/communities/:id/manager` | AuthGuard | `community.manage` | Appoint manager |
-| DELETE | `/communities/:id/manager` | AuthGuard | `community.manage` | Revoke manager |
+| Method | Path                                 | Auth      | Permission         | Description                   |
+| ------ | ------------------------------------ | --------- | ------------------ | ----------------------------- |
+| GET    | `/communities`                       | Public    | —                  | List all locality communities |
+| GET    | `/communities/:slug`                 | Public    | —                  | Community by slug             |
+| GET    | `/communities/:id/sub-communities`   | Public    | —                  | Child communities             |
+| GET    | `/communities/:id/manager`           | Public    | —                  | Current elected manager       |
+| GET    | `/communities/:id/election`          | Public    | —                  | Active election               |
+| GET    | `/communities/:id/membership`        | AuthGuard | —                  | Membership check              |
+| POST   | `/communities/:id/join`              | AuthGuard | —                  | Join community                |
+| DELETE | `/communities/:id/membership`        | AuthGuard | —                  | Leave community               |
+| POST   | `/communities/:id/election`          | AuthGuard | `community.manage` | Start election                |
+| POST   | `/communities/:id/election/nominate` | AuthGuard | —                  | Nominate candidate            |
+| POST   | `/communities/:id/election/vote`     | AuthGuard | —                  | Vote in election              |
+| POST   | `/communities/:id/election/close`    | AuthGuard | `community.manage` | Close election                |
+| POST   | `/communities/:id/manager`           | AuthGuard | `community.manage` | Appoint manager               |
+| DELETE | `/communities/:id/manager`           | AuthGuard | `community.manage` | Revoke manager                |
 
 ### 9.2 Social Community Endpoints (`/social/community`)
 
 File: `apps/gateway/src/controllers/social/community/community.controller.ts`
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/social/community` | AuthGuard | Create community |
-| GET | `/social/community/:id` | Public | Get community by ID |
-| GET | `/social/community/slug/:slug` | Public | Get community by slug |
-| POST | `/social/community/search` | Public | Search communities |
-| PUT | `/social/community/:id` | AuthGuard | Update community |
-| DELETE | `/social/community/:id` | AuthGuard | Delete community |
-| POST | `/social/community/:id/join` | AuthGuard | Join community |
-| DELETE | `/social/community/:id/membership` | AuthGuard | Leave community |
-| GET | `/social/community/user/communities` | AuthGuard | My communities |
+| Method | Path                                 | Auth      | Description           |
+| ------ | ------------------------------------ | --------- | --------------------- |
+| POST   | `/social/community`                  | AuthGuard | Create community      |
+| GET    | `/social/community/:id`              | Public    | Get community by ID   |
+| GET    | `/social/community/slug/:slug`       | Public    | Get community by slug |
+| POST   | `/social/community/search`           | Public    | Search communities    |
+| PUT    | `/social/community/:id`              | AuthGuard | Update community      |
+| DELETE | `/social/community/:id`              | AuthGuard | Delete community      |
+| POST   | `/social/community/:id/join`         | AuthGuard | Join community        |
+| DELETE | `/social/community/:id/membership`   | AuthGuard | Leave community       |
+| GET    | `/social/community/user/communities` | AuthGuard | My communities        |
 
 ### 9.3 Post Endpoints (`/social/post`)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/social/post` | AuthGuard | Create post |
-| POST | `/social/post/find` | Public | Find posts with criteria |
-| GET | `/social/post/:id` | Public | Get post by ID |
-| DELETE | `/social/post/:id` | AuthGuard | Delete post |
+| Method | Path                | Auth      | Description              |
+| ------ | ------------------- | --------- | ------------------------ |
+| POST   | `/social/post`      | AuthGuard | Create post              |
+| POST   | `/social/post/find` | Public    | Find posts with criteria |
+| GET    | `/social/post/:id`  | Public    | Get post by ID           |
+| DELETE | `/social/post/:id`  | AuthGuard | Delete post              |
 
 ### 9.4 Payment Endpoints (`/payments`)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/payments/donations/checkout` | AuthGuard | Initiate donation |
-| GET | `/payments/donations/user` | AuthGuard | User donations |
-| DELETE | `/payments/donations/subscription/:id` | AuthGuard | Cancel recurring |
-| GET | `/donations/goal` | Public | Current donation goal |
-| GET | `/donations` | Public | Monthly donations |
-| POST | `/payments/business/checkout` | AuthGuard | Create business page |
-| GET | `/payments/business/:id` | AuthGuard | Get business page |
-| PATCH | `/payments/business/:id` | AuthGuard | Update business page |
-| DELETE | `/payments/business/:id/subscription` | AuthGuard | Cancel business subscription |
-| GET | `/payments/business/city/:id` | Public | City business directory |
-| POST | `/payments/sponsorship/checkout` | AuthGuard | Create sponsorship |
-| GET | `/payments/sponsorship/:id/active` | Public | Active sponsorships for community |
-| GET | `/payments/sponsorship/user` | AuthGuard | User's sponsorships |
-| POST | `/payments/offers` | AuthGuard | Make classified offer |
-| PATCH | `/payments/offers/:id/accept` | AuthGuard | Accept offer |
-| PATCH | `/payments/offers/:id/reject` | AuthGuard | Reject offer |
-| PATCH | `/payments/offers/:id/counter` | AuthGuard | Counter offer |
-| PATCH | `/payments/offers/:id/withdraw` | AuthGuard | Withdraw offer |
-| GET | `/payments/offers/classified/:id` | Public | Offers for a classified |
-| GET | `/payments/offers/user` | AuthGuard | User's offers |
-| GET | `/payments/seller/wallet` | AuthGuard | Seller wallet |
-| PATCH | `/payments/seller/wallet/payout-info` | AuthGuard | Update payout info |
-| POST | `/payments/seller/payout` | AuthGuard | Request payout |
-| GET | `/payments/seller/payouts` | AuthGuard | Payout history |
-| DELETE | `/payments/seller/payout/:id` | AuthGuard | Cancel payout |
-| GET | `/payments/seller/earnings` | AuthGuard | Earnings summary |
-| GET | `/payments/portal` | AuthGuard | Lemon Squeezy customer portal URL |
+| Method | Path                                                    | Auth      | Description                                                              |
+| ------ | ------------------------------------------------------- | --------- | ------------------------------------------------------------------------ |
+| POST   | `/payments/donations/checkout`                          | AuthGuard | Initiate donation                                                        |
+| POST   | `/payments/donations/checkout/initialize`               | AuthGuard | Initialize Helcim donation checkout                                      |
+| POST   | `/payments/donations/checkout/validate`                 | AuthGuard | Validate Helcim donation completion                                      |
+| POST   | `/payments/donations/:donationId/refund`                | AuthGuard | Refund a completed donation                                              |
+| GET    | `/payments/donations/user`                              | AuthGuard | User donations                                                           |
+| DELETE | `/payments/donations/subscription/:id`                  | AuthGuard | Cancel recurring                                                         |
+| GET    | `/donations/goal`                                       | Public    | Current donation goal                                                    |
+| GET    | `/donations`                                            | Public    | Monthly donations                                                        |
+| POST   | `/payments/classifieds/payment/initialize`              | AuthGuard | Initialize the configured classified card checkout                       |
+| POST   | `/payments/classifieds/payment/validate`                | AuthGuard | Validate Helcim classified completion when Helcim is active              |
+| POST   | `/payments/classifieds/payment/:paymentId/confirm-card` | AuthGuard | Confirm Stripe Connect classified completion                             |
+| POST   | `/payments/classifieds/payment/:paymentId/refund`       | AuthGuard | Refund a classified card payment and reverse seller settlement if needed |
+| POST   | `/payments/business/checkout`                           | AuthGuard | Create business page                                                     |
+| GET    | `/payments/business/:id`                                | AuthGuard | Get business page                                                        |
+| PATCH  | `/payments/business/:id`                                | AuthGuard | Update business page                                                     |
+| DELETE | `/payments/business/:id/subscription`                   | AuthGuard | Cancel business subscription                                             |
+| GET    | `/payments/business/city/:id`                           | Public    | City business directory                                                  |
+| POST   | `/payments/sponsorship/checkout`                        | AuthGuard | Create sponsorship                                                       |
+| GET    | `/payments/sponsorship/:id/active`                      | Public    | Active sponsorships for community                                        |
+| GET    | `/payments/sponsorship/user`                            | AuthGuard | User's sponsorships                                                      |
+| POST   | `/payments/offers`                                      | AuthGuard | Make classified offer                                                    |
+| PATCH  | `/payments/offers/:id/accept`                           | AuthGuard | Accept offer                                                             |
+| PATCH  | `/payments/offers/:id/reject`                           | AuthGuard | Reject offer                                                             |
+| PATCH  | `/payments/offers/:id/counter`                          | AuthGuard | Counter offer                                                            |
+| PATCH  | `/payments/offers/:id/withdraw`                         | AuthGuard | Withdraw offer                                                           |
+| GET    | `/payments/offers/classified/:id`                       | Public    | Offers for a classified                                                  |
+| GET    | `/payments/offers/user`                                 | AuthGuard | User's offers                                                            |
+| GET    | `/payments/seller/wallet`                               | AuthGuard | Seller wallet                                                            |
+| POST   | `/payments/seller/stripe-connect/onboarding`            | AuthGuard | Create or resume seller Stripe onboarding                                |
+| POST   | `/payments/seller/stripe-connect/refresh`               | AuthGuard | Refresh seller Stripe status                                             |
+| PATCH  | `/payments/seller/wallet/payout-info`                   | AuthGuard | Update payout info                                                       |
+| POST   | `/payments/seller/payout`                               | AuthGuard | Request payout                                                           |
+| GET    | `/payments/seller/payouts`                              | AuthGuard | Payout history                                                           |
+| DELETE | `/payments/seller/payout/:id`                           | AuthGuard | Cancel payout                                                            |
+| GET    | `/payments/seller/earnings`                             | AuthGuard | Earnings summary                                                         |
+| GET    | `/payments/transactions`                                | AuthGuard | Billing transaction history                                              |
+| GET    | `/payments/billing/profile`                             | AuthGuard | Billing profile                                                          |
+| PATCH  | `/payments/billing/profile`                             | AuthGuard | Update billing profile                                                   |
+| GET    | `/payments/billing/payment-methods`                     | AuthGuard | Saved payment methods                                                    |
+| GET    | `/payments/portal`                                      | AuthGuard | Legacy Lemon Squeezy customer portal URL                                 |
 
 ---
 
@@ -860,15 +906,15 @@ local-hub app and potentially other frontends.
 
 ### 10.1 Exported Components
 
-| Component | Selector | Description |
-|-----------|----------|-------------|
-| `CommunityShellComponent` | `lib-community-shell` | Main layout wrapper with sidebar navigation for community views |
+| Component                  | Selector               | Description                                                        |
+| -------------------------- | ---------------------- | ------------------------------------------------------------------ |
+| `CommunityShellComponent`  | `lib-community-shell`  | Main layout wrapper with sidebar navigation for community views    |
 | `CreateCommunityComponent` | `lib-create-community` | Form for creating new interest communities with logo/banner upload |
-| `FindCommunitiesComponent` | `lib-find-communities` | Search/discover communities with filters |
-| `ManageGroupsComponent` | `lib-manage-groups` | Manage community groups and sub-communities |
-| `ManageMembersComponent` | `lib-manage-members` | View, approve, and remove community members |
-| `CommunityPostsComponent` | `lib-community-posts` | Post feed with compose, vote, and reaction support |
-| `CommunityChatComponent` | `lib-community-chat` | Real-time community group chat via WebSocket |
+| `FindCommunitiesComponent` | `lib-find-communities` | Search/discover communities with filters                           |
+| `ManageGroupsComponent`    | `lib-manage-groups`    | Manage community groups and sub-communities                        |
+| `ManageMembersComponent`   | `lib-manage-members`   | View, approve, and remove community members                        |
+| `CommunityPostsComponent`  | `lib-community-posts`  | Post feed with compose, vote, and reaction support                 |
+| `CommunityChatComponent`   | `lib-community-chat`   | Real-time community group chat via WebSocket                       |
 
 ### 10.2 Internal Services
 
@@ -881,13 +927,9 @@ local-hub app and potentially other frontends.
 fallback chain (see Section 8.3):
 
 ```typescript
-const bannerUrl = community.bannerAssetId
-  ? `/api/asset/${community.bannerAssetId}`
-  : community.bannerUrl || community.imageUrl || undefined;
+const bannerUrl = community.bannerAssetId ? `/api/asset/${community.bannerAssetId}` : community.bannerUrl || community.imageUrl || undefined;
 
-const logoUrl = community.logoAssetId
-  ? `/api/asset/${community.logoAssetId}`
-  : community.logoUrl || community.imageUrl || undefined;
+const logoUrl = community.logoAssetId ? `/api/asset/${community.logoAssetId}` : community.logoUrl || community.imageUrl || undefined;
 ```
 
 ### 10.4 Community Shell Sidebar Logo
@@ -896,13 +938,13 @@ const logoUrl = community.logoAssetId
 
 ```html
 @if (community.logoUrl || community.logoAssetId || community.imageUrl) {
-  <img
-    [src]="community.logoUrl || (community.logoAssetId
+<img
+  [src]="community.logoUrl || (community.logoAssetId
       ? '/api/asset/' + community.logoAssetId
       : community.imageUrl)"
-    alt=""
-    class="community-logo"
-  />
+  alt=""
+  class="community-logo"
+/>
 }
 ```
 
@@ -919,7 +961,7 @@ local-hub-client-interface:
     context: .
     dockerfile: ./apps/local-hub/Dockerfile
   ports:
-    - '8087:4000'         # Access at http://localhost:8087
+    - '8087:4000' # Access at http://localhost:8087
   environment:
     - GATEWAY_URL=http://gateway:3000
     - GATEWAY_WS_URL=http://gateway:3300
@@ -931,34 +973,37 @@ local-hub-client-interface:
 
 Runs the complete isolated stack for E2E testing:
 
-| Service | Port | Role |
-|---------|------|------|
-| postgres | 5433 | Shared database |
-| redis | 6380 | Cache / session store |
-| db-setup | — | Schema init (one-shot) |
-| authentication | 3001 | Auth microservice |
-| profile | 3002 | Profile microservice |
-| social | 3003 | Social microservice |
-| assets | 3005 | Asset storage |
-| classifieds | 3017 | Classifieds microservice |
-| payments | 3018 | Payments microservice |
-| gateway | 3000/3300/3301 | REST / WebSocket / health |
-| local-hub-frontend | 8087 | Angular frontend |
-| e2e-test-runner | — | Playwright test runner |
+| Service            | Port           | Role                      |
+| ------------------ | -------------- | ------------------------- |
+| postgres           | 5433           | Shared database           |
+| redis              | 6380           | Cache / session store     |
+| db-setup           | —              | Schema init (one-shot)    |
+| authentication     | 3001           | Auth microservice         |
+| profile            | 3002           | Profile microservice      |
+| social             | 3003           | Social microservice       |
+| assets             | 3005           | Asset storage             |
+| classifieds        | 3017           | Classifieds microservice  |
+| payments           | 3018           | Payments microservice     |
+| gateway            | 3000/3300/3301 | REST / WebSocket / health |
+| local-hub-frontend | 8087           | Angular frontend          |
+| e2e-test-runner    | —              | Playwright test runner    |
 
 ### 11.3 Starting the Stack
 
 **Development (main stack):**
+
 ```bash
 docker-compose up -d
 ```
 
 **Development with hot reload:**
+
 ```bash
 docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
 ```
 
 **E2E tests only:**
+
 ```bash
 docker-compose -f docker-compose.local-hub-e2e.yaml up --abort-on-container-exit
 ```
@@ -975,22 +1020,32 @@ docker compose exec local-hub-client-interface \
 
 ## 12. Environment Variables
 
-| Variable | Service | Default | Description |
-|----------|---------|---------|-------------|
-| `GATEWAY_URL` | local-hub frontend | `http://localhost:3000/api` | REST API base URL |
-| `GATEWAY_WS_URL` | local-hub frontend | `http://localhost:3300` | WebSocket base URL |
-| `APP_SCOPE` | seed script | `local-hub` | App scope tag sent with posts and communities |
-| `DATABASE_URL` | all microservices | see docker-compose | PostgreSQL connection string |
-| `REDIS_URL` | gateway, social | see docker-compose | Redis connection string |
-| `LEMON_SQUEEZY_API_KEY` | payments | — | Payment processor API key |
-| `LEMON_SQUEEZY_STORE_ID` | payments | — | Store identifier |
-| `LEMON_SQUEEZY_WEBHOOK_SECRET` | payments | — | Webhook verification secret |
+| Variable                        | Service            | Default                     | Description                                    |
+| ------------------------------- | ------------------ | --------------------------- | ---------------------------------------------- |
+| `GATEWAY_URL`                   | local-hub frontend | `http://localhost:3000/api` | REST API base URL                              |
+| `GATEWAY_WS_URL`                | local-hub frontend | `http://localhost:3300`     | WebSocket base URL                             |
+| `APP_SCOPE`                     | seed script        | `local-hub`                 | App scope tag sent with posts and communities  |
+| `DATABASE_URL`                  | all microservices  | see docker-compose          | PostgreSQL connection string                   |
+| `REDIS_URL`                     | gateway, social    | see docker-compose          | Redis connection string                        |
+| `PAYMENTS_CONFIG_PATH`          | payments           | auto-discovered config path | Explicit payments config file for a deployment |
+| `PAYMENTS_PROVIDER`             | payments           | YAML value                  | Default provider selector for undeclared flows |
+| `PAYMENTS_PROVIDER_DONATIONS`   | payments           | YAML value                  | Override the donations flow provider           |
+| `PAYMENTS_PROVIDER_CLASSIFIEDS` | payments           | YAML value                  | Override the classifieds flow provider         |
+| `PAYMENTS_PROVIDER_BUSINESS`    | payments           | YAML value                  | Override the business flow provider            |
+| `PAYMENTS_PROVIDER_SPONSORSHIP` | payments           | YAML value                  | Override the sponsorship flow provider         |
+| `HELCIM_API_TOKEN`              | payments           | —                           | Helcim API token                               |
+| `HELCIM_BASE_URL`               | payments           | `https://api.helcim.com`    | Helcim API base URL                            |
+| `HELCIM_WEBHOOK_SECRET`         | payments           | —                           | Reserved for Helcim webhook validation         |
+| `LEMON_SQUEEZY_API_KEY`         | payments           | —                           | Default Lemon Squeezy API key                  |
+| `LEMON_SQUEEZY_STORE_ID`        | payments           | —                           | Default Lemon Squeezy store identifier         |
+| `LEMON_SQUEEZY_PORTAL_URL`      | payments           | —                           | Default Lemon Squeezy customer portal URL      |
 
 ---
 
 ## See Also
 
 - [`docs/LOCAL_HUB_COMMERCE.md`](../LOCAL_HUB_COMMERCE.md) — Commerce overview (donations, tiers, sponsorships summary)
+- [`docs/payments/seeding.md`](../payments/seeding.md) — Provider setup, mixed-provider routing, and multi-app payments configuration
 - [`docs/devops/docker-compose.md`](../devops/docker-compose.md) — Docker Compose reference
 - [`docs/architecture/permissions.md`](../architecture/permissions.md) — RBAC and permissions
 - [`apps/local-hub/README.md`](../../apps/local-hub/README.md) — App-level README

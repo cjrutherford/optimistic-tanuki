@@ -39,7 +39,7 @@ export class PermissionsController {
     private readonly l: Logger,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly client: ClientProxy
-  ) { }
+  ) {}
 
   // App Scope endpoints
   @UseGuards(AuthGuard)
@@ -282,7 +282,10 @@ export class PermissionsController {
   }
 
   @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Search Permissions based on name. Returns all valid for the logged in user based on "startsWith"' })
+  @ApiOperation({
+    summary:
+      'Search Permissions based on name. Returns all valid for the logged in user based on "startsWith"',
+  })
   @Get('permission-search')
   async searchPermissions(
     @Query('startsWith') startsWith: string,
@@ -293,6 +296,15 @@ export class PermissionsController {
         { cmd: PermissionCommands.Search },
         { query: startsWith, profileId: user.profileId }
       )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get all role assignments' })
+  @Get('assignments')
+  async getAllAssignments(@Query('appScopeId') appScopeId?: string) {
+    return await firstValueFrom(
+      this.client.send({ cmd: RoleCommands.GetAllAssignments }, { appScopeId })
     );
   }
 }

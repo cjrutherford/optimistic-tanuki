@@ -19,9 +19,13 @@ import { CommunitySponsorship } from '../entities/community-sponsorship.entity';
 import { Transaction } from '../entities/transaction.entity';
 import { Offer } from '../entities/offer.entity';
 import { LemonSqueezyProduct } from '../entities/lemon-squeezy-product.entity';
+import { BillingProfile } from '../entities/billing-profile.entity';
+import { SavedPaymentMethod } from '../entities/saved-payment-method.entity';
 import { PaymentService } from './services/payment.service';
 import { BusinessThemeService } from './services/business-theme.service';
 import { OfferService } from './services/offer.service';
+import { HelcimService } from './services/helcim.service';
+import { StripeConnectService } from './services/stripe-connect.service';
 
 @Module({
   imports: [
@@ -87,8 +91,20 @@ import { OfferService } from './services/offer.service';
       useFactory: (ds: DataSource) => ds.getRepository(LemonSqueezyProduct),
       inject: ['PAYMENTS_CONNECTION'],
     },
+    {
+      provide: getRepositoryToken(BillingProfile),
+      useFactory: (ds: DataSource) => ds.getRepository(BillingProfile),
+      inject: ['PAYMENTS_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(SavedPaymentMethod),
+      useFactory: (ds: DataSource) => ds.getRepository(SavedPaymentMethod),
+      inject: ['PAYMENTS_CONNECTION'],
+    },
     BusinessThemeService,
     OfferService,
+    HelcimService,
+    StripeConnectService,
   ],
 })
-export class AppModule {}
+export class AppModule { }

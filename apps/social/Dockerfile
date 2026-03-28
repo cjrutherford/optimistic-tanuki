@@ -19,6 +19,7 @@ COPY ./dist/apps/social .
 RUN npm i --save typeorm pg
 COPY ./dist/apps/social/seed-social.js ./seed-social.js
 COPY ./dist/apps/social/seed-local-communities.js ./seed-local-communities.js
+COPY ./dist/apps/social/assets/seed-cities.json ./seed-cities.json
 RUN chown -R node:node .
 USER node
 EXPOSE 3003

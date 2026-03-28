@@ -9,6 +9,9 @@ import {
 export type SponsorshipType = 'sticky-ad' | 'banner' | 'featured';
 
 @Entity('community_sponsorships')
+@Index(['appScope'])
+@Index(['appScope', 'communityId'])
+@Index(['appScope', 'userId'])
 @Index(['communityId'])
 @Index(['userId'])
 @Index(['businessPageId'])
@@ -21,6 +24,9 @@ export class CommunitySponsorship {
 
   @Column({ type: 'uuid', nullable: true })
   businessPageId: string;
+
+  @Column({ type: 'varchar' })
+  appScope: string;
 
   @Column({ type: 'uuid' })
   userId: string;

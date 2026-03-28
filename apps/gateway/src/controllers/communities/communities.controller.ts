@@ -126,6 +126,25 @@ export class CommunitiesController {
   }
 
   @Public()
+  @Get('slug/:slug')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get a community by slug' })
+  @ApiResponse({ status: 200, description: 'Community.' })
+  async getCommunityBySlug(@Param('slug') slug: string) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.FIND_BY_SLUG },
+          { slug }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to get community by slug %s:', slug, error);
+      return null;
+    }
+  }
+
+  @Public()
   @Get(':id')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get a community by ID' })

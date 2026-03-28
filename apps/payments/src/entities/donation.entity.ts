@@ -7,6 +7,8 @@ import {
 } from 'typeorm';
 
 @Entity('donations')
+@Index(['appScope'])
+@Index(['appScope', 'userId'])
 @Index(['userId'])
 @Index(['createdAt'])
 export class Donation {
@@ -18,6 +20,9 @@ export class Donation {
 
   @Column({ type: 'uuid', nullable: true })
   profileId: string;
+
+  @Column({ type: 'varchar' })
+  appScope: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
@@ -31,8 +36,35 @@ export class Donation {
   @Column({ type: 'varchar', nullable: true })
   lemonSqueezySubscriptionId: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  externalProvider: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  externalTransactionId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  externalCustomerId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  externalInvoiceId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  paymentIntentId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  checkoutToken: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  checkoutSecretToken: string;
+
+  @Column({ type: 'text', nullable: true })
+  refundReason: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  refundedAt: Date;
+
   @Column({ type: 'varchar', default: 'pending' })
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded';
 
   @Column({ type: 'varchar', nullable: true })
   currency: string;
@@ -42,4 +74,7 @@ export class Donation {
 
   @Column({ type: 'timestamp', nullable: true })
   cancelledAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  completedAt: Date;
 }

@@ -1,4 +1,15 @@
 listenPort: 3018
+paymentProvider: 'stripe-connect'
+# `paymentFlows` applies to this payments deployment as a whole.
+# If different apps need different routing matrices, run separate payments deployments
+# with different config files and point each deployment at its config via
+# `PAYMENTS_CONFIG_PATH` or `CONFIG_PATH`.
+# Supported providers: 'stripe-connect', 'helcim'
+paymentFlows:
+  donations: 'stripe-connect'
+  classifieds: 'stripe-connect'
+  business: 'stripe-connect'
+  sponsorship: 'stripe-connect'
 database:
   host: db
   port: 5432
@@ -11,8 +22,38 @@ services:
     transport: TCP
     host: ot_profile
     port: 3002
+helcim:
+  apiToken: ${HELCIM_API_TOKEN:-''}
+  baseUrl: ${HELCIM_BASE_URL:-https://api.helcim.com}
+  webhookSecret: ${HELCIM_WEBHOOK_SECRET:-''}
+stripeConnect:
+  default:
+    secretKey: ''
+    publishableKey: ''
+    webhookSecret: ''
+    connectReturnUrl: ''
+    connectRefreshUrl: ''
+  apps:
+    local-hub:
+      secretKey: ''
+      publishableKey: ''
+      webhookSecret: ''
+      connectReturnUrl: http://localhost:8087/account/payments/stripe/return
+      connectRefreshUrl: http://localhost:8087/account/payments/stripe/refresh
 lemonSqueezy:
   default:
     apiKey: ''
     storeId: ''
+    portalUrl: ''
+  # Add per-app stores here. The key must match the incoming appScope header.
+  # Example:
+  # stores:
+  #   local-hub:
+  #     apiKey: ${LEMON_SQUEEZY_LOCAL_HUB_API_KEY:-''}
+  #     storeId: '12345'
+  #     portalUrl: 'https://my-store.lemonsqueezy.com/billing'
+  #   another-app:
+  #     apiKey: ${LEMON_SQUEEZY_ANOTHER_APP_API_KEY:-''}
+  #     storeId: '67890'
+  #     portalUrl: 'https://another-store.lemonsqueezy.com/billing'
   stores: {}

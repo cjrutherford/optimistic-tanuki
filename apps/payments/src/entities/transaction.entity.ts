@@ -16,6 +16,8 @@ export type TransactionType =
 export type TransactionDirection = 'incoming' | 'outgoing';
 
 @Entity('transactions')
+@Index(['appScope'])
+@Index(['appScope', 'userId'])
 @Index(['userId'])
 @Index(['createdAt'])
 export class Transaction {
@@ -24,6 +26,9 @@ export class Transaction {
 
   @Column({ type: 'uuid' })
   userId: string;
+
+  @Column({ type: 'varchar' })
+  appScope: string;
 
   @Column({ type: 'varchar' })
   type: TransactionType;
@@ -48,6 +53,18 @@ export class Transaction {
 
   @Column({ type: 'uuid', nullable: true })
   referenceId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  externalProvider: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  externalTransactionId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  externalCustomerId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  externalInvoiceId: string;
 
   @Column({ type: 'varchar', default: 'completed' })
   status: 'pending' | 'completed' | 'failed' | 'refunded';

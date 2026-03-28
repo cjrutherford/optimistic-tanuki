@@ -2,6 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
 
 const baseURL = process.env['BASE_URL'] || 'http://localhost:8087';
+const gatewayURL = process.env['GATEWAY_URL'] || 'http://localhost:3000';
+const mockPaymentURL =
+  process.env['MOCK_PAYMENT_URL'] || 'http://localhost:3019';
 const skipServer =
   process.env['CI'] === 'true' ||
   process.env['E2E_DOCKER'] === 'true' ||
@@ -17,6 +20,10 @@ export default defineConfig({
     video: 'retain-on-failure',
     actionTimeout: 10000,
     navigationTimeout: 30000,
+    extraHTTPHeaders: {
+      'X-Gateway-URL': gatewayURL,
+      'X-Mock-Payment-URL': mockPaymentURL,
+    },
   },
   outputDir: './test-results',
   timeout: 60000,

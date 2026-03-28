@@ -6,13 +6,22 @@ import {
   Index,
 } from 'typeorm';
 
+export type SellerStripeAccountStatus =
+  | 'not-connected'
+  | 'pending'
+  | 'restricted'
+  | 'enabled';
+
 @Entity('seller_wallets')
-@Index(['sellerId'], { unique: true })
+@Index(['appScope', 'sellerId'], { unique: true })
 export class SellerWallet {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', unique: true })
+  @Column({ type: 'varchar' })
+  appScope: string;
+
+  @Column({ type: 'uuid' })
   sellerId: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
@@ -38,6 +47,27 @@ export class SellerWallet {
 
   @Column({ type: 'varchar', nullable: true })
   bankRoutingLast4: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  stripeAccountId: string;
+
+  @Column({ type: 'varchar', default: 'not-connected' })
+  stripeAccountStatus: SellerStripeAccountStatus;
+
+  @Column({ type: 'boolean', default: false })
+  stripeDetailsSubmitted: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  stripeChargesEnabled: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  stripePayoutsEnabled: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  stripeOnboardingCompletedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  stripeLastSyncedAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;

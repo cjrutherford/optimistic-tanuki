@@ -16,16 +16,28 @@ export class AppController {
     private readonly businessThemeService: BusinessThemeService,
     @Inject(OfferService)
     private readonly offerService: OfferService
-  ) {}
+  ) { }
 
   @MessagePattern({ cmd: PaymentCommands.GET_DONATION_GOAL })
-  async getDonationGoal(@Payload() data: { month: number; year: number }) {
-    return this.paymentService.getDonationGoal(data.month, data.year);
+  async getDonationGoal(
+    @Payload() data: { month: number; year: number; appScope?: string }
+  ) {
+    return this.paymentService.getDonationGoal(
+      data.month,
+      data.year,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.LIST_DONATIONS })
-  async getDonations(@Payload() data: { month: number; year: number }) {
-    return this.paymentService.getDonations(data.month, data.year);
+  async getDonations(
+    @Payload() data: { month: number; year: number; appScope?: string }
+  ) {
+    return this.paymentService.getDonations(
+      data.month,
+      data.year,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.CREATE_DONATION_CHECKOUT })
@@ -48,18 +60,89 @@ export class AppController {
     );
   }
 
+  @MessagePattern({ cmd: PaymentCommands.INITIALIZE_DONATION_CHECKOUT })
+  async initializeDonationCheckout(
+    @Payload()
+    data: {
+      userId: string;
+      profileId: string;
+      amount: number;
+      isRecurring: boolean;
+      appScope: string;
+      email?: string;
+      name?: string;
+    }
+  ) {
+    return this.paymentService.initializeDonationCheckout(
+      data.userId,
+      data.profileId,
+      data.amount,
+      data.isRecurring,
+      data.appScope,
+      {
+        email: data.email,
+        name: data.name,
+      }
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.VALIDATE_DONATION_CHECKOUT })
+  async validateDonationCheckout(
+    @Payload()
+    data: {
+      userId: string;
+      donationId: string;
+      checkoutToken: string;
+      response: {
+        hash: string;
+        data: Record<string, unknown>;
+      };
+      appScope?: string;
+    }
+  ) {
+    return this.paymentService.validateDonationCheckout(
+      data.userId,
+      data.donationId,
+      data.checkoutToken,
+      data.response,
+      data.appScope
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.REFUND_DONATION })
+  async refundDonation(
+    @Payload()
+    data: {
+      userId: string;
+      donationId: string;
+      reason: string;
+      appScope?: string;
+    }
+  ) {
+    return this.paymentService.refundDonation(
+      data.userId,
+      data.donationId,
+      data.reason,
+      data.appScope
+    );
+  }
+
   @MessagePattern({ cmd: PaymentCommands.GET_USER_DONATIONS })
-  async getUserDonations(@Payload() data: { userId: string }) {
-    return this.paymentService.getUserDonations(data.userId);
+  async getUserDonations(
+    @Payload() data: { userId: string; appScope?: string }
+  ) {
+    return this.paymentService.getUserDonations(data.userId, data.appScope);
   }
 
   @MessagePattern({ cmd: PaymentCommands.CANCEL_SUBSCRIPTION })
   async cancelRecurringDonation(
-    @Payload() data: { userId: string; subscriptionId: string }
+    @Payload()
+    data: { userId: string; subscriptionId: string; appScope?: string }
   ) {
     return this.paymentService.cancelSubscription(
       data.userId,
-      data.subscriptionId
+      data.subscriptionId,
+      data.appScope
     );
   }
 
@@ -81,7 +164,90 @@ export class AppController {
       data.classifiedId,
       data.paymentMethod,
       data.amount,
-      data.sellerId
+      data.sellerId,
+      undefined,
+      data.appScope
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.INITIALIZE_CLASSIFIED_PAYMENT })
+  async initializeClassifiedPayment(
+    @Payload()
+    data: {
+      buyerId: string;
+      classifiedId: string;
+      amount: number;
+      appScope?: string;
+      sellerId?: string;
+      offerId?: string;
+    }
+  ) {
+    return this.paymentService.initializeClassifiedPayment(
+      data.buyerId,
+      data.classifiedId,
+      data.amount,
+      data.sellerId,
+      data.offerId,
+      data.appScope
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.VALIDATE_CLASSIFIED_PAYMENT })
+  async validateClassifiedPayment(
+    @Payload()
+    data: {
+      buyerId: string;
+      paymentId: string;
+      checkoutToken: string;
+      response: {
+        hash: string;
+        data: Record<string, unknown>;
+      };
+      appScope?: string;
+    }
+  ) {
+    return this.paymentService.validateClassifiedPayment(
+      data.buyerId,
+      data.paymentId,
+      data.checkoutToken,
+      data.response,
+      data.appScope
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.CONFIRM_STRIPE_CLASSIFIED_PAYMENT })
+  async confirmStripeClassifiedPayment(
+    @Payload()
+    data: {
+      buyerId: string;
+      paymentId: string;
+      paymentIntentId?: string;
+      appScope?: string;
+    }
+  ) {
+    return this.paymentService.confirmStripeClassifiedPayment(
+      data.buyerId,
+      data.paymentId,
+      data.paymentIntentId,
+      data.appScope
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.REFUND_CLASSIFIED_PAYMENT })
+  async refundClassifiedPayment(
+    @Payload()
+    data: {
+      userId: string;
+      paymentId: string;
+      reason: string;
+      appScope?: string;
+    }
+  ) {
+    return this.paymentService.refundClassifiedPayment(
+      data.userId,
+      data.paymentId,
+      data.reason,
+      data.appScope
     );
   }
 
@@ -92,49 +258,110 @@ export class AppController {
       paymentId: string;
       userId: string;
       proofImageUrl?: string;
+      appScope?: string;
     }
   ) {
     return this.paymentService.confirmOutOfPlatformPayment(
       data.paymentId,
-      data.proofImageUrl
+      data.proofImageUrl,
+      data.appScope
     );
   }
 
   @MessagePattern({ cmd: PaymentCommands.RELEASE_FUNDS })
-  async releaseFunds(@Payload() data: { paymentId: string; sellerId: string }) {
-    return this.paymentService.releaseFunds(data.paymentId);
+  async releaseFunds(
+    @Payload() data: { paymentId: string; sellerId: string; appScope?: string }
+  ) {
+    return this.paymentService.releaseFunds(data.paymentId, data.appScope);
   }
 
   @MessagePattern({ cmd: PaymentCommands.DISPUTE_PAYMENT })
   async disputePayment(
-    @Payload() data: { paymentId: string; userId: string; reason: string }
+    @Payload()
+    data: {
+      paymentId: string;
+      userId: string;
+      reason: string;
+      appScope?: string;
+    }
   ) {
-    return this.paymentService.disputePayment(data.paymentId, data.reason);
+    return this.paymentService.disputePayment(
+      data.paymentId,
+      data.reason,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_PAYMENT })
-  async getPayment(@Payload() data: { paymentId: string }) {
-    return this.paymentService.getPayment(data.paymentId);
+  async getPayment(
+    @Payload() data: { paymentId: string; appScope?: string }
+  ) {
+    return this.paymentService.getPayment(data.paymentId, data.appScope);
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_USER_PAYMENTS })
-  async getUserPayments(@Payload() data: { userId: string }) {
-    return this.paymentService.getUserPayments(data.userId);
+  async getUserPayments(
+    @Payload() data: { userId: string; appScope?: string }
+  ) {
+    return this.paymentService.getUserPayments(data.userId, data.appScope);
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.GET_BILLING_PROFILE })
+  async getBillingProfile(
+    @Payload() data: { userId: string; appScope?: string }
+  ) {
+    return this.paymentService.getBillingProfile(data.userId, data.appScope);
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.UPDATE_BILLING_PROFILE })
+  async updateBillingProfile(
+    @Payload()
+    data: {
+      userId: string;
+      appScope?: string;
+      name?: string;
+      email?: string;
+      defaultPaymentMethodId?: string;
+    }
+  ) {
+    return this.paymentService.updateBillingProfile(
+      data.userId,
+      {
+        name: data.name,
+        email: data.email,
+        defaultPaymentMethodId: data.defaultPaymentMethodId,
+      },
+      data.appScope
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.LIST_SAVED_PAYMENT_METHODS })
+  async listSavedPaymentMethods(
+    @Payload() data: { userId: string; appScope?: string }
+  ) {
+    return this.paymentService.listSavedPaymentMethods(data.userId, data.appScope);
   }
 
   @MessagePattern({ cmd: PaymentCommands.MARK_INTERESTED_BUYER })
   async markInterestedBuyer(
-    @Payload() data: { paymentId: string; interestedBuyerId: string }
+    @Payload()
+    data: { paymentId: string; interestedBuyerId: string; appScope?: string }
   ) {
     return this.paymentService.markInterestedBuyer(
       data.paymentId,
-      data.interestedBuyerId
+      data.interestedBuyerId,
+      data.appScope
     );
   }
 
   @MessagePattern({ cmd: PaymentCommands.MARK_PAID_OUTSIDE_PLATFORM })
-  async markPaidOutsidePlatform(@Payload() data: { paymentId: string }) {
-    return this.paymentService.markPaidOutsidePlatform(data.paymentId);
+  async markPaidOutsidePlatform(
+    @Payload() data: { paymentId: string; appScope?: string }
+  ) {
+    return this.paymentService.markPaidOutsidePlatform(
+      data.paymentId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.CREATE_BUSINESS_CHECKOUT })
@@ -156,8 +383,10 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_BUSINESS_PAGE })
-  async getBusinessPage(@Payload() data: { communityId: string }) {
-    return this.paymentService.getBusinessPage(data.communityId);
+  async getBusinessPage(
+    @Payload() data: { communityId: string; appScope?: string }
+  ) {
+    return this.paymentService.getBusinessPage(data.communityId, data.appScope);
   }
 
   @MessagePattern({ cmd: PaymentCommands.UPDATE_BUSINESS_PAGE })
@@ -166,6 +395,7 @@ export class AppController {
     data: {
       userId: string;
       communityId: string;
+      appScope?: string;
       name?: string;
       description?: string;
       logoUrl?: string;
@@ -179,6 +409,7 @@ export class AppController {
     return this.paymentService.updateBusinessPage(
       data.userId,
       data.communityId,
+      data.appScope,
       {
         name: data.name,
         description: data.description,
@@ -194,11 +425,12 @@ export class AppController {
 
   @MessagePattern({ cmd: PaymentCommands.CANCEL_BUSINESS_SUBSCRIPTION })
   async cancelBusinessSubscription(
-    @Payload() data: { userId: string; communityId: string }
+    @Payload() data: { userId: string; communityId: string; appScope?: string }
   ) {
     return this.paymentService.cancelBusinessSubscription(
       data.userId,
-      data.communityId
+      data.communityId,
+      data.appScope
     );
   }
 
@@ -227,23 +459,32 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_ACTIVE_SPONSORSHIPS })
-  async getActiveSponsorships(@Payload() data: { communityId: string }) {
-    return this.paymentService.getActiveSponsorships(data.communityId);
+  async getActiveSponsorships(
+    @Payload() data: { communityId: string; appScope?: string }
+  ) {
+    return this.paymentService.getActiveSponsorships(
+      data.communityId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_USER_SPONSORSHIPS })
-  async getUserSponsorships(@Payload() data: { userId: string }) {
-    return this.paymentService.getUserSponsorships(data.userId);
+  async getUserSponsorships(
+    @Payload() data: { userId: string; appScope?: string }
+  ) {
+    return this.paymentService.getUserSponsorships(data.userId, data.appScope);
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_USER_TRANSACTIONS })
-  async getUserTransactions(@Payload() data: { userId: string }) {
-    return this.paymentService.getUserTransactions(data.userId);
+  async getUserTransactions(
+    @Payload() data: { userId: string; appScope?: string }
+  ) {
+    return this.paymentService.getUserTransactions(data.userId, data.appScope);
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_PORTAL_URL })
-  async getPortalUrl(@Payload() data: { userId: string }) {
-    return this.paymentService.getPortalUrl(data.userId);
+  async getPortalUrl(@Payload() data: { userId: string; appScope?: string }) {
+    return this.paymentService.getPortalUrl(data.userId, data.appScope);
   }
 
   @MessagePattern({ cmd: PaymentCommands.CREATE_OFFER })
@@ -308,8 +549,36 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_SELLER_WALLET })
-  async getSellerWallet(@Payload() data: { sellerId: string }) {
-    return this.paymentService.getSellerWallet(data.sellerId);
+  async getSellerWallet(
+    @Payload() data: { sellerId: string; appScope?: string }
+  ) {
+    return this.paymentService.getSellerWallet(data.sellerId, data.appScope);
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.CREATE_SELLER_STRIPE_CONNECT_ONBOARDING_LINK })
+  async createSellerStripeConnectOnboardingLink(
+    @Payload()
+    data: {
+      sellerId: string;
+      email?: string;
+      appScope?: string;
+    }
+  ) {
+    return this.paymentService.createSellerStripeConnectOnboardingLink(
+      data.sellerId,
+      data.email,
+      data.appScope
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.REFRESH_SELLER_STRIPE_CONNECT_STATUS })
+  async refreshSellerStripeConnectStatus(
+    @Payload() data: { sellerId: string; appScope?: string }
+  ) {
+    return this.paymentService.refreshSellerStripeConnectStatus(
+      data.sellerId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.UPDATE_SELLER_PAYOUT_INFO })
@@ -317,6 +586,7 @@ export class AppController {
     @Payload()
     data: {
       sellerId: string;
+      appScope?: string;
       payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle';
       payoutEmail?: string;
       bankAccountLast4?: string;
@@ -325,6 +595,7 @@ export class AppController {
   ) {
     return this.paymentService.updateSellerPayoutInfo(
       data.sellerId,
+      data.appScope,
       data.payoutMethod,
       data.payoutEmail,
       data.bankAccountLast4,
@@ -337,6 +608,7 @@ export class AppController {
     @Payload()
     data: {
       sellerId: string;
+      appScope?: string;
       amount: number;
       payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle';
       payoutEmail?: string;
@@ -346,6 +618,7 @@ export class AppController {
   ) {
     return this.paymentService.createPayoutRequest(
       data.sellerId,
+      data.appScope,
       data.amount,
       data.payoutMethod,
       data.payoutEmail,
@@ -355,32 +628,46 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_SELLER_PAYOUT_REQUESTS })
-  async getSellerPayoutRequests(@Payload() data: { sellerId: string }) {
-    return this.paymentService.getSellerPayoutRequests(data.sellerId);
+  async getSellerPayoutRequests(
+    @Payload() data: { sellerId: string; appScope?: string }
+  ) {
+    return this.paymentService.getSellerPayoutRequests(
+      data.sellerId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.CANCEL_PAYOUT_REQUEST })
   async cancelPayoutRequest(
-    @Payload() data: { payoutRequestId: string; sellerId: string }
+    @Payload()
+    data: { payoutRequestId: string; sellerId: string; appScope?: string }
   ) {
     return this.paymentService.cancelPayoutRequest(
       data.payoutRequestId,
-      data.sellerId
+      data.sellerId,
+      data.appScope
     );
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_SELLER_EARNINGS_SUMMARY })
-  async getSellerEarningsSummary(@Payload() data: { sellerId: string }) {
-    return this.paymentService.getSellerEarningsSummary(data.sellerId);
+  async getSellerEarningsSummary(
+    @Payload() data: { sellerId: string; appScope?: string }
+  ) {
+    return this.paymentService.getSellerEarningsSummary(
+      data.sellerId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_BUSINESS_PAGES_BY_CITY })
   async getBusinessPagesByCity(
-    @Payload() data: { cityId: string; communityIds: string[] }
+    @Payload()
+    data: { cityId: string; communityIds: string[]; appScope?: string }
   ) {
     return this.paymentService.getBusinessPagesByCity(
       data.cityId,
-      data.communityIds || []
+      data.communityIds || [],
+      data.appScope
     );
   }
 

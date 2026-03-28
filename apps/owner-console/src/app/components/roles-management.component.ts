@@ -21,7 +21,7 @@ import {
   UpdateRoleDto,
   AppScopeDto,
 } from '@optimistic-tanuki/ui-models';
-import { RolesService } from '../services/roles.service';
+import { RolesService, RoleAssignmentDto } from '../services/roles.service';
 import { AppScopesService } from '../services/app-scopes.service';
 import { AgRolesTableComponent } from './ag-roles-table.component';
 
@@ -43,7 +43,24 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
   template: `
     <lib-message></lib-message>
 
-    <otui-card>
+    <div class="tabs">
+      <button
+        class="tab-button"
+        [class.active]="activeTab === 'roles'"
+        (click)="switchTab('roles')"
+      >
+        Roles
+      </button>
+      <button
+        class="tab-button"
+        [class.active]="activeTab === 'assignments'"
+        (click)="switchTab('assignments')"
+      >
+        Role Assignments
+      </button>
+    </div>
+
+    <otui-card *ngIf="activeTab === 'roles'">
       <otui-heading level="2">Roles Management</otui-heading>
 
       <app-ag-roles-table
@@ -53,6 +70,65 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
         (edit)="openEditModal($event)"
         (delete)="openDeleteConfirm($event)"
       />
+    </otui-card>
+
+    <otui-card *ngIf="activeTab === 'assignments'">
+      <otui-heading level="2">Role Assignments</otui-heading>
+
+      <div class="filters">
+        <label>Filter by App Scope:</label>
+        <select [(ngModel)]="filterAppScopeId" (change)="loadAssignments()">
+          <option value="">All Scopes</option>
+          <option *ngFor="let scope of appScopes" [value]="scope.id">
+            {{ scope.name }}
+          </option>
+        </select>
+        <otui-button variant="secondary" (action)="loadAssignments()">
+          Refresh
+        </otui-button>
+      </div>
+
+      <div class="assignments-table" *ngIf="!loadingAssignments">
+        <table>
+          <thead>
+            <tr>
+              <th>Profile ID</th>
+              <th>Role</th>
+              <th>App Scope</th>
+              <th>Target ID</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let assignment of roleAssignments">
+              <td>{{ assignment.profileId }}</td>
+              <td>{{ assignment.role?.name }}</td>
+              <td>{{ assignment.appScope?.name }}</td>
+              <td>{{ assignment.targetId || '-' }}</td>
+              <td>{{ assignment.created_at | date : 'short' }}</td>
+              <td>
+                <otui-button
+                  variant="danger"
+                  size="small"
+                  (action)="unassignRole(assignment)"
+                >
+                  Remove
+                </otui-button>
+              </td>
+            </tr>
+            <tr *ngIf="roleAssignments.length === 0">
+              <td colspan="6" class="empty-message">
+                No role assignments found.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="loadingAssignments" class="loading">
+        Loading assignments...
+      </div>
     </otui-card>
 
     <!-- Create/Edit Modal -->
@@ -217,6 +293,94 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
         padding: 16px;
       }
 
+      .tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 16px;
+        border-bottom: 2px solid var(--border-color, #ddd);
+      }
+
+      .tab-button {
+        padding: 12px 24px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-secondary, #666);
+        transition: all 0.2s;
+      }
+
+      .tab-button:hover {
+        color: var(--text-primary, #333);
+      }
+
+      .tab-button.active {
+        color: var(--accent, #007bff);
+        border-bottom-color: var(--accent, #007bff);
+      }
+
+      .filters {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 16px;
+        padding: 12px;
+        background: var(--background, #f5f5f5);
+        border-radius: 6px;
+      }
+
+      .filters select {
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        font-size: 14px;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        min-width: 200px;
+      }
+
+      .assignments-table {
+        overflow-x: auto;
+      }
+
+      .assignments-table table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      .assignments-table th,
+      .assignments-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color, #ddd);
+      }
+
+      .assignments-table th {
+        background: var(--background, #f5f5f5);
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .assignments-table tr:hover {
+        background: var(--background, #fafafa);
+      }
+
+      .empty-message {
+        text-align: center;
+        color: var(--text-secondary, #666);
+        padding: 24px !important;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 24px;
+        color: var(--text-secondary, #666);
+      }
+
       .form-container {
         display: flex;
         flex-direction: column;
@@ -339,6 +503,11 @@ export class RolesManagementComponent implements OnInit {
   roles: RoleDto[] = [];
   appScopes: AppScopeDto[] = [];
   loading = false;
+  activeTab: 'roles' | 'assignments' = 'roles';
+
+  roleAssignments: RoleAssignmentDto[] = [];
+  loadingAssignments = false;
+  filterAppScopeId = '';
 
   showFormModal = false;
   showConfirmModal = false;
@@ -364,6 +533,56 @@ export class RolesManagementComponent implements OnInit {
   ngOnInit(): void {
     this.loadRoles();
     this.loadAppScopes();
+  }
+
+  switchTab(tab: 'roles' | 'assignments'): void {
+    this.activeTab = tab;
+    if (tab === 'assignments' && this.roleAssignments.length === 0) {
+      this.loadAssignments();
+    }
+  }
+
+  loadAssignments(): void {
+    this.loadingAssignments = true;
+    this.rolesService
+      .getAllAssignments(this.filterAppScopeId || undefined)
+      .subscribe({
+        next: (assignments) => {
+          this.roleAssignments = assignments;
+          this.loadingAssignments = false;
+        },
+        error: (err) => {
+          this.loadingAssignments = false;
+          this.messageService.addMessage({
+            content: 'Failed to load role assignments.',
+            type: 'error',
+          });
+        },
+      });
+  }
+
+  unassignRole(assignment: RoleAssignmentDto): void {
+    if (
+      confirm(
+        `Remove role "${assignment.role?.name}" from profile ${assignment.profileId}?`
+      )
+    ) {
+      this.rolesService.unassignRole(assignment.id).subscribe({
+        next: () => {
+          this.messageService.addMessage({
+            content: 'Role assignment removed successfully.',
+            type: 'success',
+          });
+          this.loadAssignments();
+        },
+        error: (err) => {
+          this.messageService.addMessage({
+            content: 'Failed to remove role assignment.',
+            type: 'error',
+          });
+        },
+      });
+    }
   }
 
   loadRoles(): void {

@@ -13,6 +13,7 @@ const serverRoutes: ServerRoute[] = [
   { path: 'login', renderMode: RenderMode.Client },
   { path: 'register', renderMode: RenderMode.Client },
   { path: 'account', renderMode: RenderMode.Client },
+  { path: 'account/payments/stripe/:action', renderMode: RenderMode.Client },
   { path: 'seller-dashboard', renderMode: RenderMode.Client },
   { path: 'messages', renderMode: RenderMode.Client },
   { path: 'messages/new', renderMode: RenderMode.Client },

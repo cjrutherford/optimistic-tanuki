@@ -31,10 +31,12 @@ export async function createTestUser(
 
   const response = await request.post('/api/authentication/register', {
     data: {
+      fn: 'Test',
+      ln: 'User',
       email: user.email,
-      username: user.username,
       password: user.password,
-      confirmPassword: user.password,
+      confirm: user.password,
+      bio: 'E2E test user',
     },
     failOnStatusCode: false,
   });
@@ -42,7 +44,7 @@ export async function createTestUser(
   if (response.ok()) {
     const data = await response.json();
     user.id = data.id || data.user?.id || '';
-    user.token = data.token || data.newToken;
+    user.token = data.token || data.newToken || data.data?.newToken;
   } else {
     const errorText = await response.text();
     console.warn(`User creation warning: ${errorText}`);

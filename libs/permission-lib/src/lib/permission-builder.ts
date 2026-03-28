@@ -344,11 +344,75 @@ export class RoleInitBuilder {
           undefined,
           'local-hub'
         );
+        // Add social permissions for local-hub scope
+        this.addPermission(
+          'social.post.create',
+          'social',
+          'post',
+          'Create social post',
+          undefined,
+          'local-hub'
+        );
+        this.addPermission(
+          'social.post.read',
+          'social',
+          'post',
+          'Read social post',
+          undefined,
+          'local-hub'
+        );
+        this.addPermission(
+          'social.post.update',
+          'social',
+          'post',
+          'Update social post',
+          undefined,
+          'local-hub'
+        );
+        this.addPermission(
+          'social.post.delete',
+          'social',
+          'post',
+          'Delete social post',
+          undefined,
+          'local-hub'
+        );
+        this.addPermission(
+          'social.comment.create',
+          'social',
+          'comment',
+          'Create comment',
+          undefined,
+          'local-hub'
+        );
+        this.addPermission(
+          'social.vote.create',
+          'social',
+          'vote',
+          'Create vote',
+          undefined,
+          'local-hub'
+        );
+        this.addPermission(
+          'social.follow',
+          'social',
+          'follow',
+          'Follow/unfollow users',
+          undefined,
+          'local-hub'
+        );
         this.addRole('local_hub_member', 'Local Hub community member', [
           'classified.create',
           'classified.read',
           'classified.update',
           'classified.delete',
+          'social.post.create',
+          'social.post.read',
+          'social.post.update',
+          'social.post.delete',
+          'social.comment.create',
+          'social.vote.create',
+          'social.follow',
         ]);
         this.assignRoleToProfile('local_hub_member');
         return this;

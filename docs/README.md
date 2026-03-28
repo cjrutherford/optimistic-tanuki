@@ -46,6 +46,7 @@ Core system architecture and design documentation:
 Step-by-step guides for specific tasks:
 
 - [Local Hub Guide](./guides/local-hub.md) - Complete guide to the Local Hub (Towne Square) app: pages, services, seeding, business pages, elections, image pipeline, and deployment
+- [Payments Provider Setup](./payments/seeding.md) - Configure Helcim, Stripe Connect, Lemon Squeezy, and mixed-provider multi-app payment deployments
 - [Theme Designer Guide](./guides/theme-designer.md) - Using the theme designer component
 - [Theme Migration Guide](./guides/theme-migration.md) - Migrating to the new theme system
 - [MCP Tools Guide](./guides/mcp-tools.md) - Model Context Protocol tools usage

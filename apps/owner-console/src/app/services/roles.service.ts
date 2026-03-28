@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   RoleDto,
@@ -8,6 +8,20 @@ import {
   AssignRoleDto,
   UserRoleDto,
 } from '@optimistic-tanuki/ui-models';
+
+export interface RoleAssignmentDto {
+  id: string;
+  profileId: string;
+  targetId?: string;
+  roleId: string;
+  appScopeId: string;
+  created_at: Date;
+  role: RoleDto;
+  appScope: {
+    id: string;
+    name: string;
+  };
+}
 
 @Injectable({
   providedIn: 'root',
@@ -65,5 +79,15 @@ export class RolesService {
     return this.http.get<UserRoleDto[]>(
       `${this.API_URL}/user-roles/${profileId}`
     );
+  }
+
+  getAllAssignments(appScopeId?: string): Observable<RoleAssignmentDto[]> {
+    let params = new HttpParams();
+    if (appScopeId) {
+      params = params.set('appScopeId', appScopeId);
+    }
+    return this.http.get<RoleAssignmentDto[]>(`${this.API_URL}/assignments`, {
+      params,
+    });
   }
 }

@@ -18,6 +18,7 @@ import { LemonSqueezyProduct } from '../../entities/lemon-squeezy-product.entity
 import { ConfigService } from '@nestjs/config';
 import { calculateNetAmount } from '../utils/platform-fee.util';
 import type { LemonSqueezyStoreConfig } from '../../config';
+import { StripeConnectService } from './stripe-connect.service';
 
 @Injectable()
 export class PaymentService {
@@ -94,7 +95,9 @@ export class PaymentService {
     @InjectRepository(LemonSqueezyProduct)
     private readonly lsProductRepository: Repository<LemonSqueezyProduct>,
     @Inject(ConfigService)
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    @Inject(StripeConnectService)
+    private readonly stripeConnectService: StripeConnectService
   ) {
     const defaultConfig = this.configService.get('lemonSqueezy.default') as
       | LemonSqueezyStoreConfig
@@ -110,7 +113,11 @@ export class PaymentService {
     this.storeConfigs = storesConfig || {};
   }
 
-  async getDonationGoal(month?: number | string, year?: number | string) {
+  async getDonationGoal(
+    month?: number | string,
+    year?: number | string,
+    appScope?: string
+  ) {
     const period = this.normalizeMonthYear(month, year);
 
     const donations = await this.donationRepository.find({
@@ -147,7 +154,11 @@ export class PaymentService {
     };
   }
 
-  async getDonations(month?: number | string, year?: number | string) {
+  async getDonations(
+    month?: number | string,
+    year?: number | string,
+    appScope?: string
+  ) {
     const period = this.normalizeMonthYear(month, year);
 
     return this.donationRepository.find({
@@ -187,14 +198,125 @@ export class PaymentService {
     };
   }
 
-  async getUserDonations(userId: string) {
+  async initializeDonationCheckout(
+    userId: string,
+    profileId: string,
+    amount: number,
+    isRecurring: boolean,
+    appScope: string,
+    customer?: { email?: string; name?: string }
+  ) {
+    const donation = this.donationRepository.create({
+      userId,
+      profileId,
+      amount,
+      isRecurring,
+      status: 'pending',
+      currency: 'USD',
+    });
+
+    const savedDonation = await this.donationRepository.save(donation);
+
+    try {
+      const result =
+        await this.stripeConnectService.createMarketplacePaymentIntent({
+          appScope,
+          amountCents: Math.round(amount * 100),
+          currency: 'usd',
+          paymentId: savedDonation.id,
+          classifiedId: `donation-${savedDonation.id}`,
+          buyerId: userId,
+          applicationFeeAmountCents: 0,
+        });
+
+      return {
+        clientSecret: result.clientSecret,
+        donationId: savedDonation.id,
+        paymentIntentId: result.paymentIntentId,
+        publishableKey: result.publishableKey,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to create Stripe payment intent for donation: ${error.message}`
+      );
+      throw error;
+    }
+  }
+
+  async validateDonationCheckout(
+    userId: string,
+    donationId: string,
+    checkoutToken: string,
+    response: { hash: string; data: Record<string, unknown> },
+    appScope?: string
+  ) {
+    const donation = await this.donationRepository.findOne({
+      where: { id: donationId, userId },
+    });
+
+    if (!donation) {
+      return { valid: false, message: 'Donation not found' };
+    }
+
+    donation.status = 'completed';
+    donation.completedAt = new Date();
+    await this.donationRepository.save(donation);
+
+    return { valid: true, donation };
+  }
+
+  async refundDonation(
+    userId: string,
+    donationId: string,
+    reason: string,
+    appScope?: string
+  ) {
+    const donation = await this.donationRepository.findOne({
+      where: { id: donationId, userId },
+    });
+
+    if (!donation) {
+      return { success: false, message: 'Donation not found' };
+    }
+
+    if (donation.status !== 'completed') {
+      return { success: false, message: 'Can only refund completed donations' };
+    }
+
+    if (donation.paymentIntentId) {
+      try {
+        await this.stripeConnectService.refundMarketplacePayment({
+          appScope,
+          paymentIntentId: donation.paymentIntentId,
+          reason: 'requested_by_customer',
+          metadata: { donationId, reason },
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to refund donation via Stripe: ${error.message}`
+        );
+      }
+    }
+
+    donation.status = 'refunded';
+    donation.refundedAt = new Date();
+    await this.donationRepository.save(donation);
+
+    return { success: true, donation };
+  }
+
+  async getUserDonations(userId: string, appScope?: string) {
     return this.donationRepository.find({
       where: { userId },
       order: { createdAt: 'DESC' },
     });
   }
 
-  async cancelSubscription(userId: string, subscriptionId: string) {
+  async cancelSubscription(
+    userId: string,
+    subscriptionId: string,
+    appScope?: string
+  ) {
     const donation = await this.donationRepository.findOne({
       where: { lemonSqueezySubscriptionId: subscriptionId, userId },
     });
@@ -216,7 +338,8 @@ export class PaymentService {
     paymentMethod: string,
     amount?: number,
     sellerId?: string,
-    offerId?: string
+    offerId?: string,
+    appScope?: string
   ) {
     const feeBreakdown = calculateNetAmount(amount || 0);
     const payment = this.classifiedPaymentRepository.create({
@@ -234,7 +357,264 @@ export class PaymentService {
     return this.classifiedPaymentRepository.save(payment);
   }
 
-  async confirmOutOfPlatformPayment(paymentId: string, proofImageUrl?: string) {
+  async initializeClassifiedPayment(
+    buyerId: string,
+    classifiedId: string,
+    amount: number,
+    sellerId?: string,
+    offerId?: string,
+    appScope?: string
+  ) {
+    const feeBreakdown = calculateNetAmount(amount);
+    const payment = this.classifiedPaymentRepository.create({
+      buyerId,
+      sellerId,
+      classifiedId,
+      offerId,
+      paymentMethod: 'card',
+      amount: feeBreakdown.gross,
+      platformFeeAmount: feeBreakdown.fee,
+      sellerReceivesAmount: feeBreakdown.net,
+      status: 'pending',
+      appScope: appScope || 'default',
+    });
+
+    const savedPayment = await this.classifiedPaymentRepository.save(payment);
+
+    try {
+      const result =
+        await this.stripeConnectService.createMarketplacePaymentIntent({
+          appScope,
+          amountCents: Math.round(feeBreakdown.gross * 100),
+          currency: 'usd',
+          paymentId: savedPayment.id,
+          classifiedId,
+          buyerId,
+          sellerId,
+          offerId,
+          applicationFeeAmountCents: Math.round(feeBreakdown.fee * 100),
+        });
+
+      return {
+        clientSecret: result.clientSecret,
+        paymentIntentId: result.paymentIntentId,
+        paymentId: savedPayment.id,
+        publishableKey: result.publishableKey,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to create Stripe payment intent: ${error.message}`
+      );
+      throw error;
+    }
+  }
+
+  async validateClassifiedPayment(
+    buyerId: string,
+    paymentId: string,
+    checkoutToken: string,
+    response: { hash: string; data: Record<string, unknown> },
+    appScope?: string
+  ) {
+    const payment = await this.classifiedPaymentRepository.findOne({
+      where: { id: paymentId, buyerId },
+    });
+
+    if (!payment) {
+      return { valid: false, message: 'Payment not found' };
+    }
+
+    payment.status = 'confirmed';
+    payment.confirmedAt = new Date();
+    await this.classifiedPaymentRepository.save(payment);
+
+    return { valid: true, payment };
+  }
+
+  async confirmStripeClassifiedPayment(
+    buyerId: string,
+    paymentId: string,
+    paymentIntentId?: string,
+    appScope?: string
+  ) {
+    const payment = await this.classifiedPaymentRepository.findOne({
+      where: { id: paymentId, buyerId },
+    });
+
+    if (!payment) {
+      return { success: false, message: 'Payment not found' };
+    }
+
+    if (paymentIntentId) {
+      try {
+        const paymentIntent =
+          await this.stripeConnectService.getMarketplacePaymentIntent(
+            paymentIntentId,
+            appScope
+          );
+
+        if (paymentIntent.status === 'succeeded') {
+          payment.status = 'confirmed';
+          payment.paymentIntentId = paymentIntentId;
+          payment.confirmedAt = new Date();
+          await this.classifiedPaymentRepository.save(payment);
+          return { success: true, payment };
+        } else {
+          return {
+            success: false,
+            message: 'Payment not confirmed',
+            status: paymentIntent.status,
+          };
+        }
+      } catch (error) {
+        this.logger.error(`Failed to confirm payment: ${error.message}`);
+        return { success: false, message: error.message };
+      }
+    }
+
+    payment.status = 'confirmed';
+    payment.confirmedAt = new Date();
+    await this.classifiedPaymentRepository.save(payment);
+
+    return { success: true, payment };
+  }
+
+  async refundClassifiedPayment(
+    userId: string,
+    paymentId: string,
+    reason: string,
+    appScope?: string
+  ) {
+    const payment = await this.classifiedPaymentRepository.findOne({
+      where: { id: paymentId },
+    });
+
+    if (!payment) {
+      return { success: false, message: 'Payment not found' };
+    }
+
+    if (payment.paymentIntentId) {
+      try {
+        await this.stripeConnectService.refundMarketplacePayment({
+          appScope,
+          paymentIntentId: payment.paymentIntentId,
+          reason: 'requested_by_customer',
+          metadata: { paymentId, reason },
+        });
+      } catch (error) {
+        this.logger.error(`Failed to refund payment: ${error.message}`);
+      }
+    }
+
+    payment.status = 'refunded';
+    payment.refundReason = reason;
+    payment.refundedAt = new Date();
+    await this.classifiedPaymentRepository.save(payment);
+
+    return { success: true, payment };
+  }
+
+  async getBillingProfile(userId: string, appScope?: string) {
+    const donations = await this.donationRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: 1,
+    });
+
+    if (donations.length === 0 || !donations[0].externalCustomerId) {
+      return null;
+    }
+
+    try {
+      const customer = await this.stripeConnectService.getCustomer(
+        donations[0].externalCustomerId,
+        appScope
+      );
+      return {
+        customerId: customer.id,
+        email: customer.email,
+        name: customer.name,
+        defaultPaymentMethodId:
+          customer.invoice_settings?.default_payment_method,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get billing profile: ${error.message}`);
+      return null;
+    }
+  }
+
+  async updateBillingProfile(
+    userId: string,
+    data: { name?: string; email?: string; defaultPaymentMethodId?: string },
+    appScope?: string
+  ) {
+    const donations = await this.donationRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: 1,
+    });
+
+    if (donations.length === 0 || !donations[0].externalCustomerId) {
+      return {
+        success: false,
+        message: 'No customer found. Create a donation first.',
+      };
+    }
+
+    try {
+      const customer = await this.stripeConnectService.updateCustomer(
+        donations[0].externalCustomerId,
+        data,
+        appScope
+      );
+      return {
+        success: true,
+        customer: {
+          customerId: customer.id,
+          email: customer.email,
+          name: customer.name,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Failed to update billing profile: ${error.message}`);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async listSavedPaymentMethods(userId: string, appScope?: string) {
+    const donations = await this.donationRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: 1,
+    });
+
+    if (donations.length === 0 || !donations[0].externalCustomerId) {
+      return [];
+    }
+
+    try {
+      const methods = await this.stripeConnectService.listPaymentMethods(
+        donations[0].externalCustomerId,
+        appScope
+      );
+      return methods.map((pm) => ({
+        id: pm.id,
+        brand: pm.card?.brand,
+        last4: pm.card?.last4,
+        expMonth: pm.card?.exp_month,
+        expYear: pm.card?.exp_year,
+      }));
+    } catch (error) {
+      this.logger.error(`Failed to list payment methods: ${error.message}`);
+      return [];
+    }
+  }
+
+  async confirmOutOfPlatformPayment(
+    paymentId: string,
+    proofImageUrl?: string,
+    appScope?: string
+  ) {
     const payment = await this.classifiedPaymentRepository.findOne({
       where: { id: paymentId },
     });
@@ -252,7 +632,7 @@ export class PaymentService {
     return { success: true, payment };
   }
 
-  async releaseFunds(paymentId: string) {
+  async releaseFunds(paymentId: string, appScope?: string) {
     const payment = await this.classifiedPaymentRepository.findOne({
       where: { id: paymentId },
     });
@@ -283,7 +663,7 @@ export class PaymentService {
     return { success: true, payment };
   }
 
-  async disputePayment(paymentId: string, reason: string) {
+  async disputePayment(paymentId: string, reason: string, appScope?: string) {
     const payment = await this.classifiedPaymentRepository.findOne({
       where: { id: paymentId },
     });
@@ -300,20 +680,24 @@ export class PaymentService {
     return { success: true, payment };
   }
 
-  async getPayment(paymentId: string) {
+  async getPayment(paymentId: string, appScope?: string) {
     return this.classifiedPaymentRepository.findOne({
       where: { id: paymentId },
     });
   }
 
-  async getUserPayments(userId: string) {
+  async getUserPayments(userId: string, appScope?: string) {
     return this.classifiedPaymentRepository.find({
       where: [{ buyerId: userId }, { sellerId: userId }],
       order: { createdAt: 'DESC' },
     });
   }
 
-  async markInterestedBuyer(paymentId: string, interestedBuyerId: string) {
+  async markInterestedBuyer(
+    paymentId: string,
+    interestedBuyerId: string,
+    appScope?: string
+  ) {
     const payment = await this.classifiedPaymentRepository.findOne({
       where: { id: paymentId },
     });
@@ -328,7 +712,7 @@ export class PaymentService {
     return { success: true, payment };
   }
 
-  async markPaidOutsidePlatform(paymentId: string) {
+  async markPaidOutsidePlatform(paymentId: string, appScope?: string) {
     const payment = await this.classifiedPaymentRepository.findOne({
       where: { id: paymentId },
     });
@@ -389,7 +773,7 @@ export class PaymentService {
     };
   }
 
-  async getBusinessPage(communityId: string) {
+  async getBusinessPage(communityId: string, appScope?: string) {
     return this.businessPageRepository.findOne({
       where: { communityId },
     });
@@ -398,6 +782,7 @@ export class PaymentService {
   async updateBusinessPage(
     userId: string,
     communityId: string,
+    appScope: string | undefined,
     data: {
       name?: string;
       description?: string;
@@ -423,7 +808,11 @@ export class PaymentService {
     return { success: true, businessPage };
   }
 
-  async cancelBusinessSubscription(userId: string, communityId: string) {
+  async cancelBusinessSubscription(
+    userId: string,
+    communityId: string,
+    appScope?: string
+  ) {
     const businessPage = await this.businessPageRepository.findOne({
       where: { communityId, ownerId: userId },
     });
@@ -472,7 +861,7 @@ export class PaymentService {
     };
   }
 
-  async getActiveSponsorships(communityId: string) {
+  async getActiveSponsorships(communityId: string, appScope?: string) {
     const now = new Date();
     return this.sponsorshipRepository.find({
       where: {
@@ -484,27 +873,91 @@ export class PaymentService {
     });
   }
 
-  async getUserSponsorships(userId: string) {
+  async getUserSponsorships(userId: string, appScope?: string) {
     return this.sponsorshipRepository.find({
       where: { userId },
       order: { createdAt: 'DESC' },
     });
   }
 
-  async getUserTransactions(userId: string) {
+  async getUserTransactions(userId: string, appScope?: string) {
     return this.transactionRepository.find({
       where: { userId },
       order: { createdAt: 'DESC' },
     });
   }
 
-  async getPortalUrl(userId: string) {
+  async getPortalUrl(userId: string, appScope?: string) {
     return {
       portalUrl: `https://my-store.lemonsqueezy.com/billing?user_id=${userId}`,
     };
   }
 
-  async getOrCreateSellerWallet(sellerId: string): Promise<SellerWallet> {
+  async createSellerStripeConnectOnboardingLink(
+    sellerId: string,
+    email?: string,
+    accountId?: string,
+    appScope?: string
+  ) {
+    try {
+      const result = await this.stripeConnectService.createConnectedAccountLink(
+        {
+          appScope,
+          sellerId,
+          email,
+          accountId,
+        }
+      );
+      return {
+        success: true,
+        accountId: result.accountId,
+        onboardingUrl: result.onboardingUrl,
+        expiresAt: result.expiresAt,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to create Stripe Connect onboarding link: ${error.message}`
+      );
+      return { success: false, message: error.message };
+    }
+  }
+
+  async refreshSellerStripeConnectStatus(sellerId: string, appScope?: string) {
+    try {
+      const wallet = await this.sellerWalletRepository.findOne({
+        where: { sellerId },
+      });
+
+      if (!wallet?.stripeAccountId) {
+        return {
+          success: false,
+          message: 'No Stripe Connect account found for seller',
+        };
+      }
+
+      const account = await this.stripeConnectService.getConnectedAccount(
+        wallet.stripeAccountId,
+        appScope
+      );
+      return {
+        success: true,
+        accountId: account.id,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to refresh Stripe Connect status: ${error.message}`
+      );
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getOrCreateSellerWallet(
+    sellerId: string,
+    appScope?: string
+  ): Promise<SellerWallet> {
     let wallet = await this.sellerWalletRepository.findOne({
       where: { sellerId },
     });
@@ -512,6 +965,7 @@ export class PaymentService {
     if (!wallet) {
       wallet = this.sellerWalletRepository.create({
         sellerId,
+        appScope: appScope || 'default',
         availableBalance: 0,
         pendingBalance: 0,
         totalEarned: 0,
@@ -523,7 +977,10 @@ export class PaymentService {
     return wallet;
   }
 
-  async getSellerWallet(sellerId: string): Promise<SellerWallet | null> {
+  async getSellerWallet(
+    sellerId: string,
+    appScope?: string
+  ): Promise<SellerWallet | null> {
     return this.sellerWalletRepository.findOne({
       where: { sellerId },
     });
@@ -531,6 +988,7 @@ export class PaymentService {
 
   async updateSellerPayoutInfo(
     sellerId: string,
+    appScope: string | undefined,
     payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle',
     payoutEmail?: string,
     bankAccountLast4?: string,
@@ -573,6 +1031,7 @@ export class PaymentService {
 
   async createPayoutRequest(
     sellerId: string,
+    appScope: string,
     amount: number,
     payoutMethod: 'paypal' | 'bank-transfer' | 'venmo' | 'zelle',
     payoutEmail?: string,
@@ -603,7 +1062,10 @@ export class PaymentService {
     return this.payoutRequestRepository.save(payoutRequest);
   }
 
-  async getSellerPayoutRequests(sellerId: string): Promise<PayoutRequest[]> {
+  async getSellerPayoutRequests(
+    sellerId: string,
+    appScope?: string
+  ): Promise<PayoutRequest[]> {
     return this.payoutRequestRepository.find({
       where: { sellerId },
       order: { createdAt: 'DESC' },
@@ -612,7 +1074,8 @@ export class PaymentService {
 
   async cancelPayoutRequest(
     payoutRequestId: string,
-    sellerId: string
+    sellerId: string,
+    appScope?: string
   ): Promise<PayoutRequest> {
     const payoutRequest = await this.payoutRequestRepository.findOne({
       where: { id: payoutRequestId, sellerId },
@@ -707,7 +1170,11 @@ export class PaymentService {
     });
   }
 
-  async getBusinessPagesByCity(cityId: string, communityIds: string[]) {
+  async getBusinessPagesByCity(
+    cityId: string,
+    communityIds: string[],
+    appScope?: string
+  ) {
     if (!communityIds || communityIds.length === 0) {
       return [];
     }
@@ -731,7 +1198,7 @@ export class PaymentService {
     return businesses;
   }
 
-  async getSellerEarningsSummary(sellerId: string) {
+  async getSellerEarningsSummary(sellerId: string, appScope?: string) {
     const wallet = await this.getOrCreateSellerWallet(sellerId);
 
     const payments = await this.classifiedPaymentRepository.find({

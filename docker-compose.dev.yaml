@@ -345,7 +345,7 @@ services:
       dockerfile: ./apps/payments/Dockerfile
     volumes:
       - ./dist/apps/payments:/usr/src/app
-      - ./apps/payments/src/assets:/usr/src/app/apps/payments/src/assets
+      - ./apps/payments/src/assets:/usr/src/app/assets
       - /usr/src/app/node_modules
     command:
       [

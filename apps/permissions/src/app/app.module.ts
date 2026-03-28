@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import loadConfig from '../config';
 import loadDatabase from './loadDatabase';
 import { Permission } from '../permissions/entities/permission.entity';
@@ -13,6 +14,7 @@ import { AppScope } from '../app-scopes/entities/app-scope.entity';
 import { PermissionsService } from './permissions.service';
 import { RolesService } from './roles.service';
 import { AppScopesService } from './app-scopes.service';
+import { PermissionsVerificationService } from './permissions-verification.service';
 import { PermissionsController } from '../permissions/permissions.controller';
 import { RolesController } from '../roles/roles.controller';
 import { AppScopesController } from '../app-scopes/app-scopes.controller';
@@ -28,12 +30,14 @@ import { AppScopesController } from '../app-scopes/app-scopes.controller';
       factory: loadDatabase,
     }),
     LoggerModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [PermissionsController, RolesController, AppScopesController],
   providers: [
     PermissionsService,
     RolesService,
     AppScopesService,
+    PermissionsVerificationService,
     {
       provide: getRepositoryToken(Permission),
       useFactory: (ds: DataSource) => ds.getRepository(Permission),

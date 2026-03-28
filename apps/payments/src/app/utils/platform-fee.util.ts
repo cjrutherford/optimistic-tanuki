@@ -1,9 +1,10 @@
 import {
   PLATFORM_FEE_PERCENTAGE,
-  LEMON_SQUEEZY_FEE_PERCENTAGE,
-  LEMON_SQUEEZY_FLAT_FEE,
+  PROCESSOR_FEE_PERCENTAGE,
+  PROCESSOR_FLAT_FEE,
   TOTAL_FEE_PERCENTAGE,
 } from '@optimistic-tanuki/payment-fees';
+import { calculateTransactionFeeBreakdown } from '@optimistic-tanuki/payments-domain';
 
 export interface FeeBreakdown {
   gross: number;
@@ -20,19 +21,22 @@ export function calculatePlatformFee(amount: number): number {
 /**
  * Calculate the full fee breakdown for a classified-ad transaction.
  *
- * Total fee = (PLATFORM_FEE_PERCENTAGE + LEMON_SQUEEZY_FEE_PERCENTAGE) * amount
- *             + LEMON_SQUEEZY_FLAT_FEE
+ * Total fee = (PLATFORM_FEE_PERCENTAGE + PROCESSOR_FEE_PERCENTAGE) * amount
+ *             + PROCESSOR_FLAT_FEE
  *
  * i.e. 10% of the transaction amount plus $0.50.
  */
 export function calculateNetAmount(amount: number): FeeBreakdown {
-  const percentageFee = Math.round(amount * TOTAL_FEE_PERCENTAGE * 100) / 100;
-  const fee = Math.round((percentageFee + LEMON_SQUEEZY_FLAT_FEE) * 100) / 100;
-  const net = Math.round((amount - fee) * 100) / 100;
+  const breakdown = calculateTransactionFeeBreakdown(amount, {
+    platformPercentage: PLATFORM_FEE_PERCENTAGE,
+    processorPercentage: PROCESSOR_FEE_PERCENTAGE,
+    processorFlatFee: PROCESSOR_FLAT_FEE,
+  });
+
   return {
-    gross: amount,
-    fee,
-    net,
+    gross: breakdown.gross,
+    fee: breakdown.totalFee,
+    net: breakdown.net,
     feePercentage: TOTAL_FEE_PERCENTAGE * 100,
   };
 }
