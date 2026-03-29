@@ -89,6 +89,11 @@ services:
     transport: TCP
     host: ot_payments
     port: 3018
+  lead_tracker:
+    name: lead_tracker
+    transport: TCP
+    host: ot_lead_tracker
+    port: 3020
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

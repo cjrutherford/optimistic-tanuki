@@ -149,6 +149,31 @@ services:
     environment:
       - NODE_ENV=development
 
+  leads-app:
+    container_name: ot_leads_app
+    build:
+      context: .
+      dockerfile: ./apps/leads-app/Dockerfile
+    volumes:
+      - ./apps/leads-app:/app/apps/leads-app
+      - ./libs:/app/libs
+      - ./dist/apps/leads-app:/app/dist/apps/leads-app
+      - /usr/src/app/node_modules
+    ports:
+      - '9244:9244'
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9244',
+        '-L',
+        '/app/dist/apps/leads-app/server/server.mjs',
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+
   gateway:
     container_name: ot_gateway # Added
     build:
@@ -208,6 +233,10 @@ services:
         condition: service_started
       payments:
         condition: service_started
+      leads-app:
+        condition: service_started
+      lead-tracker:
+        condition: service_started
 
   profile:
     container_name: ot_profile
@@ -258,6 +287,31 @@ services:
     environment:
       - NODE_ENV=development
     depends_on: # Added
+      postgres:
+        condition: service_healthy
+
+  lead-tracker:
+    container_name: ot_lead_tracker
+    build:
+      context: .
+      dockerfile: ./apps/lead-tracker/Dockerfile
+    volumes:
+      - ./dist/apps/lead-tracker:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--exec',
+        'node --inspect=0.0.0.0:9233',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '9233:9233'
+    environment:
+      - NODE_ENV=development
+    depends_on:
       postgres:
         condition: service_healthy
 

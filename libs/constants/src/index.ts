@@ -116,3 +116,5 @@ export {
   type BusinessTierFeature,
   type BusinessTierType,
 } from './lib/libs/business-tiers';
+
+export { LeadCommands } from './lib/libs/leads/lead-commands';

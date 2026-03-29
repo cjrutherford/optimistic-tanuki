@@ -123,6 +123,14 @@ services:
     ports:
       - '8084:4000'
 
+  leads-app:
+    container_name: ot_leads_app
+    build:
+      context: .
+      dockerfile: ./apps/leads-app/Dockerfile
+    ports:
+      - '4201:4000'
+
   gateway:
     container_name: ot_gateway
     build:
@@ -180,6 +188,23 @@ services:
         condition: service_started
       payments:
         condition: service_started
+      lead-tracker:
+        condition: service_started
+      leads-app:
+        condition: service_started
+
+  lead-tracker:
+    container_name: ot_lead_tracker
+    build:
+      context: .
+      dockerfile: ./apps/lead-tracker/Dockerfile
+    ports:
+      - '3020:3020'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
 
   profile:
     container_name: ot_profile

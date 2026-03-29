@@ -1,0 +1,309 @@
+<div class="leads-page">
+  <header class="header">
+    <div class="header-content">
+      <a routerLink="/" class="back-link">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Dashboard
+      </a>
+      <h1 class="title">Leads</h1>
+      <p class="subtitle">Manage your prospects</p>
+    </div>
+    <div class="header-actions">
+      <div class="search-box">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search leads..."
+          [(ngModel)]="searchQuery"
+          (input)="filterLeads()"
+        />
+      </div>
+      <button class="btn btn-primary" (click)="showCreateForm = true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Add Lead
+      </button>
+    </div>
+  </header>
+
+  <div class="view-toggle">
+    <button
+      class="toggle-btn"
+      [class.active]="viewMode === 'list'"
+      (click)="viewMode = 'list'"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <line x1="8" y1="6" x2="21" y2="6" />
+        <line x1="8" y1="12" x2="21" y2="12" />
+        <line x1="8" y1="18" x2="21" y2="18" />
+        <line x1="3" y1="6" x2="3.01" y2="6" />
+        <line x1="3" y1="12" x2="3.01" y2="12" />
+        <line x1="3" y1="18" x2="3.01" y2="18" />
+      </svg>
+      List
+    </button>
+    <button
+      class="toggle-btn"
+      [class.active]="viewMode === 'kanban'"
+      (click)="viewMode = 'kanban'"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <rect x="3" y="3" width="7" height="18" rx="1" />
+        <rect x="14" y="3" width="7" height="10" rx="1" />
+      </svg>
+      Kanban
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <span>Loading leads...</span>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <!-- List View -->
+    <div *ngIf="viewMode === 'list'" class="leads-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Lead</th>
+            <th>Company</th>
+            <th>Source</th>
+            <th>Status</th>
+            <th>Value</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let lead of filteredLeads">
+            <td>
+              <div class="lead-info">
+                <span class="lead-name">{{ lead.name }}</span>
+                <span class="lead-email">{{ lead.email || '-' }}</span>
+              </div>
+            </td>
+            <td>{{ lead.company || '-' }}</td>
+            <td>
+              <span class="source-badge" [attr.data-source]="lead.source">{{
+                lead.source
+              }}</span>
+            </td>
+            <td>
+              <span class="status-badge" [attr.data-status]="lead.status">{{
+                lead.status
+              }}</span>
+            </td>
+            <td class="value-cell">${{ lead.value | number }}</td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  class="action-btn"
+                  (click)="viewLead(lead)"
+                  title="View"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+                <button
+                  class="action-btn"
+                  (click)="editLead(lead)"
+                  title="Edit"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                    />
+                    <path
+                      d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="action-btn danger"
+                  (click)="deleteLead(lead)"
+                  title="Delete"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path
+                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Kanban View -->
+    <div *ngIf="viewMode === 'kanban'" class="kanban-board">
+      <div *ngFor="let status of kanbanColumns" class="kanban-column">
+        <div class="column-header">
+          <span class="column-title">{{ status.label }}</span>
+          <span class="column-count">{{
+            getLeadsByStatus(status.key).length
+          }}</span>
+        </div>
+        <div class="column-content">
+          <div
+            *ngFor="let lead of getLeadsByStatus(status.key)"
+            class="kanban-card"
+          >
+            <div class="card-header">
+              <span class="card-name">{{ lead.name }}</span>
+              <span *ngIf="lead.isAutoDiscovered" class="auto-badge">AI</span>
+            </div>
+            <span *ngIf="lead.company" class="card-company">{{
+              lead.company
+            }}</span>
+            <div class="card-footer">
+              <span class="card-source" [attr.data-source]="lead.source">{{
+                lead.source
+              }}</span>
+              <span class="card-value">${{ lead.value | number }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Create Modal -->
+  <div
+    *ngIf="showCreateForm"
+    class="modal-overlay"
+    (click)="showCreateForm = false"
+  >
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Create New Lead</h2>
+        <button class="close-btn" (click)="showCreateForm = false">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <form (ngSubmit)="createLead()">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Name *</label>
+            <input
+              type="text"
+              [(ngModel)]="newLead.name"
+              name="name"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Company</label>
+            <input type="text" [(ngModel)]="newLead.company" name="company" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="newLead.email" name="email" />
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" [(ngModel)]="newLead.phone" name="phone" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Source</label>
+            <select [(ngModel)]="newLead.source" name="source" required>
+              <option *ngFor="let source of sources" [value]="source">
+                {{ source }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Value</label>
+            <input
+              type="number"
+              [(ngModel)]="newLead.value"
+              name="value"
+              min="0"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea
+            [(ngModel)]="newLead.notes"
+            name="notes"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="showCreateForm = false"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Create Lead</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

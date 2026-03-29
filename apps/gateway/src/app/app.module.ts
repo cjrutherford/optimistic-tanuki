@@ -53,6 +53,7 @@ import { PostShareController } from '../controllers/social/post-share/post-share
 import { SocialEventController } from '../controllers/social/social-event/social-event.controller';
 import { PaymentsController } from '../controllers/payments/payments.controller';
 import { DonationsController } from '../controllers/donations/donations.controller';
+import { LeadsController } from '../controllers/leads/leads.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -116,6 +117,7 @@ import { DonationsController } from '../controllers/donations/donations.controll
     SocialEventController,
     PaymentsController,
     DonationsController,
+    LeadsController,
   ],
   providers: [
     {
@@ -385,6 +387,22 @@ import { DonationsController } from '../controllers/donations/donations.controll
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
           'services.classifieds'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.LEAD_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.lead_tracker'
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
