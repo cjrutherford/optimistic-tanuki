@@ -150,7 +150,11 @@
     </div>
 
     <div class="quick-actions">
-      <a routerLink="/leads" class="action-card">
+      <a
+        routerLink="/leads"
+        [queryParams]="{ quickAdd: 'true' }"
+        class="action-card"
+      >
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -160,7 +164,22 @@
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
-        <span>Add New Lead</span>
+        <span>Quick Add Lead</span>
+      </a>
+      <a routerLink="/topics" class="action-card">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
+        <div class="action-card-text">
+          <span>Configure Topics</span>
+          <small>{{ activeTopics }} active</small>
+        </div>
       </a>
       <a routerLink="/analytics" class="action-card">
         <svg

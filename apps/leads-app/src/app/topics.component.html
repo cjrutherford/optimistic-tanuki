@@ -1,0 +1,159 @@
+<div class="topics-page">
+  <header class="header">
+    <div class="header-content">
+      <a routerLink="/" class="back-link">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Dashboard
+      </a>
+      <h1 class="title">Discovery Topics</h1>
+      <p class="subtitle">Configure automated lead discovery</p>
+    </div>
+    <div class="header-actions">
+      <div class="active-count">
+        <span class="count-value">{{ activeCount }}</span>
+        <span class="count-label">Active</span>
+      </div>
+      <button
+        class="btn btn-primary"
+        (click)="showAddForm = true"
+        *ngIf="!showAddForm"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Add Topic
+      </button>
+    </div>
+  </header>
+
+  <!-- Add Topic Form -->
+  <div *ngIf="showAddForm" class="add-topic-card">
+    <h3 class="add-topic-title">New Discovery Topic</h3>
+    <form (ngSubmit)="addTopic()">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Topic Name *</label>
+          <input
+            type="text"
+            [(ngModel)]="newTopic.name"
+            name="name"
+            placeholder="e.g. Healthcare SaaS"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input
+            type="text"
+            [(ngModel)]="newTopic.description"
+            name="description"
+            placeholder="Brief description of this topic"
+          />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Keywords (comma-separated)</label>
+        <input
+          type="text"
+          [(ngModel)]="newTopic.keywords"
+          name="keywords"
+          placeholder="healthcare, SaaS, telemedicine, HIPAA"
+        />
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelAdd()">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="!newTopic.name.trim()"
+        >
+          Create Topic
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Topics Grid -->
+  <div class="topics-grid">
+    <div
+      *ngFor="let topic of topics"
+      class="topic-card"
+      [class.enabled]="topic.enabled"
+      [class.disabled]="!topic.enabled"
+    >
+      <div class="topic-header">
+        <div class="topic-info">
+          <h3 class="topic-name">{{ topic.name }}</h3>
+          <p class="topic-description">{{ topic.description }}</p>
+        </div>
+        <label class="toggle-switch">
+          <input
+            type="checkbox"
+            [checked]="topic.enabled"
+            (change)="toggleTopic(topic.id)"
+          />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="topic-keywords">
+        <span *ngFor="let keyword of topic.keywords" class="keyword-chip">{{
+          keyword
+        }}</span>
+      </div>
+
+      <div class="topic-footer">
+        <div class="topic-stat">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+          </svg>
+          <span>{{ topic.leadCount }} leads found</span>
+        </div>
+        <span *ngIf="topic.lastRun" class="topic-last-run"
+          >Last scan: {{ topic.lastRun | date : 'short' }}</span
+        >
+        <span *ngIf="!topic.lastRun" class="topic-last-run"
+          >Not yet scanned</span
+        >
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="topics.length === 0" class="empty-state">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+    <h3>No Topics Configured</h3>
+    <p>Add a discovery topic to start finding leads automatically.</p>
+    <button class="btn btn-primary" (click)="showAddForm = true">
+      Add Your First Topic
+    </button>
+  </div>
+</div>

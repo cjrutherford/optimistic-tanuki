@@ -1,36 +1,43 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { LeadsService } from './leads.service';
-import { Lead, LeadStats, LeadStatus, LeadSource } from './leads.types';
+import { Lead, LeadStats, LeadStatus, LeadSource, LeadFlagReason } from './leads.types';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { FlagLeadModalComponent } from './flag-lead-modal.component';
 
 @Component({
   selector: 'app-leads',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, FlagLeadModalComponent],
   templateUrl: './leads.component.html',
   styleUrl: './leads.component.scss',
 })
 export class LeadsComponent implements OnInit {
   private readonly leadsService = inject(LeadsService);
   private readonly themeService = inject(ThemeService);
+  private readonly route = inject(ActivatedRoute);
 
   leads: Lead[] = [];
   filteredLeads: Lead[] = [];
   stats: LeadStats | null = null;
   loading = true;
-  showCreateForm = false;
   searchQuery = '';
   viewMode: 'list' | 'kanban' = 'list';
 
+  // Quick-add panel
+  showQuickAdd = false;
+  showMoreDetails = false;
   newLead: Partial<Lead> = {
     name: '',
     source: LeadSource.OTHER,
     status: LeadStatus.NEW,
     value: 0,
   };
+
+  // Flagging
+  selectedLeadForFlag: Lead | null = null;
 
   sources = Object.values(LeadSource);
   statuses = Object.values(LeadStatus);
@@ -49,6 +56,12 @@ export class LeadsComponent implements OnInit {
     this.loadLeads();
     this.loadStats();
     this.themeService.setPersonality('control-center');
+
+    this.route.queryParams.subscribe((params) => {
+      if (params['quickAdd'] === 'true') {
+        this.showQuickAdd = true;
+      }
+    });
   }
 
   loadLeads() {
@@ -88,6 +101,24 @@ export class LeadsComponent implements OnInit {
     return this.filteredLeads.filter((lead) => lead.status === status);
   }
 
+  isLeadFlagged(lead: Lead): boolean {
+    return lead.isFlagged || this.leadsService.isLeadFlagged(lead.id);
+  }
+
+  openFlagModal(lead: Lead) {
+    this.selectedLeadForFlag = lead;
+  }
+
+  onLeadFlagged(event: { reasons: LeadFlagReason[]; notes?: string }) {
+    if (!this.selectedLeadForFlag) return;
+    this.leadsService.flagLead(
+      this.selectedLeadForFlag.id,
+      event.reasons,
+      event.notes
+    );
+    this.selectedLeadForFlag = null;
+  }
+
   viewLead(lead: Lead) {
     console.log('View lead:', lead);
   }
@@ -107,7 +138,8 @@ export class LeadsComponent implements OnInit {
   createLead() {
     this.leadsService.createLead(this.newLead as any).subscribe({
       next: () => {
-        this.showCreateForm = false;
+        this.showQuickAdd = false;
+        this.showMoreDetails = false;
         this.newLead = {
           name: '',
           source: LeadSource.OTHER,
@@ -118,5 +150,16 @@ export class LeadsComponent implements OnInit {
         this.loadStats();
       },
     });
+  }
+
+  closeQuickAdd() {
+    this.showQuickAdd = false;
+    this.showMoreDetails = false;
+    this.newLead = {
+      name: '',
+      source: LeadSource.OTHER,
+      status: LeadStatus.NEW,
+      value: 0,
+    };
   }
 }
