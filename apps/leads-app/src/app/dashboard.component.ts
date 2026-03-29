@@ -27,9 +27,12 @@ export class DashboardComponent implements OnInit {
     percentage: number;
   }> = [];
 
+  activeTopics = 0;
+
   ngOnInit() {
     this.loadStats();
     this.themeService.setPersonality('control-center');
+    this.activeTopics = this.leadsService.getActiveTopicCount();
   }
 
   loadStats() {
