@@ -1,0 +1,7 @@
+listenPort: 3020
+database:
+  host: db
+  port: 5432
+  name: ot_lead_tracker
+  username: postgres
+  password: postgres

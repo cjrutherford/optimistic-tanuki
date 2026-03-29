@@ -36,6 +36,7 @@
       "@optimistic-tanuki/encryption": ["libs/encryption/src/index.ts"],
       "@optimistic-tanuki/form-ui": ["libs/form-ui/src/index.ts"],
       "@optimistic-tanuki/forum-ui": ["libs/forum-ui/src/index.ts"],
+      "@optimistic-tanuki/leads-ui": ["libs/leads-ui/src/index.ts"],
       "@optimistic-tanuki/logger": ["libs/logger/src/index.ts"],
       "@optimistic-tanuki/message-ui": ["libs/message-ui/src/index.ts"],
       "@optimistic-tanuki/models": ["libs/models/src/index.ts"],
