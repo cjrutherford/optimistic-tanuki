@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: system-configurator-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: system-configurator-api
+  template:
+    metadata:
+      labels:
+        app: system-configurator-api
+    spec:
+      containers:
+        - name: system-configurator-api
+          image: cjrutherford/optimistic_tanuki_system-configurator-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3021
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: '3021'
+            - name: DB_HOST
+              value: 'postgres'
+            - name: DB_PORT
+              value: '5432'
+            - name: DB_USER
+              value: 'postgres'
+            - name: DB_NAME
+              value: 'ot_system_configurator'
+            - name: PCPARTPICKER_SYNC_ON_START
+              value: 'false'
+            - name: PCPARTPICKER_SYNC_INTERVAL_MS
+              value: '0'
+          envFrom:
+            - secretRef:
+                name: optimistic-tanuki-secrets
+          readinessProbe:
+            tcpSocket:
+              port: 3021
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 3021
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: system-configurator-api
+spec:
+  selector:
+    app: system-configurator-api
+  ports:
+    - protocol: TCP
+      port: 3021
+      targetPort: 3021

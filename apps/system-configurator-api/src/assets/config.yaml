@@ -1,0 +1,11 @@
+listenPort: 3021
+database:
+  host: db
+  port: 5432
+  username: postgres
+  password: postgres
+  database: ot_system_configurator
+pcpartpicker:
+  baseUrl: https://pcpartpicker.com
+  syncOnStart: false
+  syncIntervalMs: 0

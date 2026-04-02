@@ -411,6 +411,38 @@ services:
       - app-configurator
       - app-configurator-seed
 
+  system-configurator:
+    container_name: ot_system_configurator
+    build:
+      context: .
+      dockerfile: ./apps/system-configurator/Dockerfile
+    ports:
+      - '8091:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+      - system-configurator-api
+
+  system-configurator-api:
+    container_name: ot_system_configurator_api
+    build:
+      context: .
+      dockerfile: ./apps/system-configurator-api/Dockerfile
+    ports:
+      - '3021:3021'
+    environment:
+      - NODE_ENV=production
+      - PORT=3021
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=ot_system_configurator
+      - PCPARTPICKER_SYNC_ON_START=false
+
   wellness:
     container_name: ot_wellness
     build:

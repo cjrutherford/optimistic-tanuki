@@ -90,6 +90,11 @@ services:
     transport: TCP
     host: ot_lead_tracker
     port: 3020
+  system_configurator:
+    name: system_configurator
+    transport: TCP
+    host: ot_system_configurator_api
+    port: 3021
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

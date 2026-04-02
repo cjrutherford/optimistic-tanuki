@@ -1,0 +1,9 @@
+{
+  "name": "system-configurator-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/system-configurator-e2e/src",
+  "implicitDependencies": ["system-configurator"],
+  "// targets": "to see all targets run: nx show project system-configurator-e2e --web",
+  "targets": {}
+}
