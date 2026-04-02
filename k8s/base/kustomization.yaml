@@ -19,6 +19,7 @@ resources:
   - services/project-planning.yaml
   - services/store.yaml
   - services/app-configurator.yaml
+  - services/system-configurator-api.yaml
   - services/wellness.yaml
   - clients/client-interface.yaml
   - clients/forgeofwill.yaml
@@ -27,6 +28,7 @@ resources:
   - clients/owner-console.yaml
   - clients/store-client.yaml
   - clients/configurable-client.yaml
+  - clients/system-configurator.yaml
   - clients/d6.yaml
   - ingress.yaml
   - tailscale-ingress.yaml

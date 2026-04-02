@@ -77,6 +77,10 @@ spec:
               value: 'store'
             - name: STORE_PORT
               value: '3013'
+            - name: SYSTEM_CONFIGURATOR_HOST
+              value: 'system-configurator-api'
+            - name: SYSTEM_CONFIGURATOR_PORT
+              value: '3021'
             - name: FORUM_HOST
               value: 'forum'
             - name: FORUM_PORT

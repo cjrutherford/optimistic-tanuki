@@ -20,6 +20,7 @@
 | permissions         | permissions        | 3012        | 3012     | TCP       |
 | store               | store              | 3013        | 3013     | TCP       |
 | app-configurator    | app-configurator   | 3014        | 3014     | TCP       |
+| system-configurator-api | system-configurator-api | 3021    | 3021     | TCP       |
 | forum               | forum              | 3015        | 3015     | TCP       |
 | wellness            | wellness           | 3016        | 3016     | TCP       |
 
@@ -35,6 +36,7 @@
 | store-client              | store-client              | 8085        | 8085     | LoadBalancer |
 | d6                        | d6                        | 8086        | 8086     | LoadBalancer |
 | configurable-client       | configurable-client       | 8090        | 8090     | LoadBalancer |
+| system-configurator       | system-configurator       | 8091        | 8091     | LoadBalancer |
 
 ## Infrastructure
 
@@ -75,5 +77,6 @@ The K8s LoadBalancer ports match the Docker Compose ports exactly:
 | store-client              | 8085:4000      | 8085             |
 | d6                        | 8086:4000      | 8086             |
 | configurable-client       | 8090:4000      | 8090             |
+| system-configurator       | 8091:4000      | 8091             |
 
 This allows accessing clients by port rather than path when using K8s LoadBalancer.

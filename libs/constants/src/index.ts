@@ -75,6 +75,7 @@ export {
 } from './lib/libs/store';
 
 export { AppConfigCommands } from './lib/libs/app-config';
+export { HardwareCommands } from './lib/libs/system-configurator';
 export {
   AppointmentCommands,
   AvailabilityCommands,

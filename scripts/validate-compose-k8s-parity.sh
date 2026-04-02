@@ -38,6 +38,7 @@ const clientServices = new Set([
   'owner-console',
   'store-client',
   'configurable-client',
+  'system-configurator',
   'd6'
 ]);
 

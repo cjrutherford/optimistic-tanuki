@@ -198,6 +198,73 @@ services:
       - NODE_ENV=development
       - GATEWAY_URL=http://gateway:3000
 
+  system-configurator:
+    container_name: ot_system_configurator
+    build:
+      context: .
+      dockerfile: ./apps/system-configurator/Dockerfile
+    volumes:
+      - ./apps/system-configurator:/app/apps/system-configurator
+      - ./dist/apps:/app/dist/apps
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--watch',
+        '/app/dist/apps/system-configurator/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/system-configurator/server/server.mjs ]; do sleep 1; done; exec node /app/dist/apps/system-configurator/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+      - system-configurator-api
+
+  system-configurator-api:
+    container_name: ot_system_configurator_api
+    build:
+      context: .
+      dockerfile: ./apps/system-configurator-api/Dockerfile
+    volumes:
+      - ./dist/apps/system-configurator-api:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '3021:3021'
+    environment:
+      - NODE_ENV=development
+      - PORT=3021
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=ot_system_configurator
+      - PCPARTPICKER_SYNC_ON_START=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   gateway:
     container_name: ot_gateway # Added
     build:
@@ -262,6 +329,8 @@ services:
       leads-app:
         condition: service_started
       lead-tracker:
+        condition: service_started
+      system-configurator-api:
         condition: service_started
 
   profile:

@@ -54,6 +54,7 @@ import { SocialEventController } from '../controllers/social/social-event/social
 import { PaymentsController } from '../controllers/payments/payments.controller';
 import { DonationsController } from '../controllers/donations/donations.controller';
 import { LeadsController } from '../controllers/leads/leads.controller';
+import { HardwareController } from '../controllers/hardware/hardware.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -118,6 +119,7 @@ import { LeadsController } from '../controllers/leads/leads.controller';
     PaymentsController,
     DonationsController,
     LeadsController,
+    HardwareController,
   ],
   providers: [
     {
@@ -403,6 +405,22 @@ import { LeadsController } from '../controllers/leads/leads.controller';
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
           'services.lead_tracker'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.SYSTEM_CONFIGURATOR_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.system_configurator'
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,

@@ -54,6 +54,7 @@
       "@optimistic-tanuki/notification-ui": [
         "libs/notification-ui/src/index.ts"
       ],
+      "@optimistic-tanuki/payments-ui": ["libs/payments-ui/src/index.ts"],
       "@optimistic-tanuki/payment-fees": [
         "libs/constants/src/lib/libs/payment-fees.ts"
       ],
