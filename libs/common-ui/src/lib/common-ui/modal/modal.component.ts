@@ -13,7 +13,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
-import { ButtonComponent } from '../button/button.component';
 
 /**
  * Modal size options
@@ -54,7 +53,7 @@ export type ModalPosition =
 @Component({
   selector: 'otui-modal',
   standalone: true,
-  imports: [CommonModule, ButtonComponent],
+  imports: [CommonModule],
   templateUrl: './modal.component.html',
   styleUrls: ['./modal.component.scss'],
   host: {

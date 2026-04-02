@@ -1,6 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+
 import { LeadsService } from './leads.service';
 import { LeadStats } from './leads.types';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -18,6 +19,8 @@ export class DashboardComponent implements OnInit {
 
   stats: LeadStats | null = null;
   loading = true;
+  statsLoaded = false;
+  topicsLoaded = false;
 
   statusBars: Array<{
     name: string;
@@ -28,21 +31,24 @@ export class DashboardComponent implements OnInit {
   }> = [];
 
   activeTopics = 0;
+  totalTopics = 0;
 
   ngOnInit() {
     this.loadStats();
     this.themeService.setPersonality('control-center');
-    this.activeTopics = this.leadsService.getActiveTopicCount();
+    this.loadActiveTopicCount();
   }
 
   loadStats() {
     this.leadsService.getStats().subscribe({
       next: (stats) => {
         this.stats = stats;
+        this.statsLoaded = true;
         this.calculateStatusBars();
         this.loading = false;
       },
       error: () => {
+        this.statsLoaded = true;
         this.loading = false;
       },
     });
@@ -79,5 +85,39 @@ export class DashboardComponent implements OnInit {
     const won = this.stats.byStatus?.['won'] || 0;
     const total = this.stats.total || 1;
     return Math.round((won / total) * 100);
+  }
+
+  get strongMatchCount(): number {
+    return this.stats?.qualification?.byClassification?.['strong-match'] || 0;
+  }
+
+  get reviewCount(): number {
+    return this.stats?.qualification?.byClassification?.review || 0;
+  }
+
+  get weakMatchCount(): number {
+    return this.stats?.qualification?.byClassification?.['weak-match'] || 0;
+  }
+
+  shouldShowOnboardingState(): boolean {
+    return (
+      this.statsLoaded &&
+      this.topicsLoaded &&
+      (this.stats?.total || 0) === 0 &&
+      this.totalTopics === 0
+    );
+  }
+
+  private loadActiveTopicCount() {
+    this.leadsService.getTopics().subscribe({
+      next: (topics) => {
+        this.topicsLoaded = true;
+        this.totalTopics = topics.length;
+        this.activeTopics = topics.filter((topic) => topic.enabled).length;
+      },
+      error: () => {
+        this.topicsLoaded = true;
+      },
+    });
   }
 }

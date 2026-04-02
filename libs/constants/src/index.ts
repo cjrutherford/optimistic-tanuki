@@ -116,4 +116,10 @@ export {
   type BusinessTierType,
 } from './lib/libs/business-tiers';
 
-export { LeadCommands } from './lib/libs/leads/lead-commands';
+export {
+  LeadCommands,
+  LeadTopicCommands,
+  LeadFlagCommands,
+  LeadOnboardingCommands,
+  LeadAnalysisCommands,
+} from './lib/libs/leads/lead-commands';

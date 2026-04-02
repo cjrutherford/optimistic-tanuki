@@ -9,13 +9,13 @@ ARG GIT_SHA=unknown
 # Copy package.json and package-lock.json
 COPY package.json ./
 COPY package-lock.json ./
+COPY tsconfig*.json ./
+COPY nx.json ./
+COPY libs ./libs
+COPY apps/digital-homestead ./apps/digital-homestead
 
 # Install all dependencies (including devDependencies needed for build)
 RUN npm install --legacy-peer-deps
-
-# Copy the entire workspace source code
-# Nx needs this to build the application and its dependencies
-COPY . .
 
 # Build the client-interface application for production with SSR
 # This will output to dist/apps/client-interface and include server/main.js

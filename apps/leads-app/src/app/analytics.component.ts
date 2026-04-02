@@ -141,7 +141,7 @@ Chart.register(...registerables);
         align-items: center;
         gap: 0.5rem;
         font-size: 0.875rem;
-        color: var(--app-muted);
+        color: var(--app-foreground-muted);
         text-decoration: none;
         margin-bottom: 1rem;
         transition: color var(--transition-fast);
@@ -167,7 +167,7 @@ Chart.register(...registerables);
 
       .subtitle {
         font-size: 0.875rem;
-        color: var(--app-muted);
+        color: var(--app-foreground-muted);
         margin: 0.25rem 0 0;
         text-transform: uppercase;
         letter-spacing: 0.1em;
@@ -180,7 +180,7 @@ Chart.register(...registerables);
         justify-content: center;
         gap: 1rem;
         padding: 4rem;
-        color: var(--app-muted);
+        color: var(--app-foreground-muted);
       }
 
       .spinner {
@@ -276,7 +276,7 @@ Chart.register(...registerables);
       .funnel-label {
         font-size: 0.8125rem;
         font-weight: 500;
-        color: white;
+        color: var(--app-primary-foreground);
         text-transform: capitalize;
       }
 
@@ -284,7 +284,7 @@ Chart.register(...registerables);
         font-family: var(--font-mono);
         font-size: 0.875rem;
         font-weight: 600;
-        color: white;
+        color: var(--app-primary-foreground);
       }
 
       .metrics-list {
@@ -298,13 +298,13 @@ Chart.register(...registerables);
         justify-content: space-between;
         align-items: center;
         padding: 0.75rem;
-        background: var(--app-muted);
+        background: var(--app-surface-muted);
         border-radius: var(--radius-md);
       }
 
       .metric-label {
         font-size: 0.8125rem;
-        color: var(--app-muted);
+        color: var(--app-foreground-muted);
       }
 
       .metric-value {
@@ -445,10 +445,13 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
   private createSourceChart() {
     if (!this.sourceChartRef?.nativeElement) return;
 
+    this.sourceChart?.destroy();
+
     const ctx = this.sourceChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
 
     const sourceCounts = this.countBySource();
+    const chartColors = this.getChartColors();
 
     this.sourceChart = new Chart(ctx, {
       type: 'doughnut',
@@ -458,13 +461,13 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
           {
             data: Object.values(sourceCounts),
             backgroundColor: [
-              '#3b82f6',
-              '#10b981',
-              '#f59e0b',
-              '#ef4444',
-              '#8b5cf6',
-              '#ec4899',
-              '#6366f1',
+              chartColors.primary,
+              chartColors.success,
+              chartColors.warning,
+              chartColors.danger,
+              chartColors.accent,
+              chartColors.pink,
+              chartColors.indigo,
             ],
             borderWidth: 0,
           },
@@ -480,6 +483,7 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
               font: { family: "'IBM Plex Sans', sans-serif", size: 12 },
               padding: 12,
               usePointStyle: true,
+              color: chartColors.textMuted,
             },
           },
         },
@@ -491,12 +495,15 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
   private createPipelineChart() {
     if (!this.pipelineChartRef?.nativeElement) return;
 
+    this.pipelineChart?.destroy();
+
     const ctx = this.pipelineChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
 
     const byStatus = this.stats?.byStatus || {};
     const labels = Object.keys(byStatus);
     const data = Object.values(byStatus);
+    const chartColors = this.getChartColors();
 
     this.pipelineChart = new Chart(ctx, {
       type: 'bar',
@@ -507,13 +514,13 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
             label: 'Leads',
             data,
             backgroundColor: [
-              '#3b82f6',
-              '#f59e0b',
-              '#8b5cf6',
-              '#ec4899',
-              '#f97316',
-              '#22c55e',
-              '#ef4444',
+              chartColors.primary,
+              chartColors.warning,
+              chartColors.accent,
+              chartColors.pink,
+              chartColors.orange,
+              chartColors.success,
+              chartColors.danger,
             ],
             borderRadius: 6,
           },
@@ -528,15 +535,17 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
         scales: {
           y: {
             beginAtZero: true,
-            grid: { color: 'rgba(0,0,0,0.05)' },
+            grid: { color: chartColors.grid },
             ticks: {
               font: { family: "'JetBrains Mono', monospace", size: 11 },
+              color: chartColors.textMuted,
             },
           },
           x: {
             grid: { display: false },
             ticks: {
               font: { family: "'IBM Plex Sans', sans-serif", size: 11 },
+              color: chartColors.textMuted,
             },
           },
         },
@@ -547,11 +556,14 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
   private createTrendChart() {
     if (!this.trendChartRef?.nativeElement) return;
 
+    this.trendChart?.destroy();
+
     const ctx = this.trendChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
 
     const months = this.getLast6Months();
     const data = months.map(() => Math.floor(Math.random() * 20) + 5);
+    const chartColors = this.getChartColors();
 
     this.trendChart = new Chart(ctx, {
       type: 'line',
@@ -561,12 +573,12 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
           {
             label: 'New Leads',
             data,
-            borderColor: '#3b82f6',
+            borderColor: chartColors.primary,
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             fill: true,
             tension: 0.4,
-            pointBackgroundColor: '#3b82f6',
-            pointBorderColor: '#fff',
+            pointBackgroundColor: chartColors.primary,
+            pointBorderColor: chartColors.surface,
             pointBorderWidth: 2,
             pointRadius: 4,
             pointHoverRadius: 6,
@@ -582,15 +594,17 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
         scales: {
           y: {
             beginAtZero: true,
-            grid: { color: 'rgba(0,0,0,0.05)' },
+            grid: { color: chartColors.grid },
             ticks: {
               font: { family: "'JetBrains Mono', monospace", size: 11 },
+              color: chartColors.textMuted,
             },
           },
           x: {
             grid: { display: false },
             ticks: {
               font: { family: "'IBM Plex Sans', sans-serif", size: 11 },
+              color: chartColors.textMuted,
             },
           },
         },
@@ -619,5 +633,33 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
       months.push(d.toLocaleDateString('en-US', { month: 'short' }));
     }
     return months;
+  }
+
+  private getChartColors() {
+    return {
+      primary: this.getThemeColor('--app-primary', '#3b82f6'),
+      success: this.getThemeColor('--app-success', '#22c55e'),
+      warning: this.getThemeColor('--app-warning', '#f59e0b'),
+      danger: this.getThemeColor('--app-danger', '#ef4444'),
+      accent: this.getThemeColor('--app-accent', '#8b5cf6'),
+      pink: '#ec4899',
+      orange: '#f97316',
+      indigo: '#6366f1',
+      surface: this.getThemeColor('--app-surface', '#ffffff'),
+      textMuted: this.getThemeColor('--app-foreground-muted', '#94a3b8'),
+      grid: this.getThemeColor('--app-border', 'rgba(148, 163, 184, 0.22)'),
+    };
+  }
+
+  private getThemeColor(variableName: string, fallback: string): string {
+    if (!isPlatformBrowser(this.platformId)) {
+      return fallback;
+    }
+
+    const value = getComputedStyle(document.documentElement)
+      .getPropertyValue(variableName)
+      .trim();
+
+    return value || fallback;
   }
 }

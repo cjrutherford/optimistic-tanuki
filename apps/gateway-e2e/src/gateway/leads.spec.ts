@@ -117,7 +117,7 @@ describe('Leads API E2E Tests', () => {
 
   describe('PUT /api/leads/:id', () => {
     it('should update a lead', async () => {
-      const res = await api.put(
+      const res = await api.patch(
         `/leads/${testLeadId}`,
         { status: 'contacted' },
         {
@@ -127,6 +127,81 @@ describe('Leads API E2E Tests', () => {
 
       expect(res.status).toBe(200);
       expect(res.data.status).toBe('contacted');
+    });
+  });
+
+  describe('Topics API', () => {
+    let topicId: string;
+
+    it('should create a topic', async () => {
+      const res = await api.post(
+        '/leads/topics',
+        {
+          name: 'Cloud Migration',
+          description: 'Cloud modernization leads',
+          keywords: ['aws', 'migration'],
+          enabled: true,
+        },
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }
+      );
+
+      expect(res.status).toBe(201);
+      expect(res.data.name).toBe('Cloud Migration');
+      topicId = res.data.id;
+    });
+
+    it('should list topics', async () => {
+      const res = await api.get('/leads/topics', {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.data)).toBe(true);
+      expect(res.data.some((topic: { id: string }) => topic.id === topicId)).toBe(true);
+    });
+
+    it('should toggle a topic', async () => {
+      const res = await api.patch(
+        `/leads/topics/${topicId}`,
+        { enabled: false },
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.data.enabled).toBe(false);
+    });
+  });
+
+  describe('Flags API', () => {
+    it('should create a flag for a lead', async () => {
+      const res = await api.post(
+        `/leads/${testLeadId}/flags`,
+        {
+          reasons: ['spam'],
+          notes: 'E2E validation flag',
+        },
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }
+      );
+
+      expect(res.status).toBe(201);
+      expect(res.data.leadId).toBe(testLeadId);
+      expect(res.data.reasons).toContain('spam');
+    });
+
+    it('should list flags for a lead', async () => {
+      const res = await api.get(`/leads/${testLeadId}/flags`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.data)).toBe(true);
+      expect(res.data.length).toBeGreaterThan(0);
     });
   });
 

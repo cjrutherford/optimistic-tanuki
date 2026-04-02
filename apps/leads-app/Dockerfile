@@ -6,10 +6,12 @@ ARG GIT_SHA=unknown
 
 COPY package.json ./
 COPY package-lock.json ./
+COPY tsconfig*.json ./
+COPY nx.json ./
+COPY libs ./libs
+COPY apps/leads-app ./apps/leads-app
 
 RUN npm install --legacy-peer-deps
-
-COPY . .
 
 RUN npx nx build leads-app --configuration=production
 

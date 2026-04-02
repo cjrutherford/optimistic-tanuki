@@ -116,7 +116,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'node -e "require(''http'').get(''http://localhost:3000/api/mcp/sse'', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }).on(''error'', (err) => process.exit(1));"',
+          'node -e "require(''http'').get(''http://localhost:3000/api-docs'', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }).on(''error'', (err) => process.exit(1));"',
         ]
       interval: 10s
       timeout: 5s
@@ -172,6 +172,13 @@ services:
       dockerfile: ./apps/lead-tracker/Dockerfile
     ports:
       - '3020:3020'
+    environment:
+      - OLLAMA_HOST=192.168.50.14
+      - OLLAMA_MODEL=gemma3:4b
+      - LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY=${LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY:-}
+      - LEAD_DISCOVERY_SEARCH_GOOGLE_CX=${LEAD_DISCOVERY_SEARCH_GOOGLE_CX:-}
+      - LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY=${LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY:-}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

@@ -4,18 +4,25 @@ import { FormsModule } from '@angular/forms';
 import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
 
 @Component({
-    selector: 'app-flag-lead-modal',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
-    <div class="modal-overlay" (click)="close.emit()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
+  selector: 'app-flag-lead-modal',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <div
+      class="modal-overlay"
+      tabindex="0"
+      role="button"
+      (click)="onOverlayClick($event)"
+      (keydown.enter)="closed.emit()"
+      (keydown.space)="closed.emit()"
+    >
+      <div class="modal-content" tabindex="0">
         <div class="modal-header">
           <div>
             <h2>Flag Lead</h2>
             <p class="flag-lead-name">{{ lead?.name }} <span *ngIf="lead?.company">— {{ lead?.company }}</span></p>
           </div>
-          <button class="close-btn" (click)="close.emit()">
+          <button class="close-btn" (click)="closed.emit()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -24,7 +31,7 @@ import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
         </div>
 
         <div class="modal-body">
-          <label class="section-label">Select Reasons</label>
+          <div class="section-label">Select Reasons</div>
           <div class="reason-grid">
             <button
               *ngFor="let reason of reasons"
@@ -40,8 +47,9 @@ import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
           </div>
 
           <div class="notes-group">
-            <label class="section-label">Additional Notes (optional)</label>
+            <label class="section-label" for="flag-notes">Additional Notes (optional)</label>
             <textarea
+              id="flag-notes"
               [(ngModel)]="notes"
               name="flagNotes"
               rows="3"
@@ -51,7 +59,7 @@ import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" (click)="close.emit()">Cancel</button>
+          <button class="btn btn-secondary" (click)="closed.emit()">Cancel</button>
           <button
             class="btn btn-danger"
             [disabled]="selectedReasons.size === 0"
@@ -67,11 +75,11 @@ import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.5);
+      background: var(--app-overlay);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -116,7 +124,7 @@ import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
 
     .flag-lead-name {
       font-size: 0.8125rem;
-      color: var(--app-muted);
+      color: var(--app-foreground-muted);
       margin: 0.25rem 0 0;
     }
 
@@ -129,12 +137,12 @@ import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
       border: none;
       background: transparent;
       border-radius: var(--radius-sm);
-      color: var(--app-muted);
+      color: var(--app-foreground-muted);
       cursor: pointer;
       flex-shrink: 0;
 
       svg { width: 20px; height: 20px; }
-      &:hover { background: var(--app-muted); }
+      &:hover { background: var(--app-surface-muted); }
     }
 
     .modal-body {
@@ -182,7 +190,7 @@ import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
       &.selected {
         background: var(--app-danger);
         border-color: var(--app-danger);
-        color: white;
+        color: var(--app-danger-foreground);
       }
     }
 
@@ -200,7 +208,7 @@ import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
         transition: border-color var(--transition-fast);
 
         &:focus { outline: none; border-color: var(--app-primary); }
-        &::placeholder { color: var(--app-muted); }
+        &::placeholder { color: var(--app-foreground-muted); }
       }
     }
 
@@ -234,7 +242,7 @@ import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
 
       &-danger {
         background: var(--app-danger);
-        color: white;
+        color: var(--app-danger-foreground);
 
         &:hover { filter: brightness(1.1); transform: translateY(-1px); }
         &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -243,28 +251,34 @@ import { Lead, LeadFlagReason, FLAG_REASON_LABELS } from './leads.types';
   `],
 })
 export class FlagLeadModalComponent {
-    @Input() lead: Lead | null = null;
-    @Output() close = new EventEmitter<void>();
-    @Output() flagged = new EventEmitter<{ reasons: LeadFlagReason[]; notes?: string }>();
+  @Input() lead: Lead | null = null;
+  @Output() closed = new EventEmitter<void>();
+  @Output() flagged = new EventEmitter<{ reasons: LeadFlagReason[]; notes?: string }>();
 
-    reasons = Object.values(LeadFlagReason);
-    reasonLabels = FLAG_REASON_LABELS;
-    selectedReasons = new Set<LeadFlagReason>();
-    notes = '';
+  reasons = Object.values(LeadFlagReason) as LeadFlagReason[];
+  reasonLabels = FLAG_REASON_LABELS;
+  selectedReasons = new Set<LeadFlagReason>();
+  notes = '';
 
-    toggleReason(reason: LeadFlagReason) {
-        if (this.selectedReasons.has(reason)) {
-            this.selectedReasons.delete(reason);
-        } else {
-            this.selectedReasons.add(reason);
-        }
+  toggleReason(reason: LeadFlagReason) {
+    if (this.selectedReasons.has(reason)) {
+      this.selectedReasons.delete(reason);
+    } else {
+      this.selectedReasons.add(reason);
     }
+  }
 
-    submitFlag() {
-        if (this.selectedReasons.size === 0) return;
-        this.flagged.emit({
-            reasons: Array.from(this.selectedReasons),
-            notes: this.notes.trim() || undefined,
-        });
+  onOverlayClick(event: MouseEvent) {
+    if (event.target === event.currentTarget) {
+      this.closed.emit();
     }
+  }
+
+  submitFlag() {
+    if (this.selectedReasons.size === 0) return;
+    this.flagged.emit({
+      reasons: Array.from(this.selectedReasons),
+      notes: this.notes.trim() || undefined,
+    });
+  }
 }

@@ -340,14 +340,14 @@ See: [CI/CD Pipeline](./cicd-pipeline.md)
 ### Local Development
 
 ```bash
-# Start all services
-./start-local.sh
+# Full Docker development stack
+npm run docker:dev
 
-# Or use Docker Compose
-docker-compose up -d
+# Optional first-time bootstrap with seeds
+npm run docker:dev:bootstrap
 
-# With debugging
-docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
+# In a second terminal for hot reload
+npm run watch:build
 ```
 
 ### Testing

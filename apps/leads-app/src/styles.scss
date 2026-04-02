@@ -1,17 +1,26 @@
 :root {
   --app-background: var(--background, #f8fafc);
   --app-foreground: var(--foreground, #0f172a);
+  --app-foreground-secondary: var(--foreground-secondary, #64748b);
+  --app-foreground-muted: var(--foreground-muted, #94a3b8);
   --app-primary: var(--primary, #3b82f6);
+  --app-primary-foreground: var(--primary-foreground, #ffffff);
   --app-primary-hover: var(--primary-hover, #2563eb);
   --app-secondary: var(--secondary, #64748b);
+  --app-secondary-foreground: var(--secondary-foreground, #ffffff);
   --app-accent: var(--accent, #8b5cf6);
-  --app-surface: var(--surface, #ffffff);
-  --app-muted: var(--muted, #f1f5f9);
+  --app-surface: var(--background-elevated, var(--surface, #ffffff));
+  --app-surface-muted: var(--surface-muted, color-mix(in srgb, var(--app-surface) 72%, var(--app-background) 28%));
   --app-border: var(--border, #e2e8f0);
   --app-success: var(--success, #22c55e);
+  --app-success-foreground: var(--success-foreground, #052e16);
   --app-warning: var(--warning, #f59e0b);
+  --app-warning-foreground: var(--warning-foreground, #451a03);
   --app-danger: var(--danger, #ef4444);
+  --app-danger-foreground: var(--danger-foreground, #450a0a);
   --app-info: var(--info, #3b82f6);
+  --app-info-foreground: var(--info-foreground, #172554);
+  --app-overlay: var(--background-overlay, rgba(15, 23, 42, 0.6));
 
   --font-heading: var(--font-heading, 'Space Grotesk', system-ui, sans-serif);
   --font-body: var(--font-body, 'IBM Plex Sans', system-ui, sans-serif);
@@ -43,6 +52,7 @@ body {
   background: var(--app-background);
   color: var(--app-foreground);
   min-height: 100vh;
+  color-scheme: light dark;
 }
 
 h1,

@@ -1,0 +1,22 @@
+<section class="onboarding-shell">
+  <div class="onboarding-copy">
+    <span class="eyebrow">Workspace Setup</span>
+    <h1>Finish your onboarding interview</h1>
+    <p>
+      Answer the interview, review the generated topics, and confirm them to
+      start discovery.
+    </p>
+  </div>
+
+  <app-interview-wizard
+    [showModal]="true"
+    [allowClose]="false"
+    [errorMessage]="errorMessage"
+    [confirmingTopics]="confirmingTopics"
+    (analyzeMadLib)="onAnalyzeMadLib($event)"
+    (parseResume)="onParseResume($event)"
+    (advanceDiscInterview)="onAdvanceDiscInterview($event)"
+    (analyzeTopics)="onAnalyzeTopics($event)"
+    (confirmTopics)="onConfirmTopics($event)"
+  ></app-interview-wizard>
+</section>

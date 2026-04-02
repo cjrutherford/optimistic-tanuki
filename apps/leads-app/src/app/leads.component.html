@@ -110,6 +110,11 @@
           <tr
             *ngFor="let lead of filteredLeads"
             [class.flagged]="isLeadFlagged(lead)"
+            (click)="viewLead(lead)"
+            (keydown.enter)="viewLead(lead)"
+            (keydown.space)="viewLead(lead); $event.preventDefault()"
+            tabindex="0"
+            role="button"
           >
             <td>
               <div class="lead-info">
@@ -155,7 +160,7 @@
               <div class="action-buttons">
                 <button
                   class="action-btn"
-                  (click)="viewLead(lead)"
+                  (click)="viewLead(lead); $event.stopPropagation()"
                   title="View"
                 >
                   <svg
@@ -170,7 +175,7 @@
                 </button>
                 <button
                   class="action-btn"
-                  (click)="editLead(lead)"
+                  (click)="editLead(lead); $event.stopPropagation()"
                   title="Edit"
                 >
                   <svg
@@ -189,7 +194,7 @@
                 </button>
                 <button
                   class="action-btn warning"
-                  (click)="openFlagModal(lead)"
+                  (click)="openFlagModal(lead); $event.stopPropagation()"
                   title="Flag Lead"
                 >
                   <svg
@@ -206,7 +211,7 @@
                 </button>
                 <button
                   class="action-btn danger"
-                  (click)="deleteLead(lead)"
+                  (click)="deleteLead(lead); $event.stopPropagation()"
                   title="Delete"
                 >
                   <svg
@@ -242,6 +247,11 @@
             *ngFor="let lead of getLeadsByStatus(status.key)"
             class="kanban-card"
             [class.flagged]="isLeadFlagged(lead)"
+            (click)="viewLead(lead)"
+            (keydown.enter)="viewLead(lead)"
+            (keydown.space)="viewLead(lead); $event.preventDefault()"
+            tabindex="0"
+            role="button"
           >
             <div class="card-header">
               <span class="card-name">{{ lead.name }}</span>
@@ -279,7 +289,7 @@
             <div class="card-actions">
               <button
                 class="card-action-btn"
-                (click)="openFlagModal(lead)"
+                (click)="openFlagModal(lead); $event.stopPropagation()"
                 title="Flag"
               >
                 <svg
@@ -296,7 +306,7 @@
               </button>
               <button
                 class="card-action-btn"
-                (click)="editLead(lead)"
+                (click)="editLead(lead); $event.stopPropagation()"
                 title="Edit"
               >
                 <svg
@@ -328,7 +338,10 @@
   ></div>
   <div class="quick-add-panel" [class.open]="showQuickAdd">
     <div class="quick-add-header">
-      <h2>Quick Add Lead</h2>
+      <div class="header-title-row">
+        <h2>{{ isEditingLead ? 'Edit Lead' : 'Quick Add Lead' }}</h2>
+        <span *ngIf="isEditingLead" class="edit-mode-badge">Editing</span>
+      </div>
       <button class="close-btn" (click)="closeQuickAdd()">
         <svg
           viewBox="0 0 24 24"
@@ -341,7 +354,7 @@
         </svg>
       </button>
     </div>
-    <form (ngSubmit)="createLead()" class="quick-add-form">
+    <form (ngSubmit)="saveLead()" class="quick-add-form">
       <div class="form-group">
         <label>Name *</label>
         <input
@@ -358,6 +371,14 @@
         <select [(ngModel)]="newLead.source" name="source">
           <option *ngFor="let source of sources" [value]="source">
             {{ source }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select [(ngModel)]="newLead.status" name="status">
+          <option *ngFor="let status of statuses" [value]="status">
+            {{ status }}
           </option>
         </select>
       </div>
@@ -426,6 +447,32 @@
             placeholder="Quick notes..."
           ></textarea>
         </div>
+        <div class="form-group">
+          <label>Next Follow-Up</label>
+          <input
+            type="date"
+            [(ngModel)]="newLead.nextFollowUp"
+            name="nextFollowUp"
+          />
+        </div>
+        <div class="form-group">
+          <label>Assigned To</label>
+          <input
+            type="text"
+            [(ngModel)]="newLead.assignedTo"
+            name="assignedTo"
+            placeholder="Owner or rep"
+          />
+        </div>
+        <div class="form-group">
+          <label>Search Keywords</label>
+          <textarea
+            [(ngModel)]="searchKeywordsInput"
+            name="searchKeywords"
+            rows="2"
+            placeholder="react, typescript, modernization"
+          ></textarea>
+        </div>
       </ng-container>
 
       <div class="quick-add-actions">
@@ -441,7 +488,7 @@
           class="btn btn-primary"
           [disabled]="!newLead.name"
         >
-          Create Lead
+          {{ isEditingLead ? 'Save Changes' : 'Create Lead' }}
         </button>
       </div>
     </form>
@@ -451,7 +498,14 @@
   <app-flag-lead-modal
     *ngIf="selectedLeadForFlag"
     [lead]="selectedLeadForFlag"
-    (close)="selectedLeadForFlag = null"
+    (closed)="selectedLeadForFlag = null"
     (flagged)="onLeadFlagged($event)"
   ></app-flag-lead-modal>
+
+  <app-lead-detail-modal
+    *ngIf="selectedLeadForView"
+    [lead]="selectedLeadForView"
+    (closed)="selectedLeadForView = null"
+    (editRequested)="openEditFromView(selectedLeadForView!)"
+  ></app-lead-detail-modal>
 </div>

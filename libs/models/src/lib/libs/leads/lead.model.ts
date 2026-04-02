@@ -4,9 +4,14 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
+  Relation,
 } from 'typeorm';
 import { LeadSource } from './lead-source.enum';
 import { LeadStatus } from './lead-status.enum';
+import { LeadFlag } from './lead-flag.model';
+import { LeadTopicLink } from './lead-topic-link.model';
+import { LeadContactPoint } from './lead-contact-point.interface';
 
 @Entity('leads')
 export class Lead {
@@ -24,6 +29,12 @@ export class Lead {
 
   @Column({ nullable: true })
   phone?: string;
+
+  @Column({ nullable: true })
+  originalPostingUrl?: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  contacts?: LeadContactPoint[];
 
   @Column({ type: 'enum', enum: LeadSource })
   source: LeadSource;
@@ -49,18 +60,24 @@ export class Lead {
   @Column({ nullable: true })
   assignedTo?: string;
 
+  @Column({ type: 'varchar', default: 'leads-app' })
+  appScope: string;
+
+  @Column({ type: 'varchar' })
+  profileId: string;
+
+  @Column({ type: 'varchar' })
+  userId: string;
+
+  @OneToMany(() => LeadFlag, (flag) => flag.lead)
+  flags?: Relation<LeadFlag[]>;
+
+  @OneToMany(() => LeadTopicLink, (topicLink) => topicLink.lead)
+  topicLinks?: Relation<LeadTopicLink[]>;
+
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-}
-
-export interface LeadStats {
-  total: number;
-  autoDiscovered: number;
-  manual: number;
-  totalValue: number;
-  followUpsDue: number;
-  byStatus: Record<string, number>;
 }

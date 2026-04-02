@@ -1,146 +1,218 @@
 # Docker Compose Development
 
-## Quick Start
+This repository has two Compose paths:
+
+- `docker compose up -d`: the standard container stack
+- `npm run docker:dev`: the full development stack with debug ports and `nodemon`
+
+For day-to-day local work, use `docker:dev`.
+
+## Why `docker:dev` Needs a Build First
+
+The development override mounts built application output from `dist/` into many containers and runs those artifacts under `nodemon`.
+
+That means `docker compose ... up -d` on its own is not enough for a reliable full-stack startup:
+
+- SSR frontends wait for built server bundles in `dist/apps/*/server`
+- Nest services run built entrypoints from `dist/apps/*`
+- if `dist/` is missing or stale, containers can come up but not actually serve the app you expect
+
+The root `docker:dev` script now handles that by running `build:dev` before Compose startup.
+
+## Full-Stack Commands
+
+### Start the full development stack
 
 ```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop all services
-docker-compose down
+npm run docker:dev
 ```
 
-## Services
+This does:
 
-### Core Infrastructure
+1. `npm run build:dev`
+2. `docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d --remove-orphans`
 
-| Service  | Port | Description         |
-| -------- | ---- | ------------------- |
-| postgres | 5432 | PostgreSQL database |
-| redis    | 6379 | Redis cache         |
-
-### Microservices
-
-| Service            | Port | Container Name        |
-| ------------------ | ---- | --------------------- |
-| authentication     | 3001 | ot_authentication     |
-| profile            | 3002 | ot_profile            |
-| social             | 3003 | ot_social             |
-| forum              | 3015 | ot_forum              |
-| chat-collector     | 3007 | ot_chat_collector     |
-| assets             | 3005 | ot_assets             |
-| prompt-proxy       | 3009 | ot_prompt_proxy       |
-| ai-orchestration   | 3010 | ot_ai_orchestration   |
-| telos-docs-service | 3008 | ot_telos_docs_service |
-| blogging           | 3011 | ot_blogging           |
-| permissions        | 3012 | ot_permissions        |
-| project-planning   | 3006 | ot_project_planning   |
-| store              | 3013 | ot_store              |
-| app-configurator   | 3014 | ot_app_configurator   |
-| wellness           | 3016 | ot_wellness           |
-
-### Gateway
-
-| Service             | Port | Container Name |
-| ------------------- | ---- | -------------- |
-| gateway (HTTP)      | 3000 | ot_gateway     |
-| gateway (Chat WS)   | 3300 | ot_gateway     |
-| gateway (Social WS) | 3301 | ot_gateway     |
-
-### Client Applications
-
-| Client                    | Port | Container Name         |
-| ------------------------- | ---- | ---------------------- |
-| client-interface          | 8080 | ot_client_interface    |
-| forgeofwill               | 8081 | fow_client_interface   |
-| digital-homestead         | 8082 | dh_client_interface    |
-| christopherrutherford-net | 8083 | crdn_client_interface  |
-| owner-console             | 8084 | owner_console          |
-| store-client              | 8085 | ot_store_client        |
-| d6                        | 8086 | ot_d6                  |
-| configurable-client       | 8090 | ot_configurable_client |
-
-## Client to Gateway
-
-In Docker Compose, clients automatically proxy `/api/*` to the gateway:
-
-```typescript
-// server.ts in each client
-app.use(
-  '/api',
-  createProxyMiddleware({
-    target: 'http://ot_gateway:3000/api',
-    changeOrigin: true,
-  })
-);
-```
-
-The target is hardcoded to `http://ot_gateway:3000` in Docker Compose.
-
-## Environment Variables
-
-### Gateway
-
-The gateway reads from `config.yaml` in Docker Compose. Override with:
+### First-time bootstrap with seed data
 
 ```bash
-# Via docker-compose.yaml
-environment:
-  - AUTHENTICATION_HOST=ot_authentication
-  - AUTHENTICATION_PORT=3001
+npm run docker:dev:bootstrap
 ```
 
-### Clients
+This starts the full dev stack, then runs the seed scripts against the same Compose project.
+
+The bootstrap seed step uses `scripts/dev-seed.sh`, which runs with explicit `-w` values per service. Most seeds use `docker compose exec -T`, while the social seeds use `docker compose run --rm --no-deps` because `exec` is not reliable for the long-running dev social container in this stack.
+
+### Keep hot reload active
+
+Run this in a second terminal after `docker:dev`:
 
 ```bash
-# Client environment
-environment:
-  - NODE_ENV=production
-  - PORT=4000
-  - GATEWAY_URL=http://ot_gateway:3000
-  - GATEWAY_WS_URL=http://ot_gateway:3300
+npm run watch:build
 ```
 
-## Volumes
+Changes flow like this:
 
-| Volume         | Path                     | Purpose          |
-| -------------- | ------------------------ | ---------------- |
-| postgres_data  | /var/lib/postgresql/data | Database storage |
-| assets_storage | /usr/src/app/storage     | Asset files      |
+1. source changes in `apps/` or `libs/`
+2. Nx rebuilds into `dist/`
+3. mounted `dist/` changes become visible in containers
+4. `nodemon` restarts the affected service
 
-## Health Checks
-
-Services include health checks. Use `docker-compose ps` to view status.
-
-## Development Workflow
+### Inspect and control the stack
 
 ```bash
-# Rebuild specific service
-docker-compose build gateway
-docker-compose up -d gateway
-
-# View service logs
-docker-compose logs -f gateway
-
-# Restart service
-docker-compose restart gateway
-
-# Scale service
-docker-compose up -d --scale gateway=2
+npm run docker:dev:ps
+npm run docker:dev:logs
+npm run docker:dev:down
+npm run docker:dev:reset
 ```
 
-## Networking
+## Services in the Dev Stack
 
-All services share the `optimistic-tanuki_default` network. Services communicate using container names as hostnames.
+The merged dev Compose configuration currently includes these services:
 
-## K8s vs Docker Compose Differences
+```text
+redis
+postgres
+db-setup
+telos-docs-service
+blogging
+forum
+wellness
+assets
+digital-homestead-client-interface
+authentication
+leads-app
+ot-client-interface
+project-planning
+prompt-proxy
+ai-orchestration
+classifieds
+forgeofwill-client-interface
+profile
+chat-collector
+lead-tracker
+permissions
+social
+payments
+gateway
+local-hub-client-interface
+store-client
+app-configurator
+app-configurator-seed
+crdn-client-interface
+owner-console
+store
+d6
+configurable-client
+```
 
-| Aspect            | Docker Compose         | K8s                  |
-| ----------------- | ---------------------- | -------------------- |
-| Client access     | localhost:8080         | LoadBalancer IP:8080 |
-| Gateway URL       | http://ot_gateway:3000 | http://gateway:3000  |
-| Service discovery | container names        | K8s service names    |
-| External access   | localhost              | LoadBalancer         |
+To verify that list locally:
+
+```bash
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml config --services
+```
+
+## Primary Local URLs
+
+### Frontends
+
+- Main app: `http://localhost:8080`
+- Leads app: `http://localhost:4201`
+- Forge of Will: `http://localhost:8081`
+- Digital Homestead: `http://localhost:8082`
+- christopherrutherford.net: `http://localhost:8083`
+- Owner Console: `http://localhost:8084`
+- Store Client: `http://localhost:8085`
+- D6: `http://localhost:8086`
+- Local Hub: `http://localhost:8087`
+- Configurable Client: `http://localhost:8090`
+
+### Backend / infra
+
+- Gateway HTTP: `http://localhost:3000`
+- Gateway chat socket: `ws://localhost:3300`
+- Gateway social socket: `ws://localhost:3301`
+- Postgres: `localhost:5432`
+- Redis: `localhost:6379`
+- Lead Tracker: `http://localhost:3020`
+
+## Debug Ports
+
+The development override exposes Node inspector ports for many services. A few common ones:
+
+- gateway: `9000`
+- authentication: `9229`
+- profile: `9234`
+- social: `9232`
+- lead-tracker: `9233`
+- assets: `9235`
+- leads-app SSR server: `9244`
+
+See `docker-compose.dev.yaml` for the full mapping.
+
+## Common Failure Modes
+
+### `docker:dev` starts containers but the app still does not load
+
+Check whether the build artifacts exist and the containers are healthy:
+
+```bash
+npm run docker:dev:ps
+ls dist/apps
+```
+
+If `dist/` is incomplete, rerun:
+
+```bash
+npm run docker:dev
+```
+
+### A specific service is exiting or waiting forever
+
+Inspect that service directly:
+
+```bash
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml logs -f <service-name>
+```
+
+Examples:
+
+```bash
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml logs -f gateway
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml logs -f leads-app
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml logs -f lead-tracker
+```
+
+### Source changes do not appear in the running stack
+
+The containers do not build TypeScript for you. Make sure the watch process is running:
+
+```bash
+npm run watch:build
+```
+
+### Seed commands fail
+
+Use the bootstrap command so the seed scripts target the same dev Compose stack:
+
+```bash
+npm run docker:dev:bootstrap
+```
+
+If you need to rerun only the seed phase:
+
+```bash
+npm run docker:dev:seed
+```
+
+If you see an error like `current working directory is outside of container mount namespace root`, the fix is to use the scripted seed path above rather than ad hoc `docker compose exec` calls without an explicit `-w`.
+
+## Standard Stack vs Dev Stack
+
+| Task | Command |
+| --- | --- |
+| Full local development | `npm run docker:dev` |
+| Full local development + seeds | `npm run docker:dev:bootstrap` |
+| Hot reload loop | `npm run watch:build` |
+| Stop development stack | `npm run docker:dev:down` |
+| Production-like local compose | `docker compose up -d` |

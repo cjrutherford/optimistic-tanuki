@@ -10,6 +10,7 @@ import { MessageService } from '../message.service';
 
 @Component({
   selector: 'lib-message',
+  standalone: true,
   imports: [CommonModule, CardComponent, TileComponent, ButtonComponent],
   templateUrl: './message.component.html',
   styleUrl: './message.component.scss',
