@@ -126,6 +126,24 @@ export class CommunitiesController {
   }
 
   @Public()
+  @Get('slug/:slug')
+  @ApiOperation({ summary: 'Get a locality community by slug' })
+  @ApiResponse({ status: 200, description: 'Community.' })
+  async findCommunity(@Param('slug') slug: string) {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.FIND_BY_SLUG },
+          { slug }
+        )
+      );
+    } catch (error) {
+      this.logger.error('Failed to find community %s:', slug, error);
+      return null;
+    }
+  }
+
+  @Public()
   @Get(':id')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get a community by ID' })
@@ -276,24 +294,6 @@ export class CommunitiesController {
     } catch (error) {
       this.logger.error('Failed to invite member:', error);
       throw error;
-    }
-  }
-
-  @Public()
-  @Get('slug/:slug')
-  @ApiOperation({ summary: 'Get a locality community by slug' })
-  @ApiResponse({ status: 200, description: 'Community.' })
-  async findCommunity(@Param('slug') slug: string) {
-    try {
-      return await firstValueFrom(
-        this.socialClient.send(
-          { cmd: CommunityCommands.FIND_BY_SLUG },
-          { slug }
-        )
-      );
-    } catch (error) {
-      this.logger.error('Failed to find community %s:', slug, error);
-      return null;
     }
   }
 

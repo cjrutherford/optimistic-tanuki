@@ -1,1 +1,1 @@
-export * from './lib/form-ui';
+export * from './lib/form-ui/index';

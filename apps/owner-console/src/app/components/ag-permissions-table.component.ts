@@ -11,7 +11,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PermissionDto } from '@optimistic-tanuki/ui-models';
-import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
+import { ColDef } from 'ag-grid-community';
+import { AgGridUiComponent } from '@optimistic-tanuki/ag-grid-ui/ag-grid-ui.component';
 
 @Component({
   selector: 'app-ag-permissions-table',

@@ -1,40 +1,38 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LeadsController } from './leads.controller';
 import { ClientProxy } from '@nestjs/microservices';
+import { of } from 'rxjs';
 import {
+  LeadAnalysisCommands,
   LeadCommands,
-  LeadSource,
-  LeadStatus,
+  LeadFlagCommands,
+  LeadOnboardingCommands,
+  LeadTopicCommands,
 } from '@optimistic-tanuki/constants';
+import { LeadSource } from '@optimistic-tanuki/models/leads-contracts';
+import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
 
 describe('LeadsController', () => {
   let controller: LeadsController;
   let leadClient: jest.Mocked<ClientProxy>;
 
-  const mockLead = {
-    id: '123e4567-e89b-12d3-a456-426614174000',
-    name: 'Test Lead',
-    company: 'Test Company',
+  const mockUser = {
+    userId: 'user-1',
     email: 'test@example.com',
-    phone: '555-1234',
-    source: LeadSource.UPWORK,
-    status: LeadStatus.NEW,
-    value: 5000,
-    notes: 'Test notes',
-    nextFollowUp: '2026-04-01',
-    isAutoDiscovered: false,
-    searchKeywords: ['react', 'typescript'],
-    assignedTo: 'user-1',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    name: 'Test User',
+    profileId: 'profile-1',
+    scopes: [],
+    roles: [],
   };
+  const appScope = 'leads-app';
 
   beforeEach(async () => {
     const mockClient = {
       send: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleRef = Test.createTestingModule({
       controllers: [LeadsController],
       providers: [
         {
@@ -42,125 +40,172 @@ describe('LeadsController', () => {
           useValue: mockClient,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) });
+
+    const module: TestingModule = await moduleRef.compile();
 
     controller = module.get<LeadsController>(LeadsController);
     leadClient = module.get('LEAD_SERVICE');
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  it('proxies lead list requests with auth context', async () => {
+    leadClient.send.mockReturnValue(of([]));
+
+    await controller.findAll(mockUser as any, appScope, 'new', 'upwork');
+
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.FIND_ALL },
+      {
+        status: 'new',
+        source: 'upwork',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        appScope: 'leads-app',
+      }
+    );
   });
 
-  describe('findAll', () => {
-    it('should send FIND_ALL command with filters', async () => {
-      const mockSend = jest.fn().mockResolvedValue([mockLead]);
-      leadClient.send.mockReturnValue(mockSend as any);
+  it('proxies lead creation with shared command constants and context', async () => {
+    leadClient.send.mockReturnValue(of({ id: 'lead-1' }));
 
-      const result = await controller.findAll('new', 'upwork');
-
-      expect(leadClient.send).toHaveBeenCalledWith(
-        { cmd: LeadCommands.FIND_ALL },
-        { status: 'new', source: 'upwork' }
-      );
-      expect(result).toEqual([mockLead]);
+    await controller.create(mockUser as any, appScope, {
+      name: 'New Lead',
+      source: LeadSource.REFERRAL,
     });
 
-    it('should send FIND_ALL command without filters', async () => {
-      const mockSend = jest.fn().mockResolvedValue([mockLead]);
-      leadClient.send.mockReturnValue(mockSend as any);
-
-      const result = await controller.findAll();
-
-      expect(leadClient.send).toHaveBeenCalledWith(
-        { cmd: LeadCommands.FIND_ALL },
-        { status: undefined, source: undefined }
-      );
-      expect(result).toEqual([mockLead]);
-    });
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.CREATE },
+      {
+        dto: {
+          name: 'New Lead',
+          source: LeadSource.REFERRAL,
+        },
+        context: {
+          userId: 'user-1',
+          profileId: 'profile-1',
+          appScope: 'leads-app',
+        },
+      }
+    );
   });
 
-  describe('findOne', () => {
-    it('should send FIND_ONE command with id', async () => {
-      const mockSend = jest.fn().mockResolvedValue(mockLead);
-      leadClient.send.mockReturnValue(mockSend as any);
+  it('proxies topic creation with scoped context', async () => {
+    leadClient.send.mockReturnValue(of({ id: 'topic-1' }));
 
-      const result = await controller.findOne(mockLead.id);
-
-      expect(leadClient.send).toHaveBeenCalledWith(
-        { cmd: LeadCommands.FIND_ONE },
-        { id: mockLead.id }
-      );
-      expect(result).toEqual(mockLead);
+    await controller.createTopic(mockUser as any, appScope, {
+      name: 'Cloud',
+      description: '',
+      keywords: ['aws'],
     });
+
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadTopicCommands.CREATE },
+      {
+        dto: {
+          name: 'Cloud',
+          description: '',
+          keywords: ['aws'],
+        },
+        context: {
+          userId: 'user-1',
+          profileId: 'profile-1',
+          appScope: 'leads-app',
+        },
+      }
+    );
   });
 
-  describe('create', () => {
-    it('should send CREATE command with dto', async () => {
-      const createDto = { name: 'New Lead', source: LeadSource.REFERRAL };
-      const mockSend = jest.fn().mockResolvedValue(mockLead);
-      leadClient.send.mockReturnValue(mockSend as any);
+  it('uses exported onboarding command constants', async () => {
+    leadClient.send.mockReturnValue(
+      of({
+        suggestedServiceOffer: 'React modernization consulting',
+      })
+    );
 
-      const result = await controller.create(createDto);
-
-      expect(leadClient.send).toHaveBeenCalledWith(
-        { cmd: LeadCommands.CREATE },
-        createDto
-      );
-      expect(result).toEqual(mockLead);
+    await controller.analyzeMadLib({
+      text: 'I modernize React codebases.',
     });
+
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadOnboardingCommands.ANALYZE_MAD_LIB },
+      { text: 'I modernize React codebases.' }
+    );
   });
 
-  describe('update', () => {
-    it('should send UPDATE command with id and dto', async () => {
-      const updateDto = { status: LeadStatus.CONTACTED };
-      const mockSend = jest.fn().mockResolvedValue(mockLead);
-      leadClient.send.mockReturnValue(mockSend as any);
+  it('proxies onboarding confirmation with context', async () => {
+    leadClient.send.mockReturnValue(of({ topics: [] }));
 
-      const result = await controller.update(mockLead.id, updateDto);
-
-      expect(leadClient.send).toHaveBeenCalledWith(
-        { cmd: LeadCommands.UPDATE },
-        { id: mockLead.id, dto: updateDto }
-      );
-      expect(result).toEqual(mockLead);
+    await controller.confirmOnboarding(mockUser as any, appScope, {
+      profile: {
+        currentStep: 4,
+      } as any,
+      topics: [],
     });
+
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadOnboardingCommands.CONFIRM },
+      {
+        profile: {
+          currentStep: 4,
+        },
+        topics: [],
+        context: {
+          userId: 'user-1',
+          profileId: 'profile-1',
+          appScope: 'leads-app',
+        },
+      }
+    );
   });
 
-  describe('delete', () => {
-    it('should send DELETE command with id', async () => {
-      const mockSend = jest.fn().mockResolvedValue(undefined);
-      leadClient.send.mockReturnValue(mockSend as any);
+  it('proxies location autocomplete with exported constants', async () => {
+    leadClient.send.mockReturnValue(of([]));
 
-      await controller.delete(mockLead.id);
+    await controller.autocompleteLocations('sav');
 
-      expect(leadClient.send).toHaveBeenCalledWith(
-        { cmd: LeadCommands.DELETE },
-        { id: mockLead.id }
-      );
-    });
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadOnboardingCommands.AUTOCOMPLETE_LOCATIONS },
+      { query: 'sav' }
+    );
   });
 
-  describe('getStats', () => {
-    it('should send GET_STATS command', async () => {
-      const stats = {
-        total: 1,
-        autoDiscovered: 0,
-        manual: 1,
-        totalValue: 5000,
-        followUpsDue: 0,
-        byStatus: { new: 1 },
-      };
-      const mockSend = jest.fn().mockResolvedValue(stats);
-      leadClient.send.mockReturnValue(mockSend as any);
+  it('proxies lead flags with scoped context', async () => {
+    leadClient.send.mockReturnValue(of([]));
 
-      const result = await controller.getStats();
+    await controller.findFlagsByLead(mockUser as any, appScope, 'lead-1');
 
-      expect(leadClient.send).toHaveBeenCalledWith(
-        { cmd: LeadCommands.GET_STATS },
-        {}
-      );
-      expect(result).toEqual(stats);
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadFlagCommands.FIND_BY_LEAD },
+      {
+        leadId: 'lead-1',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        appScope: 'leads-app',
+      }
+    );
+  });
+
+  it('proxies analysis runs with the exported analysis command', async () => {
+    leadClient.send.mockReturnValue(of({}));
+
+    await controller.runLeadAnalysis(mockUser as any, appScope, {
+      leadId: 'lead-1',
+      topicId: 'topic-1',
     });
+
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadAnalysisCommands.RUN },
+      {
+        leadId: 'lead-1',
+        topicId: 'topic-1',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        appScope: 'leads-app',
+      }
+    );
   });
 });

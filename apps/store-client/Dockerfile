@@ -7,13 +7,13 @@ WORKDIR /usr/src/app
 # Copy package.json and package-lock.json
 COPY package.json ./
 COPY package-lock.json ./
+COPY tsconfig*.json ./
+COPY nx.json ./
+COPY libs ./libs
+COPY apps/store-client ./apps/store-client
 
 # Install all dependencies (including devDependencies needed for build)
 RUN npm install --legacy-peer-deps
-
-# Copy the entire workspace source code
-# Nx needs this to build the application and its dependencies
-COPY . .
 
 # Build the store-client application for production with SSR
 RUN npx nx build store-client --configuration=production

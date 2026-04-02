@@ -1,5 +1,12 @@
 import { DataSource } from 'typeorm';
-import { Lead } from '@optimistic-tanuki/models';
+import {
+  Lead,
+  LeadFlag,
+  LeadOnboardingProfileRecord,
+  LeadQualification,
+  LeadTopic,
+  LeadTopicLink,
+} from '@optimistic-tanuki/models/leads-entities';
 
 export default new DataSource({
   type: 'postgres',
@@ -8,6 +15,13 @@ export default new DataSource({
   username: process.env.POSTGRES_USER || 'postgres',
   password: process.env.POSTGRES_PASSWORD || 'postgres',
   database: process.env.POSTGRES_DB || 'ot_lead_tracker',
-  entities: [Lead],
-  migrations: ['src/migrations/*.ts'],
+  entities: [
+    Lead,
+    LeadFlag,
+    LeadTopic,
+    LeadTopicLink,
+    LeadQualification,
+    LeadOnboardingProfileRecord,
+  ],
+  migrations: ['src/migrations/*.ts', 'migrations/*.ts'],
 });

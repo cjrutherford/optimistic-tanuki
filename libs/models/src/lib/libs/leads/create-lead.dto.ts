@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { LeadSource } from './lead-source.enum';
 import { LeadStatus } from './lead-status.enum';
+import { LeadContactPoint } from './lead-contact-point.interface';
 
 export class CreateLeadDto {
   @IsString()
@@ -27,6 +28,13 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @IsOptional()
+  @IsString()
+  originalPostingUrl?: string;
+
+  @IsOptional()
+  contacts?: LeadContactPoint[];
 
   @IsEnum(LeadSource)
   source: LeadSource;

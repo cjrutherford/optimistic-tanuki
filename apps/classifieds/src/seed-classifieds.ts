@@ -427,7 +427,7 @@ async function fetchCommunityId(
   gatewayUrl: string
 ): Promise<string | null> {
   try {
-    const response = await fetch(`${gatewayUrl}/api/communities/${slug}`);
+    const response = await fetch(`${gatewayUrl}/api/communities/slug/${slug}`);
     if (!response.ok) {
       console.warn(`  Community not found: ${slug}`);
       return null;

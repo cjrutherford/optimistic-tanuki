@@ -7,10 +7,12 @@ ARG GIT_SHA=unknown
 
 COPY package.json ./
 COPY package-lock.json ./
+COPY tsconfig*.json ./
+COPY nx.json ./
+COPY libs ./libs
+COPY apps/local-hub ./apps/local-hub
 
 RUN npm install --legacy-peer-deps
-
-COPY . .
 
 RUN npx nx build local-hub --configuration=production
 

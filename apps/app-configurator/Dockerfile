@@ -1,23 +1,23 @@
-# Install dependencies only when needed
-FROM docker.io/node:lts-alpine AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+FROM docker.io/node:lts-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
-COPY dist/apps/app-configurator/package*.json ./
-RUN npm install --omit=dev --legacy-peer-deps
+COPY package*.json tsconfig*.json nx.json ./
+COPY libs/ ./libs/
+COPY apps/app-configurator/ ./apps/app-configurator/
+RUN npm install --legacy-peer-deps
+RUN npx nx build app-configurator --configuration=development
 
-# Production image, copy all the files and run nest
 FROM docker.io/node:lts-alpine AS runner
 WORKDIR /usr/src/app
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3014
 RUN npm i -g nodemon pg
-RUN npm i --save pg
-COPY --from=deps /usr/src/app/node_modules ./node_modules
-COPY --from=deps /usr/src/app/package.json ./package.json
-RUN npm i --save typeorm
-COPY ./dist/apps/app-configurator .
+COPY --from=builder /usr/src/app/dist/apps/app-configurator/ ./
+RUN npm install --omit=dev --legacy-peer-deps
+RUN npm i --save --legacy-peer-deps pg typeorm
+RUN mkdir -p ./seed-data && cp ./seed-script.js ./seed-data/seed-script.js
+RUN mkdir -p ./seed-data/assets && cp ./assets/config.yaml ./seed-data/assets/config.yaml
 RUN chown -R node:node .
 USER node
 EXPOSE 3014

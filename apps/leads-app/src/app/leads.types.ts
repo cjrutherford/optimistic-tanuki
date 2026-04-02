@@ -1,10 +1,36 @@
 export enum LeadSource {
-  UPWORK = 'upwork',
-  LINKEDIN = 'linkedin',
+  REMOTE_OK = 'remoteok',
+  HIMALAYAS = 'himalayas',
+  WE_WORK_REMOTELY = 'weworkremotely',
+  JUST_REMOTE = 'justremote',
+  JOBICY = 'jobicy',
+  CLUTCH = 'clutch',
+  CRUNCHBASE = 'crunchbase',
+  INDEED = 'indeed',
+  GOOGLE_MAPS = 'google-maps',
   REFERRAL = 'referral',
   COLD = 'cold',
-  LOCAL = 'local',
   OTHER = 'other',
+  UPWORK = 'upwork',
+  LINKEDIN = 'linkedin',
+  LOCAL = 'local',
+}
+
+export enum LeadDiscoverySource {
+  REMOTE_OK = 'remoteok',
+  HIMALAYAS = 'himalayas',
+  WE_WORK_REMOTELY = 'weworkremotely',
+  JUST_REMOTE = 'justremote',
+  JOBICY = 'jobicy',
+  CLUTCH = 'clutch',
+  CRUNCHBASE = 'crunchbase',
+  INDEED = 'indeed',
+  GOOGLE_MAPS = 'google-maps',
+}
+
+export enum LeadTopicDiscoveryIntent {
+  JOB_OPENINGS = 'job-openings',
+  SERVICE_BUYERS = 'service-buyers',
 }
 
 export enum LeadStatus {
@@ -49,12 +75,23 @@ export interface LeadFlag {
   createdAt: Date;
 }
 
+export interface LeadContactPoint {
+  kind: 'email' | 'phone' | 'link';
+  value: string;
+  href: string;
+  label: string;
+  source: 'provider' | 'posting-page';
+  isPrimary: boolean;
+}
+
 export interface Lead {
   id: string;
   name: string;
   company?: string;
   email?: string;
   phone?: string;
+  originalPostingUrl?: string;
+  contacts?: LeadContactPoint[];
   source: LeadSource;
   status: LeadStatus;
   value: number;
@@ -76,6 +113,19 @@ export interface LeadStats {
   totalValue: number;
   followUpsDue: number;
   byStatus: Record<string, number>;
+  qualification: LeadQualificationSummary;
+}
+
+export interface LeadQualificationSummary {
+  byClassification: {
+    'strong-match': number;
+    review: number;
+    'weak-match': number;
+  };
+  averageRelevanceScore: number | null;
+  averageDifficultyScore: number | null;
+  averageUserFitScore: number | null;
+  missingUserFitCount: number;
 }
 
 export interface Topic {
@@ -84,8 +134,18 @@ export interface Topic {
   description: string;
   enabled: boolean;
   keywords: string[];
+  excludedTerms: string[];
+  discoveryIntent: LeadTopicDiscoveryIntent;
+  sources?: LeadDiscoverySource[];
+  googleMapsCities?: string[] | null;
+  googleMapsTypes?: string[] | null;
+  googleMapsLocation?: string | null;
+  googleMapsRadiusMiles?: number | null;
   lastRun?: Date;
   leadCount: number;
+  qualificationSummary?: LeadQualificationSummary;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface CreateLeadDto {
@@ -93,6 +153,7 @@ export interface CreateLeadDto {
   company?: string;
   email?: string;
   phone?: string;
+  originalPostingUrl?: string;
   source: LeadSource;
   status?: LeadStatus;
   value?: number;
@@ -108,6 +169,7 @@ export interface UpdateLeadDto {
   company?: string;
   email?: string;
   phone?: string;
+  originalPostingUrl?: string;
   source?: LeadSource;
   status?: LeadStatus;
   value?: number;
@@ -116,4 +178,88 @@ export interface UpdateLeadDto {
   isAutoDiscovered?: boolean;
   searchKeywords?: string[];
   assignedTo?: string;
+}
+
+export interface CreateLeadFlagDto {
+  reasons: LeadFlagReason[];
+  notes?: string;
+}
+
+export interface CreateTopicDto {
+  name: string;
+  description?: string;
+  keywords: string[];
+  excludedTerms?: string[];
+  discoveryIntent?: LeadTopicDiscoveryIntent;
+  sources?: LeadDiscoverySource[];
+  googleMapsCities?: string[];
+  googleMapsTypes?: string[];
+  googleMapsLocation?: string;
+  googleMapsRadiusMiles?: number;
+  enabled?: boolean;
+  lastRun?: string;
+  leadCount?: number;
+}
+
+export interface UpdateTopicDto {
+  name?: string;
+  description?: string;
+  keywords?: string[];
+  excludedTerms?: string[];
+  discoveryIntent?: LeadTopicDiscoveryIntent;
+  sources?: LeadDiscoverySource[];
+  googleMapsCities?: string[];
+  googleMapsTypes?: string[];
+  googleMapsLocation?: string;
+  googleMapsRadiusMiles?: number;
+  enabled?: boolean;
+  lastRun?: string;
+  leadCount?: number;
+}
+
+export interface TopicDiscoveryProviderResult {
+  providerName: string;
+  status?: 'ok' | 'warning' | 'error' | 'skipped';
+  candidateCount: number;
+  queries: string[];
+  warnings: string[];
+  issues?: TopicDiscoveryIssue[];
+}
+
+export interface TopicDiscoveryIssue {
+  type:
+    | 'missing-credentials'
+    | 'upstream-response'
+    | 'provider-failure'
+    | 'excluded-results'
+    | 'no-results'
+    | 'other';
+  severity: 'info' | 'success' | 'warning' | 'error';
+  summary: string;
+  detail: string;
+  action?: string;
+}
+
+export interface TopicDiscoveryDiagnosticCounts {
+  errors: number;
+  warnings: number;
+  providersWithIssues: number;
+}
+
+export interface TopicDiscoveryResult {
+  topicId: string;
+  linkedLeadCount: number;
+  addedCount: number;
+  removedCount: number;
+  queued: boolean;
+  status: 'idle' | 'queued' | 'running' | 'completed' | 'failed' | 'skipped';
+  skipped?: boolean;
+  lastRun?: string;
+  message?: string;
+  severity?: 'info' | 'success' | 'warning' | 'error';
+  summaryTitle?: string;
+  summaryBody?: string;
+  actionItems?: string[];
+  diagnosticCounts?: TopicDiscoveryDiagnosticCounts;
+  providerResults?: TopicDiscoveryProviderResult[];
 }

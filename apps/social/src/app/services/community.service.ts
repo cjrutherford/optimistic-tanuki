@@ -441,10 +441,10 @@ export class CommunityService {
     const existingMember = await this.getMember(dto.communityId, userId);
     if (existingMember) {
       if (existingMember.status === CommunityMembershipStatus.APPROVED) {
-        throw new RpcException('Already a member');
+        return existingMember;
       }
       if (existingMember.status === CommunityMembershipStatus.PENDING) {
-        throw new RpcException('Join request already pending');
+        return existingMember;
       }
     }
 

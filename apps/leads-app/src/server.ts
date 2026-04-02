@@ -15,6 +15,9 @@ const commonEngine = new CommonEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+const listenPort = process.env['PORT'] || '4000';
+const serverRenderOrigin =
+  process.env['SSR_ORIGIN'] || `http://127.0.0.1:${listenPort}`;
 
 app.use(
   '/socket.io',
@@ -49,13 +52,13 @@ app.get(
 );
 
 app.get('**', (req, res, next) => {
-  const { protocol, originalUrl, baseUrl, headers } = req;
+  const { originalUrl, baseUrl } = req;
 
   commonEngine
     .render({
       bootstrap,
       documentFilePath: indexHtml,
-      url: `${protocol}://${headers.host}${originalUrl}`,
+      url: `${serverRenderOrigin}${originalUrl}`,
       publicPath: browserDistFolder,
       providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
     })
@@ -64,9 +67,8 @@ app.get('**', (req, res, next) => {
 });
 
 if (isMainModule(import.meta.url)) {
-  const port = process.env['PORT'] || 4000;
-  app.listen(port, () => {
-    console.log(`Node Express server listening on http://localhost:${port}`);
+  app.listen(listenPort, () => {
+    console.log(`Node Express server listening on http://localhost:${listenPort}`);
   });
 }
 

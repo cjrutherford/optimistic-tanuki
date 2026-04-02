@@ -1,0 +1,42 @@
+.onboarding-shell {
+  min-height: calc(100vh - 88px);
+}
+
+.onboarding-copy {
+  position: fixed;
+  top: 112px;
+  left: 32px;
+  z-index: 1;
+  max-width: 320px;
+  color: var(--app-foreground);
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 12px;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  line-height: 1.05;
+}
+
+p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  opacity: 0.82;
+}
+
+@media (max-width: 960px) {
+  .onboarding-copy {
+    position: static;
+    max-width: none;
+    padding: 24px 20px 0;
+  }
+}

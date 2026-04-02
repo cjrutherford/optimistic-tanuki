@@ -7,13 +7,13 @@ WORKDIR /usr/src/app
 # Copy package.json and package-lock.json
 COPY package.json ./
 COPY package-lock.json ./
+COPY tsconfig*.json ./
+COPY nx.json ./
+COPY libs ./libs
+COPY apps/owner-console ./apps/owner-console
 
 # Install all dependencies (including devDependencies needed for build)
 RUN npm install --legacy-peer-deps
-
-# Copy the entire workspace source code
-# Nx needs this to build the application and its dependencies
-COPY . .
 
 # Build the owner-console application for production with SSR
 # This will output to dist/apps/owner-console and include server/main.js

@@ -1,20 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {
-  CardComponent,
-  HeadingComponent,
-  ModalComponent,
-  ButtonComponent,
-} from '@optimistic-tanuki/common-ui';
-import {
-  MessageComponent,
-  MessageService,
-} from '@optimistic-tanuki/message-ui';
-import {
-  TextInputComponent,
-  TextAreaComponent,
-} from '@optimistic-tanuki/form-ui';
+import { ButtonComponent } from '@optimistic-tanuki/common-ui/button/button.component';
+import { CardComponent } from '@optimistic-tanuki/common-ui/card/card.component';
+import { HeadingComponent } from '@optimistic-tanuki/common-ui/heading/heading.component';
+import { ModalComponent } from '@optimistic-tanuki/common-ui/modal/modal.component';
+import { MessageComponent } from '@optimistic-tanuki/message-ui/message/message.component';
+import { MessageService } from '@optimistic-tanuki/message-ui/message.service';
+import { TextAreaComponent } from '@optimistic-tanuki/form-ui/text-area/text-area.component';
+import { TextInputComponent } from '@optimistic-tanuki/form-ui/text-input/text-input.component';
 import {
   RoleDto,
   CreateRoleDto,
@@ -336,6 +330,10 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
   ],
 })
 export class RolesManagementComponent implements OnInit {
+  private readonly rolesService = inject(RolesService);
+  private readonly appScopesService = inject(AppScopesService);
+  private readonly messageService = inject(MessageService);
+
   roles: RoleDto[] = [];
   appScopes: AppScopeDto[] = [];
   loading = false;
@@ -354,12 +352,6 @@ export class RolesManagementComponent implements OnInit {
   confirmModalTitle = '';
   confirmModalMessage = '';
   confirmAction: 'create' | 'update' | 'delete' = 'create';
-
-  constructor(
-    private rolesService: RolesService,
-    private appScopesService: AppScopesService,
-    private messageService: MessageService
-  ) {}
 
   ngOnInit(): void {
     this.loadRoles();

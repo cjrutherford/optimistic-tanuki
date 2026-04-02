@@ -13,6 +13,24 @@ This directory contains infrastructure and deployment documentation for the Opti
 
 ## Quick Reference
 
+### Local Development Stack
+
+```bash
+# Build dist/ and start the full Docker dev stack
+npm run docker:dev
+
+# First-time bootstrap with seed data
+npm run docker:dev:bootstrap
+
+# Keep hot reload active
+npm run watch:build
+
+# Inspect or stop the stack
+npm run docker:dev:ps
+npm run docker:dev:logs
+npm run docker:dev:down
+```
+
 ### Service Ports
 
 | Service            | Docker Compose Port | K8s LoadBalancer Port | Internal K8s Port |

@@ -4,7 +4,8 @@
   "sourceRoot": "apps/lead-tracker/src",
   "projectType": "application",
   "dependencies": {
-    "pg": "^8.16.0"
+    "pg": "^8.16.0",
+    "typeorm": "^0.3.28"
   },
   "tags": [],
   "targets": {

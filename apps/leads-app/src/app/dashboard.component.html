@@ -15,6 +15,22 @@
   </div>
 
   <ng-container *ngIf="!loading && stats">
+    <div *ngIf="shouldShowOnboardingState()" class="onboarding-state">
+      <div class="onboarding-state-copy">
+        <span class="eyebrow">Fresh Workspace</span>
+        <h2>Complete onboarding to begin discovery</h2>
+        <p>
+          This workspace does not have topics yet. Finish the onboarding
+          interview so the app can generate and create your first discovery
+          topics.
+        </p>
+      </div>
+      <div class="onboarding-state-actions">
+        <a routerLink="/onboarding" class="btn btn-primary">Open Onboarding</a>
+        <a routerLink="/topics" class="btn btn-secondary">Topics</a>
+      </div>
+    </div>
+
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon">
@@ -144,6 +160,38 @@
               [style.width.%]="stage.percentage"
               [attr.data-status]="stage.key"
             ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-section">
+      <h2 class="section-title">Qualification Pipeline</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-content">
+            <span class="stat-value">{{ strongMatchCount }}</span>
+            <span class="stat-label">Strong Matches</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <span class="stat-value">{{ reviewCount }}</span>
+            <span class="stat-label">Needs Review</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <span class="stat-value">{{ weakMatchCount }}</span>
+            <span class="stat-label">Weak Matches</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <span class="stat-value">{{
+              stats.qualification.averageRelevanceScore ?? 'N/A'
+            }}</span>
+            <span class="stat-label">Avg Relevance</span>
           </div>
         </div>
       </div>

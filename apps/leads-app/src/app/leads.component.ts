@@ -3,14 +3,27 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { LeadsService } from './leads.service';
-import { Lead, LeadStats, LeadStatus, LeadSource, LeadFlagReason } from './leads.types';
+import {
+  Lead,
+  LeadStats,
+  LeadStatus,
+  LeadSource,
+  LeadFlagReason,
+} from './leads.types';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { FlagLeadModalComponent } from './flag-lead-modal.component';
+import { LeadDetailModalComponent } from './lead-detail-modal.component';
 
 @Component({
   selector: 'app-leads',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, FlagLeadModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    FlagLeadModalComponent,
+    LeadDetailModalComponent,
+  ],
   templateUrl: './leads.component.html',
   styleUrl: './leads.component.scss',
 })
@@ -29,6 +42,7 @@ export class LeadsComponent implements OnInit {
   // Quick-add panel
   showQuickAdd = false;
   showMoreDetails = false;
+  searchKeywordsInput = '';
   newLead: Partial<Lead> = {
     name: '',
     source: LeadSource.OTHER,
@@ -36,10 +50,15 @@ export class LeadsComponent implements OnInit {
     value: 0,
   };
 
+  // Edit mode
+  isEditingLead = false;
+  editingLeadId: string | null = null;
+
   // Flagging
   selectedLeadForFlag: Lead | null = null;
+  selectedLeadForView: Lead | null = null;
 
-  sources = Object.values(LeadSource);
+  sources = [LeadSource.REFERRAL, LeadSource.COLD, LeadSource.OTHER];
   statuses = Object.values(LeadStatus);
 
   kanbanColumns = [
@@ -88,13 +107,17 @@ export class LeadsComponent implements OnInit {
       this.filteredLeads = this.leads;
       return;
     }
-    const query = this.searchQuery.toLowerCase();
-    this.filteredLeads = this.leads.filter(
-      (lead) =>
-        lead.name.toLowerCase().includes(query) ||
-        lead.company?.toLowerCase().includes(query) ||
-        lead.email?.toLowerCase().includes(query)
-    );
+    const normalizedQuery = this.normalizeSearchToken(this.searchQuery);
+    const tokens = normalizedQuery.split(' ').filter(Boolean);
+
+    this.filteredLeads = this.leads
+      .map((lead) => ({
+        lead,
+        score: this.getLeadSearchScore(lead, normalizedQuery, tokens),
+      }))
+      .filter((entry) => entry.score > 0)
+      .sort((left, right) => right.score - left.score)
+      .map((entry) => entry.lead);
   }
 
   getLeadsByStatus(status: string): Lead[] {
@@ -102,7 +125,7 @@ export class LeadsComponent implements OnInit {
   }
 
   isLeadFlagged(lead: Lead): boolean {
-    return lead.isFlagged || this.leadsService.isLeadFlagged(lead.id);
+    return !!lead.isFlagged || (lead.flags?.length || 0) > 0;
   }
 
   openFlagModal(lead: Lead) {
@@ -111,20 +134,44 @@ export class LeadsComponent implements OnInit {
 
   onLeadFlagged(event: { reasons: LeadFlagReason[]; notes?: string }) {
     if (!this.selectedLeadForFlag) return;
-    this.leadsService.flagLead(
-      this.selectedLeadForFlag.id,
-      event.reasons,
-      event.notes
-    );
-    this.selectedLeadForFlag = null;
+    this.leadsService
+      .flagLead(this.selectedLeadForFlag.id, {
+        reasons: event.reasons,
+        notes: event.notes,
+      })
+      .subscribe({
+        next: () => {
+          this.selectedLeadForFlag = null;
+          this.loadLeads();
+          this.loadStats();
+        },
+      });
   }
 
   viewLead(lead: Lead) {
-    console.log('View lead:', lead);
+    this.selectedLeadForView = lead;
   }
 
   editLead(lead: Lead) {
-    console.log('Edit lead:', lead);
+    this.selectedLeadForView = null;
+    this.isEditingLead = true;
+    this.editingLeadId = lead.id;
+    this.showQuickAdd = true;
+    this.newLead = {
+      name: lead.name,
+      company: lead.company,
+      email: lead.email,
+      phone: lead.phone,
+      source: lead.source,
+      status: lead.status,
+      value: lead.value,
+      notes: lead.notes,
+      nextFollowUp: lead.nextFollowUp,
+      assignedTo: lead.assignedTo,
+      searchKeywords: lead.searchKeywords,
+    };
+    this.searchKeywordsInput = (lead.searchKeywords || []).join(', ');
+    this.showMoreDetails = true;
   }
 
   deleteLead(lead: Lead) {
@@ -136,30 +183,183 @@ export class LeadsComponent implements OnInit {
   }
 
   createLead() {
-    this.leadsService.createLead(this.newLead as any).subscribe({
+    this.leadsService.createLead(this.buildLeadPayload() as any).subscribe({
       next: () => {
-        this.showQuickAdd = false;
-        this.showMoreDetails = false;
-        this.newLead = {
-          name: '',
-          source: LeadSource.OTHER,
-          status: LeadStatus.NEW,
-          value: 0,
-        };
+        this.resetForm();
         this.loadLeads();
         this.loadStats();
       },
     });
   }
 
-  closeQuickAdd() {
+  saveLead() {
+    if (this.isEditingLead && this.editingLeadId) {
+      this.updateLead();
+    } else {
+      this.createLead();
+    }
+  }
+
+  private updateLead() {
+    this.leadsService
+      .updateLead(this.editingLeadId!, this.buildLeadPayload() as any)
+      .subscribe({
+        next: () => {
+          this.resetForm();
+          this.loadLeads();
+          this.loadStats();
+        },
+      });
+  }
+
+  private resetForm() {
     this.showQuickAdd = false;
     this.showMoreDetails = false;
+    this.isEditingLead = false;
+    this.editingLeadId = null;
+    this.searchKeywordsInput = '';
     this.newLead = {
       name: '',
       source: LeadSource.OTHER,
       status: LeadStatus.NEW,
       value: 0,
     };
+  }
+
+  private buildLeadPayload() {
+    const searchKeywords =
+      this.parseSearchKeywords(this.searchKeywordsInput) ||
+      this.normalizeKeywordList(this.newLead.searchKeywords);
+
+    return {
+      name: this.newLead.name?.trim() || '',
+      company: this.normalizeOptionalString(this.newLead.company),
+      email: this.normalizeOptionalString(this.newLead.email),
+      phone: this.normalizeOptionalString(this.newLead.phone),
+      source: this.newLead.source,
+      status: this.newLead.status,
+      value: this.newLead.value ?? 0,
+      notes: this.normalizeOptionalString(this.newLead.notes),
+      nextFollowUp: this.normalizeOptionalString(this.newLead.nextFollowUp),
+      assignedTo: this.normalizeOptionalString(this.newLead.assignedTo),
+      searchKeywords,
+    };
+  }
+
+  private normalizeOptionalString(value: string | undefined) {
+    const normalized = value?.trim();
+    return normalized ? normalized : undefined;
+  }
+
+  private parseSearchKeywords(value: string): string[] | undefined {
+    const keywords = value
+      .split(',')
+      .map((keyword) => keyword.trim())
+      .filter((keyword) => keyword.length > 0);
+
+    return keywords.length ? keywords : undefined;
+  }
+
+  private normalizeKeywordList(values: string[] | undefined): string[] | undefined {
+    const keywords = (values || [])
+      .map((keyword) => keyword.trim())
+      .filter((keyword) => keyword.length > 0);
+
+    return keywords.length ? keywords : undefined;
+  }
+
+  closeQuickAdd() {
+    this.resetForm();
+  }
+
+  openEditFromView(lead: Lead) {
+    this.selectedLeadForView = null;
+    this.editLead(lead);
+  }
+
+  private getLeadSearchScore(
+    lead: Lead,
+    normalizedQuery: string,
+    tokens: string[]
+  ): number {
+    const haystacks = {
+      name: this.normalizeSearchToken(lead.name),
+      company: this.normalizeSearchToken(lead.company),
+      email: this.normalizeSearchToken(lead.email),
+      phone: this.normalizeSearchToken(lead.phone),
+      notes: this.normalizeSearchToken(lead.notes),
+      source: this.normalizeSearchToken(lead.source),
+      status: this.normalizeSearchToken(lead.status),
+      assignedTo: this.normalizeSearchToken(lead.assignedTo),
+      keywords: this.normalizeSearchToken((lead.searchKeywords || []).join(' ')),
+      contacts: this.normalizeSearchToken(
+        (lead.contacts || [])
+          .map((contact) => `${contact.label} ${contact.value} ${contact.href}`)
+          .join(' ')
+      ),
+      posting: this.normalizeSearchToken(lead.originalPostingUrl),
+    };
+
+    let score = 0;
+
+    for (const token of tokens) {
+      if (!token) {
+        continue;
+      }
+
+      let tokenMatched = false;
+      const weightedFields: Array<[string, number]> = [
+        [haystacks.name, 10],
+        [haystacks.company, 8],
+        [haystacks.email, 7],
+        [haystacks.phone, 7],
+        [haystacks.keywords, 6],
+        [haystacks.contacts, 6],
+        [haystacks.notes, 4],
+        [haystacks.assignedTo, 4],
+        [haystacks.source, 3],
+        [haystacks.status, 3],
+        [haystacks.posting, 2],
+      ];
+
+      for (const [fieldValue, weight] of weightedFields) {
+        if (!fieldValue) {
+          continue;
+        }
+        if (fieldValue === token) {
+          score += weight + 3;
+          tokenMatched = true;
+          continue;
+        }
+        if (fieldValue.startsWith(token)) {
+          score += weight + 2;
+          tokenMatched = true;
+          continue;
+        }
+        if (fieldValue.includes(token)) {
+          score += weight;
+          tokenMatched = true;
+        }
+      }
+
+      if (!tokenMatched) {
+        return 0;
+      }
+    }
+
+    const fullHaystack = Object.values(haystacks).join(' ');
+    if (normalizedQuery && fullHaystack.includes(normalizedQuery)) {
+      score += 5;
+    }
+
+    return score;
+  }
+
+  private normalizeSearchToken(value: string | undefined): string {
+    return (value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 }

@@ -22,16 +22,16 @@ This monorepo contains the source code for the Optimistic Tanuki project, a coll
    pnpm install
    ```
 
-2. Start all services:
+2. Start the full Docker development stack:
 
    ```sh
-   ./start-local.sh
+   npm run docker:dev
    ```
 
 3. Access the applications:
-   - Main App: http://localhost:4200
-   - Forge of Will: http://localhost:4201
-   - API Gateway: http://localhost:3333
+   - Main App: http://localhost:8080
+   - Leads App: http://localhost:4201
+   - API Gateway: http://localhost:3000
 
 **Prerequisites**: [Docker](https://docs.docker.com/get-docker/), [Node.js](https://nodejs.org/) (v18+), [pnpm](https://pnpm.io/installation)
 
@@ -42,8 +42,11 @@ For comprehensive development guides, see the [Development Documentation](./docs
 ### Quick Development Commands
 
 ```bash
-# Start all services in development mode
-./start-local.sh
+# Build app artifacts and start the full Docker development stack
+npm run docker:dev
+
+# First-time bootstrap with seed data
+npm run docker:dev:bootstrap
 
 # Run specific service with Nx
 nx serve gateway
@@ -64,15 +67,14 @@ For Docker-based development with debugging and hot-reload support, see the [Deb
 Quick start with debugging:
 
 ```bash
-# Build all applications
-npm run build:dev
+# Build app artifacts and start development stack with debugging enabled
+npm run docker:dev
 
-# Start development stack with debugging enabled
-docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
-
-# In a separate terminal: enable hot-reload
+# In a separate terminal, keep dist/ fresh for hot-reload
 npm run watch:build
 ```
+
+The dev containers execute built files from `dist/`, so `docker:dev` now runs the required development build before bringing the stack up. For the full workflow, ports, seeding, and troubleshooting commands, see [Docker Compose Development](./docs/devops/docker-compose.md).
 
 ## 🚢 Deployment
 

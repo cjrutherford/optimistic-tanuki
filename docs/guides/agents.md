@@ -10,11 +10,11 @@
 - For questions around nx configuration, best practices or if you're unsure, use the `nx_docs` tool to get relevant, up-to-date docs. Always use this instead of assuming things about nx configuration
 - If the user needs help with an Nx configuration or project graph error, use the `nx_workspace` tool to get any errors
 
-# Models and libraries
+## Models and libraries
 
 - models for Nestjs services cannot be used in Angular services due to context differences. instead place models intended to operate against an angular context in the `ui-models` libarary.
 
-# CI Error Guidelines
+## CI Error Guidelines
 
 If the user wants help with fixing an error in their CI pipeline, use the following flow:
 
@@ -25,7 +25,7 @@ If the user wants help with fixing an error in their CI pipeline, use the follow
 
 <!-- nx configuration end-->
 
-# General Workspace Architecture
+## General Workspace Architecture
 
 1. the apps folder is where all deployable code should be stored. this is broken down into three cases:
    - Gateway - HTTP endpoint for all platform operations.
@@ -40,7 +40,7 @@ If the user wants help with fixing an error in their CI pipeline, use the follow
 
 _It's Highly important to note that UI and backend models should never mix as it breaks the build._
 
-# Workspace commands
+## Workspace commands
 
 1. Build everything:
    - Dev: `npm run build:dev`
@@ -54,3 +54,5 @@ _It's Highly important to note that UI and backend models should never mix as it
    - Prod: `npm run docker:up`
 4. syncing the database should be done with the `db-setup` container only.
 5. generating migrations should be done in the app's folder and by using this command: `TS_NODE_PROJECT=./tsconfig.app.json node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/staticDatabase.ts migration:generate migrations/<migration-name>` (config.yaml database host must be set to local host first, and set back to db after.)
+
+Please refer to [Code and Scaffolding Guidelines](./code-and-scaffold-guidelines.md) for general style and procedure notes.

@@ -176,6 +176,49 @@ async function bootstrap() {
     },
   });
 
+  const getUserRoles = async (profileId: string, token: string) => {
+    const response = await httpClient.get(`/permissions/user-roles/${profileId}`, {
+      params: { appScope },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data?.data || response.data;
+  };
+
+  const ensureRoleAssignment = async (
+    role: any,
+    profileId: string,
+    token: string,
+    targetId: string | null = null
+  ) => {
+    if (!role?.id) {
+      return false;
+    }
+
+    const assignments = await getUserRoles(profileId, token);
+    const alreadyAssigned = Array.isArray(assignments)
+      ? assignments.some(
+          (assignment: any) => assignment.role?.id === role.id
+        )
+      : false;
+
+    if (alreadyAssigned) {
+      return false;
+    }
+
+    await httpClient.post(
+      '/permissions/assignment',
+      {
+        roleId: role.id,
+        profileId,
+        appScopeId: role.appScope?.id || appScope,
+        targetId,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return true;
+  };
+
   try {
     await httpClient.get('/health');
     logger.log('Gateway connectivity: OK');
@@ -278,6 +321,8 @@ async function bootstrap() {
   // ── Step 1.5: Assign local_hub_admin role to seed user ────────────────────
   logger.log('=== Step 1.5: Assign local_hub_admin Role ===');
   const seedUser = authenticatedUsers[0];
+  let localHubMemberRole: any = null;
+  let localHubPosterRole: any = null;
 
   try {
     const rolesRes = await httpClient.get('/permissions/role', {
@@ -287,22 +332,32 @@ async function bootstrap() {
     const localHubAdminRole = Array.isArray(roles)
       ? roles.find((r: any) => r.name === 'local_hub_admin')
       : null;
+    localHubMemberRole = Array.isArray(roles)
+      ? roles.find((r: any) => r.name === 'local_hub_member')
+      : null;
+    localHubPosterRole = Array.isArray(roles)
+      ? roles.find((r: any) => r.name === 'local_hub_community_poster')
+      : null;
 
     if (localHubAdminRole?.id) {
       try {
-        await httpClient.post(
-          '/permissions/assignment',
-          {
-            roleId: localHubAdminRole.id,
-            profileId: seedUser.profileId,
-            appScopeId: localHubAdminRole.appScope?.id || 'local-hub',
-            targetId: null,
-          },
-          { headers: { Authorization: `Bearer ${seedUser.token}` } }
+        const assigned = await ensureRoleAssignment(
+          localHubAdminRole,
+          seedUser.profileId,
+          seedUser.token
         );
-        logger.log(`Assigned local_hub_admin role to ${seedUser.email}`);
+        logger.log(
+          assigned
+            ? `Assigned local_hub_admin role to ${seedUser.email}`
+            : `User already has local_hub_admin role`
+        );
       } catch (assignErr: any) {
-        if (assignErr.response?.status === 409) {
+        const message =
+          assignErr.response?.data?.message || assignErr.message || '';
+        if (
+          assignErr.response?.status === 409 ||
+          `${message}`.toLowerCase().includes('duplicate')
+        ) {
           logger.log(`User already has local_hub_admin role`);
         } else {
           logger.warn(`Failed to assign role: ${assignErr.message}`);
@@ -310,6 +365,24 @@ async function bootstrap() {
       }
     } else {
       logger.warn(`local_hub_admin role not found`);
+    }
+
+    for (const user of authenticatedUsers) {
+      if (localHubMemberRole?.id) {
+        await ensureRoleAssignment(
+          localHubMemberRole,
+          user.profileId,
+          seedUser.token
+        );
+      }
+
+      if (localHubPosterRole?.id) {
+        await ensureRoleAssignment(
+          localHubPosterRole,
+          user.profileId,
+          seedUser.token
+        );
+      }
     }
   } catch (roleErr: any) {
     logger.warn(`Failed to get roles: ${roleErr.message}`);
@@ -322,7 +395,7 @@ async function bootstrap() {
   let cityCommSlug: string | undefined;
 
   try {
-    const existing = await httpClient.get('/social/community/slug/savannah-ga');
+    const existing = await httpClient.get('/communities/slug/savannah-ga');
     const c = existing.data?.data || existing.data;
     if (c?.id) {
       cityCommId = c.id;
@@ -375,7 +448,7 @@ async function bootstrap() {
 
   try {
     const existing = await httpClient.get(
-      '/social/community/slug/savannah-foodies'
+      '/communities/slug/savannah-foodies'
     );
     const c = existing.data?.data || existing.data;
     if (c?.id) {
@@ -431,7 +504,11 @@ async function bootstrap() {
         );
         logger.log(`User ${user.email} joined community ${commId}`);
       } catch (err: any) {
-        if (err.response?.status === 409) {
+        const message = err.response?.data?.message || err.message || '';
+        if (
+          err.response?.status === 409 ||
+          `${message}`.includes('Already a member')
+        ) {
           logger.log(`${user.email} already in community ${commId}`);
         } else {
           logger.debug(
@@ -439,6 +516,7 @@ async function bootstrap() {
           );
         }
       }
+
       await sleep(30);
     }
   }
@@ -510,10 +588,19 @@ async function bootstrap() {
   // ── Step 7: Create comments on posts ─────────────────────────────────────
   logger.log('=== Step 7: Create Comments ===');
   const createdComments: CommentResponse[] = [];
+  let commentsEnabled = true;
 
   for (const post of allPosts) {
+    if (!commentsEnabled) {
+      break;
+    }
+
     const numComments = Math.floor(Math.random() * 4) + 2; // 2–5 comments per post
     for (let i = 0; i < numComments; i++) {
+      if (!commentsEnabled) {
+        break;
+      }
+
       const user =
         authenticatedUsers[
           Math.floor(Math.random() * authenticatedUsers.length)
@@ -536,6 +623,13 @@ async function bootstrap() {
           logger.log(`Added comment on post ${post.id}`);
         }
       } catch (err: any) {
+        if (err.response?.status === 403) {
+          commentsEnabled = false;
+          logger.warn(
+            'Skipping remaining comment seed because local-hub users do not currently have comment permission.'
+          );
+          break;
+        }
         logger.debug(`Could not add comment: ${err.message}`);
       }
       await sleep(20);
@@ -593,7 +687,12 @@ async function bootstrap() {
 
   // ── Step 10: Add votes to posts ────────────────────────────────────────────
   logger.log('=== Step 10: Add Votes to Posts ===');
+  let votesEnabled = true;
   for (const post of allPosts) {
+    if (!votesEnabled) {
+      break;
+    }
+
     const user =
       authenticatedUsers[Math.floor(Math.random() * authenticatedUsers.length)];
     const voteValue = Math.random() > 0.2 ? 1 : -1; // mostly upvotes
@@ -609,6 +708,13 @@ async function bootstrap() {
       );
       logger.log(`Added vote ${voteValue} to post ${post.id}`);
     } catch (err: any) {
+      if (err.response?.status === 403) {
+        votesEnabled = false;
+        logger.warn(
+          'Skipping remaining vote seed because local-hub users do not currently have vote permission.'
+        );
+        break;
+      }
       logger.debug(`Could not vote on post ${post.id}: ${err.message}`);
     }
     await sleep(20);

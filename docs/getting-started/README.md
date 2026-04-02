@@ -37,70 +37,64 @@ This will install all dependencies for the monorepo using Nx's optimized install
 
 ## Running the Application
 
-### Option 1: Quick Start (Recommended for First-Time Users)
+### Option 1: Full Docker Development Stack (Recommended)
 
-Use the provided start script to run all services:
+Use the npm entrypoints that match the current Docker Compose dev stack:
 
 ```bash
-./start-local.sh
+# Build the development artifacts and start the full stack
+npm run docker:dev
 ```
 
-This script will:
-
-1. Start the PostgreSQL database
-2. Run database migrations
-3. Start all backend services
-4. Launch the frontend applications
-
-**Services Started:**
-
-- PostgreSQL Database (port 5432)
-- Gateway (port 3333)
-- Authentication Service (port 3001)
-- Profile Service (port 3002)
-- Social Service (port 3003)
-- Assets Service (port 3005)
-- Project Planning Service (port 3006)
-- Chat Collector (port 3007)
-- Client Interface (port 4200) - Main web app
-- Forge of Will (port 4201) - Project management app
-
-**Access the Applications:**
-
-- Main App: http://localhost:4200
-- Forge of Will: http://localhost:4201
-- API Gateway: http://localhost:3333
-
-### Option 2: Docker Compose
-
-Run services in Docker containers:
-
-**Standard Stack** (Main application):
+For a first-time bootstrap that also seeds the shared local data:
 
 ```bash
-docker-compose up -d
+npm run docker:dev:bootstrap
 ```
 
-**Forge of Will Stack**:
+This flow:
+
+1. Builds the development artifacts into `dist/`
+2. Starts the full Docker Compose stack from `docker-compose.yaml` + `docker-compose.dev.yaml`
+3. Brings up the database, gateway, backend services, and frontend containers
+4. Leaves the stack ready for an optional watch process
+
+**Common Follow-Up Commands**
 
 ```bash
-docker-compose -f fow.docker-compose.yaml up -d
-```
-
-**Development Mode with Debugging**:
-
-```bash
-# Build applications
-npm run build:dev
-
-# Start with debugging enabled
-docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
-
-# Enable hot-reload (in separate terminal)
+# Keep dist/ updated for hot reload in a separate terminal
 npm run watch:build
+
+# See running containers
+npm run docker:dev:ps
+
+# Tail logs
+npm run docker:dev:logs
+
+# Stop the development stack
+npm run docker:dev:down
+
+# Rerun the shared dev seed step only
+npm run docker:dev:seed
 ```
 
-For detailed debugging instructions, see the [Debugging Guide](../development/debugging.md).
+**Primary Entry Points**
+
+- Main App: http://localhost:8080
+- Leads App: http://localhost:4201
+- Forge of Will: http://localhost:8081
+- Owner Console: http://localhost:8084
+- API Gateway: http://localhost:3000
+
+### Option 2: Production-Like Docker Compose
+
+Run the non-debug Compose stack:
+
+```bash
+docker compose up -d
+```
+
+This is useful when you want the standard container startup path without the development nodemon/watch behavior.
 
 ### Option 3: Individual Services with Nx
 
@@ -121,7 +115,7 @@ nx serve authentication
 
 ### 1. Database Setup
 
-The database should be automatically set up when using `start-local.sh` or Docker Compose.
+The database should be automatically set up when using `npm run docker:dev`, `npm run docker:dev:bootstrap`, or the standard Docker Compose stack.
 
 To manually set up the database:
 
@@ -218,24 +212,24 @@ optimistic-tanuki/
 
 ### Viewing Logs
 
-When running with Docker:
+When running the development stack:
 
 ```bash
-# View all logs
-docker-compose logs -f
+# View all development logs
+npm run docker:dev:logs
 
-# View specific service logs
-docker-compose logs -f gateway
+# View a specific service
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml logs -f gateway
 ```
 
 ### Stopping Services
 
 ```bash
-# Stop Docker services
-docker-compose down
+# Stop the development stack
+npm run docker:dev:down
 
-# Stop with cleanup
-docker-compose down -v  # Removes volumes (databases will be reset!)
+# Stop the standard stack with cleanup
+docker compose down -v  # Removes volumes (databases will be reset!)
 ```
 
 ### Cleaning Build Artifacts
@@ -256,8 +250,8 @@ pnpm install
 If you get port conflict errors:
 
 ```bash
-# Check what's using a port (e.g., 3333)
-lsof -i :3333
+# Check what's using a port (e.g., 3000)
+lsof -i :3000
 
 # Kill the process
 kill -9 <PID>

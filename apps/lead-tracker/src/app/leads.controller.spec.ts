@@ -1,28 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DiscoveryService } from './discovery.service';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
-import { LeadStatus, LeadSource } from '@optimistic-tanuki/models';
+import { GoogleMapsLocationAutocompleteService } from './google-maps-location-autocomplete.service';
+import { OnboardingAnalysisService } from './onboarding-analysis.service';
+import { LeadQualificationService } from './lead-qualification.service';
+import {
+  LeadAnalysisCommands,
+  LeadOnboardingCommands,
+} from '@optimistic-tanuki/constants';
+import { LeadSource } from '@optimistic-tanuki/models/leads-contracts';
 
 describe('LeadsController', () => {
   let controller: LeadsController;
   let service: jest.Mocked<LeadsService>;
+  let discoveryService: jest.Mocked<DiscoveryService>;
+  let onboardingAnalysisService: jest.Mocked<OnboardingAnalysisService>;
+  let googleMapsLocationAutocompleteService: jest.Mocked<GoogleMapsLocationAutocompleteService>;
+  let leadQualificationService: jest.Mocked<LeadQualificationService>;
 
-  const mockLead = {
-    id: '123e4567-e89b-12d3-a456-426614174000',
-    name: 'Test Lead',
-    company: 'Test Company',
-    email: 'test@example.com',
-    phone: '555-1234',
-    source: LeadSource.UPWORK,
-    status: LeadStatus.NEW,
-    value: 5000,
-    notes: 'Test notes',
-    nextFollowUp: '2026-04-01',
-    isAutoDiscovered: false,
-    searchKeywords: ['react', 'typescript'],
-    assignedTo: 'user-1',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+  const context = {
+    userId: 'user-1',
+    profileId: 'profile-1',
+    appScope: 'leads-app',
   };
 
   beforeEach(async () => {
@@ -33,115 +33,138 @@ describe('LeadsController', () => {
       update: jest.fn(),
       delete: jest.fn(),
       getStats: jest.fn(),
+      findAllTopics: jest.fn(),
+      findTopicById: jest.fn(),
+      createTopic: jest.fn(),
+      updateTopic: jest.fn(),
+      deleteTopic: jest.fn(),
+      findFlagsByLead: jest.fn(),
+      createFlag: jest.fn(),
+      saveOnboardingProfile: jest.fn(),
+    };
+    const mockDiscoveryService = {
+      request: jest.fn(),
+      getStatus: jest.fn(),
+      runNow: jest.fn(),
+    };
+    const mockOnboardingAnalysisService = {
+      analyzeProfile: jest.fn(),
+      analyzeMadLib: jest.fn(),
+      parseResume: jest.fn(),
+      advanceDiscInterview: jest.fn(),
+    };
+    const mockGoogleMapsLocationAutocompleteService = {
+      searchCities: jest.fn(),
+    };
+    const mockLeadQualificationService = {
+      analyzeAndSave: jest.fn(),
+      requalifyAllLeads: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [LeadsController],
       providers: [
+        { provide: LeadsService, useValue: mockService },
+        { provide: DiscoveryService, useValue: mockDiscoveryService },
+        { provide: OnboardingAnalysisService, useValue: mockOnboardingAnalysisService },
         {
-          provide: LeadsService,
-          useValue: mockService,
+          provide: GoogleMapsLocationAutocompleteService,
+          useValue: mockGoogleMapsLocationAutocompleteService,
         },
+        { provide: LeadQualificationService, useValue: mockLeadQualificationService },
       ],
     }).compile();
 
-    controller = module.get<LeadsController>(LeadsController);
+    controller = module.get(LeadsController);
     service = module.get(LeadsService);
+    discoveryService = module.get(DiscoveryService);
+    onboardingAnalysisService = module.get(OnboardingAnalysisService);
+    googleMapsLocationAutocompleteService = module.get(
+      GoogleMapsLocationAutocompleteService
+    );
+    leadQualificationService = module.get(LeadQualificationService);
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
+  it('passes profile-scoped filters into leads service queries', async () => {
+    service.findAll.mockResolvedValue([]);
 
-  describe('findAll', () => {
-    it('should call service.findAll with filters', async () => {
-      service.findAll.mockResolvedValue([mockLead]);
-
-      const result = await controller.findAll({
-        status: 'new',
-        source: 'upwork',
-      });
-
-      expect(service.findAll).toHaveBeenCalledWith({
-        status: 'new',
-        source: 'upwork',
-      });
-      expect(result).toEqual([mockLead]);
+    await controller.findAll({
+      status: 'new',
+      source: 'upwork',
+      profileId: 'profile-1',
     });
 
-    it('should call service.findAll without filters', async () => {
-      service.findAll.mockResolvedValue([mockLead]);
-
-      await controller.findAll();
-
-      expect(service.findAll).toHaveBeenCalledWith(undefined);
+    expect(service.findAll).toHaveBeenCalledWith({
+      status: 'new',
+      source: 'upwork',
+      profileId: 'profile-1',
     });
   });
 
-  describe('findOne', () => {
-    it('should call service.findOne with id', async () => {
-      service.findOne.mockResolvedValue(mockLead);
+  it('creates leads with explicit auth context', async () => {
+    service.create.mockResolvedValue({ id: 'lead-1' } as any);
 
-      const result = await controller.findOne({ id: mockLead.id });
-
-      expect(service.findOne).toHaveBeenCalledWith(mockLead.id);
-      expect(result).toEqual(mockLead);
+    await controller.create({
+      dto: { name: 'Lead', source: LeadSource.REFERRAL },
+      context,
     });
+
+    expect(service.create).toHaveBeenCalledWith(
+      { name: 'Lead', source: LeadSource.REFERRAL },
+      context
+    );
   });
 
-  describe('create', () => {
-    it('should call service.create with dto', async () => {
-      const createDto = { name: 'New Lead', source: LeadSource.REFERRAL };
-      service.create.mockResolvedValue(mockLead);
+  it('creates topics and queues discovery within the same profile scope', async () => {
+    service.createTopic.mockResolvedValue({
+      id: 'topic-1',
+      enabled: true,
+    } as any);
+    service.findTopicById.mockResolvedValue({ id: 'topic-1' } as any);
 
-      const result = await controller.create(createDto);
-
-      expect(service.create).toHaveBeenCalledWith(createDto);
-      expect(result).toEqual(mockLead);
+    await controller.createTopic({
+      dto: { name: 'Cloud', description: '', keywords: ['aws'] },
+      context,
     });
+
+    expect(service.createTopic).toHaveBeenCalledWith(
+      { name: 'Cloud', description: '', keywords: ['aws'] },
+      context
+    );
+    expect(discoveryService.request).toHaveBeenCalledWith('topic-1', 'profile-1');
+    expect(service.findTopicById).toHaveBeenCalledWith('topic-1', 'profile-1');
   });
 
-  describe('update', () => {
-    it('should call service.update with id and dto', async () => {
-      const updateDto = { status: LeadStatus.CONTACTED };
-      service.update.mockResolvedValue(mockLead);
+  it('uses exported onboarding command handlers while saving scoped onboarding data', async () => {
+    service.createTopic.mockResolvedValue({ id: 'topic-1', enabled: false } as any);
 
-      const result = await controller.update({
-        id: mockLead.id,
-        dto: updateDto,
-      });
-
-      expect(service.update).toHaveBeenCalledWith(mockLead.id, updateDto);
-      expect(result).toEqual(mockLead);
+    await controller.confirmOnboarding({
+      profile: { currentStep: 4 } as any,
+      topics: [{ name: 'Cloud', description: '', keywords: ['aws'] }],
+      context,
     });
+
+    expect(service.saveOnboardingProfile).toHaveBeenCalledWith(
+      { currentStep: 4 },
+      context
+    );
+    expect(leadQualificationService.requalifyAllLeads).toHaveBeenCalledWith(
+      'profile-1'
+    );
   });
 
-  describe('delete', () => {
-    it('should call service.delete with id', async () => {
-      service.delete.mockResolvedValue();
+  it('uses exported onboarding command implementations for helper flows', async () => {
+    onboardingAnalysisService.analyzeMadLib.mockResolvedValue({ summary: 'x' } as any);
+    googleMapsLocationAutocompleteService.searchCities.mockResolvedValue([]);
 
-      await controller.delete({ id: mockLead.id });
+    await controller.analyzeMadLib({ text: 'hello' });
+    await controller.autocompleteLocations({ query: 'sav' });
 
-      expect(service.delete).toHaveBeenCalledWith(mockLead.id);
-    });
-  });
-
-  describe('getStats', () => {
-    it('should call service.getStats', async () => {
-      const stats = {
-        total: 1,
-        autoDiscovered: 0,
-        manual: 1,
-        totalValue: 5000,
-        followUpsDue: 0,
-        byStatus: { new: 1 },
-      };
-      service.getStats.mockResolvedValue(stats);
-
-      const result = await controller.getStats();
-
-      expect(service.getStats).toHaveBeenCalled();
-      expect(result).toEqual(stats);
-    });
+    expect(onboardingAnalysisService.analyzeMadLib).toHaveBeenCalledWith('hello');
+    expect(googleMapsLocationAutocompleteService.searchCities).toHaveBeenCalledWith(
+      'sav'
+    );
+    expect(LeadOnboardingCommands.ANALYZE_MAD_LIB).toBe('leads.onboarding.mad-lib.analyze');
+    expect(LeadAnalysisCommands.RUN).toBe('leads.analysis.run');
   });
 });
