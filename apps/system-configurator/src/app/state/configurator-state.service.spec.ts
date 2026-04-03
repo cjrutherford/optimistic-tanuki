@@ -21,7 +21,9 @@ describe('ConfiguratorStateService', () => {
       gpuId: 'gpu-1',
     });
 
-    const restored = new ConfiguratorStateService();
+    const restored = TestBed.runInInjectionContext(
+      () => new ConfiguratorStateService()
+    );
     expect(restored.draft()).toEqual({
       chassisId: 'chassis-1',
       chassisType: 'M',

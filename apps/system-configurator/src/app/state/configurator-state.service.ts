@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import {
   ConfigurationDto,
   PriceBreakdown,
@@ -17,6 +18,7 @@ interface CheckoutDraft {
 export class ConfiguratorStateService {
   private readonly draftKey = 'hai-system-configurator-draft';
   private readonly checkoutKey = 'hai-system-configurator-checkout';
+  private readonly platformId = inject(PLATFORM_ID);
 
   readonly draft = signal<ConfigurationDto | null>(this.readDraft());
   readonly priceBreakdown = signal<PriceBreakdown | null>(null);
@@ -24,7 +26,9 @@ export class ConfiguratorStateService {
 
   setDraft(draft: ConfigurationDto): void {
     this.draft.set(draft);
-    localStorage.setItem(this.draftKey, JSON.stringify(draft));
+    if (this.isBrowser()) {
+      localStorage.setItem(this.draftKey, JSON.stringify(draft));
+    }
   }
 
   patchDraft(patch: Partial<ConfigurationDto>): void {
@@ -48,27 +52,43 @@ export class ConfiguratorStateService {
 
   setCheckoutDraft(draft: CheckoutDraft): void {
     this.checkoutDraft.set(draft);
-    localStorage.setItem(this.checkoutKey, JSON.stringify(draft));
+    if (this.isBrowser()) {
+      localStorage.setItem(this.checkoutKey, JSON.stringify(draft));
+    }
   }
 
   clear(): void {
     this.draft.set(null);
     this.priceBreakdown.set(null);
     this.checkoutDraft.set(this.defaultCheckoutDraft());
-    localStorage.removeItem(this.draftKey);
-    localStorage.removeItem(this.checkoutKey);
+    if (this.isBrowser()) {
+      localStorage.removeItem(this.draftKey);
+      localStorage.removeItem(this.checkoutKey);
+    }
   }
 
   private readDraft(): ConfigurationDto | null {
+    if (!this.isBrowser()) {
+      return null;
+    }
+
     const value = localStorage.getItem(this.draftKey);
     return value ? (JSON.parse(value) as ConfigurationDto) : null;
   }
 
   private readCheckoutDraft(): CheckoutDraft {
+    if (!this.isBrowser()) {
+      return this.defaultCheckoutDraft();
+    }
+
     const value = localStorage.getItem(this.checkoutKey);
     return value
       ? (JSON.parse(value) as CheckoutDraft)
       : this.defaultCheckoutDraft();
+  }
+
+  private isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
   }
 
   private defaultCheckoutDraft(): CheckoutDraft {
