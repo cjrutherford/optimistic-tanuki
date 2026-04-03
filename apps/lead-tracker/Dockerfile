@@ -5,7 +5,7 @@ COPY package*.json tsconfig*.json nx.json ./
 COPY libs/ ./libs/
 COPY apps/lead-tracker/ ./apps/lead-tracker/
 RUN npm install --legacy-peer-deps
-RUN npx nx build lead-tracker --configuration=development
+RUN npx nx build lead-tracker --configuration=production
 
 FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init

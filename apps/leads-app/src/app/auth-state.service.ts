@@ -67,7 +67,9 @@ export class AuthStateService {
 
   login(loginRequest: LoginRequest): Promise<{ data: { newToken: string } }> {
     if (!this.isBrowser()) {
-      return Promise.reject('Login is not available on this platform.');
+      return Promise.reject(
+        new Error('Login is not available on this platform.')
+      );
     }
 
     return this.authService.login(loginRequest).then((response) => {

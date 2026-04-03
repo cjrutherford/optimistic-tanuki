@@ -8,12 +8,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authState = inject(AuthStateService);
   const router = inject(Router);
   const token = authState.getToken();
+  const headers: Record<string, string> = {
+    'X-ot-appscope': 'leads-app',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   const clonedRequest = req.clone({
-    setHeaders: {
-      Authorization: token ? `Bearer ${token}` : '',
-      'X-ot-appscope': 'leads-app',
-    },
+    setHeaders: headers,
   });
 
   return next(clonedRequest).pipe(
