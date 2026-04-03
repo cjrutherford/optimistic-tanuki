@@ -16,7 +16,6 @@ WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/dist/apps/gateway ./dist/apps/gateway
 COPY --from=builder /usr/src/app/package.json ./package.json
 RUN npm install --omit=dev --legacy-peer-deps
-RUN npm i --save --legacy-peer-deps @nestjs/passport @nestjs/throttler
 RUN chown -R node:node .
 USER node
 EXPOSE 3000

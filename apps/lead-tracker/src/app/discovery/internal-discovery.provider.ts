@@ -29,12 +29,17 @@ export class InternalDiscoveryProvider implements TopicDiscoveryProvider {
     constructor(
         @InjectRepository(Lead)
         private readonly leadRepository: Repository<Lead>
-    ) {}
+    ) { }
 
     async search(topic: LeadTopic): Promise<ProviderSearchResult> {
         const normalizedKeywords = this.normalizeKeywords(topic.keywords);
         const allowedSources = new Set(this.normalizeSources(topic.sources));
-        const allLeads = await this.leadRepository.find();
+        const allLeads = await this.leadRepository.find({
+            where: {
+                profileId: topic.profileId,
+                appScope: topic.appScope,
+            },
+        });
 
         const candidates = allLeads
             .filter((lead) => allowedSources.has(lead.source))

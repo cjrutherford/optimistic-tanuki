@@ -1,5 +1,5 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Component, PLATFORM_ID, inject } from '@angular/core';
+import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthStateService } from './auth-state.service';
@@ -58,14 +58,14 @@ import { ProfileService } from './profile.service';
     `,
   ],
 })
-export class HomeRedirectComponent {
+export class HomeRedirectComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly authState = inject(AuthStateService);
   private readonly profileService = inject(ProfileService);
   private readonly onboardingGateService = inject(OnboardingGateService);
   private readonly platformId = inject(PLATFORM_ID);
 
-  constructor() {
+  ngOnInit(): void {
     void this.resolveRoute();
   }
 

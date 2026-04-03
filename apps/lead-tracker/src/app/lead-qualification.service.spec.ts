@@ -20,6 +20,7 @@ describe('LeadQualificationService', () => {
   const mockLead = {
     id: 'lead-1',
     name: 'React modernization',
+    profileId: 'profile-1',
   } as Lead;
 
   const mockAnalysis = {
@@ -99,6 +100,7 @@ describe('LeadQualificationService', () => {
     await service.analyzeAndSave(mockLead, null);
 
     expect(onboardingProfileRepository.find).toHaveBeenCalledWith({
+      where: { profileId: 'profile-1' },
       order: {
         completedAt: 'DESC',
         updatedAt: 'DESC',
