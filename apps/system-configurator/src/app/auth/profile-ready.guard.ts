@@ -1,5 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { CanActivate, Router, RouterStateSnapshot } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  CanActivate,
+  Router,
+  RouterStateSnapshot,
+} from '@angular/router';
 import { AuthStateService } from '../state/auth-state.service';
 import { ProfileService } from '../state/profile.service';
 import { ReturnIntentService } from '../state/return-intent.service';
@@ -13,7 +18,10 @@ export class ProfileReadyGuard implements CanActivate {
   private readonly profileService = inject(ProfileService);
   private readonly returnIntent = inject(ReturnIntentService);
 
-  async canActivate(_route: never, state: RouterStateSnapshot): Promise<boolean> {
+  async canActivate(
+    _route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): Promise<boolean> {
     if (!this.authState.isAuthenticated) {
       this.returnIntent.remember(state.url);
       this.router.navigate(['/login']);

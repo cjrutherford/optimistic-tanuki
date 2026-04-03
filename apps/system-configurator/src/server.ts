@@ -35,14 +35,6 @@ app.use(
   })
 );
 
-app.get(
-  '**',
-  express.static(browserDistFolder, {
-    maxAge: '1y',
-    index: 'index.html',
-  })
-);
-
 app.get('**', (req, res, next) => {
   const { originalUrl, baseUrl } = req;
 
