@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: prompt-proxy
-          image: cjrutherford/optimistic_tanuki_prompt-proxy:sha-d72bb2e9ab4f08d92d24b313be33ac0df87ba408
+          image: cjrutherford/optimistic_tanuki_prompt-proxy:sha-d26936238b90f31051688a18ec5915c3cf53d937
           imagePullPolicy: Always
           ports:
             - containerPort: 3009
