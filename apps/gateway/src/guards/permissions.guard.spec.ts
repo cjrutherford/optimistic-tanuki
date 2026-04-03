@@ -297,6 +297,39 @@ describe('PermissionsGuard', () => {
       );
     });
 
+    it('uses the app-scoped profile when the JWT profile belongs to another scope', async () => {
+      const profileService = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
+      jest.spyOn(profileService, 'send').mockReturnValue(
+        of([
+          { id: 'global-profile', appScope: 'global', userId: 'user-1' },
+          { id: 'leads-profile', appScope: 'leads-app', userId: 'user-1' },
+        ])
+      );
+
+      permissionsClient.send
+        .mockReturnValueOnce(of({ id: 'scope-leads', name: 'leads-app' }))
+        .mockReturnValueOnce(of({ id: 'scope-global', name: 'global' }))
+        .mockReturnValueOnce(of(false))
+        .mockReturnValueOnce(of(true));
+
+      const context = createMockContext(
+        { profileId: 'global-profile', userId: 'user-1' },
+        { 'x-ot-appscope': 'leads-app' }
+      );
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(permissionsClient.send).toHaveBeenLastCalledWith(
+        { cmd: 'CheckPermission:Role' },
+        expect.objectContaining({
+          profileId: 'leads-profile',
+          profileAppScope: 'leads-app',
+          appScopeId: 'scope-leads',
+        })
+      );
+    });
+
     it('should fail if any permission check fails', async () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
         permissions: ['permission1', 'permission2'],

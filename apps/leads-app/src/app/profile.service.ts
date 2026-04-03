@@ -8,6 +8,7 @@ import {
 } from '@optimistic-tanuki/ui-models';
 import { firstValueFrom } from 'rxjs';
 import { AuthStateService } from './auth-state.service';
+import { AuthenticationService } from './authentication.service';
 
 @Injectable({
   providedIn: 'root',
@@ -15,6 +16,7 @@ import { AuthStateService } from './auth-state.service';
 export class ProfileService {
   private readonly http = inject(HttpClient);
   private readonly authState = inject(AuthStateService);
+  private readonly authenticationService = inject(AuthenticationService);
   private readonly apiBaseUrl = inject(API_BASE_URL);
   private readonly appScope = 'leads-app';
 
@@ -47,6 +49,28 @@ export class ProfileService {
     if (matchingProfile) {
       this.currentUserProfile.set(matchingProfile);
       this.authState.persistSelectedProfile(matchingProfile);
+    }
+  }
+
+  async activateProfile(profile: ProfileDto): Promise<void> {
+    this.selectProfile(profile);
+
+    const matchingProfile = this.getCurrentUserProfile();
+    if (!matchingProfile) {
+      return;
+    }
+
+    const tokenProfileId = this.authState.getDecodedTokenValue()?.profileId || '';
+    if (tokenProfileId === matchingProfile.id) {
+      return;
+    }
+
+    const response = await this.authenticationService.issue({
+      profileId: matchingProfile.id,
+    });
+    const newToken = response?.data?.newToken;
+    if (newToken) {
+      this.authState.setToken(newToken);
     }
   }
 

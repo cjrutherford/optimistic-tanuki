@@ -32,4 +32,13 @@ export class AuthenticationService {
       )
     );
   }
+
+  issue(data: { profileId?: string }) {
+    return firstValueFrom(
+      this.http.post<{ data: { newToken: string } }>(
+        `${this.baseUrl}/issue`,
+        data
+      )
+    );
+  }
 }

@@ -301,6 +301,35 @@ export class RoleInitBuilder {
         this.assignRoleToProfile('community_owner');
         return this;
       case 'leads-app':
+        this.addPermission(
+          'lead.read',
+          'lead',
+          'read',
+          'Read leads and overview metrics',
+          undefined,
+          'leads-app'
+        );
+        this.addPermission(
+          'lead.topic.read',
+          'lead.topic',
+          'read',
+          'Read lead topics',
+          undefined,
+          'leads-app'
+        );
+        this.addPermission(
+          'lead.onboarding.update',
+          'lead.onboarding',
+          'update',
+          'Complete and update onboarding for leads workspace',
+          undefined,
+          'leads-app'
+        );
+        this.addRole('leads_app_member', 'Standard user for Lead Command', [
+          'lead.read',
+          'lead.topic.read',
+          'lead.onboarding.update',
+        ]);
         this.assignRoleToProfile('leads_app_member');
         return this;
       case 'christopherrutherford-net':
