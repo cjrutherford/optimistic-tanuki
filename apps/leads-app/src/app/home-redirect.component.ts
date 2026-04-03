@@ -87,7 +87,7 @@ export class HomeRedirectComponent {
       return;
     }
 
-    this.profileService.selectProfile(profile);
+    await this.profileService.activateProfile(profile);
 
     const onboardingState = await firstValueFrom(
       this.onboardingGateService.getState(true)

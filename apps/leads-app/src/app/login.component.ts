@@ -72,7 +72,7 @@ export class LoginComponent {
 
     const profile = this.profileService.getEffectiveProfile();
     if (profile && profile.appScope === 'leads-app') {
-      this.profileService.selectProfile(profile);
+      await this.profileService.activateProfile(profile);
       await this.router.navigate(['/']);
       return;
     }

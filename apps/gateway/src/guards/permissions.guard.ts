@@ -94,15 +94,17 @@ export class PermissionsGuard implements CanActivate {
       )
     );
 
+    const globalProfile = profiles.find(
+      (p) => !p.appScope || p.appScope === 'global'
+    );
+    const appScopeProfile = profiles.find((p) => p.appScope === appScopeName);
+    const currentProfile = profiles.find((p) => p.id === user.profileId);
+
     // If the JWT is missing profileId (for example, after initial
     // registration or before a re-login that encodes it), attempt to
     // resolve an appropriate profile for this request and attach it to
     // the user context so permission checks can proceed.
     if (!user.profileId) {
-      const appScopeProfile = profiles.find((p) => p.appScope === appScopeName);
-      const globalProfile = profiles.find(
-        (p) => !p.appScope || p.appScope === 'global'
-      );
       const fallbackProfile = appScopeProfile || globalProfile || profiles[0];
 
       if (!fallbackProfile) {
@@ -117,11 +119,17 @@ export class PermissionsGuard implements CanActivate {
       this.logger.debug(
         `Resolved missing profileId from profiles list: profileId=${user.profileId}, appScope=${fallbackProfile.appScope}`
       );
+    } else if (appScopeProfile && currentProfile?.appScope !== appScopeName) {
+      user.profileId = appScopeProfile.id;
+      request.user = user;
+      this.logger.debug(
+        `Switched request profileId to app-scoped profile: profileId=${user.profileId}, appScope=${appScopeName}`
+      );
     }
 
     // Check for global scope first - if user has permission in global scope, allow access
-    const globalProfile = profiles.find((p) => p.appScope === 'global');
-    const appScopeProfile = profiles.find((p) => p.appScope === appScopeName);
+    const globalPermissionProfileId = globalProfile?.id || user.profileId;
+    const appScopePermissionProfileId = appScopeProfile?.id || user.profileId;
 
     // Determine if we should check global scope permissions first
     const checkGlobalFirst = !!globalProfile;
@@ -149,7 +157,7 @@ export class PermissionsGuard implements CanActivate {
 
       for (const permission of permissions) {
         let hasPermission = await this.cacheService.get(
-          user.profileId,
+          globalPermissionProfileId,
           permission,
           globalScope.id,
           targetId
@@ -163,7 +171,7 @@ export class PermissionsGuard implements CanActivate {
             this.permissionsClient.send(
               { cmd: RoleCommands.CheckPermission },
               {
-                profileId: user.profileId,
+                profileId: globalPermissionProfileId,
                 permission,
                 profileAppScope: 'global',
                 appScopeId: globalScope.id,
@@ -173,7 +181,7 @@ export class PermissionsGuard implements CanActivate {
           );
 
           await this.cacheService.set(
-            user.profileId,
+            globalPermissionProfileId,
             permission,
             globalScope.id,
             hasPermission,
@@ -189,7 +197,7 @@ export class PermissionsGuard implements CanActivate {
 
       if (allGlobalPermissionsGranted) {
         this.logger.debug(
-          `Access granted via global scope permissions for profile ${user.profileId}`
+          `Access granted via global scope permissions for profile ${globalPermissionProfileId}`
         );
         return true;
       }
@@ -208,7 +216,7 @@ export class PermissionsGuard implements CanActivate {
     for (const permission of permissions) {
       // Try to get from cache first
       let hasPermission = await this.cacheService.get(
-        user.profileId,
+        appScopePermissionProfileId,
         permission,
         appScope.id,
         targetId
@@ -223,7 +231,7 @@ export class PermissionsGuard implements CanActivate {
           this.permissionsClient.send(
             { cmd: RoleCommands.CheckPermission },
             {
-              profileId: user.profileId,
+              profileId: appScopePermissionProfileId,
               permission,
               profileAppScope: appScopeName,
               appScopeId: appScope.id,
@@ -233,11 +241,9 @@ export class PermissionsGuard implements CanActivate {
           )
         );
 
-        console.log(hasPermission);
-
         // Cache the result
         await this.cacheService.set(
-          user.profileId,
+          appScopePermissionProfileId,
           permission,
           appScope.id,
           hasPermission,
@@ -251,7 +257,7 @@ export class PermissionsGuard implements CanActivate {
 
       if (!hasPermission) {
         this.logger.warn(
-          `Permission denied: ${permission} in app scope ${appScopeName} for profile ${user.profileId}`
+          `Permission denied: ${permission} in app scope ${appScopeName} for profile ${appScopePermissionProfileId}`
         );
         throw new ForbiddenException(
           `Permission denied: ${permission} in app scope ${appScopeName}`
