@@ -65,6 +65,7 @@ const ALL_OWNER_ROLES: { [key: string]: string[] } = {
     'forum_moderator',
   ],
   forgeofwill: ['forgeofwill_planner', 'forum_moderator'],
+  'leads-app': ['leads_app_admin'],
   blogging: ['blog_author'],
   assets: ['asset_owner'],
   social: ['social_user'],
@@ -80,6 +81,7 @@ const ALL_USER_ROLES: { [key: string]: string[] } = {
   'digital-homestead': ['digital_standard_user'],
   'client-interface': ['client_interface_user'],
   forgeofwill: ['forgeofwill_standard_user'],
+  'leads-app': ['leads_app_member'],
   blogging: ['blog_reader'],
   assets: ['asset_viewer'],
   social: ['social_user'],
@@ -297,6 +299,38 @@ export class RoleInitBuilder {
         this.assignRoleToProfile('client_interface_user');
         this.assignRoleToProfile('forum_user');
         this.assignRoleToProfile('community_owner');
+        return this;
+      case 'leads-app':
+        this.addPermission(
+          'lead.read',
+          'lead',
+          'read',
+          'Read leads and overview metrics',
+          undefined,
+          'leads-app'
+        );
+        this.addPermission(
+          'lead.topic.read',
+          'lead.topic',
+          'read',
+          'Read lead topics',
+          undefined,
+          'leads-app'
+        );
+        this.addPermission(
+          'lead.onboarding.update',
+          'lead.onboarding',
+          'update',
+          'Complete and update onboarding for leads workspace',
+          undefined,
+          'leads-app'
+        );
+        this.addRole('leads_app_member', 'Standard user for Lead Command', [
+          'lead.read',
+          'lead.topic.read',
+          'lead.onboarding.update',
+        ]);
+        this.assignRoleToProfile('leads_app_member');
         return this;
       case 'christopherrutherford-net':
         this.assignRoleToProfile('christopherrutherford_standard_user');

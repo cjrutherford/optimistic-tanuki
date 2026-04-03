@@ -28,8 +28,25 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    command: /bin/sh -c "apk add --no-cache postgresql-client && psql -h db -U postgres -c 'CREATE DATABASE ot_lead_tracker;' || true && npm run db:setup"
     restart: 'no'
+
+  lead-tracker:
+    container_name: e2e_lead_tracker_gw
+    build:
+      context: ..
+      dockerfile: ./apps/lead-tracker/Dockerfile
+    ports:
+      - '3020:3020'
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ot_lead_tracker
+    depends_on:
+      db:
+        condition: service_healthy
 
   authentication:
     container_name: e2e_authentication_gw
@@ -139,6 +156,8 @@ services:
       PERMISSIONS_PORT: 3012
       BLOGGING_HOST: blogging
       BLOGGING_PORT: 3011
+      LEAD_TRACKER_HOST: lead-tracker
+      LEAD_TRACKER_PORT: 3020
     depends_on:
       db:
         condition: service_healthy
@@ -149,4 +168,6 @@ services:
       permissions:
         condition: service_started
       blogging:
+        condition: service_started
+      lead-tracker:
         condition: service_started

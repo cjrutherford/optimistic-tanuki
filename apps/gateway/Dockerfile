@@ -1,22 +1,22 @@
-# Install dependencies only when needed
-FROM docker.io/node:lts-alpine AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+FROM docker.io/node:lts-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
-COPY dist/apps/gateway/package*.json ./
-RUN npm install --omit=dev --legacy-peer-deps && npm i --legacy-peer-deps @nestjs/passport @nestjs/throttler
+COPY package*.json tsconfig*.json nx.json ./
+COPY libs/ ./libs/
+COPY apps/gateway/ ./apps/gateway/
+RUN npm install --legacy-peer-deps
+RUN npx nx build gateway --configuration=development
 
-# Production image, copy all the files and run nest
 FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3000
+RUN npm i -g nodemon pg
 WORKDIR /usr/src/app
-COPY --from=deps /usr/src/app/node_modules ./node_modules
-COPY --from=deps /usr/src/app/package.json ./package.json
-RUN npm i -g nodemon pg 
-COPY ./dist/apps/gateway .
+COPY --from=builder /usr/src/app/dist/apps/gateway ./dist/apps/gateway
+COPY --from=builder /usr/src/app/package.json ./package.json
+RUN npm install --omit=dev --legacy-peer-deps
 RUN chown -R node:node .
 USER node
 EXPOSE 3000
-CMD ["dumb-init", "node", "main.js"]
+CMD ["dumb-init", "node", "dist/apps/gateway/main.js"]

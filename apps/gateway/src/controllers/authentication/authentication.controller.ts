@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -32,6 +33,8 @@ import {
 } from '@optimistic-tanuki/permission-lib';
 
 import { Throttle } from '@nestjs/throttler';
+import { AuthGuard } from '../../auth/auth.guard';
+import { User, UserDetails } from '../../decorators/user.decorator';
 
 @ApiTags('authentication')
 @Controller('authentication')
@@ -181,6 +184,34 @@ export class AuthenticationController {
       this.logger.error('Error in loginUser:', error?.message || error);
       throw new HttpException(
         `Login failed: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('issue')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Issue a token for the requested profile' })
+  @ApiResponse({ status: 201, description: 'Token issued successfully.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async issueTokenForProfile(
+    @User() user: UserDetails,
+    @Body() body: { profileId?: string }
+  ) {
+    try {
+      return await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.Issue },
+          { userId: user.userId, profileId: body.profileId || user.profileId }
+        )
+      );
+    } catch (error) {
+      this.logger.error(
+        'Error in issueTokenForProfile:',
+        error?.message || error
+      );
+      throw new HttpException(
+        `Token issue failed: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

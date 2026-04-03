@@ -16,6 +16,11 @@
       "active": true
     },
     {
+      "name": "leads-app",
+      "description": "Lead Command application",
+      "active": true
+    },
+    {
       "name": "digital-homestead",
       "description": "Digital Homestead application",
       "active": true
@@ -146,6 +151,16 @@
       "name": "client_asset_manager",
       "description": "Manage own assets via client-interface",
       "appScope": "client-interface"
+    },
+    {
+      "name": "leads_app_member",
+      "description": "Standard user for Lead Command",
+      "appScope": "leads-app"
+    },
+    {
+      "name": "leads_app_admin",
+      "description": "Administrator for Lead Command",
+      "appScope": "leads-app"
     },
     {
       "name": "forgeofwill_standard_user",
@@ -410,6 +425,110 @@
       "action": "delete",
       "targetId": null,
       "appScope": "client-interface"
+    },
+    {
+      "name": "lead.read",
+      "description": "Read leads workspace data",
+      "resource": "lead",
+      "action": "read",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.create",
+      "description": "Create leads",
+      "resource": "lead",
+      "action": "create",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.update",
+      "description": "Update leads",
+      "resource": "lead",
+      "action": "update",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.delete",
+      "description": "Delete leads",
+      "resource": "lead",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.topic.read",
+      "description": "Read lead topics",
+      "resource": "lead.topic",
+      "action": "read",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.topic.create",
+      "description": "Create lead topics",
+      "resource": "lead.topic",
+      "action": "create",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.topic.update",
+      "description": "Update lead topics",
+      "resource": "lead.topic",
+      "action": "update",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.topic.delete",
+      "description": "Delete lead topics",
+      "resource": "lead.topic",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.topic.run",
+      "description": "Run topic discovery",
+      "resource": "lead.topic",
+      "action": "run",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.flag.read",
+      "description": "Read lead flags",
+      "resource": "lead.flag",
+      "action": "read",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.flag.create",
+      "description": "Create lead flags",
+      "resource": "lead.flag",
+      "action": "create",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.onboarding.update",
+      "description": "Run onboarding and topic generation",
+      "resource": "lead.onboarding",
+      "action": "update",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.admin",
+      "description": "Administer the leads workspace",
+      "resource": "lead",
+      "action": "admin",
+      "targetId": null,
+      "appScope": "leads-app"
     },
     {
       "name": "blog.post.create",
@@ -1967,6 +2086,131 @@
       "role": "client_asset_manager",
       "permission": "asset.delete",
       "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.delete",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.topic.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.topic.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.topic.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.topic.delete",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.topic.run",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.flag.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.flag.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.onboarding.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.delete",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.topic.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.topic.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.topic.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.topic.delete",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.topic.run",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.flag.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.flag.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.onboarding.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.admin",
+      "permissionAppScope": "leads-app"
     },
     {
       "role": "community_owner",
@@ -4122,6 +4366,16 @@
       "role": "local_hub_member",
       "permission": "classified.delete",
       "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "social.comment.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "social.vote.create",
+      "permissionAppScope": "social"
     },
     {
       "role": "local_hub_member",

@@ -20,6 +20,7 @@
     "baseUrl": ".",
     "paths": {
       "@optimistic-tanuki/ag-grid-ui": ["libs/ag-grid-ui/src/index.ts"],
+       "@optimistic-tanuki/ag-grid-ui/*": ["libs/ag-grid-ui/src/lib/ag-grid-ui/*"],
       "@optimistic-tanuki/app-config-models": [
         "libs/app-config-models/src/index.ts"
       ],
@@ -29,16 +30,26 @@
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
       "@optimistic-tanuki/classified-ui": ["libs/classified-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
+      "@optimistic-tanuki/common-ui/*": ["libs/common-ui/src/lib/common-ui/*"],
       "@optimistic-tanuki/community-ui": ["libs/community-ui/src/index.ts"],
       "@optimistic-tanuki/compose-lib": ["libs/compose-lib/src/index.ts"],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
       "@optimistic-tanuki/encryption": ["libs/encryption/src/index.ts"],
       "@optimistic-tanuki/form-ui": ["libs/form-ui/src/index.ts"],
+      "@optimistic-tanuki/form-ui/*": ["libs/form-ui/src/lib/form-ui/*"],
       "@optimistic-tanuki/forum-ui": ["libs/forum-ui/src/index.ts"],
+      "@optimistic-tanuki/leads-ui": ["libs/leads-ui/src/index.ts"],
       "@optimistic-tanuki/logger": ["libs/logger/src/index.ts"],
       "@optimistic-tanuki/message-ui": ["libs/message-ui/src/index.ts"],
+      "@optimistic-tanuki/message-ui/*": ["libs/message-ui/src/lib/*"],
       "@optimistic-tanuki/models": ["libs/models/src/index.ts"],
+      "@optimistic-tanuki/models/leads-contracts": [
+        "libs/models/src/lib/libs/leads/contracts.ts"
+      ],
+      "@optimistic-tanuki/models/leads-entities": [
+        "libs/models/src/lib/libs/leads/entities.ts"
+      ],
       "@optimistic-tanuki/navigation-ui": ["libs/navigation-ui/src/index.ts"],
       "@optimistic-tanuki/notification-ui": [
         "libs/notification-ui/src/index.ts"

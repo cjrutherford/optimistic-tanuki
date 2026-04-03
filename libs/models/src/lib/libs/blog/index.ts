@@ -22,5 +22,5 @@ export {
   CreateBlogComponentDto,
   UpdateBlogComponentDto,
   BlogComponentQueryDto,
-  ComponentExtractionResult,
 } from './blog-component';
+export type { ComponentExtractionResult } from './blog-component';

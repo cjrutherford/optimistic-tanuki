@@ -40,6 +40,7 @@ export const ALL_APP_SCOPES = [
   'global',
   'forgeofwill',
   'client-interface',
+  'leads-app',
   'digital-homestead',
   'christopherrutherford-net',
   'blogging',

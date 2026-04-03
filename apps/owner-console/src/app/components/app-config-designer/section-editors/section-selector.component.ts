@@ -1,9 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import {
-  IconComponent,
-  ButtonComponent,
-  CardComponent,
-} from '@optimistic-tanuki/common-ui';
+import { ButtonComponent } from '@optimistic-tanuki/common-ui/button/button.component';
+import { CardComponent } from '@optimistic-tanuki/common-ui/card/card.component';
+import { IconComponent } from '@optimistic-tanuki/common-ui/icon/icon.component';
 import { SectionType } from '@optimistic-tanuki/app-config-models';
 
 interface SectionTypeOption {

@@ -1,0 +1,511 @@
+<div class="leads-page">
+  <header class="header">
+    <div class="header-content">
+      <a routerLink="/" class="back-link">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Dashboard
+      </a>
+      <h1 class="title">Leads</h1>
+      <p class="subtitle">Manage your prospects</p>
+    </div>
+    <div class="header-actions">
+      <div class="search-box">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search leads..."
+          [(ngModel)]="searchQuery"
+          (input)="filterLeads()"
+        />
+      </div>
+      <button class="btn btn-primary" (click)="showQuickAdd = true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Quick Add
+      </button>
+    </div>
+  </header>
+
+  <div class="view-toggle">
+    <button
+      class="toggle-btn"
+      [class.active]="viewMode === 'list'"
+      (click)="viewMode = 'list'"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <line x1="8" y1="6" x2="21" y2="6" />
+        <line x1="8" y1="12" x2="21" y2="12" />
+        <line x1="8" y1="18" x2="21" y2="18" />
+        <line x1="3" y1="6" x2="3.01" y2="6" />
+        <line x1="3" y1="12" x2="3.01" y2="12" />
+        <line x1="3" y1="18" x2="3.01" y2="18" />
+      </svg>
+      List
+    </button>
+    <button
+      class="toggle-btn"
+      [class.active]="viewMode === 'kanban'"
+      (click)="viewMode = 'kanban'"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <rect x="3" y="3" width="7" height="18" rx="1" />
+        <rect x="14" y="3" width="7" height="10" rx="1" />
+      </svg>
+      Kanban
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <span>Loading leads...</span>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <!-- List View -->
+    <div *ngIf="viewMode === 'list'" class="leads-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Lead</th>
+            <th>Company</th>
+            <th>Source</th>
+            <th>Status</th>
+            <th>Value</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let lead of filteredLeads"
+            [class.flagged]="isLeadFlagged(lead)"
+            (click)="viewLead(lead)"
+            (keydown.enter)="viewLead(lead)"
+            (keydown.space)="viewLead(lead); $event.preventDefault()"
+            tabindex="0"
+            role="button"
+          >
+            <td>
+              <div class="lead-info">
+                <div class="lead-name-row">
+                  <span class="lead-name">{{ lead.name }}</span>
+                  <span
+                    *ngIf="isLeadFlagged(lead)"
+                    class="flag-indicator"
+                    title="Flagged"
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                      <path
+                        d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+                      />
+                      <line
+                        x1="4"
+                        y1="22"
+                        x2="4"
+                        y2="15"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        fill="none"
+                      />
+                    </svg>
+                  </span>
+                </div>
+                <span class="lead-email">{{ lead.email || '-' }}</span>
+              </div>
+            </td>
+            <td>{{ lead.company || '-' }}</td>
+            <td>
+              <span class="source-badge" [attr.data-source]="lead.source">{{
+                lead.source
+              }}</span>
+            </td>
+            <td>
+              <span class="status-badge" [attr.data-status]="lead.status">{{
+                lead.status
+              }}</span>
+            </td>
+            <td class="value-cell">${{ lead.value | number }}</td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  class="action-btn"
+                  (click)="viewLead(lead); $event.stopPropagation()"
+                  title="View"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+                <button
+                  class="action-btn"
+                  (click)="editLead(lead); $event.stopPropagation()"
+                  title="Edit"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                    />
+                    <path
+                      d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="action-btn warning"
+                  (click)="openFlagModal(lead); $event.stopPropagation()"
+                  title="Flag Lead"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+                    />
+                    <line x1="4" y1="22" x2="4" y2="15" />
+                  </svg>
+                </button>
+                <button
+                  class="action-btn danger"
+                  (click)="deleteLead(lead); $event.stopPropagation()"
+                  title="Delete"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path
+                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Kanban View -->
+    <div *ngIf="viewMode === 'kanban'" class="kanban-board">
+      <div *ngFor="let status of kanbanColumns" class="kanban-column">
+        <div class="column-header">
+          <span class="column-title">{{ status.label }}</span>
+          <span class="column-count">{{
+            getLeadsByStatus(status.key).length
+          }}</span>
+        </div>
+        <div class="column-content">
+          <div
+            *ngFor="let lead of getLeadsByStatus(status.key)"
+            class="kanban-card"
+            [class.flagged]="isLeadFlagged(lead)"
+            (click)="viewLead(lead)"
+            (keydown.enter)="viewLead(lead)"
+            (keydown.space)="viewLead(lead); $event.preventDefault()"
+            tabindex="0"
+            role="button"
+          >
+            <div class="card-header">
+              <span class="card-name">{{ lead.name }}</span>
+              <div class="card-badges">
+                <span
+                  *ngIf="isLeadFlagged(lead)"
+                  class="flag-badge"
+                  title="Flagged"
+                  (click)="openFlagModal(lead); $event.stopPropagation()"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    stroke="none"
+                    width="12"
+                    height="12"
+                  >
+                    <path
+                      d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+                    />
+                  </svg>
+                </span>
+                <span *ngIf="lead.isAutoDiscovered" class="auto-badge">AI</span>
+              </div>
+            </div>
+            <span *ngIf="lead.company" class="card-company">{{
+              lead.company
+            }}</span>
+            <div class="card-footer">
+              <span class="card-source" [attr.data-source]="lead.source">{{
+                lead.source
+              }}</span>
+              <span class="card-value">${{ lead.value | number }}</span>
+            </div>
+            <div class="card-actions">
+              <button
+                class="card-action-btn"
+                (click)="openFlagModal(lead); $event.stopPropagation()"
+                title="Flag"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+                  />
+                  <line x1="4" y1="22" x2="4" y2="15" />
+                </svg>
+              </button>
+              <button
+                class="card-action-btn"
+                (click)="editLead(lead); $event.stopPropagation()"
+                title="Edit"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                  />
+                  <path
+                    d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Quick-Add Slide Panel -->
+  <div
+    *ngIf="showQuickAdd"
+    class="quick-add-backdrop"
+    (click)="closeQuickAdd()"
+  ></div>
+  <div class="quick-add-panel" [class.open]="showQuickAdd">
+    <div class="quick-add-header">
+      <div class="header-title-row">
+        <h2>{{ isEditingLead ? 'Edit Lead' : 'Quick Add Lead' }}</h2>
+        <span *ngIf="isEditingLead" class="edit-mode-badge">Editing</span>
+      </div>
+      <button class="close-btn" (click)="closeQuickAdd()">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    <form (ngSubmit)="saveLead()" class="quick-add-form">
+      <div class="form-group">
+        <label>Name *</label>
+        <input
+          type="text"
+          [(ngModel)]="newLead.name"
+          name="name"
+          placeholder="Contact name"
+          required
+          autofocus
+        />
+      </div>
+      <div class="form-group">
+        <label>Source</label>
+        <select [(ngModel)]="newLead.source" name="source">
+          <option *ngFor="let source of sources" [value]="source">
+            {{ source }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select [(ngModel)]="newLead.status" name="status">
+          <option *ngFor="let status of statuses" [value]="status">
+            {{ status }}
+          </option>
+        </select>
+      </div>
+
+      <button
+        type="button"
+        class="expand-btn"
+        (click)="showMoreDetails = !showMoreDetails"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          [class.rotated]="showMoreDetails"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+        {{ showMoreDetails ? 'Less details' : 'More details' }}
+      </button>
+
+      <ng-container *ngIf="showMoreDetails">
+        <div class="form-group">
+          <label>Company</label>
+          <input
+            type="text"
+            [(ngModel)]="newLead.company"
+            name="company"
+            placeholder="Company name"
+          />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input
+            type="email"
+            [(ngModel)]="newLead.email"
+            name="email"
+            placeholder="email@example.com"
+          />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input
+            type="tel"
+            [(ngModel)]="newLead.phone"
+            name="phone"
+            placeholder="+1 (555) 000-0000"
+          />
+        </div>
+        <div class="form-group">
+          <label>Value</label>
+          <input
+            type="number"
+            [(ngModel)]="newLead.value"
+            name="value"
+            min="0"
+            placeholder="0"
+          />
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea
+            [(ngModel)]="newLead.notes"
+            name="notes"
+            rows="2"
+            placeholder="Quick notes..."
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label>Next Follow-Up</label>
+          <input
+            type="date"
+            [(ngModel)]="newLead.nextFollowUp"
+            name="nextFollowUp"
+          />
+        </div>
+        <div class="form-group">
+          <label>Assigned To</label>
+          <input
+            type="text"
+            [(ngModel)]="newLead.assignedTo"
+            name="assignedTo"
+            placeholder="Owner or rep"
+          />
+        </div>
+        <div class="form-group">
+          <label>Search Keywords</label>
+          <textarea
+            [(ngModel)]="searchKeywordsInput"
+            name="searchKeywords"
+            rows="2"
+            placeholder="react, typescript, modernization"
+          ></textarea>
+        </div>
+      </ng-container>
+
+      <div class="quick-add-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="closeQuickAdd()"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="!newLead.name"
+        >
+          {{ isEditingLead ? 'Save Changes' : 'Create Lead' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Flag Lead Modal -->
+  <app-flag-lead-modal
+    *ngIf="selectedLeadForFlag"
+    [lead]="selectedLeadForFlag"
+    (closed)="selectedLeadForFlag = null"
+    (flagged)="onLeadFlagged($event)"
+  ></app-flag-lead-modal>
+
+  <app-lead-detail-modal
+    *ngIf="selectedLeadForView"
+    [lead]="selectedLeadForView"
+    (closed)="selectedLeadForView = null"
+    (editRequested)="openEditFromView(selectedLeadForView!)"
+  ></app-lead-detail-modal>
+</div>

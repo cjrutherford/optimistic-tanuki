@@ -212,16 +212,17 @@ describe('CommunityService', () => {
       expect(result.status).toBe(CommunityMembershipStatus.PENDING);
     });
 
-    it('should throw if user is already a member', async () => {
+    it('should return the existing membership if user is already a member', async () => {
       communityRepo.findOne.mockResolvedValue({ id: 'community-1' } as any);
-      memberRepo.findOne.mockResolvedValue({
+      const existingMember = {
         userId: 'user-2',
         status: CommunityMembershipStatus.APPROVED,
-      } as any);
+      } as any;
+      memberRepo.findOne.mockResolvedValue(existingMember);
 
-      await expect(
-        service.join(joinDto, 'user-2', 'profile-2')
-      ).rejects.toThrow('Already a member');
+      await expect(service.join(joinDto, 'user-2', 'profile-2')).resolves.toBe(
+        existingMember
+      );
     });
   });
 

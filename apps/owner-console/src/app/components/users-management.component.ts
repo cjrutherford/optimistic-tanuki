@@ -1,10 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
-import {
-  MessageComponent,
-  MessageService,
-} from '@optimistic-tanuki/message-ui';
+import { CardComponent } from '@optimistic-tanuki/common-ui/card/card.component';
+import { HeadingComponent } from '@optimistic-tanuki/common-ui/heading/heading.component';
+import { MessageComponent } from '@optimistic-tanuki/message-ui/message/message.component';
+import { MessageService } from '@optimistic-tanuki/message-ui/message.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { UsersService } from '../services/users.service';
 import { RolesService } from '../services/roles.service';
@@ -43,14 +42,12 @@ import { AgUsersTableComponent } from './ag-users-table.component';
   ],
 })
 export class UsersManagementComponent implements OnInit {
+  private readonly usersService = inject(UsersService);
+  private readonly rolesService = inject(RolesService);
+  private readonly messageService = inject(MessageService);
+
   users: ProfileDto[] = [];
   loading = false;
-
-  constructor(
-    private usersService: UsersService,
-    private rolesService: RolesService,
-    private messageService: MessageService
-  ) {}
 
   ngOnInit(): void {
     this.loadUsers();

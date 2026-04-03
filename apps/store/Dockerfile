@@ -1,24 +1,21 @@
-# Install dependencies only when needed
-FROM docker.io/node:lts-alpine AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+FROM docker.io/node:lts-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
-COPY dist/apps/store/package*.json ./
-RUN npm install --omit=dev --legacy-peer-deps
+COPY package*.json tsconfig*.json nx.json ./
+COPY libs/ ./libs/
+COPY apps/store/ ./apps/store/
+RUN npm install --legacy-peer-deps
+RUN npx nx build store --configuration=development
 
-# Production image, copy all the files and run nest
 FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3009
 RUN npm i -g nodemon pg
 WORKDIR /usr/src/app
-COPY --from=deps /usr/src/app/node_modules ./node_modules
-COPY --from=deps /usr/src/app/package.json ./package.json
-COPY ./dist/apps/store .
-RUN npm i --save typeorm
-# Copy seed script for database population
-COPY ./dist/apps/store/seed-store.js ./seed-store.js
+COPY --from=builder /usr/src/app/dist/apps/store/ ./
+RUN npm install --omit=dev --legacy-peer-deps
+RUN npm i --save --legacy-peer-deps typeorm
 RUN chown -R node:node .
 USER node
 EXPOSE 3009

@@ -13,6 +13,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { HttpException, Logger } from '@nestjs/common';
 import { of } from 'rxjs';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
+import { AuthGuard } from '../../auth/auth.guard';
 
 describe('AuthenticationController', () => {
   let controller: AuthenticationController;
@@ -37,7 +38,7 @@ describe('AuthenticationController', () => {
       processNow: jest.fn().mockResolvedValue(undefined),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleRef = Test.createTestingModule({
       controllers: [AuthenticationController],
       providers: [
         {
@@ -54,7 +55,10 @@ describe('AuthenticationController', () => {
         },
         Logger,
       ],
-    }).compile();
+    }).overrideGuard(AuthGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) });
+
+    const module: TestingModule = await moduleRef.compile();
 
     controller = module.get<AuthenticationController>(AuthenticationController);
   });
@@ -145,6 +149,17 @@ describe('AuthenticationController', () => {
       { ...loginRequest, profileId: 'profile-forge' }
     );
     expect(roleInitService.processNow).toHaveBeenCalled();
+    expect(roleInitService.processNow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopeName: 'forgeofwill',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({
+            roleName: 'forgeofwill_standard_user',
+            profileId: 'profile-forge',
+          }),
+        ]),
+      })
+    );
   });
 
   it('should throw HttpException if loginUser fails', async () => {
@@ -157,6 +172,24 @@ describe('AuthenticationController', () => {
     });
     await expect(controller.loginUser(loginRequest, 'test')).rejects.toThrow(
       HttpException
+    );
+  });
+
+  it('should issue a fresh token for the requested profile', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ data: { newToken: 'fresh-token' } })
+    );
+
+    await expect(
+      controller.issueTokenForProfile(
+        { userId: 'user-1', email: 'u@example.com', name: 'U' } as any,
+        { profileId: 'profile-2' }
+      )
+    ).resolves.toEqual({ data: { newToken: 'fresh-token' } });
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.Issue },
+      { userId: 'user-1', profileId: 'profile-2' }
     );
   });
 
@@ -186,6 +219,63 @@ describe('AuthenticationController', () => {
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Register },
       registerRequest
+    );
+  });
+
+  it('provisions minimum leads permissions during leads-app registration', async () => {
+    const registerRequest: RegisterRequest = {
+      fn: 'Lead',
+      ln: 'User',
+      password: 'test',
+      email: 'lead@test.com',
+      confirm: 'test',
+      bio: '',
+    };
+    const mockResult = {
+      data: {
+        user: {
+          id: 'lead-user',
+          profileId: 'lead-profile',
+          firstName: 'Lead',
+          lastName: 'User',
+        },
+      },
+    };
+
+    jest.spyOn(clientProxy, 'send').mockReturnValueOnce(of(mockResult));
+    jest
+      .spyOn(profileService, 'send')
+      .mockReturnValueOnce(of({ id: 'leads-profile', appScope: 'leads-app' }));
+
+    await expect(
+      controller.registerUser(registerRequest, 'leads-app')
+    ).resolves.toEqual(mockResult);
+
+    expect(roleInitService.processNow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopeName: 'leads-app',
+        permissions: expect.arrayContaining([
+          expect.objectContaining({ name: 'lead.read' }),
+          expect.objectContaining({ name: 'lead.topic.read' }),
+          expect.objectContaining({ name: 'lead.onboarding.update' }),
+        ]),
+        roles: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'leads_app_member',
+            permissions: expect.arrayContaining([
+              'lead.read',
+              'lead.topic.read',
+              'lead.onboarding.update',
+            ]),
+          }),
+        ]),
+        assignments: expect.arrayContaining([
+          expect.objectContaining({
+            roleName: 'leads_app_member',
+            profileId: 'leads-profile',
+          }),
+        ]),
+      })
     );
   });
 

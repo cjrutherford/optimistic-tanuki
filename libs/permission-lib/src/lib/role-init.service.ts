@@ -82,24 +82,26 @@ export class RoleInitService {
       );
     }
     if (!appScope) {
+      try {
+        appScope = await firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: AppScopeCommands.Create },
+            {
+              name: item.scopeName,
+              resourceId: item.scopeResourceId,
+              description: `Auto-created scope ${item.scopeName}:${item.scopeResourceId}`,
+            }
+          )
+        ).catch(() => null);
+      } catch (e) {
+        this.logger.debug(
+          'AppScope.Create failed',
+          (e as { message: string })?.message || e
+        );
+      }
+    }
+    if (!appScope) {
       throw new RpcException(`AppScope ${item.scopeName} not found`);
-      // try {
-      //   appScope = await firstValueFrom(
-      //     this.permissionsClient.send(
-      //       { cmd: AppScopeCommands.Create },
-      //       {
-      //         name: item.scopeName,
-      //         resourceId: item.scopeResourceId,
-      //         description: `Auto-created scope ${item.scopeName}:${item.scopeResourceId}`,
-      //       }
-      //     )
-      //   ).catch(() => null);
-      // } catch (e) {
-      //   this.logger.debug(
-      //     'AppScope.Create failed',
-      //     (e as { message: string })?.message || e
-      //   );
-      // }
     }
     const appScopeId = appScope?.id ?? item.scopeResourceId ?? item.scopeName;
 

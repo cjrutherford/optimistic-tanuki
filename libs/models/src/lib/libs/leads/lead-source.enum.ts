@@ -1,0 +1,17 @@
+export enum LeadSource {
+  REMOTE_OK = 'remoteok',
+  HIMALAYAS = 'himalayas',
+  WE_WORK_REMOTELY = 'weworkremotely',
+  JUST_REMOTE = 'justremote',
+  JOBICY = 'jobicy',
+  CLUTCH = 'clutch',
+  CRUNCHBASE = 'crunchbase',
+  INDEED = 'indeed',
+  GOOGLE_MAPS = 'google-maps',
+  REFERRAL = 'referral',
+  COLD = 'cold',
+  OTHER = 'other',
+  UPWORK = 'upwork',
+  LINKEDIN = 'linkedin',
+  LOCAL = 'local',
+}
