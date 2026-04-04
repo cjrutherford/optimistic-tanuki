@@ -3,7 +3,7 @@
 }
 
 .landing-shell {
-  --hai-shell-width: min(1200px, calc(100% - 2rem));
+  --hai-shell-width: min(1320px, calc(100% - clamp(1rem, 3vw, 2.5rem) * 2));
   --hai-radius-panel: var(--personality-card-radius, 1.75rem);
   --hai-radius-pill: var(--personality-button-radius, 999px);
   --hai-border-width: var(--personality-border-width, 1px);
@@ -12,8 +12,7 @@
     --personality-card-shadow,
     0 28px 80px rgba(15, 23, 42, 0.14)
   );
-  --hai-shadow-hover: 0 30px 80px -28px
-      color-mix(in srgb, var(--foreground) 34%, transparent),
+  --hai-shadow-hover: 0 30px 80px -28px color-mix(in srgb, var(--foreground) 34%, transparent),
     0 10px 26px -14px color-mix(in srgb, var(--primary) 18%, transparent);
   --hai-transition: var(
     --personality-transition,
@@ -21,15 +20,27 @@
   );
   --hai-panel-background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--surface, var(--background)) 92%, var(--primary) 8%),
+    color-mix(
+      in srgb,
+      var(--surface, var(--background)) 92%,
+      var(--primary) 8%
+    ),
     color-mix(in srgb, var(--surface, var(--background)) 97%, transparent)
   );
   --hai-panel-strong: linear-gradient(
     160deg,
-    color-mix(in srgb, var(--surface, var(--background)) 84%, var(--secondary) 16%),
+    color-mix(
+      in srgb,
+      var(--surface, var(--background)) 84%,
+      var(--secondary) 16%
+    ),
     color-mix(in srgb, var(--surface, var(--background)) 94%, var(--primary) 6%)
   );
-  --hai-outline: color-mix(in srgb, var(--border, var(--primary)) 70%, transparent);
+  --hai-outline: color-mix(
+    in srgb,
+    var(--border, var(--primary)) 70%,
+    transparent
+  );
 
   width: var(--hai-shell-width);
   margin: 0 auto;
@@ -61,8 +72,7 @@
   inset: 0;
   z-index: -2;
   pointer-events: none;
-  background:
-    radial-gradient(
+  background: radial-gradient(
       circle at 12% 18%,
       color-mix(in srgb, var(--primary) 14%, transparent),
       transparent 36%
@@ -94,11 +104,11 @@
 .hero-panel {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
-  gap: 1.5rem;
+  gap: 2rem;
   align-items: stretch;
   margin-top: 1.5rem;
   min-height: 38rem;
-  padding: clamp(1.4rem, 3vw, 2.5rem);
+  padding: clamp(1.6rem, 3.5vw, 3rem);
 }
 
 .hero-backdrop {
@@ -149,7 +159,8 @@
 .card-label,
 .signal-kicker {
   margin: 0 0 0.8rem;
-  font: 700 0.78rem/1.1 var(--personality-font-family, var(--font-body, sans-serif));
+  font: 700 0.78rem/1.1
+    var(--personality-font-family, var(--font-body, sans-serif));
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
@@ -159,7 +170,10 @@ h1,
 h2,
 h3,
 .app-name {
-  font-family: var(--font-heading, var(--personality-font-family, Georgia, serif));
+  font-family: var(
+    --font-heading,
+    var(--personality-font-family, Georgia, serif)
+  );
 }
 
 h1 {
@@ -188,13 +202,15 @@ h3 {
 .ownership-list,
 .app-tagline,
 .contact-panel p {
-  font: 400 1rem/1.75 var(--font-body, var(--personality-font-family, sans-serif));
+  font: 400 1rem/1.75
+    var(--font-body, var(--personality-font-family, sans-serif));
   color: color-mix(in srgb, var(--foreground) 74%, transparent);
 }
 
 .lede {
   max-width: 44rem;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
+  line-height: 1.8;
 }
 
 .hero-actions {
@@ -208,17 +224,18 @@ h3 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3rem;
-  padding: 0.82rem 1.25rem;
+  min-height: 3.2rem;
+  padding: 0.85rem 1.6rem;
   border-radius: var(--hai-radius-pill);
   border: var(--hai-border-width) var(--hai-border-style)
     color-mix(in srgb, var(--primary) 20%, transparent);
   text-decoration: none;
-  font-weight: 800;
-  transition:
-    transform var(--hai-transition),
-    box-shadow var(--hai-transition),
-    border-color var(--hai-transition);
+  font-family: var(--font-body, var(--personality-font-family, sans-serif));
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: transform var(--hai-transition), box-shadow var(--hai-transition),
+    border-color var(--hai-transition), background var(--hai-transition);
 }
 
 .cta.primary {
@@ -229,7 +246,16 @@ h3 {
 
 .cta.secondary {
   color: var(--foreground);
-  background: color-mix(in srgb, var(--surface, var(--background)) 86%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 86%,
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--border, var(--primary)) 40%,
+    transparent
+  );
 }
 
 .cta:hover,
@@ -245,15 +271,13 @@ h3 {
 .hero-signal {
   align-self: end;
   padding: 1.5rem;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--foreground) 84%, var(--background) 16%),
-      color-mix(in srgb, var(--foreground) 92%, transparent)
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--foreground) 84%, var(--background) 16%),
+    color-mix(in srgb, var(--foreground) 92%, transparent)
+  );
   color: color-mix(in srgb, var(--background) 95%, white 5%);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 18%, transparent),
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 18%, transparent),
     0 28px 60px -28px color-mix(in srgb, var(--foreground) 50%, transparent);
 }
 
@@ -283,7 +307,7 @@ h3 {
 .personal-cloud-panel,
 .ecosystem-panel,
 .contact-panel {
-  margin-top: 2rem;
+  margin-top: clamp(2.5rem, 5vw, 4rem);
 }
 
 .manifesto-rail {
@@ -328,14 +352,19 @@ h3 {
 .manifesto-card {
   min-height: 9.75rem;
   padding: 1.1rem;
-  background: color-mix(in srgb, var(--surface, var(--background)) 72%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 72%,
+    transparent
+  );
   backdrop-filter: blur(18px);
 }
 
 .manifesto-label {
   display: inline-flex;
   margin-bottom: 0.75rem;
-  font: 700 0.78rem/1.1 var(--personality-font-family, var(--font-body, sans-serif));
+  font: 700 0.78rem/1.1
+    var(--personality-font-family, var(--font-body, sans-serif));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--foreground) 60%, var(--primary));
@@ -343,18 +372,23 @@ h3 {
 
 .manifesto-card p {
   margin: 0;
-  font: 500 1rem/1.6 var(--font-body, var(--personality-font-family, sans-serif));
+  font: 500 1rem/1.6
+    var(--font-body, var(--personality-font-family, sans-serif));
   color: color-mix(in srgb, var(--foreground) 82%, transparent);
 }
 
 .story-grid {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
-  gap: 1.2rem;
+  gap: 1.5rem;
 }
 
 .story-panel {
-  padding: clamp(1.4rem, 2.6vw, 2.2rem);
+  padding: clamp(1.6rem, 2.8vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 3px solid color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
 .service-list,
@@ -369,11 +403,29 @@ h3 {
 }
 
 .service-card {
-  padding: 1.25rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--hai-transition), box-shadow var(--hai-transition),
+    border-color var(--hai-transition);
+}
+
+.card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  margin-bottom: 1rem;
+  border-radius: calc(var(--hai-radius-panel) * 0.5);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .personal-cloud-panel {
-  padding: clamp(1.4rem, 2.8vw, 2.4rem);
+  padding: clamp(1.6rem, 3vw, 2.8rem);
 }
 
 .ownership-layout {
@@ -383,14 +435,35 @@ h3 {
 }
 
 .ownership-card {
-  padding: 1.4rem;
+  padding: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .ownership-list {
   display: grid;
-  gap: 1rem;
+  gap: 1.2rem;
   margin: 0;
-  padding-left: 1.2rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+.ownership-list li {
+  position: relative;
+  padding-left: 1.4rem;
+}
+
+.ownership-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--primary) 50%, transparent);
+  transform: rotate(45deg);
 }
 
 .ownership-motion {
@@ -403,31 +476,44 @@ h3 {
 
 .ecosystem-grid {
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1.25rem;
   margin-top: 1.2rem;
 }
 
 .ecosystem-card {
-  display: block;
-  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1.4rem;
   text-decoration: none;
   color: inherit;
   grid-column: span 3;
-  min-height: 13rem;
+  min-height: 14rem;
+  transition: transform var(--hai-transition), box-shadow var(--hai-transition),
+    border-color var(--hai-transition);
 }
 
 .ecosystem-card-featured {
   grid-column: span 6;
-  background:
-    linear-gradient(
-      140deg,
-      color-mix(in srgb, var(--surface, var(--background)) 80%, var(--primary) 20%),
-      color-mix(in srgb, var(--surface, var(--background)) 92%, var(--secondary) 8%)
-    );
+  background: linear-gradient(
+    140deg,
+    color-mix(
+      in srgb,
+      var(--surface, var(--background)) 80%,
+      var(--primary) 20%
+    ),
+    color-mix(
+      in srgb,
+      var(--surface, var(--background)) 92%,
+      var(--secondary) 8%
+    )
+  );
 }
 
 .app-name {
   display: block;
   font-size: 1.7rem;
+  margin-top: auto;
 }
 
 .app-tagline {
@@ -435,32 +521,51 @@ h3 {
   margin-top: 0.35rem;
 }
 
+.ecosystem-card .card-label {
+  margin-bottom: auto;
+}
+
 .contact-panel {
-  padding: clamp(1.6rem, 3vw, 2.5rem);
+  padding: clamp(2.5rem, 5vw, 4rem) clamp(1.6rem, 3vw, 2.5rem);
   text-align: center;
 }
 
 @media (max-width: 960px) {
-  .hero-panel,
-  .story-grid,
-  .manifesto-rail,
-  .service-list,
-  .ownership-layout,
-  .ecosystem-grid {
+  .hero-panel {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .story-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manifesto-rail {
     grid-template-columns: 1fr;
   }
 
   .manifesto-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .service-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ownership-layout {
     grid-template-columns: 1fr;
   }
 
-  .ecosystem-card,
-  .ecosystem-card-featured {
-    grid-column: auto;
+  .ecosystem-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
-  .hero-panel {
-    min-height: auto;
+  .ecosystem-card {
+    grid-column: span 3;
+  }
+
+  .ecosystem-card-featured {
+    grid-column: span 6;
   }
 
   .hero-beacon {
@@ -475,6 +580,40 @@ h3 {
 
   h1 {
     max-width: 12ch;
+  }
+}
+
+@media (max-width: 640px) {
+  .service-list,
+  .manifesto-grid,
+  .ecosystem-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ecosystem-card,
+  .ecosystem-card-featured {
+    grid-column: auto;
+  }
+
+  .hero-panel {
+    padding: 1.2rem;
+  }
+
+  .manifesto-rail {
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: clamp(2.4rem, 8vw, 3.2rem);
+  }
+
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .cta {
+    width: 100%;
+    text-align: center;
   }
 }
 
