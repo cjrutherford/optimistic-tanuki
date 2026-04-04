@@ -1,0 +1,133 @@
+:host {
+  display: block;
+}
+
+.signal-mesh {
+  position: relative;
+  min-height: 18rem;
+  overflow: hidden;
+  border-radius: var(--personality-card-radius, 20px);
+  border: var(--personality-border-width, 1px)
+    var(--personality-border-style, solid)
+    color-mix(in srgb, var(--secondary) 18%, var(--border, transparent));
+  background:
+    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 34%),
+    radial-gradient(circle at 82% 78%, color-mix(in srgb, var(--secondary) 12%, transparent), transparent 30%),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--background) 94%, black 5%),
+      color-mix(in srgb, var(--surface, var(--background)) 98%, transparent)
+    );
+  box-shadow: var(--personality-card-shadow, 0 18px 40px rgba(0, 0, 0, 0.12));
+  isolation: isolate;
+}
+
+.mesh-grid,
+.mesh-line,
+.mesh-node,
+.mesh-glow,
+.mesh-overlay {
+  position: absolute;
+}
+
+.mesh-grid {
+  inset: 0;
+}
+
+.mesh-line {
+  opacity: calc(0.22 + (var(--mesh-intensity) * 0.22));
+  background: color-mix(in srgb, var(--secondary) 34%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.mesh-line-vertical {
+  top: 12%;
+  bottom: 14%;
+  width: 1px;
+}
+
+.mesh-line-horizontal {
+  left: 8%;
+  right: 10%;
+  height: 1px;
+}
+
+.mesh-node {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-left: -0.375rem;
+  margin-top: -0.375rem;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, color-mix(in srgb, white 44%, var(--secondary)) 0 30%, color-mix(in srgb, var(--primary) 72%, transparent) 58%, transparent 100%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--secondary) 24%, transparent),
+    0 0 18px color-mix(in srgb, var(--secondary) 28%, transparent);
+  animation: signal-node-pulse linear infinite;
+}
+
+.mesh-glow {
+  inset: auto;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 999px;
+  filter: blur(36px);
+  opacity: calc(0.16 + (var(--mesh-intensity) * 0.12));
+}
+
+.mesh-glow-a {
+  top: -2rem;
+  right: -4rem;
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.mesh-glow-b {
+  bottom: -6rem;
+  left: -3rem;
+  background: color-mix(in srgb, var(--secondary) 18%, transparent);
+}
+
+.mesh-overlay {
+  inset: auto 0 0;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: linear-gradient(to top, color-mix(in srgb, var(--background) 74%, transparent), transparent 42%);
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  font: 600 0.72rem/1 var(--personality-font-family, var(--font-body, sans-serif));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 68%, var(--secondary));
+}
+
+h3 {
+  margin: 0;
+  font-family: var(--font-heading, var(--personality-font-family, serif));
+  font-size: clamp(1.45rem, 3.8vw, 2.25rem);
+  color: var(--foreground);
+}
+
+.caption {
+  max-width: 29rem;
+  margin: 0.45rem 0 0;
+  font: 400 0.95rem/1.5 var(--personality-font-family, var(--font-body, sans-serif));
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+}
+
+.signal-mesh.is-fallback .mesh-node {
+  animation: none;
+  opacity: calc(0.58 + (var(--mesh-intensity) * 0.16));
+}
+
+@keyframes signal-node-pulse {
+  0%,
+  100% {
+    transform: scale(0.84);
+    opacity: 0.56;
+  }
+  45% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}

@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MurmurationSceneComponent],
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.scss'],
 })
@@ -69,7 +70,6 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     this.updateGradients();
-    this.initParticleField();
     this.subscribeToThemeChanges();
   }
 
@@ -99,65 +99,6 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
     } else {
       this.accentColor = '#ff6b35';
       this.secondaryColor = '#00d4ff';
-    }
-  }
-
-  private initParticleField(): void {
-    const particleContainer = document.getElementById('particles');
-    if (!particleContainer) return;
-
-    const particleCount = 25;
-
-    for (let i = 0; i < particleCount; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'ember-particle';
-
-      const size = Math.random() * 3 + 1;
-      const x = Math.random() * 100;
-      const y = Math.random() * 100;
-      const delay = Math.random() * 5;
-      const duration = Math.random() * 10 + 10;
-
-      particle.style.cssText = `
-        position: absolute;
-        width: ${size}px;
-        height: ${size}px;
-        background: radial-gradient(circle, var(--accent), transparent);
-        border-radius: 50%;
-        left: ${x}%;
-        top: ${y}%;
-        opacity: ${Math.random() * 0.5 + 0.2};
-        animation: ember-float ${duration}s ease-in-out ${delay}s infinite;
-        pointer-events: none;
-      `;
-
-      particleContainer.appendChild(particle);
-    }
-
-    if (!document.getElementById('ember-styles')) {
-      const style = document.createElement('style');
-      style.id = 'ember-styles';
-      style.textContent = `
-        @keyframes ember-float {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-            opacity: 0.3;
-          }
-          25% {
-            transform: translate(30px, -30px) scale(1.2);
-            opacity: 0.6;
-          }
-          50% {
-            transform: translate(-20px, -50px) scale(0.8);
-            opacity: 0.2;
-          }
-          75% {
-            transform: translate(20px, -30px) scale(1);
-            opacity: 0.4;
-          }
-        }
-      `;
-      document.head.appendChild(style);
     }
   }
 

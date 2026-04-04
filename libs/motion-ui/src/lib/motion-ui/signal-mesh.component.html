@@ -1,0 +1,44 @@
+<section
+  class="signal-mesh"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--mesh-intensity]="intensity"
+  [style.--mesh-speed]="speed"
+  [style.--mesh-columns]="columns.length"
+  [style.--mesh-rows]="rows.length"
+>
+  <div class="mesh-grid">
+    <span
+      *ngFor="let left of verticalLines"
+      class="mesh-line mesh-line-vertical"
+      [style.left]="left"
+    ></span>
+
+    <span
+      *ngFor="let top of horizontalLines"
+      class="mesh-line mesh-line-horizontal"
+      [style.top]="top"
+    ></span>
+
+    <span
+      *ngFor="let node of nodes"
+      class="mesh-node"
+      [style.left]="node.left"
+      [style.top]="node.top"
+      [style.animation-delay]="node.delay"
+      [style.animation-duration]="node.duration"
+    ></span>
+  </div>
+
+  <div class="mesh-glow mesh-glow-a"></div>
+  <div class="mesh-glow mesh-glow-b"></div>
+
+  <div class="mesh-overlay">
+    <p class="eyebrow">Motion UI</p>
+    <h3>Signal Mesh</h3>
+    <p class="caption">
+      Thin network lines and pulsing junctions for technical shells, systems
+      pages, and instrumentation backgrounds.
+    </p>
+  </div>
+</section>

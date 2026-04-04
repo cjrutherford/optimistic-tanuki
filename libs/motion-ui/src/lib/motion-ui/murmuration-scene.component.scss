@@ -1,0 +1,164 @@
+:host {
+  display: block;
+}
+
+.murmuration-scene {
+  --motion-primary: color-mix(in srgb, var(--primary) 88%, white);
+  --motion-secondary: color-mix(in srgb, var(--secondary) 84%, white);
+  --motion-surface: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 88%,
+    transparent
+  );
+  position: relative;
+  min-height: 18rem;
+  overflow: hidden;
+  border-radius: var(--personality-card-radius, 20px);
+  border: var(--personality-border-width, 1px)
+    var(--personality-border-style, solid)
+    color-mix(in srgb, var(--primary) 35%, var(--border, transparent));
+  background: radial-gradient(
+      circle at 18% 20%,
+      color-mix(in srgb, var(--primary) 24%, transparent),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 82% 24%,
+      color-mix(in srgb, var(--secondary) 18%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--background) 84%, black 4%),
+      color-mix(in srgb, var(--surface, var(--background)) 92%, transparent)
+    );
+  box-shadow: var(--personality-card-shadow, 0 18px 40px rgba(0, 0, 0, 0.12));
+  isolation: isolate;
+}
+
+.murmuration-backdrop,
+.murmuration-orbit,
+.murmuration-canvas,
+.murmuration-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.murmuration-backdrop {
+  background: linear-gradient(
+      120deg,
+      transparent 0%,
+      color-mix(in srgb, var(--primary) 12%, transparent) 45%,
+      transparent 65%
+    ),
+    repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 18px,
+      color-mix(in srgb, var(--primary) 7%, transparent) 18px,
+      color-mix(in srgb, var(--primary) 7%, transparent) 19px
+    );
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.murmuration-orbit {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent);
+  filter: blur(0.2px);
+  transform-origin: center;
+  animation: orbit-spin 18s linear infinite;
+}
+
+.murmuration-orbit-a {
+  inset: 12% 10%;
+}
+
+.murmuration-orbit-b {
+  inset: 22% 28%;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--secondary) 18%, transparent);
+  animation-direction: reverse;
+  animation-duration: 24s;
+}
+
+.murmuration-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  mix-blend-mode: screen;
+  transform: scale(1.04);
+}
+
+.murmuration-overlay {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--background) 52%, transparent),
+    transparent 40%
+  );
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  font: 600 0.72rem/1
+    var(--personality-font-family, var(--font-body, sans-serif));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 68%, var(--primary));
+}
+
+h3 {
+  margin: 0;
+  font-family: var(--font-heading, var(--personality-font-family, serif));
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  font-weight: var(--personality-font-weight, 700);
+  color: var(--foreground);
+}
+
+.caption {
+  max-width: 28rem;
+  margin: 0.45rem 0 0;
+  font: 400 0.95rem/1.5
+    var(--personality-font-family, var(--font-body, sans-serif));
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+}
+
+.murmuration-scene.is-fallback .murmuration-canvas {
+  opacity: 0.2;
+}
+
+.murmuration-scene.is-fallback .murmuration-backdrop {
+  animation: shimmer 10s linear infinite;
+}
+
+@keyframes orbit-spin {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.02);
+  }
+  to {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translate3d(-2%, 0, 0);
+    opacity: 0.72;
+  }
+  50% {
+    transform: translate3d(2%, -1%, 0);
+    opacity: 0.92;
+  }
+  100% {
+    transform: translate3d(-2%, 0, 0);
+    opacity: 0.72;
+  }
+}

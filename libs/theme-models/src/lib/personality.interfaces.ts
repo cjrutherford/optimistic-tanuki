@@ -252,6 +252,109 @@ export interface PersonalityTokenOverrides {
   letterSpacing: string;
 }
 
+export type PersonalityBorderStyle =
+  | 'solid'
+  | 'dashed'
+  | 'dotted'
+  | 'double'
+  | 'groove'
+  | 'ridge'
+  | 'inset'
+  | 'outset';
+export type PersonalityBorderWidth = 'thin' | 'medium' | 'thick';
+export type PersonalityBorderRadius =
+  | 'none'
+  | 'small'
+  | 'medium'
+  | 'large'
+  | 'pill'
+  | 'circle';
+export type PersonalityShadowStyle =
+  | 'none'
+  | 'subtle'
+  | 'medium'
+  | 'dramatic'
+  | 'neon'
+  | 'glow';
+export type PersonalityFontFamily =
+  | 'sans-serif'
+  | 'serif'
+  | 'monospace'
+  | 'display'
+  | 'handwritten';
+export type PersonalityFontWeight =
+  | 'light'
+  | 'normal'
+  | 'medium'
+  | 'semibold'
+  | 'bold'
+  | 'extrabold';
+export type PersonalityFontStyle = 'normal' | 'italic' | 'oblique';
+export type PersonalityAnimationStyle =
+  | 'none'
+  | 'subtle'
+  | 'bouncy'
+  | 'flowing'
+  | 'pulsing'
+  | 'wobbly';
+export type PersonalityAnimationSpeed = 'fast' | 'normal' | 'slow';
+
+export interface PersonalityPresentation {
+  border: {
+    style: PersonalityBorderStyle;
+    width: PersonalityBorderWidth;
+    radius: PersonalityBorderRadius;
+    styleValue: string;
+    widthValue: string;
+    radiusValue: string;
+  };
+  shadow: {
+    style: PersonalityShadowStyle;
+    value: string;
+  };
+  typography: {
+    fontFamily: PersonalityFontFamily;
+    headingFamily: PersonalityFontFamily;
+    bodyFamily: PersonalityFontFamily;
+    fontWeight: PersonalityFontWeight;
+    fontStyle: PersonalityFontStyle;
+    familyValue: string;
+    headingFamilyValue: string;
+    bodyFamilyValue: string;
+    weightValue: string;
+  };
+  animation: {
+    style: PersonalityAnimationStyle;
+    speed: PersonalityAnimationSpeed;
+    timingFunction: string;
+    duration: string;
+    transition: string;
+  };
+  layout: {
+    borderRadius: string;
+    spacing: 'compact' | 'normal' | 'relaxed';
+    maxWidth: string;
+  };
+  components: {
+    button: {
+      borderRadius: string;
+      padding: string;
+      fontWeight: string;
+      textTransform: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+    };
+    card: {
+      borderRadius: string;
+      padding: string;
+      boxShadow: string;
+    };
+    input: {
+      borderRadius: string;
+      borderWidth: string;
+      focusStyle: string;
+    };
+  };
+}
+
 /**
  * Complete personality definition
  */
@@ -273,6 +376,9 @@ export interface Personality {
 
   // Animations
   animations: AnimationConfig;
+
+  // Presentation contract layered on top of the personality metadata
+  presentation?: PersonalityPresentation;
 
   // Icons
   iconStyle: IconStyle;

@@ -5,6 +5,7 @@
 
 import {
   Personality,
+  PersonalityPresentation,
   ColorHarmonyType,
   SpacingScale,
   BorderRadiusStyle,
@@ -1263,6 +1264,591 @@ export const foundationPersonality: Personality = {
   category: 'technical',
 };
 
+function createPresentation(
+  config: PersonalityPresentation
+): PersonalityPresentation {
+  return config;
+}
+
+const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
+  classic: createPresentation({
+    border: {
+      style: 'solid',
+      width: 'thin',
+      radius: 'small',
+      styleValue: 'solid',
+      widthValue: '1px',
+      radiusValue: '4px',
+    },
+    shadow: { style: 'subtle', value: '0 2px 4px rgba(0,0,0,0.1)' },
+    typography: {
+      fontFamily: 'sans-serif',
+      headingFamily: 'sans-serif',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      familyValue: "'Inter', -apple-system, sans-serif",
+      headingFamilyValue: "'Inter', -apple-system, sans-serif",
+      bodyFamilyValue: "'Inter', -apple-system, sans-serif",
+      weightValue: '400',
+    },
+    animation: {
+      style: 'subtle',
+      speed: 'normal',
+      timingFunction: 'ease',
+      duration: '0.2s',
+      transition: 'all 0.2s ease',
+    },
+    layout: { borderRadius: '8px', spacing: 'normal', maxWidth: '72rem' },
+    components: {
+      button: {
+        borderRadius: '4px',
+        padding: '8px 16px',
+        fontWeight: '500',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '8px',
+        padding: '16px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      },
+      input: {
+        borderRadius: '4px',
+        borderWidth: '1px',
+        focusStyle: '0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent)',
+      },
+    },
+  }),
+  bold: createPresentation({
+    border: {
+      style: 'solid',
+      width: 'thick',
+      radius: 'medium',
+      styleValue: 'solid',
+      widthValue: '3px',
+      radiusValue: '8px',
+    },
+    shadow: { style: 'dramatic', value: '4px 4px 0px rgba(0,0,0,0.2)' },
+    typography: {
+      fontFamily: 'sans-serif',
+      headingFamily: 'sans-serif',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'bold',
+      fontStyle: 'normal',
+      familyValue: "'Inter', -apple-system, sans-serif",
+      headingFamilyValue: "'Inter', -apple-system, sans-serif",
+      bodyFamilyValue: "'Inter', -apple-system, sans-serif",
+      weightValue: '700',
+    },
+    animation: {
+      style: 'bouncy',
+      speed: 'normal',
+      timingFunction: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+      duration: '0.3s',
+      transition: 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+    },
+    layout: { borderRadius: '12px', spacing: 'normal', maxWidth: '70rem' },
+    components: {
+      button: {
+        borderRadius: '8px',
+        padding: '12px 24px',
+        fontWeight: '700',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '12px',
+        padding: '20px',
+        boxShadow: '6px 6px 0px rgba(0,0,0,0.15)',
+      },
+      input: {
+        borderRadius: '8px',
+        borderWidth: '3px',
+        focusStyle: '0 0 0 4px color-mix(in srgb, var(--primary) 24%, transparent)',
+      },
+    },
+  }),
+  soft: createPresentation({
+    border: {
+      style: 'solid',
+      width: 'thin',
+      radius: 'large',
+      styleValue: 'solid',
+      widthValue: '1px',
+      radiusValue: '16px',
+    },
+    shadow: { style: 'subtle', value: '0 4px 12px rgba(0,0,0,0.06)' },
+    typography: {
+      fontFamily: 'serif',
+      headingFamily: 'serif',
+      bodyFamily: 'serif',
+      fontWeight: 'light',
+      fontStyle: 'normal',
+      familyValue: "'Georgia', 'Times New Roman', serif",
+      headingFamilyValue: "'Georgia', 'Times New Roman', serif",
+      bodyFamilyValue: "'Georgia', 'Times New Roman', serif",
+      weightValue: '300',
+    },
+    animation: {
+      style: 'flowing',
+      speed: 'slow',
+      timingFunction: 'ease-out',
+      duration: '0.4s',
+      transition: 'all 0.4s ease-out',
+    },
+    layout: { borderRadius: '20px', spacing: 'relaxed', maxWidth: '72rem' },
+    components: {
+      button: {
+        borderRadius: '24px',
+        padding: '12px 28px',
+        fontWeight: '400',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '20px',
+        padding: '24px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
+      },
+      input: {
+        borderRadius: '12px',
+        borderWidth: '1px',
+        focusStyle: '0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent)',
+      },
+    },
+  }),
+  professional: createPresentation({
+    border: {
+      style: 'solid',
+      width: 'thin',
+      radius: 'small',
+      styleValue: 'solid',
+      widthValue: '1px',
+      radiusValue: '4px',
+    },
+    shadow: { style: 'subtle', value: '0 1px 3px rgba(0,0,0,0.1)' },
+    typography: {
+      fontFamily: 'sans-serif',
+      headingFamily: 'sans-serif',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'medium',
+      fontStyle: 'normal',
+      familyValue: "'Roboto', 'Segoe UI', sans-serif",
+      headingFamilyValue: "'Roboto', 'Segoe UI', sans-serif",
+      bodyFamilyValue: "'Roboto', 'Segoe UI', sans-serif",
+      weightValue: '500',
+    },
+    animation: {
+      style: 'none',
+      speed: 'fast',
+      timingFunction: 'linear',
+      duration: '0s',
+      transition: 'none',
+    },
+    layout: { borderRadius: '4px', spacing: 'normal', maxWidth: '76rem' },
+    components: {
+      button: {
+        borderRadius: '4px',
+        padding: '10px 20px',
+        fontWeight: '500',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '4px',
+        padding: '16px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+      },
+      input: {
+        borderRadius: '4px',
+        borderWidth: '1px',
+        focusStyle: '0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent)',
+      },
+    },
+  }),
+  playful: createPresentation({
+    border: {
+      style: 'dashed',
+      width: 'medium',
+      radius: 'pill',
+      styleValue: 'dashed',
+      widthValue: '2px',
+      radiusValue: '9999px',
+    },
+    shadow: { style: 'neon', value: '0 0 10px rgba(0,0,0,0.15)' },
+    typography: {
+      fontFamily: 'display',
+      headingFamily: 'display',
+      bodyFamily: 'display',
+      fontWeight: 'bold',
+      fontStyle: 'normal',
+      familyValue: "'Poppins', 'Comic Sans MS', cursive",
+      headingFamilyValue: "'Poppins', 'Comic Sans MS', cursive",
+      bodyFamilyValue: "'Poppins', 'Comic Sans MS', cursive",
+      weightValue: '700',
+    },
+    animation: {
+      style: 'bouncy',
+      speed: 'normal',
+      timingFunction: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+      duration: '0.3s',
+      transition: 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+    },
+    layout: { borderRadius: '24px', spacing: 'relaxed', maxWidth: '68rem' },
+    components: {
+      button: {
+        borderRadius: '9999px',
+        padding: '14px 32px',
+        fontWeight: '700',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '24px',
+        padding: '24px',
+        boxShadow: '0 0 15px rgba(0,0,0,0.1)',
+      },
+      input: {
+        borderRadius: '16px',
+        borderWidth: '2px',
+        focusStyle: '0 0 0 4px color-mix(in srgb, var(--primary) 24%, transparent)',
+      },
+    },
+  }),
+  elegant: createPresentation({
+    border: {
+      style: 'double',
+      width: 'thick',
+      radius: 'none',
+      styleValue: 'double',
+      widthValue: '3px',
+      radiusValue: '0px',
+    },
+    shadow: { style: 'dramatic', value: '0 10px 30px rgba(0,0,0,0.2)' },
+    typography: {
+      fontFamily: 'serif',
+      headingFamily: 'serif',
+      bodyFamily: 'serif',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      familyValue: "'Playfair Display', 'Times New Roman', serif",
+      headingFamilyValue: "'Playfair Display', 'Times New Roman', serif",
+      bodyFamilyValue: "'Playfair Display', 'Times New Roman', serif",
+      weightValue: '400',
+    },
+    animation: {
+      style: 'subtle',
+      speed: 'normal',
+      timingFunction: 'ease',
+      duration: '0.3s',
+      transition: 'all 0.3s ease',
+    },
+    layout: { borderRadius: '0px', spacing: 'normal', maxWidth: '70rem' },
+    components: {
+      button: {
+        borderRadius: '0px',
+        padding: '12px 24px',
+        fontWeight: '400',
+        textTransform: 'uppercase',
+      },
+      card: {
+        borderRadius: '0px',
+        padding: '24px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+      },
+      input: {
+        borderRadius: '0px',
+        borderWidth: '1px',
+        focusStyle: '0 0 0 2px color-mix(in srgb, var(--primary) 16%, transparent)',
+      },
+    },
+  }),
+  minimal: createPresentation({
+    border: {
+      style: 'solid',
+      width: 'thin',
+      radius: 'none',
+      styleValue: 'solid',
+      widthValue: '1px',
+      radiusValue: '0px',
+    },
+    shadow: { style: 'none', value: 'none' },
+    typography: {
+      fontFamily: 'sans-serif',
+      headingFamily: 'sans-serif',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      familyValue: "'Helvetica Neue', 'Arial', sans-serif",
+      headingFamilyValue: "'Helvetica Neue', 'Arial', sans-serif",
+      bodyFamilyValue: "'Helvetica Neue', 'Arial', sans-serif",
+      weightValue: '400',
+    },
+    animation: {
+      style: 'none',
+      speed: 'fast',
+      timingFunction: 'linear',
+      duration: '0s',
+      transition: 'none',
+    },
+    layout: { borderRadius: '0px', spacing: 'compact', maxWidth: '76rem' },
+    components: {
+      button: {
+        borderRadius: '0px',
+        padding: '10px 20px',
+        fontWeight: '400',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '0px',
+        padding: '16px',
+        boxShadow: 'none',
+      },
+      input: {
+        borderRadius: '0px',
+        borderWidth: '1px',
+        focusStyle: '0 0 0 2px color-mix(in srgb, var(--primary) 10%, transparent)',
+      },
+    },
+  }),
+  architect: createPresentation({
+    border: {
+      style: 'solid',
+      width: 'thick',
+      radius: 'none',
+      styleValue: 'solid',
+      widthValue: '3px',
+      radiusValue: '0px',
+    },
+    shadow: { style: 'dramatic', value: '6px 6px 0px rgba(0,0,0,0.18)' },
+    typography: {
+      fontFamily: 'display',
+      headingFamily: 'display',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'extrabold',
+      fontStyle: 'normal',
+      familyValue: "'Oswald', 'Arial Narrow', sans-serif",
+      headingFamilyValue: "'Oswald', 'Arial Narrow', sans-serif",
+      bodyFamilyValue: "'IBM Plex Sans', sans-serif",
+      weightValue: '800',
+    },
+    animation: {
+      style: 'subtle',
+      speed: 'normal',
+      timingFunction: 'steps(2)',
+      duration: '0.2s',
+      transition: 'all 0.2s steps(2)',
+    },
+    layout: { borderRadius: '0px', spacing: 'compact', maxWidth: '74rem' },
+    components: {
+      button: {
+        borderRadius: '0px',
+        padding: '12px 20px',
+        fontWeight: '800',
+        textTransform: 'uppercase',
+      },
+      card: {
+        borderRadius: '0px',
+        padding: '20px',
+        boxShadow: '8px 8px 0px rgba(0,0,0,0.14)',
+      },
+      input: {
+        borderRadius: '0px',
+        borderWidth: '3px',
+        focusStyle: '0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent)',
+      },
+    },
+  }),
+  'soft-touch': createPresentation({
+    border: {
+      style: 'solid',
+      width: 'thin',
+      radius: 'pill',
+      styleValue: 'solid',
+      widthValue: '1px',
+      radiusValue: '9999px',
+    },
+    shadow: { style: 'glow', value: '0 8px 22px rgba(0,0,0,0.08)' },
+    typography: {
+      fontFamily: 'handwritten',
+      headingFamily: 'sans-serif',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      familyValue: "'Quicksand', 'Nunito', sans-serif",
+      headingFamilyValue: "'Quicksand', 'Nunito', sans-serif",
+      bodyFamilyValue: "'Nunito', sans-serif",
+      weightValue: '400',
+    },
+    animation: {
+      style: 'flowing',
+      speed: 'slow',
+      timingFunction: 'ease-out',
+      duration: '0.35s',
+      transition: 'all 0.35s ease-out',
+    },
+    layout: { borderRadius: '24px', spacing: 'relaxed', maxWidth: '72rem' },
+    components: {
+      button: {
+        borderRadius: '9999px',
+        padding: '12px 26px',
+        fontWeight: '500',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '20px',
+        padding: '24px',
+        boxShadow: '0 12px 28px rgba(0,0,0,0.08)',
+      },
+      input: {
+        borderRadius: '18px',
+        borderWidth: '1px',
+        focusStyle: '0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent)',
+      },
+    },
+  }),
+  electric: createPresentation({
+    border: {
+      style: 'solid',
+      width: 'medium',
+      radius: 'medium',
+      styleValue: 'solid',
+      widthValue: '2px',
+      radiusValue: '10px',
+    },
+    shadow: { style: 'neon', value: '0 0 18px rgba(0,0,0,0.16)' },
+    typography: {
+      fontFamily: 'display',
+      headingFamily: 'display',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'bold',
+      fontStyle: 'normal',
+      familyValue: "'DM Serif Display', 'Georgia', serif",
+      headingFamilyValue: "'DM Serif Display', 'Georgia', serif",
+      bodyFamilyValue: "'Inter', -apple-system, sans-serif",
+      weightValue: '700',
+    },
+    animation: {
+      style: 'pulsing',
+      speed: 'normal',
+      timingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
+      duration: '0.25s',
+      transition: 'all 0.25s cubic-bezier(0.23, 1, 0.32, 1)',
+    },
+    layout: { borderRadius: '12px', spacing: 'normal', maxWidth: '72rem' },
+    components: {
+      button: {
+        borderRadius: '10px',
+        padding: '12px 24px',
+        fontWeight: '700',
+        textTransform: 'uppercase',
+      },
+      card: {
+        borderRadius: '14px',
+        padding: '20px',
+        boxShadow: '0 0 22px rgba(0,0,0,0.14)',
+      },
+      input: {
+        borderRadius: '10px',
+        borderWidth: '2px',
+        focusStyle: '0 0 0 4px color-mix(in srgb, var(--primary) 28%, transparent)',
+      },
+    },
+  }),
+  'control-center': createPresentation({
+    border: {
+      style: 'solid',
+      width: 'thin',
+      radius: 'small',
+      styleValue: 'solid',
+      widthValue: '1px',
+      radiusValue: '4px',
+    },
+    shadow: { style: 'medium', value: '0 1px 2px rgba(0,0,0,0.16)' },
+    typography: {
+      fontFamily: 'monospace',
+      headingFamily: 'display',
+      bodyFamily: 'monospace',
+      fontWeight: 'medium',
+      fontStyle: 'normal',
+      familyValue: "'Space Grotesk', 'JetBrains Mono', monospace",
+      headingFamilyValue: "'Space Grotesk', sans-serif",
+      bodyFamilyValue: "'JetBrains Mono', monospace",
+      weightValue: '500',
+    },
+    animation: {
+      style: 'subtle',
+      speed: 'fast',
+      timingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
+      duration: '0.18s',
+      transition: 'all 0.18s cubic-bezier(0.23, 1, 0.32, 1)',
+    },
+    layout: { borderRadius: '4px', spacing: 'compact', maxWidth: '84rem' },
+    components: {
+      button: {
+        borderRadius: '4px',
+        padding: '10px 18px',
+        fontWeight: '600',
+        textTransform: 'uppercase',
+      },
+      card: {
+        borderRadius: '4px',
+        padding: '16px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+      },
+      input: {
+        borderRadius: '4px',
+        borderWidth: '1px',
+        focusStyle: '0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent)',
+      },
+    },
+  }),
+  foundation: createPresentation({
+    border: {
+      style: 'solid',
+      width: 'thin',
+      radius: 'none',
+      styleValue: 'solid',
+      widthValue: '1px',
+      radiusValue: '0px',
+    },
+    shadow: { style: 'none', value: 'none' },
+    typography: {
+      fontFamily: 'sans-serif',
+      headingFamily: 'sans-serif',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'medium',
+      fontStyle: 'normal',
+      familyValue: "system-ui, -apple-system, sans-serif",
+      headingFamilyValue: "system-ui, -apple-system, sans-serif",
+      bodyFamilyValue: "system-ui, -apple-system, sans-serif",
+      weightValue: '500',
+    },
+    animation: {
+      style: 'none',
+      speed: 'fast',
+      timingFunction: 'linear',
+      duration: '0s',
+      transition: 'none',
+    },
+    layout: { borderRadius: '0px', spacing: 'compact', maxWidth: '80rem' },
+    components: {
+      button: {
+        borderRadius: '0px',
+        padding: '10px 18px',
+        fontWeight: '500',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '0px',
+        padding: '16px',
+        boxShadow: 'none',
+      },
+      input: {
+        borderRadius: '0px',
+        borderWidth: '1px',
+        focusStyle: '0 0 0 2px color-mix(in srgb, var(--primary) 12%, transparent)',
+      },
+    },
+  }),
+};
+
 /**
  * All predefined personalities (12 total: 7 original + 5 library-promoted)
  */
@@ -1279,7 +1865,10 @@ export const PREDEFINED_PERSONALITIES: Personality[] = [
   electricPersonality,
   controlCenterPersonality,
   foundationPersonality,
-];
+].map((personality) => ({
+  ...personality,
+  presentation: PRESENTATION_BY_ID[personality.id],
+}));
 
 /**
  * Get a personality by ID
@@ -1292,7 +1881,7 @@ export function getPersonalityById(id: string): Personality | undefined {
  * Get the default personality (Classic)
  */
 export function getDefaultPersonality(): Personality {
-  return classicPersonality;
+  return PREDEFINED_PERSONALITIES[0];
 }
 
 /**

@@ -1,0 +1,31 @@
+<section
+  class="glass-fog"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--fog-intensity]="intensity"
+  [style.--fog-speed]="speed"
+>
+  <div class="fog-backdrop"></div>
+
+  <span
+    *ngFor="let blob of blobs"
+    class="fog-blob"
+    [style.left]="blob.left"
+    [style.top]="blob.top"
+    [style.width]="blob.size"
+    [style.height]="blob.size"
+    [style.animation-delay]="blob.delay"
+    [style.animation-duration]="blob.duration"
+  ></span>
+
+  <div class="fog-sheen"></div>
+
+  <div class="fog-overlay">
+    <p class="eyebrow">Motion UI</p>
+    <h3>Glass Fog</h3>
+    <p class="caption">
+      Refracted haze and slow color pockets for premium shells, modal backdrops,
+      and atmospheric surface treatments.
+    </p>
+  </div>
+</section>
