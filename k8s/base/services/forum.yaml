@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: forum
-          image: cjrutherford/optimistic_tanuki_forum:sha-6b41e001a63d9e379ffbcc239305818d9c9e79cf
+          image: cjrutherford/optimistic_tanuki_forum:sha-1d5bb482689e469f1918a464dd9837a03741beed
           imagePullPolicy: Always
           ports:
             - containerPort: 3015
