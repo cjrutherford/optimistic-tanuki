@@ -5,7 +5,7 @@ import {
   Input,
   Output,
   EventEmitter,
-  input
+  input,
 } from '@angular/core';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { CommonModule } from '@angular/common';
@@ -24,7 +24,7 @@ export interface NotificationTab {
       <div class="page-header">
         <h1>Notifications</h1>
         @if (unreadCount() > 0) {
-        <button class="mark-all-btn" (click)="onMarkAllRead.emit()">
+        <button class="mark-all-btn" (click)="markAllRead.emit()">
           Mark all as read
         </button>
         }
@@ -336,7 +336,7 @@ export class NotificationListComponent {
   readonly notifications = input(signal<any[]>([]));
   @Input() unreadCount = signal(0);
   @Output() notificationClick = new EventEmitter<any>();
-  @Output() onMarkAllRead = new EventEmitter<void>();
+  @Output() markAllRead = new EventEmitter<void>();
 
   activeTab = signal('all');
 

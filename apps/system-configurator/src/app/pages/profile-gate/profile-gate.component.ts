@@ -3,7 +3,10 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
-import { TextInputComponent, TextAreaComponent } from '@optimistic-tanuki/form-ui';
+import {
+  TextInputComponent,
+  TextAreaComponent,
+} from '@optimistic-tanuki/form-ui';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from '../../state/profile.service';
@@ -58,6 +61,7 @@ import { ReturnIntentService } from '../../state/return-intent.service';
 
           <div class="panel">
             <h2>Create a HAI profile</h2>
+            <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
             <label>Profile name</label>
             <lib-text-input
               [(ngModel)]="profileName"
@@ -66,6 +70,7 @@ import { ReturnIntentService } from '../../state/return-intent.service';
               placeholder="HAI Build Lead"
             ></lib-text-input>
 
+            <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
             <label>Role or purpose</label>
             <lib-text-input
               [(ngModel)]="occupation"
@@ -74,11 +79,9 @@ import { ReturnIntentService } from '../../state/return-intent.service';
               placeholder="Systems integrator"
             ></lib-text-input>
 
+            <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
             <label>Short bio</label>
-            <lib-text-area
-              [(ngModel)]="bio"
-              name="bio"
-            ></lib-text-area>
+            <lib-text-area [(ngModel)]="bio" name="bio"></lib-text-area>
 
             <button
               type="button"

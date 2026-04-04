@@ -55,7 +55,7 @@ jobs:
 
           npm install --legacy-peer-deps
 
-          npx nx build-many -t build --configuration=production --all --parallel=3
+          npx nx run-many -t build --configuration=production --all --parallel=3
 
           docker compose -f docker-compose.k8s.yaml build
           docker compose -f docker-compose.k8s.yaml push

@@ -142,7 +142,9 @@ describe('OnboardingAnalysisService', () => {
     });
 
     expect(result.summary).toContain('Principal Consultant');
-    expect(result.skills).toEqual(expect.arrayContaining(['React', 'TypeScript']));
+    expect(result.skills).toEqual(
+      expect.arrayContaining(['React', 'TypeScript'])
+    );
     expect(result.certifications).toEqual(
       expect.arrayContaining(['AWS Certified Solutions Architect'])
     );
@@ -162,11 +164,17 @@ describe('OnboardingAnalysisService', () => {
         companySizeTarget: expect.arrayContaining(['51-200', '201-500']),
         industries: expect.arrayContaining(['SaaS', 'Healthcare']),
         outcomes: expect.arrayContaining(['Reduced release cycles by 40%']),
-        outreachMethod: expect.arrayContaining(['Email', 'LinkedIn', 'Referrals']),
+        outreachMethod: expect.arrayContaining([
+          'Email',
+          'LinkedIn',
+          'Referrals',
+        ]),
         geographicFocus: 'North America',
       })
     );
-    expect(result.evidenceByField?.idealCustomer?.[0]).toContain('VP Engineering');
+    expect(result.evidenceByField?.idealCustomer?.[0]).toContain(
+      'VP Engineering'
+    );
   });
 
   it('strips non-printing characters out of binary-looking resume uploads', async () => {
@@ -183,6 +191,7 @@ describe('OnboardingAnalysisService', () => {
 
     expect(result.summary).toContain('Principal Consultant');
     expect(result.summary).toContain('Northstar Digital');
+    // eslint-disable-next-line no-control-regex
     expect(result.summary).not.toMatch(/[\x00-\x1F\x7F]/);
   });
 
@@ -225,7 +234,9 @@ describe('OnboardingAnalysisService', () => {
     expect(result.evidenceByField?.idealCustomer?.[0]).toBe(
       'VP Engineering and Product leaders'
     );
-    expect(JSON.stringify(result)).not.toMatch(/[\x00-\x1F\x7F\u200B-\u200F\u2060\uFEFF]/);
+    expect(JSON.stringify(result)).not.toMatch(
+      /[\x00-\x1F\x7F\u200B-\u200F\u2060\uFEFF]/
+    );
   });
 
   it('returns the next DISC question until enough transcript exists', async () => {
@@ -240,17 +251,31 @@ describe('OnboardingAnalysisService', () => {
   it('produces a lightweight DISC behavioral profile with quadrant percentages', async () => {
     const result = await service.advanceDiscInterview({
       transcript: [
-        { role: 'user', text: 'I like making fast decisions and leading change.' },
-        { role: 'user', text: 'I address missed deadlines directly and push through obstacles.' },
-        { role: 'user', text: 'I reduce ambiguity by making a plan, using data, and clarifying expectations.' },
-        { role: 'user', text: 'I perform best with autonomy, ownership, and a high bar for quality.' },
+        {
+          role: 'user',
+          text: 'I like making fast decisions and leading change.',
+        },
+        {
+          role: 'user',
+          text: 'I address missed deadlines directly and push through obstacles.',
+        },
+        {
+          role: 'user',
+          text: 'I reduce ambiguity by making a plan, using data, and clarifying expectations.',
+        },
+        {
+          role: 'user',
+          text: 'I perform best with autonomy, ownership, and a high bar for quality.',
+        },
       ],
     });
 
     expect(result.complete).toBe(true);
     expect(result.assessment?.primaryType).toBeDefined();
     expect(result.discType).toBe(result.assessment?.primaryType);
-    expect(result.assessment?.dScore).toBeGreaterThan(result.assessment?.sScore ?? 0);
+    expect(result.assessment?.dScore).toBeGreaterThan(
+      result.assessment?.sScore ?? 0
+    );
     expect(result.assessment?.summary).toContain('behavioral');
     expect(result.assessment?.summary).toContain('%');
     expect(result.assessment?.confidence).toBeGreaterThanOrEqual(75);
@@ -258,14 +283,18 @@ describe('OnboardingAnalysisService', () => {
 
   it('uses resume and DISC context when generating deterministic topics', async () => {
     const topics = await service.analyzeProfile({
-      madLibSummary: 'Product engineering consultant specializing in React modernization.',
+      madLibSummary:
+        'Product engineering consultant specializing in React modernization.',
       serviceOffer: 'React modernization consulting',
       yearsExperience: '10+ years',
       skills: ['React'],
       certifications: [],
-      resumeParseSummary: 'Senior frontend consultant with TypeScript expertise.',
+      resumeParseSummary:
+        'Senior frontend consultant with TypeScript expertise.',
       resumeDerivedSkills: ['TypeScript'],
-      resumeDerivedExperience: ['10+ years leading frontend modernization projects'],
+      resumeDerivedExperience: [
+        '10+ years leading frontend modernization projects',
+      ],
       resumeDerivedCertifications: [],
       idealCustomer: 'VP Engineering',
       companySizeTarget: ['51-200'],
@@ -296,12 +325,14 @@ describe('OnboardingAnalysisService', () => {
 
     expect(
       topics.some((topic) =>
-        ['React modernization consulting', 'React', 'TypeScript'].every((keyword) =>
-          topic.keywords.includes(keyword)
+        ['React modernization consulting', 'React', 'TypeScript'].every(
+          (keyword) => topic.keywords.includes(keyword)
         )
       )
     ).toBe(true);
-    expect(Math.max(...topics.map((topic) => topic.confidence))).toBeGreaterThanOrEqual(70);
+    expect(
+      Math.max(...topics.map((topic) => topic.confidence))
+    ).toBeGreaterThanOrEqual(70);
   });
 
   it('generates a broad topic set from the collated onboarding profile', async () => {
@@ -352,22 +383,31 @@ describe('OnboardingAnalysisService', () => {
         summary: 'behavioral profile summary: D 82%, I 61%, S 43%, C 57%',
         confidence: 88,
       },
-      leadSignalTypes: ['Company growth', 'Funding rounds', 'New product launches'],
+      leadSignalTypes: [
+        'Company growth',
+        'Funding rounds',
+        'New product launches',
+      ],
       excludedCompanies: [],
       excludedIndustries: [],
       currentStep: 0,
     });
 
     expect(topics.length).toBeGreaterThanOrEqual(7);
-    expect(topics.some((topic) => topic.name.includes('Healthcare'))).toBe(true);
+    expect(topics.some((topic) => topic.name.includes('Healthcare'))).toBe(
+      true
+    );
     expect(topics.some((topic) => topic.name.includes('Fintech'))).toBe(true);
     expect(topics.some((topic) => topic.name.includes('React'))).toBe(true);
     expect(topics.some((topic) => topic.name.includes('Analytics'))).toBe(true);
     expect(
-      topics.filter((topic) => topic.sources.includes('google-maps' as any)).every((topic) =>
-        topic.googleMapsLocation === 'Atlanta, GA' &&
-        topic.googleMapsRadiusMiles === 50
-      )
+      topics
+        .filter((topic) => topic.sources.includes('google-maps' as any))
+        .every(
+          (topic) =>
+            topic.googleMapsLocation === 'Atlanta, GA' &&
+            topic.googleMapsRadiusMiles === 50
+        )
     ).toBe(true);
   });
 });

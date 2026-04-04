@@ -58,10 +58,10 @@
       "@optimistic-tanuki/notification-ui": [
         "libs/notification-ui/src/index.ts"
       ],
-      "@optimistic-tanuki/payments-ui": ["libs/payments-ui/src/index.ts"],
       "@optimistic-tanuki/payment-fees": [
         "libs/constants/src/lib/libs/payment-fees.ts"
       ],
+      "@optimistic-tanuki/payments-ui": ["libs/payments-ui/src/index.ts"],
       "@optimistic-tanuki/permission-lib": ["libs/permission-lib/src/index.ts"],
       "@optimistic-tanuki/persona-ui": ["libs/persona-ui/src/index.ts"],
       "@optimistic-tanuki/profile-ui": ["libs/profile-ui/src/index.ts"],
