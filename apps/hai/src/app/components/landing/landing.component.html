@@ -83,7 +83,7 @@
     </div>
   </section>
 
-  <section class="story-grid">
+  <section class="story-grid" id="services">
     <article class="story-panel" data-theme-surface="card">
       <p class="eyebrow">Services</p>
       <h2>We build software that respects ownership, clarity, and scale.</h2>
@@ -97,6 +97,7 @@
     <div class="service-list">
       @for (pillar of servicePillars; track pillar.title) {
       <article class="service-card" data-theme-surface="card">
+        <span class="card-icon" aria-hidden="true">{{ pillar.icon }}</span>
         <h3>{{ pillar.title }}</h3>
         <p>{{ pillar.description }}</p>
       </article>
@@ -104,14 +105,18 @@
     </div>
   </section>
 
-  <section class="personal-cloud-panel" data-theme-surface="feature">
+  <section
+    class="personal-cloud-panel"
+    data-theme-surface="feature"
+    id="personal-cloud"
+  >
     <div class="section-copy">
       <p class="eyebrow">Digital Homesteading</p>
       <h2>Personal cloud should feel grounded, not experimental.</h2>
       <p>
         We package personal-cloud systems for homelab, family compute, and
-        self-hosted workflows so they feel approachable, stable, and useful.
-        The goal is not novelty. The goal is owned capability.
+        self-hosted workflows so they feel approachable, stable, and useful. The
+        goal is not novelty. The goal is owned capability.
       </p>
     </div>
 
@@ -153,6 +158,7 @@
         [href]="app.href"
         data-theme-surface="card"
       >
+        <span class="card-label">{{ app.category }}</span>
         <span class="app-name">{{ app.name }}</span>
         <span class="app-tagline">{{ app.tagline }}</span>
       </a>
@@ -160,12 +166,17 @@
     </div>
   </section>
 
-  <section class="contact-panel" data-theme-surface="hero">
+  <section class="contact-panel" data-theme-surface="hero" id="contact">
     <p class="eyebrow">Work With HAI</p>
-    <h2>Build durable software. Set up owned computing. Start with the next sensible step.</h2>
-    <div class="hero-actions">
+    <h2>
+      Build durable software. Set up owned computing. Start with the next
+      sensible step.
+    </h2>
+    <div class="hero-actions" style="justify-content: center">
       <a class="cta primary" href="/hai-computer">Go to HAI Computer</a>
-      <a class="cta secondary" href="mailto:hello@hopefulaspirations.com">hello@hopefulaspirations.com</a>
+      <a class="cta secondary" href="mailto:hello@hopefulaspirations.com"
+        >hello@hopefulaspirations.com</a
+      >
     </div>
   </section>
 </div>

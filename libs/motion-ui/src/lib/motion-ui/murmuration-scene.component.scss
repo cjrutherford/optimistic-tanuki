@@ -38,8 +38,7 @@
 
 .murmuration-backdrop,
 .murmuration-orbit,
-.murmuration-canvas,
-.murmuration-overlay {
+.murmuration-canvas {
   position: absolute;
   inset: 0;
 }
@@ -58,7 +57,7 @@
       color-mix(in srgb, var(--primary) 7%, transparent) 18px,
       color-mix(in srgb, var(--primary) 7%, transparent) 19px
     );
-  opacity: 0.9;
+  opacity: 0.35;
   transform: scale(1.02);
 }
 
@@ -88,44 +87,6 @@
   display: block;
   mix-blend-mode: screen;
   transform: scale(1.04);
-}
-
-.murmuration-overlay {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: clamp(1rem, 2vw, 1.5rem);
-  pointer-events: none;
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--background) 52%, transparent),
-    transparent 40%
-  );
-}
-
-.eyebrow {
-  margin: 0 0 0.4rem;
-  font: 600 0.72rem/1
-    var(--personality-font-family, var(--font-body, sans-serif));
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--foreground) 68%, var(--primary));
-}
-
-h3 {
-  margin: 0;
-  font-family: var(--font-heading, var(--personality-font-family, serif));
-  font-size: clamp(1.5rem, 4vw, 2.4rem);
-  font-weight: var(--personality-font-weight, 700);
-  color: var(--foreground);
-}
-
-.caption {
-  max-width: 28rem;
-  margin: 0.45rem 0 0;
-  font: 400 0.95rem/1.5
-    var(--personality-font-family, var(--font-body, sans-serif));
-  color: color-mix(in srgb, var(--foreground) 70%, transparent);
 }
 
 .murmuration-scene.is-fallback .murmuration-canvas {
