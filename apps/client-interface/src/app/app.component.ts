@@ -47,7 +47,9 @@ import {
   SearchResult,
 } from '@optimistic-tanuki/search-ui';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
+import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'app-root',
@@ -63,7 +65,9 @@ import { MessageComponent } from '@optimistic-tanuki/message-ui';
     NotificationBellComponent,
     GlobalSearchComponent,
     DevInfoComponent,
+    HaiAboutTagComponent,
     MessageComponent,
+    MurmurationSceneComponent,
   ],
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -92,6 +96,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   title = 'client-interface';
+  readonly haiAboutConfig = {
+    appId: 'optimistic-tanuki',
+    appName: 'Optimistic Tanuki',
+    appTagline: 'The broader HAI social and utility ecosystem.',
+    appDescription:
+      'Optimistic Tanuki is the social, messaging, and utility layer in the HAI ecosystem, connecting identity, community, and daily workflows.',
+    appUrl: '/optimistic-tanuki',
+  };
   isNavExpanded = signal(false);
   isAuthenticated = signal(false);
   selectedProfile = signal<ProfileDto | null>(null);
@@ -104,6 +116,22 @@ export class AppComponent implements OnInit, OnDestroy {
 
   notifications = signal<Notification[]>([]);
   unreadCount = signal(0);
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   ngOnInit() {
     this.currentUrl$ = this.router.events.pipe(

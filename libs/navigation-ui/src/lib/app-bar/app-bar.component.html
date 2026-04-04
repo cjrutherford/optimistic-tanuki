@@ -3,6 +3,7 @@
     <div class="title-bar">
       <img *ngIf="logoSrc" [src]="logoSrc" [alt]="logoAlt" width="75px" />
       <otui-heading [text]="appTitle" [size]="'2em'"></otui-heading>
+      <lib-theme-toggle *ngIf="showThemeToggle"></lib-theme-toggle>
       <otui-button class="menu-btn" (click)="onMenuClick()">{{
         menuIcon
       }}</otui-button>

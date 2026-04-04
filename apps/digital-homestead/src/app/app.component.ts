@@ -7,10 +7,18 @@ import {
   GradientBuilder,
   DevInfoComponent,
 } from '@optimistic-tanuki/common-ui';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { hexToRgb } from '@optimistic-tanuki/theme-lib';
+import { GlassFogComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
-  imports: [RouterModule, TitleBarComponent, DevInfoComponent],
+  imports: [
+    RouterModule,
+    TitleBarComponent,
+    DevInfoComponent,
+    HaiAboutTagComponent,
+    GlassFogComponent,
+  ],
   selector: 'dh-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -21,11 +29,35 @@ import { hexToRgb } from '@optimistic-tanuki/theme-lib';
 export class AppComponent implements OnInit {
   title = 'digital-homestead';
   headingGradient = 'linear-gradient(90deg, #ff7e5f, #feb47b)'; // Example gradient
+  readonly haiAboutConfig = {
+    appId: 'digital-grange',
+    appName: 'Digital Grange',
+    appTagline: 'Digital homesteading for owned, calm computing.',
+    appDescription:
+      'Digital Grange brings together blogging, community, and personal-cloud minded tools for people building a durable digital homestead.',
+    appUrl: '/digital-grange',
+  };
 
   constructor(
     private readonly themeService: ThemeService,
     @Inject(PLATFORM_ID) private platformId: object
   ) {}
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   ngOnInit() {
     // Initialize theme - only in browser to avoid SSR issues

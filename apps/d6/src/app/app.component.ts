@@ -1,43 +1,83 @@
-import { Component, inject } from '@angular/core';
+import { Component, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NavigationComponent } from './components/navigation/navigation.component';
 import { MessageService, MessageType } from './services/message.service';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, NavigationComponent, CommonModule, DevInfoComponent],
+  imports: [
+    RouterOutlet,
+    NavigationComponent,
+    CommonModule,
+    DevInfoComponent,
+    HaiAboutTagComponent,
+    ShimmerBeamComponent,
+  ],
   template: `
-    <app-navigation></app-navigation>
-
-    <!-- Toast Messages -->
-    <div class="message-container" *ngIf="messages().length > 0">
-      @for (message of messages(); track message.id) {
-      <div
-        class="message"
-        [ngClass]="message.type"
-        (click)="dismiss(message.id!)"
-      >
-        <span class="message-text">{{ message.content }}</span>
-        <button class="close-button" [attr.aria-label]="'Close message'">
-          <span class="icon">×</span>
-        </button>
-      </div>
-      }
+    @if (isBrowser) {
+    <div class="motion-background" aria-hidden="true">
+      <otui-shimmer-beam
+        [reducedMotion]="reducedMotion"
+        height="100vh"
+        [speed]="0.2"
+        [intensity]="0.36"
+        direction="diagonal"
+      ></otui-shimmer-beam>
     </div>
+    }
 
-    <main class="main-content">
-      <router-outlet></router-outlet>
-    </main>
+    <div class="app-content">
+      <app-navigation></app-navigation>
 
-    <otui-dev-info />
+      <!-- Toast Messages -->
+      <div class="message-container" *ngIf="messages().length > 0">
+        @for (message of messages(); track message.id) {
+        <div
+          class="message"
+          [ngClass]="message.type"
+          (click)="dismiss(message.id!)"
+        >
+          <span class="message-text">{{ message.content }}</span>
+          <button class="close-button" [attr.aria-label]="'Close message'">
+            <span class="icon">×</span>
+          </button>
+        </div>
+        }
+      </div>
+
+      <main class="main-content">
+        <router-outlet></router-outlet>
+      </main>
+
+      <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
+      <otui-dev-info />
+    </div>
   `,
   styles: [
     `
       :host {
         display: block;
+        min-height: 100vh;
+      }
+
+      .motion-background {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+
+      .app-content {
+        position: relative;
+        z-index: 1;
         min-height: 100vh;
       }
 
@@ -144,8 +184,42 @@ import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 })
 export class AppComponent {
   private readonly messageService = inject(MessageService);
+  private readonly themeService = inject(ThemeService);
+  private readonly platformId = inject(PLATFORM_ID);
+  readonly haiAboutConfig = {
+    appId: 'd6',
+    appName: 'd6',
+    appTagline: 'Personal daily practice and self-reflection tooling.',
+    appDescription:
+      'd6 is an HAI app for structured reflection, personal practice, and guided day-to-day self-management workflows.',
+    appUrl: '/d6',
+  };
 
   messages = this.messageService.messages;
+
+  constructor() {
+    if (this.isBrowser) {
+      this.themeService.setTheme('light');
+      this.themeService.setPersonality('soft-touch');
+      this.themeService.setPrimaryColor('#6b8f8a');
+    }
+  }
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   dismiss(id: number): void {
     this.messageService.removeMessage(id);

@@ -79,6 +79,14 @@ services:
     ports:
       - '8082:4000'
 
+  hai-client-interface:
+    container_name: hai_client_interface
+    build:
+      context: .
+      dockerfile: ./apps/hai/Dockerfile
+    ports:
+      - '8088:4000'
+
   crdn-client-interface:
     container_name: crdn_client_interface # Added
     build:
@@ -146,6 +154,8 @@ services:
       forgeofwill-client-interface:
         condition: service_started
       digital-homestead-client-interface:
+        condition: service_started
+      hai-client-interface:
         condition: service_started
       profile:
         condition: service_started

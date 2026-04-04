@@ -1,17 +1,34 @@
-<div class="app-container">
-  <nav class="main-nav">
-    <h1>Store</h1>
-    <ul>
-      <li><a routerLink="/catalog" routerLinkActive="active">Catalog</a></li>
-      <li><a routerLink="/bookings" routerLinkActive="active">Bookings</a></li>
-      <li><a routerLink="/cart" routerLinkActive="active">Cart</a></li>
-      <li>
-        <a routerLink="/donations" routerLinkActive="active">Donations</a>
-      </li>
-      <li><a routerLink="/forum" routerLinkActive="active">Forum</a></li>
-    </ul>
-  </nav>
-  <main>
-    <router-outlet></router-outlet>
-  </main>
+@if (isBrowser) {
+<div class="motion-background" aria-hidden="true">
+  <otui-aurora-ribbon
+    [reducedMotion]="reducedMotion"
+    height="100vh"
+    [density]="4"
+    [speed]="0.24"
+    [intensity]="0.42"
+  ></otui-aurora-ribbon>
+</div>
+}
+
+<div class="app-content">
+  <div class="app-container">
+    <nav class="main-nav">
+      <h1>Store</h1>
+      <ul>
+        <li><a routerLink="/catalog" routerLinkActive="active">Catalog</a></li>
+        <li>
+          <a routerLink="/bookings" routerLinkActive="active">Bookings</a>
+        </li>
+        <li><a routerLink="/cart" routerLinkActive="active">Cart</a></li>
+        <li>
+          <a routerLink="/donations" routerLinkActive="active">Donations</a>
+        </li>
+        <li><a routerLink="/forum" routerLinkActive="active">Forum</a></li>
+      </ul>
+    </nav>
+    <main>
+      <router-outlet></router-outlet>
+    </main>
+    <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
+  </div>
 </div>

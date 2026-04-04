@@ -1,0 +1,126 @@
+:host {
+  position: fixed;
+  left: max(0.85rem, env(safe-area-inset-left));
+  bottom: max(0.85rem, env(safe-area-inset-bottom));
+  z-index: 1060;
+}
+
+.hai-tag {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 12.5rem;
+  padding: 0.9rem 1rem 0.9rem 1.2rem;
+  border: 0;
+  border-radius: 1rem 1rem 1rem 0.4rem;
+  background: linear-gradient(
+      180deg,
+      color-mix(
+        in srgb,
+        var(--surface, var(--background)) 96%,
+        var(--secondary) 4%
+      ),
+      color-mix(
+        in srgb,
+        var(--surface, var(--background)) 92%,
+        var(--secondary) 8%
+      )
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      color-mix(in srgb, var(--foreground) 6%, transparent) 0 6px,
+      color-mix(in srgb, white 14%, transparent) 6px 12px
+    );
+  box-shadow: 0 20px 40px color-mix(in srgb, var(--foreground) 18%, transparent),
+    0 4px 12px color-mix(in srgb, var(--foreground) 12%, transparent);
+  color: var(--foreground);
+  cursor: pointer;
+  text-align: left;
+  transition: transform var(--personality-transition, 180ms ease),
+    box-shadow var(--personality-transition, 180ms ease);
+}
+
+.hai-tag:hover,
+.hai-tag:focus-visible {
+  transform: translateY(-2px) rotate(-1deg);
+  box-shadow: 0 24px 48px color-mix(in srgb, var(--foreground) 24%, transparent),
+    0 4px 12px color-mix(in srgb, var(--foreground) 14%, transparent);
+}
+
+.hai-tag::after {
+  content: '';
+  position: absolute;
+  inset: 0.35rem;
+  border: 1px dashed color-mix(in srgb, var(--foreground) 35%, transparent);
+  border-radius: 0.75rem 0.75rem 0.75rem 0.25rem;
+  pointer-events: none;
+}
+
+.tag-hole {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.65rem;
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  box-shadow: inset 0 2px 4px
+    color-mix(in srgb, var(--foreground) 25%, transparent);
+}
+
+.tag-mark {
+  display: grid;
+  place-items: center;
+  width: 2.7rem;
+  aspect-ratio: 1;
+  border-radius: var(--personality-button-radius, 0.9rem);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--primary) 88%, black 12%),
+    color-mix(in srgb, var(--primary) 72%, black 28%)
+  );
+  color: var(--background, #f8f2e6);
+  font-family: var(
+    --font-heading,
+    var(--personality-font-family, Georgia, serif)
+  );
+  font-size: 1.25rem;
+  letter-spacing: 0.22em;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 25%, transparent);
+}
+
+.tag-copy {
+  display: grid;
+  gap: 0.1rem;
+  padding-left: 0.1rem;
+}
+
+.tag-copy strong {
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.tag-copy small {
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  :host {
+    left: max(0.65rem, env(safe-area-inset-left));
+    bottom: max(0.65rem, env(safe-area-inset-bottom));
+  }
+
+  .hai-tag {
+    min-width: 10.8rem;
+    padding-right: 0.8rem;
+  }
+
+  .tag-copy strong {
+    font-size: 0.88rem;
+  }
+}

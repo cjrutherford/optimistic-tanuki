@@ -1,35 +1,50 @@
-<div class="app-container">
-  <otui-app-bar
-    appTitle="Forge of Will"
-    logoSrc="android-chrome-192x192.png"
-    logoAlt="Forge of Will Logo"
-    [showThemeToggle]="true"
-    [useTile]="false"
-    (menuToggle)="showModal()"
-  >
-  </otui-app-bar>
+@if (isBrowser) {
+<div class="motion-background" aria-hidden="true">
+  <otui-pulse-rings
+    [reducedMotion]="reducedMotion"
+    height="100vh"
+    [ringCount]="5"
+    [speed]="0.32"
+    [intensity]="0.45"
+  ></otui-pulse-rings>
+</div>
+}
 
-  <otui-nav-sidebar
-    [isOpen]="isModalOpen()"
-    [navItems]="navItems()"
-    heading="Navigation"
-    (close)="isModalOpen.set(false)"
-  >
-  </otui-nav-sidebar>
+<div class="app-content">
+  <div class="app-container">
+    <otui-app-bar
+      appTitle="Forge of Will"
+      logoSrc="android-chrome-192x192.png"
+      logoAlt="Forge of Will Logo"
+      [showThemeToggle]="true"
+      [useTile]="false"
+      (menuToggle)="showModal()"
+    >
+    </otui-app-bar>
 
-  <main class="main-content">
-    <router-outlet></router-outlet>
-  </main>
+    <otui-nav-sidebar
+      [isOpen]="isModalOpen()"
+      [navItems]="navItems()"
+      heading="Navigation"
+      (close)="isModalOpen.set(false)"
+    >
+    </otui-nav-sidebar>
 
-  @if (isAuthenticated() && selectedProfile()) {
-  <app-chat [externalMessages]="newPersonaMessages()"></app-chat>
-  <app-ai-assistant-bubble
-    [userProfile]="selectedProfile()"
-    (personaSelected)="onPersonaSelected($event)"
-  ></app-ai-assistant-bubble>
-  }
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
 
-  <lib-message></lib-message>
+    @if (isAuthenticated() && selectedProfile()) {
+    <app-chat [externalMessages]="newPersonaMessages()"></app-chat>
+    <app-ai-assistant-bubble
+      [userProfile]="selectedProfile()"
+      (personaSelected)="onPersonaSelected($event)"
+    ></app-ai-assistant-bubble>
+    }
 
-  <otui-dev-info />
+    <lib-message></lib-message>
+
+    <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
+    <otui-dev-info />
+  </div>
 </div>

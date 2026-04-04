@@ -1,3 +1,15 @@
+@if (isBrowser) {
+<div class="motion-background" aria-hidden="true">
+  <otui-signal-mesh
+    [reducedMotion]="reducedMotion"
+    height="100vh"
+    [density]="5"
+    [speed]="0.22"
+    [intensity]="0.42"
+  ></otui-signal-mesh>
+</div>
+}
+
 <div class="app-shell">
   <header class="topbar">
     <button class="brand" type="button" (click)="navigateHome()">
@@ -21,4 +33,6 @@
   <main class="content-shell">
     <router-outlet></router-outlet>
   </main>
+
+  <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
 </div>

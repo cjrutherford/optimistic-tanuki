@@ -1,4 +1,19 @@
-<dh-title-bar></dh-title-bar>
-<router-outlet></router-outlet>
+@if (isBrowser) {
+<div class="motion-background" aria-hidden="true">
+  <otui-glass-fog
+    [reducedMotion]="reducedMotion"
+    height="100vh"
+    [density]="5"
+    [speed]="0.22"
+    [intensity]="0.4"
+  ></otui-glass-fog>
+</div>
+}
 
-<otui-dev-info />
+<div class="app-content">
+  <dh-title-bar></dh-title-bar>
+  <router-outlet></router-outlet>
+
+  <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
+  <otui-dev-info />
+</div>

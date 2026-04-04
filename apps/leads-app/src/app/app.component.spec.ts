@@ -79,7 +79,9 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.nav-brand')?.textContent).toContain('Lead Command');
+    expect(compiled.querySelector('.nav-brand')?.textContent).toContain(
+      'Lead Command'
+    );
     expect(compiled.textContent).toContain('Dashboard');
     expect(compiled.textContent).toContain('Leads');
     expect(compiled.textContent).toContain('Topics');
@@ -100,9 +102,9 @@ describe('AppComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.nav-links')).toBeNull();
-    expect(compiled.querySelector('.nav-brand')?.getAttribute('href')).toContain(
-      '/onboarding'
-    );
+    expect(
+      compiled.querySelector('.nav-brand')?.getAttribute('href')
+    ).toContain('/onboarding');
   });
 
   it('shows login and register links when signed out', () => {
@@ -115,5 +117,15 @@ describe('AppComponent', () => {
 
     expect(compiled.textContent).toContain('Login');
     expect(compiled.textContent).toContain('Register');
+  });
+
+  it('renders the parallax grid warp motion background shell', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.motion-background')).toBeTruthy();
+    expect(compiled.querySelector('otui-parallax-grid-warp')).toBeTruthy();
+    expect(compiled.querySelector('.app-shell')).toBeTruthy();
   });
 });

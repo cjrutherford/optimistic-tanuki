@@ -7,6 +7,7 @@
 #   - optimistic-tanuki.tail-scale.ts.net
 #   - client-interface.tail-scale.ts.net
 #   - forgeofwill.tail-scale.ts.net
+#   - hai.tail-scale.ts.net
 #
 # To customize the base domain, edit the "host" and "tailscale.com/hostname"
 # values below to match your Tailscale account's DNS configuration.
@@ -15,6 +16,7 @@
 #   - Gateway API:  https://optimistic-tanuki.tail-scale.ts.net
 #   - Client UI:    https://client-interface.tail-scale.ts.net
 #   - Forgeofwill:  https://forgeofwill.tail-scale.ts.net
+#   - HAI:          https://hai.tail-scale.ts.net
 #   - etc.
 #
 ---
@@ -101,6 +103,27 @@ spec:
                 name: digital-homestead
                 port:
                   number: 8082
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hai-ingress-tailscale
+  namespace: optimistic-tanuki
+  annotations:
+    tailscale.com/hostname: hai
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: hai.tail-scale.ts.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hai
+                port:
+                  number: 8088
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

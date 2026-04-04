@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { PLATFORM_ID } from '@angular/core';
 import { AppComponent } from './app.component';
 import { RouterModule } from '@angular/router';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
@@ -14,6 +15,7 @@ describe('AppComponent', () => {
         HttpClientTestingModule,
       ],
       providers: [
+        { provide: PLATFORM_ID, useValue: 'browser' },
         {
           provide: ContactService,
           useValue: {
@@ -37,5 +39,15 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     expect(app.title).toEqual('digital-homestead');
+  });
+
+  it('renders the glass fog motion background shell', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.motion-background')).toBeTruthy();
+    expect(compiled.querySelector('otui-glass-fog')).toBeTruthy();
+    expect(compiled.querySelector('.app-content')).toBeTruthy();
   });
 });

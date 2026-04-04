@@ -9,6 +9,7 @@ import {
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
 import { AuthService } from '../services/auth.service';
+import { OPERATOR_WORKSPACES } from '../operator-workspaces';
 
 @Component({
   selector: 'app-dashboard',
@@ -33,96 +34,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.themeService.setPersonality('control-center');
+    this.themeService.setPrimaryColor('#2dd4bf');
+
     this.theme$.pipe(takeUntil(this.destroy$)).subscribe((theme) => {
       // Theme changes are handled by ThemeService via CSS variables
     });
 
-    this.navItems = [
-      {
-        label: 'Users',
-        action: () => this.router.navigate(['/dashboard/users']),
-        variant: 'text',
-        isActive: this.router.url.includes('/users'),
-      },
-      {
-        label: 'Roles',
-        action: () => this.router.navigate(['/dashboard/roles']),
-        variant: 'text',
-        isActive: this.router.url.includes('/roles'),
-      },
-      {
-        label: 'Permissions',
-        action: () => this.router.navigate(['/dashboard/permissions']),
-        variant: 'text',
-        isActive:
-          this.router.url.includes('/permissions') &&
-          !this.router.url.includes('/permissions-inspector'),
-      },
-      {
-        label: 'Permissions Inspector',
-        action: () =>
-          this.router.navigate(['/dashboard/permissions-inspector']),
-        variant: 'text',
-        isActive: this.router.url.includes('/permissions-inspector'),
-      },
-      {
-        label: 'App Scopes',
-        action: () => this.router.navigate(['/dashboard/app-scopes']),
-        variant: 'text',
-        isActive: this.router.url.includes('/app-scopes'),
-      },
-      {
-        label: 'Theme',
-        action: () => this.router.navigate(['/dashboard/theme']),
-        variant: 'text',
-        isActive: this.router.url.includes('/theme'),
-      },
-      {
-        label: 'Store Overview',
-        action: () => this.router.navigate(['/dashboard/store/overview']),
-        variant: 'text',
-        isActive: this.router.url.includes('/store/overview'),
-      },
-      {
-        label: 'Products',
-        action: () => this.router.navigate(['/dashboard/store/products']),
-        variant: 'text',
-        isActive: this.router.url.includes('/store/products'),
-      },
-      {
-        label: 'Orders',
-        action: () => this.router.navigate(['/dashboard/store/orders']),
-        variant: 'text',
-        isActive: this.router.url.includes('/store/orders'),
-      },
-      {
-        label: 'App Config',
-        action: () => this.router.navigate(['/dashboard/app-config']),
-        variant: 'text',
-        isActive: this.router.url.includes('/app-config'),
-      },
-      {
-        label: 'Communities',
-        action: () => this.router.navigate(['/dashboard/communities']),
-        variant: 'text',
-        isActive: this.router.url.includes('/communities'),
-      },
-      {
-        label: 'Cities',
-        action: () => this.router.navigate(['/dashboard/cities']),
-        variant: 'text',
-        isActive: this.router.url.includes('/cities'),
-      },
-      {
-        label: 'Logout',
-        action: () => this.logout(),
-        variant: 'danger',
-      },
-    ];
+    this.navItems = this.buildNavItems();
 
-    // Navigate to users by default
+    // Navigate to overview by default
     if (this.router.url === '/dashboard') {
-      this.router.navigate(['/dashboard/users']);
+      this.router.navigate(['/dashboard/overview']);
     }
   }
 
@@ -145,5 +68,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   toggleTheme(): void {
     this.themeService.toggleTheme();
+  }
+
+  private buildNavItems(): NavItem[] {
+    const workspaceNav = [
+      {
+        label: 'Overview',
+        route: '/dashboard/overview',
+      },
+      ...OPERATOR_WORKSPACES.map((workspace) => ({
+        label: workspace.label,
+        route: `/dashboard/${workspace.path}`,
+      })),
+      {
+        label: 'Operations',
+        route: '/dashboard/operations',
+      },
+    ];
+
+    return [
+      ...workspaceNav.map((item) => ({
+        label: item.label,
+        action: () => this.router.navigate([item.route]),
+        variant: 'text' as const,
+        isActive: this.router.url.startsWith(item.route),
+      })),
+      {
+        label: 'Logout',
+        action: () => this.logout(),
+        variant: 'danger',
+      },
+    ];
   }
 }
