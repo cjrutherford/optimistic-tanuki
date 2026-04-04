@@ -1,0 +1,20 @@
+<button
+  type="button"
+  class="hai-tag"
+  data-testid="hai-about-tag"
+  aria-label="Open about HAI"
+  (click)="open()"
+>
+  <span class="tag-hole" aria-hidden="true"></span>
+  <span class="tag-mark">HAI</span>
+  <span class="tag-copy">
+    <strong>{{ config.appName }}</strong>
+    <small>About this app</small>
+  </span>
+</button>
+
+<hai-about-modal
+  [config]="config"
+  [visible]="isOpen()"
+  (close)="close()"
+></hai-about-modal>

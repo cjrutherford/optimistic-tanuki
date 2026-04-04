@@ -24,6 +24,7 @@ resources:
   - clients/client-interface.yaml
   - clients/forgeofwill.yaml
   - clients/digital-homestead.yaml
+  - clients/hai.yaml
   - clients/christopherrutherford-net.yaml
   - clients/owner-console.yaml
   - clients/store-client.yaml

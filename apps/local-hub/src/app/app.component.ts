@@ -20,6 +20,7 @@ import {
 } from '@optimistic-tanuki/navigation-ui';
 import { Router } from '@angular/router';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { AuthStateService } from './services/auth-state.service';
 
@@ -34,6 +35,7 @@ import { AuthStateService } from './services/auth-state.service';
     AppBarComponent,
     NavSidebarComponent,
     DevInfoComponent,
+    HaiAboutTagComponent,
     MessageComponent,
   ],
 })
@@ -56,6 +58,14 @@ export class AppComponent implements OnInit, OnDestroy {
   ) { }
 
   title = 'Towne Square';
+  readonly haiAboutConfig = {
+    appId: 'towne-square',
+    appName: 'Towne Square',
+    appTagline: 'Neighborhood commerce and local community tools.',
+    appDescription:
+      'Towne Square is HAI software for local communities, neighborhood commerce, and civic connection that still feels human-scale.',
+    appUrl: '/towne-square',
+  };
 
   ngOnInit() {
     this.themeService.setPersonality('bold');
