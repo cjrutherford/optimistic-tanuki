@@ -1,55 +1,68 @@
-<div class="container">
-  <otui-app-bar
-    appTitle="Optimistic Tanuki"
-    logoSrc="assets/tanuki.jpg"
-    logoAlt="Optimistic Tanuki Logo"
-    [showThemeToggle]="true"
-    [useTile]="false"
-    (menuToggle)="toggleNav()"
-  >
-    <search-global-search (searchResultClick)="onSearchResultClick($event)" />
-  </otui-app-bar>
+@if (isBrowser) {
+<div class="motion-background" aria-hidden="true">
+  <otui-murmuration-scene
+    [reducedMotion]="reducedMotion"
+    height="100vh"
+    [count]="72"
+    [speed]="0.3"
+  ></otui-murmuration-scene>
+</div>
+}
 
-  <otui-nav-sidebar
-    [isOpen]="isNavExpanded()"
-    [navItems]="navItems()"
-    heading="Navigation"
-    (close)="isNavExpanded.set(false)"
-  >
-  </otui-nav-sidebar>
+<div class="app-content">
+  <div class="container">
+    <otui-app-bar
+      appTitle="Optimistic Tanuki"
+      logoSrc="assets/tanuki.jpg"
+      logoAlt="Optimistic Tanuki Logo"
+      [showThemeToggle]="true"
+      [useTile]="false"
+      (menuToggle)="toggleNav()"
+    >
+      <search-global-search (searchResultClick)="onSearchResultClick($event)" />
+    </otui-app-bar>
 
-  <main class="content">
-    <router-outlet></router-outlet>
-  </main>
+    <otui-nav-sidebar
+      [isOpen]="isNavExpanded()"
+      [navItems]="navItems()"
+      heading="Navigation"
+      (close)="isNavExpanded.set(false)"
+    >
+    </otui-nav-sidebar>
 
-  @if (isAuthenticated()) {
-  <notif-notification-bell
-    class="notification-bell"
-    [notifications]="notifications"
-    [unreadCount]="unreadCount"
-    (notificationClick)="onNotificationClick($event)"
-    (onMarkAllRead)="onMarkAllRead()"
-  ></notif-notification-bell>
+    <main class="content">
+      <router-outlet></router-outlet>
+    </main>
 
-  <div class="chat-floating-button" (click)="toggleChat()">
-    <span class="chat-icon">💬</span>
-    @if (!showChat()) {
-    <span class="chat-label">Messages</span>
-    }
+    @if (isAuthenticated()) {
+    <notif-notification-bell
+      class="notification-bell"
+      [notifications]="notifications"
+      [unreadCount]="unreadCount"
+      (notificationClick)="onNotificationClick($event)"
+      (onMarkAllRead)="onMarkAllRead()"
+    ></notif-notification-bell>
+
+    <div class="chat-floating-button" (click)="toggleChat()">
+      <span class="chat-icon">💬</span>
+      @if (!showChat()) {
+      <span class="chat-label">Messages</span>
+      }
+    </div>
+
+    @if (showChat()) {
+    <div class="chat-panel">
+      <lib-chat-ui
+        [contacts]="chatContacts"
+        [conversations]="chatConversations"
+      ></lib-chat-ui>
+    </div>
+    } }
+
+    <otui-dev-info />
+
+    <lib-message />
+
+    <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
   </div>
-
-  @if (showChat()) {
-  <div class="chat-panel">
-    <lib-chat-ui
-      [contacts]="chatContacts"
-      [conversations]="chatConversations"
-    ></lib-chat-ui>
-  </div>
-  } }
-
-  <otui-dev-info />
-
-  <lib-message />
-
-  <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
 </div>

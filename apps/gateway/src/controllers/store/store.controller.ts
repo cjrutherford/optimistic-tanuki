@@ -290,7 +290,8 @@ export class StoreController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('store.appointment.cancel')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Put('appointments/:id/cancel')
   async cancelAppointment(@Param('id') id: string) {
     return await firstValueFrom(

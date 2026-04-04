@@ -18,6 +18,8 @@ import {
   UpdateAppConfigDto,
 } from '@optimistic-tanuki/app-config-models';
 import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { firstValueFrom } from 'rxjs';
 
 @ApiTags('app-config')
@@ -29,7 +31,8 @@ export class AppConfigController {
     private readonly client: ClientProxy
   ) {}
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('app-config.create')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Create a new app configuration' })
   @ApiResponse({ status: 201, description: 'Configuration created successfully' })
   @Post()
@@ -84,7 +87,8 @@ export class AppConfigController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Update app configuration' })
   @ApiResponse({ status: 200, description: 'Configuration updated' })
   @ApiResponse({ status: 404, description: 'Configuration not found' })
@@ -102,7 +106,8 @@ export class AppConfigController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('app-config.delete')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Delete app configuration' })
   @ApiResponse({ status: 200, description: 'Configuration deleted' })
   @ApiResponse({ status: 404, description: 'Configuration not found' })

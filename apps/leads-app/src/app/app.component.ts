@@ -1,13 +1,26 @@
-import { Component, inject, OnDestroy, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnDestroy,
+  OnInit,
+  PLATFORM_ID,
+  signal,
+} from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AuthStateService } from './auth-state.service';
 import { Subscription, filter } from 'rxjs';
 import { NotificationBellComponent } from '@optimistic-tanuki/notification-ui';
+import { ParallaxGridWarpComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
-  imports: [CommonModule, RouterModule, NotificationBellComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    NotificationBellComponent,
+    ParallaxGridWarpComponent,
+  ],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -28,6 +41,22 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly unreadNotificationCount = this.unreadCount;
   private readonly subscriptions = new Subscription();
 
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
   get brandRoute(): string {
     if (this.isOnboardingRoute) {
       return '/onboarding';
@@ -41,23 +70,36 @@ export class AppComponent implements OnInit, OnDestroy {
       this.themeService.setPersonality('control-center');
       this.isDark = this.themeService.getTheme() === 'dark';
       this.isOnboardingRoute = this.router.url.startsWith('/onboarding');
-      this.subscriptions.add(this.themeService.theme$().subscribe((theme) => {
-        this.isDark = theme === 'dark';
-      }));
-      this.subscriptions.add(this.authState.isAuthenticated$.subscribe((value) => {
-        this.isAuthenticated = value;
-        if (!value) {
-          this.currentProfileName = '';
-        }
-      }));
-      this.subscriptions.add(this.authState.currentProfile$.subscribe((profile) => {
-        this.currentProfileName = profile?.profileName || '';
-      }));
-      this.subscriptions.add(this.router.events
-        .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-        .subscribe((event) => {
-          this.isOnboardingRoute = event.urlAfterRedirects.startsWith('/onboarding');
-        }));
+      this.subscriptions.add(
+        this.themeService.theme$().subscribe((theme) => {
+          this.isDark = theme === 'dark';
+        })
+      );
+      this.subscriptions.add(
+        this.authState.isAuthenticated$.subscribe((value) => {
+          this.isAuthenticated = value;
+          if (!value) {
+            this.currentProfileName = '';
+          }
+        })
+      );
+      this.subscriptions.add(
+        this.authState.currentProfile$.subscribe((profile) => {
+          this.currentProfileName = profile?.profileName || '';
+        })
+      );
+      this.subscriptions.add(
+        this.router.events
+          .pipe(
+            filter(
+              (event): event is NavigationEnd => event instanceof NavigationEnd
+            )
+          )
+          .subscribe((event) => {
+            this.isOnboardingRoute =
+              event.urlAfterRedirects.startsWith('/onboarding');
+          })
+      );
     }
   }
 

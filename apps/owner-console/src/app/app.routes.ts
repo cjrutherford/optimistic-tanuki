@@ -21,6 +21,10 @@ import { CommunityEditorComponent } from './components/community-editor.componen
 import { CityManagementComponent } from './components/city-management.component';
 import { CityEditorComponent } from './components/city-editor.component';
 import { CommunityMembersComponent } from './components/community-members.component';
+import { OperatorOverviewComponent } from './components/operator-overview.component';
+import { OperationsWorkspaceComponent } from './components/operations-workspace.component';
+import { WorkspaceLandingComponent } from './components/workspace-landing.component';
+import { OPERATOR_WORKSPACES } from './operator-workspaces';
 
 export const appRoutes: Route[] = [
   { path: 'login', component: LoginComponent },
@@ -30,6 +34,52 @@ export const appRoutes: Route[] = [
     component: DashboardComponent,
     canActivate: [authGuard],
     children: [
+      { path: 'overview', component: OperatorOverviewComponent },
+      {
+        path: OPERATOR_WORKSPACES[0].path,
+        component: WorkspaceLandingComponent,
+        data: {
+          title: OPERATOR_WORKSPACES[0].label,
+          description: OPERATOR_WORKSPACES[0].description,
+          summary: OPERATOR_WORKSPACES[0].summary,
+          checklist: OPERATOR_WORKSPACES[0].checklist,
+          cards: OPERATOR_WORKSPACES[0].cards,
+        },
+      },
+      {
+        path: OPERATOR_WORKSPACES[1].path,
+        component: WorkspaceLandingComponent,
+        data: {
+          title: OPERATOR_WORKSPACES[1].label,
+          description: OPERATOR_WORKSPACES[1].description,
+          summary: OPERATOR_WORKSPACES[1].summary,
+          checklist: OPERATOR_WORKSPACES[1].checklist,
+          cards: OPERATOR_WORKSPACES[1].cards,
+        },
+      },
+      {
+        path: OPERATOR_WORKSPACES[2].path,
+        component: WorkspaceLandingComponent,
+        data: {
+          title: OPERATOR_WORKSPACES[2].label,
+          description: OPERATOR_WORKSPACES[2].description,
+          summary: OPERATOR_WORKSPACES[2].summary,
+          checklist: OPERATOR_WORKSPACES[2].checklist,
+          cards: OPERATOR_WORKSPACES[2].cards,
+        },
+      },
+      {
+        path: OPERATOR_WORKSPACES[3].path,
+        component: WorkspaceLandingComponent,
+        data: {
+          title: OPERATOR_WORKSPACES[3].label,
+          description: OPERATOR_WORKSPACES[3].description,
+          summary: OPERATOR_WORKSPACES[3].summary,
+          checklist: OPERATOR_WORKSPACES[3].checklist,
+          cards: OPERATOR_WORKSPACES[3].cards,
+        },
+      },
+      { path: 'operations', component: OperationsWorkspaceComponent },
       { path: 'users', component: UsersManagementComponent },
       { path: 'roles', component: RolesManagementComponent },
       { path: 'permissions', component: PermissionsManagementComponent },
@@ -60,7 +110,7 @@ export const appRoutes: Route[] = [
       { path: 'cities', component: CityManagementComponent },
       { path: 'cities/new', component: CityEditorComponent },
       { path: 'cities/:id', component: CityEditorComponent },
-      { path: '', redirectTo: 'users', pathMatch: 'full' },
+      { path: '', redirectTo: 'overview', pathMatch: 'full' },
     ],
   },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },

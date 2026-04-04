@@ -11,7 +11,7 @@ import {
 } from './toolbar-enhanced.component';
 import { DropdownComponent } from '@optimistic-tanuki/common-ui';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
-import { signal } from '@angular/core';
+import { of } from 'rxjs';
 
 describe('ToolbarEnhancedComponent', () => {
   let component: ToolbarEnhancedComponent;
@@ -24,6 +24,21 @@ describe('ToolbarEnhancedComponent', () => {
   };
 
   const mockThemeService = {
+    themeColors$: of({
+      background: '#ffffff',
+      foreground: '#000000',
+      accent: '#000000',
+      complementary: '#666666',
+      tertiary: '#333333',
+      success: '#00aa00',
+      danger: '#cc0000',
+      warning: '#ffaa00',
+      complementaryGradients: {
+        light: 'linear-gradient(#666666, #000000)',
+        dark: 'linear-gradient(#000000, #666666)',
+      },
+    }),
+    getTheme: jest.fn().mockReturnValue('light'),
     getCurrentTheme: () => ({
       primary: '#000000',
       background: '#ffffff',

@@ -35,4 +35,12 @@ describe('AppComponent', () => {
       'Hopeful Aspirations Integrators Computers'
     );
   });
+
+  it('renders the signal mesh motion background shell', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.motion-background')).toBeTruthy();
+    expect(compiled.querySelector('otui-signal-mesh')).toBeTruthy();
+    expect(compiled.querySelector('.app-shell')).toBeTruthy();
+  });
 });

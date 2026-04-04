@@ -24,9 +24,7 @@ describe('AppComponent', () => {
         HttpClientTestingModule,
         NoopAnimationsModule,
       ],
-      providers: [
-        { provide: AuthStateService, useValue: authStateMock },
-      ],
+      providers: [{ provide: AuthStateService, useValue: authStateMock }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AppComponent);
@@ -37,7 +35,16 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should have title "local-hub"', () => {
-    expect(app.title).toEqual('local-hub');
+  it('should have title "Towne Square"', () => {
+    expect(app.title).toEqual('Towne Square');
+  });
+
+  it('renders the particle veil motion background shell', () => {
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.motion-background')).toBeTruthy();
+    expect(compiled.querySelector('otui-particle-veil')).toBeTruthy();
+    expect(compiled.querySelector('.app-content')).toBeTruthy();
   });
 });

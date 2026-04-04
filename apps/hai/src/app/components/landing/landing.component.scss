@@ -40,6 +40,8 @@
 .hero-panel,
 .story-panel,
 .service-card,
+.manifesto-rail,
+.manifesto-card,
 .personal-cloud-panel,
 .ownership-card,
 .ecosystem-card,
@@ -277,10 +279,72 @@ h3 {
 }
 
 .story-grid,
+.manifesto-rail,
 .personal-cloud-panel,
 .ecosystem-panel,
 .contact-panel {
   margin-top: 2rem;
+}
+
+.manifesto-rail {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 1rem;
+  padding: clamp(1.2rem, 2.7vw, 2.1rem);
+  position: relative;
+  overflow: clip;
+}
+
+.manifesto-copy {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+}
+
+.manifesto-track {
+  position: relative;
+  min-height: 16rem;
+  border-radius: calc(var(--hai-radius-panel) - 0.2rem);
+  overflow: clip;
+}
+
+.manifesto-beam {
+  position: absolute;
+  inset: 0;
+  opacity: 0.95;
+}
+
+.manifesto-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  padding: 1rem;
+  min-height: 100%;
+  align-items: end;
+}
+
+.manifesto-card {
+  min-height: 9.75rem;
+  padding: 1.1rem;
+  background: color-mix(in srgb, var(--surface, var(--background)) 72%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.manifesto-label {
+  display: inline-flex;
+  margin-bottom: 0.75rem;
+  font: 700 0.78rem/1.1 var(--personality-font-family, var(--font-body, sans-serif));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 60%, var(--primary));
+}
+
+.manifesto-card p {
+  margin: 0;
+  font: 500 1rem/1.6 var(--font-body, var(--personality-font-family, sans-serif));
+  color: color-mix(in srgb, var(--foreground) 82%, transparent);
 }
 
 .story-grid {
@@ -338,7 +402,7 @@ h3 {
 }
 
 .ecosystem-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   margin-top: 1.2rem;
 }
 
@@ -347,6 +411,18 @@ h3 {
   padding: 1.15rem;
   text-decoration: none;
   color: inherit;
+  grid-column: span 3;
+  min-height: 13rem;
+}
+
+.ecosystem-card-featured {
+  grid-column: span 6;
+  background:
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--surface, var(--background)) 80%, var(--primary) 20%),
+      color-mix(in srgb, var(--surface, var(--background)) 92%, var(--secondary) 8%)
+    );
 }
 
 .app-name {
@@ -367,10 +443,20 @@ h3 {
 @media (max-width: 960px) {
   .hero-panel,
   .story-grid,
+  .manifesto-rail,
   .service-list,
   .ownership-layout,
   .ecosystem-grid {
     grid-template-columns: 1fr;
+  }
+
+  .manifesto-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ecosystem-card,
+  .ecosystem-card-featured {
+    grid-column: auto;
   }
 
   .hero-panel {

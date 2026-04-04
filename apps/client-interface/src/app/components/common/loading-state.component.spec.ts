@@ -27,16 +27,16 @@ describe('LoadingStateComponent', () => {
   });
 
   it('should render with custom diameter', () => {
-    component.diameter = () => 60;
+    component.diameter.set(60);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    const spinner = compiled.querySelector('.spinner');
+    const spinner = compiled.querySelector('.spinner') as HTMLElement | null;
     expect(spinner?.style.width).toBe('60px');
     expect(spinner?.style.height).toBe('60px');
   });
 
   it('should render message when provided', () => {
-    component.message = () => 'Loading data...';
+    component.message.set('Loading data...');
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.loading-message')?.textContent).toContain(
@@ -51,7 +51,7 @@ describe('LoadingStateComponent', () => {
   });
 
   it('should have overlay class when overlay is true', () => {
-    component.overlay = () => true;
+    component.overlay.set(true);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(
@@ -62,7 +62,7 @@ describe('LoadingStateComponent', () => {
   });
 
   it('should not have overlay class when overlay is false', () => {
-    component.overlay = () => false;
+    component.overlay.set(false);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(

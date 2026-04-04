@@ -2,9 +2,10 @@ import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { isPlatformBrowser } from '@angular/common';
+import { TopographicDriftComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
-  imports: [RouterModule],
+  imports: [RouterModule, TopographicDriftComponent],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -16,6 +17,22 @@ export class AppComponent implements OnInit {
   title = 'christopherrutherford.net';
   private readonly themeService = inject(ThemeService);
   private readonly platformId = inject(PLATFORM_ID);
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   ngOnInit() {
     // Initialize theme - only in browser to avoid SSR issues

@@ -49,6 +49,7 @@ import {
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
+import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'app-root',
@@ -66,6 +67,7 @@ import { MessageComponent } from '@optimistic-tanuki/message-ui';
     DevInfoComponent,
     HaiAboutTagComponent,
     MessageComponent,
+    MurmurationSceneComponent,
   ],
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -114,6 +116,22 @@ export class AppComponent implements OnInit, OnDestroy {
 
   notifications = signal<Notification[]>([]);
   unreadCount = signal(0);
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   ngOnInit() {
     this.currentUrl$ = this.router.events.pipe(

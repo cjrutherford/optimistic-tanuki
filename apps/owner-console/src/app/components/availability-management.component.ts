@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../services/store.service';
+import { AuthService } from '../services/auth.service';
 import {
   Availability,
   CreateAvailabilityDto,
@@ -45,7 +46,10 @@ export class AvailabilityManagementComponent implements OnInit {
     { value: 6, label: 'Saturday' },
   ];
 
-  constructor(private storeService: StoreService) {}
+  constructor(
+    private storeService: StoreService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.loadAvailabilities();
@@ -69,10 +73,16 @@ export class AvailabilityManagementComponent implements OnInit {
   }
 
   openCreateModal(): void {
-    // TODO: Get current user ID from auth service
-    // For now using a placeholder that needs to be replaced with actual user ID
+    const ownerId = this.getOwnerIdFromToken();
+    if (!ownerId) {
+      this.error =
+        'Unable to determine operator identity for availability creation.';
+      this.showCreateModal = false;
+      return;
+    }
+
     this.createForm = {
-      ownerId: 'OWNER_ID_FROM_AUTH_SERVICE', // Replace with actual user ID from auth service
+      ownerId,
       dayOfWeek: 1,
       startTime: '09:00:00',
       endTime: '17:00:00',
@@ -174,5 +184,24 @@ export class AvailabilityManagementComponent implements OnInit {
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
+  }
+
+  private getOwnerIdFromToken(): string | null {
+    const token = this.authService.getToken();
+    if (!token) return null;
+
+    const [, payload] = token.split('.');
+    if (!payload) return null;
+    if (typeof atob !== 'function') return null;
+
+    try {
+      const decodedPayload = atob(
+        payload.replace(/-/g, '+').replace(/_/g, '/')
+      );
+      const parsed = JSON.parse(decodedPayload) as { userId?: string };
+      return parsed.userId || null;
+    } catch {
+      return null;
+    }
   }
 }

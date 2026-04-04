@@ -187,6 +187,14 @@ describe('AppComponent', () => {
       expect(themeService.setPersonality).toHaveBeenCalledWith('bold');
       expect(themeService.setPrimaryColor).toHaveBeenCalledWith('#0EA5E9');
     });
+
+    it('renders the pulse rings motion background shell', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+
+      expect(compiled.querySelector('.motion-background')).toBeTruthy();
+      expect(compiled.querySelector('otui-pulse-rings')).toBeTruthy();
+      expect(compiled.querySelector('.app-content')).toBeTruthy();
+    });
   });
 
   describe('Navigation and Actions', () => {

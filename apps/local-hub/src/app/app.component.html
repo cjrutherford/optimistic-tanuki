@@ -1,29 +1,43 @@
-<div class="container">
-  <otui-app-bar
-    [logoSrc]="'assets/ts.png'"
-    appTitle="Towne Square"
-    logoAlt="Towne Square Logo"
-    [showThemeToggle]="true"
-    [useTile]="false"
-    (menuToggle)="toggleNav()"
-  >
-  </otui-app-bar>
+@if (isBrowser) {
+<div class="motion-background" aria-hidden="true">
+  <otui-particle-veil
+    [reducedMotion]="reducedMotion"
+    height="100vh"
+    [density]="18"
+    [speed]="0.2"
+    [intensity]="0.4"
+  ></otui-particle-veil>
+</div>
+}
 
-  <otui-nav-sidebar
-    [isOpen]="isNavExpanded()"
-    [navItems]="navItems()"
-    heading="Navigation"
-    (close)="isNavExpanded.set(false)"
-  >
-  </otui-nav-sidebar>
+<div class="app-content">
+  <div class="container">
+    <otui-app-bar
+      [logoSrc]="'assets/ts.png'"
+      appTitle="Towne Square"
+      logoAlt="Towne Square Logo"
+      [showThemeToggle]="true"
+      [useTile]="false"
+      (menuToggle)="toggleNav()"
+    >
+    </otui-app-bar>
 
-  <main class="content">
-    <router-outlet></router-outlet>
-  </main>
+    <otui-nav-sidebar
+      [isOpen]="isNavExpanded()"
+      [navItems]="navItems()"
+      heading="Navigation"
+      (close)="isNavExpanded.set(false)"
+    >
+    </otui-nav-sidebar>
 
-  <otui-dev-info />
+    <main class="content">
+      <router-outlet></router-outlet>
+    </main>
 
-  <lib-message />
+    <otui-dev-info />
 
-  <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
+    <lib-message />
+
+    <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
+  </div>
 </div>

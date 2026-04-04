@@ -3,6 +3,7 @@ import { Component, PLATFORM_ID, inject } from '@angular/core';
 import {
   AuroraRibbonComponent,
   PulseRingsComponent,
+  ShimmerBeamComponent,
   TopographicDriftComponent,
 } from '@optimistic-tanuki/motion-ui';
 
@@ -19,6 +20,7 @@ interface EcosystemLink {
     CommonModule,
     AuroraRibbonComponent,
     PulseRingsComponent,
+    ShimmerBeamComponent,
     TopographicDriftComponent,
   ],
   templateUrl: './landing.component.html',
@@ -72,6 +74,21 @@ export class LandingComponent {
     'Pre-configured systems for homelab, local AI, backups, and family services.',
     'Hosted and personal infrastructure designed to complement each other.',
     'Interfaces and operating patterns shaped for real households, not full-time operators.',
+  ];
+
+  readonly manifesto = [
+    {
+      label: 'Own the stack',
+      value: 'Software that can live in the cloud, at home, or both.',
+    },
+    {
+      label: 'Keep it legible',
+      value: 'Interfaces and operations that feel understandable under pressure.',
+    },
+    {
+      label: 'Build for staying power',
+      value: 'Tools, systems, and hardware configured to endure.',
+    },
   ];
 
   get reducedMotion(): boolean {

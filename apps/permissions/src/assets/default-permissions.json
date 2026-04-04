@@ -1091,6 +1091,27 @@
       "appScope": "owner-console"
     },
     {
+      "name": "app-config.create",
+      "description": "Create app configurations",
+      "resource": "app-config",
+      "action": "create",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "app-config.update",
+      "description": "Update app configurations",
+      "resource": "app-config",
+      "action": "update",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "app-config.delete",
+      "description": "Delete app configurations",
+      "resource": "app-config",
+      "action": "delete",
+      "appScope": "owner-console"
+    },
+    {
       "name": "profile.read",
       "description": "Read profile (global)",
       "resource": "profile",
@@ -2009,6 +2030,158 @@
       "resource": "moderation",
       "action": "ban",
       "appScope": "local-hub"
+    },
+    {
+      "name": "app-config.create",
+      "description": "Create app configurations (global)",
+      "active": true,
+      "resource": "app-config",
+      "action": "create",
+      "appScope": "global"
+    },
+    {
+      "name": "app-config.update",
+      "description": "Update app configurations (global)",
+      "active": true,
+      "resource": "app-config",
+      "action": "update",
+      "appScope": "global"
+    },
+    {
+      "name": "app-config.delete",
+      "description": "Delete app configurations (global)",
+      "active": true,
+      "resource": "app-config",
+      "action": "delete",
+      "appScope": "global"
+    },
+    {
+      "name": "store.product.create",
+      "description": "Create store products",
+      "active": true,
+      "resource": "store.product",
+      "action": "create",
+      "appScope": "global"
+    },
+    {
+      "name": "store.product.update",
+      "description": "Update store products",
+      "active": true,
+      "resource": "store.product",
+      "action": "update",
+      "appScope": "global"
+    },
+    {
+      "name": "store.product.delete",
+      "description": "Delete store products",
+      "active": true,
+      "resource": "store.product",
+      "action": "delete",
+      "appScope": "global"
+    },
+    {
+      "name": "store.order.view",
+      "description": "View store orders",
+      "active": true,
+      "resource": "store.order",
+      "action": "view",
+      "appScope": "global"
+    },
+    {
+      "name": "store.order.update",
+      "description": "Update store orders",
+      "active": true,
+      "resource": "store.order",
+      "action": "update",
+      "appScope": "global"
+    },
+    {
+      "name": "store.subscription.view",
+      "description": "View store subscriptions",
+      "active": true,
+      "resource": "store.subscription",
+      "action": "view",
+      "appScope": "global"
+    },
+    {
+      "name": "store.subscription.cancel",
+      "description": "Cancel store subscriptions",
+      "active": true,
+      "resource": "store.subscription",
+      "action": "cancel",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.view",
+      "description": "View store appointments",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "view",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.approve",
+      "description": "Approve store appointments",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "approve",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.deny",
+      "description": "Deny store appointments",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "deny",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.cancel",
+      "description": "Cancel store appointments",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "cancel",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.complete",
+      "description": "Complete store appointments",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "complete",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.invoice",
+      "description": "Generate store appointment invoices",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "invoice",
+      "appScope": "global"
+    },
+    {
+      "name": "store.availability.create",
+      "description": "Create store availability",
+      "active": true,
+      "resource": "store.availability",
+      "action": "create",
+      "appScope": "global"
+    },
+    {
+      "name": "store.availability.update",
+      "description": "Update store availability",
+      "active": true,
+      "resource": "store.availability",
+      "action": "update",
+      "appScope": "global"
+    },
+    {
+      "name": "store.availability.delete",
+      "description": "Delete store availability",
+      "active": true,
+      "resource": "store.availability",
+      "action": "delete",
+      "appScope": "global"
     }
   ],
   "role_permissions": [
@@ -4526,6 +4699,401 @@
       "role": "local_hub_member",
       "permission": "store.create",
       "permissionAppScope": "store"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.create",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.delete",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
     }
   ]
 }
