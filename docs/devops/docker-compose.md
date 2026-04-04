@@ -99,11 +99,13 @@ local-hub-client-interface
 store-client
 app-configurator
 app-configurator-seed
+system-configurator-api
 crdn-client-interface
 owner-console
 store
 d6
 configurable-client
+system-configurator
 ```
 
 To verify that list locally:
@@ -126,6 +128,7 @@ docker compose -f docker-compose.yaml -f docker-compose.dev.yaml config --servic
 - D6: `http://localhost:8086`
 - Local Hub: `http://localhost:8087`
 - Configurable Client: `http://localhost:8090`
+- Hardware Configurator: `http://localhost:8091`
 
 ### Backend / infra
 

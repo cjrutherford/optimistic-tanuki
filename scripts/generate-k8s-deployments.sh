@@ -24,6 +24,7 @@ SERVICES=(
     "project-planning:3006"
     "store:3009"
     "app-configurator:3014"
+    "system-configurator-api:3021"
     "wellness:3016"
 )
 
@@ -35,6 +36,7 @@ CLIENT_SERVICES=(
     "owner-console:8084:4000"
     "store-client:8085:4000"
     "configurable-client:8090:4000"
+    "system-configurator:8091:4000"
     "d6:8086:4000"
 )
 

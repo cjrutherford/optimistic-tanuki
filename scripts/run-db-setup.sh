@@ -21,6 +21,21 @@ DEPLOY_TARGET="${DEPLOY_TARGET:-}"
 CREATE_DATABASES="${CREATE_DATABASES:-true}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-true}"
 
+resolve_app_name() {
+    local db_name="$1"
+    case "$db_name" in
+        classifieds_db)
+            echo "classifieds"
+            ;;
+        ot_system_configurator)
+            echo "system-configurator-api"
+            ;;
+        *)
+            echo "${db_name#ot_}" | tr '_' '-'
+            ;;
+    esac
+}
+
 run_db_setup_in_pod() {
     echo "Running database setup in Kubernetes pod..."
 
@@ -31,7 +46,7 @@ run_db_setup_in_pod() {
         return 1
     fi
 
-    for db in ot_authentication ot_profile ot_social ot_assets ot_project_planning ot_chat_collector ot_telos_docs_service ot_blogging ot_permissions ot_store ot_app_configurator ot_forum ot_wellness; do
+    for db in ot_authentication ot_profile ot_social ot_assets ot_project_planning ot_chat_collector ot_telos_docs_service ot_blogging ot_permissions ot_store ot_app_configurator ot_forum ot_wellness classifieds_db ot_payments ot_lead_tracker ot_system_configurator; do
         echo "Ensuring database exists: $db"
         $KUBECTL_CMD exec -n "$NAMESPACE" "$postgres_pod" -- sh -c \
             "psql -U \"$POSTGRES_USER\" -tAc \"SELECT 1 FROM pg_database WHERE datname='$db'\" | grep -q 1 || psql -U \"$POSTGRES_USER\" -c \"CREATE DATABASE $db;\"" 2>/dev/null || true
@@ -55,7 +70,18 @@ run_migrations_from_host() {
     export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
     export NODE_ENV=development
     
-    local db_name="ot_${app_name//-/_}"
+    local db_name
+    case "$app_name" in
+        classifieds)
+            db_name="classifieds_db"
+            ;;
+        system-configurator-api)
+            db_name="ot_system_configurator"
+            ;;
+        *)
+            db_name="ot_${app_name//-/_}"
+            ;;
+    esac
     export POSTGRES_DB="$db_name"
     
     echo "Database: $db_name"
@@ -96,10 +122,10 @@ run_migrations_docker() {
     export POSTGRES_PASSWORD=postgres
     export NODE_ENV=development
     
-    ADDITIONAL_DBS=ot_authentication,ot_profile,ot_social,ot_assets,ot_project_planning,ot_chat_collector,ot_telos_docs_service,ot_blogging,ot_permissions,ot_store,ot_app_configurator,ot_forum,ot_wellness
-    
+    ADDITIONAL_DBS=ot_authentication,ot_profile,ot_social,ot_assets,ot_project_planning,ot_chat_collector,ot_telos_docs_service,ot_blogging,ot_permissions,ot_store,ot_app_configurator,ot_forum,ot_wellness,classifieds_db,ot_payments,ot_lead_tracker,ot_system_configurator
+
     for db_with_prefix in $(echo $ADDITIONAL_DBS | tr ',' ' '); do
-        app_name=$(echo $db_with_prefix | sed 's/^ot_//' | tr '_' '-')
+        app_name=$(resolve_app_name "$db_with_prefix")
         
         if [ -d "./apps/$app_name" ]; then
             echo "Running migrations for $app_name (Database: $db_with_prefix)"
@@ -160,7 +186,7 @@ main() {
                 export POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
                 
                 local failed_migrations=0
-                for app in authentication profile social assets project-planning chat-collector telos-docs-service blogging permissions store app-configurator forum wellness; do
+                for app in authentication profile social assets project-planning chat-collector telos-docs-service blogging permissions store app-configurator forum wellness classifieds payments lead-tracker system-configurator-api; do
                     if ! run_migrations_from_host $app; then
                         echo "ERROR: Migrations failed for $app"
                         failed_migrations=$((failed_migrations + 1))

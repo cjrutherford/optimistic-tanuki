@@ -24,7 +24,8 @@ export type TcpServiceConfig = {
     | 'wellness'
     | 'classifieds'
     | 'payments'
-    | 'lead_tracker';
+    | 'lead_tracker'
+    | 'system_configurator';
   transport: Transport;
   options: TcpClientOptions;
   host: string;
@@ -71,6 +72,7 @@ export type Config = {
     classifieds: TcpServiceConfig;
     payments: TcpServiceConfig;
     lead_tracker: TcpServiceConfig;
+    system_configurator: TcpServiceConfig;
   };
 };
 

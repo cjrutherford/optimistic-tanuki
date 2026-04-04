@@ -1,0 +1,24 @@
+<div class="app-shell">
+  <header class="topbar">
+    <button class="brand" type="button" (click)="navigateHome()">
+      <span class="brand-mark">HAI</span>
+      <span class="brand-copy">
+        <strong>{{ brandName }}</strong>
+        <small>{{ fullBrandName }}</small>
+      </span>
+    </button>
+
+    <nav class="topnav">
+      <a routerLink="/">Systems</a>
+      <a routerLink="/review">Review</a>
+      <a routerLink="/checkout">Checkout</a>
+      <button type="button" class="auth-button" (click)="handleAuthAction()">
+        {{ actionLabel() }}
+      </button>
+    </nav>
+  </header>
+
+  <main class="content-shell">
+    <router-outlet></router-outlet>
+  </main>
+</div>

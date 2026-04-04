@@ -49,6 +49,7 @@ npm run docker:dev:down
 | permissions        | 3012                | 3012                  | 3012              |
 | store              | 3013                | 3013                  | 3013              |
 | app-configurator   | 3014                | 3014                  | 3014              |
+| system-configurator-api | 3021            | 3021                  | 3021              |
 | forum              | 3015                | 3015                  | 3015              |
 | wellness           | 3016                | 3016                  | 3016              |
 
@@ -64,6 +65,7 @@ npm run docker:dev:down
 | store-client              | 8085                | 8085                  |
 | d6                        | 8086                | 8086                  |
 | configurable-client       | 8090                | 8090                  |
+| system-configurator       | 8091                | 8091                  |
 
 ### WebSocket Ports
 
