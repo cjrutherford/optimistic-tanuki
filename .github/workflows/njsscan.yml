@@ -8,6 +8,8 @@ jobs:
   njsscan:
     runs-on: ubuntu-latest
     name: njsscan code scanning
+    permissions:
+      security-events: write
     steps:
       - name: Checkout the code
         uses: actions/checkout@v6
@@ -20,6 +22,6 @@ jobs:
         with:
           args: '. -c .njsscan --sarif --output results.sarif || true'
       - name: Upload njsscan report
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: results.sarif

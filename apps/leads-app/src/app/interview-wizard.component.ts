@@ -36,11 +36,12 @@ type WizardStage = 'mad-lib' | 'resume' | 'profile' | 'disc';
 })
 export class InterviewWizardComponent implements OnDestroy {
   private readonly leadsService = inject(LeadsService);
+  private readonly cdr = inject(ChangeDetectorRef);
   @Input() showModal = false;
   @Input() allowClose = true;
   @Input() errorMessage = '';
   @Input() confirmingTopics = false;
-  @Output() close = new EventEmitter<void>();
+  @Output() closed = new EventEmitter<void>();
   @Output() analyzeMadLib = new EventEmitter<string>();
   @Output() parseResume = new EventEmitter<File>();
   @Output() advanceDiscInterview = new EventEmitter<DiscInterviewRequest>();
@@ -239,8 +240,6 @@ export class InterviewWizardComponent implements OnDestroy {
     },
   ];
 
-  constructor(private cdr: ChangeDetectorRef) {}
-
   ngOnDestroy(): void {
     this.locationAutocompleteSub?.unsubscribe();
   }
@@ -260,7 +259,12 @@ export class InterviewWizardComponent implements OnDestroy {
       case 'resume':
         return 25;
       case 'profile':
-        return 25 + Math.round(((this.currentQuestionIndex + 1) / this.questions.length) * 45);
+        return (
+          25 +
+          Math.round(
+            ((this.currentQuestionIndex + 1) / this.questions.length) * 45
+          )
+        );
       case 'disc':
         return 80;
       default:
@@ -324,12 +328,14 @@ export class InterviewWizardComponent implements OnDestroy {
   }
 
   getCurrentQuestionSourceLabel(): string | null {
-    const source = this.profile.prefillSourceByField?.[
-      this.currentQuestion.id as keyof OnboardingProfileSuggestions
-    ];
+    const source =
+      this.profile.prefillSourceByField?.[
+        this.currentQuestion.id as keyof OnboardingProfileSuggestions
+      ];
 
     if (!source) return null;
-    if (source === 'mad-lib+resume') return 'Prefilled from your intro and resume';
+    if (source === 'mad-lib+resume')
+      return 'Prefilled from your intro and resume';
     if (source === 'mad-lib') return 'Suggested from your intro';
     return 'Prefilled from your resume';
   }
@@ -347,7 +353,9 @@ export class InterviewWizardComponent implements OnDestroy {
   }
 
   isAnswered(questionId: string): boolean {
-    const value = (this.profile as unknown as Record<string, unknown>)[questionId];
+    const value = (this.profile as unknown as Record<string, unknown>)[
+      questionId
+    ];
     if (Array.isArray(value)) return value.length > 0;
     return Boolean(value);
   }
@@ -429,16 +437,18 @@ export class InterviewWizardComponent implements OnDestroy {
     }
 
     this.locationAutocompleteSub?.unsubscribe();
-    this.locationAutocompleteSub = this.leadsService.searchLocations(query).subscribe({
-      next: (suggestions) => {
-        this.locationSuggestions = suggestions;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.locationSuggestions = [];
-        this.cdr.detectChanges();
-      },
-    });
+    this.locationAutocompleteSub = this.leadsService
+      .searchLocations(query)
+      .subscribe({
+        next: (suggestions) => {
+          this.locationSuggestions = suggestions;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.locationSuggestions = [];
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   applyLocationSuggestion(suggestion: LocationAutocompleteSuggestion): void {
@@ -517,8 +527,9 @@ export class InterviewWizardComponent implements OnDestroy {
     if (!value) return;
 
     const current =
-      ((this.profile as unknown as Record<string, unknown>)[field] as string[]) ||
-      [];
+      ((this.profile as unknown as Record<string, unknown>)[
+        field
+      ] as string[]) || [];
     if (!current.includes(value)) {
       (this.profile as unknown as Record<string, unknown>)[field] = [
         ...current,
@@ -531,20 +542,21 @@ export class InterviewWizardComponent implements OnDestroy {
 
   removeChip(field: string, value: string): void {
     (this.profile as unknown as Record<string, unknown>)[field] = (
-      ((this.profile as unknown as Record<string, unknown>)[field] as string[]) ||
-      []
+      ((this.profile as unknown as Record<string, unknown>)[
+        field
+      ] as string[]) || []
     ).filter((item: string) => item !== value);
     this.cdr.detectChanges();
   }
 
   toggleMultiSelect(field: string, value: string): void {
     const current =
-      ((this.profile as unknown as Record<string, unknown>)[field] as string[]) ||
-      [];
+      ((this.profile as unknown as Record<string, unknown>)[
+        field
+      ] as string[]) || [];
     if (current.includes(value)) {
-      (this.profile as unknown as Record<string, unknown>)[field] = current.filter(
-        (item: string) => item !== value
-      );
+      (this.profile as unknown as Record<string, unknown>)[field] =
+        current.filter((item: string) => item !== value);
     } else {
       (this.profile as unknown as Record<string, unknown>)[field] = [
         ...current,
@@ -556,8 +568,9 @@ export class InterviewWizardComponent implements OnDestroy {
 
   isMultiSelected(field: string, value: string): boolean {
     const current =
-      ((this.profile as unknown as Record<string, unknown>)[field] as string[]) ||
-      [];
+      ((this.profile as unknown as Record<string, unknown>)[
+        field
+      ] as string[]) || [];
     return current.includes(value);
   }
 
@@ -653,7 +666,7 @@ export class InterviewWizardComponent implements OnDestroy {
     if (!this.allowClose) {
       return;
     }
-    this.close.emit();
+    this.closed.emit();
     this.reset();
   }
 
@@ -767,7 +780,9 @@ export class InterviewWizardComponent implements OnDestroy {
         continue;
       }
 
-      const profileValue = (this.profile as unknown as Record<string, unknown>)[field];
+      const profileValue = (this.profile as unknown as Record<string, unknown>)[
+        field
+      ];
 
       if (field === 'budgetRange' && typeof value === 'string') {
         const normalized = value.trim();
@@ -784,10 +799,7 @@ export class InterviewWizardComponent implements OnDestroy {
           value
         );
         (this.profile as unknown as Record<string, unknown>)[field] = merged;
-      } else if (
-        field === 'localSearchRadiusMiles' ||
-        !profileValue
-      ) {
+      } else if (field === 'localSearchRadiusMiles' || !profileValue) {
         (this.profile as unknown as Record<string, unknown>)[field] =
           field === 'localSearchRadiusMiles' ? Number(value) : value;
       }

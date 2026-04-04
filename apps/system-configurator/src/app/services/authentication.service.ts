@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { API_BASE_URL, LoginRequest } from '@optimistic-tanuki/ui-models';
 import { firstValueFrom } from 'rxjs';
@@ -7,14 +7,8 @@ import { firstValueFrom } from 'rxjs';
   providedIn: 'root',
 })
 export class AuthenticationService {
-  private readonly baseUrl: string;
-
-  constructor(
-    @Inject(API_BASE_URL) apiBaseUrl: string,
-    private readonly http: HttpClient
-  ) {
-    this.baseUrl = `${apiBaseUrl}/authentication`;
-  }
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${inject(API_BASE_URL)}/authentication`;
 
   login(data: LoginRequest) {
     return firstValueFrom(
