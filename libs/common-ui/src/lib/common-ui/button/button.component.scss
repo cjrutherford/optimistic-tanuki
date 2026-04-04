@@ -10,15 +10,25 @@
 button {
   @include flex-center;
   width: 100%;
-  padding: var(--spacing-md, 12px) var(--spacing-lg, 24px);
-  font-family: var(--font-body, system-ui);
+  padding: var(
+    --personality-button-padding,
+    var(--spacing-md, 12px) var(--spacing-lg, 24px)
+  );
+  font-family: var(--personality-font-family, var(--font-body, system-ui));
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: var(--personality-button-font-weight, 600);
+  text-transform: var(--personality-button-text-transform, none);
   cursor: pointer;
-  transition: transform var(--animation-duration-fast) var(--animation-easing),
-    box-shadow var(--animation-duration-fast) var(--animation-easing),
-    background var(--animation-duration-fast) var(--animation-easing);
-  border-radius: var(--border-radius-md, 4px);
+  transition: var(
+    --personality-transition,
+    transform var(--animation-duration-fast) var(--animation-easing),
+      box-shadow var(--animation-duration-fast) var(--animation-easing),
+      background var(--animation-duration-fast) var(--animation-easing)
+  );
+  border-radius: var(
+    --personality-button-radius,
+    var(--border-radius-md, 4px)
+  );
 
   &:disabled {
     opacity: 0.5;
@@ -28,8 +38,9 @@ button {
   &.primary {
     background-color: var(--primary);
     color: var(--primary-foreground, #fff);
-    border: var(--border-width, 1px) solid var(--primary);
-    box-shadow: var(--shadow-md);
+    border: var(--personality-border-width, var(--border-width, 1px))
+      var(--personality-border-style, solid) var(--primary);
+    box-shadow: var(--personality-box-shadow, var(--shadow-md));
 
     &:hover:not(:disabled) {
       background-color: var(
@@ -57,8 +68,9 @@ button {
   &.warning {
     background-color: var(--warning);
     color: var(--warning-foreground, #000);
-    border: var(--border-width, 1px) solid var(--warning);
-    box-shadow: var(--shadow-md);
+    border: var(--personality-border-width, var(--border-width, 1px))
+      var(--personality-border-style, solid) var(--warning);
+    box-shadow: var(--personality-box-shadow, var(--shadow-md));
 
     &:hover:not(:disabled) {
       background-color: color-mix(in srgb, var(--warning) 85%, #000);
@@ -80,8 +92,9 @@ button {
   &.danger {
     background-color: var(--danger);
     color: var(--danger-foreground, #fff);
-    border: var(--border-width, 1px) solid var(--danger);
-    box-shadow: var(--shadow-md);
+    border: var(--personality-border-width, var(--border-width, 1px))
+      var(--personality-border-style, solid) var(--danger);
+    box-shadow: var(--personality-box-shadow, var(--shadow-md));
 
     &:hover:not(:disabled) {
       background-color: color-mix(in srgb, var(--danger) 85%, #000);
@@ -103,8 +116,9 @@ button {
   &.success {
     background-color: var(--success);
     color: var(--success-foreground, #fff);
-    border: var(--border-width, 1px) solid var(--success);
-    box-shadow: var(--shadow-md);
+    border: var(--personality-border-width, var(--border-width, 1px))
+      var(--personality-border-style, solid) var(--success);
+    box-shadow: var(--personality-box-shadow, var(--shadow-md));
 
     &:hover:not(:disabled) {
       background-color: color-mix(in srgb, var(--success) 85%, #000);
@@ -126,8 +140,9 @@ button {
   &.secondary {
     background-color: var(--secondary);
     color: var(--secondary-foreground, #fff);
-    border: var(--border-width, 1px) solid var(--secondary);
-    box-shadow: var(--shadow-md);
+    border: var(--personality-border-width, var(--border-width, 1px))
+      var(--personality-border-style, solid) var(--secondary);
+    box-shadow: var(--personality-box-shadow, var(--shadow-md));
 
     &:hover:not(:disabled) {
       background-color: color-mix(in srgb, var(--secondary) 85%, #000);
@@ -148,7 +163,8 @@ button {
 
   &.outlined {
     background-color: transparent;
-    border: var(--border-width, 1px) solid var(--primary);
+    border: var(--personality-border-width, var(--border-width, 1px))
+      var(--personality-border-style, solid) var(--primary);
     color: var(--primary);
     box-shadow: none;
 
@@ -173,9 +189,10 @@ button {
   &.rounded {
     background-color: var(--primary);
     color: var(--primary-foreground, #fff);
-    border: var(--border-width, 1px) solid var(--primary);
+    border: var(--personality-border-width, var(--border-width, 1px))
+      var(--personality-border-style, solid) var(--primary);
     border-radius: var(--border-radius-full, 9999px);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--personality-box-shadow, var(--shadow-md));
     padding: var(--spacing-sm, 8px);
 
     &:hover:not(:disabled) {

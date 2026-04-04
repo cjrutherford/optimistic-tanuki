@@ -1,0 +1,31 @@
+<section
+  class="topographic-drift"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--topographic-intensity]="intensity"
+  [style.--topographic-speed]="speed"
+>
+  <div class="topographic-field">
+    <span
+      *ngFor="let band of bands; let index = index"
+      class="contour-band"
+      [style.top]="band.top"
+      [style.width]="band.width"
+      [style.opacity]="band.opacity"
+      [style.animation-delay]="band.delay"
+      [style.animation-duration]="band.duration"
+      [style.--band-index]="index"
+    ></span>
+  </div>
+
+  <div class="topographic-focus"></div>
+
+  <div class="topographic-overlay">
+    <p class="eyebrow">Motion UI</p>
+    <h3>Topographic Drift</h3>
+    <p class="caption">
+      Contour-like motion bands for editorial backgrounds, analytics surfaces,
+      and slow-moving data atmospheres.
+    </p>
+  </div>
+</section>

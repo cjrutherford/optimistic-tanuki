@@ -19,6 +19,16 @@ export {
   type ContrastConfig,
   type PersonalityTokenOverrides,
   type Personality,
+  type PersonalityPresentation,
+  type PersonalityBorderStyle,
+  type PersonalityBorderWidth,
+  type PersonalityBorderRadius,
+  type PersonalityShadowStyle,
+  type PersonalityFontFamily,
+  type PersonalityFontWeight,
+  type PersonalityFontStyle,
+  type PersonalityAnimationStyle,
+  type PersonalityAnimationSpeed,
   type PersonalityThemeConfig,
   type PersonalityCustomizations,
   type PersonalityColors,
@@ -92,6 +102,7 @@ export * from './themeable.interface';
 export * from './theme-variable.service';
 export * from './theme-host-bindings.directive';
 export * from './storybook-theme-bridge.component';
+export * from './theme-validation-harness.component';
 export * from './theme-palettes';
 export * from './design-tokens';
 export * from './theme-config';

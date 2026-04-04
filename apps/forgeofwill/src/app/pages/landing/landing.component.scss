@@ -316,8 +316,9 @@
 .particle-field {
   position: absolute;
   inset: 0;
-  opacity: 0.5;
-  --particle-color: var(--primary, #ff6b35);
+  opacity: 0.58;
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(circle at center, black 40%, transparent 92%);
 }
 
 // Noise texture for grit

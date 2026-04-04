@@ -1,0 +1,102 @@
+:host {
+  display: block;
+}
+
+.pulse-rings {
+  position: relative;
+  min-height: 16rem;
+  overflow: hidden;
+  border-radius: var(--personality-card-radius, 20px);
+  border: var(--personality-border-width, 1px)
+    var(--personality-border-style, solid)
+    color-mix(in srgb, var(--secondary) 28%, var(--border, transparent));
+  background:
+    radial-gradient(circle at center, color-mix(in srgb, var(--secondary) 16%, transparent), transparent 44%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background) 92%, black 2%),
+      color-mix(in srgb, var(--surface, var(--background)) 96%, transparent)
+    );
+  box-shadow: var(--personality-card-shadow, 0 18px 40px rgba(0, 0, 0, 0.12));
+  isolation: isolate;
+}
+
+.pulse-core,
+.pulse-ring,
+.pulse-overlay {
+  position: absolute;
+}
+
+.pulse-core,
+.pulse-ring {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+}
+
+.pulse-core {
+  width: 5rem;
+  aspect-ratio: 1;
+  background:
+    radial-gradient(circle, color-mix(in srgb, white 54%, var(--secondary)) 0 24%, color-mix(in srgb, var(--secondary) 72%, transparent) 48%, transparent 76%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--secondary) 26%, transparent),
+    0 0 44px color-mix(in srgb, var(--secondary) 26%, transparent);
+}
+
+.pulse-ring {
+  width: calc(7rem + (var(--ring-index) * 2.75rem));
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--secondary) calc(40% - (var(--ring-index) * 4%)), transparent);
+  opacity: calc(0.78 - (var(--ring-index) * 0.1));
+  animation: pulse-expand calc(9s / max(var(--pulse-speed), 0.2)) ease-out infinite;
+  animation-delay: calc(var(--ring-index) * -1.2s);
+}
+
+.pulse-overlay {
+  inset: auto 0 0;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: linear-gradient(to top, color-mix(in srgb, var(--background) 56%, transparent), transparent 42%);
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  font: 600 0.72rem/1 var(--personality-font-family, var(--font-body, sans-serif));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 68%, var(--secondary));
+}
+
+h3 {
+  margin: 0;
+  font-family: var(--font-heading, var(--personality-font-family, serif));
+  font-size: clamp(1.45rem, 3.8vw, 2.25rem);
+  color: var(--foreground);
+}
+
+.caption {
+  max-width: 26rem;
+  margin: 0.45rem 0 0;
+  font: 400 0.95rem/1.5 var(--personality-font-family, var(--font-body, sans-serif));
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+}
+
+.pulse-rings.is-fallback .pulse-ring {
+  animation: none;
+  opacity: calc(0.56 - (var(--ring-index) * 0.08));
+}
+
+@keyframes pulse-expand {
+  0% {
+    transform: translate(-50%, -50%) scale(0.72);
+    opacity: calc(0.62 + (var(--pulse-intensity) * 0.16));
+  }
+  70% {
+    opacity: 0.08;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.14);
+    opacity: 0;
+  }
+}

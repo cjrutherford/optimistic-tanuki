@@ -9,15 +9,22 @@
 
 .card {
   position: relative;
-  border: var(--border-width, 1px) solid var(--border);
-  border-radius: var(--border-radius-lg, 8px);
+  border: var(--personality-border-width, var(--border-width, 1px))
+    var(--personality-border-style, solid) var(--border);
+  border-radius: var(
+    --personality-card-radius,
+    var(--border-radius-lg, 8px)
+  );
   background-color: var(--surface, var(--background));
   color: var(--foreground);
-  font-family: var(--font-body, system-ui);
+  font-family: var(--personality-font-family, var(--font-body, system-ui));
   overflow: hidden;
-  box-shadow: var(--shadow-md);
-  transition: transform var(--animation-duration-fast) var(--animation-easing),
-    box-shadow var(--animation-duration-fast) var(--animation-easing);
+  box-shadow: var(--personality-card-shadow, var(--shadow-md));
+  transition: var(
+    --personality-transition,
+    transform var(--animation-duration-fast) var(--animation-easing),
+      box-shadow var(--animation-duration-fast) var(--animation-easing)
+  );
 
   &:hover {
     box-shadow: var(--shadow-lg);
@@ -81,10 +88,10 @@
 
 .card-body {
   margin: 0;
-  padding: 24px;
+  padding: var(--personality-card-padding, 24px);
   position: relative;
   background: var(--background, #ffffff);
-  border-radius: var(--border-radius-sm, 4px);
+  border-radius: var(--personality-border-radius, var(--border-radius-sm, 4px));
 
   // Card label/tag
   .card-label {
@@ -93,8 +100,8 @@
     background: var(--primary);
     color: var(--primary-foreground, #fff);
     font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
+    font-weight: var(--personality-button-font-weight, 700);
+    text-transform: var(--personality-button-text-transform, uppercase);
     letter-spacing: 0.1em;
     margin-bottom: 16px;
     border-radius: var(--border-radius-sm, 4px);
@@ -103,8 +110,8 @@
   .card-title {
     font-family: var(--font-heading, system-ui, sans-serif);
     font-size: 1.5rem;
-    font-weight: 700;
-    text-transform: uppercase;
+    font-weight: var(--personality-font-weight, 700);
+    text-transform: var(--personality-button-text-transform, uppercase);
     letter-spacing: 0.05em;
     margin: 0 0 12px 0;
     color: var(--foreground, #212121);

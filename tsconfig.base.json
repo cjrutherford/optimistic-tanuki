@@ -20,7 +20,9 @@
     "baseUrl": ".",
     "paths": {
       "@optimistic-tanuki/ag-grid-ui": ["libs/ag-grid-ui/src/index.ts"],
-       "@optimistic-tanuki/ag-grid-ui/*": ["libs/ag-grid-ui/src/lib/ag-grid-ui/*"],
+      "@optimistic-tanuki/ag-grid-ui/*": [
+        "libs/ag-grid-ui/src/lib/ag-grid-ui/*"
+      ],
       "@optimistic-tanuki/app-config-models": [
         "libs/app-config-models/src/index.ts"
       ],
@@ -50,6 +52,7 @@
       "@optimistic-tanuki/models/leads-entities": [
         "libs/models/src/lib/libs/leads/entities.ts"
       ],
+      "@optimistic-tanuki/motion-ui": ["libs/motion-ui/src/index.ts"],
       "@optimistic-tanuki/navigation-ui": ["libs/navigation-ui/src/index.ts"],
       "@optimistic-tanuki/notification-ui": [
         "libs/notification-ui/src/index.ts"

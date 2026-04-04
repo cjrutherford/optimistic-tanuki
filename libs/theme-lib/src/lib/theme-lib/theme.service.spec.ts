@@ -9,6 +9,7 @@ import {
 import { loadPredefinedPalettes } from './theme-palettes';
 
 import { TestBed, fakeAsync, tick, flush } from '@angular/core/testing';
+import { PLATFORM_ID } from '@angular/core';
 import { ThemeService } from './theme.service';
 
 jest.mock('./color-utils', () => ({
@@ -89,7 +90,7 @@ describe('ThemeService', () => {
     (generateTertiaryColor as jest.Mock).mockReturnValue('#0000ff');
 
     TestBed.configureTestingModule({
-      providers: [ThemeService],
+      providers: [ThemeService, { provide: PLATFORM_ID, useValue: 'browser' }],
     });
 
     service = TestBed.inject(ThemeService);
@@ -161,5 +162,43 @@ describe('ThemeService', () => {
     // Verify theme colors were generated
     expect(themeColors).toBeTruthy();
     expect(themeColors.accent).toMatch(/^#/);
+  }));
+
+  it('should apply personality presentation css variables', fakeAsync(() => {
+    service.setPrimaryColor('#0ea5e9');
+    tick();
+
+    const rootStyle = document.documentElement.style;
+
+    expect(rootStyle.getPropertyValue('--personality-border-style')).toBe(
+      'solid'
+    );
+    expect(rootStyle.getPropertyValue('--personality-border-width')).toBe(
+      '1px'
+    );
+    expect(rootStyle.getPropertyValue('--personality-border-radius')).toBe(
+      '4px'
+    );
+    expect(rootStyle.getPropertyValue('--personality-box-shadow')).toContain(
+      'rgba'
+    );
+    expect(rootStyle.getPropertyValue('--personality-font-family')).toContain(
+      'sans-serif'
+    );
+    expect(rootStyle.getPropertyValue('--personality-font-weight')).toBe(
+      '400'
+    );
+    expect(rootStyle.getPropertyValue('--personality-transition')).toContain(
+      '0.2s'
+    );
+    expect(rootStyle.getPropertyValue('--personality-button-radius')).toBe(
+      '4px'
+    );
+    expect(rootStyle.getPropertyValue('--personality-card-shadow')).toContain(
+      'rgba'
+    );
+    expect(rootStyle.getPropertyValue('--personality-input-border-width')).toBe(
+      '1px'
+    );
   }));
 });
