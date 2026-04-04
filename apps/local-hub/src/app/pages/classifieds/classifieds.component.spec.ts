@@ -7,6 +7,9 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { ClassifiedService } from '@optimistic-tanuki/classified-ui';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { AssetService } from '../../services/asset.service';
+import { MessageService } from '@optimistic-tanuki/message-ui';
 
 const authStateMock = {
   isAuthenticated$: of(false),
@@ -51,8 +54,27 @@ describe('ClassifiedsComponent', () => {
         { provide: CommunityService, useValue: communityServiceMock },
         { provide: AuthStateService, useValue: authStateMock },
         {
+          provide: AssetService,
+          useValue: {
+            fileToDataUrl: jest.fn(),
+            createAsset: jest.fn(),
+            getFileExtension: jest.fn().mockReturnValue('png'),
+            getAssetUrl: jest.fn().mockReturnValue('/asset/test'),
+          },
+        },
+        {
+          provide: MessageService,
+          useValue: { addMessage: jest.fn() },
+        },
+        { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+        {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: { get: () => 'test-city' } } },
+          useValue: {
+            snapshot: {
+              paramMap: { get: () => 'test-city' },
+              data: {},
+            },
+          },
         },
       ],
     }).compileComponents();

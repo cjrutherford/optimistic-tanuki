@@ -12,10 +12,11 @@ import { Router } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { AuthStateService } from './state/auth-state.service';
+import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   standalone: true,
-  imports: [RouterModule, HaiAboutTagComponent],
+  imports: [RouterModule, HaiAboutTagComponent, SignalMeshComponent],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -41,6 +42,22 @@ export class AppComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   ngOnInit(): void {
     this.authState.isAuthenticated$().subscribe((value) => {

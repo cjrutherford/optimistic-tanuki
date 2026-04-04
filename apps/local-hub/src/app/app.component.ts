@@ -7,7 +7,7 @@ import {
   PLATFORM_ID,
   Inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, RouterModule } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { Subject, filter } from 'rxjs';
@@ -23,6 +23,7 @@ import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { AuthStateService } from './services/auth-state.service';
+import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'app-root',
@@ -37,6 +38,7 @@ import { AuthStateService } from './services/auth-state.service';
     DevInfoComponent,
     HaiAboutTagComponent,
     MessageComponent,
+    ParticleVeilComponent,
   ],
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -55,7 +57,7 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: object
-  ) { }
+  ) {}
 
   title = 'Towne Square';
   readonly haiAboutConfig = {
@@ -66,6 +68,22 @@ export class AppComponent implements OnInit, OnDestroy {
       'Towne Square is HAI software for local communities, neighborhood commerce, and civic connection that still feels human-scale.',
     appUrl: '/towne-square',
   };
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   ngOnInit() {
     this.themeService.setPersonality('bold');

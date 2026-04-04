@@ -1,10 +1,24 @@
+.motion-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
 .app-nav {
   display: flex;
   align-items: center;
   gap: 2rem;
   padding: 0 2rem;
   height: 56px;
-  background: var(--app-surface);
+  background: color-mix(in srgb, var(--app-surface) 88%, transparent);
   border-bottom: 1px solid var(--app-border);
   position: sticky;
   top: 0;

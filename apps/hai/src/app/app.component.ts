@@ -4,11 +4,17 @@ import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
+import { AuroraRibbonComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'hai-root',
   standalone: true,
-  imports: [RouterModule, TitleBarComponent, HaiAboutTagComponent],
+  imports: [
+    RouterModule,
+    TitleBarComponent,
+    HaiAboutTagComponent,
+    AuroraRibbonComponent,
+  ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
@@ -25,6 +31,22 @@ export class AppComponent implements OnInit {
 
   private readonly themeService = inject(ThemeService);
   private readonly platformId = inject(PLATFORM_ID);
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {

@@ -44,4 +44,11 @@ describe('LandingComponent', () => {
       nativeElement.querySelector('.story-panel[data-theme-surface="card"]')
     ).not.toBeNull();
   });
+
+  it('renders the manifesto rail with motion-backed section emphasis', () => {
+    const nativeElement = fixture.nativeElement as HTMLElement;
+
+    expect(nativeElement.querySelector('.manifesto-rail')).not.toBeNull();
+    expect(nativeElement.querySelector('otui-shimmer-beam')).not.toBeNull();
+  });
 });

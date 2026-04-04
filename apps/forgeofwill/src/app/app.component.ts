@@ -30,6 +30,7 @@ import { AiAssistantBubbleComponent } from './ai-assistant-bubble/ai-assistant-b
 import { ChatMessage } from '@optimistic-tanuki/chat-ui';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   imports: [
@@ -41,6 +42,7 @@ import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
     AiAssistantBubbleComponent,
     DevInfoComponent,
     HaiAboutTagComponent,
+    PulseRingsComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -70,6 +72,22 @@ export class AppComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly messageService = inject(MessageService);
   private readonly themeService = inject(ThemeService);
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   constructor() {
     effect(() => {

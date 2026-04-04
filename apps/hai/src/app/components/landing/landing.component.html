@@ -52,6 +52,37 @@
     </aside>
   </section>
 
+  <section class="manifesto-rail" data-theme-surface="feature">
+    <div class="manifesto-copy">
+      <p class="eyebrow">HAI Approach</p>
+      <h2>Cloud fluency without surrendering ownership.</h2>
+      <p>
+        We design systems that let hosted platforms and personal infrastructure
+        reinforce each other instead of competing for control.
+      </p>
+    </div>
+
+    <div class="manifesto-track">
+      <otui-shimmer-beam
+        class="manifesto-beam"
+        height="100%"
+        direction="horizontal"
+        [speed]="0.85"
+        [intensity]="0.72"
+        [reducedMotion]="reducedMotion"
+      ></otui-shimmer-beam>
+
+      <div class="manifesto-grid">
+        @for (item of manifesto; track item.label) {
+        <article class="manifesto-card" data-theme-surface="card">
+          <span class="manifesto-label">{{ item.label }}</span>
+          <p>{{ item.value }}</p>
+        </article>
+        }
+      </div>
+    </div>
+  </section>
+
   <section class="story-grid">
     <article class="story-panel" data-theme-surface="card">
       <p class="eyebrow">Services</p>
@@ -115,8 +146,13 @@
     </div>
 
     <div class="ecosystem-grid">
-      @for (app of ecosystem; track app.name) {
-      <a class="ecosystem-card" [href]="app.href" data-theme-surface="card">
+      @for (app of ecosystem; track app.name; let i = $index) {
+      <a
+        class="ecosystem-card"
+        [class.ecosystem-card-featured]="i === 0"
+        [href]="app.href"
+        data-theme-surface="card"
+      >
         <span class="app-name">{{ app.name }}</span>
         <span class="app-tagline">{{ app.tagline }}</span>
       </a>
