@@ -1,0 +1,23 @@
+<section
+  class="aurora-ribbon"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--aurora-speed]="speed"
+  [style.--aurora-intensity]="intensity"
+>
+  <div class="aurora-backdrop"></div>
+
+  <div
+    *ngFor="let layer of layers"
+    class="aurora-layer"
+    [style.--layer-index]="layer"
+  ></div>
+
+  <div class="aurora-overlay">
+    <p class="eyebrow">Motion UI</p>
+    <h3>Aurora Ribbon</h3>
+    <p class="caption">
+      Layered color bands for atmospheric hero surfaces and editorial headers.
+    </p>
+  </div>
+</section>

@@ -719,6 +719,43 @@ export class ThemeService {
     variables['--animation-duration-slow'] =
       personality.animations.duration.slow;
 
+    if (personality.presentation) {
+      variables['--personality-border-style'] =
+        personality.presentation.border.styleValue;
+      variables['--personality-border-width'] =
+        personality.presentation.border.widthValue;
+      variables['--personality-border-radius'] =
+        personality.presentation.border.radiusValue;
+      variables['--personality-box-shadow'] =
+        personality.presentation.shadow.value;
+      variables['--personality-font-family'] =
+        personality.presentation.typography.familyValue;
+      variables['--personality-font-weight'] =
+        personality.presentation.typography.weightValue;
+      variables['--personality-transition'] =
+        personality.presentation.animation.transition;
+      variables['--personality-button-radius'] =
+        personality.presentation.components.button.borderRadius;
+      variables['--personality-button-padding'] =
+        personality.presentation.components.button.padding;
+      variables['--personality-button-font-weight'] =
+        personality.presentation.components.button.fontWeight;
+      variables['--personality-button-text-transform'] =
+        personality.presentation.components.button.textTransform;
+      variables['--personality-card-radius'] =
+        personality.presentation.components.card.borderRadius;
+      variables['--personality-card-padding'] =
+        personality.presentation.components.card.padding;
+      variables['--personality-card-shadow'] =
+        personality.presentation.components.card.boxShadow;
+      variables['--personality-input-radius'] =
+        personality.presentation.components.input.borderRadius;
+      variables['--personality-input-border-width'] =
+        personality.presentation.components.input.borderWidth;
+      variables['--personality-input-focus-style'] =
+        personality.presentation.components.input.focusStyle;
+    }
+
     // Page background pattern (theme-responsive)
     if (personality.pageBackground) {
       const svgPattern = generatePageBackgroundPattern(

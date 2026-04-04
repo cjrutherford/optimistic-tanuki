@@ -16,6 +16,55 @@
     },
     "lint": {
       "executor": "@nx/eslint:lint"
+    },
+    "storybook": {
+      "executor": "@storybook/angular:start-storybook",
+      "options": {
+        "port": 4400,
+        "configDir": "libs/notification-ui/.storybook",
+        "browserTarget": "notification-ui:build-storybook",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "build-storybook": {
+      "executor": "@storybook/angular:build-storybook",
+      "outputs": ["{options.outputDir}"],
+      "options": {
+        "outputDir": "dist/storybook/notification-ui",
+        "configDir": "libs/notification-ui/.storybook",
+        "browserTarget": "notification-ui:build-storybook",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "test-storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test-storybook -c libs/notification-ui/.storybook --url=http://localhost:4400"
+      }
+    },
+    "static-storybook": {
+      "executor": "@nx/web:file-server",
+      "dependsOn": ["build-storybook"],
+      "options": {
+        "buildTarget": "notification-ui:build-storybook",
+        "staticFilePath": "dist/storybook/notification-ui",
+        "spa": true
+      },
+      "configurations": {
+        "ci": {
+          "buildTarget": "notification-ui:build-storybook:ci"
+        }
+      }
     }
   }
 }

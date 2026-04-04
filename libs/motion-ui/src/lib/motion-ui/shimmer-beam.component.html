@@ -1,0 +1,20 @@
+<section
+  class="shimmer-beam"
+  [class.is-fallback]="reducedMotion"
+  [class.is-horizontal]="direction === 'horizontal'"
+  [style.height]="height"
+  [style.--beam-speed]="speed"
+  [style.--beam-intensity]="intensity"
+>
+  <div class="beam-base"></div>
+  <div class="beam-sweep beam-sweep-primary"></div>
+  <div class="beam-sweep beam-sweep-secondary"></div>
+
+  <div class="beam-overlay">
+    <p class="eyebrow">Motion UI</p>
+    <h3>Shimmer Beam</h3>
+    <p class="caption">
+      A luminous sweep for transitions, section caps, and editorial emphasis.
+    </p>
+  </div>
+</section>
