@@ -1,0 +1,16 @@
+:host {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: block;
+  padding: 1rem 1rem 0;
+  backdrop-filter: blur(18px);
+}
+
+:host ::ng-deep .title-bar {
+  gap: 1.25rem;
+}
+
+:host ::ng-deep otui-heading {
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+}

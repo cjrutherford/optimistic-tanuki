@@ -56,6 +56,13 @@ spec:
                 name: digital-homestead
                 port:
                   number: 8082
+          - path: /hai
+            pathType: Prefix
+            backend:
+              service:
+                name: hai
+                port:
+                  number: 8088
           - path: /crdn
             pathType: Prefix
             backend:

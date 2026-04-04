@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { NavigationComponent } from './components/navigation/navigation.component';
 import { MessageService, MessageType } from './services/message.service';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, NavigationComponent, CommonModule, DevInfoComponent],
+  imports: [RouterOutlet, NavigationComponent, CommonModule, DevInfoComponent, HaiAboutTagComponent],
   template: `
     <app-navigation></app-navigation>
 
@@ -32,6 +33,7 @@ import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
       <router-outlet></router-outlet>
     </main>
 
+    <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
     <otui-dev-info />
   `,
   styles: [
@@ -144,6 +146,14 @@ import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 })
 export class AppComponent {
   private readonly messageService = inject(MessageService);
+  readonly haiAboutConfig = {
+    appId: 'd6',
+    appName: 'd6',
+    appTagline: 'Personal daily practice and self-reflection tooling.',
+    appDescription:
+      'd6 is an HAI app for structured reflection, personal practice, and guided day-to-day self-management workflows.',
+    appUrl: '/d6',
+  };
 
   messages = this.messageService.messages;
 

@@ -29,6 +29,7 @@ import { filter } from 'rxjs';
 import { AiAssistantBubbleComponent } from './ai-assistant-bubble/ai-assistant-bubble.component';
 import { ChatMessage } from '@optimistic-tanuki/chat-ui';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 
 @Component({
   imports: [
@@ -39,6 +40,7 @@ import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
     MessageComponent,
     AiAssistantBubbleComponent,
     DevInfoComponent,
+    HaiAboutTagComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -46,6 +48,14 @@ import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 })
 export class AppComponent implements OnInit {
   title = 'forgeofwill';
+  readonly haiAboutConfig = {
+    appId: 'forge-of-will',
+    appName: 'Forge of Will',
+    appTagline: 'Intentional systems for focused personal workflows.',
+    appDescription:
+      'Forge of Will helps people shape projects, habits, and personal systems with tools that support deliberate work instead of background churn.',
+    appUrl: '/forge-of-will',
+  };
   isModalOpen = signal<boolean>(false);
   messages = signal<MessageType[]>([]);
   navItems = signal<NavItem[]>([]);
