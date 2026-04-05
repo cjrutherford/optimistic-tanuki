@@ -7,5 +7,5 @@ database:
   database: ot_profile
 services:
   permissions:
-    host: ot_permissions
+    host: permissions
     port: 3012

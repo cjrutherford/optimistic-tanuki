@@ -10,7 +10,7 @@ on:
 permissions:
   contents: read
   actions: read
-  pull-requests: write
+  issues: write
 
 jobs:
   coverage:
@@ -37,7 +37,7 @@ jobs:
         uses: nrwl/nx-set-shas@v4
 
       - name: Run tests with coverage
-        run: npx nx affected -t test --configuration=ci --parallel=3 --codeCoverage=true
+        run: npx nx affected -t test -c ci --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static
         env:
           CI: true
 
@@ -55,7 +55,7 @@ jobs:
           # Process each coverage report
           if [ -d "coverage" ]; then
             find coverage -name "coverage-summary.json" | while read file; do
-              PROJECT=$(echo $file | cut -d'/' -f2)
+              PROJECT=$(basename "$(dirname "$file")")
               
               if [ -f "$file" ]; then
                 STATEMENTS=$(jq -r '.total.statements.pct' "$file" 2>/dev/null || echo "0")
@@ -111,7 +111,7 @@ jobs:
           retention-days: 30
 
       - name: Comment PR with coverage
-        if: github.event_name == 'pull_request' && always()
+        if: github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && always()
         uses: actions/github-script@v8
         with:
           script: |
@@ -133,7 +133,7 @@ jobs:
                   } else if (file === 'coverage-summary.json') {
                     try {
                       const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
-                      const project = dir.split('/')[1];
+                      const project = path.basename(path.dirname(fullPath));
                       const total = data.total;
                       
                       const getIcon = (pct) => pct >= 80 ? '✅' : pct >= 60 ? '⚠️' : '❌';

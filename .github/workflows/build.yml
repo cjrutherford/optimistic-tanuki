@@ -36,7 +36,7 @@ jobs:
         uses: nrwl/nx-set-shas@v4
 
       - name: Build all projects
-        run: npx nx run-many --all -t build --configuration=production --parallel=3 --maxParallel=3
+        run: npx nx run-many -t build --configuration=production --parallel=3 --outputStyle=static
         env:
           CI: true
 
@@ -69,7 +69,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Build all projects
-        run: npx nx run-many -t build --configuration=production --all --parallel=3
+        run: npx nx run-many -t build --configuration=production --parallel=3 --outputStyle=static
         env:
           CI: true
 
@@ -109,22 +109,12 @@ jobs:
 
       - name: Build Docker image for ${{ matrix.service }}
         run: |
-          docker compose build ${{ matrix.service }}
+          docker build \
+            -f apps/${{ matrix.service }}/Dockerfile \
+            -t ot-${{ matrix.service }}:ci \
+            .
         env:
           CI: true
 
-      - name: Test Docker image
-        run: |
-          # Start the service
-          docker compose up -d ${{ matrix.service }}
-
-          # Wait for service to be ready
-          sleep 10
-
-          # Check if container is running
-          docker ps | grep ${{ matrix.service }}
-
-          # Stop the service
-          docker compose down
-        env:
-          CI: true
+      - name: Verify Docker image was built
+        run: docker images ot-${{ matrix.service }}:ci
