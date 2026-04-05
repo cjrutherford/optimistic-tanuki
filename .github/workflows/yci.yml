@@ -26,6 +26,6 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - uses: nrwl/nx-set-shas@v4
 
-      - run: npx nx affected -t lint --parallel=3 --maxParallel=3 --exclude='*-e2e'
-      - run: npx nx affected -t build --parallel=3 --maxParallel=3
-      - run: npx nx affected -t test --passWithNoTests=true
+      - run: npx nx affected -t lint --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static --exclude='*-e2e'
+      - run: npx nx affected -t build --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static
+      - run: npx nx affected -t test -c ci --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static

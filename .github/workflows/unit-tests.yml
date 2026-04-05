@@ -37,7 +37,7 @@ jobs:
         uses: nrwl/nx-set-shas@v4
 
       - name: Run affected unit tests
-        run: npx nx affected -t test --configuration=ci --parallel=3 --maxParallel=3
+        run: npx nx affected -t test -c ci --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static
         env:
           CI: true
 
@@ -57,7 +57,7 @@ jobs:
 
           if [ -d "coverage" ]; then
             find coverage -name "coverage-summary.json" | while read file; do
-              PROJECT=$(echo $file | cut -d'/' -f2)
+              PROJECT=$(basename "$(dirname "$file")")
               echo "### $PROJECT" >> $GITHUB_STEP_SUMMARY
               
               # Extract coverage percentages if file exists
@@ -99,7 +99,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Run all unit tests
-        run: npx nx run-many -t test --configuration=ci --all --parallel=3
+        run: npx nx run-many -t test -c ci --parallel=3 --outputStyle=static
         env:
           CI: true
 
