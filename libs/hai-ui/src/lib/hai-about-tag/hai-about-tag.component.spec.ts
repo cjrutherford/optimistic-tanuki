@@ -40,7 +40,7 @@ describe('HaiAboutTagComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain(
-      'Made with Love in Savannah - Hopeful Aspiration Integrators'
+      'Made with Love in Savannah - '
     );
   });
 });

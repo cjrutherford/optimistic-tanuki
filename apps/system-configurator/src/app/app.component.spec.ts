@@ -32,7 +32,7 @@ describe('AppComponent', () => {
   it('renders the HAI Computer brand shell', () => {
     expect(component.brandName).toBe('HAI Computer');
     expect(fixture.nativeElement.textContent).toContain(
-      'Hopeful Aspirations Integrators Computers'
+      'Hovering Alien Invaders Computers'
     );
   });
 

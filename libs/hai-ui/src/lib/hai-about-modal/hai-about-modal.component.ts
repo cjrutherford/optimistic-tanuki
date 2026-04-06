@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { ModalComponent, Tab, TabsComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutConfig } from '../hai-types/hai-app.config';
 import { getHaiAppLinks } from '../hai-types/hai-app.directory';
+import { getRandomHaiExpansion } from '../hai-types/hai-expansions';
 
 @Component({
   selector: 'hai-about-modal',
@@ -11,7 +12,7 @@ import { getHaiAppLinks } from '../hai-types/hai-app.directory';
   templateUrl: './hai-about-modal.component.html',
   styleUrl: './hai-about-modal.component.scss',
 })
-export class HaiAboutModalComponent {
+export class HaiAboutModalComponent implements OnInit {
   @Input({ required: true }) config!: HaiAboutConfig;
   @Input() visible = false;
   @Output() close = new EventEmitter<void>();
@@ -23,6 +24,11 @@ export class HaiAboutModalComponent {
   ];
 
   activeTab = 'app';
+  currentExpansion = '';
+
+  ngOnInit() {
+    this.currentExpansion = getRandomHaiExpansion();
+  }
 
   get appLinks() {
     return getHaiAppLinks(this.config?.appId);
