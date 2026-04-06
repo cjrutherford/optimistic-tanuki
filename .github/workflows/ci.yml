@@ -41,7 +41,7 @@ jobs:
         run: npx nx format:check --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
 
       - name: Validate nx workspace
-        run: npx nx workspace-lint
+        run: npx nx show projects
 
   # Main CI job with affected commands
   affected:
@@ -78,18 +78,18 @@ jobs:
       - name: Run affected ${{ matrix.target }}
         run: |
           if [ "${{ matrix.target }}" = "test" ]; then
-            npx nx affected -t ${{ matrix.target }} --configuration=ci --parallel=3 --maxParallel=3
+            npx nx affected -t ${{ matrix.target }} -c ci --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static
           elif [ "${{ matrix.target }}" = "lint" ]; then
-            npx nx affected -t ${{ matrix.target }} --parallel=3 --maxParallel=3 --exclude='*-e2e'
+            npx nx affected -t ${{ matrix.target }} --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static --exclude='*-e2e'
           else
-            npx nx affected -t ${{ matrix.target }} --parallel=3 --maxParallel=3
+            npx nx affected -t ${{ matrix.target }} --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static
           fi
         env:
           CI: true
 
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-results
           path: |

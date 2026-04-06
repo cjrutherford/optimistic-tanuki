@@ -15,7 +15,11 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
   imports: [CommonModule, ButtonComponent],
   template: `
     <div class="notification-bell-wrapper">
-      <otui-button class="icon-button" [variant]="'text'" (click)="toggleDropdown()">
+      <otui-button
+        class="icon-button"
+        [variant]="'text'"
+        (click)="toggleDropdown()"
+      >
         @if (unreadCount() > 0) {
         <span class="badge">{{
           unreadCount() > 99 ? '99+' : unreadCount()
@@ -38,7 +42,11 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
         <div class="notification-header">
           <h3>Notifications</h3>
           @if (unreadCount() > 0) {
-          <otui-button class="text-button" [variant]="'outlined'" (click)="onMarkAllRead.emit()">
+          <otui-button
+            class="text-button"
+            [variant]="'outlined'"
+            (click)="markAllRead.emit()"
+          >
             Mark all read
           </otui-button>
           }
@@ -234,7 +242,7 @@ export class NotificationBellComponent {
   @Input() notifications = signal<any[]>([]);
   @Input() unreadCount = signal(0);
   @Output() notificationClick = new EventEmitter<any>();
-  @Output() onMarkAllRead = new EventEmitter<void>();
+  @Output() markAllRead = new EventEmitter<void>();
 
   isOpen = signal(false);
 

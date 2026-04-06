@@ -2,7 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { TextInputComponent, SelectComponent } from '@optimistic-tanuki/form-ui';
+import {
+  TextInputComponent,
+  SelectComponent,
+} from '@optimistic-tanuki/form-ui';
 import {
   PaymentMethodOption,
   PaymentMethodSelectorComponent,
@@ -28,7 +31,9 @@ import { ProfileService } from '../../state/profile.service';
   template: `
     <section class="checkout-shell" *ngIf="draft()">
       <header class="checkout-header">
-        <button type="button" class="back-link" (click)="goBack()">Back to review</button>
+        <button type="button" class="back-link" (click)="goBack()">
+          Back to review
+        </button>
         <div class="header-grid">
           <div>
             <p class="eyebrow">HAI Order Intake</p>
@@ -92,6 +97,7 @@ import { ProfileService } from '../../state/profile.service';
                 placeholder="31401"
               ></lib-text-input>
               <div class="country-field">
+                <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
                 <label>Country</label>
                 <lib-select
                   [(ngModel)]="shipping.country"
@@ -119,7 +125,11 @@ import { ProfileService } from '../../state/profile.service';
             <p>{{ paymentCopy() }}</p>
           </section>
 
-          <button type="submit" class="submit-action" [disabled]="submitting() || !isValid()">
+          <button
+            type="submit"
+            class="submit-action"
+            [disabled]="submitting() || !isValid()"
+          >
             {{ submitting() ? 'Submitting order...' : 'Create order' }}
           </button>
         </form>
@@ -128,12 +138,24 @@ import { ProfileService } from '../../state/profile.service';
           <p class="eyebrow">Order snapshot</p>
           <h2>\${{ totals.totalPrice }}</h2>
           <div class="summary-rows">
-            <div><span>Chassis</span><strong>\${{ totals.chassisPrice }}</strong></div>
-            <div><span>CPU</span><strong>\${{ totals.cpuPrice }}</strong></div>
-            <div><span>RAM</span><strong>\${{ totals.ramPrice }}</strong></div>
-            <div><span>Storage</span><strong>\${{ totals.storagePrice }}</strong></div>
-            <div *ngIf="totals.gpuPrice > 0"><span>GPU</span><strong>\${{ totals.gpuPrice }}</strong></div>
-            <div><span>Assembly</span><strong>\${{ totals.assemblyFee }}</strong></div>
+            <div>
+              <span>Chassis</span><strong>\${{ totals.chassisPrice }}</strong>
+            </div>
+            <div>
+              <span>CPU</span><strong>\${{ totals.cpuPrice }}</strong>
+            </div>
+            <div>
+              <span>RAM</span><strong>\${{ totals.ramPrice }}</strong>
+            </div>
+            <div>
+              <span>Storage</span><strong>\${{ totals.storagePrice }}</strong>
+            </div>
+            <div *ngIf="totals.gpuPrice > 0">
+              <span>GPU</span><strong>\${{ totals.gpuPrice }}</strong>
+            </div>
+            <div>
+              <span>Assembly</span><strong>\${{ totals.assemblyFee }}</strong>
+            </div>
           </div>
         </aside>
       </div>
@@ -157,8 +179,11 @@ import { ProfileService } from '../../state/profile.service';
       .payment-note {
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 1.8rem;
-        background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
+        background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.04),
+            rgba(255, 255, 255, 0.015)
+          ),
           rgba(4, 12, 15, 0.78);
       }
 
@@ -336,7 +361,9 @@ export class CheckoutComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
 
   readonly draft = computed(() => this.configuratorState.draft());
-  readonly price = signal<PriceBreakdown | null>(this.configuratorState.priceBreakdown());
+  readonly price = signal<PriceBreakdown | null>(
+    this.configuratorState.priceBreakdown()
+  );
   readonly submitting = signal(false);
   readonly errorMessage = signal('');
 
@@ -395,7 +422,9 @@ export class CheckoutComponent implements OnInit {
   }
 
   activeProfileName(): string {
-    return this.profileService.getEffectiveProfile()?.profileName || 'HAI profile';
+    return (
+      this.profileService.getEffectiveProfile()?.profileName || 'HAI profile'
+    );
   }
 
   paymentHeadline(): string {

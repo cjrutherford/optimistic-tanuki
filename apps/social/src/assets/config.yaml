@@ -9,10 +9,10 @@ services:
   authentication:
     name: authentication
     transport: TCP
-    host: ot_authentication
+    host: authentication
     port: 3001
   profile:
     name: profile
     transport: TCP
-    host: ot_profile
+    host: profile
     port: 3002

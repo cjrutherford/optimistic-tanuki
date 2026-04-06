@@ -50,7 +50,7 @@ describe('NotificationListComponent', () => {
 
     fixture = TestBed.createComponent(NotificationListComponent);
     component = fixture.componentInstance;
-    component.notifications = signal(mockNotifications);
+    fixture.componentRef.setInput('notifications', signal(mockNotifications));
     component.unreadCount = signal(2);
     fixture.detectChanges();
   });
@@ -84,10 +84,10 @@ describe('NotificationListComponent', () => {
     expect(emitSpy).toHaveBeenCalledWith(notification);
   });
 
-  it('should emit onMarkAllRead when mark all read is clicked', () => {
-    const emitSpy = jest.spyOn(component.onMarkAllRead, 'emit');
+  it('should emit markAllRead when mark all read is clicked', () => {
+    const emitSpy = jest.spyOn(component.markAllRead, 'emit');
 
-    component.onMarkAllRead.emit();
+    component.markAllRead.emit();
 
     expect(emitSpy).toHaveBeenCalled();
   });
@@ -95,7 +95,7 @@ describe('NotificationListComponent', () => {
   describe('tab filtering', () => {
     it('should filter by all tab', () => {
       component.activeTab.set('all');
-      component.filteredNotifications.set(component.notifications());
+      component.filteredNotifications.set(component.notifications()());
 
       const filtered = component.filteredNotifications();
       expect(filtered.length).toBe(3);
@@ -104,18 +104,22 @@ describe('NotificationListComponent', () => {
     it('should filter by unread tab', () => {
       component.activeTab.set('unread');
       component.filteredNotifications.set(
-        component.notifications().filter((n) => !n.isRead)
+        component
+          .notifications()()
+          .filter((n: any) => !n.isRead)
       );
 
       const filtered = component.filteredNotifications();
       expect(filtered.length).toBe(2);
-      expect(filtered.every((n) => !n.isRead)).toBe(true);
+      expect(filtered.every((n: any) => !n.isRead)).toBe(true);
     });
 
     it('should filter by type', () => {
       component.activeTab.set('like');
       component.filteredNotifications.set(
-        component.notifications().filter((n) => n.type === 'like')
+        component
+          .notifications()()
+          .filter((n: any) => n.type === 'like')
       );
 
       const filtered = component.filteredNotifications();

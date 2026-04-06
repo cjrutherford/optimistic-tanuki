@@ -261,6 +261,14 @@
                   class="flag-badge"
                   title="Flagged"
                   (click)="openFlagModal(lead); $event.stopPropagation()"
+                  (keydown.enter)="
+                    openFlagModal(lead); $event.stopPropagation()
+                  "
+                  (keydown.space)="
+                    openFlagModal(lead); $event.stopPropagation()
+                  "
+                  role="button"
+                  tabindex="0"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -335,6 +343,10 @@
     *ngIf="showQuickAdd"
     class="quick-add-backdrop"
     (click)="closeQuickAdd()"
+    (keydown.escape)="closeQuickAdd()"
+    role="button"
+    tabindex="-1"
+    aria-label="Close panel"
   ></div>
   <div class="quick-add-panel" [class.open]="showQuickAdd">
     <div class="quick-add-header">
@@ -356,27 +368,27 @@
     </div>
     <form (ngSubmit)="saveLead()" class="quick-add-form">
       <div class="form-group">
-        <label>Name *</label>
+        <label for="lead-name">Name *</label>
         <input
+          id="lead-name"
           type="text"
           [(ngModel)]="newLead.name"
           name="name"
           placeholder="Contact name"
           required
-          autofocus
         />
       </div>
       <div class="form-group">
-        <label>Source</label>
-        <select [(ngModel)]="newLead.source" name="source">
+        <label for="lead-source">Source</label>
+        <select id="lead-source" [(ngModel)]="newLead.source" name="source">
           <option *ngFor="let source of sources" [value]="source">
             {{ source }}
           </option>
         </select>
       </div>
       <div class="form-group">
-        <label>Status</label>
-        <select [(ngModel)]="newLead.status" name="status">
+        <label for="lead-status">Status</label>
+        <select id="lead-status" [(ngModel)]="newLead.status" name="status">
           <option *ngFor="let status of statuses" [value]="status">
             {{ status }}
           </option>
@@ -402,8 +414,9 @@
 
       <ng-container *ngIf="showMoreDetails">
         <div class="form-group">
-          <label>Company</label>
+          <label for="lead-company">Company</label>
           <input
+            id="lead-company"
             type="text"
             [(ngModel)]="newLead.company"
             name="company"
@@ -411,8 +424,9 @@
           />
         </div>
         <div class="form-group">
-          <label>Email</label>
+          <label for="lead-email">Email</label>
           <input
+            id="lead-email"
             type="email"
             [(ngModel)]="newLead.email"
             name="email"
@@ -420,8 +434,9 @@
           />
         </div>
         <div class="form-group">
-          <label>Phone</label>
+          <label for="lead-phone">Phone</label>
           <input
+            id="lead-phone"
             type="tel"
             [(ngModel)]="newLead.phone"
             name="phone"
@@ -429,8 +444,9 @@
           />
         </div>
         <div class="form-group">
-          <label>Value</label>
+          <label for="lead-value">Value</label>
           <input
+            id="lead-value"
             type="number"
             [(ngModel)]="newLead.value"
             name="value"
@@ -439,8 +455,9 @@
           />
         </div>
         <div class="form-group">
-          <label>Notes</label>
+          <label for="lead-notes">Notes</label>
           <textarea
+            id="lead-notes"
             [(ngModel)]="newLead.notes"
             name="notes"
             rows="2"
@@ -448,16 +465,18 @@
           ></textarea>
         </div>
         <div class="form-group">
-          <label>Next Follow-Up</label>
+          <label for="lead-follow-up">Next Follow-Up</label>
           <input
+            id="lead-follow-up"
             type="date"
             [(ngModel)]="newLead.nextFollowUp"
             name="nextFollowUp"
           />
         </div>
         <div class="form-group">
-          <label>Assigned To</label>
+          <label for="lead-assigned-to">Assigned To</label>
           <input
+            id="lead-assigned-to"
             type="text"
             [(ngModel)]="newLead.assignedTo"
             name="assignedTo"
@@ -465,8 +484,9 @@
           />
         </div>
         <div class="form-group">
-          <label>Search Keywords</label>
+          <label for="lead-keywords">Search Keywords</label>
           <textarea
+            id="lead-keywords"
             [(ngModel)]="searchKeywordsInput"
             name="searchKeywords"
             rows="2"

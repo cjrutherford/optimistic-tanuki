@@ -18,7 +18,7 @@ import { ProfileService } from '../../profile.service';
         [notifications]="notifications"
         [unreadCount]="unreadCount"
         (notificationClick)="onNotificationClick($event)"
-        (onMarkAllRead)="onMarkAllRead()"
+        (markAllRead)="onMarkAllRead()"
       />
     </div>
   `,

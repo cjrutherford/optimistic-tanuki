@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
   CreateProfileDto,
@@ -16,19 +16,20 @@ export class ProfileService {
   currentUserProfile = signal<ProfileDto | null>(null);
 
   private readonly appScope = 'system-configurator';
-
-  constructor(
-    private readonly http: HttpClient,
-    private readonly authState: AuthStateService
-  ) {}
+  private readonly http = inject(HttpClient);
+  private readonly authState = inject(AuthStateService);
 
   async getAllProfiles(): Promise<void> {
-    const profiles = await firstValueFrom(this.http.get<ProfileDto[]>('/api/profile'));
+    const profiles = await firstValueFrom(
+      this.http.get<ProfileDto[]>('/api/profile')
+    );
     const userId = this.authState.getDecodedTokenValue()?.userId;
     const scopedProfiles = profiles.filter(
       (profile) =>
         profile.userId === userId &&
-        (profile.appScope === this.appScope || profile.appScope === 'global' || !profile.appScope)
+        (profile.appScope === this.appScope ||
+          profile.appScope === 'global' ||
+          !profile.appScope)
     );
 
     this.currentUserProfiles.set(scopedProfiles);
@@ -51,19 +52,24 @@ export class ProfileService {
   }
 
   getEffectiveProfile(): ProfileDto | null {
-    const selected = this.currentUserProfile() || this.authState.getPersistedSelectedProfile();
+    const selected =
+      this.currentUserProfile() || this.authState.getPersistedSelectedProfile();
     if (selected) {
       this.currentUserProfile.set(selected);
       return selected;
     }
 
     const profiles = this.getCurrentUserProfiles();
-    const local = profiles.find((profile) => profile.appScope === this.appScope);
+    const local = profiles.find(
+      (profile) => profile.appScope === this.appScope
+    );
     if (local) {
       return local;
     }
 
-    const global = profiles.find((profile) => profile.appScope === 'global' || !profile.appScope);
+    const global = profiles.find(
+      (profile) => profile.appScope === 'global' || !profile.appScope
+    );
     return global || null;
   }
 
@@ -100,7 +106,10 @@ export class ProfileService {
     return created;
   }
 
-  async updateProfile(id: string, profile: UpdateProfileDto): Promise<ProfileDto> {
+  async updateProfile(
+    id: string,
+    profile: UpdateProfileDto
+  ): Promise<ProfileDto> {
     const updated = await firstValueFrom(
       this.http.put<ProfileDto>(`/api/profile/${id}`, profile)
     );
