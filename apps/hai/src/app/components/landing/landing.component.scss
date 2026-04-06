@@ -633,3 +633,66 @@ h3 {
     transform: none;
   }
 }
+
+.acronym-generator-panel {
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 3vw, 2.5rem);
+  border-radius: var(--hai-radius-panel);
+  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
+  box-shadow: var(--hai-shadow-panel);
+
+  .generator-box {
+    margin-top: 2.5rem;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border-radius: var(--hai-radius-panel);
+    border: var(--hai-border-width) var(--hai-border-style)
+      color-mix(in srgb, var(--primary) 15%, transparent);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    background: color-mix(
+      in srgb,
+      var(--surface, var(--background)) 94%,
+      var(--primary) 6%
+    );
+
+    p {
+      margin: 0;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      color: color-mix(in srgb, var(--foreground) 50%, transparent);
+    }
+
+    .big-acronym {
+      font-family: var(--font-heading, Georgia, serif);
+      font-size: clamp(2rem, 6vw, 4.5rem);
+      color: var(--primary);
+      text-align: center;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+      &:hover {
+        transform: scale(1.05);
+      }
+
+      ::ng-deep .hai-expansion-shell {
+        gap: 1.5ch;
+      }
+
+      ::ng-deep .hai-expansion-copy {
+        font-size: 0.7em;
+        font-weight: 500;
+      }
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      opacity: 0.6;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+  }
+}

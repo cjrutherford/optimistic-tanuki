@@ -1,5 +1,6 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
+import { HaiExpansionComponent } from '@optimistic-tanuki/hai-ui';
 import {
   AuroraRibbonComponent,
   PulseRingsComponent,
@@ -19,6 +20,7 @@ interface EcosystemLink {
   standalone: true,
   imports: [
     CommonModule,
+    HaiExpansionComponent,
     AuroraRibbonComponent,
     PulseRingsComponent,
     ShimmerBeamComponent,

@@ -23,7 +23,7 @@ import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
 })
 export class AppComponent implements OnInit {
   readonly brandName = 'HAI Computer';
-  readonly fullBrandName = 'Hopeful Aspirations Integrators Computers';
+  readonly fullBrandName = 'Hovering Alien Invaders Computers';
   readonly haiAboutConfig = {
     appId: 'hai-computer',
     appName: 'HAI Computer',
