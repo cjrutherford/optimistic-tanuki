@@ -1,9 +1,19 @@
-<div class="modal-overlay" *ngIf="showModal" (click)="allowClose && closeModal()">
+<div
+  class="modal-overlay"
+  *ngIf="showModal"
+  (click)="allowClose && closeModal()"
+  (keydown.escape)="allowClose && closeModal()"
+  role="dialog"
+  aria-modal="true"
+  tabindex="-1"
+>
   <div class="modal-content" (click)="$event.stopPropagation()">
     <ng-container *ngIf="showTopicReview; else interviewMode">
       <div class="modal-header">
         <h2>Review Generated Topics</h2>
-        <button *ngIf="allowClose" class="close-btn" (click)="closeModal()">×</button>
+        <button *ngIf="allowClose" class="close-btn" (click)="closeModal()">
+          ×
+        </button>
       </div>
 
       <div class="topic-review">
@@ -91,7 +101,11 @@
             (action)="confirmAndCreate()"
             [disabled]="confirmingTopics"
           >
-            {{ confirmingTopics ? 'Creating Topics...' : 'Confirm & Create Topics' }}
+            {{
+              confirmingTopics
+                ? 'Creating Topics...'
+                : 'Confirm & Create Topics'
+            }}
           </otui-button>
         </div>
       </div>
@@ -100,7 +114,9 @@
     <ng-template #interviewMode>
       <div class="modal-header">
         <h2>Setup Interview</h2>
-        <button *ngIf="allowClose" class="close-btn" (click)="closeModal()">×</button>
+        <button *ngIf="allowClose" class="close-btn" (click)="closeModal()">
+          ×
+        </button>
       </div>
 
       <div class="progress-bar">
@@ -112,7 +128,8 @@
           <span *ngSwitchCase="'mad-lib'">Step 1 of 4: Quick intro</span>
           <span *ngSwitchCase="'resume'">Step 2 of 4: Resume prefill</span>
           <span *ngSwitchCase="'profile'">
-            Step 3 of 4: Question {{ currentQuestionIndex + 1 }} of {{ questions.length }}
+            Step 3 of 4: Question {{ currentQuestionIndex + 1 }} of
+            {{ questions.length }}
           </span>
           <span *ngSwitchCase="'disc'">Step 4 of 4: DISC interview</span>
         </ng-container>
@@ -126,7 +143,8 @@
           </label>
           <p class="question-help">
             Each section maps to later onboarding fields, so include the buyer,
-            problems, outcomes, delivery, and outreach details you want prefilled.
+            problems, outcomes, delivery, and outreach details you want
+            prefilled.
           </p>
           <textarea
             id="mad-lib"
@@ -155,10 +173,20 @@
             {{ profile.resumeParseSummary }}
           </p>
           <div class="disc-thread" *ngIf="profile.resumeRoleSummaries?.length">
-            <div class="disc-turn assistant" *ngFor="let role of profile.resumeRoleSummaries">
-              <span class="disc-role">{{ role.title }}<span *ngIf="role.company"> · {{ role.company }}</span></span>
-              <p *ngIf="role.highlights.length">{{ role.highlights.join(' ') }}</p>
-              <p *ngIf="role.skills.length">Skills: {{ role.skills.join(', ') }}</p>
+            <div
+              class="disc-turn assistant"
+              *ngFor="let role of profile.resumeRoleSummaries"
+            >
+              <span class="disc-role"
+                >{{ role.title
+                }}<span *ngIf="role.company"> · {{ role.company }}</span></span
+              >
+              <p *ngIf="role.highlights.length">
+                {{ role.highlights.join(' ') }}
+              </p>
+              <p *ngIf="role.skills.length">
+                Skills: {{ role.skills.join(', ') }}
+              </p>
             </div>
           </div>
         </div>
@@ -187,13 +215,17 @@
 
           <div
             class="autocomplete-field"
-            *ngIf="currentQuestion.type === 'text' && isLocationAutocompleteQuestion"
+            *ngIf="
+              currentQuestion.type === 'text' && isLocationAutocompleteQuestion
+            "
           >
             <div class="chips-input chips-input-location">
               <div class="chips" *ngIf="getProfileValue(currentQuestion.id)">
                 <span class="chip">
                   {{ getProfileValue(currentQuestion.id) }}
-                  <button type="button" (click)="clearLocationSelection()">×</button>
+                  <button type="button" (click)="clearLocationSelection()">
+                    ×
+                  </button>
                 </span>
               </div>
               <input
@@ -214,7 +246,9 @@
                 *ngFor="let suggestion of locationSuggestions"
                 (mousedown)="applyLocationSuggestion(suggestion)"
               >
-                <span class="autocomplete-primary">{{ suggestion.primaryText }}</span>
+                <span class="autocomplete-primary">{{
+                  suggestion.primaryText
+                }}</span>
                 <span
                   class="autocomplete-secondary"
                   *ngIf="suggestion.secondaryText"
@@ -226,7 +260,9 @@
           </div>
 
           <input
-            *ngIf="currentQuestion.type === 'text' && !isLocationAutocompleteQuestion"
+            *ngIf="
+              currentQuestion.type === 'text' && !isLocationAutocompleteQuestion
+            "
             type="text"
             [id]="currentQuestion.id"
             [ngModel]="getProfileValue(currentQuestion.id)"
@@ -255,7 +291,10 @@
             </option>
           </select>
 
-          <div class="multi-select" *ngIf="currentQuestion.type === 'multiselect'">
+          <div
+            class="multi-select"
+            *ngIf="currentQuestion.type === 'multiselect'"
+          >
             <button
               *ngFor="let opt of currentQuestion.options"
               class="option-btn"
@@ -268,9 +307,14 @@
 
           <div class="chips-input" *ngIf="currentQuestion.type === 'chips'">
             <div class="chips">
-              <span class="chip" *ngFor="let chip of getProfileListValue(currentQuestion.id)">
+              <span
+                class="chip"
+                *ngFor="let chip of getProfileListValue(currentQuestion.id)"
+              >
                 {{ chip }}
-                <button (click)="removeChip(currentQuestion.id, chip)">×</button>
+                <button (click)="removeChip(currentQuestion.id, chip)">
+                  ×
+                </button>
               </span>
             </div>
             <input
@@ -296,7 +340,9 @@
               [class.assistant]="turn.role === 'assistant'"
               [class.user]="turn.role === 'user'"
             >
-              <span class="disc-role">{{ turn.role === 'assistant' ? 'Guide' : 'You' }}</span>
+              <span class="disc-role">{{
+                turn.role === 'assistant' ? 'Guide' : 'You'
+              }}</span>
               <p>{{ turn.text }}</p>
             </div>
           </div>
@@ -308,7 +354,10 @@
             rows="4"
             placeholder="Share a real example or describe how you usually operate."
           ></textarea>
-          <div class="disc-thread" *ngIf="hasCompletedDiscAssessment && profile.discAssessment">
+          <div
+            class="disc-thread"
+            *ngIf="hasCompletedDiscAssessment && profile.discAssessment"
+          >
             <div class="disc-turn assistant">
               <span class="disc-role">DISC Summary</span>
               <p>{{ profile.discAssessment.summary }}</p>
@@ -332,7 +381,12 @@
         <button
           class="btn-secondary"
           (click)="prevQuestion()"
-          [disabled]="currentStage === 'mad-lib' || isAnalyzing || isResumeParsing || isDiscLoading"
+          [disabled]="
+            currentStage === 'mad-lib' ||
+            isAnalyzing ||
+            isResumeParsing ||
+            isDiscLoading
+          "
         >
           Back
         </button>
@@ -347,10 +401,18 @@
         </button>
 
         <ng-container *ngIf="currentStage === 'resume'">
-          <button class="btn-secondary" (click)="skipResumeStep()" [disabled]="isResumeParsing">
+          <button
+            class="btn-secondary"
+            (click)="skipResumeStep()"
+            [disabled]="isResumeParsing"
+          >
             Skip for now
           </button>
-          <button class="btn-primary" (click)="skipResumeStep()" [disabled]="isResumeParsing">
+          <button
+            class="btn-primary"
+            (click)="skipResumeStep()"
+            [disabled]="isResumeParsing"
+          >
             {{ isResumeParsing ? 'Parsing...' : 'Continue to questions' }}
           </button>
         </ng-container>
@@ -388,7 +450,13 @@
           (click)="submitDiscAnswer()"
           [disabled]="!discAnswerValue.trim() || isDiscLoading || isAnalyzing"
         >
-          {{ isDiscLoading ? 'Continuing...' : isAnalyzing ? 'Analyzing...' : 'Continue DISC' }}
+          {{
+            isDiscLoading
+              ? 'Continuing...'
+              : isAnalyzing
+              ? 'Analyzing...'
+              : 'Continue DISC'
+          }}
         </button>
       </div>
     </ng-template>

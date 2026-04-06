@@ -11,12 +11,11 @@ FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3000
-RUN npm i -g nodemon pg
 WORKDIR /usr/src/app
-COPY --from=builder /usr/src/app/dist/apps/gateway ./dist/apps/gateway
-COPY --from=builder /usr/src/app/package.json ./package.json
+COPY --from=builder /usr/src/app/dist/apps/gateway/ ./
 RUN npm install --omit=dev --legacy-peer-deps
+RUN npm i --save --legacy-peer-deps typeorm
 RUN chown -R node:node .
 USER node
 EXPOSE 3000
-CMD ["dumb-init", "node", "dist/apps/gateway/main.js"]
+CMD ["dumb-init", "node", "main.js"]

@@ -1,8 +1,4 @@
 import { Route } from '@angular/router';
-import { DashboardComponent } from './dashboard.component';
-import { LeadsComponent } from './leads.component';
-import { AnalyticsComponent } from './analytics.component';
-import { TopicsComponent } from './topics.component';
 import { authGuard } from './auth.guard';
 import { alreadyAuthenticatedGuard } from './already-authenticated.guard';
 import { profileGuard } from './profile.guard';
@@ -12,66 +8,72 @@ import {
   onboardingRequiredGuard,
   onboardingRequiredMatchGuard,
 } from './onboarding-gate.service';
-import { OnboardingPageComponent } from './onboarding-page.component';
-import { LoginComponent } from './login.component';
-import { RegisterComponent } from './register.component';
-import { ProfileSetupComponent } from './profile-setup.component';
-import { SettingsComponent } from './settings.component';
-import { HomeRedirectComponent } from './home-redirect.component';
 
 export const appRoutes: Route[] = [
   {
     path: 'register',
-    component: RegisterComponent,
+    loadComponent: () =>
+      import('./register.component').then((m) => m.RegisterComponent),
     canActivate: [alreadyAuthenticatedGuard],
   },
   {
     path: 'login',
-    component: LoginComponent,
+    loadComponent: () =>
+      import('./login.component').then((m) => m.LoginComponent),
     canActivate: [alreadyAuthenticatedGuard],
   },
   {
     path: 'profile/setup',
-    component: ProfileSetupComponent,
+    loadComponent: () =>
+      import('./profile-setup.component').then((m) => m.ProfileSetupComponent),
     canActivate: [authGuard],
   },
   {
     path: 'settings',
-    component: SettingsComponent,
+    loadComponent: () =>
+      import('./settings.component').then((m) => m.SettingsComponent),
     canActivate: [authGuard, profileGuard],
   },
   {
     path: 'onboarding',
-    component: OnboardingPageComponent,
+    loadComponent: () =>
+      import('./onboarding-page.component').then(
+        (m) => m.OnboardingPageComponent
+      ),
     canActivate: [authGuard, profileGuard, onboardingPageGuard],
     canMatch: [onboardingPageMatchGuard],
   },
   {
     path: '',
-    component: HomeRedirectComponent,
+    loadComponent: () =>
+      import('./home-redirect.component').then((m) => m.HomeRedirectComponent),
     pathMatch: 'full',
   },
   {
     path: 'dashboard',
-    component: DashboardComponent,
+    loadComponent: () =>
+      import('./dashboard.component').then((m) => m.DashboardComponent),
     canActivate: [authGuard, profileGuard, onboardingRequiredGuard],
     canMatch: [onboardingRequiredMatchGuard],
   },
   {
     path: 'leads',
-    component: LeadsComponent,
+    loadComponent: () =>
+      import('./leads.component').then((m) => m.LeadsComponent),
     canActivate: [authGuard, profileGuard, onboardingRequiredGuard],
     canMatch: [onboardingRequiredMatchGuard],
   },
   {
     path: 'topics',
-    component: TopicsComponent,
+    loadComponent: () =>
+      import('./topics.component').then((m) => m.TopicsComponent),
     canActivate: [authGuard, profileGuard, onboardingRequiredGuard],
     canMatch: [onboardingRequiredMatchGuard],
   },
   {
     path: 'analytics',
-    component: AnalyticsComponent,
+    loadComponent: () =>
+      import('./analytics.component').then((m) => m.AnalyticsComponent),
     canActivate: [authGuard, profileGuard, onboardingRequiredGuard],
     canMatch: [onboardingRequiredMatchGuard],
   },

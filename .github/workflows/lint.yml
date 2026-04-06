@@ -36,7 +36,7 @@ jobs:
         uses: nrwl/nx-set-shas@v4
 
       - name: Run affected linting
-        run: npx nx affected -t lint --parallel=3 --maxParallel=3 --exclude='*-e2e'
+        run: npx nx affected -t lint --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static --exclude='*-e2e'
         env:
           CI: true
 
@@ -64,9 +64,9 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Run all linting
-        run: npx nx run-many -t lint --all --parallel=3 --exclude='*-e2e'
+        run: npx nx run-many -t lint --parallel=3 --outputStyle=static --exclude='*-e2e'
         env:
           CI: true
 
       - name: Check all formatting
-        run: npx nx format:check --all
+        run: npx nx format:check

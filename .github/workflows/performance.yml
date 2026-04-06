@@ -46,12 +46,27 @@ jobs:
 
       - name: Start application
         run: |
-          # Build and start the app
-          docker compose build ${{ matrix.app }}
-          docker compose up -d ${{ matrix.app }}
+          # Build image directly from app Dockerfile
+          docker build \
+            -f apps/${{ matrix.app }}/Dockerfile \
+            -t ot-${{ matrix.app }}:ci \
+            .
+          # Run container mapping host port 4200 to container port 4000 (SSR apps expose 4000)
+          docker run -d --name app-${{ matrix.app }} \
+            -p 4200:4000 \
+            -e NODE_ENV=production \
+            ot-${{ matrix.app }}:ci
 
           # Wait for app to be ready
-          sleep 30
+          echo "Waiting for app to be available on port 4200..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:4200 > /dev/null 2>&1; then
+              echo "App is ready."
+              break
+            fi
+            echo "Attempt $i/30 - not ready yet, waiting 3s..."
+            sleep 3
+          done
 
       - name: Run Lighthouse CI
         uses: treosh/lighthouse-ci-action@v12
@@ -63,7 +78,7 @@ jobs:
 
       - name: Stop application
         if: always()
-        run: docker compose down
+        run: docker rm -f app-${{ matrix.app }} 2>/dev/null || true
 
   load-test:
     name: Load Testing
@@ -93,7 +108,7 @@ jobs:
 
       - name: Start full stack
         run: |
-          docker compose up -d
+          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d
 
           # Wait for services to be ready
           echo "Waiting for services..."
@@ -128,7 +143,7 @@ jobs:
           };
 
           export default function () {
-            const res = http.get('http://localhost:3000/health');
+            const res = http.get('http://localhost:3000/api-docs');
             check(res, {
               'status is 200': (r) => r.status === 200,
               'response time < 500ms': (r) => r.timings.duration < 500,
@@ -142,7 +157,7 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose down
+        run: docker compose -f e2e/docker-compose.e2e-stack.yaml down
 
       - name: Upload load test results
         if: always()

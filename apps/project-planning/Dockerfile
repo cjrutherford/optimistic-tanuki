@@ -10,7 +10,7 @@ RUN npx nx build project-planning --configuration=development
 FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
-ENV PORT=3002
+ENV PORT=3006
 RUN npm i -g nodemon pg
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/dist/apps/project-planning ./dist/apps/project-planning
@@ -19,5 +19,5 @@ RUN npm install --omit=dev --legacy-peer-deps
 RUN npm i --save --legacy-peer-deps pg
 RUN chown -R node:node .
 USER node
-EXPOSE 3002
+EXPOSE 3006
 CMD ["dumb-init", "node", "dist/apps/project-planning/main.js"]
