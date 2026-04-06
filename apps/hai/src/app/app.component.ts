@@ -25,7 +25,7 @@ export class AppComponent implements OnInit {
     appName: 'HAI',
     appTagline: 'Software, cloud, and personal-cloud systems.',
     appDescription:
-      'Hopeful Aspirations Integrators builds software systems, cloud platforms, and personal cloud tooling for people who want durable, owned computing.',
+      'HAI (Heavily Articulated Iguanas) builds software systems, cloud platforms, and personal cloud tooling for people who want durable, owned computing.',
     appUrl: '/hai',
   };
 

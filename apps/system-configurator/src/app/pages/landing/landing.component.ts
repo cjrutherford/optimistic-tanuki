@@ -15,7 +15,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
           <p class="eyebrow">HAI Computer</p>
           <h1>Purpose-built systems for teams that need calm, durable compute.</h1>
           <p class="lede">
-            Hopeful Aspirations Integrators Computers designs integration-ready
+            Hovering Alien Invaders Computers designs integration-ready
             workstations, storage nodes, and deployment platforms with a tighter
             handoff from planning to purchase.
           </p>

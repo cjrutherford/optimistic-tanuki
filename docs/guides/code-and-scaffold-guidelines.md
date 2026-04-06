@@ -1,4 +1,4 @@
-# HOPEFUL ASPIRATIONS — Project Rules for LLMs
+# HAI (Whatever That Means Today) — Project Rules for LLMs
 
 ## Purpose
 
