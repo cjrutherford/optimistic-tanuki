@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: social
-          image: cjrutherford/optimistic_tanuki_social:sha-1d5bb482689e469f1918a464dd9837a03741beed
+          image: cjrutherford/optimistic_tanuki_social:sha-1d12c7afda88e22db8371f88f9923913309b6638
           imagePullPolicy: Always
           ports:
             - containerPort: 3003
