@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: permissions
-          image: cjrutherford/optimistic_tanuki_permissions:sha-1d12c7afda88e22db8371f88f9923913309b6638
+          image: cjrutherford/optimistic_tanuki_permissions:sha-2850755da05286086a098d1dbdaf74f339af2a62
           imagePullPolicy: Always
           ports:
             - containerPort: 3012
