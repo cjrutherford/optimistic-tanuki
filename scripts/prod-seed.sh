@@ -2,7 +2,7 @@
 
 set -eu
 
-COMPOSE_FILES="-f docker-compose.yaml -f docker-compose.prod.yaml"
+COMPOSE_FILES="-f docker-compose.yaml"
 GATEWAY_API_URL="${GATEWAY_API_URL:-http://gateway:3000/api}"
 GATEWAY_BASE_URL="${GATEWAY_BASE_URL:-http://gateway:3000}"
 HOST_GATEWAY_BASE_URL="${HOST_GATEWAY_BASE_URL:-http://127.0.0.1:3000}"
