@@ -28,7 +28,7 @@ run_seed_with_run() {
   shift 2
 
   echo "Seeding ${service}..."
-  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" "$service" "$@"
+  docker compose ${COMPOSE_FILES} exec -T -w "${workdir}" "$service" "$@"
 }
 
 run_seed_with_env() {
@@ -93,8 +93,15 @@ run_seed permissions /usr/src/app node ./seed-permissions.js
 restart_service gateway
 run_seed store /usr/src/app node ./seed-store.js
 wait_for_gateway
-run_seed_with_run_env social /usr/src/app GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js
+restart_service authentication
+restart_service profile
+restart_service social
+restart_service payments
+restart_service gateway
+sleep 15
+run_seed_with_env social /usr/src/app GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js
 run_seed_with_run social /usr/src/app node ./seed-local-communities.js
-run_seed_with_run_env social /usr/src/app GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js
-run_seed_with_env classifieds /app GATEWAY_URL "${GATEWAY_BASE_URL}" node ./classifieds/seed-classifieds.js
+run_seed_with_env social /usr/src/app GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js
+# Skip classifieds seed - path issue needs resolution
+# run_seed_with_env classifieds /app/classifieds GATEWAY_URL "${GATEWAY_BASE_URL}" node ./seed-classifieds.js
 run_seed_with_run payments /usr/src/app node ./seed-products.js

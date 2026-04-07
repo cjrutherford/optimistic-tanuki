@@ -31,13 +31,13 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Build ${{ matrix.app }}
-        run: npx nx build ${{ matrix.app }} --configuration=production
+        run: pnpm exec nx build ${{ matrix.app }} --configuration=production
         env:
           CI: true
 

@@ -423,6 +423,7 @@ export class NavSidebarComponent {
   mobileMenuOpen = false;
 
   readonly libraries: LibraryInfo[] = [
+    { path: '/docs', name: 'Documentation', componentCount: 0 },
     { path: '/motion-ui', name: 'Motion UI', componentCount: 9 },
     { path: '/common-ui', name: 'Common UI', componentCount: 18 },
     { path: '/form-ui', name: 'Form UI', componentCount: 6 },
@@ -438,6 +439,14 @@ export class NavSidebarComponent {
     { path: '/search-ui', name: 'Search UI', componentCount: 2 },
     { path: '/persona-ui', name: 'Persona UI', componentCount: 1 },
     { path: '/ag-grid-ui', name: 'AG Grid UI', componentCount: 1 },
+    { path: '/blogging-ui', name: 'Blogging UI', componentCount: 7 },
+    { path: '/business-ui', name: 'Business UI', componentCount: 1 },
+    { path: '/classified-ui', name: 'Classifieds UI', componentCount: 1 },
+    { path: '/community-ui', name: 'Community UI', componentCount: 1 },
+    { path: '/forum-ui', name: 'Forum UI', componentCount: 2 },
+    { path: '/hai-ui', name: 'HAI UI', componentCount: 3 },
+    { path: '/payments-ui', name: 'Payments UI', componentCount: 3 },
+    { path: '/project-ui', name: 'Project UI', componentCount: 3 },
     { path: '/validation', name: 'Validation Board', componentCount: 15 },
   ];
 

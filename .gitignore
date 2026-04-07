@@ -72,3 +72,4 @@ tf/tfplan
 tmp/
 .env
 .kilo/
+worktrees/*

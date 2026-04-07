@@ -374,6 +374,44 @@ async function bootstrap() {
         }
       }
 
+      // If still no profileId, try to create one directly via profile service
+      if (userId && !profileId && token) {
+        logger.log(
+          `No profile found, creating profile directly for userId: ${userId}`
+        );
+        try {
+          const createProfileResponse = await httpClient.post(
+            '/profile',
+            {
+              userId: userId,
+              name: `${userData.firstName} ${userData.lastName}`,
+              coverPic: '',
+              profilePic: '',
+              bio: userData.bio,
+              location: '',
+              description: '',
+              occupation: '',
+              interests: '',
+              skills: '',
+              appScope: appScope,
+            },
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          const createdProfile =
+            createProfileResponse.data?.data || createProfileResponse.data;
+          profileId = createdProfile?.id;
+          logger.log(`Created profile: ${profileId}`);
+        } catch (e: any) {
+          logger.warn(
+            `Could not create profile for ${userData.email}: ${
+              e?.response?.data?.message || e.message
+            }`
+          );
+        }
+      }
+
       logger.log(
         `Logged in: ${userData.email} (userId: ${userId}, profileId: ${profileId})`
       );

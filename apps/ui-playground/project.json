@@ -47,6 +47,9 @@
     "serve": {
       "continuous": true,
       "executor": "@angular/build:dev-server",
+      "options": {
+        "poll": 2000
+      },
       "configurations": {
         "production": {
           "buildTarget": "ui-playground:build:production"
