@@ -33,7 +33,7 @@ interface LibraryDoc {
       [importSnippet]="installSnippet"
     >
       <ng-container slot="index">
-        @for (lib of libraries; track lib.id) {
+        @for (lib of uiLibraries; track lib.id) {
         <pg-index-chip [id]="lib.id" [label]="lib.name" />
         }
       </ng-container>
