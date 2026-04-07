@@ -177,10 +177,13 @@ async function bootstrap() {
   });
 
   const getUserRoles = async (profileId: string, token: string) => {
-    const response = await httpClient.get(`/permissions/user-roles/${profileId}`, {
-      params: { appScope },
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await httpClient.get(
+      `/permissions/user-roles/${profileId}`,
+      {
+        params: { appScope },
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
     return response.data?.data || response.data;
   };
 
@@ -196,9 +199,7 @@ async function bootstrap() {
 
     const assignments = await getUserRoles(profileId, token);
     const alreadyAssigned = Array.isArray(assignments)
-      ? assignments.some(
-          (assignment: any) => assignment.role?.id === role.id
-        )
+      ? assignments.some((assignment: any) => assignment.role?.id === role.id)
       : false;
 
     if (alreadyAssigned) {
@@ -287,6 +288,44 @@ async function bootstrap() {
             if (!userId) userId = p?.userId;
           } catch {
             /* ignore */
+          }
+        }
+
+        // If still no profileId, try to create one directly
+        if (!profileId && userId && token) {
+          logger.log(
+            `No profile found, creating profile for userId: ${userId}`
+          );
+          try {
+            const createProfileRes = await httpClient.post(
+              '/profile',
+              {
+                userId: userId,
+                name: `${userData.firstName} ${userData.lastName}`,
+                coverPic: '',
+                profilePic: '',
+                bio: userData.bio,
+                location: '',
+                description: '',
+                occupation: '',
+                interests: '',
+                skills: '',
+                appScope: appScope,
+              },
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            const createdProfile =
+              createProfileRes.data?.data || createProfileRes.data;
+            profileId = createdProfile?.id;
+            logger.log(`Created profile: ${profileId}`);
+          } catch (e: any) {
+            logger.warn(
+              `Could not create profile: ${
+                e?.response?.data?.message || e.message
+              }`
+            );
           }
         }
 
@@ -447,9 +486,7 @@ async function bootstrap() {
   let foodieCommId: string | undefined;
 
   try {
-    const existing = await httpClient.get(
-      '/communities/slug/savannah-foodies'
-    );
+    const existing = await httpClient.get('/communities/slug/savannah-foodies');
     const c = existing.data?.data || existing.data;
     if (c?.id) {
       foodieCommId = c.id;

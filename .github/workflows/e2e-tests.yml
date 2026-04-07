@@ -30,13 +30,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Build all applications
-        run: npx nx run-many -t build --parallel=4 --outputStyle=static
+        run: pnpm exec nx run-many -t build --parallel=4 --outputStyle=static
         env:
           CI: true
 
@@ -67,10 +67,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Download dist artifact
         uses: actions/download-artifact@v4
@@ -96,67 +96,67 @@ jobs:
           CI: true
 
       - name: Run authentication-e2e
-        run: npx nx e2e authentication-e2e --configuration=ci
+        run: pnpm exec nx e2e authentication-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run profile-e2e
-        run: npx nx e2e profile-e2e --configuration=ci
+        run: pnpm exec nx e2e profile-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run social-e2e
-        run: npx nx e2e social-e2e --configuration=ci
+        run: pnpm exec nx e2e social-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run assets-e2e
-        run: npx nx e2e assets-e2e --configuration=ci
+        run: pnpm exec nx e2e assets-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run blogging-e2e
-        run: npx nx e2e blogging-e2e --configuration=ci
+        run: pnpm exec nx e2e blogging-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run gateway-e2e
-        run: npx nx e2e gateway-e2e --configuration=ci
+        run: pnpm exec nx e2e gateway-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run permissions-e2e
-        run: npx nx e2e permissions-e2e --configuration=ci
+        run: pnpm exec nx e2e permissions-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run project-planning-e2e
-        run: npx nx e2e project-planning-e2e --configuration=ci
+        run: pnpm exec nx e2e project-planning-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run chat-collector-e2e
-        run: npx nx e2e chat-collector-e2e --configuration=ci
+        run: pnpm exec nx e2e chat-collector-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run prompt-proxy-e2e
-        run: npx nx e2e prompt-proxy-e2e --configuration=ci
+        run: pnpm exec nx e2e prompt-proxy-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run telos-docs-service-e2e
-        run: npx nx e2e telos-docs-service-e2e --configuration=ci
+        run: pnpm exec nx e2e telos-docs-service-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run ai-orchestrator-e2e
-        run: npx nx e2e ai-orchestrator-e2e --configuration=ci
+        run: pnpm exec nx e2e ai-orchestrator-e2e --configuration=ci
         env:
           CI: true
 
       - name: Run app-configurator-e2e
-        run: npx nx e2e app-configurator-e2e --configuration=ci
+        run: pnpm exec nx e2e app-configurator-e2e --configuration=ci
         env:
           CI: true
 
@@ -209,10 +209,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Download dist artifact
         uses: actions/download-artifact@v4
@@ -224,7 +224,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: pnpm exec playwright install --with-deps
 
       - name: Start shared backend infrastructure
         run: |
@@ -250,7 +250,7 @@ jobs:
           CI: true
 
       - name: Run client-interface-e2e
-        run: npx nx e2e client-interface-e2e --configuration=ci
+        run: pnpm exec nx e2e client-interface-e2e --configuration=ci
         env:
           CI: true
           BASE_URL: http://localhost:8080
@@ -273,7 +273,7 @@ jobs:
           CI: true
 
       - name: Run forgeofwill-e2e
-        run: npx nx e2e forgeofwill-e2e --configuration=ci
+        run: pnpm exec nx e2e forgeofwill-e2e --configuration=ci
         env:
           CI: true
           BASE_URL: http://localhost:8081
@@ -296,7 +296,7 @@ jobs:
           CI: true
 
       - name: Run digital-homestead-e2e
-        run: npx nx e2e digital-homestead-e2e --configuration=ci
+        run: pnpm exec nx e2e digital-homestead-e2e --configuration=ci
         env:
           CI: true
           BASE_URL: http://localhost:8082
@@ -319,7 +319,7 @@ jobs:
           CI: true
 
       - name: Run christopherrutherford-net-e2e
-        run: npx nx e2e christopherrutherford-net-e2e --configuration=ci
+        run: pnpm exec nx e2e christopherrutherford-net-e2e --configuration=ci
         env:
           CI: true
           BASE_URL: http://localhost:8083
@@ -342,7 +342,7 @@ jobs:
           CI: true
 
       - name: Run owner-console-e2e
-        run: npx nx e2e owner-console-e2e --configuration=ci
+        run: pnpm exec nx e2e owner-console-e2e --configuration=ci
         env:
           CI: true
           BASE_URL: http://localhost:8084
@@ -365,7 +365,7 @@ jobs:
           CI: true
 
       - name: Run store-client-e2e
-        run: npx nx e2e store-client-e2e --configuration=ci
+        run: pnpm exec nx e2e store-client-e2e --configuration=ci
         env:
           CI: true
           BASE_URL: http://localhost:8085
@@ -388,7 +388,7 @@ jobs:
           CI: true
 
       - name: Run configurable-client-e2e
-        run: npx nx e2e configurable-client-e2e --configuration=ci
+        run: pnpm exec nx e2e configurable-client-e2e --configuration=ci
         env:
           CI: true
           BASE_URL: http://localhost:8090

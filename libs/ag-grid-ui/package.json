@@ -1,0 +1,19 @@
+{
+  "name": "@optimistic-tanuki/ag-grid-ui",
+  "version": "0.0.1",
+  "description": "AG Grid integration components for Angular",
+  "peerDependencies": {
+    "@angular/common": ">=20.0.0",
+    "@angular/core": ">=20.0.0",
+    "ag-grid-angular": ">=35.0.0",
+    "ag-grid-community": ">=35.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false,
+  "nx": {
+    "root": "libs/ag-grid-ui",
+    "sourceRoot": "libs/ag-grid-ui/src"
+  }
+}

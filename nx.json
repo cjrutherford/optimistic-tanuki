@@ -1,6 +1,19 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "useDaemonProcess": false,
+  "workspaceLayout": {
+    "appsDir": "apps",
+    "libsDir": "libs"
+  },
+  "defaultProject": "authentication",
+  "nxCloud": {
+    "accessToken": null
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"]
+    }
+  },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
