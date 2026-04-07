@@ -1,0 +1,4 @@
+.worktrees/
+.worktrees/**/*
+multi-app-validation/
+multi-app-validation/**/*

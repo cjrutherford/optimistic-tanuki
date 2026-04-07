@@ -28,24 +28,22 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Derive appropriate SHAs for base and head for nx affected commands
         uses: nrwl/nx-set-shas@v4
 
       - name: Run tests with coverage
-        run: npx nx affected -t test -c ci --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static
-        env:
-          CI: true
+        run: pnpm exec nx affected -t test -c ci --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static
 
       - name: Generate coverage badges and summary
         if: always()
         run: |
           # Install coverage tools
-          npm install -g istanbul-badges-readme
+          pnpm add -g istanbul-badges-readme
 
           echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

@@ -27,8 +27,12 @@ type LibraryCard = {
           </p>
 
           <div class="hero-actions">
-            <a class="primary-action" routerLink="/common-ui">Start With Core UI</a>
-            <a class="secondary-action" routerLink="/theme-ui">Browse Theme Controls</a>
+            <a class="primary-action" routerLink="/common-ui"
+              >Start With Core UI</a
+            >
+            <a class="secondary-action" routerLink="/docs"
+              >Read Documentation</a
+            >
           </div>
         </div>
 
@@ -43,7 +47,10 @@ type LibraryCard = {
           </div>
           <div class="note-panel">
             <span class="panel-kicker">Best Use</span>
-            <p>Reach for this first when you need the shortest path from component discovery to implementation.</p>
+            <p>
+              Reach for this first when you need the shortest path from
+              component discovery to implementation.
+            </p>
           </div>
         </aside>
       </header>
@@ -52,7 +59,9 @@ type LibraryCard = {
         <div class="section-heading">
           <span class="section-kicker">Browse</span>
           <h2>Library Catalog</h2>
-          <p>Grouped by intent so the first scan tells you where to dig next.</p>
+          <p>
+            Grouped by intent so the first scan tells you where to dig next.
+          </p>
         </div>
 
         <section class="library-grid">
@@ -74,13 +83,19 @@ type LibraryCard = {
         <div class="section-heading">
           <span class="section-kicker">Install</span>
           <h2>Quick Start</h2>
-          <p>Start small: pull in a component package and the shared theme layer.</p>
+          <p>
+            Start small: pull in a component package and the shared theme layer.
+          </p>
         </div>
 
         <div class="quick-start-grid">
-          <pre><code>npm install @optimistic-tanuki/common-ui @optimistic-tanuki/theme-lib</code></pre>
+          <pre><code>pnpm add @optimistic-tanuki/common-ui @optimistic-tanuki/theme-lib</code></pre>
           <div class="quick-start-copy">
-            <p>All UI libraries are published as standalone Angular components. Import what you need, then refine inputs in the playground before wiring them into feature code.</p>
+            <p>
+              All UI libraries are published as standalone Angular components.
+              Import what you need, then refine inputs in the playground before
+              wiring them into feature code.
+            </p>
           </div>
         </div>
       </section>
@@ -106,8 +121,11 @@ type LibraryCard = {
       .note-panel,
       .content-section {
         border: 1px solid rgba(129, 168, 222, 0.12);
-        background:
-          radial-gradient(circle at top right, rgba(125, 183, 255, 0.12), transparent 35%),
+        background: radial-gradient(
+            circle at top right,
+            rgba(125, 183, 255, 0.12),
+            transparent 35%
+          ),
           linear-gradient(180deg, rgba(15, 24, 38, 0.84), rgba(8, 14, 24, 0.94));
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
       }
@@ -161,14 +179,16 @@ type LibraryCard = {
         border-radius: 999px;
         text-decoration: none;
         font-weight: 600;
-        transition:
-          transform 160ms ease,
-          border-color 160ms ease,
+        transition: transform 160ms ease, border-color 160ms ease,
           background 160ms ease;
       }
 
       .primary-action {
-        background: linear-gradient(135deg, rgba(125, 183, 255, 0.96), rgba(120, 240, 214, 0.82));
+        background: linear-gradient(
+          135deg,
+          rgba(125, 183, 255, 0.96),
+          rgba(120, 240, 214, 0.82)
+        );
         color: #07101b;
       }
 
@@ -248,12 +268,14 @@ type LibraryCard = {
         padding: 1.15rem;
         border: 1px solid rgba(129, 168, 222, 0.12);
         border-radius: 1.2rem;
-        background: linear-gradient(180deg, rgba(18, 27, 42, 0.88), rgba(11, 18, 30, 0.96));
+        background: linear-gradient(
+          180deg,
+          rgba(18, 27, 42, 0.88),
+          rgba(11, 18, 30, 0.96)
+        );
         text-decoration: none;
         color: inherit;
-        transition:
-          transform 180ms ease,
-          border-color 180ms ease,
+        transition: transform 180ms ease, border-color 180ms ease,
           box-shadow 180ms ease;
       }
 
@@ -487,6 +509,75 @@ export class HomeComponent {
         'Theme-aware enterprise data grid wrapper for dense application tables.',
       componentCount: 1,
       category: 'Data',
+    },
+    {
+      path: '/blogging-ui',
+      name: 'Blogging UI',
+      description:
+        'Blog and content management components for editorial experiences.',
+      componentCount: 7,
+      category: 'Content',
+    },
+    {
+      path: '/business-ui',
+      name: 'Business UI',
+      description:
+        'Business and enterprise UI components for B2B applications.',
+      componentCount: 1,
+      category: 'Commerce',
+    },
+    {
+      path: '/classified-ui',
+      name: 'Classifieds UI',
+      description: 'Classified ads and marketplace listing components.',
+      componentCount: 1,
+      category: 'Commerce',
+    },
+    {
+      path: '/community-ui',
+      name: 'Community UI',
+      description:
+        'Community building and engagement components for social platforms.',
+      componentCount: 1,
+      category: 'Social',
+    },
+    {
+      path: '/forum-ui',
+      name: 'Forum UI',
+      description:
+        'Forum and discussion board components for community conversations.',
+      componentCount: 2,
+      category: 'Social',
+    },
+    {
+      path: '/hai-ui',
+      name: 'HAI UI',
+      description:
+        'Human-AI Interaction components for intelligent assistant interfaces.',
+      componentCount: 3,
+      category: 'AI',
+    },
+    {
+      path: '/payments-ui',
+      name: 'Payments UI',
+      description: 'Payment processing and transaction UI components.',
+      componentCount: 3,
+      category: 'Commerce',
+    },
+    {
+      path: '/project-ui',
+      name: 'Project UI',
+      description: 'Project management and task tracking UI components.',
+      componentCount: 3,
+      category: 'Productivity',
+    },
+    {
+      path: '/docs',
+      name: 'Documentation',
+      description:
+        'Library organization, migration notes, and integration guides.',
+      componentCount: 0,
+      category: 'Info',
     },
   ];
 

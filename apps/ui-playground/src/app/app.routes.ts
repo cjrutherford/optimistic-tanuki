@@ -7,6 +7,13 @@ export const routes: Routes = [
       import('./pages/home/home.component').then((m) => m.HomeComponent),
   },
   {
+    path: 'docs',
+    loadComponent: () =>
+      import('./pages/docs/docs-page.component').then(
+        (m) => m.DocsPageComponent
+      ),
+  },
+  {
     path: 'motion-ui',
     loadComponent: () =>
       import('./pages/motion-ui/motion-ui-page.component').then(
@@ -109,6 +116,62 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/ag-grid-ui/ag-grid-ui-page.component').then(
         (m) => m.AgGridUiPageComponent
+      ),
+  },
+  {
+    path: 'blogging-ui',
+    loadComponent: () =>
+      import('./pages/blogging-ui/blogging-ui-page.component').then(
+        (m) => m.BloggingUiPageComponent
+      ),
+  },
+  {
+    path: 'business-ui',
+    loadComponent: () =>
+      import('./pages/business-ui/business-ui-page.component').then(
+        (m) => m.BusinessUiPageComponent
+      ),
+  },
+  {
+    path: 'classified-ui',
+    loadComponent: () =>
+      import('./pages/classified-ui/classified-ui-page.component').then(
+        (m) => m.ClassifiedUiPageComponent
+      ),
+  },
+  {
+    path: 'community-ui',
+    loadComponent: () =>
+      import('./pages/community-ui/community-ui-page.component').then(
+        (m) => m.CommunityUiPageComponent
+      ),
+  },
+  {
+    path: 'forum-ui',
+    loadComponent: () =>
+      import('./pages/forum-ui/forum-ui-page.component').then(
+        (m) => m.ForumUiPageComponent
+      ),
+  },
+  {
+    path: 'hai-ui',
+    loadComponent: () =>
+      import('./pages/hai-ui/hai-ui-page.component').then(
+        (m) => m.HaiUiPageComponent
+      ),
+  },
+  {
+    path: 'payments-ui',
+    loadComponent: () =>
+      import('./pages/payments-ui/payments-ui-page.component').then(
+        (m) => m.PaymentsUiPageComponent
+      ),
+  },
+  {
+    path: 'project-ui',
+    loadComponent: () =>
+      import('./pages/project-ui/project-ui-page.component').then(
+        (m) => m.ProjectUiPageComponent
       ),
   },
   {
