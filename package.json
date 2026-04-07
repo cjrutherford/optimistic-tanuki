@@ -22,6 +22,8 @@
     "docker:dev": "pnpm run build:dev && pnpm run docker:dev:up",
     "docker:dev:bootstrap": "pnpm run docker:dev && pnpm run docker:dev:seed",
     "docker:dev:reset": "pnpm run build:dev && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d --force-recreate --renew-anon-volumes --remove-orphans",
+    "docker:prod:seed": "sh ./scripts/prod-seed.sh",
+    "docker:prod:bootstrap": "pnpm run build && pnpm run docker:prod:seed",
     "fow:docker:build:dev": "docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml build",
     "fow:docker:dev": "docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml up -d --force-recreate --renew-anon-volumes && docker compose exec telos-docs-service node /usr/src/app/seed-persona.js",
     "fow:docker:down": "docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml down --remove-orphans",
