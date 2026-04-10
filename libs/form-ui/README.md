@@ -1,20 +1,15 @@
 # Form UI
 
-This library contains UI components for building forms, such as input fields, text areas, and select boxes.
+`form-ui` contains reusable form components and styles for Angular clients. Its source lives under `libs/form-ui/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the components in this library, import the `FormUiModule` into your Angular module:
+- shared form presentation and interaction primitives
+- used across multiple app UIs in the monorepo
 
-```typescript
-import { FormUiModule } from '@optimistic-tanuki/form-ui';
+## Nx Commands
 
-@NgModule({
-  imports: [FormUiModule],
-})
-export class MyModule {}
+```bash
+npx nx build form-ui
+npx nx test form-ui
 ```
-
-## Running unit tests
-
-Run `nx test form-ui` to execute the unit tests.

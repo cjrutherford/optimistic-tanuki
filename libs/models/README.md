@@ -1,15 +1,15 @@
 # Models
 
-This library contains data models that are shared across multiple applications. These models define the structure of the data that is passed between the frontend and backend.
+`models` contains shared domain models used across services and clients. Its source lives under `libs/models/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the models in this library, import them directly from the library:
+- shared data contracts and model definitions
+- one of the core cross-cutting libraries in the repo
 
-```typescript
-import { User } from '@optimistic-tanuki/models';
+## Nx Commands
+
+```bash
+npx nx build models
+npx nx test models
 ```
-
-## Running unit tests
-
-Run `nx test models` to execute the unit tests.

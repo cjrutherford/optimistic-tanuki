@@ -1,23 +1,33 @@
 # AI Orchestrator E2E
 
-This folder contains end-to-end tests that exercise the AI orchestration microservice.
+This project contains end-to-end tests for the AI orchestrator service and its gateway-facing behavior.
 
-## How to run the e2e tests locally
+## Local Run
 
-1. Start the required services (recommended):
+The tests expect the required services to be available locally.
+
+Recommended flow:
 
 ```bash
-# From repository root - starts the dev docker-compose stack and waits for ports
+# From repo root
 ./scripts/start-e2e-deps.sh
-```
 
-2. Run the e2e tests (assumes services are running locally on the ports used by the repo):
-
-```bash
+# Then run the suite
 npx nx e2e ai-orchestrator-e2e --skip-nx-cache --testTimeout=30000
 ```
 
+## Expected Local Dependencies
+
+The current test assumptions are:
+
+- gateway on `http://localhost:3000`
+- profile on `http://localhost:3002`
+- ai-orchestrator on `http://localhost:3010`
+
+If your local stack uses different endpoints, update the helper script or run the required services manually.
+
 ## Notes
 
-- The e2e runner currently assumes the `gateway` (port 3000), `profile` (port 3002), and `ai-orchestrator` (port 3010) services are available locally. Adjust `scripts/start-e2e-deps.sh` if your environment uses different ports or service names.
-- The test project is configured to NOT auto-start the `ai-orchestrator` service; this avoids EADDRINUSE issues if a service is already running. Use the start script to bring up services or run them manually.
+- The e2e project does not auto-start the ai-orchestrator service.
+- The helper script uses Docker Compose to bring up supporting services and waits for the required host ports.
+- If the helper script does not match your local environment, prefer documenting and using the exact manual stack you need rather than relying on implicit auto-start behavior.

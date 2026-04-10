@@ -2,7 +2,7 @@ name: Build
 
 on:
   pull_request:
-    branches: [main, develop, MVP-polish]
+    branches: [main, develop, mvp-polish]
   push:
     branches: [main, develop]
   workflow_dispatch:

@@ -1,11 +1,28 @@
 # Assets
 
-This service is responsible for managing digital assets, such as images, videos, and documents. It provides a centralized location for storing and retrieving assets, as well as for performing various operations on them, such as resizing and cropping images.
+The assets service manages uploaded and generated files for the platform. Its source lives under `apps/assets/src` with service code in `src/app` and entity definitions in `src/entities`.
 
-## 🚀 Getting Started
+## Local Development
 
-This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+Run it as part of the main stack:
 
-## 📝 API Reference
+```bash
+npm run docker:dev
+```
 
-The Assets service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/assets`.
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/assets`
+
+## Repo Role
+
+- backend asset storage and retrieval
+- file metadata and asset-related entity handling
+- part of the canonical deployment inventory used by the k8s and CI flows
+
+## Nx Commands
+
+```bash
+npx nx build assets
+npx nx test assets
+```

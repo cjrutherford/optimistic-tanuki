@@ -1,11 +1,28 @@
 # Prompt Proxy
 
-This service is responsible for proxying requests to prompt-based AI models. It provides a unified interface for interacting with various AI models, and is responsible for tasks such as prompt engineering, caching, and rate limiting.
+The prompt-proxy service provides the platform’s backend surface for prompt-oriented AI requests. Its source lives under `apps/prompt-proxy/src/app`.
 
-## 🚀 Getting Started
+## Local Development
 
-This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+Run it through the normal development stack:
 
-## 📝 API Reference
+```bash
+npm run docker:dev
+```
 
-The Prompt Proxy service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/prompt-proxy`.
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/prompt-proxy`
+
+## Repo Role
+
+- backend prompt request mediation
+- supports AI-oriented workflows in the platform
+- included in the deployment inventory and image promotion flow
+
+## Nx Commands
+
+```bash
+npx nx build prompt-proxy
+npx nx test prompt-proxy
+```

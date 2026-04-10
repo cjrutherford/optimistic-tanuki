@@ -16,31 +16,28 @@ if [ ! -d "$K8S_BASE_DIR" ]; then
   exit 1
 fi
 
-node - "$COMPOSE_FILE" "$K8S_BASE_DIR" <<'NODE'
+INVENTORY_FILE="$(mktemp)"
+trap 'rm -f "$INVENTORY_FILE"' EXIT
+(
+  cd "$PROJECT_DIR/tools/admin-env-wizard"
+  GOCACHE="${GOCACHE:-/tmp/go-build}" go run ./cmd/deployment-inventory > "$INVENTORY_FILE"
+)
+
+node - "$COMPOSE_FILE" "$K8S_BASE_DIR" "$INVENTORY_FILE" <<'NODE'
 const fs = require('fs');
 const path = require('path');
 
 const composeFile = process.argv[2];
 const k8sBaseDir = process.argv[3];
+const inventoryFile = process.argv[4];
+const repoRoot = path.resolve(k8sBaseDir, '..', '..');
+const inventoryJson = fs.readFileSync(inventoryFile, 'utf8');
+const inventory = JSON.parse(inventoryJson);
 
 const skipServices = new Set(['postgres', 'redis', 'db-setup', 'app-configurator-seed']);
-const serviceNameMap = {
-  'ot-client-interface': 'client-interface',
-  'forgeofwill-client-interface': 'forgeofwill',
-  'digital-homestead-client-interface': 'digital-homestead',
-  'crdn-client-interface': 'christopherrutherford-net'
-};
-const clientServices = new Set([
-  'client-interface',
-  'forgeofwill',
-  'digital-homestead',
-  'christopherrutherford-net',
-  'owner-console',
-  'store-client',
-  'configurable-client',
-  'system-configurator',
-  'd6'
-]);
+const deployableAppsByComposeService = new Map(
+  inventory.apps.map((app) => [app.ComposeServiceName, app])
+);
 
 const composeContent = fs.readFileSync(composeFile, 'utf8').split(/\r?\n/);
 let inServices = false;
@@ -93,22 +90,16 @@ for (const [composeService, info] of parsed.entries()) {
     continue;
   }
 
-  const k8sName = serviceNameMap[composeService] || composeService;
-  const manifestCandidates = [
-    path.join(k8sBaseDir, 'services', `${k8sName}.yaml`),
-    path.join(k8sBaseDir, 'clients', `${k8sName}.yaml`),
-    path.join(k8sBaseDir, `${k8sName}.yaml`)
-  ];
-  const manifestPath = manifestCandidates.find((candidate) => fs.existsSync(candidate))
-    || (clientServices.has(k8sName)
-      ? path.join(k8sBaseDir, 'clients', `${k8sName}.yaml`)
-      : path.join(k8sBaseDir, 'services', `${k8sName}.yaml`));
+  const app = deployableAppsByComposeService.get(composeService);
+  if (!app) {
+    continue;
+  }
 
   expected.push({
     composeService,
-    k8sName,
+    k8sName: app.ID,
     containerPort: info.containerPort,
-    manifestPath
+    manifestPath: path.join(repoRoot, app.K8sManifestPath)
   });
 }
 

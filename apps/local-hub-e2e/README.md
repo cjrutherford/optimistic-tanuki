@@ -1,75 +1,61 @@
 # Local Hub E2E Tests
 
-This directory contains end-to-end tests for the Local Hub application using Playwright.
+This project contains Playwright end-to-end tests for the Local Hub application.
 
-## Test Files
+## Coverage
 
-- `public-pages.spec.ts` - Tests for public pages (landing, communities, about, help)
-- `authentication.spec.ts` - Tests for registration, login, and session management
-- `member-actions.spec.ts` - Tests for community browsing, membership, posts, profile
-- `database-verification.spec.ts` - Tests that verify data is correctly stored in the database
-- `elections.spec.ts` - Tests for community election functionality
-- `business.spec.ts` - Tests for business directory and listings
-- `classifieds.spec.ts` - Tests for classifieds listings
+Current suites include:
+
+- public pages
+- authentication
+- member actions
+- database verification
+- elections
+- business directory
+- classifieds
 
 ## Running Tests
 
-### With Docker (Recommended for CI)
+### Docker-based flow
 
-1. Start the test infrastructure:
-
-```bash
-docker-compose -f docker-compose.local-hub-e2e.yaml up -d
-```
-
-2. Run tests:
+The repo-level compose file for this suite is `docker-compose.local-hub-e2e.yaml`.
 
 ```bash
-docker-compose -f docker-compose.local-hub-e2e.yaml run e2e-test-runner
+# From repo root
+docker compose -f docker-compose.local-hub-e2e.yaml up -d
+docker compose -f docker-compose.local-hub-e2e.yaml run --rm e2e-test-runner
 ```
 
-Or run tests manually:
+Equivalent package scripts:
 
 ```bash
-docker-compose -f docker-compose.local-hub-e2e.yaml up -d
-docker exec local_hub_e2e_runner npx playwright test
+npm run e2e:docker:up
+npm run e2e:docker:test
+npm run e2e:docker:down
 ```
 
-### Local Development
+### Local Playwright run
 
-1. Start the services:
+If the required services are already running:
 
 ```bash
-docker-compose -f docker-compose.local-hub-e2e.yaml up -d
+BASE_URL=http://localhost:8087 npx playwright test --config=apps/local-hub-e2e/playwright.config.ts
 ```
 
-2. Run tests with custom BASE_URL:
+## Environment Variables
 
-```bash
-BASE_URL=http://localhost:8087 npx playwright test
-```
-
-### Environment Variables
-
-- `BASE_URL` - Frontend URL (default: http://localhost:8087)
-- `GATEWAY_URL` - Gateway API URL (default: http://localhost:3000)
-- `POSTGRES_HOST` - Database host (default: localhost)
-- `POSTGRES_PORT` - Database port (default: 5433)
-- `POSTGRES_USER` - Database user (default: postgres)
-- `POSTGRES_PASSWORD` - Database password (default: postgres)
-- `POSTGRES_DB` - Database name (default: ot_local_hub)
-- `CI` - Set to "true" for CI mode (disables server auto-start)
-- `E2E_DOCKER` - Set to "true" to use Docker-based testing
-
-## Test Fixtures
-
-Test fixtures are located in `src/fixtures/`:
-
-- `auth.fixture.ts` - Authentication helpers and test user management
-- `helpers.ts` - Service wait helpers and utility functions
+- `BASE_URL`: frontend URL, default `http://localhost:8087`
+- `GATEWAY_URL`: gateway API URL, default `http://localhost:3000`
+- `POSTGRES_HOST`: database host
+- `POSTGRES_PORT`: database port
+- `POSTGRES_USER`: database user
+- `POSTGRES_PASSWORD`: database password
+- `POSTGRES_DB`: database name
+- `CI`: set to `"true"` for CI mode
+- `E2E_DOCKER`: set to `"true"` for Docker-based testing
 
 ## Notes
 
-- Tests are designed to work with Docker-based services
-- The e2e docker-compose file starts all required services with proper health checks
-- Database tests require a running PostgreSQL instance with proper credentials
+- The suite is designed around Docker-backed dependencies.
+- The compose file lives at the repo root, not inside `apps/local-hub-e2e/`.
+- For the platform-wide local stack, see `npm run docker:dev` and the Docker docs in `docs/devops/docker-compose.md`.

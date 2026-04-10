@@ -1,11 +1,28 @@
 # Profile
 
-This service is responsible for managing user profiles. It provides a centralized location for storing and retrieving user data, such as personal information, preferences, and settings.
+The profile service manages user profiles, timelines, and related profile data. The main implementation lives under `apps/profile/src/profiles` and `apps/profile/src/timelines`.
 
-## 🚀 Getting Started
+## Local Development
 
-This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+Run it as part of the main stack:
 
-## 📝 API Reference
+```bash
+npm run docker:dev
+```
 
-The Profile service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/profile`.
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/profile`
+
+## Repo Role
+
+- user profile storage and retrieval
+- timeline and profile-related data flows for multiple frontends
+- part of the gateway and deployment inventory surface
+
+## Nx Commands
+
+```bash
+npx nx build profile
+npx nx test profile
+```

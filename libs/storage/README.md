@@ -1,20 +1,15 @@
 # Storage
 
-This library contains services for interacting with file storage. It provides a simple and consistent way to upload, download, and delete files.
+`storage` contains shared storage-related utilities and abstractions. Its source lives under `libs/storage/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the services in this library, inject them into your NestJS services or controllers:
+- reusable storage helpers for backend services
+- shared infrastructure layer rather than end-user UI
 
-```typescript
-import { StorageService } from '@optimistic-tanuki/storage';
+## Nx Commands
 
-@Injectable()
-export class MyService {
-  constructor(private readonly storageService: StorageService) {}
-}
+```bash
+npx nx build storage
+npx nx test storage
 ```
-
-## Running unit tests
-
-Run `nx test storage` to execute the unit tests.

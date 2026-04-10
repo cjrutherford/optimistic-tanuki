@@ -142,7 +142,22 @@ else
 fi
 
 echo ""
-echo "Step 5: Validating compose ↔ k8s parity..."
+echo "Step 5: Validating deployment inventory..."
+if [ -f "$SCRIPT_DIR/validate-deployment-inventory.mjs" ]; then
+    INVENTORY_FILE="$(mktemp)"
+    trap 'rm -f "$INVENTORY_FILE"' EXIT
+    (
+        cd "$PROJECT_DIR/tools/admin-env-wizard"
+        GOCACHE="${GOCACHE:-/tmp/go-build}" go run ./cmd/deployment-inventory > "$INVENTORY_FILE"
+    )
+    DEPLOYMENT_INVENTORY_FILE="$INVENTORY_FILE" node "$SCRIPT_DIR/validate-deployment-inventory.mjs"
+else
+    echo "Error: validate-deployment-inventory.mjs not found."
+    exit 1
+fi
+
+echo ""
+echo "Step 5.1: Validating compose ↔ k8s parity..."
 if [ -f "$SCRIPT_DIR/validate-compose-k8s-parity.sh" ]; then
     chmod +x "$SCRIPT_DIR/validate-compose-k8s-parity.sh"
     "$SCRIPT_DIR/validate-compose-k8s-parity.sh"
@@ -177,12 +192,14 @@ echo "Step 7: Applying ArgoCD application and waiting for infrastructure..."
 
 ARGO_REPO_URL="${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}"
 ARGO_TARGET_REVISION="${ARGO_TARGET_REVISION:-main}"
-ARGO_ENV="${ARGO_ENV:-production}"
+ARGO_ENV="${ARGO_ENV:-staging}"
 
 ARGO_APP_FILE="$PROJECT_DIR/k8s/argo-app/application.yaml"
-sed -e "s|\${ARGO_REPO_URL}|$ARGO_REPO_URL|g" \
-    -e "s|\${ARGO_TARGET_REVISION}|$ARGO_TARGET_REVISION|g" \
-    -e "s|\${ARGO_ENV}|$ARGO_ENV|g" \
+sed -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
+    -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|$NAMESPACE|g" \
+    -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|$ARGO_REPO_URL|g" \
+    -e "s|\${ARGO_TARGET_REVISION:-main}|$ARGO_TARGET_REVISION|g" \
+    -e "s|\${ARGO_ENV:-production}|$ARGO_ENV|g" \
     "$ARGO_APP_FILE" | $KUBECTL_CMD apply -f -
 
 if [ "$BOOTSTRAP_APPLY_SURFACE" = "true" ]; then
@@ -191,13 +208,13 @@ if [ "$BOOTSTRAP_APPLY_SURFACE" = "true" ]; then
 fi
 
 wait_for_deployment "argocd" "argocd-server"
-wait_for_argocd_application_sync "optimistic-tanuki" "argocd"
+wait_for_argocd_application_sync "optimistic-tanuki-staging" "argocd"
 wait_for_deployment "$NAMESPACE" "postgres"
 wait_for_deployment "$NAMESPACE" "redis"
 wait_for_deployment "$NAMESPACE" "gateway"
 
 if [ "$DEPLOY_TARGET" != "k8s" ] && [ "$DEPLOY_TARGET" != "kubernetes" ]; then
-    echo "Warning: DEPLOY_TARGET is '$DEPLOY_TARGET', but production flow assumes Kubernetes infrastructure."
+echo "Warning: DEPLOY_TARGET is '$DEPLOY_TARGET', but staging flow assumes Kubernetes infrastructure."
 fi
 
 echo ""
@@ -236,10 +253,10 @@ fi
 
 echo ""
 echo "=========================================="
-echo "Production deployment pipeline completed!"
+echo "Staging deployment pipeline completed!"
 echo "=========================================="
 echo ""
 echo "Next steps:"
 echo "1. Configure ArgoCD: argocd login argocd.<domain> --username admin --password <password>"
-echo "2. Sync application: argocd app sync optimistic-tanuki"
+echo "2. Sync application: argocd app sync optimistic-tanuki-staging"
 echo "Or push to main branch to trigger GitHub Actions deployment."
