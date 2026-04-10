@@ -6,18 +6,19 @@ WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json
 COPY package.json ./
-COPY package-lock.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
 COPY tsconfig*.json ./
 COPY nx.json ./
 COPY libs ./libs
 COPY apps/owner-console ./apps/owner-console
 
 # Install all dependencies (including devDependencies needed for build)
-RUN npm install --legacy-peer-deps
+RUN corepack enable && pnpm install --frozen-lockfile
 
 # Build the owner-console application for production with SSR
 # This will output to dist/apps/owner-console and include server/main.js
-RUN npx nx build owner-console --configuration=production
+RUN pnpm exec nx build owner-console --configuration=production
 
 # Stage 2: Create the runtime image from a slim Node.js base
 FROM node:lts-alpine
@@ -30,10 +31,11 @@ ENV NODE_ENV=production
 
 # Copy package.json and package-lock.json again to install only production dependencies
 COPY --from=builder /usr/src/app/package.json ./
-COPY --from=builder /usr/src/app/package-lock.json ./
+COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
+COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
 # Install only production dependencies.
-RUN npm install --omit=dev --legacy-peer-deps && npm i -g nodemon
+RUN corepack enable && pnpm install --prod --frozen-lockfile
 
 # Copy the built application (server and browser bundles) from the builder stage
 # The structure should be dist/apps/owner-console/server/main.js and dist/apps/owner-console/browser/...

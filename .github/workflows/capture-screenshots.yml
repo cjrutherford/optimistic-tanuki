@@ -7,7 +7,7 @@ on:
 
 jobs:
   capture-screenshots:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -25,24 +25,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '18'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
+        run: pnpm exec playwright install chromium --with-deps
 
       - name: Build application
-        run: npx nx build ${{ matrix.app.name }} --configuration=production
+        run: pnpm exec nx build ${{ matrix.app.name }} --configuration=production
 
       - name: Start application
         run: |
-          npx nx serve ${{ matrix.app.name }} --port=${{ matrix.app.port }} &
+          pnpm exec nx serve ${{ matrix.app.name }} --port=${{ matrix.app.port }} &
           # Wait for server to be ready
           timeout 120 bash -c 'until curl -s http://localhost:${{ matrix.app.port }} > /dev/null; do sleep 2; done'
         env:
@@ -51,11 +56,11 @@ jobs:
       - name: Capture screenshots
         run: |
           cd tools/screenshots
-          BASE_URL="http://localhost:${{ matrix.app.port }}" APP_NAME="${{ matrix.app.name }}" npx playwright test --grep="${{ matrix.app.name }}" --config=playwright.config.ts
+          BASE_URL="http://localhost:${{ matrix.app.port }}" APP_NAME="${{ matrix.app.name }}" pnpm exec playwright test --grep="${{ matrix.app.name }}" --config=playwright.config.ts
         continue-on-error: true
 
       - name: Upload screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: screenshots-${{ matrix.app.name }}
@@ -63,7 +68,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-report-${{ matrix.app.name }}
@@ -72,14 +77,14 @@ jobs:
 
   generate-report:
     needs: capture-screenshots
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
       - name: Download all screenshots
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: screenshots-*
           path: screenshots/
@@ -92,7 +97,7 @@ jobs:
           ./generate-features-report.sh
 
       - name: Upload features breakdown
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: features-breakdown
           path: FEATURES_BREAKDOWN.md

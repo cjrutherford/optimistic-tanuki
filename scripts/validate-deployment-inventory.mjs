@@ -5,21 +5,22 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import yaml from 'js-yaml';
 
-const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const repoRoot = path.resolve(
+  path.dirname(new URL(import.meta.url).pathname),
+  '..'
+);
 const inventoryJson = process.env.DEPLOYMENT_INVENTORY_FILE
   ? fs.readFileSync(process.env.DEPLOYMENT_INVENTORY_FILE, 'utf8')
-  : execFileSync(
-      'go',
-      ['run', './cmd/deployment-inventory'],
-      {
-        cwd: path.join(repoRoot, 'tools/admin-env-wizard'),
-        env: { ...process.env, GOCACHE: process.env.GOCACHE || '/tmp/go-build' },
-        encoding: 'utf8',
-      },
-    );
+  : execFileSync('go', ['run', './cmd/deployment-inventory'], {
+      cwd: path.join(repoRoot, 'tools/admin-env-wizard'),
+      env: { ...process.env, GOCACHE: process.env.GOCACHE || '/tmp/go-build' },
+      encoding: 'utf8',
+    });
 
 const inventory = JSON.parse(inventoryJson);
-const expectedApps = inventory.apps.map((app) => app.BuildAppID || app.ID).sort();
+const expectedApps = inventory.apps
+  .map((app) => app.BuildAppID || app.ID)
+  .sort();
 
 function readYaml(filePath) {
   return yaml.load(fs.readFileSync(filePath, 'utf8'));
@@ -43,15 +44,24 @@ function compareList(label, expected, actual) {
   return errors;
 }
 
-const buildPush = readYaml(path.join(repoRoot, '.github/workflows/build-push.yml'));
+const buildPush = readYaml(
+  path.join(repoRoot, '.github/workflows/build-push.yml')
+);
 const matrixApps = buildPush.jobs['build-and-push'].strategy.matrix.include
   .map((entry) => entry.app)
   .sort();
 
-const baseKustomization = readYaml(path.join(repoRoot, 'k8s/base/kustomization.yaml'));
-const expectedResources = inventory.apps.map((app) => app.K8sManifestPath.replace(/^k8s\/base\//, '')).sort();
+const baseKustomization = readYaml(
+  path.join(repoRoot, 'k8s/base/kustomization.yaml')
+);
+const expectedResources = inventory.apps
+  .map((app) => app.K8sManifestPath.replace(/^k8s\/base\//, ''))
+  .sort();
 const actualResources = (baseKustomization.resources || [])
-  .filter((resource) => resource !== 'ingress.yaml' && resource !== 'tailscale-ingress.yaml')
+  .filter(
+    (resource) =>
+      resource !== 'ingress.yaml' && resource !== 'tailscale-ingress.yaml'
+  )
   .sort();
 
 const overlayFiles = [
@@ -62,14 +72,24 @@ const expectedImageNames = inventory.apps.map((app) => app.ImageName).sort();
 
 const errors = [
   ...compareList('build-push matrix apps', expectedApps, matrixApps),
-  ...compareList('base kustomization resources', expectedResources, actualResources),
+  ...compareList(
+    'base kustomization resources',
+    expectedResources,
+    actualResources
+  ),
 ];
 
 for (const overlayFile of overlayFiles) {
   const overlay = readYaml(overlayFile);
-  const actualImageNames = (overlay.images || []).map((image) => image.name).sort();
+  const actualImageNames = (overlay.images || [])
+    .map((image) => image.name)
+    .sort();
   errors.push(
-    ...compareList(`${path.relative(repoRoot, overlayFile)} image overrides`, expectedImageNames, actualImageNames),
+    ...compareList(
+      `${path.relative(repoRoot, overlayFile)} image overrides`,
+      expectedImageNames,
+      actualImageNames
+    )
   );
 }
 
@@ -81,4 +101,6 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log(`Deployment inventory validation passed for ${expectedApps.length} apps.`);
+console.log(
+  `Deployment inventory validation passed for ${expectedApps.length} apps.`
+);
