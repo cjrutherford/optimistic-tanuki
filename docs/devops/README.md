@@ -62,20 +62,20 @@ Deployment and management scripts are located in `scripts/`.
 
 ### Deployment Scripts
 
-| Script | Description |
-| --- | --- |
+| Script                 | Description                                                      |
+| ---------------------- | ---------------------------------------------------------------- |
 | `deploy-production.sh` | Validate inventory, apply infra, and sync the production overlay |
-| `deploy-staging.sh` | Validate inventory, apply infra, and sync the staging overlay |
-| `apply-terraform.sh` | Apply Terraform configuration |
-| `teardown.sh` | Tear down Kubernetes resources |
+| `deploy-staging.sh`    | Validate inventory, apply infra, and sync the staging overlay    |
+| `apply-terraform.sh`   | Apply Terraform configuration                                    |
+| `teardown.sh`          | Tear down Kubernetes resources                                   |
 
 ### Validation Scripts
 
-| Script | Description |
-| --- | --- |
-| `validate-compose-k8s-parity.sh` | Validate Docker Compose ↔ k8s parity for k8s deployable apps |
-| `validate-deployment-inventory.mjs` | Validate workflow, base resources, and overlay image lists |
-| `update-k8s-overlay-images.mjs` | Update overlay image tags from the exported inventory |
+| Script                              | Description                                                  |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `validate-compose-k8s-parity.sh`    | Validate Docker Compose ↔ k8s parity for k8s deployable apps |
+| `validate-deployment-inventory.mjs` | Validate workflow, base resources, and overlay image lists   |
+| `update-k8s-overlay-images.mjs`     | Update overlay image tags from the exported inventory        |
 
 ### Usage
 

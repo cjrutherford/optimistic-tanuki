@@ -7,7 +7,7 @@ import {
   InjectableComponent,
   InjectedComponentInstance,
 } from '../interfaces/component-injection.interface';
-import { ComponentEditorWrapperComponent } from '@optimistic-tanuki/blogging-ui';
+import { ComponentEditorWrapperComponent } from '../components/component-editor-wrapper.component';
 
 export interface AngularComponentOptions {
   HTMLAttributes: Record<string, unknown>;
@@ -89,7 +89,10 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
     };
   },
 
-  parseHTML(): Array<{ tag: string; getAttrs?: (dom: HTMLElement) => Record<string, any> | false }> {
+  parseHTML(): Array<{
+    tag: string;
+    getAttrs?: (dom: HTMLElement) => Record<string, any> | false;
+  }> {
     return [
       {
         tag: 'div[data-angular-component]',
@@ -126,12 +129,16 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
     // Filter out complex objects from HTMLAttributes to prevent [object Object] in DOM
     // These are handled manually below as stringified JSON in data-* attributes
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { data: _d, componentDef: _cd, ...cleanHTMLAttributes } = HTMLAttributes;
+    const {
+      data: _d,
+      componentDef: _cd,
+      ...cleanHTMLAttributes
+    } = HTMLAttributes;
 
     // Serialize component data as JSON strings in data attributes
     const attributes: Record<string, any> = {
       'data-angular-component': '',
-      'class': 'angular-component-node',
+      class: 'angular-component-node',
     };
 
     if (componentId) {
@@ -149,7 +156,11 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
 
     return [
       'div',
-      mergeAttributes(this.options.HTMLAttributes, cleanHTMLAttributes, attributes),
+      mergeAttributes(
+        this.options.HTMLAttributes,
+        cleanHTMLAttributes,
+        attributes
+      ),
       [
         'div',
         { class: 'component-placeholder' },
@@ -187,9 +198,13 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
             instance.componentRef.instance
           ) {
             // Update the wrapper component's componentData property
-            const wrapperInstance: ComponentEditorWrapperComponent = instance.componentRef.instance as ComponentEditorWrapperComponent;
+            const wrapperInstance: ComponentEditorWrapperComponent = instance
+              .componentRef.instance as ComponentEditorWrapperComponent;
             if (wrapperInstance.componentData) {
-              wrapperInstance.componentData = { ...wrapperInstance.componentData, ...newData };
+              wrapperInstance.componentData = {
+                ...wrapperInstance.componentData,
+                ...newData,
+              };
             }
 
             // Also update the instance data
@@ -220,63 +235,71 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
           data?: Record<string, any>;
           componentDef: InjectableComponent;
         }) =>
-          ({ commands }: CommandProps) => {
-            return commands.insertContent({
-              type: this.name,
-              attrs: {
-                componentId: options.componentId,
-                instanceId: options.instanceId,
-                data: options.data,
-                componentDef: options.componentDef,
-              },
-            });
-          },
+        ({ commands }: CommandProps) => {
+          return commands.insertContent({
+            type: this.name,
+            attrs: {
+              componentId: options.componentId,
+              instanceId: options.instanceId,
+              data: options.data,
+              componentDef: options.componentDef,
+            },
+          });
+        },
 
       updateAngularComponent:
         (options: { instanceId: string; data: Record<string, any> }) =>
-          ({ tr, state, dispatch }: { tr: Transaction; state: EditorState; dispatch?: (tr: Transaction) => void }) => {
-            const { doc } = state;
-            let updated = false;
+        ({
+          tr,
+          state,
+          dispatch,
+        }: {
+          tr: Transaction;
+          state: EditorState;
+          dispatch?: (tr: Transaction) => void;
+        }) => {
+          const { doc } = state;
+          let updated = false;
 
-            doc.descendants((node, pos) => {
-              if (
-                node.type.name === this.name &&
-                node.attrs['instanceId'] === options.instanceId
-              ) {
-                tr.setNodeMarkup(pos, undefined, {
-                  ...node.attrs,
-                  data: options.data,
-                });
-                updated = true;
-              }
-            });
-
-            // Actually dispatch the transaction to update the editor state
-            if (updated && dispatch) {
-              dispatch(tr);
+          doc.descendants((node, pos) => {
+            if (
+              node.type.name === this.name &&
+              node.attrs['instanceId'] === options.instanceId
+            ) {
+              tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                data: options.data,
+              });
+              updated = true;
             }
+          });
 
-            return updated;
-          },
+          // Actually dispatch the transaction to update the editor state
+          if (updated && dispatch) {
+            dispatch(tr);
+          }
+
+          return updated;
+        },
 
       removeAngularComponent:
         (instanceId: string) =>
-          ({ tr, state }: { tr: Transaction; state: EditorState }) => {
-            const { doc } = state;
-            let removed = false;
+        ({ tr, state }: { tr: Transaction; state: EditorState }) => {
+          const { doc } = state;
+          let removed = false;
 
-            doc.descendants((node, pos) => {
-              if (
-                node.type.name === this.name &&
-                node.attrs['instanceId'] === instanceId
-              ) {
-                tr.delete(pos, pos + node.nodeSize);
-                removed = true;
-              }
-            });
+          doc.descendants((node, pos) => {
+            if (
+              node.type.name === this.name &&
+              node.attrs['instanceId'] === instanceId
+            ) {
+              tr.delete(pos, pos + node.nodeSize);
+              removed = true;
+            }
+          });
 
-            return removed;
-          },
+          return removed;
+        },
     };
   },
 
@@ -312,7 +335,8 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
                   controls.innerHTML = `
                     <button class="component-edit-btn" title="Edit Component">✏️</button>
                     <button class="component-delete-btn" title="Delete Component">🗑️</button>
-                    <span class="component-label">${node.attrs['componentDef']?.name || 'Component'
+                    <span class="component-label">${
+                      node.attrs['componentDef']?.name || 'Component'
                     }</span>
                   `;
 
@@ -347,11 +371,13 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
                   content.className = 'component-content';
                   content.innerHTML = `
                     <div class="component-preview">
-                      <h4>${node.attrs['componentDef']?.name || 'Angular Component'
-                    }</h4>
-                      <p>${node.attrs['componentDef']?.description ||
-                    'Click to edit this component'
-                    }</p>
+                      <h4>${
+                        node.attrs['componentDef']?.name || 'Angular Component'
+                      }</h4>
+                      <p>${
+                        node.attrs['componentDef']?.description ||
+                        'Click to edit this component'
+                      }</p>
                     </div>
                   `;
 

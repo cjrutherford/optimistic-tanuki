@@ -21,20 +21,20 @@ spec:
             - containerPort: 4000
           env:
             - name: NODE_ENV
-              value: "production"
+              value: 'production'
             - name: PORT
-              value: "4000"
+              value: '4000'
             - name: GATEWAY_URL
-              value: "http://gateway:3000"
+              value: 'http://gateway:3000'
             - name: GATEWAY_WS_URL
-              value: "http://gateway:3300"
+              value: 'http://gateway:3300'
           resources:
             requests:
-              memory: "64Mi"
-              cpu: "50m"
+              memory: '64Mi'
+              cpu: '50m'
             limits:
-              memory: "256Mi"
-              cpu: "250m"
+              memory: '256Mi'
+              cpu: '250m'
           livenessProbe:
             tcpSocket:
               port: 4000

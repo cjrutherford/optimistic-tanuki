@@ -5,15 +5,16 @@ WORKDIR /usr/src/app
 ARG GIT_SHA=unknown
 
 COPY package.json ./
-COPY package-lock.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
 COPY tsconfig*.json ./
 COPY nx.json ./
 COPY libs ./libs
 COPY apps/leads-app ./apps/leads-app
 
-RUN npm install --legacy-peer-deps
+RUN corepack enable && pnpm install --frozen-lockfile
 
-RUN npx nx build leads-app --configuration=production
+RUN pnpm exec nx build leads-app --configuration=production
 
 FROM node:lts-alpine
 RUN apk add --no-cache dumb-init
@@ -26,9 +27,10 @@ ENV NODE_ENV=production
 ENV GIT_SHA=${GIT_SHA}
 
 COPY --from=builder /usr/src/app/package.json ./
-COPY --from=builder /usr/src/app/package-lock.json ./
+COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
+COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
-RUN npm install --omit=dev --legacy-peer-deps && npm i -g nodemon
+RUN corepack enable && pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /usr/src/app/dist/apps/leads-app ./dist/apps/leads-app
 

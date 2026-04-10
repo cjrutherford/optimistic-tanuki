@@ -3,14 +3,15 @@ FROM node:lts-alpine AS builder
 WORKDIR /usr/src/app
 
 COPY package.json ./
-COPY package-lock.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
 COPY tsconfig*.json ./
 COPY nx.json ./
 COPY libs ./libs
 COPY apps/system-configurator ./apps/system-configurator
 
-RUN npm install --legacy-peer-deps
-RUN npx nx build system-configurator --configuration=production
+RUN corepack enable && pnpm install --frozen-lockfile
+RUN pnpm exec nx build system-configurator --configuration=production
 
 FROM node:lts-alpine
 
@@ -22,9 +23,10 @@ ENV NODE_ENV=production
 ENV PORT=4000
 
 COPY --from=builder /usr/src/app/package.json ./
-COPY --from=builder /usr/src/app/package-lock.json ./
+COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
+COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
-RUN npm install --omit=dev --legacy-peer-deps && npm i -g nodemon
+RUN corepack enable && pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /usr/src/app/dist/apps/system-configurator ./dist/apps/system-configurator
 
