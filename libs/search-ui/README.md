@@ -1,7 +1,15 @@
-# search-ui
+# Search UI
 
-This library was generated with [Nx](https://nx.dev).
+`search-ui` contains reusable search and exploration UI components. Its source lives under `libs/search-ui/src/lib`.
 
-## Running unit tests
+## Repo Role
 
-Run `nx test search-ui` to execute the unit tests.
+- shared global search and explore-page presentation
+- Angular UI library for search-oriented frontends
+
+## Nx Commands
+
+```bash
+npx nx build search-ui
+npx nx test search-ui
+```

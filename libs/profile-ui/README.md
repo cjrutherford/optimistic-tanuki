@@ -1,20 +1,15 @@
 # Profile UI
 
-This library contains UI components for displaying user profiles.
+`profile-ui` contains reusable profile-oriented UI components and styles. Its source lives under `libs/profile-ui/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the components in this library, import the `ProfileUiModule` into your Angular module:
+- shared profile presentation
+- used by profile-facing Angular applications
 
-```typescript
-import { ProfileUiModule } from '@optimistic-tanuki/profile-ui';
+## Nx Commands
 
-@NgModule({
-  imports: [ProfileUiModule],
-})
-export class MyModule {}
+```bash
+npx nx build profile-ui
+npx nx test profile-ui
 ```
-
-## Running unit tests
-
-Run `nx test profile-ui` to execute the unit tests.

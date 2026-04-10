@@ -1,11 +1,15 @@
-# theme-models
+# Theme Models
 
-This library was generated with [Nx](https://nx.dev).
+`theme-models` contains shared theme-related data models. Its source lives under `libs/theme-models/src/lib`.
 
-## Building
+## Repo Role
 
-Run `nx build theme-models` to build the library.
+- shared data contracts for the repo’s theme system
+- companion library to `theme-lib`, `theme-ui`, and `theme-styles`
 
-## Running unit tests
+## Nx Commands
 
-Run `nx test theme-models` to execute the unit tests via [Jest](https://jestjs.io).
+```bash
+npx nx build theme-models
+npx nx test theme-models
+```

@@ -1,7 +1,15 @@
-# community-ui
+# Community UI
 
-This library was generated with [Nx](https://nx.dev).
+`community-ui` contains reusable community-oriented UI components and styles. Its source lives under `libs/community-ui/src/lib`.
 
-## Running unit tests
+## Repo Role
 
-Run `nx test community-ui` to execute the unit tests.
+- shared community and post-related presentation
+- supports community-facing app surfaces in the repo
+
+## Nx Commands
+
+```bash
+npx nx build community-ui
+npx nx test community-ui
+```

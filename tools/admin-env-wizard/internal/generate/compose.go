@@ -102,7 +102,12 @@ func GenerateCompose(env *domain.EnvironmentDefinition, cat *catalog.Catalog) ([
 			service.Volumes = preset.Compose.Volumes
 		}
 
-		cf.Services[preset.ID] = service
+		serviceName := preset.Compose.ServiceName
+		if serviceName == "" {
+			serviceName = preset.ID
+		}
+
+		cf.Services[serviceName] = service
 	}
 
 	for kind := range enabledInfra {

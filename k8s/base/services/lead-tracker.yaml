@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lead-tracker
+  namespace: optimistic-tanuki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lead-tracker
+  template:
+    metadata:
+      labels:
+        app: lead-tracker
+    spec:
+      containers:
+        - name: lead-tracker
+          image: cjrutherford/optimistic_tanuki_lead-tracker:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3020
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3020"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: POSTGRES_PORT
+              value: "5432"
+          envFrom:
+            - secretRef:
+                name: optimistic-tanuki-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 3020
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3020
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lead-tracker
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: lead-tracker
+  ports:
+    - port: 3020
+      targetPort: 3020
+  clusterIP: None

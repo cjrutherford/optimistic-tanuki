@@ -1,7 +1,15 @@
-# permission-lib
+# Permission Lib
 
-This library was generated with [Nx](https://nx.dev).
+`permission-lib` contains shared permission-related logic used across the repo. Its source lives under `libs/permission-lib/src/lib`.
 
-## Running unit tests
+## Repo Role
 
-Run `nx test permission-lib` to execute the unit tests via [Jest](https://jestjs.io).
+- shared permission helpers and contracts
+- supports the permissions service and permission-aware UI/backend flows
+
+## Nx Commands
+
+```bash
+npx nx build permission-lib
+npx nx test permission-lib
+```

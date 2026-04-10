@@ -1,11 +1,15 @@
-# app-config-models
+# App Config Models
 
-This library was generated with [Nx](https://nx.dev).
+`app-config-models` contains shared models for application configuration data. Its source lives under `libs/app-config-models/src/lib`.
 
-## Building
+## Repo Role
 
-Run `nx build app-config-models` to build the library.
+- shared configuration data types
+- supports app configuration flows across services and frontends
 
-## Running unit tests
+## Nx Commands
 
-Run `nx test app-config-models` to execute the unit tests via [Jest](https://jestjs.io).
+```bash
+npx nx build app-config-models
+npx nx test app-config-models
+```

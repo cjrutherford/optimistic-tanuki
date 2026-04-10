@@ -17,6 +17,9 @@ resources:
   - services/blogging.yaml
   - services/permissions.yaml
   - services/project-planning.yaml
+  - services/classifieds.yaml
+  - services/payments.yaml
+  - services/lead-tracker.yaml
   - services/store.yaml
   - services/app-configurator.yaml
   - services/system-configurator-api.yaml
@@ -31,5 +34,7 @@ resources:
   - clients/configurable-client.yaml
   - clients/system-configurator.yaml
   - clients/d6.yaml
+  - clients/local-hub.yaml
+  - clients/leads-app.yaml
   - ingress.yaml
   - tailscale-ingress.yaml

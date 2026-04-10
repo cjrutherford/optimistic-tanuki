@@ -13,6 +13,7 @@ const (
 )
 
 type ComposeMetadata struct {
+	ServiceName   string
 	BuildContext  string
 	Dockerfile    string
 	ContainerPort int
@@ -76,6 +77,16 @@ type Preset struct {
 	Image         ImageMetadata
 	Dependencies  []Dependency
 	ServicePoints []domain.ServicePoint
+}
+
+type DeployableApp struct {
+	ID                 string
+	BuildAppID         string
+	Category           Category
+	ComposeServiceName string
+	Dockerfile         string
+	ImageName          string
+	K8sManifestPath    string
 }
 
 type Catalog struct {

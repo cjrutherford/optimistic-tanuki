@@ -1,16 +1,15 @@
 # Auth UI
 
-This library contains UI components for authentication, such as login and registration forms.
+`auth-ui` contains reusable authentication UI components and styles. Its source lives under `libs/auth-ui/src/lib/auth-ui` and `libs/auth-ui/src/lib/styles`.
 
-## Usage
+## Repo Role
 
-To use the components in this library, import the `AuthUiModule` into your Angular module:
+- login and registration-oriented UI
+- shared auth presentation for Angular clients in the monorepo
 
-```typescript
-import { AuthUiModule } from '@optimistic-tanuki/auth-ui';
+## Nx Commands
 
-@NgModule({
-  imports: [AuthUiModule],
-})
-export class MyModule {}
+```bash
+npx nx build auth-ui
+npx nx test auth-ui
 ```

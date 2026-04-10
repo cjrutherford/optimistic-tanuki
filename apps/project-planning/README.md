@@ -1,11 +1,28 @@
 # Project Planning
 
-This service is responsible for managing projects, tasks, and other project-related data. It provides a flexible and powerful platform for planning and tracking projects of all sizes.
+The project-planning service is the backend for project, task, timer, journal, analytics, and risk workflows. Its source is organized under `apps/project-planning/src/app` by domain feature.
 
-## 🚀 Getting Started
+## Local Development
 
-This service is started as part of the Forge of Will application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+Run it through the main repo stack:
 
-## 📝 API Reference
+```bash
+npm run docker:dev
+```
 
-The Project Planning service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/project-planning`.
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/project-planning`
+
+## Repo Role
+
+- backend for Forge of Will and related project-management surfaces
+- task and project state, journaling, time tracking, and risk tracking
+- part of the canonical deployment inventory
+
+## Nx Commands
+
+```bash
+npx nx build project-planning
+npx nx test project-planning
+```

@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: classifieds
+  namespace: optimistic-tanuki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: classifieds
+  template:
+    metadata:
+      labels:
+        app: classifieds
+    spec:
+      containers:
+        - name: classifieds
+          image: cjrutherford/optimistic_tanuki_classifieds:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3017
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3017"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: POSTGRES_PORT
+              value: "5432"
+          envFrom:
+            - secretRef:
+                name: optimistic-tanuki-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 3017
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3017
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: classifieds
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: classifieds
+  ports:
+    - port: 3017
+      targetPort: 3017
+  clusterIP: None

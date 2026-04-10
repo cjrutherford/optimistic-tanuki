@@ -1,11 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 namespace: optimistic-tanuki
-
 resources:
   - ../../base
-
 patches:
   - patch: |-
       apiVersion: apps/v1
@@ -17,9 +14,73 @@ patches:
     target:
       kind: Deployment
       name: gateway
-
 configMapGenerator:
   - name: optimistic-tanuki-env
     literals:
       - NODE_ENV=production
       - LOG_LEVEL=info
+images:
+  - name: cjrutherford/optimistic_tanuki_ai-orchestrator
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_app-configurator
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_assets
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_authentication
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_blogging
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_chat-collector
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_christopherrutherford-net
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_classifieds
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_client-interface
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_configurable-client
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_d6
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_digital-homestead
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_forgeofwill
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_forum
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_gateway
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_hai
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_lead-tracker
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_leads-app
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_local-hub
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_owner-console
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_payments
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_permissions
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_profile
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_project-planning
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_prompt-proxy
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_social
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_store
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_store-client
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_system-configurator
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_system-configurator-api
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_telos-docs-service
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_wellness
+    newTag: latest

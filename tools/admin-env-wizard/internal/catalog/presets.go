@@ -628,6 +628,7 @@ func (c *Catalog) initClients() {
 			Name:     "Client Interface",
 			Category: CategoryClient,
 			Compose: ComposeMetadata{
+				ServiceName:   "ot-client-interface",
 				BuildContext:  ".",
 				Dockerfile:    "./apps/client-interface/Dockerfile",
 				ContainerPort: 4000,
@@ -654,6 +655,7 @@ func (c *Catalog) initClients() {
 			Name:     "Forge of Will Client",
 			Category: CategoryClient,
 			Compose: ComposeMetadata{
+				ServiceName:   "forgeofwill-client-interface",
 				BuildContext:  ".",
 				Dockerfile:    "./apps/forgeofwill/Dockerfile",
 				ContainerPort: 4000,
@@ -677,6 +679,7 @@ func (c *Catalog) initClients() {
 			Name:     "Digital Homestead Client",
 			Category: CategoryClient,
 			Compose: ComposeMetadata{
+				ServiceName:   "digital-homestead-client-interface",
 				BuildContext:  ".",
 				Dockerfile:    "./apps/digital-homestead/Dockerfile",
 				ContainerPort: 4000,
@@ -700,6 +703,7 @@ func (c *Catalog) initClients() {
 			Name:     "HAI Client",
 			Category: CategoryClient,
 			Compose: ComposeMetadata{
+				ServiceName:   "hai-client-interface",
 				BuildContext:  ".",
 				Dockerfile:    "./apps/hai/Dockerfile",
 				ContainerPort: 4000,
@@ -723,6 +727,7 @@ func (c *Catalog) initClients() {
 			Name:     "Christopher Rutherford Client",
 			Category: CategoryClient,
 			Compose: ComposeMetadata{
+				ServiceName:   "crdn-client-interface",
 				BuildContext:  ".",
 				Dockerfile:    "./apps/christopherrutherford-net/Dockerfile",
 				ContainerPort: 4000,
@@ -867,6 +872,7 @@ func (c *Catalog) initClients() {
 			Name:     "Local Hub Client",
 			Category: CategoryClient,
 			Compose: ComposeMetadata{
+				ServiceName:   "local-hub-client-interface",
 				BuildContext:  ".",
 				Dockerfile:    "./apps/local-hub/Dockerfile",
 				ContainerPort: 4000,
