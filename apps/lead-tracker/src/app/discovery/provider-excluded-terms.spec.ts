@@ -31,6 +31,9 @@ describe('Discovery provider excluded-term filtering', () => {
     valueProposition: null,
     searchStrategy: null,
     confidence: null,
+    appScope: 'leads-app',
+    profileId: 'profile-1',
+    userId: 'user-1',
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -42,7 +45,7 @@ describe('Discovery provider excluded-term filtering', () => {
 
   it('drops remoteok jobs containing excluded terms even when positive keywords match', async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: async () => ([
+      json: async () => [
         {
           position: 'React Engineer',
           company: 'Acme',
@@ -50,10 +53,12 @@ describe('Discovery provider excluded-term filtering', () => {
           url: 'https://example.com/job',
           tags: ['react'],
         },
-      ]),
+      ],
     }) as typeof fetch;
 
-    const result = await new RemoteOkDiscoveryProvider().search(buildTopic(LeadDiscoverySource.REMOTE_OK));
+    const result = await new RemoteOkDiscoveryProvider().search(
+      buildTopic(LeadDiscoverySource.REMOTE_OK)
+    );
 
     expect(result.candidates).toHaveLength(0);
     expect(result.warnings).toEqual(
@@ -75,7 +80,9 @@ describe('Discovery provider excluded-term filtering', () => {
       `,
     }) as typeof fetch;
 
-    const result = await new WeWorkRemotelyDiscoveryProvider().search(buildTopic(LeadDiscoverySource.WE_WORK_REMOTELY));
+    const result = await new WeWorkRemotelyDiscoveryProvider().search(
+      buildTopic(LeadDiscoverySource.WE_WORK_REMOTELY)
+    );
 
     expect(result.candidates).toHaveLength(0);
   });
@@ -91,7 +98,9 @@ describe('Discovery provider excluded-term filtering', () => {
       `,
     }) as typeof fetch;
 
-    const result = await new JustRemoteDiscoveryProvider().search(buildTopic(LeadDiscoverySource.JUST_REMOTE));
+    const result = await new JustRemoteDiscoveryProvider().search(
+      buildTopic(LeadDiscoverySource.JUST_REMOTE)
+    );
 
     expect(result.candidates).toHaveLength(0);
   });
@@ -117,7 +126,9 @@ describe('Discovery provider excluded-term filtering', () => {
       }),
     } as unknown as SearchAcquisitionService;
 
-    const result = await new ClutchDiscoveryProvider(searchAcquisition).search(buildTopic(LeadDiscoverySource.CLUTCH));
+    const result = await new ClutchDiscoveryProvider(searchAcquisition).search(
+      buildTopic(LeadDiscoverySource.CLUTCH)
+    );
 
     expect(result.candidates).toHaveLength(0);
   });
@@ -143,7 +154,9 @@ describe('Discovery provider excluded-term filtering', () => {
       }),
     } as unknown as SearchAcquisitionService;
 
-    const result = await new CrunchbaseDiscoveryProvider(searchAcquisition).search(buildTopic(LeadDiscoverySource.CRUNCHBASE));
+    const result = await new CrunchbaseDiscoveryProvider(
+      searchAcquisition
+    ).search(buildTopic(LeadDiscoverySource.CRUNCHBASE));
 
     expect(result.candidates).toHaveLength(0);
   });
@@ -169,7 +182,9 @@ describe('Discovery provider excluded-term filtering', () => {
       }),
     } as unknown as SearchAcquisitionService;
 
-    const result = await new IndeedDiscoveryProvider(searchAcquisition).search(buildTopic(LeadDiscoverySource.INDEED));
+    const result = await new IndeedDiscoveryProvider(searchAcquisition).search(
+      buildTopic(LeadDiscoverySource.INDEED)
+    );
 
     expect(result.candidates).toHaveLength(0);
   });

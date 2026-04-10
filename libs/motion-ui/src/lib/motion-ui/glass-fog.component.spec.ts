@@ -21,14 +21,14 @@ describe('GlassFogComponent', () => {
   });
 
   it('renders one blob per density step', () => {
-    component.density = 5;
+    fixture.componentRef.setInput('density', 5);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelectorAll('.fog-blob')).toHaveLength(5);
   });
 
   it('supports reduced motion fallback mode', () => {
-    component.reducedMotion = true;
+    fixture.componentRef.setInput('reducedMotion', true);
     fixture.detectChanges();
 
     expect(

@@ -8,14 +8,20 @@ import {
 import { AuthGuard } from '../../../auth/auth.guard';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { SocialGateway } from '../../../app/social-gateway/social.gateway';
 
 describe('NotificationController', () => {
   let controller: NotificationController;
   let mockSocialClient: { send: jest.Mock };
+  let mockSocialGateway: { broadcastNotification: jest.Mock };
 
   beforeEach(async () => {
     mockSocialClient = {
       send: jest.fn(),
+    };
+
+    mockSocialGateway = {
+      broadcastNotification: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -24,6 +30,10 @@ describe('NotificationController', () => {
         {
           provide: ServiceTokens.SOCIAL_SERVICE,
           useValue: mockSocialClient,
+        },
+        {
+          provide: SocialGateway,
+          useValue: mockSocialGateway,
         },
         {
           provide: AuthGuard,

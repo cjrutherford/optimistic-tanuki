@@ -1,9 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Lead, LeadStats } from '@optimistic-tanuki/models';
-import { CreateLeadDto } from '@optimistic-tanuki/models';
-import { UpdateLeadDto } from '@optimistic-tanuki/models';
+import { CreateLeadDto, Lead, LeadStats, UpdateLeadInput } from './leads.types';
 
 @Injectable({ providedIn: 'root' })
 export class LeadsService {
@@ -22,7 +20,7 @@ export class LeadsService {
     return this.http.post<Lead>(this.baseUrl, dto);
   }
 
-  updateLead(id: string, dto: UpdateLeadDto): Observable<Lead> {
+  updateLead(id: string, dto: UpdateLeadInput): Observable<Lead> {
     return this.http.patch<Lead>(`${this.baseUrl}/${id}`, dto);
   }
 

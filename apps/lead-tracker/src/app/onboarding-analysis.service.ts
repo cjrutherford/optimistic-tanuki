@@ -606,17 +606,19 @@ export class OnboardingAnalysisService {
   }
 
   private sanitizeExtractedText(text: string): string {
-    return text
+    const withoutNonPrintable = text
       .normalize('NFKC')
+      .split('')
+      .map((char) => (this.isNonPrintable(char) ? ' ' : char))
+      .join('');
+
+    return withoutNonPrintable
       .replace(/\u00A0/g, ' ')
       .replace(/[\u200B-\u200F\u2028\u2029\u2060\uFEFF]/g, '')
       .replace(/[\uE000-\uF8FF]/g, ' ')
       .replace(/\r\n/g, '\n')
       .replace(/[ \t]+/g, ' ')
       .replace(/\n{3,}/g, '\n\n')
-      .split('')
-      .map((char) => (this.isNonPrintable(char) ? ' ' : char))
-      .join('')
       .trim();
   }
 

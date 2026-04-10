@@ -8,7 +8,19 @@ import { PostService } from './services/post.service';
 import { RpcException } from '@nestjs/microservices';
 import { VoteService } from './services/vote.service';
 import { SocialComponentService } from './services/social-component.service';
+import { ReactionService } from './services/reaction.service';
 import { CommunityService } from './services/community.service';
+import { NotificationService } from './services/notification.service';
+import { SearchService } from './services/search.service';
+import { PrivacyService } from './services/privacy.service';
+import { ActivityService } from './services/activity.service';
+import { PresenceService } from './services/presence.service';
+import { ProfileAnalyticsService } from './services/profile-analytics.service';
+import { PollService } from './services/poll.service';
+import { PostShareService } from './services/post-share.service';
+import { EventService } from './services/event.service';
+import { LinkService } from './services/link.service';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
 
 describe('AppController', () => {
   let controller: AppController;
@@ -29,6 +41,11 @@ describe('AppController', () => {
       findOne: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
+      createScheduledPost: jest.fn(),
+      updateScheduledPost: jest.fn(),
+      deleteScheduledPost: jest.fn(),
+      findScheduledPosts: jest.fn(),
+      publishScheduledPost: jest.fn(),
     } as any;
     voteService = {
       create: jest.fn(),
@@ -67,6 +84,9 @@ describe('AppController', () => {
       update: jest.fn(),
       remove: jest.fn(),
       findByType: jest.fn(),
+      findByPostId: jest.fn(),
+      findByQuery: jest.fn(),
+      removeByPostId: jest.fn(),
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -74,11 +94,189 @@ describe('AppController', () => {
       providers: [
         { provide: PostService, useValue: postService },
         { provide: VoteService, useValue: voteService },
+        {
+          provide: ReactionService,
+          useValue: {
+            create: jest.fn(),
+            findUserReaction: jest.fn(),
+            remove: jest.fn(),
+            update: jest.fn(),
+            findOne: jest.fn(),
+            findByPostId: jest.fn(),
+            findByCommentId: jest.fn(),
+            getReactionCounts: jest.fn(),
+          },
+        },
         { provide: AttachmentService, useValue: attachmentService },
         { provide: CommentService, useValue: commentService },
         { provide: FollowService, useValue: followService },
         { provide: SocialComponentService, useValue: socialComponentService },
-        { provide: CommunityService, useValue: { findOne: jest.fn() } },
+        {
+          provide: CommunityService,
+          useValue: {
+            findOne: jest.fn(),
+            create: jest.fn(),
+            findBySlug: jest.fn(),
+            listLocality: jest.fn(),
+            getSubCommunities: jest.fn(),
+            findAll: jest.fn(),
+            getTopActive: jest.fn(),
+            update: jest.fn(),
+            delete: jest.fn(),
+            join: jest.fn(),
+            leave: jest.fn(),
+            getMembers: jest.fn(),
+            isMember: jest.fn(),
+            getUserCommunities: jest.fn(),
+            getCommunitiesByProfileId: jest.fn(),
+            invite: jest.fn(),
+            cancelInvite: jest.fn(),
+            getPendingInvites: jest.fn(),
+            getPendingJoinRequests: jest.fn(),
+            approveMember: jest.fn(),
+            rejectMember: jest.fn(),
+            removeMember: jest.fn(),
+            updateMemberRole: jest.fn(),
+            getCommunityChatRoom: jest.fn(),
+            setCommunityChatRoom: jest.fn(),
+            getCommunityManager: jest.fn(),
+            getActiveElection: jest.fn(),
+            startElection: jest.fn(),
+            nominateForElection: jest.fn(),
+            voteInElection: jest.fn(),
+            closeElection: jest.fn(),
+            withdrawCandidate: jest.fn(),
+            appointManager: jest.fn(),
+            revokeManager: jest.fn(),
+          },
+        },
+        {
+          provide: NotificationService,
+          useValue: {
+            create: jest.fn(),
+            findOne: jest.fn(),
+            findByRecipient: jest.fn(),
+            markAsRead: jest.fn(),
+            markAllAsRead: jest.fn(),
+            delete: jest.fn(),
+            getUnreadCount: jest.fn(),
+            queueNotification: jest.fn(),
+          },
+        },
+        {
+          provide: SearchService,
+          useValue: {
+            search: jest.fn(),
+            getTrending: jest.fn(),
+            getSuggestedUsers: jest.fn(),
+            getSuggestedCommunities: jest.fn(),
+            getSearchHistory: jest.fn(),
+          },
+        },
+        {
+          provide: PrivacyService,
+          useValue: {
+            blockUser: jest.fn(),
+            unblockUser: jest.fn(),
+            getBlockedUsers: jest.fn(),
+            isUserBlocked: jest.fn(),
+            muteUser: jest.fn(),
+            unmuteUser: jest.fn(),
+            getMutedUsers: jest.fn(),
+            reportContent: jest.fn(),
+            getMyReports: jest.fn(),
+          },
+        },
+        {
+          provide: ActivityService,
+          useValue: {
+            createActivity: jest.fn(),
+            findOne: jest.fn(),
+            findByProfile: jest.fn(),
+            deleteActivity: jest.fn(),
+            saveItem: jest.fn(),
+            unsaveItem: jest.fn(),
+            findSavedItems: jest.fn(),
+            isItemSaved: jest.fn(),
+          },
+        },
+        {
+          provide: PresenceService,
+          useValue: {
+            setPresence: jest.fn(),
+            getPresence: jest.fn(),
+            getPresenceBatch: jest.fn(),
+            getOnlineUsers: jest.fn(),
+            updateLastSeen: jest.fn(),
+            setOffline: jest.fn(),
+          },
+        },
+        {
+          provide: ProfileAnalyticsService,
+          useValue: {
+            recordView: jest.fn(),
+            getViewStats: jest.fn(),
+            getRecentViewers: jest.fn(),
+          },
+        },
+        {
+          provide: PollService,
+          useValue: {
+            create: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
+            findOne: jest.fn(),
+            findMany: jest.fn(),
+            vote: jest.fn(),
+            removeVote: jest.fn(),
+          },
+        },
+        {
+          provide: PostShareService,
+          useValue: {
+            create: jest.fn(),
+            remove: jest.fn(),
+            findByPost: jest.fn(),
+            findByProfile: jest.fn(),
+          },
+        },
+        {
+          provide: EventService,
+          useValue: {
+            create: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
+            findOne: jest.fn(),
+            findMany: jest.fn(),
+            findUpcoming: jest.fn(),
+            attend: jest.fn(),
+            unattend: jest.fn(),
+            isAttending: jest.fn(),
+          },
+        },
+        {
+          provide: LinkService,
+          useValue: {
+            create: jest
+              .fn()
+              .mockRejectedValue(
+                new RpcException('Link Object Not Implemented')
+              ),
+            update: jest
+              .fn()
+              .mockRejectedValue(new Error('Link Object Not Implemented')),
+            findOne: jest
+              .fn()
+              .mockRejectedValue(new Error('Link Object Not Implemented')),
+            findAll: jest
+              .fn()
+              .mockRejectedValue(new Error('Link Object Not Implemented')),
+          },
+        },
+        {
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: { send: jest.fn() },
+        },
       ],
     }).compile();
 

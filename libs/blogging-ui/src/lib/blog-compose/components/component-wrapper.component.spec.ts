@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ComponentWrapperComponent } from './component-wrapper.component';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
-import { Component, ComponentRef } from '@angular/core';
+import { Component, ComponentRef, Input } from '@angular/core';
 import { IconComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
@@ -9,7 +9,9 @@ import { IconComponent } from '@optimistic-tanuki/common-ui';
   standalone: true,
   template: '',
 })
-class MockIconComponent {}
+class MockIconComponent {
+  @Input() name: any;
+}
 
 describe('ComponentWrapperComponent', () => {
   let component: ComponentWrapperComponent;

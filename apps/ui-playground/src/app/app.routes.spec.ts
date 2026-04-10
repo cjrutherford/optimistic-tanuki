@@ -9,6 +9,7 @@ describe('ui-playground routes', () => {
 
     expect(libraryPaths).toEqual([
       '',
+      'docs',
       'motion-ui',
       'common-ui',
       'form-ui',
@@ -24,6 +25,14 @@ describe('ui-playground routes', () => {
       'search-ui',
       'persona-ui',
       'ag-grid-ui',
+      'blogging-ui',
+      'business-ui',
+      'classified-ui',
+      'community-ui',
+      'forum-ui',
+      'hai-ui',
+      'payments-ui',
+      'project-ui',
       'validation',
     ]);
   });
@@ -32,6 +41,7 @@ describe('ui-playground routes', () => {
     const component = new NavSidebarComponent();
 
     expect(component.libraries.map((library) => library.path)).toEqual([
+      '/docs',
       '/motion-ui',
       '/common-ui',
       '/form-ui',
@@ -47,6 +57,14 @@ describe('ui-playground routes', () => {
       '/search-ui',
       '/persona-ui',
       '/ag-grid-ui',
+      '/blogging-ui',
+      '/business-ui',
+      '/classified-ui',
+      '/community-ui',
+      '/forum-ui',
+      '/hai-ui',
+      '/payments-ui',
+      '/project-ui',
       '/validation',
     ]);
   });

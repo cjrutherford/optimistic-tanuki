@@ -21,16 +21,16 @@ describe('AuroraRibbonComponent', () => {
   });
 
   it('renders one ribbon layer per density step', () => {
-    component.density = 4;
+    fixture.componentRef.setInput('density', 4);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelectorAll('.aurora-layer')).toHaveLength(
-      4
-    );
+    expect(
+      fixture.nativeElement.querySelectorAll('.aurora-layer')
+    ).toHaveLength(4);
   });
 
   it('supports reduced motion fallback mode', () => {
-    component.reducedMotion = true;
+    fixture.componentRef.setInput('reducedMotion', true);
     fixture.detectChanges();
 
     expect(
