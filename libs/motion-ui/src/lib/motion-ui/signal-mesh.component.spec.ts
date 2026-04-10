@@ -21,14 +21,16 @@ describe('SignalMeshComponent', () => {
   });
 
   it('renders one node per grid intersection', () => {
-    component.density = 4;
+    fixture.componentRef.setInput('density', 4);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelectorAll('.mesh-node')).toHaveLength(20);
+    expect(fixture.nativeElement.querySelectorAll('.mesh-node')).toHaveLength(
+      20
+    );
   });
 
   it('supports reduced motion fallback mode', () => {
-    component.reducedMotion = true;
+    fixture.componentRef.setInput('reducedMotion', true);
     fixture.detectChanges();
 
     expect(

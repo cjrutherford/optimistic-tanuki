@@ -25,6 +25,9 @@ describe('JobicyDiscoveryProvider', () => {
     valueProposition: null,
     searchStrategy: null,
     confidence: null,
+    appScope: 'leads-app',
+    profileId: 'profile-1',
+    userId: 'user-1',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -77,9 +80,11 @@ describe('JobicyDiscoveryProvider', () => {
       ok: false,
       status: 503,
       headers: {
-        get: (name: string) => (name.toLowerCase() === 'content-type' ? 'text/html' : null),
+        get: (name: string) =>
+          name.toLowerCase() === 'content-type' ? 'text/html' : null,
       },
-      text: async () => '<!DOCTYPE html><html><body>Temporarily unavailable</body></html>',
+      text: async () =>
+        '<!DOCTYPE html><html><body>Temporarily unavailable</body></html>',
     }) as typeof fetch;
 
     const provider = new JobicyDiscoveryProvider();
@@ -87,9 +92,7 @@ describe('JobicyDiscoveryProvider', () => {
     await expect(provider.search(topic)).resolves.toEqual(
       expect.objectContaining({
         candidates: [],
-        warnings: [
-          expect.stringContaining('Expected JSON'),
-        ],
+        warnings: [expect.stringContaining('Expected JSON')],
       })
     );
   });

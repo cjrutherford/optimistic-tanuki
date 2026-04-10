@@ -7,11 +7,21 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "@nx/angular:package",
-      "outputs": ["{options.outputPath}"],
+      "executor": "@nx/angular:ng-packagr-lite",
+      "outputs": ["{workspaceRoot}/dist/{projectRoot}"],
       "options": {
-        "project": "libs/leads-ui/project.json"
-      }
+        "project": "libs/leads-ui/ng-package.json",
+        "tsConfig": "libs/leads-ui/tsconfig.lib.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "libs/leads-ui/tsconfig.lib.json"
+        },
+        "development": {
+          "tsConfig": "libs/leads-ui/tsconfig.lib.json"
+        }
+      },
+      "defaultConfiguration": "production"
     },
     "test": {
       "executor": "@nx/jest:jest",

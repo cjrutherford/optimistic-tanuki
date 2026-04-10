@@ -27,11 +27,13 @@ class MockButtonComponent {
 class MockCardComponent {}
 
 @Component({
-  selector: 'mat-icon',
+  selector: 'otui-icon',
   standalone: true,
   template: '',
 })
-class MockMatIconComponent {}
+class MockIconComponent {
+  @Input() name: any;
+}
 
 describe('ComponentSelectorComponent', () => {
   let component: ComponentSelectorComponent;
@@ -74,11 +76,7 @@ describe('ComponentSelectorComponent', () => {
       .overrideComponent(ComponentSelectorComponent, {
         remove: { imports: [IconComponent, ButtonComponent, CardComponent] },
         add: {
-          imports: [
-            MockButtonComponent,
-            MockCardComponent,
-            MockMatIconComponent,
-          ],
+          imports: [MockButtonComponent, MockCardComponent, MockIconComponent],
         },
       })
       .compileComponents();

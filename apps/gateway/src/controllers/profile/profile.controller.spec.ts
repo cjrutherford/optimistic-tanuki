@@ -67,6 +67,12 @@ describe('ProfileController', () => {
           },
         },
         {
+          provide: ServiceTokens.SOCIAL_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          },
+        },
+        {
           provide: ServiceTokens.PERMISSIONS_SERVICE,
           useValue: {
             send: jest.fn().mockImplementation(() => of({})),

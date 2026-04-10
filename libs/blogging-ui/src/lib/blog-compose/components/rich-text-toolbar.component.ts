@@ -143,6 +143,10 @@ export class RichTextToolbarComponent {
   @Output() componentsClicked = new EventEmitter<void>();
   @Output() imageUploadClicked = new EventEmitter<void>();
 
+  private chain(): any {
+    return this.editor.chain().focus();
+  }
+
   get toolbarGroups(): ToolbarGroup[] {
     const baseGroups: ToolbarGroup[] = [
       {
@@ -152,7 +156,7 @@ export class RichTextToolbarComponent {
             id: 'bold',
             name: 'Bold',
             icon: 'matFormatBold',
-            action: () => this.editor.chain().focus().toggleBold().run(),
+            action: () => this.chain().toggleBold().run(),
             isActive: () => this.editor.isActive('bold'),
             tooltip: 'Bold (Ctrl+B)',
           },
@@ -160,7 +164,7 @@ export class RichTextToolbarComponent {
             id: 'italic',
             name: 'Italic',
             icon: 'matFormatItalic',
-            action: () => this.editor.chain().focus().toggleItalic().run(),
+            action: () => this.chain().toggleItalic().run(),
             isActive: () => this.editor.isActive('italic'),
             tooltip: 'Italic (Ctrl+I)',
           },
@@ -168,7 +172,7 @@ export class RichTextToolbarComponent {
             id: 'underline',
             name: 'Underline',
             icon: 'matFormatUnderlined',
-            action: () => this.editor.chain().focus().toggleUnderline().run(),
+            action: () => this.chain().toggleUnderline().run(),
             isActive: () => this.editor.isActive('underline'),
             tooltip: 'Underline (Ctrl+U)',
           },
@@ -176,7 +180,7 @@ export class RichTextToolbarComponent {
             id: 'strikethrough',
             name: 'Strikethrough',
             icon: 'matFormatStrikethrough',
-            action: () => this.editor.chain().focus().toggleStrike().run(),
+            action: () => this.chain().toggleStrike().run(),
             isActive: () => this.editor.isActive('strike'),
             tooltip: 'Strikethrough',
           },
@@ -189,8 +193,7 @@ export class RichTextToolbarComponent {
             id: 'heading1',
             name: 'Heading 1',
             icon: 'matTitle',
-            action: () =>
-              this.editor.chain().focus().toggleHeading({ level: 1 }).run(),
+            action: () => this.chain().toggleHeading({ level: 1 }).run(),
             isActive: () => this.editor.isActive('heading', { level: 1 }),
             tooltip: 'Heading 1',
           },
@@ -198,8 +201,7 @@ export class RichTextToolbarComponent {
             id: 'heading2',
             name: 'Heading 2',
             icon: 'matSubtitles',
-            action: () =>
-              this.editor.chain().focus().toggleHeading({ level: 2 }).run(),
+            action: () => this.chain().toggleHeading({ level: 2 }).run(),
             isActive: () => this.editor.isActive('heading', { level: 2 }),
             tooltip: 'Heading 2',
           },
@@ -207,7 +209,7 @@ export class RichTextToolbarComponent {
             id: 'bulletList',
             name: 'Bullet List',
             icon: 'matFormatListBulleted',
-            action: () => this.editor.chain().focus().toggleBulletList().run(),
+            action: () => this.chain().toggleBulletList().run(),
             isActive: () => this.editor.isActive('bulletList'),
             tooltip: 'Bullet List',
           },
@@ -215,7 +217,7 @@ export class RichTextToolbarComponent {
             id: 'orderedList',
             name: 'Numbered List',
             icon: 'matFormatListNumbered',
-            action: () => this.editor.chain().focus().toggleOrderedList().run(),
+            action: () => this.chain().toggleOrderedList().run(),
             isActive: () => this.editor.isActive('orderedList'),
             tooltip: 'Numbered List',
           },
@@ -223,7 +225,7 @@ export class RichTextToolbarComponent {
             id: 'blockquote',
             name: 'Blockquote',
             icon: 'matFormatQuote',
-            action: () => this.editor.chain().focus().toggleBlockquote().run(),
+            action: () => this.chain().toggleBlockquote().run(),
             isActive: () => this.editor.isActive('blockquote'),
             tooltip: 'Blockquote',
           },
@@ -231,7 +233,7 @@ export class RichTextToolbarComponent {
             id: 'codeBlock',
             name: 'Code Block',
             icon: 'matCode',
-            action: () => this.editor.chain().focus().toggleCodeBlock().run(),
+            action: () => this.chain().toggleCodeBlock().run(),
             isActive: () => this.editor.isActive('codeBlock'),
             tooltip: 'Code Block',
           },
@@ -244,8 +246,7 @@ export class RichTextToolbarComponent {
             id: 'alignLeft',
             name: 'Align Left',
             icon: 'matFormatAlignLeft',
-            action: () =>
-              this.editor.chain().focus().setTextAlign('left').run(),
+            action: () => this.chain().setTextAlign('left').run(),
             isActive: () => this.editor.isActive({ textAlign: 'left' }),
             tooltip: 'Align Left',
           },
@@ -253,8 +254,7 @@ export class RichTextToolbarComponent {
             id: 'alignCenter',
             name: 'Align Center',
             icon: 'matFormatAlignCenter',
-            action: () =>
-              this.editor.chain().focus().setTextAlign('center').run(),
+            action: () => this.chain().setTextAlign('center').run(),
             isActive: () => this.editor.isActive({ textAlign: 'center' }),
             tooltip: 'Align Center',
           },
@@ -262,8 +262,7 @@ export class RichTextToolbarComponent {
             id: 'alignRight',
             name: 'Align Right',
             icon: 'matFormatAlignRight',
-            action: () =>
-              this.editor.chain().focus().setTextAlign('right').run(),
+            action: () => this.chain().setTextAlign('right').run(),
             isActive: () => this.editor.isActive({ textAlign: 'right' }),
             tooltip: 'Align Right',
           },
@@ -271,8 +270,7 @@ export class RichTextToolbarComponent {
             id: 'alignJustify',
             name: 'Justify',
             icon: 'matFormatAlignJustify',
-            action: () =>
-              this.editor.chain().focus().setTextAlign('justify').run(),
+            action: () => this.chain().setTextAlign('justify').run(),
             isActive: () => this.editor.isActive({ textAlign: 'justify' }),
             tooltip: 'Justify',
           },
@@ -300,9 +298,7 @@ export class RichTextToolbarComponent {
             name: 'Insert Table',
             icon: 'matTableChart',
             action: () =>
-              this.editor
-                .chain()
-                .focus()
+              this.chain()
                 .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
                 .run(),
             tooltip: 'Insert Table',
@@ -316,14 +312,14 @@ export class RichTextToolbarComponent {
             id: 'undo',
             name: 'Undo',
             icon: 'matUndo',
-            action: () => this.editor.chain().focus().undo().run(),
+            action: () => this.chain().undo().run(),
             tooltip: 'Undo (Ctrl+Z)',
           },
           {
             id: 'redo',
             name: 'Redo',
             icon: 'matRedo',
-            action: () => this.editor.chain().focus().redo().run(),
+            action: () => this.chain().redo().run(),
             tooltip: 'Redo (Ctrl+Y)',
           },
         ],
@@ -339,49 +335,49 @@ export class RichTextToolbarComponent {
             id: 'addColumnBefore',
             name: 'Add Column Before',
             icon: 'matTableView',
-            action: () => this.editor.chain().focus().addColumnBefore().run(),
+            action: () => this.chain().addColumnBefore().run(),
             tooltip: 'Add Column Before',
           },
           {
             id: 'addColumnAfter',
             name: 'Add Column After',
             icon: 'matTableView',
-            action: () => this.editor.chain().focus().addColumnAfter().run(),
+            action: () => this.chain().addColumnAfter().run(),
             tooltip: 'Add Column After',
           },
           {
             id: 'deleteColumn',
             name: 'Delete Column',
             icon: 'matDeleteOutline',
-            action: () => this.editor.chain().focus().deleteColumn().run(),
+            action: () => this.chain().deleteColumn().run(),
             tooltip: 'Delete Column',
           },
           {
             id: 'addRowBefore',
             name: 'Add Row Before',
             icon: 'matTableRows',
-            action: () => this.editor.chain().focus().addRowBefore().run(),
+            action: () => this.chain().addRowBefore().run(),
             tooltip: 'Add Row Before',
           },
           {
             id: 'addRowAfter',
             name: 'Add Row After',
             icon: 'matTableRows',
-            action: () => this.editor.chain().focus().addRowAfter().run(),
+            action: () => this.chain().addRowAfter().run(),
             tooltip: 'Add Row After',
           },
           {
             id: 'deleteRow',
             name: 'Delete Row',
             icon: 'matDeleteOutline',
-            action: () => this.editor.chain().focus().deleteRow().run(),
+            action: () => this.chain().deleteRow().run(),
             tooltip: 'Delete Row',
           },
           {
             id: 'deleteTable',
             name: 'Delete Table',
             icon: 'matDeleteOutline',
-            action: () => this.editor.chain().focus().deleteTable().run(),
+            action: () => this.chain().deleteTable().run(),
             tooltip: 'Delete Table',
           },
         ],
@@ -402,7 +398,7 @@ export class RichTextToolbarComponent {
   private insertLink(): void {
     const url = window.prompt('Enter URL:');
     if (url) {
-      this.editor.chain().focus().setLink({ href: url }).run();
+      this.chain().setLink({ href: url }).run();
     }
   }
 }

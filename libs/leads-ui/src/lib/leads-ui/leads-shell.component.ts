@@ -3,12 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { LeadsService } from './leads.service';
-import {
-  Lead,
-  LeadStats,
-  LeadStatus,
-  LeadSource,
-} from '@optimistic-tanuki/models';
+import { Lead, LeadSource, LeadStats, LeadStatus } from './leads.types';
 
 @Component({
   selector: 'lib-leads-shell',
