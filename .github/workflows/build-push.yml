@@ -16,6 +16,9 @@ on:
       - 'package.json'
       - 'scripts/**'
       - 'tools/admin-env-wizard/**'
+    paths-ignore:
+      - 'k8s/overlays/staging/**'
+      - 'k8s/overlays/production/**'
   workflow_dispatch:
 
 permissions:

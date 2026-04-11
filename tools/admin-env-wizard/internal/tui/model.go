@@ -180,6 +180,7 @@ func (m Model) updateBasics(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.env.Namespace = m.inputs[1].Value()
 		m.env.ImageOwner = m.inputs[2].Value()
 		m.env.DefaultTag = m.inputs[3].Value()
+		m.cursor = 0
 		m.step = stepTargets
 		return m, nil
 	case tea.KeyTab, tea.KeyShiftTab, tea.KeyUp, tea.KeyDown:

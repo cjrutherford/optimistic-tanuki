@@ -15,8 +15,8 @@ Start with [docs/getting-started/README.md](./docs/getting-started/README.md) if
 ```bash
 git clone https://github.com/cjrutherford/optimistic-tanuki.git
 cd optimistic-tanuki
-npm install
-npm run docker:dev
+pnpm install
+pnpm run docker:dev
 ```
 
 Primary local endpoints:
@@ -28,7 +28,7 @@ Primary local endpoints:
 Prerequisites:
 
 - Node.js 20+
-- npm
+- pnpm
 - Docker and Docker Compose
 - Go 1.24+ if you want to run the Go tools in `tools/`
 
