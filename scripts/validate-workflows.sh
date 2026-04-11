@@ -71,7 +71,10 @@ for file in "$WORKFLOW_DIR"/*.yml; do
   filename=$(basename "$file")
 
   # Warn if npm ci / npm install used in a pnpm-managed repo
-  if grep -qE '^\s+(run: npm (ci|install)|npm ci|npm install)' "$file"; then
+  # (skip YAML comments — lines whose first non-space character is '#')
+  # Use \bnpm\b to avoid false-positive matches on 'pnpm install'
+  if grep -qE '^\s+run:.*\bnpm (ci|install)\b' "$file" || \
+     grep -qE '^\s+- \bnpm (ci|install)\b' "$file"; then
     echo "  ⚠️  $filename: uses 'npm ci' or 'npm install' in a pnpm repo — use 'pnpm install --frozen-lockfile'"
     WARNINGS=$((WARNINGS + 1))
   fi
@@ -92,10 +95,13 @@ for file in "$WORKFLOW_DIR"/*.yml; do
     fi
   fi
 
-  # Warn if workflow commits to the repo but does not ignore its own actor
-  if grep -q 'git push' "$file" && ! grep -q 'github-actions\[bot\]' "$file" 2>/dev/null; then
-    if ! grep -q 'paths-ignore:' "$file"; then
-      echo "  ⚠️  $filename: commits and pushes without 'paths-ignore' — verify no self-trigger loop is possible"
+  # Warn if workflow commits to the repo but does not have paths-ignore or an actor guard
+  # that would prevent the bot commit from re-triggering this workflow.
+  if grep -q 'git push' "$file"; then
+    HAS_PATHS_IGNORE=$(grep -c 'paths-ignore:' "$file" || true)
+    HAS_ACTOR_GUARD=$(grep -cE "github\.actor\s*!=\s*'github-actions\[bot\]'" "$file" || true)
+    if [ "$HAS_PATHS_IGNORE" -eq 0 ] && [ "$HAS_ACTOR_GUARD" -eq 0 ]; then
+      echo "  ⚠️  $filename: commits and pushes without 'paths-ignore' or an actor guard — verify no self-trigger loop is possible"
       WARNINGS=$((WARNINGS + 1))
     fi
   fi

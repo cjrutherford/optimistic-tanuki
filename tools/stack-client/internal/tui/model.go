@@ -171,11 +171,11 @@ func (m Model) updateLogin(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return loginDoneMsg{session: session, err: err}
 		}
 	case tea.KeyTab, tea.KeyShiftTab, tea.KeyUp, tea.KeyDown:
+		direction := 1
 		if msg.Type == tea.KeyUp || msg.Type == tea.KeyShiftTab {
-			m.inputCursor = (m.inputCursor + len(m.inputs) - 1) % len(m.inputs)
-		} else {
-			m.inputCursor = (m.inputCursor + 1) % len(m.inputs)
+			direction = -1
 		}
+		m.inputCursor = (m.inputCursor + direction + len(m.inputs)) % len(m.inputs)
 		for i := range m.inputs {
 			if i == m.inputCursor {
 				m.inputs[i].Focus()
