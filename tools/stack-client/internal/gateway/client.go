@@ -40,6 +40,10 @@ func New(baseURL string, httpClient *http.Client) *Client {
 	}
 }
 
+func (c *Client) SetBaseURL(url string) {
+	c.baseURL = strings.TrimRight(url, "/")
+}
+
 func (c *Client) SetSession(session Session) {
 	c.token = session.Token
 	c.appScope = session.AppScope

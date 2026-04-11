@@ -58,6 +58,7 @@ type Model struct {
 	client      clientAPI
 	screen      screen
 	inputs      []textinput.Model
+	inputCursor int
 	menu        []Action
 	menuCursor  int
 	current     Action
@@ -122,6 +123,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case screenOutput:
 			if msg.String() == "b" {
 				m.screen = screenMenu
+				m.err = nil
 			}
 		}
 	}
@@ -139,7 +141,7 @@ func (m Model) View() string {
 		for _, input := range m.inputs {
 			out += input.View() + "\n"
 		}
-		return out + "\nEnter to log in"
+		return out + "\nTab/↑↓ to navigate · Enter to log in"
 	case screenMenu:
 		return title + "\n\nMain Menu\n\n" + renderMenu(m.menu, m.menuCursor) + "\n\nEnter selects"
 	case screenInput:
@@ -152,16 +154,36 @@ func (m Model) View() string {
 }
 
 func (m Model) updateLogin(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if msg.Type == tea.KeyEnter {
+	switch msg.Type {
+	case tea.KeyEnter:
+		baseURL := m.inputs[0].Value()
 		req := gateway.LoginRequest{
 			Email:    m.inputs[1].Value(),
 			Password: m.inputs[2].Value(),
 			AppScope: m.inputs[3].Value(),
 		}
+		if gw, ok := m.client.(*gateway.Client); ok && baseURL != "" {
+			gw.SetBaseURL(baseURL)
+		}
+		m.err = nil
 		return m, func() tea.Msg {
 			session, err := m.client.Login(context.Background(), req)
 			return loginDoneMsg{session: session, err: err}
 		}
+	case tea.KeyTab, tea.KeyShiftTab, tea.KeyUp, tea.KeyDown:
+		if msg.Type == tea.KeyUp || msg.Type == tea.KeyShiftTab {
+			m.inputCursor = (m.inputCursor + len(m.inputs) - 1) % len(m.inputs)
+		} else {
+			m.inputCursor = (m.inputCursor + 1) % len(m.inputs)
+		}
+		for i := range m.inputs {
+			if i == m.inputCursor {
+				m.inputs[i].Focus()
+			} else {
+				m.inputs[i].Blur()
+			}
+		}
+		return m, nil
 	}
 	cmds := make([]tea.Cmd, len(m.inputs))
 	for i := range m.inputs {
@@ -178,6 +200,7 @@ func (m Model) updateMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.menuCursor = (m.menuCursor + 1) % len(m.menu)
 	case "enter":
 		m.current = m.menu[m.menuCursor]
+		m.err = nil
 		if m.current.Prompt != "" {
 			m.actionInput.SetValue("")
 			m.actionInput.Focus()
@@ -217,7 +240,13 @@ func (m Model) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func defaultActions(client clientAPI) []Action {
 	gw, _ := client.(*gateway.Client)
 	if gw == nil {
-		return []Action{{Domain: "app config", Label: "List app configs"}}
+		return []Action{{
+			Domain: "app config",
+			Label:  "List app configs",
+			Run: func(_ context.Context, _ string) (json.RawMessage, error) {
+				return nil, fmt.Errorf("gateway client not configured")
+			},
+		}}
 	}
 
 	return []Action{
