@@ -38,7 +38,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Derive appropriate SHAs for base and head for nx affected commands
-        uses: nrwl/nx-set-shas@v4
+        uses: nrwl/nx-set-shas@v5
 
       - name: Build all projects
         run: pnpm exec nx run-many -t build --configuration=production --parallel=3 --outputStyle=static
