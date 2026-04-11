@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: '0 0 * * 0' # Run weekly on Sunday at midnight
 
+permissions:
+  contents: read
+
 jobs:
   capture-screenshots:
     runs-on: ubuntu-24.04

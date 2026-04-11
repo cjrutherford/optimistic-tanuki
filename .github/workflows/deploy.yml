@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - mvp-polish
+    paths-ignore:
+      - 'k8s/overlays/production/**'
   workflow_dispatch:
     inputs:
       environment:

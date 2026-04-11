@@ -2,8 +2,9 @@
 
 This document provides an itemized analysis of every failure identified in the
 `refactor/deployment-pipeline` branch as of commit `c43e01b`, plus all issues
-raised in the automated code review. Items are grouped by area and include a
-resolution status.
+raised in the automated code review. It also tracks the follow-up workflow
+validation pass run locally with `scripts/validate-workflows.sh` after commit
+`de911390`. Items are grouped by area and include a resolution status.
 
 ---
 
@@ -66,6 +67,30 @@ resolution status.
 | **Root cause** | Building all microservice Docker images with `npm install --legacy-peer-deps` inside each Dockerfile stage takes far more than the 6-hour GitHub Actions runner limit. The UI E2E job also silently fails (no artifacts, no logs uploaded) and its cancellation is counted as a failure. |
 | **Recommended fix** | (a) Pre-build and cache Docker images in the build-push workflow, then pull them in E2E. (b) Parallelize E2E jobs or use a self-hosted runner with a longer timeout. (c) Add `continue-on-error: true` to the `UI E2E Tests` job upload step to ensure logs are always uploaded before the job ends. |
 | **Status** | ⚠️ Pre-existing infrastructure issue — not introduced by this PR; tracked for a follow-up |
+
+---
+
+### 1.6 Workflow Validation Script — Remaining Warnings After `de911390`
+
+| Field | Detail |
+|-------|--------|
+| **Validation command** | `bash scripts/validate-workflows.sh` |
+| **Observed result before fixes** | Validation passed, but with 4 warnings: missing top-level `permissions:` in `capture-screenshots.yml`, `docker-publish.yml`, and `njsscan.yml`, plus a self-trigger warning in `deploy.yml`. |
+| **Root cause** | The new validator checks for top-level least-privilege permissions and for workflows that perform `git push` without a matching `paths-ignore` or actor guard. These workflows had either implicit permissions or a production overlay push path that could retrigger deploy automation. |
+| **Fix** | Added explicit top-level `permissions:` blocks to the three workflows and added `paths-ignore: k8s/overlays/production/**` to `deploy.yml` so production promotion commits do not retrigger the push-based deploy path. |
+| **Status** | ✅ Fixed |
+
+---
+
+### 1.7 `build-push.yml` — Invalid `push.paths` + `push.paths-ignore` Combination
+
+| Field | Detail |
+|-------|--------|
+| **Workflow** | `build-push.yml` |
+| **Error** | The push-triggered run failed before any jobs were created, and GitHub reported it as a workflow file issue. |
+| **Root cause** | `on.push` used both `paths` and `paths-ignore`. GitHub Actions does not allow that combination for the same event trigger, so the workflow was rejected during workflow parsing. |
+| **Fix** | Replaced `paths-ignore` with negated patterns inside the `paths` list: `!k8s/overlays/staging/**` and `!k8s/overlays/production/**`. |
+| **Status** | ✅ Fixed |
 
 ---
 
@@ -171,7 +196,7 @@ validate all GitHub Actions workflow files before committing. It:
    - `npm ci` / `npm install` in a pnpm-managed repo
    - Missing top-level `permissions:` block
    - `k8s/**` push trigger without `paths-ignore` (self-trigger loop risk)
-   - Bot `git push` without `paths-ignore`
+   - Bot `git push` without `paths-ignore` or an actor guard
 
 ### Usage
 
@@ -210,6 +235,8 @@ go install github.com/rhysd/actionlint/cmd/actionlint@latest
 | 1.3 | Build-push — overlay commit causes self-trigger loop | 🟠 High | ✅ Fixed |
 | 1.4 | Performance — Lighthouse can't reach app container | 🟡 Medium | ⚠️ Pre-existing |
 | 1.5 | E2E — microservices runner timeout / UI 404 | 🟡 Medium | ⚠️ Pre-existing |
+| 1.6 | Workflow validator follow-up warnings | 🟡 Medium | ✅ Fixed |
+| 1.7 | build-push trigger uses invalid path filters | 🔴 Blocking | ✅ Fixed |
 | 2.1 | stack-client — no login input navigation | 🟠 High | ✅ Fixed |
 | 2.2 | stack-client — base URL not applied to gateway | 🟠 High | ✅ Fixed |
 | 2.3 | admin-env-wizard — out-of-bounds panic on step transition | 🔴 Blocking | ✅ Fixed |

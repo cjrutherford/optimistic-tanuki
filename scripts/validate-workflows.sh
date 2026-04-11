@@ -69,6 +69,11 @@ echo "▶ Checking for common anti-patterns..."
 
 for file in "$WORKFLOW_DIR"/*.yml; do
   filename=$(basename "$file")
+  HAS_OVERLAY_NEGATION=0
+  if grep -qE "^\s+-\s+'?!k8s/overlays/staging/\*\*'?" "$file" && \
+     grep -qE "^\s+-\s+'?!k8s/overlays/production/\*\*'?" "$file"; then
+    HAS_OVERLAY_NEGATION=1
+  fi
 
   # Warn if npm ci / npm install used in a pnpm-managed repo
   # (skip YAML comments — lines whose first non-space character is '#')
@@ -89,7 +94,7 @@ for file in "$WORKFLOW_DIR"/*.yml; do
   if grep -qE "^\s+-\s+'?k8s/\*\*'?" "$file" && \
      grep -q 'on:' "$file" && \
      grep -qE 'push:' "$file"; then
-    if ! grep -q 'paths-ignore:' "$file"; then
+    if ! grep -q 'paths-ignore:' "$file" && [ "$HAS_OVERLAY_NEGATION" -eq 0 ]; then
       echo "  ⚠️  $filename: triggers on 'k8s/**' push with no 'paths-ignore' — overlay commits may cause infinite workflow loops"
       WARNINGS=$((WARNINGS + 1))
     fi
@@ -100,7 +105,7 @@ for file in "$WORKFLOW_DIR"/*.yml; do
   if grep -q 'git push' "$file"; then
     HAS_PATHS_IGNORE=$(grep -c 'paths-ignore:' "$file" || true)
     HAS_ACTOR_GUARD=$(grep -cE "github\.actor\s*!=\s*'github-actions\[bot\]'" "$file" || true)
-    if [ "$HAS_PATHS_IGNORE" -eq 0 ] && [ "$HAS_ACTOR_GUARD" -eq 0 ]; then
+    if [ "$HAS_PATHS_IGNORE" -eq 0 ] && [ "$HAS_ACTOR_GUARD" -eq 0 ] && [ "$HAS_OVERLAY_NEGATION" -eq 0 ]; then
       echo "  ⚠️  $filename: commits and pushes without 'paths-ignore' or an actor guard — verify no self-trigger loop is possible"
       WARNINGS=$((WARNINGS + 1))
     fi
