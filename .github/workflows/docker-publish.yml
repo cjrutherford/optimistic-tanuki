@@ -5,6 +5,9 @@ on:
     branches:
       - '**' # Triggers on pushes to all branches
 
+permissions:
+  contents: read
+
 jobs:
   # SSR Angular apps that build themselves (multi-stage Dockerfiles)
   build_and_push_ssr_apps:

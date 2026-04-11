@@ -11,14 +11,13 @@ on:
       - 'docker-compose.k8s.yaml'
       - 'docker-compose.yaml'
       - 'k8s/**'
+      - '!k8s/overlays/staging/**'
+      - '!k8s/overlays/production/**'
       - 'libs/**'
       - 'nx.json'
       - 'package.json'
       - 'scripts/**'
       - 'tools/admin-env-wizard/**'
-    paths-ignore:
-      - 'k8s/overlays/staging/**'
-      - 'k8s/overlays/production/**'
   workflow_dispatch:
 
 permissions:
