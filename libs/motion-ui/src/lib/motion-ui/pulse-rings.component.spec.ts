@@ -21,7 +21,7 @@ describe('PulseRingsComponent', () => {
   });
 
   it('renders one ring per requested count', () => {
-    component.ringCount = 5;
+    fixture.componentRef.setInput('ringCount', 5);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelectorAll('.pulse-ring')).toHaveLength(
@@ -30,7 +30,7 @@ describe('PulseRingsComponent', () => {
   });
 
   it('supports reduced motion fallback mode', () => {
-    component.reducedMotion = true;
+    fixture.componentRef.setInput('reducedMotion', true);
     fixture.detectChanges();
 
     expect(

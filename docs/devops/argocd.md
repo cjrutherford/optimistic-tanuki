@@ -2,170 +2,84 @@
 
 ## Overview
 
-ArgoCD is used for GitOps-based deployment to Kubernetes. The application definitions are in `k8s/argo-app/`.
-
-## Setup
-
-### 1. Install ArgoCD
-
-```bash
-# Install ArgoCD
-kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-# Get admin password
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-```
-
-### 2. Access ArgoCD UI
-
-```bash
-# Port forward
-kubectl port-forward svc/argocd-server 8080:443 -n argocd
-```
-
-Navigate to `https://localhost:8080` and login with:
-
-- Username: `admin`
-- Password: (from above)
+ArgoCD is used for GitOps deployment to Kubernetes. The repo now uses a single parameterized application manifest at `k8s/argo-app/application.yaml` and points it at environment-specific Kustomize overlays.
 
 ## Application Definition
 
-The ArgoCD Application is defined in `k8s/argo-app/application.yaml`:
+The ArgoCD application is defined in `k8s/argo-app/application.yaml`:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: optimistic-tanuki
+  name: ${ARGO_APP_NAME:-optimistic-tanuki}
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://github.com/your-repo/optimistic-tanuki
-    targetRevision: main
-    path: k8s/overlays/production
+    repoURL: ${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}
+    targetRevision: ${ARGO_TARGET_REVISION:-main}
+    path: k8s/overlays/${ARGO_ENV:-production}
   destination:
     server: https://kubernetes.default.svc
-    namespace: optimistic-tanuki
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    namespace: ${ARGO_NAMESPACE:-optimistic-tanuki}
 ```
 
-## Deploying
+## Applying the Application
 
-### Option 1: CLI
+### Production
 
 ```bash
-# Apply application definition
-kubectl apply -f k8s/argo-app/application.yaml
+sed \
+  -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki|g" \
+  -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki|g" \
+  -e "s|\${ARGO_ENV:-production}|production|g" \
+  k8s/argo-app/application.yaml | kubectl apply -f -
+```
 
-# Sync (deploy)
+### Staging
+
+```bash
+sed \
+  -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
+  -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
+  -e "s|\${ARGO_ENV:-production}|staging|g" \
+  k8s/argo-app/application.yaml | kubectl apply -f -
+```
+
+## Syncing
+
+```bash
 argocd app sync optimistic-tanuki
-```
+argocd app sync optimistic-tanuki-staging
 
-### Option 2: UI
-
-1. Open ArgoCD UI
-2. Click "New Application"
-3. Fill in details:
-   - Application Name: `optimistic-tanuki`
-   - Project: `default`
-   - Source: Repository URL
-   - Path: `k8s/overlays/production`
-   - Destination: Cluster URL, namespace `optimistic-tanuki`
-4. Click "Create"
-5. Click "Sync" to deploy
-
-## Sync Options
-
-| Option    | Description                       |
-| --------- | --------------------------------- |
-| Manual    | Click Sync button in UI           |
-| Automatic | Auto-sync on Git push             |
-| Prune     | Remove resources deleted from Git |
-| Self-Heal | Reconcile drift                   |
-
-## Monitoring
-
-```bash
-# View application status
-argocd app get optimistic-tanuki
-
-# Watch sync progress
 argocd app wait optimistic-tanuki
-
-# View resource status
-argocd app resources optimistic-tanuki
+argocd app wait optimistic-tanuki-staging
 ```
 
-## Rollback
+## Image Promotion
 
-```bash
-# List history
-argocd app history optimistic-tanuki
+ArgoCD does not pick image tags itself. The promoted tags live in:
 
-# Rollback to previous revision
-argocd app rollback optimistic-tanuki <revision>
-```
+- `k8s/overlays/staging/kustomization.yaml`
+- `k8s/overlays/production/kustomization.yaml`
 
-## Troubleshooting
+Those `images:` lists are updated by:
 
-```bash
-# View sync status
-argocd app sync optimistic-tanuki
+- `scripts/update-k8s-overlay-images.mjs`
+- `.github/workflows/build-push.yml`
+- `.github/workflows/deploy.yml`
 
-# View logs
-argocd app logs optimistic-tanuki
-
-# Sync with force
-argocd app sync optimistic-tanuki --force
-```
+The overlay image names are expected to stay aligned with the exported deployment inventory.
 
 ## Directory Structure
 
-```
+```text
 k8s/
-├── base/                    # Base Kustomize
-│   ├── kustomization.yaml
-│   ├── gateway.yaml
-│   ├── clients/
-│   └── services/
+├── base/
 ├── overlays/
-│   ├── production/          # Production Kustomize
-│   │   └── kustomization.yaml
-│   └── staging/            # Staging Kustomize
-│       └── kustomization.yaml
+│   ├── production/
+│   └── staging/
 └── argo-app/
-    └── application.yaml   # ArgoCD Application
-```
-
-## Kustomize Overlays
-
-### Production Overlay
-
-```yaml
-# k8s/overlays/production/kustomization.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-resources:
-  - ../../base
-
-namespace: optimistic-tanuki
-```
-
-### Staging Overlay
-
-```yaml
-# k8s/overlays/staging/kustomization.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-resources:
-  - ../../base
-
-namespace: optimistic-tanuki-staging
+    └── application.yaml
 ```

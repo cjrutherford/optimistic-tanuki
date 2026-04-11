@@ -9,7 +9,9 @@ import { v4 as uuidv4 } from 'uuid'; // Import uuid for mocking
 // Mock the fs/promises module
 jest.mock('fs/promises');
 // Mock the uuid module
-jest.mock('uuid');
+jest.mock('uuid', () => ({
+  v4: jest.fn(() => 'mock-uuid'),
+}));
 
 describe('LocalStorageAdapter', () => {
   let adapter: LocalStorageAdapter;

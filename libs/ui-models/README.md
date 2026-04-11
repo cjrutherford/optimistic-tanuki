@@ -1,15 +1,15 @@
 # UI Models
 
-This library contains data models that are shared across multiple UI libraries. These models define the structure of the data that is passed between components.
+`ui-models` contains shared UI-facing model definitions. Its source lives under `libs/ui-models/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the models in this library, import them directly from the library:
+- shared presentation-oriented data shapes
+- complements the broader domain models in `libs/models`
 
-```typescript
-import { Button } from '@optimistic-tanuki/ui-models';
+## Nx Commands
+
+```bash
+npx nx build ui-models
+npx nx test ui-models
 ```
-
-## Running unit tests
-
-Run `nx test ui-models` to execute the unit tests.

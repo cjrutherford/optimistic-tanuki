@@ -6,6 +6,10 @@ import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
 
 // Mock the S3Service
 jest.mock('./s3.service');
+// Mock the uuid module
+jest.mock('uuid', () => ({
+  v4: jest.fn(() => 'mock-uuid'),
+}));
 
 describe('NetworkStorageAdapter', () => {
   let adapter: NetworkStorageAdapter;

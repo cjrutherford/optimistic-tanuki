@@ -25,6 +25,9 @@ describe('HimalayasDiscoveryProvider', () => {
     valueProposition: null,
     searchStrategy: null,
     confidence: null,
+    appScope: 'leads-app',
+    profileId: 'profile-1',
+    userId: 'user-1',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -40,22 +43,25 @@ describe('HimalayasDiscoveryProvider', () => {
       status: 200,
       headers: {
         get: (name: string) =>
-          name.toLowerCase() === 'content-type' ? 'application/json; charset=utf-8' : null,
+          name.toLowerCase() === 'content-type'
+            ? 'application/json; charset=utf-8'
+            : null,
       },
-      text: async () => JSON.stringify({
-        jobs: [
-          {
-            title: 'Senior React Engineer',
-            companyName: 'Acme',
-            description: '<p>Build React applications.</p>',
-            applicationLink: 'https://example.com/apply',
-            guid: 'job-1',
-            minSalary: 140000,
-            maxSalary: 180000,
-            currency: 'USD',
-          },
-        ],
-      }),
+      text: async () =>
+        JSON.stringify({
+          jobs: [
+            {
+              title: 'Senior React Engineer',
+              companyName: 'Acme',
+              description: '<p>Build React applications.</p>',
+              applicationLink: 'https://example.com/apply',
+              guid: 'job-1',
+              minSalary: 140000,
+              maxSalary: 180000,
+              currency: 'USD',
+            },
+          ],
+        }),
     });
     global.fetch = fetchMock as typeof fetch;
 
@@ -83,7 +89,8 @@ describe('HimalayasDiscoveryProvider', () => {
       ok: false,
       status: 404,
       headers: {
-        get: (name: string) => (name.toLowerCase() === 'content-type' ? 'text/html' : null),
+        get: (name: string) =>
+          name.toLowerCase() === 'content-type' ? 'text/html' : null,
       },
       text: async () => '<!DOCTYPE html><html><body>Not found</body></html>',
     }) as typeof fetch;
@@ -93,9 +100,7 @@ describe('HimalayasDiscoveryProvider', () => {
     await expect(provider.search(topic)).resolves.toEqual(
       expect.objectContaining({
         candidates: [],
-        warnings: [
-          expect.stringContaining('Expected JSON'),
-        ],
+        warnings: [expect.stringContaining('Expected JSON')],
       })
     );
   });

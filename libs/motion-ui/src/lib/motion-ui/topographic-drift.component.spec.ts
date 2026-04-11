@@ -17,18 +17,22 @@ describe('TopographicDriftComponent', () => {
 
   it('renders the topographic shell', () => {
     expect(component).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.topographic-drift')).toBeTruthy();
+    expect(
+      fixture.nativeElement.querySelector('.topographic-drift')
+    ).toBeTruthy();
   });
 
   it('renders one contour per density step', () => {
-    component.density = 7;
+    fixture.componentRef.setInput('density', 7);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelectorAll('.contour-band')).toHaveLength(7);
+    expect(
+      fixture.nativeElement.querySelectorAll('.contour-band')
+    ).toHaveLength(7);
   });
 
   it('supports reduced motion fallback mode', () => {
-    component.reducedMotion = true;
+    fixture.componentRef.setInput('reducedMotion', true);
     fixture.detectChanges();
 
     expect(

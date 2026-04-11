@@ -1,20 +1,15 @@
 # Chat UI
 
-This library contains UI components for chat functionality, such as a chat window and a message list.
+`chat-ui` contains reusable chat components, types, utilities, and styles. Its source lives under `libs/chat-ui/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the components in this library, import the `ChatUiModule` into your Angular module:
+- shared chat presentation for Angular clients
+- UI support for chat features backed by the gateway and chat collector
 
-```typescript
-import { ChatUiModule } from '@optimistic-tanuki/chat-ui';
+## Nx Commands
 
-@NgModule({
-  imports: [ChatUiModule],
-})
-export class MyModule {}
+```bash
+npx nx build chat-ui
+npx nx test chat-ui
 ```
-
-## Running unit tests
-
-Run `nx test chat-ui` to execute the unit tests.

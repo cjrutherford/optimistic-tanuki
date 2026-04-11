@@ -71,11 +71,13 @@ class MockButtonComponent {
 class MockCardComponent {}
 
 @Component({
-  selector: 'mat-icon',
+  selector: 'otui-icon',
   standalone: true,
   template: '',
 })
-class MockMatIconComponent {}
+class MockIconComponent {
+  @Input() name: any;
+}
 
 describe('PropertyEditorComponent', () => {
   let component: PropertyEditorComponent;
@@ -127,7 +129,7 @@ describe('PropertyEditorComponent', () => {
             MockTextInputComponent,
             MockButtonComponent,
             MockCardComponent,
-            MockMatIconComponent,
+            MockIconComponent,
           ],
         },
       })

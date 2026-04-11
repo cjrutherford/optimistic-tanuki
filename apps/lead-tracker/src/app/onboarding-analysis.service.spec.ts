@@ -1,6 +1,17 @@
 import { OnboardingAnalysisService } from './onboarding-analysis.service';
 import { LlmOnboardingAnalysisService } from './llm-onboarding-analysis.service';
 
+function hasInvisibleCharacters(value: string): boolean {
+  return Array.from(value).some((char) => {
+    const code = char.charCodeAt(0);
+    const isAsciiControl = (code >= 0x00 && code <= 0x1f) || code === 0x7f;
+    const isFormattingControl =
+      (code >= 0x200b && code <= 0x200f) || code === 0x2060 || code === 0xfeff;
+
+    return isAsciiControl || isFormattingControl;
+  });
+}
+
 describe('OnboardingAnalysisService', () => {
   let service: OnboardingAnalysisService;
   let llmAnalysisService: jest.Mocked<LlmOnboardingAnalysisService>;
@@ -234,9 +245,7 @@ describe('OnboardingAnalysisService', () => {
     expect(result.evidenceByField?.idealCustomer?.[0]).toBe(
       'VP Engineering and Product leaders'
     );
-    expect(JSON.stringify(result)).not.toMatch(
-      /[\x00-\x1F\x7F\u200B-\u200F\u2060\uFEFF]/
-    );
+    expect(hasInvisibleCharacters(JSON.stringify(result))).toBe(false);
   });
 
   it('returns the next DISC question until enough transcript exists', async () => {

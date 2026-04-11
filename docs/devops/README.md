@@ -1,15 +1,15 @@
 # DevOps Documentation
 
-This directory contains infrastructure and deployment documentation for the Optimistic Tanuki platform.
+This directory contains the infrastructure and deployment docs for the active repo workflows.
 
 ## Contents
 
 - [Architecture Overview](architecture.md) - High-level infrastructure design
-- [Kubernetes Deployment](k8s.md) - K8s deployment guides and configuration
+- [Kubernetes Deployment](k8s.md) - Kustomize base and overlays, local scripts, and cluster apply flow
 - [Service Ports Reference](ports.md) - Port mappings for all services
 - [Gateway Configuration](gateway.md) - Gateway service configuration
 - [Docker Compose](docker-compose.md) - Local development with Docker Compose
-- [ArgoCD](argocd.md) - GitOps deployment with ArgoCD
+- [ArgoCD](argocd.md) - GitOps deployment with the parameterized Argo application
 
 ## Quick Reference
 
@@ -31,99 +31,51 @@ npm run docker:dev:logs
 npm run docker:dev:down
 ```
 
-### Service Ports
+### Deployment Environments
 
-| Service            | Docker Compose Port | K8s LoadBalancer Port | Internal K8s Port |
-| ------------------ | ------------------- | --------------------- | ----------------- |
-| gateway            | 3000                | 3000                  | 3000              |
-| authentication     | 3001                | 3001                  | 3001              |
-| profile            | 3002                | 3002                  | 3002              |
-| social             | 3003                | 3003                  | 3003              |
-| assets             | 3005                | 3005                  | 3005              |
-| project-planning   | 3006                | 3006                  | 3006              |
-| chat-collector     | 3007                | 3007                  | 3007              |
-| telos-docs-service | 3008                | 3008                  | 3008              |
-| prompt-proxy       | 3009                | 3009                  | 3009              |
-| ai-orchestration   | 3010                | 3010                  | 3010              |
-| blogging           | 3011                | 3011                  | 3011              |
-| permissions        | 3012                | 3012                  | 3012              |
-| store              | 3013                | 3013                  | 3013              |
-| app-configurator   | 3014                | 3014                  | 3014              |
-| system-configurator-api | 3021            | 3021                  | 3021              |
-| forum              | 3015                | 3015                  | 3015              |
-| wellness           | 3016                | 3016                  | 3016              |
+- **Development**: Docker Compose via `npm run docker:dev`
+- **Staging**: Kubernetes overlay in `k8s/overlays/staging/`
+- **Production**: Kubernetes overlay in `k8s/overlays/production/`
 
-### Client Applications
+## Deployment Contract
 
-| Client                    | Docker Compose Port | K8s LoadBalancer Port |
-| ------------------------- | ------------------- | --------------------- |
-| client-interface          | 8080                | 8080                  |
-| forgeofwill               | 8081                | 8081                  |
-| digital-homestead         | 8082                | 8082                  |
-| christopherrutherford-net | 8083                | 8083                  |
-| owner-console             | 8084                | 8084                  |
-| store-client              | 8085                | 8085                  |
-| d6                        | 8086                | 8086                  |
-| configurable-client       | 8090                | 8090                  |
-| system-configurator       | 8091                | 8091                  |
+The current deployment pipeline is inventory-driven:
 
-### WebSocket Ports
-
-| Service          | Port | Purpose          |
-| ---------------- | ---- | ---------------- |
-| gateway (chat)   | 3300 | Chat WebSocket   |
-| gateway (social) | 3301 | Social WebSocket |
-
-## Deployment Environments
-
-- **Development**: Docker Compose (`docker-compose.yaml`)
-- **Production**: Kubernetes with ArgoCD
-- **Staging**: Kubernetes overlay (`k8s/overlays/staging/`)
+1. `tools/admin-env-wizard/cmd/deployment-inventory` exports the canonical app inventory.
+2. `scripts/validate-deployment-inventory.mjs` verifies that the GitHub Actions build matrix, base Kustomize resources, and overlay image lists match that inventory.
+3. `scripts/validate-compose-k8s-parity.sh` checks Compose and Kubernetes parity for apps marked deployable to k8s.
+4. `scripts/update-k8s-overlay-images.mjs` updates overlay `images:` entries with the promoted tag.
+5. ArgoCD syncs the environment overlay selected by `k8s/argo-app/application.yaml`.
 
 ## Key Components
 
-- **Gateway**: API gateway using NestJS, handles routing to microservices
-- **Ingress**: Nginx ingress controller for external access
-- **ArgoCD**: GitOps for Kubernetes deployments
-- **PostgreSQL**: Primary database
-- **Redis**: Caching and session storage
-- **SeaweedFS**: Object storage for assets
+- **Gateway**: API gateway using NestJS and routing requests into the service graph
+- **Kustomize**: base resources plus staging and production overlays
+- **ArgoCD**: GitOps deployment controller
+- **PostgreSQL**: primary data store
+- **Redis**: cache and session store
+- **SeaweedFS**: object storage where required by the stack
 
 ## Scripts
 
-Deployment and management scripts are located in the `scripts/` directory:
+Deployment and management scripts are located in `scripts/`.
 
 ### Deployment Scripts
 
-| Script                 | Description                      |
-| ---------------------- | -------------------------------- |
-| `deploy-production.sh` | Deploy to production environment |
-| `deploy-staging.sh`    | Deploy to staging environment    |
-| `apply-terraform.sh`   | Apply Terraform configuration    |
-| `teardown.sh`          | Tear down Kubernetes resources   |
-
-### Infrastructure Scripts
-
-| Script                        | Description                       |
-| ----------------------------- | --------------------------------- |
-| `setup-microk8s.sh`           | Setup MicroK8s cluster            |
-| `install-terraform.sh`        | Install Terraform                 |
-| `generate-secrets.sh`         | Generate Kubernetes secrets       |
-| `generate-k8s-deployments.sh` | Generate K8s deployment manifests |
-
-### Database Scripts
-
-| Script            | Description                       |
-| ----------------- | --------------------------------- |
-| `run-db-setup.sh` | Run database setup and migrations |
-| `run-seed.sh`     | Seed database with initial data   |
+| Script                 | Description                                                      |
+| ---------------------- | ---------------------------------------------------------------- |
+| `deploy-production.sh` | Validate inventory, apply infra, and sync the production overlay |
+| `deploy-staging.sh`    | Validate inventory, apply infra, and sync the staging overlay    |
+| `apply-terraform.sh`   | Apply Terraform configuration                                    |
+| `teardown.sh`          | Tear down Kubernetes resources                                   |
 
 ### Validation Scripts
 
-| Script                           | Description                          |
-| -------------------------------- | ------------------------------------ |
-| `validate-compose-k8s-parity.sh` | Validate Docker Compose ↔ K8s parity |
-| `validate-debug-config.sh`       | Validate debug configuration         |
+| Script                              | Description                                                  |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `validate-compose-k8s-parity.sh`    | Validate Docker Compose ↔ k8s parity for k8s deployable apps |
+| `validate-deployment-inventory.mjs` | Validate workflow, base resources, and overlay image lists   |
+| `update-k8s-overlay-images.mjs`     | Update overlay image tags from the exported inventory        |
 
 ### Usage
 
@@ -134,6 +86,7 @@ Deployment and management scripts are located in the `scripts/` directory:
 # Staging deployment
 ./scripts/deploy-staging.sh
 
-# Custom deployment with environment variables
-NAMESPACE=optimistic-tanuki DEPLOY_TARGET=k8s ./scripts/deploy-production.sh
+# Validate the deployment contract locally
+node scripts/validate-deployment-inventory.mjs
+bash scripts/validate-compose-k8s-parity.sh
 ```

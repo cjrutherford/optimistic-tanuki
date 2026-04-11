@@ -1,7 +1,15 @@
-# notification-ui
+# Notification UI
 
-This library was generated with [Nx](https://nx.dev).
+`notification-ui` contains reusable notification UI such as bells and lists. Its source lives under `libs/notification-ui/src/lib`.
 
-## Running unit tests
+## Repo Role
 
-Run `nx test notification-ui` to execute the unit tests.
+- shared notification presentation
+- frontend companion library for notification features
+
+## Nx Commands
+
+```bash
+npx nx build notification-ui
+npx nx test notification-ui
+```

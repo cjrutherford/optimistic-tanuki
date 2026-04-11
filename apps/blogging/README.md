@@ -1,11 +1,28 @@
 # Blogging
 
-This service is responsible for managing blog posts, comments, and other blogging-related functionality. It provides a rich and flexible platform for creating and managing blog content.
+The blogging service manages blog posts, comments, and related publishing flows. Its implementation lives under `apps/blogging/src/app` with controllers, entities, and services split by concern.
 
-## 🚀 Getting Started
+## Local Development
 
-This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+Run it through the normal repo stack:
 
-## 📝 API Reference
+```bash
+npm run docker:dev
+```
 
-The Blogging service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/blogging`.
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/blogging`
+
+## Repo Role
+
+- backend blog content and comment handling
+- supports blog-oriented UIs and shared blogging libraries in the repo
+- included in the deployment inventory and k8s image promotion flow
+
+## Nx Commands
+
+```bash
+npx nx build blogging
+npx nx test blogging
+```

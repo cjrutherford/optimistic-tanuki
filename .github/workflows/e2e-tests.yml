@@ -17,17 +17,22 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────
   build:
     name: Build All Applications
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -41,7 +46,7 @@ jobs:
           CI: true
 
       - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist/
@@ -53,18 +58,23 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────
   microservices-e2e:
     name: Microservices E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     timeout-minutes: 90
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -73,7 +83,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download dist artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
@@ -169,7 +179,7 @@ jobs:
 
       - name: Upload docker logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: docker-logs-microservices
           path: docker-logs/
@@ -181,7 +191,7 @@ jobs:
 
       - name: Upload microservices test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-microservices
           path: |
@@ -195,18 +205,23 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────
   ui-e2e:
     name: UI E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     timeout-minutes: 120
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -215,7 +230,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download dist artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
@@ -411,7 +426,7 @@ jobs:
 
       - name: Upload docker logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: docker-logs-ui
           path: docker-logs/
@@ -423,7 +438,7 @@ jobs:
 
       - name: Upload Playwright reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-reports-ui
           path: dist/.playwright/apps/*/playwright-report
@@ -431,7 +446,7 @@ jobs:
 
       - name: Upload UI test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-ui
           path: test-results/
@@ -442,13 +457,13 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────
   test-summary:
     name: Test Summary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [microservices-e2e, ui-e2e]
     if: always()
 
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 

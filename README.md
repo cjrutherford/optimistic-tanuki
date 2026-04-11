@@ -1,212 +1,121 @@
 # Optimistic Tanuki
 
-This monorepo contains the source code for the Optimistic Tanuki project, a collection of microservices and frontend applications that power a personal digital homestead, a project management tool, and a blogging platform.
+Optimistic Tanuki is an Nx monorepo for a multi-app platform built around NestJS services, Angular and SSR clients, a Docker Compose development stack, and a Kubernetes GitOps deployment surface.
 
-## 🚀 Getting Started
+The repo currently has three operational layers:
 
-**New to this project?** Start with our comprehensive [Getting Started Guide](./docs/getting-started/README.md) which includes:
+- local development through Docker Compose and Nx
+- deployment inventory and environment generation through Go tooling in `tools/`
+- Kubernetes delivery through Kustomize overlays, ArgoCD, and GitHub Actions
 
-- Detailed installation instructions
-- Multiple ways to run the application
-- First-time setup steps
-- Troubleshooting tips
-- Next steps for development
+## Getting Started
 
-### Quick Start
-
-1. Clone the repo and install dependencies:
-
-   ```sh
-   git clone https://github.com/cjrutherford/optimistic-tanuki.git
-   cd optimistic-tanuki
-   pnpm install
-   ```
-
-2. Start the full Docker development stack:
-
-   ```sh
-   npm run docker:dev
-   ```
-
-3. Access the applications:
-   - Main App: http://localhost:8080
-   - Leads App: http://localhost:4201
-   - API Gateway: http://localhost:3000
-
-**Prerequisites**: [Docker](https://docs.docker.com/get-docker/), [Node.js](https://nodejs.org/) (v18+), [pnpm](https://pnpm.io/installation)
-
-## 🛠️ Development
-
-For comprehensive development guides, see the [Development Documentation](./docs/development/).
-
-### Quick Development Commands
+Start with [docs/getting-started/README.md](./docs/getting-started/README.md) if you need first-time setup. For most contributors, the shortest path is:
 
 ```bash
-# Build app artifacts and start the full Docker development stack
+git clone https://github.com/cjrutherford/optimistic-tanuki.git
+cd optimistic-tanuki
+pnpm install
+pnpm run docker:dev
+```
+
+Primary local endpoints:
+
+- Main app: `http://localhost:8080`
+- Leads app: `http://localhost:4201`
+- Gateway: `http://localhost:3000`
+
+Prerequisites:
+
+- Node.js 20+
+- pnpm
+- Docker and Docker Compose
+- Go 1.24+ if you want to run the Go tools in `tools/`
+
+## Local Development
+
+The day-to-day development path is the Docker dev stack, not plain `docker compose up`.
+
+```bash
+# Build dist/ and start the development stack
 npm run docker:dev
 
 # First-time bootstrap with seed data
 npm run docker:dev:bootstrap
 
-# Run specific service with Nx
-nx serve gateway
-
-# Build all applications
-nx run-many --target=build --all
-```
-
-### Development with Docker and Debugging
-
-For Docker-based development with debugging and hot-reload support, see the [Debugging Guide](./docs/development/debugging.md). This guide covers:
-
-- Setting up VS Code debugging for all services
-- Configuring hot-reload with `nx watch`
-- Inspector port mappings
-- Troubleshooting common issues
-
-Quick start with debugging:
-
-```bash
-# Build app artifacts and start development stack with debugging enabled
-npm run docker:dev
-
-# In a separate terminal, keep dist/ fresh for hot-reload
+# Keep dist/ updated for hot reload in a second terminal
 npm run watch:build
+
+# Inspect or stop the dev stack
+npm run docker:dev:ps
+npm run docker:dev:logs
+npm run docker:dev:down
 ```
 
-The dev containers execute built files from `dist/`, so `docker:dev` now runs the required development build before bringing the stack up. For the full workflow, ports, seeding, and troubleshooting commands, see [Docker Compose Development](./docs/devops/docker-compose.md).
+Why this matters: the dev containers run built output from `dist/`, so `npm run docker:dev` performs the required build before bringing services up. The full workflow is documented in [docs/devops/docker-compose.md](./docs/devops/docker-compose.md).
 
-## 🚢 Deployment
+## Deployment Model
 
-The applications are deployed using Docker. There are two main application stacks that can be run using Docker Compose.
+The current deployment path is GitOps-oriented and catalog-driven.
 
-### Standard Stack
+1. The canonical deployable app inventory is exported from the Go configurator in [tools/admin-env-wizard](./tools/admin-env-wizard/README.md).
+2. GitHub Actions validates that inventory against the image build matrix, Kustomize base resources, and overlay image lists.
+3. Image promotion updates Kustomize overlay `images:` entries instead of rewriting every manifest.
+4. ArgoCD applies [k8s/argo-app/application.yaml](./k8s/argo-app/application.yaml) against the selected overlay under `k8s/overlays/`.
 
-This stack runs the main application, including the `client-interface` frontend.
+Key files:
 
-To start the standard stack, run the following command:
+- [build-push.yml](./.github/workflows/build-push.yml)
+- [deploy.yml](./.github/workflows/deploy.yml)
+- [k8s/base/kustomization.yaml](./k8s/base/kustomization.yaml)
+- [k8s/overlays/staging/kustomization.yaml](./k8s/overlays/staging/kustomization.yaml)
+- [k8s/overlays/production/kustomization.yaml](./k8s/overlays/production/kustomization.yaml)
+- [validate-deployment-inventory.mjs](./scripts/validate-deployment-inventory.mjs)
+- [validate-compose-k8s-parity.sh](./scripts/validate-compose-k8s-parity.sh)
+- [update-k8s-overlay-images.mjs](./scripts/update-k8s-overlay-images.mjs)
+
+## Go Tooling
+
+Two Go tools now document and drive part of the platform surface:
+
+- [tools/admin-env-wizard](./tools/admin-env-wizard/README.md)
+  - `admin-env generate` for non-interactive environment generation
+  - `admin-env tui` for the Bubble Tea configurator
+  - `cmd/deployment-inventory` for exporting the canonical deployment inventory used by CI and scripts
+- [tools/stack-client](./tools/stack-client/README.md)
+  - `stack-client tui` for an authenticated terminal client to the stack through the gateway
+
+## Testing
+
+Common commands:
 
 ```bash
-docker-compose up -d
+# Unit tests
+npx nx test <project>
+
+# E2E tests
+npx nx e2e <project>-e2e
+
+# Repo-wide validation examples
+npx nx run-many --target=build --all
+npx nx run-many --target=test --all
 ```
 
-### Forge of Will Stack
-
-This stack runs the "Forge of Will" application, which includes the `forgeofwill` frontend and the `project-planning` service.
-
-To start the Forge of Will stack, run the following command:
-
-```bash
-docker-compose -f fow.docker-compose.yaml up -d
-```
-
-## 🧪 Testing
-
-This project includes comprehensive end-to-end (E2E) tests for all applications and microservices.
-
-For detailed testing documentation, see the [Testing Guides](./docs/testing/).
-
-### Quick Test Commands
-
-```bash
-# Run all E2E tests
-nx run-many --target=e2e --all
-
-# Run specific application tests
-nx e2e client-interface-e2e
-nx e2e authentication-e2e
-nx e2e gateway-e2e
-
-# Run unit tests
-nx test common-ui
-```
-
-### Setup
-
-Before running tests, install Playwright browsers:
+Before running Playwright suites for the first time:
 
 ```bash
 npx playwright install
 ```
 
-**Key Testing Resources:**
+See [docs/testing/quick-reference.md](./docs/testing/quick-reference.md) and [docs/testing/e2e-testing.md](./docs/testing/e2e-testing.md) for the deeper test workflow.
 
-- [E2E Testing Guide](./docs/testing/e2e-testing.md) - Comprehensive E2E testing with Playwright
-- [Test Portability Guide](./docs/testing/test-portability.md) - Running tests in different environments
-- [Quick Reference](./docs/testing/quick-reference.md) - Common testing tasks
-- [Test Coverage](./docs/testing/coverage.md) - Coverage information and goals
+## Repository Layout
 
-## ✨ Built With
+- `apps/`: NestJS services and frontend applications
+- `libs/`: shared libraries
+- `k8s/`: base manifests, overlays, and the ArgoCD application
+- `scripts/`: deployment, validation, seeding, and operational scripts
+- `tools/`: Go utilities and other developer tooling
+- `docs/`: curated project documentation
 
-- [Angular](https://angular.io/) - Frontend framework
-- [NestJS](https://nestjs.com/) - Backend framework
-- [Nx](https://nx.dev/) - Monorepo management tool
-- [PostgreSQL](https://www.postgresql.org/) - Database
-- [Docker](https://www.docker.com/) - Containerization
-- [Playwright](https://playwright.dev/) - E2E testing for web applications
-
-## 📂 Project Structure
-
-The workspace is organized into the following directories:
-
-- **`apps/`**: Individual applications (services and frontends)
-- **`libs/`**: Shared libraries used across applications
-- **`docs/`**: Comprehensive project documentation
-- **`tools/`**: Build scripts and development tools
-- **`docker/`**: Docker configuration files
-
-For detailed information about specific applications and libraries, see the [Documentation Index](./docs/README.md).
-
-## 📚 Documentation
-
-All documentation has been organized into a comprehensive, navigable structure. Start with the [Documentation Index](./docs/README.md) to find what you need:
-
-- **[Getting Started](./docs/getting-started/)** - Installation and first-time setup
-- **[Development](./docs/development/)** - Development guides and configuration
-- **[Architecture](./docs/architecture/)** - System design and architecture docs
-- **[Guides](./docs/guides/)** - Step-by-step guides for specific features
-- **[Testing](./docs/testing/)** - Testing guides and best practices
-- **[API Documentation](./docs/api/)** - API reference for all services
-
-### Quick Links
-
-- [Getting Started Guide](./docs/getting-started/README.md) - Start here if you're new
-- [MVP Overview](./docs/getting-started/mvp-overview.md) - Project roadmap and plan
-- [Debugging Guide](./docs/development/debugging.md) - Set up debugging in VS Code
-- [Permissions System](./docs/architecture/permissions.md) - RBAC implementation
-- [Theme System](./docs/architecture/theme-system.md) - Theming architecture
-- [E2E Testing](./docs/testing/e2e-testing.md) - End-to-end testing guide
-
-## 📦 Project Applications
-
-Here's a list of the individual applications within this workspace:
-
-- **`ai-orchestrator`**: A service for orchestrating AI-related tasks.
-- **`assets`**: A service for managing digital assets.
-- **`authentication`**: A service for user authentication and authorization.
-- **`blogging`**: A service for managing blog posts and comments.
-- **`chat-collector`**: A service for collecting and storing chat messages.
-- **`christopherrutherford-net`**: The frontend for the christopherrutherford.net website.
-- **`client-interface`**: The main frontend application for the digital homestead.
-- **`digital-homestead`**: A service for managing the digital homestead.
-- **`forgeofwill`**: The frontend for the Forge of Will project management tool.
-- **`gateway`**: An API gateway that routes requests to the appropriate microservice.
-- **`profile`**: A service for managing user profiles.
-- **`project-planning`**: A service for managing projects, tasks, and other project-related data.
-- **`prompt-proxy`**: A service for proxying requests to prompt-based AI models.
-- **`social`**: A service for managing social media integrations.
-- **`telos-docs-service`**: A service for managing documentation.
-
-## 🤝 Contributing
-
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
-
-## 📄 License
-
-Distributed under the MIT License. See `LICENSE` for more information.
+Use [docs/README.md](./docs/README.md) as the documentation index.

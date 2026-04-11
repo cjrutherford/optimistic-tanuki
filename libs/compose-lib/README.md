@@ -1,7 +1,15 @@
-# compose-lib
+# Compose Lib
 
-This library was generated with [Nx](https://nx.dev).
+`compose-lib` contains composition-related components, configs, interfaces, extensions, and services. Its source lives under `libs/compose-lib/src/lib`.
 
-## Running unit tests
+## Repo Role
 
-Run `nx test compose-lib` to execute the unit tests.
+- shared composition and editor-like infrastructure
+- utility layer for richer content and UI assembly flows
+
+## Nx Commands
+
+```bash
+npx nx build compose-lib
+npx nx test compose-lib
+```

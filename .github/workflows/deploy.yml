@@ -5,71 +5,29 @@ on:
     branches:
       - main
       - mvp-polish
+    paths-ignore:
+      - 'k8s/overlays/production/**'
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: Environment to deploy to
         required: true
-        default: 'staging'
+        default: staging
         type: choice
         options:
           - staging
           - production
 
 permissions:
-  contents: read
-  packages: write
+  contents: write
   id-token: write
 
 jobs:
-  build:
-    name: Build and Push Images
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: cjrutherford/optimistic_tanuki
-          tags: |
-            type=ref,event=branch
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=${{ github.sha }}
-
-      - name: Build and push backend services
-        run: |
-          export IMAGE_TAG="${GITHUB_SHA}"
-
-          npm install --legacy-peer-deps
-
-          npx nx run-many -t build --configuration=production --all --parallel=3
-
-          docker compose -f docker-compose.k8s.yaml build
-          docker compose -f docker-compose.k8s.yaml push
-
-        env:
-          CI: true
-          NODE_ENV: production
-
   deploy-staging:
     name: Deploy to Staging
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: staging
-    needs: build
-    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
     timeout-minutes: 30
 
     steps:
@@ -87,51 +45,80 @@ jobs:
           chmod +x /usr/local/bin/argocd
 
       - name: Login to ArgoCD
-        run: |
-          argocd login argocd.${{ secrets.DOMAIN }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
+        run: argocd login argocd.${{ secrets.DOMAIN }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
 
       - name: Apply ArgoCD Application for staging
         run: |
-          sed -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
-              -e "s|\${ARGO_TARGET_REVISION:-main}|main|g" \
-              -e "s|k8s/overlays/\${ARGO_ENV:-production}|k8s/overlays/staging|g" \
-              -e "s|optimistic-tanuki|optimistic-tanuki-staging|g" \
-              k8s/argo-app/application.yaml | kubectl apply -f -
+          sed \
+            -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
+            -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
+            -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
+            -e "s|\${ARGO_TARGET_REVISION:-main}|${GITHUB_REF_NAME}|g" \
+            -e "s|\${ARGO_ENV:-production}|staging|g" \
+            k8s/argo-app/application.yaml | kubectl apply -f -
 
       - name: Sync staging application
-        run: |
-          argocd app sync optimistic-tanuki-staging --server argocd.${{ secrets.DOMAIN }} --insecure || \
-          argocd app create optimistic-tanuki-staging \
-            --repo https://github.com/cjrutherford/optimistic-tanuki.git \
-            --path k8s/overlays/staging \
-            --dest-server https://kubernetes.default.svc \
-            --dest-namespace optimistic-tanuki-staging \
-            --server argocd.${{ secrets.DOMAIN }} \
-            --insecure
+        run: argocd app sync optimistic-tanuki-staging --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
 
-      - name: Wait for deployment
-        run: |
-          argocd app wait optimistic-tanuki-staging --server argocd.${{ secrets.DOMAIN }} --insecure
+      - name: Wait for staging deployment
+        run: argocd app wait optimistic-tanuki-staging --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
 
-      - name: Run smoke tests
+      - name: Run staging smoke test
         run: |
-          echo "Running smoke tests against staging..."
           sleep 30
-          curl -f "https://staging.${{ secrets.DOMAIN }}/api/mcp/sse" || exit 1
-        env:
-          STAGING_URL: ${{ secrets.STAGING_URL }}
+          curl -f "https://staging.${{ secrets.DOMAIN }}/api/mcp/sse"
 
   deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
+    name: Promote and Deploy Production
+    runs-on: ubuntu-24.04
     environment: production
-    needs: [build, deploy-staging]
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
-    timeout-minutes: 30
+    timeout-minutes: 40
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: tools/admin-env-wizard/go.mod
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Export deployment inventory
+        working-directory: tools/admin-env-wizard
+        run: GOCACHE=/tmp/go-build go run ./cmd/deployment-inventory > /tmp/deployment-inventory.json
+
+      - name: Update production overlay images
+        run: |
+          DEPLOYMENT_INVENTORY_FILE=/tmp/deployment-inventory.json \
+          node scripts/update-k8s-overlay-images.mjs k8s/overlays/production/kustomization.yaml sha-${{ github.sha }}
+
+      - name: Commit production overlay update
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add k8s/overlays/production/kustomization.yaml
+          if git diff --cached --quiet; then
+            echo "No production overlay changes to commit"
+          else
+            git commit -m "ci: promote production image tags to sha-${{ github.sha }}"
+            git push origin ${{ github.ref_name }}
+          fi
 
       - name: Setup kubectl
         uses: azure/k8s-set-context@v4
@@ -144,42 +131,35 @@ jobs:
           chmod +x /usr/local/bin/argocd
 
       - name: Login to ArgoCD
-        run: |
-          argocd login argocd.${{ secrets.DOMAIN }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
+        run: argocd login argocd.${{ secrets.DOMAIN }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
 
       - name: Apply ArgoCD Application for production
         run: |
-          sed -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
-              -e "s|\${ARGO_TARGET_REVISION:-main}|main|g" \
-              -e "s|k8s/overlays/\${ARGO_ENV:-production}|k8s/overlays/production|g" \
-              k8s/argo-app/application.yaml | kubectl apply -f -
+          sed \
+            -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki|g" \
+            -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki|g" \
+            -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
+            -e "s|\${ARGO_TARGET_REVISION:-main}|${GITHUB_REF_NAME}|g" \
+            -e "s|\${ARGO_ENV:-production}|production|g" \
+            k8s/argo-app/application.yaml | kubectl apply -f -
 
       - name: Sync production application
-        run: |
-          argocd app sync optimistic-tanuki \
-            --server argocd.${{ secrets.DOMAIN }} \
-            --insecure \
-            --timeout 600
+        run: argocd app sync optimistic-tanuki --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
 
-      - name: Wait for deployment
-        run: |
-          argocd app wait optimistic-tanuki --server argocd.${{ secrets.DOMAIN }} --insecure
+      - name: Wait for production deployment
+        run: argocd app wait optimistic-tanuki --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
 
-      - name: Run smoke tests
+      - name: Run production smoke test
         run: |
-          echo "Running smoke tests against production..."
           sleep 30
-          curl -f "https://${{ secrets.DOMAIN }}/api/mcp/sse" || exit 1
-        env:
-          PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+          curl -f "https://${{ secrets.DOMAIN }}/api/mcp/sse"
 
   notify:
     name: Notify
-    runs-on: ubuntu-latest
-    needs: [deploy-production]
+    runs-on: ubuntu-24.04
+    needs: [deploy-staging, deploy-production]
     if: always()
     steps:
       - name: Send notification on failure
-        if: failure()
-        run: |
-          echo "Deployment failed! Sending notification..."
+        if: contains(needs.*.result, 'failure')
+        run: echo "Deployment failed. Check workflow logs for details."

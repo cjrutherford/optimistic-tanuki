@@ -177,7 +177,22 @@ else
 fi
 
 echo ""
-echo "Step 5: Validating compose ↔ k8s parity..."
+echo "Step 5: Validating deployment inventory..."
+if [ -f "$SCRIPT_DIR/validate-deployment-inventory.mjs" ]; then
+    INVENTORY_FILE="$(mktemp)"
+    trap 'rm -f "$INVENTORY_FILE"' EXIT
+    (
+        cd "$PROJECT_DIR/tools/admin-env-wizard"
+        GOCACHE="${GOCACHE:-/tmp/go-build}" go run ./cmd/deployment-inventory > "$INVENTORY_FILE"
+    )
+    DEPLOYMENT_INVENTORY_FILE="$INVENTORY_FILE" node "$SCRIPT_DIR/validate-deployment-inventory.mjs"
+else
+    echo "Error: validate-deployment-inventory.mjs not found."
+    exit 1
+fi
+
+echo ""
+echo "Step 5.1: Validating compose ↔ k8s parity..."
 if [ -f "$SCRIPT_DIR/validate-compose-k8s-parity.sh" ]; then
     chmod +x "$SCRIPT_DIR/validate-compose-k8s-parity.sh"
     "$SCRIPT_DIR/validate-compose-k8s-parity.sh"
@@ -239,9 +254,11 @@ ARGO_ENV="${ARGO_ENV:-production}"
 
 ARGO_APP_FILE="$PROJECT_DIR/k8s/argo-app/application.yaml"
 if [ -f "$ARGO_APP_FILE" ]; then
-    sed -e "s|\${ARGO_REPO_URL}|$ARGO_REPO_URL|g" \
-        -e "s|\${ARGO_TARGET_REVISION}|$ARGO_TARGET_REVISION|g" \
-        -e "s|\${ARGO_ENV}|$ARGO_ENV|g" \
+    sed -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki|g" \
+        -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|$NAMESPACE|g" \
+        -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|$ARGO_REPO_URL|g" \
+        -e "s|\${ARGO_TARGET_REVISION:-main}|$ARGO_TARGET_REVISION|g" \
+        -e "s|\${ARGO_ENV:-production}|$ARGO_ENV|g" \
         "$ARGO_APP_FILE" | $KUBECTL_CMD apply -f -
 else
     echo "ArgoCD application file not found, skipping."

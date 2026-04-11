@@ -1,7 +1,15 @@
-# business-ui
+# Business UI
 
-This library was generated with [Nx](https://nx.dev).
+`business-ui` contains business-oriented shared UI for Angular applications. Its source lives under `libs/business-ui/src/lib/business-ui`.
 
-## Running unit tests
+## Repo Role
 
-Run `nx test business-ui` to execute the unit tests.
+- reusable business-facing UI building blocks
+- shared presentation code rather than backend logic
+
+## Nx Commands
+
+```bash
+npx nx build business-ui
+npx nx test business-ui
+```

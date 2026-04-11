@@ -69,8 +69,14 @@ export class OnboardingAnalysisService {
 
     if (this.llmAnalysisService.isAvailable && extractedText) {
       try {
-        const parsed = await this.llmAnalysisService.parseResumeText(extractedText);
-        if (parsed.summary || parsed.skills.length || parsed.experience.length) {
+        const parsed = await this.llmAnalysisService.parseResumeText(
+          extractedText
+        );
+        if (
+          parsed.summary ||
+          parsed.skills.length ||
+          parsed.experience.length
+        ) {
           return this.sanitizeResumeParseResult(parsed);
         }
       } catch (error) {
@@ -88,22 +94,32 @@ export class OnboardingAnalysisService {
       .filter((line) => line.length > 0);
 
     const roleSummaries = this.extractRoleSummaries(lines);
-    const suggestedProfile = this.buildSuggestedProfile(extractedText, roleSummaries);
+    const suggestedProfile = this.buildSuggestedProfile(
+      extractedText,
+      roleSummaries
+    );
 
     return this.sanitizeResumeParseResult({
       summary: lines.slice(0, 4).join(' ').slice(0, 320),
       skills: this.extractKeywords(extractedText),
-      experience: lines.filter((line) =>
-        /(years|engineer|developer|consultant|manager|lead|architect|director)/i.test(
-          line
+      experience: lines
+        .filter((line) =>
+          /(years|engineer|developer|consultant|manager|lead|architect|director)/i.test(
+            line
+          )
         )
-      ).slice(0, 6),
-      certifications: lines.filter((line) =>
-        /(certified|certification|pmp|aws|scrum|google|azure)/i.test(line)
-      ).slice(0, 6),
+        .slice(0, 6),
+      certifications: lines
+        .filter((line) =>
+          /(certified|certification|pmp|aws|scrum|google|azure)/i.test(line)
+        )
+        .slice(0, 6),
       suggestedProfile,
       roleSummaries,
-      evidenceByField: this.buildSuggestionEvidence(extractedText, suggestedProfile),
+      evidenceByField: this.buildSuggestionEvidence(
+        extractedText,
+        suggestedProfile
+      ),
     });
   }
 
@@ -116,7 +132,9 @@ export class OnboardingAnalysisService {
       'When a project becomes ambiguous, what do you do first?',
       'What kind of work environment helps you perform at your best?',
     ];
-    const userResponses = request.transcript.filter((turn) => turn.role === 'user');
+    const userResponses = request.transcript.filter(
+      (turn) => turn.role === 'user'
+    );
 
     if (userResponses.length < prompts.length) {
       return {
@@ -140,7 +158,9 @@ export class OnboardingAnalysisService {
       try {
         this.logger.log('Analyzing onboarding profile with LLM');
         const result = await this.llmAnalysisService.analyzeProfile(profile);
-        const deterministicTopics = await this.analyzeProfileDeterministic(profile);
+        const deterministicTopics = await this.analyzeProfileDeterministic(
+          profile
+        );
         const topics =
           result.topics.length >= 7
             ? result.topics
@@ -254,18 +274,21 @@ export class OnboardingAnalysisService {
         } companies needing ${profile.outcomes.join(', ')}.`,
         keywords: this.deriveBuyerKeywords(profile),
         excludedTerms: this.normalizeExcludedTerms(profile),
-      discoveryIntent: LeadTopicDiscoveryIntent.SERVICE_BUYERS,
-      sources: [LeadDiscoverySource.GOOGLE_MAPS, LeadDiscoverySource.CLUTCH],
-      googleMapsCities: [profile.localSearchLocation || profile.geographicFocus],
-      googleMapsTypes: this.deriveGoogleMapsBusinessTypes(profile),
-      priority: 3,
+        discoveryIntent: LeadTopicDiscoveryIntent.SERVICE_BUYERS,
+        sources: [LeadDiscoverySource.GOOGLE_MAPS, LeadDiscoverySource.CLUTCH],
+        googleMapsCities: [
+          profile.localSearchLocation || profile.geographicFocus,
+        ],
+        googleMapsTypes: this.deriveGoogleMapsBusinessTypes(profile),
+        priority: 3,
         targetCompanies: profile.companySizeTarget,
         buyerPersona: profile.idealCustomer,
         painPoints: profile.problemsSolved,
         valueProposition: profile.outcomes[0] || profile.serviceOffer,
         searchStrategy: 'conservative',
         confidence: this.calculateConfidence(profile, 'buyer-regional'),
-        googleMapsLocation: profile.localSearchLocation || profile.geographicFocus,
+        googleMapsLocation:
+          profile.localSearchLocation || profile.geographicFocus,
         googleMapsRadiusMiles: profile.localSearchRadiusMiles || 25,
       });
     }
@@ -334,12 +357,18 @@ export class OnboardingAnalysisService {
           ? this.deriveGoogleMapsBusinessTypes(profile)
           : undefined,
       priority: 8 + index,
-      targetCompanies: [`${industry} companies`, ...this.deriveTargetCompanies(profile)],
+      targetCompanies: [
+        `${industry} companies`,
+        ...this.deriveTargetCompanies(profile),
+      ],
       buyerPersona: profile.idealCustomer,
       painPoints: profile.problemsSolved.slice(0, 3),
       valueProposition: profile.outcomes[0] || profile.serviceOffer,
       searchStrategy: this.determineSearchStrategy(profile),
-      confidence: this.calculateConfidence(profile, `industry-${industry.toLowerCase()}`),
+      confidence: this.calculateConfidence(
+        profile,
+        `industry-${industry.toLowerCase()}`
+      ),
       googleMapsLocation:
         profile.geographicFocus && profile.geographicFocus !== 'Global'
           ? profile.localSearchLocation || profile.geographicFocus
@@ -378,7 +407,9 @@ export class OnboardingAnalysisService {
     keywords.push(...profile.outcomes.slice(0, 3));
     keywords.push(...profile.industries.slice(0, 2));
     if (profile.resumeParseSummary) {
-      keywords.push(...this.extractKeywords(profile.resumeParseSummary).slice(0, 3));
+      keywords.push(
+        ...this.extractKeywords(profile.resumeParseSummary).slice(0, 3)
+      );
     }
     return this.normalizeKeywords(keywords);
   }
@@ -425,8 +456,8 @@ export class OnboardingAnalysisService {
   ): string[] {
     const types = this.normalizeKeywords([
       ...profile.industries.map((industry) => `${industry} business`),
-      ...this.extractKeywords(profile.idealCustomer || '').map((term) =>
-        `${term} business`
+      ...this.extractKeywords(profile.idealCustomer || '').map(
+        (term) => `${term} business`
       ),
     ])
       .map((value) => value.toLowerCase())
@@ -551,8 +582,7 @@ export class OnboardingAnalysisService {
 
   private extractReadableTextFromBinary(buffer: Buffer): string {
     const binaryText = buffer.toString('latin1');
-    const spans = binaryText
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]+/g, '\n')
+    const spans = this.replaceNonPrintable(binaryText, '\n', true)
       .split(/\n+/)
       .map((line) =>
         line.replace(/[^A-Za-z0-9@&/().,:'"+\-_%# ]+/g, ' ').trim()
@@ -576,16 +606,55 @@ export class OnboardingAnalysisService {
   }
 
   private sanitizeExtractedText(text: string): string {
-    return text
+    const withoutNonPrintable = text
       .normalize('NFKC')
+      .split('')
+      .map((char) => (this.isNonPrintable(char) ? ' ' : char))
+      .join('');
+
+    return withoutNonPrintable
       .replace(/\u00A0/g, ' ')
       .replace(/[\u200B-\u200F\u2028\u2029\u2060\uFEFF]/g, '')
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
       .replace(/[\uE000-\uF8FF]/g, ' ')
       .replace(/\r\n/g, '\n')
       .replace(/[ \t]+/g, ' ')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
+  }
+
+  private replaceNonPrintable(
+    value: string,
+    replacement: string,
+    collapseRuns = false
+  ): string {
+    let result = '';
+    let inRun = false;
+
+    for (const char of value) {
+      if (this.isNonPrintable(char)) {
+        if (!collapseRuns || !inRun) {
+          result += replacement;
+        }
+        inRun = true;
+        continue;
+      }
+
+      inRun = false;
+      result += char;
+    }
+
+    return result;
+  }
+
+  private isNonPrintable(char: string): boolean {
+    const code = char.charCodeAt(0);
+    return (
+      (code >= 0x00 && code <= 0x08) ||
+      code === 0x0b ||
+      code === 0x0c ||
+      (code >= 0x0e && code <= 0x1f) ||
+      (code >= 0x7f && code <= 0x9f)
+    );
   }
 
   private async assessDiscTranscript(
@@ -610,7 +679,9 @@ export class OnboardingAnalysisService {
       .map((turn) => turn.text.toLowerCase())
       .join(' ');
     const scores = this.scoreDiscQuadrants(joinedText);
-    const ordered = Object.entries(scores).sort((left, right) => right[1] - left[1]);
+    const ordered = Object.entries(scores).sort(
+      (left, right) => right[1] - left[1]
+    );
     const primaryType = ordered[0][0];
     const secondaryType = ordered[1]?.[0];
 
@@ -712,7 +783,10 @@ export class OnboardingAnalysisService {
     };
 
     Object.entries(suggestions).forEach(([key, value]) => {
-      assign(key as keyof OnboardingProfileSuggestions, value as string[] | string);
+      assign(
+        key as keyof OnboardingProfileSuggestions,
+        value as string[] | string
+      );
     });
 
     return evidence;
@@ -753,7 +827,9 @@ export class OnboardingAnalysisService {
         highlights: this.sanitizeStringArray(role.highlights || []),
         outcomes: this.sanitizeStringArray(role.outcomes || []),
       })),
-      suggestedProfile: this.sanitizeSuggestedProfile(result.suggestedProfile || {}),
+      suggestedProfile: this.sanitizeSuggestedProfile(
+        result.suggestedProfile || {}
+      ),
       evidenceByField: this.sanitizeSuggestionEvidence(result.evidenceByField),
     };
   }
@@ -843,7 +919,11 @@ export class OnboardingAnalysisService {
       current.skills.push(...this.extractKeywords(line));
       current.industries.push(...this.extractIndustries(line));
 
-      if (/(improv|reduc|increas|grew|accelerat|launched|delivered|boost)/i.test(line)) {
+      if (
+        /(improv|reduc|increas|grew|accelerat|launched|delivered|boost)/i.test(
+          line
+        )
+      ) {
         current.highlights.push(line);
         current.outcomes.push(...this.extractOutcomePhrases(line));
       }
@@ -949,7 +1029,9 @@ export class OnboardingAnalysisService {
     ];
     const lower = text.toLowerCase();
     return this.normalizeKeywords(
-      methods.filter(([match]) => lower.includes(match)).map(([, label]) => label)
+      methods
+        .filter(([match]) => lower.includes(match))
+        .map(([, label]) => label)
     );
   }
 
@@ -992,7 +1074,10 @@ export class OnboardingAnalysisService {
       .slice(0, 6);
   }
 
-  private extractServiceOffer(text: string, skills: string[]): string | undefined {
+  private extractServiceOffer(
+    text: string,
+    skills: string[]
+  ): string | undefined {
     const modernizationMatch = text.match(
       /help [^.!\n]+? modernize ([^.!\n,]+)/i
     );
@@ -1061,19 +1146,65 @@ export class OnboardingAnalysisService {
     ];
     const lower = text.toLowerCase();
     return this.normalizeKeywords(
-      signals.filter(([match]) => lower.includes(match)).map(([, label]) => label)
+      signals
+        .filter(([match]) => lower.includes(match))
+        .map(([, label]) => label)
     );
   }
 
-  private scoreDiscQuadrants(text: string): Record<'D' | 'I' | 'S' | 'C', number> {
+  private scoreDiscQuadrants(
+    text: string
+  ): Record<'D' | 'I' | 'S' | 'C', number> {
     const buckets: Record<'D' | 'I' | 'S' | 'C', string[]> = {
-      D: ['control', 'lead', 'direct', 'fast', 'decis', 'challenge', 'obstacle', 'ownership', 'drive'],
-      I: ['persuad', 'influence', 'energ', 'excited', 'collaborat', 'network', 'relationship', 'team'],
-      S: ['support', 'steady', 'calm', 'patient', 'reliable', 'consistent', 'warm'],
-      C: ['quality', 'detail', 'accur', 'process', 'data', 'plan', 'analy', 'clarify', 'expectation'],
+      D: [
+        'control',
+        'lead',
+        'direct',
+        'fast',
+        'decis',
+        'challenge',
+        'obstacle',
+        'ownership',
+        'drive',
+      ],
+      I: [
+        'persuad',
+        'influence',
+        'energ',
+        'excited',
+        'collaborat',
+        'network',
+        'relationship',
+        'team',
+      ],
+      S: [
+        'support',
+        'steady',
+        'calm',
+        'patient',
+        'reliable',
+        'consistent',
+        'warm',
+      ],
+      C: [
+        'quality',
+        'detail',
+        'accur',
+        'process',
+        'data',
+        'plan',
+        'analy',
+        'clarify',
+        'expectation',
+      ],
     };
 
-    const raw: Record<'D' | 'I' | 'S' | 'C', number> = { D: 1, I: 1, S: 1, C: 1 };
+    const raw: Record<'D' | 'I' | 'S' | 'C', number> = {
+      D: 1,
+      I: 1,
+      S: 1,
+      C: 1,
+    };
     (Object.keys(buckets) as Array<'D' | 'I' | 'S' | 'C'>).forEach((key) => {
       raw[key] += buckets[key].reduce(
         (total, token) => total + (text.includes(token) ? 1 : 0),
@@ -1082,7 +1213,8 @@ export class OnboardingAnalysisService {
     });
 
     const total = raw.D + raw.I + raw.S + raw.C;
-    const normalize = (value: number) => Math.max(5, Math.round((value / total) * 100));
+    const normalize = (value: number) =>
+      Math.max(5, Math.round((value / total) * 100));
 
     return {
       D: normalize(raw.D),
@@ -1104,6 +1236,12 @@ export class OnboardingAnalysisService {
       C: 'clarity and compliance',
     };
 
-    return `behavioral profile summary: D ${scores.D}%, I ${scores.I}%, S ${scores.S}%, C ${scores.C}%. Primary tendency ${primaryType} (${labels[primaryType]}), with ${secondaryType || 'balanced'} as a secondary tendency. This is a lightweight communication and work-style summary, not a predictor of job performance.`;
+    return `behavioral profile summary: D ${scores.D}%, I ${scores.I}%, S ${
+      scores.S
+    }%, C ${scores.C}%. Primary tendency ${primaryType} (${
+      labels[primaryType]
+    }), with ${
+      secondaryType || 'balanced'
+    } as a secondary tendency. This is a lightweight communication and work-style summary, not a predictor of job performance.`;
   }
 }

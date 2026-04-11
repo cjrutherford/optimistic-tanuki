@@ -41,6 +41,9 @@ describe('LeadsService', () => {
     isAutoDiscovered: false,
     searchKeywords: ['react', 'typescript'],
     assignedTo: 'user-1',
+    profileId: 'test-profile',
+    userId: 'test-user',
+    appScope: 'test-scope',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -50,6 +53,8 @@ describe('LeadsService', () => {
     leadId: mockLead.id,
     reasons: [LeadFlagReason.SPAM],
     notes: 'Not a fit',
+    profileId: 'test-profile',
+    userId: 'test-user',
     createdAt: new Date(),
   };
 
@@ -63,6 +68,8 @@ describe('LeadsService', () => {
     sources: [LeadDiscoverySource.REMOTE_OK, LeadDiscoverySource.HIMALAYAS],
     googleMapsCities: null,
     googleMapsTypes: null,
+    googleMapsLocation: null,
+    googleMapsRadiusMiles: null,
     enabled: true,
     lastRun: new Date(),
     leadCount: 2,
@@ -73,8 +80,17 @@ describe('LeadsService', () => {
     valueProposition: null,
     searchStrategy: null,
     confidence: null,
+    profileId: 'test-profile',
+    userId: 'test-user',
+    appScope: 'test-scope',
     createdAt: new Date(),
     updatedAt: new Date(),
+  };
+
+  const authContext = {
+    profileId: 'test-profile',
+    userId: 'test-user',
+    appScope: 'test-scope',
   };
 
   let mockRepository: any;
@@ -86,6 +102,7 @@ describe('LeadsService', () => {
       createQueryBuilder: jest.fn(),
       findOneBy: jest.fn(),
       findOne: jest.fn(),
+      findBy: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
       delete: jest.fn(),
@@ -171,9 +188,13 @@ describe('LeadsService', () => {
       };
       repository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      const result = await service.findAll();
+      const result = await service.findAll({ profileId: 'test-profile' });
 
       expect(result).toEqual([{ ...mockLead, isFlagged: false }]);
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'lead.profileId = :profileId',
+        { profileId: 'test-profile' }
+      );
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
         'lead.nextFollowUp',
         'ASC'
@@ -190,7 +211,7 @@ describe('LeadsService', () => {
       };
       repository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      await service.findAll({ status: 'new' });
+      await service.findAll({ status: 'new', profileId: 'test-profile' });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'lead.status = :status',
@@ -208,7 +229,7 @@ describe('LeadsService', () => {
       };
       repository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      await service.findAll({ source: 'upwork' });
+      await service.findAll({ source: 'upwork', profileId: 'test-profile' });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'lead.source = :source',
@@ -219,13 +240,20 @@ describe('LeadsService', () => {
 
   describe('findOne', () => {
     it('should return a single lead by id', async () => {
-      repository.findOne.mockResolvedValue({ ...mockLead, flags: [mockFlag] } as any);
+      repository.findOne.mockResolvedValue({
+        ...mockLead,
+        flags: [mockFlag],
+      } as any);
 
-      const result = await service.findOne(mockLead.id);
+      const result = await service.findOne(mockLead.id, 'test-profile');
 
-      expect(result).toEqual({ ...mockLead, flags: [mockFlag], isFlagged: true });
+      expect(result).toEqual({
+        ...mockLead,
+        flags: [mockFlag],
+        isFlagged: true,
+      });
       expect(repository.findOne).toHaveBeenCalledWith({
-        where: { id: mockLead.id },
+        where: { id: mockLead.id, profileId: 'test-profile' },
         relations: { flags: true },
       });
     });
@@ -233,7 +261,7 @@ describe('LeadsService', () => {
     it('should return null if lead not found', async () => {
       repository.findOne.mockResolvedValue(null);
 
-      const result = await service.findOne('non-existent-id');
+      const result = await service.findOne('non-existent-id', 'test-profile');
 
       expect(result).toBeNull();
     });
@@ -246,9 +274,11 @@ describe('LeadsService', () => {
       repository.save.mockResolvedValue({ ...mockLead, ...createDto } as Lead);
       leadQualificationService.analyzeAndSave.mockResolvedValue({} as any);
 
-      const result = await service.create(createDto);
+      const result = await service.create(createDto, authContext);
 
-      expect(repository.create).toHaveBeenCalledWith(createDto);
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining(createDto)
+      );
       expect(repository.save).toHaveBeenCalled();
       expect(leadQualificationService.analyzeAndSave).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'New Lead' }),
@@ -267,9 +297,16 @@ describe('LeadsService', () => {
         ...updateDto,
       } as Lead);
 
-      const result = await service.update(mockLead.id, updateDto);
+      const result = await service.update(
+        mockLead.id,
+        updateDto,
+        'test-profile'
+      );
 
-      expect(repository.update).toHaveBeenCalledWith(mockLead.id, updateDto);
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: mockLead.id, profileId: 'test-profile' },
+        updateDto
+      );
       expect(repository.findOne).toHaveBeenCalled();
       expect(result.status).toBe(LeadStatus.CONTACTED);
     });
@@ -280,9 +317,10 @@ describe('LeadsService', () => {
       leadTopicRepository.find.mockResolvedValue([mockTopic]);
       leadTopicLinkRepository.find.mockResolvedValue([]);
 
-      const result = await service.findAllTopics();
+      const result = await service.findAllTopics('test-profile');
 
       expect(leadTopicRepository.find).toHaveBeenCalledWith({
+        where: { profileId: 'test-profile' },
         order: { enabled: 'DESC', updatedAt: 'DESC', name: 'ASC' },
       });
       expect(result).toEqual([
@@ -313,7 +351,7 @@ describe('LeadsService', () => {
       leadTopicRepository.create.mockReturnValue({ ...mockTopic, ...dto });
       leadTopicRepository.save.mockResolvedValue({ ...mockTopic, ...dto });
 
-      const result = await service.createTopic(dto);
+      const result = await service.createTopic(dto, authContext);
 
       expect(leadTopicRepository.create).toHaveBeenCalled();
       expect(result.name).toBe('Cloud');
@@ -325,10 +363,14 @@ describe('LeadsService', () => {
         description: 'Cloud work',
         keywords: ['aws'],
       };
-      leadTopicRepository.create.mockImplementation((input) => input as LeadTopic);
-      leadTopicRepository.save.mockImplementation(async (input) => input as LeadTopic);
+      leadTopicRepository.create.mockImplementation(
+        (input) => input as LeadTopic
+      );
+      leadTopicRepository.save.mockImplementation(
+        async (input) => input as LeadTopic
+      );
 
-      const result = await service.createTopic(dto as any);
+      const result = await service.createTopic(dto as any, authContext);
 
       expect(result.sources).toEqual(DEFAULT_LEAD_DISCOVERY_SOURCES);
     });
@@ -342,10 +384,14 @@ describe('LeadsService', () => {
         googleMapsCities: [' Savannah, GA '],
         googleMapsTypes: [' restaurants ', 'restaurants'],
       };
-      leadTopicRepository.create.mockImplementation((input) => input as LeadTopic);
-      leadTopicRepository.save.mockImplementation(async (input) => input as any);
+      leadTopicRepository.create.mockImplementation(
+        (input) => input as LeadTopic
+      );
+      leadTopicRepository.save.mockImplementation(
+        async (input) => input as any
+      );
 
-      const result = await service.createTopic(dto as any);
+      const result = await service.createTopic(dto as any, authContext);
 
       expect(result.googleMapsCities).toEqual(['Savannah, GA']);
       expect(result.googleMapsTypes).toEqual(['restaurants']);
@@ -358,10 +404,14 @@ describe('LeadsService', () => {
         keywords: ['react'],
         excludedTerms: [' Wordpress ', 'php', 'wordpress'],
       };
-      leadTopicRepository.create.mockImplementation((input) => input as LeadTopic);
-      leadTopicRepository.save.mockImplementation(async (input) => input as any);
+      leadTopicRepository.create.mockImplementation(
+        (input) => input as LeadTopic
+      );
+      leadTopicRepository.save.mockImplementation(
+        async (input) => input as any
+      );
 
-      const result = await service.createTopic(dto as any);
+      const result = await service.createTopic(dto as any, authContext);
 
       expect(result.excludedTerms).toEqual(['wordpress', 'php']);
       expect(result.discoveryIntent).toBe('job-openings');
@@ -369,21 +419,31 @@ describe('LeadsService', () => {
 
     it('should update a topic', async () => {
       leadTopicRepository.update.mockResolvedValue({ affected: 1 } as any);
-      leadTopicRepository.findOneBy.mockResolvedValue({ ...mockTopic, enabled: false });
-
-      const result = await service.updateTopic(mockTopic.id, { enabled: false });
-
-      expect(leadTopicRepository.update).toHaveBeenCalledWith(mockTopic.id, {
+      leadTopicRepository.findOneBy.mockResolvedValue({
+        ...mockTopic,
         enabled: false,
-        excludedTerms: undefined,
-        discoveryIntent: undefined,
-        sources: undefined,
-        googleMapsCities: null,
-        googleMapsTypes: null,
-        googleMapsLocation: null,
-        googleMapsRadiusMiles: null,
-        lastRun: undefined,
       });
+
+      const result = await service.updateTopic(
+        mockTopic.id,
+        { enabled: false },
+        'test-profile'
+      );
+
+      expect(leadTopicRepository.update).toHaveBeenCalledWith(
+        { id: mockTopic.id, profileId: 'test-profile' },
+        {
+          enabled: false,
+          excludedTerms: undefined,
+          discoveryIntent: undefined,
+          sources: undefined,
+          googleMapsCities: null,
+          googleMapsTypes: null,
+          googleMapsLocation: null,
+          googleMapsRadiusMiles: null,
+          lastRun: undefined,
+        }
+      );
       expect(result?.enabled).toBe(false);
     });
 
@@ -396,22 +456,29 @@ describe('LeadsService', () => {
         sources: [LeadDiscoverySource.REMOTE_OK],
       });
 
-      await service.updateTopic(mockTopic.id, {
-        sources: [LeadDiscoverySource.REMOTE_OK],
-        googleMapsCities: ['Savannah, GA'],
-        googleMapsTypes: ['restaurants'],
-      } as any);
+      await service.updateTopic(
+        mockTopic.id,
+        {
+          sources: [LeadDiscoverySource.REMOTE_OK],
+          googleMapsCities: ['Savannah, GA'],
+          googleMapsTypes: ['restaurants'],
+        } as any,
+        'test-profile'
+      );
 
-      expect(leadTopicRepository.update).toHaveBeenCalledWith(mockTopic.id, {
-        sources: [LeadDiscoverySource.REMOTE_OK],
-        googleMapsCities: null,
-        googleMapsTypes: null,
-        googleMapsLocation: null,
-        googleMapsRadiusMiles: null,
-        excludedTerms: undefined,
-        discoveryIntent: undefined,
-        lastRun: undefined,
-      });
+      expect(leadTopicRepository.update).toHaveBeenCalledWith(
+        { id: mockTopic.id, profileId: 'test-profile' },
+        {
+          sources: [LeadDiscoverySource.REMOTE_OK],
+          googleMapsCities: null,
+          googleMapsTypes: null,
+          googleMapsLocation: null,
+          googleMapsRadiusMiles: null,
+          excludedTerms: undefined,
+          discoveryIntent: undefined,
+          lastRun: undefined,
+        }
+      );
     });
 
     it('should preserve generic topic metadata when disabling google maps', async () => {
@@ -425,24 +492,31 @@ describe('LeadsService', () => {
         sources: [LeadDiscoverySource.REMOTE_OK],
       });
 
-      await service.updateTopic(mockTopic.id, {
-        sources: [LeadDiscoverySource.REMOTE_OK],
-        googleMapsCities: ['Savannah, GA'],
-        googleMapsTypes: ['restaurants'],
-        excludedTerms: [' Wordpress ', 'php'],
-        discoveryIntent: 'service-buyers',
-      } as any);
+      await service.updateTopic(
+        mockTopic.id,
+        {
+          sources: [LeadDiscoverySource.REMOTE_OK],
+          googleMapsCities: ['Savannah, GA'],
+          googleMapsTypes: ['restaurants'],
+          excludedTerms: [' Wordpress ', 'php'],
+          discoveryIntent: 'service-buyers',
+        } as any,
+        'test-profile'
+      );
 
-      expect(leadTopicRepository.update).toHaveBeenCalledWith(mockTopic.id, {
-        sources: [LeadDiscoverySource.REMOTE_OK],
-        googleMapsCities: null,
-        googleMapsTypes: null,
-        googleMapsLocation: null,
-        googleMapsRadiusMiles: null,
-        excludedTerms: ['wordpress', 'php'],
-        discoveryIntent: 'service-buyers',
-        lastRun: undefined,
-      });
+      expect(leadTopicRepository.update).toHaveBeenCalledWith(
+        { id: mockTopic.id, profileId: 'test-profile' },
+        {
+          sources: [LeadDiscoverySource.REMOTE_OK],
+          googleMapsCities: null,
+          googleMapsTypes: null,
+          googleMapsLocation: null,
+          googleMapsRadiusMiles: null,
+          excludedTerms: ['wordpress', 'php'],
+          discoveryIntent: 'service-buyers',
+          lastRun: undefined,
+        }
+      );
     });
 
     it('should default missing sources to the discovery source defaults on create', async () => {
@@ -451,10 +525,14 @@ describe('LeadsService', () => {
         description: '',
         keywords: ['web'],
       };
-      leadTopicRepository.create.mockImplementation((input) => input as LeadTopic);
-      leadTopicRepository.save.mockImplementation(async (input) => input as any);
+      leadTopicRepository.create.mockImplementation(
+        (input) => input as LeadTopic
+      );
+      leadTopicRepository.save.mockImplementation(
+        async (input) => input as any
+      );
 
-      const result = await service.createTopic(dto as any);
+      const result = await service.createTopic(dto as any, authContext);
 
       expect(result.sources).toEqual(DEFAULT_LEAD_DISCOVERY_SOURCES);
     });
@@ -464,10 +542,10 @@ describe('LeadsService', () => {
     it('should return flags for a lead', async () => {
       leadFlagRepository.find.mockResolvedValue([mockFlag]);
 
-      const result = await service.findFlagsByLead(mockLead.id);
+      const result = await service.findFlagsByLead(mockLead.id, 'test-profile');
 
       expect(leadFlagRepository.find).toHaveBeenCalledWith({
-        where: { leadId: mockLead.id },
+        where: { leadId: mockLead.id, profileId: 'test-profile' },
         order: { createdAt: 'DESC' },
       });
       expect(result).toEqual([mockFlag]);
@@ -478,12 +556,14 @@ describe('LeadsService', () => {
       leadFlagRepository.create.mockReturnValue(mockFlag);
       leadFlagRepository.save.mockResolvedValue(mockFlag);
 
-      const result = await service.createFlag(mockLead.id, dto);
+      const result = await service.createFlag(mockLead.id, dto, authContext);
 
       expect(leadFlagRepository.create).toHaveBeenCalledWith({
         leadId: mockLead.id,
         reasons: dto.reasons,
         notes: dto.notes,
+        profileId: authContext.profileId,
+        userId: authContext.userId,
       });
       expect(result).toEqual(mockFlag);
     });
@@ -493,17 +573,23 @@ describe('LeadsService', () => {
     it('should delete a lead', async () => {
       repository.delete.mockResolvedValue({ affected: 1 } as any);
 
-      await service.delete(mockLead.id);
+      await service.delete(mockLead.id, 'test-profile');
 
-      expect(repository.delete).toHaveBeenCalledWith(mockLead.id);
+      expect(repository.delete).toHaveBeenCalledWith({
+        id: mockLead.id,
+        profileId: 'test-profile',
+      });
     });
 
     it('should delete a topic', async () => {
       leadTopicRepository.delete.mockResolvedValue({ affected: 1 } as any);
 
-      await service.deleteTopic(mockTopic.id);
+      await service.deleteTopic(mockTopic.id, 'test-profile');
 
-      expect(leadTopicRepository.delete).toHaveBeenCalledWith(mockTopic.id);
+      expect(leadTopicRepository.delete).toHaveBeenCalledWith({
+        id: mockTopic.id,
+        profileId: 'test-profile',
+      });
     });
   });
 
@@ -534,10 +620,10 @@ describe('LeadsService', () => {
           nextFollowUp: '2025-01-01',
         },
       ] as Lead[];
-      repository.find.mockResolvedValue(leads);
+      repository.findBy.mockResolvedValue(leads);
       qualificationRepository.find.mockResolvedValue([]);
 
-      const result = await service.getStats();
+      const result = await service.getStats('test-profile');
 
       expect(result.total).toBe(3);
       expect(result.autoDiscovered).toBe(2);
@@ -550,7 +636,7 @@ describe('LeadsService', () => {
     });
 
     it('should include qualification summary metrics', async () => {
-      repository.find.mockResolvedValue([
+      repository.findBy.mockResolvedValue([
         mockLead,
         {
           ...mockLead,
@@ -579,7 +665,7 @@ describe('LeadsService', () => {
         },
       ] as any);
 
-      const result = await service.getStats();
+      const result = await service.getStats('test-profile');
 
       expect((result as any).qualification).toEqual({
         byClassification: {
@@ -604,10 +690,10 @@ describe('LeadsService', () => {
           nextFollowUp: '2025-01-01',
         },
       ] as Lead[];
-      repository.find.mockResolvedValue(leads);
+      repository.findBy.mockResolvedValue(leads);
       qualificationRepository.find.mockResolvedValue([]);
 
-      const result = await service.getStats();
+      const result = await service.getStats('test-profile');
 
       expect(result.followUpsDue).toBe(0);
     });

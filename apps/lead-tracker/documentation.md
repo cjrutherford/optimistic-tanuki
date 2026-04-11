@@ -1,4 +1,4 @@
-# Lead Tracker Current Documentation
+# Lead Tracker Documentation
 
 Status: current
 Scope: `apps/lead-tracker` and `apps/leads-app`
@@ -6,6 +6,24 @@ Scope: `apps/lead-tracker` and `apps/leads-app`
 ## Purpose
 
 Lead Tracker is the lead discovery and pipeline backend for Lead Command. It stores manual leads, creates and updates discovery topics, runs provider-backed discovery jobs, links discovered leads back to their topics, and reports dashboard metrics to the UI.
+
+`leads-app` is the client surface for that workflow.
+
+## Runtime Surface
+
+In the current repo:
+
+- `lead-tracker` is part of the Docker development stack
+- `leads-app` is part of the Docker development stack
+- both are included in the deployment inventory used by CI and k8s validation
+- `lead-tracker` has a k8s base manifest
+- `leads-app` has a k8s client manifest
+
+Primary local endpoints:
+
+- leads app: `http://localhost:4201`
+- lead tracker service: `http://localhost:3020`
+- gateway: `http://localhost:3000`
 
 ## Current User Flow
 
@@ -30,31 +48,12 @@ The onboarding interview generates one or two topics:
   - intent: `job-openings`
   - sources: `remoteok`, `himalayas`, `weworkremotely`, `justremote`, `jobicy`, `indeed`
   - keywords: normalized service + buyer + outcome phrases
-
 - Local buyer topic:
   - intent: `service-buyers`
   - sources: `google-maps`, `clutch`, `crunchbase`
   - google maps cities: the local markets supplied by the user
   - google maps business types: derived from buyer phrases
   - keywords: normalized service + outcome phrases
-
-## Data Model
-
-`LeadTopic` currently supports:
-
-- `name`
-- `description`
-- `keywords`
-- `excludedTerms`
-- `discoveryIntent`
-- `sources`
-- `googleMapsCities`
-- `googleMapsTypes`
-- `enabled`
-- `lastRun`
-- `leadCount`
-
-This makes the topic model rich enough to support interview-driven onboarding without adding another onboarding-specific persistence layer.
 
 ## Discovery Behavior
 
@@ -69,21 +68,6 @@ Lead Tracker should requeue discovery when an enabled topic changes in ways that
 - `googleMapsCities`
 - `googleMapsTypes`
 - `enabled` from `false` to `true`
-
-## UX Intent
-
-The desired UX is:
-
-- onboarding feels like a guided interview, not a configuration screen
-- the user only needs to provide business context and local work radius
-- source selection and search strategy are preconfigured
-- the Topics page is for refinement, not first-run setup
-
-## Known Constraints
-
-- Google Maps local discovery only works well when buyer phrases can be converted into practical business categories.
-- Provider availability and quality still vary by upstream site behavior.
-- Discovery remains topic-driven; onboarding is a topic generator, not a separate search system.
 
 ## Canonical Files
 

@@ -1,16 +1,17 @@
 # Blogging UI
 
-This library contains UI components for blogging, such as a blog post viewer and a comment section.
+`blogging-ui` contains reusable blogging components and related styles. The library includes blog post, comment, author profile, compose, hero, newsletter, and tag-list surfaces under `libs/blogging-ui/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the components in this library, import the `BloggingUiModule` into your Angular module:
+- shared UI for blog and editorial experiences
+- used by blogging-related frontends in the repo
 
-```typescript
-import { BloggingUiModule } from '@optimistic-tanuki/blogging-ui';
+Additional docs live under `libs/blogging-ui/docs/`.
 
-@NgModule({
-  imports: [BloggingUiModule],
-})
-export class MyModule {}
+## Nx Commands
+
+```bash
+npx nx build blogging-ui
+npx nx test blogging-ui
 ```

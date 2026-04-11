@@ -1,7 +1,15 @@
-# navigation-ui
+# Navigation UI
 
-This library was generated with [Nx](https://nx.dev).
+`navigation-ui` contains reusable navigation components such as app bars and sidebars. Its source lives under `libs/navigation-ui/src/lib`.
 
-## Running unit tests
+## Repo Role
 
-Run `nx test navigation-ui` to execute the unit tests.
+- shared navigation shells and primitives
+- supports consistent app navigation across Angular clients
+
+## Nx Commands
+
+```bash
+npx nx build navigation-ui
+npx nx test navigation-ui
+```

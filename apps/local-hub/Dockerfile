@@ -6,15 +6,16 @@ WORKDIR /usr/src/app
 ARG GIT_SHA=unknown
 
 COPY package.json ./
-COPY package-lock.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
 COPY tsconfig*.json ./
 COPY nx.json ./
 COPY libs ./libs
 COPY apps/local-hub ./apps/local-hub
 
-RUN npm install --legacy-peer-deps
+RUN corepack enable && pnpm install --frozen-lockfile
 
-RUN npx nx build local-hub --configuration=production
+RUN pnpm exec nx build local-hub --configuration=production
 
 # Stage 2: Runtime image
 FROM node:lts-alpine
@@ -29,9 +30,10 @@ ENV PORT=4000
 ENV GIT_SHA=${GIT_SHA}
 
 COPY --from=builder /usr/src/app/package.json ./
-COPY --from=builder /usr/src/app/package-lock.json ./
+COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
+COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
-RUN npm install --omit=dev --legacy-peer-deps && npm i -g nodemon
+RUN corepack enable && pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /usr/src/app/dist/apps/local-hub ./dist/apps/local-hub
 

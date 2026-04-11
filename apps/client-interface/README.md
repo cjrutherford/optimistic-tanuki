@@ -1,13 +1,28 @@
 # Client Interface
 
-This project is the main frontend application for the Optimistic Tanuki digital homestead. It is built with Angular and is responsible for rendering the user interface and interacting with the various backend services.
+`client-interface` is the main frontend application for the platform. Its source lives under `apps/client-interface/src/app` with components, directives, guards, state, and utility code split by concern.
 
-## 🚀 Getting Started
+## Local Development
 
-This application is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+The normal path is the repo development stack:
 
-The application will be available at `http://localhost:4200`.
+```bash
+npm run docker:dev
+```
 
-## 🚢 Deployment
+Primary local URL:
 
-This application is deployed as a Docker container. See the main [README.md](../../README.md) for instructions on how to deploy the application.
+- `http://localhost:8080`
+
+For direct Nx work:
+
+```bash
+npx nx serve client-interface
+npx nx build client-interface
+```
+
+## Repo Role
+
+- primary browser frontend for the broader platform
+- talks to the gateway as its backend entrypoint
+- included in the deployment inventory and k8s overlay image promotion flow

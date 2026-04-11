@@ -31,6 +31,9 @@ describe('DiscoveryPipelineService', () => {
     valueProposition: 'Ship frontend modernization with less delivery risk',
     searchStrategy: 'balanced',
     confidence: 88,
+    appScope: 'leads-app',
+    profileId: 'profile-1',
+    userId: 'user-1',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -50,6 +53,9 @@ describe('DiscoveryPipelineService', () => {
     isAutoDiscovered: true,
     searchKeywords: ['react modernization', 'frontend platform'],
     assignedTo: undefined,
+    appScope: 'leads-app',
+    profileId: 'profile-1',
+    userId: 'user-1',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
