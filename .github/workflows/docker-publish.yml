@@ -46,7 +46,7 @@ jobs:
             type=raw,value=prod,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./apps/${{ matrix.service }}/Dockerfile
@@ -119,7 +119,7 @@ jobs:
             type=raw,value=prod,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./apps/${{ matrix.service }}/Dockerfile
