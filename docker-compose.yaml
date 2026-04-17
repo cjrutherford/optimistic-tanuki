@@ -15,8 +15,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
   db-setup:
-    image: node:lts-alpine
+    build:
+      context: .
+      dockerfile: ./docker/db-setup/Dockerfile
     container_name: db-setup
     working_dir: /workspace
     volumes:
@@ -28,7 +38,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && command -v pg_isready && npm run db:setup"
+    command: /bin/sh -c "command -v pg_isready && pnpm run db:setup"
     restart: 'no'
   redis:
     image: redis:latest
@@ -41,6 +51,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   authentication:
     container_name: ot_authentication
@@ -54,6 +72,14 @@ services:
         condition: service_healthy
       db-setup: # Ensures db-setup is completed before starting authentication
         condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   ot-client-interface:
     container_name: ot_client_interface # Added
@@ -62,6 +88,14 @@ services:
       dockerfile: ./apps/client-interface/Dockerfile
     ports:
       - '8080:4000'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   forgeofwill-client-interface:
     container_name: fow_client_interface # Added
@@ -70,6 +104,14 @@ services:
       dockerfile: ./apps/forgeofwill/Dockerfile
     ports:
       - '8081:4000'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   digital-homestead-client-interface:
     container_name: dh_client_interface # Added
@@ -86,6 +128,20 @@ services:
       dockerfile: ./apps/hai/Dockerfile
     ports:
       - '8088:4000'
+
+  fin-commander:
+    container_name: ot_fin_commander
+    build:
+      context: .
+      dockerfile: ./apps/fin-commander/Dockerfile
+    ports:
+      - '8089:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
 
   crdn-client-interface:
     container_name: crdn_client_interface # Added
@@ -179,6 +235,8 @@ services:
         condition: service_started
       forum:
         condition: service_started
+      finance:
+        condition: service_started
       wellness:
         condition: service_started
       classifieds:
@@ -189,6 +247,14 @@ services:
         condition: service_started
       leads-app:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   lead-tracker:
     container_name: ot_lead_tracker
@@ -209,6 +275,8 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+      finance:
+        condition: service_started
 
   profile:
     container_name: ot_profile
@@ -244,6 +312,19 @@ services:
       dockerfile: ./apps/forum/Dockerfile
     ports:
       - 3015:3015
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  finance:
+    container_name: ot_finance
+    build:
+      context: .
+      dockerfile: ./apps/finance/Dockerfile
+    ports:
+      - 3016:3016
     depends_on:
       postgres:
         condition: service_healthy
@@ -324,6 +405,14 @@ services:
         condition: service_started
       telos-docs-service:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   telos-docs-service:
     container_name: ot_telos_docs_service
@@ -470,7 +559,7 @@ services:
       context: .
       dockerfile: ./apps/wellness/Dockerfile
     ports:
-      - '3016:3016'
+      - '3017:3017'
     depends_on:
       postgres:
         condition: service_healthy
@@ -483,7 +572,7 @@ services:
       context: .
       dockerfile: ./apps/classifieds/Dockerfile
     ports:
-      - '3017:3017'
+      - '3018:3018'
     depends_on:
       postgres:
         condition: service_healthy
@@ -496,7 +585,7 @@ services:
       context: .
       dockerfile: ./apps/payments/Dockerfile
     ports:
-      - '3018:3018'
+      - '3019:3019'
     depends_on:
       postgres:
         condition: service_healthy

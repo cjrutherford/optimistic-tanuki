@@ -91,6 +91,8 @@ jobs:
             type: service
           - app: classifieds
             type: service
+          - app: finance
+            type: service
           - app: forum
             type: service
           - app: gateway
@@ -127,6 +129,8 @@ jobs:
           - app: d6
             type: client
           - app: digital-homestead
+            type: client
+          - app: fin-commander
             type: client
           - app: forgeofwill
             type: client
