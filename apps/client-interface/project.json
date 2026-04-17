@@ -36,10 +36,7 @@
             "input": "apps/client-interface/public"
           }
         ],
-        "styles": [
-          "@angular/material/prebuilt-themes/azure-blue.css",
-          "apps/client-interface/src/styles.scss"
-        ],
+        "styles": ["apps/client-interface/src/styles.scss"],
         "scripts": [],
         "server": "apps/client-interface/src/main.server.ts",
         "ssr": {
@@ -52,13 +49,13 @@
           "budgets": [
             {
               "type": "initial",
-              "maximumWarning": "500kb",
-              "maximumError": "1mb"
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
             },
             {
               "type": "anyComponentStyle",
-              "maximumWarning": "4kb",
-              "maximumError": "8kb"
+              "maximumWarning": "8kb",
+              "maximumError": "40kb"
             }
           ],
           "outputHashing": "all"

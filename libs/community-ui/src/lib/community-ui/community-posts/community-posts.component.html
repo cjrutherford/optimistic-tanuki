@@ -1,0 +1,114 @@
+<div class="community-posts">
+  @if (showCommunityHeader) {
+  <header class="community-header">
+    @if (community()) {
+    <div class="community-banner">
+      @if (community()?.bannerUrl) {
+      <img
+        [src]="community()?.bannerUrl"
+        alt="Community banner"
+        class="banner-image"
+      />
+      } @else {
+      <div class="banner-placeholder"></div>
+      }
+    </div>
+    <div class="community-info">
+      @if (community()?.logoUrl) {
+      <img
+        [src]="community()?.logoUrl"
+        alt="Community logo"
+        class="logo-image"
+      />
+      }
+      <div class="info-content">
+        <h2>{{ community()?.name }}</h2>
+        <p class="description">{{ community()?.description }}</p>
+        <span class="member-count">{{ community()?.memberCount }} members</span>
+      </div>
+    </div>
+    }
+  </header>
+  } @if (showNavigation) {
+  <nav class="posts-nav">
+    <button
+      class="nav-tab"
+      [class.active]="activeTab() === 'posts'"
+      (click)="setActiveTab('posts')"
+    >
+      Posts
+    </button>
+    <button
+      class="nav-tab"
+      [class.active]="activeTab() === 'create'"
+      (click)="setActiveTab('create')"
+    >
+      Create Post
+    </button>
+    @if (isOwnerOrManager()) {
+    <button
+      class="nav-tab"
+      [class.active]="activeTab() === 'manage'"
+      (click)="setActiveTab('manage')"
+    >
+      Manage
+    </button>
+    }
+    <button class="nav-tab" (click)="goToChat()">Chat</button>
+  </nav>
+  }
+
+  <main class="posts-content">
+    @if (loading()) {
+    <div class="loading">Loading posts...</div>
+    } @else if (error()) {
+    <div class="error-message">{{ error() }}</div>
+    } @else { @if (showComposer || activeTab() === 'create') {
+    <div class="create-post">
+      @if (currentProfileId) {
+      <lib-social-compose
+        [title]="'Create Post'"
+        [profileId]="currentProfileId"
+        (postSubmitted)="createdPost($event)"
+      ></lib-social-compose>
+      } @else {
+      <div class="no-posts">
+        <p>Sign in to create a post in this community.</p>
+      </div>
+      }
+    </div>
+    } @if (activeTab() === 'posts' || showComposer) {
+    <div class="posts-list">
+      @for (post of posts(); track post.id) {
+      <lib-post
+        [content]="post"
+        [profile]="profiles()[post.profileId]"
+        [currentUserId]="currentUserId"
+        [profileId]="currentProfileId"
+        [userVote]="getUserVote(post.id)"
+        [voteCount]="getVoteCount(post.id)"
+        [userReaction]="getUserReaction(post.id)"
+        [reactionCounts]="getReactionCounts(post.id)"
+        [shareUrl]="getShareUrl(post.id)"
+        (voteChange)="onVoteChanged($event)"
+        (reactionChange)="onReactionChanged($event)"
+        (startChat)="onStartChat($event)"
+        (newCommentAdded)="onCommentAdded($event)"
+      ></lib-post>
+      } @empty {
+      <div class="no-posts">
+        <p>No posts yet. Be the first to create one!</p>
+      </div>
+      }
+    </div>
+    } @if (activeTab() === 'manage') {
+    <div class="manage-content">
+      <h3>Community Management</h3>
+      <p>Manage your community members, settings, and more.</p>
+      <otui-button variant="primary" (click)="goToManage()">
+        Open Full Management
+      </otui-button>
+    </div>
+    } }
+  </main>
+</div>

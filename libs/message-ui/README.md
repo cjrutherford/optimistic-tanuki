@@ -1,20 +1,15 @@
 # Message UI
 
-This library contains UI components for displaying messages to the user, such as alerts, notifications, and snackbars.
+`message-ui` contains reusable messaging UI components and styles. Its source lives under `libs/message-ui/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the components in this library, import the `MessageUiModule` into your Angular module:
+- shared messaging presentation
+- used by chat and message-oriented frontend features
 
-```typescript
-import { MessageUiModule } from '@optimistic-tanuki/message-ui';
+## Nx Commands
 
-@NgModule({
-  imports: [MessageUiModule],
-})
-export class MyModule {}
+```bash
+npx nx build message-ui
+npx nx test message-ui
 ```
-
-## Running unit tests
-
-Run `nx test message-ui` to execute the unit tests.

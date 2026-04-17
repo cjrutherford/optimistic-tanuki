@@ -1,0 +1,329 @@
+// ============================================
+// Personality-Driven Theme Mixins (theme-ui)
+// Configurable via CSS custom properties
+// ============================================
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+// Theme fonts
+@mixin theme-fonts {
+  font-family: var(--font-body, system-ui, sans-serif);
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  label,
+  .label {
+    font-family: var(--font-heading, system-ui, sans-serif);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+}
+
+@mixin theme-mono {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125rem;
+  letter-spacing: -0.02em;
+}
+
+// Theme grid background
+@mixin theme-grid-background($size: 20px) {
+  background-image: linear-gradient(color-mix(in srgb, var(--primary) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 6%, transparent) 1px, transparent 1px);
+  background-size: $size $size;
+}
+
+// Theme inset shadow
+@mixin theme-inset-shadow {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+// Theme subtle shadow
+@mixin theme-subtle-shadow {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+// Theme card
+@mixin theme-card {
+  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border-radius: var(--border-radius-sm, 4px);
+  background: #fff;
+  @include theme-inset-shadow;
+  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+}
+
+// Theme button
+@mixin theme-button {
+  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-radius: var(--border-radius-sm, 4px);
+  padding: 8px 16px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #fff;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+
+  &:hover {
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+    color: var(--primary);
+  }
+
+  &:active {
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  &.active {
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Theme input
+@mixin theme-input {
+  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border-radius: var(--border-radius-sm, 4px);
+  padding: 10px 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125rem;
+  background: #fafafa;
+  color: #1f2937;
+  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #fff;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+// Theme label
+@mixin theme-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin-bottom: 6px;
+  display: block;
+}
+
+// Theme section
+@mixin theme-section {
+  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 12%, transparent);
+  border-radius: var(--border-radius-sm, 4px);
+  padding: 16px;
+  background: #fafafa;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    border-radius: var(--border-radius-sm, 4px) 0 0 var(--border-radius-sm, 4px);
+  }
+
+  h3 {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #4b5563;
+    margin: 0 0 12px 0;
+    padding-left: 8px;
+  }
+}
+
+// Theme divider
+@mixin theme-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--primary) 15%, transparent) 20%,
+    color-mix(in srgb, var(--primary) 15%, transparent) 80%,
+    transparent
+  );
+  margin: 16px 0;
+}
+
+// Theme badge
+@mixin theme-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+// Theme tooltip
+@mixin theme-tooltip {
+  position: relative;
+
+  &::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background: #1f2937;
+    color: #f9fafb;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.6875rem;
+    white-space: nowrap;
+    border-radius: 3px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+    z-index: 100;
+  }
+
+  &:hover::after {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+// Theme select
+@mixin theme-select {
+  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border-radius: var(--border-radius-sm, 4px);
+  padding: 8px 32px 8px 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125rem;
+  background: #fafafa;
+  color: #4b5563;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    background-color: #fff;
+  }
+}
+
+// Theme toggle
+@mixin theme-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-radius: 3px;
+  background: #e5e7eb;
+  cursor: pointer;
+  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: transform var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+  }
+
+  &.active {
+    background: color-mix(in srgb, var(--primary) 20%, transparent);
+    border-color: var(--primary);
+
+    &::after {
+      transform: translateX(16px);
+      background: var(--primary);
+    }
+  }
+}
+
+// Theme progress bar
+@mixin theme-progress {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+
+  .progress-bar {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 3px;
+    transition: width 200ms ease;
+  }
+}
+
+// Theme value display
+@mixin theme-value {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+  padding: 4px 8px;
+  background: #f3f4f6;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+// ============================================
+// @deprecated aliases — use theme-* instead
+// ============================================
+@mixin control-fonts { @include theme-fonts; }
+@mixin control-mono { @include theme-mono; }
+@mixin control-grid-background($size: 20px) { @include theme-grid-background($size); }
+@mixin control-inset-shadow { @include theme-inset-shadow; }
+@mixin control-subtle-shadow { @include theme-subtle-shadow; }
+@mixin control-card { @include theme-card; }
+@mixin control-button { @include theme-button; }
+@mixin control-input { @include theme-input; }
+@mixin control-label { @include theme-label; }
+@mixin control-section { @include theme-section; }
+@mixin control-divider { @include theme-divider; }
+@mixin control-badge { @include theme-badge; }
+@mixin control-tooltip { @include theme-tooltip; }
+@mixin control-select { @include theme-select; }
+@mixin control-toggle { @include theme-toggle; }
+@mixin control-progress { @include theme-progress; }
+@mixin control-value { @include theme-value; }

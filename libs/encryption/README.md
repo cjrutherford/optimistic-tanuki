@@ -1,20 +1,15 @@
 # Encryption
 
-This library contains services for encrypting and decrypting data. It provides a simple and secure way to protect sensitive information.
+`encryption` contains shared cryptographic helpers used across backend services. Its source lives under `libs/encryption/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the services in this library, inject them into your NestJS services or controllers:
+- reusable encryption and secure value handling
+- backend-focused shared utility library
 
-```typescript
-import { EncryptionService } from '@optimistic-tanuki/encryption';
+## Nx Commands
 
-@Injectable()
-export class MyService {
-  constructor(private readonly encryptionService: EncryptionService) {}
-}
+```bash
+npx nx build encryption
+npx nx test encryption
 ```
-
-## Running unit tests
-
-Run `nx test encryption` to execute the unit tests.

@@ -13,28 +13,28 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class PostDto {
   @ApiProperty({ description: 'Post ID' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'Post title' })
-  title: string;
+  title!: string;
 
   @ApiProperty({ description: 'Post content' })
-  content: string;
+  content!: string;
 
   @ApiProperty({ description: 'Author ID' })
-  authorId: string;
+  authorId!: string;
 
   @ApiProperty({ description: 'Is draft' })
-  isDraft: boolean;
+  isDraft!: boolean;
 
   @ApiProperty({ description: 'Published timestamp', nullable: true })
-  publishedAt: Date | null;
+  publishedAt!: Date | null;
 
   @ApiProperty({ description: 'Created timestamp' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({ description: 'Updated timestamp' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export class CreateBlogPostDto {
@@ -42,18 +42,18 @@ export class CreateBlogPostDto {
   @IsString()
   @MinLength(3)
   @MaxLength(500)
-  title: string;
+  title!: string;
 
   @ApiProperty({ description: 'Post content in HTML format' })
   @IsString()
   @MinLength(10)
   @MaxLength(100000)
-  content: string;
+  content!: string;
 
   @ApiProperty({ description: 'Author ID' })
   @IsString()
   @IsUUID()
-  authorId: string;
+  authorId!: string;
 
   @ApiProperty({ description: 'Is draft', required: false, default: true })
   @IsOptional()
@@ -65,7 +65,7 @@ export class UpdateBlogPostDto {
   @ApiProperty({ description: 'Post ID' })
   @IsString()
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'Post title', required: false })
   @IsOptional()

@@ -12,7 +12,7 @@ import {
   OnDestroy,
   Input,
   SimpleChange,
-  SimpleChanges,
+  SimpleChanges, OnChanges,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
@@ -71,7 +71,7 @@ import { io } from 'socket.io-client';
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss',
 })
-export class ChatComponent implements OnInit, OnDestroy {
+export class ChatComponent implements OnInit, OnDestroy, OnChanges {
   @Input() externalMessages: Partial<ChatMessage>[] = [];
   socketChat?: SocketChatService | null;
   private injector = inject(EnvironmentInjector);
@@ -84,6 +84,17 @@ export class ChatComponent implements OnInit, OnDestroy {
   openWindows = signal<Set<string>>(new Set());
   selectedConversation = signal<string | null>(null);
   isConnected = signal<boolean>(false);
+
+  // AI status tracking
+  aiRespondingStatus = signal<{ [conversationId: string]: boolean }>({});
+  aiThinkingMessages = signal<{ [conversationId: string]: string | null }>({});
+  toolCallStatus = signal<{
+    [conversationId: string]: {
+      toolName: string;
+      status: string;
+      attempt?: number;
+    };
+  }>({});
 
   private platformId = inject(PLATFORM_ID);
   private profileService = inject(ProfileService);
@@ -169,9 +180,27 @@ export class ChatComponent implements OnInit, OnDestroy {
 
     // Set up conversations handler
     this.socketChat.onConversations((data: ChatConversation[]) => {
-      console.log('Conversations updated:', data.length);
+      if (JSON.stringify(this.conversations()) === JSON.stringify(data)) return;
       this.conversations.set(data);
       this.updateContacts();
+    });
+
+    // Set up AI status handler
+    this.socketChat.onAIStatusUpdate((data) => {
+      console.log('AI status update:', data);
+      this.handleAIStatusUpdate(data);
+    });
+
+    // Set up tool call handler
+    this.socketChat.onToolCallUpdate((data) => {
+      console.log('Tool call update:', data);
+      this.handleToolCallUpdate(data);
+    });
+
+    // Set up streaming response handler
+    this.socketChat.onStreamingResponse((data) => {
+      console.log('Streaming response:', data);
+      this.handleStreamingResponse(data);
     });
 
     console.log('Socket connection handlers initialized');
@@ -215,6 +244,158 @@ export class ChatComponent implements OnInit, OnDestroy {
       }
       return conversations;
     });
+  }
+
+  /**
+   * Handle AI status updates
+   */
+  private handleAIStatusUpdate(data: {
+    conversationId: string;
+    status: 'thinking' | 'responding' | 'complete' | 'error';
+    message?: string;
+  }) {
+    const currentStatus = this.aiRespondingStatus();
+    const currentThinking = this.aiThinkingMessages();
+
+    switch (data.status) {
+      case 'thinking':
+        this.aiRespondingStatus.set({
+          ...currentStatus,
+          [data.conversationId]: true,
+        });
+        this.aiThinkingMessages.set({
+          ...currentThinking,
+          [data.conversationId]: data.message || 'AI is thinking...',
+        });
+        break;
+      case 'responding':
+        this.aiThinkingMessages.set({
+          ...currentThinking,
+          [data.conversationId]: null,
+        });
+        this.aiRespondingStatus.set({
+          ...currentStatus,
+          [data.conversationId]: true,
+        });
+        break;
+      case 'complete':
+        this.aiRespondingStatus.set({
+          ...currentStatus,
+          [data.conversationId]: false,
+        });
+        this.aiThinkingMessages.set({
+          ...currentThinking,
+          [data.conversationId]: null,
+        });
+        break;
+      case 'error':
+        this.aiRespondingStatus.set({
+          ...currentStatus,
+          [data.conversationId]: false,
+        });
+        this.aiThinkingMessages.set({
+          ...currentThinking,
+          [data.conversationId]: `Error: ${
+            data.message || 'Unknown error occurred'
+          }`,
+        });
+        // Clear error message after 5 seconds
+        setTimeout(() => {
+          const current = this.aiThinkingMessages();
+          this.aiThinkingMessages.set({
+            ...current,
+            [data.conversationId]: null,
+          });
+        }, 5000);
+        break;
+    }
+  }
+
+  /**
+   * Handle tool call updates
+   */
+  private handleToolCallUpdate(data: {
+    conversationId: string;
+    toolName: string;
+    status: 'calling' | 'success' | 'error' | 'retrying';
+    error?: string;
+    attempt?: number;
+  }) {
+    const currentStatus = this.toolCallStatus();
+    const currentThinking = this.aiThinkingMessages();
+
+    this.toolCallStatus.set({
+      ...currentStatus,
+      [data.conversationId]: {
+        toolName: data.toolName,
+        status: data.status,
+        attempt: data.attempt,
+      },
+    });
+
+    switch (data.status) {
+      case 'calling':
+        this.aiThinkingMessages.set({
+          ...currentThinking,
+          [data.conversationId]: `Calling ${data.toolName}...`,
+        });
+        break;
+      case 'retrying':
+        this.aiThinkingMessages.set({
+          ...currentThinking,
+          [data.conversationId]: `Retrying ${data.toolName}... (attempt ${
+            data.attempt || 1
+          })`,
+        });
+        break;
+      case 'error':
+        this.aiThinkingMessages.set({
+          ...currentThinking,
+          [data.conversationId]: `Tool error: ${
+            data.error || `Failed to call ${data.toolName}`
+          }`,
+        });
+        break;
+      case 'success':
+        this.aiThinkingMessages.set({
+          ...currentThinking,
+          [data.conversationId]: null,
+        });
+        break;
+    }
+  }
+
+  /**
+   * Handle streaming AI responses
+   */
+  private handleStreamingResponse(data: {
+    conversationId: string;
+    chunk: string;
+    isComplete: boolean;
+  }) {
+    if (data.isComplete) {
+      const currentStatus = this.aiRespondingStatus();
+      this.aiRespondingStatus.set({
+        ...currentStatus,
+        [data.conversationId]: false,
+      });
+    }
+    // Note: Real streaming would update the message content in real-time
+    // For now, we just update the status
+  }
+
+  /**
+   * Get AI responding status for a conversation
+   */
+  isAIResponding(conversationId: string): boolean {
+    return this.aiRespondingStatus()[conversationId] || false;
+  }
+
+  /**
+   * Get AI thinking message for a conversation
+   */
+  getAIThinkingMessage(conversationId: string): string | null {
+    return this.aiThinkingMessages()[conversationId] || null;
   }
 
   /**
@@ -321,20 +502,19 @@ export class ChatComponent implements OnInit, OnDestroy {
           const profile = await firstValueFrom(
             this.profileService.getDisplayProfile(id)
           );
-          return profile
-            ? {
-                id: profile.id,
-                name: profile.profileName,
-                avatarUrl:
-                  profile.profilePic ||
-                  'https://pics.craiyon.com/2023-12-02/m-ncT7EvSXypl0qgvzXhWA.webp',
-                lastMessage: '',
-                lastMessageTime: new Date().toISOString(),
-              }
-            : null;
+          if (!profile) return null;
+          return {
+            id: profile.id,
+            name: profile.profileName,
+            avatarUrl:
+              profile.profilePic ||
+              'https://pics.craiyon.com/2023-12-02/m-ncT7EvSXypl0qgvzXhWA.webp',
+            lastMessage: '',
+            lastMessageTime: new Date().toISOString(),
+          } as ChatContact;
         })
       )
-    ).filter((c): c is ChatContact => !!c);
+    ).filter((c): c is ChatContact => c !== null);
 
     contacts.push({
       id: currentUser.id,
@@ -344,7 +524,7 @@ export class ChatComponent implements OnInit, OnDestroy {
         'https://pics.craiyon.com/2023-12-02/m-ncT7EvSXypl0qgvzXhWA.webp',
       lastMessage: '',
       lastMessageTime: new Date().toISOString(),
-    });
+    } as ChatContact);
 
     this.contacts.set(contacts);
   }

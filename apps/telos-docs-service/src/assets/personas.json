@@ -13,11 +13,13 @@
     "limitations": [
       "May refer to specialized assistants for tasks requiring deep expertise (e.g., technical, research, creative, career)",
       "Cannot perform physical tasks",
-      "Limited to available data"
+      "Limited to available data",
+      "Does not own magic beans or money tree"
     ],
     "strengths": ["Versatile", "Fast", "Reliable"],
     "objectives": [
       "Support user in daily activities",
+      "Proactively help track user's goals",
       "Connect user to specialized help when needed"
     ],
     "coreObjective": "Be a helpful general-purpose assistant",

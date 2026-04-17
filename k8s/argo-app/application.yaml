@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${ARGO_APP_NAME:-optimistic-tanuki}
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: ${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}
+    targetRevision: ${ARGO_TARGET_REVISION:-main}
+    path: k8s/overlays/${ARGO_ENV:-production}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${ARGO_NAMESPACE:-optimistic-tanuki}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import {
-  HttpClientTestingModule,
   HttpTestingController,
+  provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { BlogService } from './blog.service';
 import {
@@ -27,8 +28,8 @@ describe('BlogService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [BlogService],
+      imports: [],
+      providers: [BlogService, provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(BlogService);
@@ -143,7 +144,7 @@ describe('BlogService', () => {
       });
 
       const req = httpMock.expectOne(`/api/post/${postId}`);
-      expect(req.request.method).toBe('PUT');
+      expect(req.request.method).toBe('PATCH');
       expect(req.request.body).toEqual(updateData);
       req.flush(mockBlogPost);
     });

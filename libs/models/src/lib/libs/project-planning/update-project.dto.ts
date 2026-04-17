@@ -6,7 +6,7 @@ import { IsUUID, IsOptional, IsBoolean } from 'class-validator';
 export class UpdateProjectDto extends PartialType(CreateProjectDto) {
   @ApiProperty({ description: 'Project ID' })
   @IsUUID()
-  id: string;
+  id!: string;
 }
 
 export class QueryProjectDto extends PartialType(CreateProjectDto) {

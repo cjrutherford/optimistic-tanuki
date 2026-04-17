@@ -1,4 +1,13 @@
 /**
+ * Represents a reaction on a message.
+ */
+export interface MessageReaction {
+  emoji: string;
+  userId: string;
+  userName?: string;
+}
+
+/**
  * Represents a single chat message.
  */
 export interface ChatMessage {
@@ -30,6 +39,22 @@ export interface ChatMessage {
    * The type of the message.
    */
   type: 'chat' | 'info' | 'warning' | 'system';
+  /**
+   * Array of reactions on the message.
+   */
+  reactions?: MessageReaction[];
+  /**
+   * Whether the message has been edited.
+   */
+  isEdited?: boolean;
+  /**
+   * Whether the message has been deleted.
+   */
+  isDeleted?: boolean;
+  /**
+   * Array of user IDs who have read the message.
+   */
+  readBy?: string[];
 }
 
 /**

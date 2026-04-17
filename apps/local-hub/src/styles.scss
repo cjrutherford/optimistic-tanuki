@@ -1,0 +1,431 @@
+/* Global styles with theme support */
+@import 'leaflet/dist/leaflet.css';
+
+:root {
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  /* Animation defaults */
+  --animation-speed: normal;
+  --animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --animation-duration-fast: 150ms;
+  --animation-duration-normal: 300ms;
+  --animation-duration-slow: 500ms;
+  --animation-stagger-delay: 50ms;
+
+  /* Light theme (default) */
+  --primary: #2d5a4a;
+  --primary-hover: #1e4035;
+  --secondary: #c9a66b;
+  --tertiary: #8b4513;
+  --accent: #d4724a;
+  --background: #faf6f0;
+  --surface: #ffffff;
+  --surface-elevated: #fefdfb;
+  --surface-variant: #f0ebe3;
+  --foreground: #2c2416;
+  --foreground-muted: #6b5d4d;
+  --muted: #ede8df;
+  --border: #d9ceb8;
+  --success: #4a7c59;
+  --success-bg: #e8f5e9;
+  --warning: #c9852d;
+  --warning-bg: #fff8e1;
+  --error: #b5463a;
+  --error-bg: #ffebee;
+  --hover-bg: rgba(45, 90, 74, 0.08);
+
+  /* On colors for contrast */
+  --on-primary: #ffffff;
+  --on-secondary: #2c2416;
+  --on-tertiary: #ffffff;
+  --on-surface: #2c2416;
+  --on-surface-variant: #6b5d4d;
+  --on-background: #2c2416;
+  --on-success: #ffffff;
+  --on-warning: #ffffff;
+  --on-error: #ffffff;
+
+  /* Elevation shadows — warm-tinted for light theme */
+  --shadow-xs: 0 1px 2px rgba(44, 36, 22, 0.05);
+  --shadow-sm: 0 2px 8px rgba(44, 36, 22, 0.06),
+    0 1px 2px rgba(44, 36, 22, 0.04);
+  --shadow-md: 0 4px 16px rgba(44, 36, 22, 0.08),
+    0 2px 4px rgba(44, 36, 22, 0.04);
+  --shadow-lg: 0 8px 32px rgba(44, 36, 22, 0.1),
+    0 4px 8px rgba(44, 36, 22, 0.05);
+  --shadow-xl: 0 16px 48px rgba(44, 36, 22, 0.12),
+    0 8px 16px rgba(44, 36, 22, 0.06);
+
+  /* Card & interactive element elevation */
+  --shadow-card: 0 1px 3px rgba(44, 36, 22, 0.04),
+    0 1px 2px rgba(44, 36, 22, 0.03);
+  --shadow-card-hover: 0 8px 24px rgba(44, 36, 22, 0.1),
+    0 4px 8px rgba(44, 36, 22, 0.05);
+  --shadow-card-active: 0 2px 8px rgba(44, 36, 22, 0.08);
+
+  /* Glow accent for focused/active interactive elements */
+  --ring-primary: 0 0 0 3px rgba(45, 90, 74, 0.12);
+  --ring-accent: 0 0 0 3px rgba(212, 114, 74, 0.12);
+
+  /* Glass / overlay tokens */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: 12px;
+  --overlay-light: rgba(250, 246, 240, 0.85);
+
+  /* Tier semantic colors — theme aware */
+  --tier-basic-bg: var(--surface-variant);
+  --tier-basic-fg: var(--foreground-muted);
+  --tier-pro-bg: #dbeafe;
+  --tier-pro-fg: #1e5a9e;
+  --tier-enterprise-bg: #fde9d0;
+  --tier-enterprise-fg: #9a5e18;
+
+  /* Status semantic colors */
+  --status-active-bg: var(--success-bg);
+  --status-active-fg: var(--success);
+  --status-past-due-bg: var(--warning-bg);
+  --status-past-due-fg: var(--warning);
+  --status-canceled-bg: var(--error-bg);
+  --status-canceled-fg: var(--error);
+}
+
+/* Dark theme */
+[data-theme='dark'],
+.dark-theme {
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  --primary: #4a9a7a;
+  --primary-hover: #5fb896;
+  --secondary: #d4b88a;
+  --tertiary: #c9874d;
+  --accent: #e8956d;
+  --background: #121212;
+  --surface: #1e1e1e;
+  --surface-elevated: #2a2a2a;
+  --surface-variant: #2d2d2d;
+  --foreground: #e8e4dc;
+  --foreground-muted: #a89f8f;
+  --muted: #2d2d2d;
+  --border: #3d3d3d;
+  --success: #6aab82;
+  --success-bg: #1a3d2a;
+  --warning: #e0a850;
+  --warning-bg: #3d2e14;
+  --error: #d46a5e;
+  --error-bg: #3d1f1c;
+  --hover-bg: rgba(74, 154, 122, 0.15);
+
+  /* On colors for contrast */
+  --on-primary: #121212;
+  --on-secondary: #121212;
+  --on-tertiary: #121212;
+  --on-surface: #e8e4dc;
+  --on-surface-variant: #a89f8f;
+  --on-background: #e8e4dc;
+  --on-success: #121212;
+  --on-warning: #121212;
+  --on-error: #121212;
+
+  /* Elevation shadows — cool-tinted for dark theme */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.25);
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.25);
+  --shadow-card-active: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  --ring-primary: 0 0 0 3px rgba(74, 154, 122, 0.25);
+  --ring-accent: 0 0 0 3px rgba(232, 149, 109, 0.25);
+
+  /* Glass / overlay tokens — frosted dark glass */
+  --glass-bg: rgba(30, 30, 30, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 16px;
+  --overlay-light: rgba(18, 18, 18, 0.9);
+
+  /* Tier semantic colors — dark theme aware */
+  --tier-basic-bg: var(--surface-variant);
+  --tier-basic-fg: var(--foreground-muted);
+  --tier-pro-bg: #1a3050;
+  --tier-pro-fg: #6eb5ff;
+  --tier-enterprise-bg: #3a2a1a;
+  --tier-enterprise-fg: #ffb86e;
+
+  /* Status semantic colors */
+  --status-active-bg: var(--success-bg);
+  --status-active-fg: var(--success);
+  --status-past-due-bg: var(--warning-bg);
+  --status-past-due-fg: var(--warning);
+  --status-canceled-bg: var(--error-bg);
+  --status-canceled-fg: var(--error);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(
+    --font-body,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif
+  );
+  background-color: var(--background, #ffffff);
+  color: var(--foreground, #212121);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions for theme changes - list properties explicitly */
+body,
+body * {
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Touch optimizations for mobile */
+button,
+a,
+[role='button'],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Overscroll behavior for modals/drawers */
+.modal-content,
+.drawer-content,
+[role='dialog'],
+.sheet {
+  overscroll-behavior: contain;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--accent, #3f51b5);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--primary, #3f51b5);
+  color: white;
+  padding: 8px 16px;
+  z-index: 10000;
+  transition: top 0.2s;
+  text-decoration: none;
+
+  &:focus {
+    top: 0;
+  }
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface, #f5f5f5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted, #cccccc);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground, #666666);
+}
+
+/* Staggered load animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--animation-duration-normal, normal)
+    var(--animation-easing) forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp var(--animation-duration-normal, normal)
+    var(--animation-easing) forwards;
+  opacity: 0;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft var(--animation-duration-normal, normal)
+    var(--animation-easing) forwards;
+  opacity: 0;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--animation-duration-normal, normal)
+    var(--animation-easing) forwards;
+  opacity: 0;
+}
+
+/* Stagger delays - use with animation classes */
+.stagger-1 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 1);
+}
+.stagger-2 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 2);
+}
+.stagger-3 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 3);
+}
+.stagger-4 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 4);
+}
+.stagger-5 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 5);
+}
+.stagger-6 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 6);
+}
+.stagger-7 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 7);
+}
+.stagger-8 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 8);
+}
+.stagger-9 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 9);
+}
+.stagger-10 {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 10);
+}
+
+/* Card animations for lists */
+.card-list-animate > * {
+  opacity: 0;
+  animation: fadeInUp var(--animation-duration-normal, normal)
+    var(--animation-easing) forwards;
+}
+
+.card-list-animate > *:nth-child(1) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 1);
+}
+.card-list-animate > *:nth-child(2) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 2);
+}
+.card-list-animate > *:nth-child(3) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 3);
+}
+.card-list-animate > *:nth-child(4) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 4);
+}
+.card-list-animate > *:nth-child(5) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 5);
+}
+.card-list-animate > *:nth-child(6) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 6);
+}
+.card-list-animate > *:nth-child(7) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 7);
+}
+.card-list-animate > *:nth-child(8) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 8);
+}
+.card-list-animate > *:nth-child(9) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 9);
+}
+.card-list-animate > *:nth-child(10) {
+  animation-delay: calc(var(--animation-stagger-delay, 50ms) * 10);
+}

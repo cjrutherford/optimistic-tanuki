@@ -14,7 +14,7 @@ import { Type } from 'class-transformer';
 export class CreateAppointmentDto {
   @ApiProperty({ description: 'User ID requesting the appointment' })
   @IsUUID()
-  userId: string;
+  userId!: string;
 
   @ApiPropertyOptional({ description: 'Associated product ID' })
   @IsUUID()
@@ -30,7 +30,7 @@ export class CreateAppointmentDto {
   @IsString()
   @MinLength(1)
   @MaxLength(255)
-  title: string;
+  title!: string;
 
   @ApiPropertyOptional({ description: 'Appointment description' })
   @IsString()
@@ -41,12 +41,12 @@ export class CreateAppointmentDto {
   @ApiProperty({ description: 'Start time of the appointment' })
   @IsDate()
   @Type(() => Date)
-  startTime: Date;
+  startTime!: Date;
 
   @ApiProperty({ description: 'End time of the appointment' })
   @IsDate()
   @Type(() => Date)
-  endTime: Date;
+  endTime!: Date;
 
   @ApiPropertyOptional({
     description: 'Is this a free consultation',
@@ -119,5 +119,5 @@ export class DenyAppointmentDto {
   @IsString()
   @MinLength(1)
   @MaxLength(2000)
-  denialReason: string;
+  denialReason!: string;
 }

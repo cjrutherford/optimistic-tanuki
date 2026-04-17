@@ -8,7 +8,7 @@ on:
     branches:
       - main
       - develop
-      - MVP-polish
+      - mvp-polish
 
 permissions:
   actions: read
@@ -19,34 +19,39 @@ jobs:
   # Quick validation job - runs first
   validate:
     name: Quick Validation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Derive SHAs for nx affected
         uses: nrwl/nx-set-shas@v4
 
       - name: Check formatting
-        run: npx nx format:check --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
+        run: pnpm exec nx format:check --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
 
       - name: Validate nx workspace
-        run: npx nx workspace-lint
+        run: pnpm exec nx show projects
 
   # Main CI job with affected commands
   affected:
     name: Affected Build & Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [validate]
     timeout-minutes: 30
 
@@ -56,21 +61,26 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright (for E2E)
         if: matrix.target == 'e2e'
-        run: npx playwright install --with-deps
+        run: pnpm exec playwright install --with-deps
 
       - name: Derive SHAs for nx affected
         uses: nrwl/nx-set-shas@v4
@@ -78,18 +88,18 @@ jobs:
       - name: Run affected ${{ matrix.target }}
         run: |
           if [ "${{ matrix.target }}" = "test" ]; then
-            npx nx affected -t ${{ matrix.target }} --configuration=ci --parallel=3 --maxParallel=3
+            pnpm exec nx affected -t ${{ matrix.target }} -c ci --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static
           elif [ "${{ matrix.target }}" = "lint" ]; then
-            npx nx affected -t ${{ matrix.target }} --parallel=3 --maxParallel=3 --exclude='*-e2e'
+            pnpm exec nx affected -t ${{ matrix.target }} --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static --exclude='*-e2e'
           else
-            npx nx affected -t ${{ matrix.target }} --parallel=3 --maxParallel=3
+            pnpm exec nx affected -t ${{ matrix.target }} --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static
           fi
         env:
           CI: true
 
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.target }}-results
           path: |
@@ -98,11 +108,53 @@ jobs:
             test-results/
           retention-days: 7
 
+  deployment-contract:
+    name: Deployment Contract
+    runs-on: ubuntu-24.04
+    needs: [validate]
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: tools/admin-env-wizard/go.mod
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Go deployment inventory tests
+        working-directory: tools/admin-env-wizard
+        run: |
+          GOCACHE=/tmp/go-build go test ./internal/catalog/...
+          GOCACHE=/tmp/go-build go test ./internal/generate/...
+
+      - name: Export deployment inventory
+        working-directory: tools/admin-env-wizard
+        run: GOCACHE=/tmp/go-build go run ./cmd/deployment-inventory > /tmp/deployment-inventory.json
+
+      - name: Validate workflow and k8s inventory
+        run: DEPLOYMENT_INVENTORY_FILE=/tmp/deployment-inventory.json node scripts/validate-deployment-inventory.mjs
+
+      - name: Validate compose and k8s parity
+        run: bash scripts/validate-compose-k8s-parity.sh
+
   # Summary job
   ci-summary:
     name: CI Summary
-    runs-on: ubuntu-latest
-    needs: [validate, affected]
+    runs-on: ubuntu-24.04
+    needs: [validate, affected, deployment-contract]
     if: always()
 
     steps:
@@ -123,8 +175,14 @@ jobs:
             echo "❌ Affected Build & Test: Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
+          if [ "${{ needs.deployment-contract.result }}" = "success" ]; then
+            echo "✅ Deployment Contract: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Deployment Contract: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
           # Fail if any job failed
-          if [ "${{ needs.validate.result }}" != "success" ] || [ "${{ needs.affected.result }}" != "success" ]; then
+          if [ "${{ needs.validate.result }}" != "success" ] || [ "${{ needs.affected.result }}" != "success" ] || [ "${{ needs.deployment-contract.result }}" != "success" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "❌ CI Pipeline Failed" >> $GITHUB_STEP_SUMMARY
             exit 1

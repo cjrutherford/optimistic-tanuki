@@ -1,20 +1,15 @@
 # Logger
 
-This library contains a service for logging messages to the console and other output streams. It provides a flexible and configurable way to log messages at different levels of severity.
+`logger` contains shared logging infrastructure for backend services. Its source lives under `libs/logger/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the service in this library, inject it into your NestJS services or controllers:
+- common logging behavior and helpers
+- backend-focused shared utility layer
 
-```typescript
-import { LoggerService } from '@optimistic-tanuki/logger';
+## Nx Commands
 
-@Injectable()
-export class MyService {
-  constructor(private readonly loggerService: LoggerService) {}
-}
+```bash
+npx nx build logger
+npx nx test logger
 ```
-
-## Running unit tests
-
-Run `nx test logger` to execute the unit tests.

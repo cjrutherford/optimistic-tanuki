@@ -1,11 +1,11 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { EventCommands } from '@optimistic-tanuki/constants';
+import { BlogEventCommands as EventCommands } from '@optimistic-tanuki/constants';
 import {
-  CreateEventDto,
-  EventDto,
-  EventQueryDto,
-  UpdateEventDto,
+  CreateBlogEventDto as CreateEventDto,
+  BlogEventDto as EventDto,
+  BlogEventQueryDto as EventQueryDto,
+  UpdateBlogEventDto as UpdateEventDto,
 } from '@optimistic-tanuki/models';
 import { EventService } from '../services';
 

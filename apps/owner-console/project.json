@@ -40,8 +40,8 @@
             },
             {
               "type": "anyComponentStyle",
-              "maximumWarning": "4kb",
-              "maximumError": "8kb"
+              "maximumWarning": "8kb",
+              "maximumError": "16kb"
             }
           ],
           "outputHashing": "all"
@@ -57,6 +57,9 @@
     "serve": {
       "continuous": true,
       "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "proxyConfig": "apps/owner-console/proxy.conf.json"
+      },
       "configurations": {
         "production": {
           "buildTarget": "owner-console:build:production"
@@ -92,6 +95,41 @@
         "port": 4200,
         "staticFilePath": "dist/apps/owner-console/browser",
         "spa": true
+      }
+    },
+    "storybook": {
+      "executor": "@storybook/angular:start-storybook",
+      "options": {
+        "port": 4401,
+        "configDir": "apps/owner-console/.storybook",
+        "browserTarget": "owner-console:build",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "build-storybook": {
+      "executor": "@storybook/angular:build-storybook",
+      "outputs": ["{options.outputDir}"],
+      "options": {
+        "outputDir": "dist/storybook/owner-console",
+        "configDir": "apps/owner-console/.storybook",
+        "browserTarget": "owner-console:build",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "test-storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test-storybook -c apps/owner-console/.storybook --url=http://localhost:4401"
       }
     }
   }

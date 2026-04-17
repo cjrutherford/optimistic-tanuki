@@ -67,6 +67,12 @@ describe('ProfileController', () => {
           },
         },
         {
+          provide: ServiceTokens.SOCIAL_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of({})),
+          },
+        },
+        {
           provide: ServiceTokens.PERMISSIONS_SERVICE,
           useValue: {
             send: jest.fn().mockImplementation(() => of({})),
@@ -138,7 +144,7 @@ describe('ProfileController', () => {
     const id = '1';
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    const getResponse = await controller.getProfile(id, 'test');
+    const getResponse = await controller.getProfileById(id, 'test');
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: ProfileCommands.Get },
       { id }
@@ -151,7 +157,11 @@ describe('ProfileController', () => {
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of([]));
 
     const getAllResponse = await firstValueFrom(
-      controller.getAllProfiles({ userId: 'user1234' } as UserDetails, query)
+      controller.getAllProfiles(
+        { userId: 'user1234' } as UserDetails,
+        query,
+        'test'
+      )
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: ProfileCommands.GetAll },

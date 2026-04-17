@@ -36,11 +36,46 @@ export type {
   UpdateBlogPostDto,
   BlogPostQueryDto,
 } from './blog-post';
+export type {
+  BlogComponentDto,
+  CreateBlogComponentDto,
+  UpdateBlogComponentDto,
+  BlogComponentQueryDto,
+} from './blog-component';
+export type {
+  SocialComponentDto,
+  CreateSocialComponentDto,
+  UpdateSocialComponentDto,
+  SocialComponentQueryDto,
+} from './social-component';
 export type { PostDto, CreatePostDto, UpdatePostDto } from './post';
 export type { CommentDto, CreateCommentDto, UpdateCommentDto } from './comment';
 export type { VoteDto, CreateVoteDto } from './vote';
 export type { FollowDto, FollowEventDto } from './follow';
 export { type CreateAttachmentDto } from './create-attachment.dto';
+export {
+  type CommunityDto,
+  type CreateCommunityDto,
+  type UpdateCommunityDto,
+  type SearchCommunityDto,
+  type CommunityMemberDto,
+  type JoinCommunityDto,
+  type InviteToCommunityDto,
+  type CommunityInviteDto,
+  type CommunityFeedOptions,
+  type CommunityTag,
+  type CommunityElectionDto,
+  type ElectionCandidateDto,
+  type StartElectionDto,
+  type ElectionVoteDto,
+  type CloseElectionDto,
+  type AppointManagerDto,
+  CommunityMembershipStatus,
+  CommunityMemberRole,
+  CommunityJoinPolicy,
+  ElectionStatus,
+  LocalityType,
+} from './community';
 export { API_BASE_URL } from './api-config.tokens';
 export { type PersonaTelosDto } from './telos';
 export { type PostThemeConfig, DEFAULT_POST_THEME } from './post-theme-config';

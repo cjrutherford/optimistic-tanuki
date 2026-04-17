@@ -1,16 +1,28 @@
-<div [ngClass]="layout">
-  @for (option of options; track option) {
-  <div class="radio-container">
-    <label>
+<div
+  class="form-field form-radio-group"
+  [class.layout-vertical]="layout === 'vertical'"
+  [class.layout-horizontal]="layout === 'horizontal'"
+  [class.layout-grid]="layout === 'grid'"
+>
+  @if (label) {
+  <span class="form-label">{{ label }}</span>
+  }
+  <div class="radio-options">
+    @for (option of options; track option) {
+    <label class="form-check form-radio">
       <input
         type="radio"
         [value]="option.value"
         [(ngModel)]="selected"
         (change)="onSelect(option.value)"
+        [disabled]="disabled"
       />
       <span class="radio-mark"></span>
-      {{ option.label }}
+      <span class="form-check-label">{{ option.label }}</span>
     </label>
+    }
   </div>
+  @if (errorMessage) {
+  <span class="error-message">{{ errorMessage }}</span>
   }
 </div>

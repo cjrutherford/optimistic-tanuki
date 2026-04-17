@@ -1,158 +1,330 @@
 @use '../../styles/mixins' as *;
+@use '../../styles/personality-tokens' as *;
+@use '../../styles/personality-effects' as *;
+
+// ============================================
+// Personality-Driven Card Component
+// Uses application personality CSS variables
+// ============================================
 
 .card {
-  /* Base card styles using design tokens with local overrides */
-  @include border-base(
-    var(--local-border-width, var(--border-width, 1px)),
-    var(--local-border-style, var(--border-style, solid)),
-    var(--local-border-color, var(--complement, #c0af4b))
+  position: relative;
+  border: var(--personality-border-width, var(--border-width, 1px))
+    var(--personality-border-style, solid) var(--border);
+  border-radius: var(
+    --personality-card-radius,
+    var(--border-radius-lg, 8px)
   );
-  @include border-radius-standard(
-    var(--local-border-radius, var(--border-radius-lg, 8px))
+  background-color: var(--surface, var(--background));
+  color: var(--foreground);
+  font-family: var(--personality-font-family, var(--font-body, system-ui));
+  overflow: hidden;
+  box-shadow: var(--personality-card-shadow, var(--shadow-md));
+  transition: var(
+    --personality-transition,
+    transform var(--animation-duration-fast) var(--animation-easing),
+      box-shadow var(--animation-duration-fast) var(--animation-easing)
   );
-  background-color: var(--local-background, var(--background, #ffffff));
-  color: var(--local-foreground, var(--foreground, #212121));
-  @include box-shadow-layered(
-    var(--local-accent, var(--accent, #3f51b5)),
-    var(--local-complement, var(--complement, #c0af4b)),
-    var(--local-background, var(--background, #1a1a2e))
-  );
-  box-shadow: var(
-      --local-inset-shadow,
-      var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1))
-    ),
-    0 0 24px 8px var(--local-accent, var(--accent, #3f51b5)),
-    0 0 48px 16px var(--local-complement, var(--complement, #c0af4b)),
-    0 0 96px 32px var(--local-background, var(--background, #1a1a2e));
-  @include transition-base(all, var(--local-transition-duration, 0.15s));
 
-  /* Support for enhanced variants */
-  background-image: var(
-      --local-background-gradient,
-      var(--background-gradient, none)
-    ),
-    var(--local-border-gradient, var(--border-gradient, none));
-  filter: var(--local-glow-filter, var(--glow-filter, none));
-  animation: var(--local-animation, var(--animation, none));
+  &:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
+  &.solid {
+    background: var(--primary);
+    color: var(--primary-foreground, #fff);
+
+    .card-body {
+      background: transparent;
+    }
+  }
+
+  &.outlined {
+    background: transparent;
+    box-shadow: none;
+    border: var(--border-width, 1px) solid var(--primary);
+
+    &:hover {
+      background: color-mix(in srgb, var(--primary) 5%, transparent);
+      box-shadow: none;
+      transform: none;
+    }
+
+    &::before {
+      display: none;
+    }
+  }
+
+  // Striped variant
+  &.striped {
+    &::before {
+      background: repeating-linear-gradient(
+        45deg,
+        var(--primary),
+        var(--primary) 10px,
+        var(--secondary) 10px,
+        var(--secondary) 20px
+      );
+      height: 12px;
+    }
+  }
+
+  // Minimal variant
+  &.minimal {
+    border-width: 1px;
+    box-shadow: none;
+
+    &::before {
+      display: none;
+    }
+
+    &:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+    }
+  }
 }
 
 .card-body {
   margin: 0;
-  padding: var(--local-spacing, var(--spacing-lg, 24px));
+  padding: var(--personality-card-padding, 24px);
   position: relative;
-  background: var(
-    --local-background-filter,
-    var(--background-filter, rgba(255, 255, 255, 0.5))
-  );
-  border-radius: var(--local-border-radius, var(--border-radius-lg, 8px));
+  background: var(--background, #ffffff);
+  border-radius: var(--personality-border-radius, var(--border-radius-sm, 4px));
 
-  &:hover {
-    background: var(
-      --local-hover-background-filter,
-      var(
-        --hover-background-filter,
-        var(
-          --local-background-filter,
-          var(--background-filter, rgba(255, 255, 255, 0.5))
-        )
-      )
-    );
-    transition: background var(--local-transition-duration, 0.15s) ease-in-out;
+  // Card label/tag
+  .card-label {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--primary);
+    color: var(--primary-foreground, #fff);
+    font-size: 0.75rem;
+    font-weight: var(--personality-button-font-weight, 700);
+    text-transform: var(--personality-button-text-transform, uppercase);
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+    border-radius: var(--border-radius-sm, 4px);
+  }
+
+  .card-title {
+    font-family: var(--font-heading, system-ui, sans-serif);
+    font-size: 1.5rem;
+    font-weight: var(--personality-font-weight, 700);
+    text-transform: var(--personality-button-text-transform, uppercase);
+    letter-spacing: 0.05em;
+    margin: 0 0 12px 0;
+    color: var(--foreground, #212121);
+  }
+
+  .card-subtitle {
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary);
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-family: var(--font-body, system-ui, sans-serif);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin: 0 0 16px 0;
   }
 }
 
-.card:hover {
-  box-shadow: var(
-    --local-hover-box-shadow,
-    var(
-      --hover-box-shadow,
-      var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1))
-    )
-  );
-  filter: var(
-    --local-hover-glow-filter,
-    var(--hover-glow-filter, var(--local-glow-filter, var(--glow-filter, none)))
-  );
-  @include transition-multi(
-    box-shadow var(--local-transition-duration, 0.15s) ease-in-out,
-    filter var(--local-transition-duration, 0.15s) ease-in-out
-  );
+.card-header {
+  padding: 16px 24px;
+  border-bottom: 2px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+
+  .card-title {
+    margin-bottom: 0;
+  }
 }
 
-/* Gradient background animation */
-.gradient-background {
-  @include animated-gradient(8s, 200%);
+.card-footer {
+  padding: 16px 24px;
+  border-top: 2px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
-/* Glow effects */
-.card-body.glow-effect::before,
-.card-body.gradient-glow::before {
-  @include glow-layer(60px, -5%, var(--z-index-base, 0));
-  display: block;
-  background: var(--local-border-gradient, var(--border-gradient, none));
+// Interactive hover states
+.card.interactive {
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--secondary);
+    box-shadow: var(--shadow-lg);
+
+    &::before {
+      background: var(--secondary);
+    }
+  }
+
+  &:active {
+    box-shadow: var(--shadow-md);
+    transform: translate(2px, 2px);
+  }
 }
 
-/* Electric border variant */
-.card.electric-border {
-  padding: var(--spacing-xl, 32px);
-  @include border-radius-standard(
-    var(--local-border-radius, var(--border-radius-xl, 12px))
-  );
-  @include border-base(
-    2px,
-    solid,
-    var(--local-complement, var(--complement, #c0af4b))
-  );
+// Glass variant
+.card.glass {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: none;
+  border-color: var(--primary);
+
+  &::before {
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+  }
+}
+
+// Grid background variant
+.card.grid-bg {
+  background-image: linear-gradient(
+      color-mix(in srgb, var(--primary) 3%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--primary) 3%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 20px 20px;
+}
+
+// ============================================
+// Personality-Specific Card Enhancements
+// ============================================
+
+// Architect personality - brutalist style
+body.personality-architect .card {
+  border-radius: 0;
+  border: 2px solid var(--foreground);
+
+  &:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 6px 6px 0 var(--primary);
+  }
+}
+
+// Playful personality - bouncy hover
+body.personality-playful .card {
+  &:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Minimal personality - subtle lift
+body.personality-minimal .card {
+  border-radius: 2px;
+  box-shadow: none;
+  border: 1px solid var(--border);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+// Electric personality - glow effect
+body.personality-electric .card {
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 30px var(--primary-alpha-30, rgba(63, 81, 181, 0.3));
+  }
+}
+
+// Soft Touch personality - gentle rounded
+body.personality-soft-touch .card {
+  border-radius: 16px;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Control Center personality - technical
+body.personality-control-center .card {
+  border-radius: 4px;
+  border: 1px solid var(--border);
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 0 0 1px var(--primary);
+  }
+}
+
+// Gradient header variant
+.card-header-gradient {
   background: var(
-    --local-background-gradient,
-    var(--background-gradient, none)
+    --gradient-card-header,
+    linear-gradient(180deg, var(--primary) 0%, transparent 100%)
   );
-  @include transition-multi(
-    box-shadow var(--local-transition-duration, 0.15s) ease-in-out,
-    filter var(--local-transition-duration, 0.15s) ease-in-out
-  );
-  @include electric-border-effect(
-    var(--local-complement, var(--complement, #c0af4b))
-  );
+  border-bottom: none;
+  color: var(--primary-foreground, #fff);
+
+  .card-title {
+    color: var(--primary-foreground, #fff);
+  }
 }
 
-/* Gradient glow card variant */
-.card.gradient-glow-card {
+// Accent corner variant
+.card.accent-corner {
   position: relative;
-  @include border-radius-standard(
-    var(--local-border-radius, var(--border-radius-lg, 8px))
-  );
-  @include border-base(4px, solid, var(--local-accent, var(--accent, #3f51b5)));
-  background: var(
-    --local-background-gradient,
-    var(--accent-gradient-light, linear-gradient(45deg, #3f51b5, #c0af4b))
-  );
-  @include transition-multi(
-    box-shadow var(--local-transition-duration, 0.15s) ease-in-out,
-    filter var(--local-transition-duration, 0.15s) ease-in-out
-  );
-  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-left: 30px solid var(--primary);
+    border-top: 30px solid transparent;
+  }
 }
 
-.card.gradient-glow-card .glow-layer {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(
-    --local-background-gradient,
-    var(--accent-gradient-light, linear-gradient(45deg, #3f51b5, #c0af4b))
-  );
-  filter: blur(0.75em);
-  pointer-events: none;
-  z-index: var(--z-index-base, 0);
+// Animated gradient border
+.card.animated-border {
+  position: relative;
+  background: var(--surface);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2;
+    background: var(--gradient-animated, var(--primary));
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+    border-radius: inherit;
+    z-index: -1;
+  }
 }
 
-/* Reset z-index for all glow elements */
-.card.electric-border .glow-layer-1,
-.card.electric-border .glow-layer-2,
-.card.electric-border .overlay-1,
-.card.electric-border .overlay-2,
-.card.electric-border .background-glow,
-.card.gradient-glow-card .glow-layer {
-  pointer-events: none;
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+// Glass card variant
+.card.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }

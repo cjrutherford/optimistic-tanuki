@@ -1,6 +1,11 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Message } from './message.entity';
 
+export enum ConversationType {
+  DIRECT = 'direct',
+  COMMUNITY = 'community',
+}
+
 @Entity()
 export default class Conversation {
   @PrimaryGeneratedColumn('uuid')
@@ -8,6 +13,22 @@ export default class Conversation {
 
   @Column()
   title: string;
+
+  @Column({
+    type: 'enum',
+    enum: ConversationType,
+    default: ConversationType.DIRECT,
+  })
+  type: ConversationType;
+
+  @Column({ nullable: true })
+  communityId: string;
+
+  @Column({ nullable: true })
+  ownerId: string;
+
+  @Column({ default: false })
+  isDeleted: boolean;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

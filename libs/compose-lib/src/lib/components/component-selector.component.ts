@@ -1,19 +1,22 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import {
+  IconComponent,
+  ButtonComponent,
+  CardComponent,
+} from '@optimistic-tanuki/common-ui';
 import { InjectableComponent } from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'lib-component-selector',
   standalone: true,
-  imports: [MatIconModule, ButtonComponent, CardComponent],
+  imports: [IconComponent, ButtonComponent, CardComponent],
   template: `
     @if (isVisible) {
     <otui-card class="component-selector">
       <div class="selector-header">
         <h3>Insert Component</h3>
         <button (click)="onClose()" class="close-btn">
-          <mat-icon>close</mat-icon>
+          <otui-icon name="close"></otui-icon>
         </button>
       </div>
       @if (categories.length > 1) {
@@ -39,9 +42,9 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
         >
           <div class="component-icon">
             @if (component.icon) {
-            <mat-icon>{{ component.icon }}</mat-icon>
+            <otui-icon [name]="component.icon"></otui-icon>
             } @else {
-            <mat-icon>extension</mat-icon>
+            <otui-icon name="extension"></otui-icon>
             }
           </div>
           <div class="component-info">

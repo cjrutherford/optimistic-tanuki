@@ -1,6 +1,6 @@
 import { Meta, StoryObj, moduleMetadata } from '@storybook/angular';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 import { Component, Input } from '@angular/core';
 
 import { ComponentEditorWrapperComponent } from './component-editor-wrapper.component';
@@ -39,6 +39,24 @@ const mockComponentDef: InjectableComponent = {
     title: 'Sample Title',
     content: 'This is sample content for the component.',
   },
+  properties: [
+    {
+      key: 'title',
+      label: 'Title',
+      type: 'string',
+      description: 'The title of the component',
+      defaultValue: 'Sample Title',
+      isOutput: false,
+    },
+    {
+      key: 'content',
+      label: 'Content',
+      type: 'string',
+      description: 'The main content text',
+      defaultValue: 'This is sample content for the component.',
+      isOutput: false,
+    },
+  ],
 };
 
 const mockComponentInstance: InjectedComponentInstance = {
@@ -66,7 +84,7 @@ const meta: Meta<ComponentEditorWrapperComponent> = {
   component: ComponentEditorWrapperComponent,
   decorators: [
     moduleMetadata({
-      imports: [FormsModule, MatIconModule, SampleInjectedComponent],
+      imports: [FormsModule, IconComponent, SampleInjectedComponent],
     }),
   ],
   parameters: {

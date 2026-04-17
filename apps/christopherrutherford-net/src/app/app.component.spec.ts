@@ -11,6 +11,7 @@ import { LandingComponent } from '../landing/landing.component';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { PLATFORM_ID } from '@angular/core';
 import { ContactService } from './contact.service';
 import { of } from 'rxjs';
 
@@ -36,6 +37,7 @@ describe('AppComponent', () => {
         HttpClientTestingModule,
       ],
       providers: [
+        { provide: PLATFORM_ID, useValue: 'browser' },
         {
           provide: ContactService,
           useValue: {
@@ -57,5 +59,14 @@ describe('AppComponent', () => {
 
   it(`should have as title 'christopherrutherford-net'`, () => {
     expect(app.title).toEqual('christopherrutherford.net');
+  });
+
+  it('renders the topographic drift motion background shell', () => {
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.motion-background')).toBeTruthy();
+    expect(compiled.querySelector('otui-topographic-drift')).toBeTruthy();
+    expect(compiled.querySelector('.app-content')).toBeTruthy();
   });
 });

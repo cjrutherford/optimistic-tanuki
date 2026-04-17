@@ -1,0 +1,76 @@
+<otui-modal
+  [visible]="visible"
+  [heading]="config.appName"
+  [size]="'lg'"
+  [variant]="'glass'"
+  [ariaLabel]="config.appName + ' about dialog'"
+  [closeOnBackdrop]="true"
+  [closeOnEscape]="true"
+  data-testid="hai-about-modal"
+  (close)="handleClose()"
+>
+  <div class="about-shell">
+    <header class="about-hero">
+      <div class="hai-mark" aria-hidden="true">
+        <span>HAI</span>
+      </div>
+      <div class="about-intro">
+        <p class="eyebrow">{{ currentExpansion }}</p>
+        <h3>{{ config.appName }}</h3>
+        <p class="tagline">{{ config.appTagline }}</p>
+        <p class="savannah-line">
+          Made with Love in Savannah - {{ currentExpansion }}
+        </p>
+      </div>
+    </header>
+
+    <otui-tabs
+      [tabs]="tabs"
+      [activeTab]="activeTab"
+      (tabChange)="setActiveTab($event)"
+    ></otui-tabs>
+
+    <section class="about-panel">
+      @if (activeTab === 'app') {
+      <div class="copy-stack">
+        <p class="panel-label">About This App</p>
+        <p>{{ config.appDescription }}</p>
+        @if (config.appUrl) {
+        <a class="primary-link" [href]="config.appUrl">Open {{ config.appName }}</a>
+        }
+      </div>
+      }
+
+      @if (activeTab === 'hai') {
+      <div class="copy-stack">
+        <p class="panel-label">About HAI</p>
+        <p>
+          HAI is a software development house focused on cloud platforms,
+          personal cloud software, and the practical systems people need to own
+          more of their digital lives.
+        </p>
+        <p>
+          We build for teams, homes, and homelabs that want calm infrastructure,
+          thoughtful interfaces, and tools that support digital homesteading
+          instead of lock-in.
+        </p>
+      </div>
+      }
+
+      @if (activeTab === 'directory') {
+      <div class="directory-grid">
+        @for (app of appLinks; track app.appId) {
+        <a
+          class="directory-card"
+          [href]="app.href"
+          data-testid="hai-app-link"
+        >
+          <span class="directory-name">{{ app.name }}</span>
+          <span class="directory-tagline">{{ app.tagline }}</span>
+        </a>
+        }
+      </div>
+      }
+    </section>
+  </div>
+</otui-modal>

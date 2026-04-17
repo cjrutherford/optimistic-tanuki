@@ -1,14 +1,27 @@
 # Digital Homestead
 
-Welcome to **Digital Homestead**!  
-This is a small blog dedicated to exploring the world of digital homesteading—building, maintaining, and thriving in your own online space. Here you'll find articles, tips, and resources on self-hosting, digital privacy, open-source tools, and sustainable tech practices.
+`digital-homestead` is a frontend application in the monorepo with its main source under `apps/digital-homestead/src/app` and supporting UI components under `src/app/components`.
 
-This service is responsible for managing the digital homestead. It provides a centralized location for storing and retrieving data related to the digital homestead, such as personal information, contacts, and notes.
+## Local Development
 
-## 🚀 Getting Started
+Run it through the repo stack:
 
-This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+```bash
+npm run docker:dev
+```
 
-## 📝 API Reference
+Primary local URL:
 
-The Digital Homestead service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/digital-homestead`.
+- `http://localhost:8082`
+
+For direct Nx work:
+
+```bash
+npx nx serve digital-homestead
+npx nx build digital-homestead
+```
+
+## Repo Role
+
+- one of the deployed client applications in the repo
+- included in the Docker and k8s image promotion flow

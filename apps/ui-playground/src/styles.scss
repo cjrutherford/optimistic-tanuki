@@ -1,0 +1,88 @@
+:root {
+  --background: #f4f7fb;
+  --surface: #ffffff;
+  --foreground: #111827;
+  --muted: #5b6b84;
+  --border: rgba(86, 108, 140, 0.2);
+  --primary: #3f51b5;
+  --secondary: #0ea5a4;
+  --personality-card-radius: 22px;
+  --personality-border-width: 1px;
+  --personality-border-style: solid;
+  --personality-card-shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
+  --personality-font-family: 'IBM Plex Sans', 'Avenir Next', 'Segoe UI',
+    sans-serif;
+  --font-heading: 'IBM Plex Sans', 'Avenir Next Condensed', sans-serif;
+  --font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(
+      circle at top,
+      color-mix(in srgb, var(--primary) 16%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background) 96%, white),
+      color-mix(in srgb, var(--surface) 98%, var(--background)) 22%,
+      var(--background)
+    );
+  background-image:
+    radial-gradient(
+      circle at top,
+      color-mix(in srgb, var(--primary) 16%, transparent),
+      transparent 34%
+    ),
+    var(--page-background-pattern, none),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background) 96%, white),
+      color-mix(in srgb, var(--surface) 98%, var(--background)) 22%,
+      var(--background)
+    );
+  color: var(--foreground);
+  font-family: var(--personality-font-family);
+}
+
+body {
+  min-height: 100vh;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', 'Monaco', 'Consolas',
+    monospace;
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+}

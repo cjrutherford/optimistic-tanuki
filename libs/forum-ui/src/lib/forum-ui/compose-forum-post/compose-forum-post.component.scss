@@ -1,34 +1,41 @@
+:host {
+  display: block;
+}
+
 .forum-compose-card {
   width: 100%;
-  border: 2px solid var(--accent-color, #007acc);
-  border-radius: 8px;
+  border: 2px solid var(--accent);
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .forum-compose-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
   height: 100%;
 
   h3 {
-    margin: 0 0 1rem 0;
-    color: var(--foreground-color, #333);
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
-    padding-bottom: 0.5rem;
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--foreground);
+    font-family: var(--font-heading, sans-serif);
+    border-bottom: var(--border-width, 1px) solid var(--border);
+    padding-bottom: var(--spacing-sm);
   }
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
 
   label {
     font-weight: 600;
-    color: var(--foreground-color, #333);
-    font-size: 0.875rem;
+    color: var(--foreground);
+    font-size: var(--font-size-sm);
+    font-family: var(--font-body, sans-serif);
   }
 
   &.editor-group {
@@ -38,49 +45,56 @@
 }
 
 .new-item-input {
-  margin-top: 0.5rem;
+  margin-top: var(--spacing-sm);
 }
 
 .tag-input-container {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   align-items: flex-end;
 }
 
 .tags-display {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
 }
 
 .tag-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background-color: var(--accent-color, #007acc);
-  color: white;
-  border-radius: 16px;
-  font-size: 0.875rem;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--accent);
+  color: var(--primary-foreground);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-body, sans-serif);
 }
 
 .tag-remove {
   background: none;
   border: none;
-  color: white;
+  color: var(--primary-foreground);
   cursor: pointer;
   font-weight: bold;
   padding: 0;
   width: 16px;
   height: 16px;
-  border-radius: 50%;
+  border-radius: var(--border-radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color var(--animation-duration-fast, 150ms)
+    var(--animation-easing, ease);
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: color-mix(
+      in srgb,
+      var(--primary-foreground) 20%,
+      transparent
+    );
   }
 }
 
@@ -89,74 +103,118 @@
   flex-direction: column;
   flex: 1;
   min-height: 200px;
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 4px;
+  border: var(--border-width, 1px) solid var(--border);
+  border-radius: var(--border-radius-md);
   overflow: hidden;
+  position: relative;
+  transition: border-color var(--animation-duration-fast, 150ms)
+    var(--animation-easing, ease);
+
+  &.dragover {
+    border-color: var(--accent);
+    border-width: 2px;
+    background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+
+    &::after {
+      content: 'Drop images here';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: var(--spacing-md) var(--spacing-xl);
+      background: var(--accent);
+      color: var(--primary-foreground);
+      border-radius: var(--border-radius-lg);
+      font-weight: bold;
+      font-family: var(--font-heading, sans-serif);
+      pointer-events: none;
+      z-index: var(--z-index-dropdown, 10);
+      box-shadow: var(--shadow-lg);
+    }
+  }
 }
 
-:deep(.tiptap-editor-styles) {
+::ng-deep .tiptap-editor-styles {
   flex: 1;
   min-height: 200px;
-  
+
   .prosemirror-editor {
     min-height: 200px;
     max-height: 400px;
     overflow-y: auto;
-    padding: 1rem;
+    padding: var(--spacing-md);
     border: none;
     outline: none;
-    background: var(--background-color, white);
-    color: var(--foreground-color, #333);
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body, sans-serif);
+    font-size: var(--font-size-base);
+    line-height: 1.6;
 
     &:focus {
       outline: none;
-      box-shadow: inset 0 0 0 2px var(--accent-color, #007acc);
+      box-shadow: inset 0 0 0 2px var(--accent);
     }
 
     p {
-      margin: 0 0 0.5rem 0;
-      
+      margin: 0 0 var(--spacing-sm) 0;
+
       &:last-child {
         margin-bottom: 0;
       }
     }
 
-    h1, h2, h3, h4, h5, h6 {
-      margin: 1rem 0 0.5rem 0;
-      
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+      font-family: var(--font-heading, sans-serif);
+
       &:first-child {
         margin-top: 0;
       }
     }
 
-    ul, ol {
-      margin: 0.5rem 0;
-      padding-left: 1.5rem;
+    ul,
+    ol {
+      margin: var(--spacing-sm) 0;
+      padding-left: var(--spacing-lg);
     }
 
     blockquote {
-      margin: 1rem 0;
-      padding-left: 1rem;
-      border-left: 3px solid var(--accent-color, #007acc);
+      margin: var(--spacing-md) 0;
+      padding-left: var(--spacing-md);
+      border-left: 3px solid var(--accent);
       font-style: italic;
+      color: var(--muted-foreground);
     }
 
     code {
-      background-color: var(--accent-shade, rgba(0, 122, 204, 0.1));
-      padding: 0.125rem 0.25rem;
-      border-radius: 3px;
-      font-family: 'Monaco', 'Consolas', monospace;
+      background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+      padding: 2px var(--spacing-xs);
+      border-radius: var(--border-radius-sm);
+      font-family: var(--font-mono, monospace);
+      font-size: 0.9em;
     }
 
     pre {
-      background-color: var(--accent-shade, rgba(0, 122, 204, 0.1));
-      padding: 1rem;
-      border-radius: 4px;
+      background-color: color-mix(
+        in srgb,
+        var(--foreground) 5%,
+        var(--background)
+      );
+      padding: var(--spacing-md);
+      border-radius: var(--border-radius-md);
       overflow-x: auto;
-      
+      border: var(--border-width, 1px) solid var(--border);
+
       code {
         background: none;
         padding: 0;
+        border-radius: 0;
       }
     }
   }
@@ -165,8 +223,8 @@
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color, #e0e0e0);
+  padding-top: var(--spacing-md);
+  border-top: var(--border-width, 1px) solid var(--border);
 }
 
 // Responsive adjustments
@@ -175,12 +233,296 @@
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .form-actions {
     justify-content: stretch;
-    
+
     otui-button {
       width: 100%;
+    }
+  }
+}
+
+// ── Personality Overrides ──
+
+// Professional
+:host-context([data-personality='classic']),
+:host-context([data-personality='professional']) {
+  .forum-compose-card {
+    border-radius: var(--border-radius-md);
+  }
+  .tag-chip {
+    border-radius: var(--border-radius-sm);
+  }
+}
+
+:host-context([data-personality='minimal']) {
+  .forum-compose-card {
+    border-width: 1px;
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-none);
+  }
+  .form-actions {
+    border-top: none;
+  }
+  .tag-chip {
+    background-color: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: var(--border-radius-sm);
+  }
+  .tag-remove {
+    color: var(--accent);
+  }
+}
+
+:host-context([data-personality='elegant']) {
+  .forum-compose-card {
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .forum-compose-form h3 {
+    font-style: italic;
+    border-bottom-color: var(--accent);
+  }
+  .tag-chip {
+    background-color: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+  .tag-remove {
+    color: var(--accent);
+  }
+}
+
+// Creative
+:host-context([data-personality='bold']) {
+  .forum-compose-card {
+    border-width: 3px;
+    border-radius: var(--border-radius-sm);
+  }
+  .forum-compose-form h3 {
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 800;
+    border-bottom-width: 3px;
+    border-bottom-color: var(--accent);
+  }
+  .form-actions {
+    border-top-width: 3px;
+    border-top-color: var(--accent);
+  }
+  .tag-chip {
+    font-weight: 700;
+    border-radius: var(--border-radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+}
+
+:host-context([data-personality='playful']) {
+  .forum-compose-card {
+    border-radius: var(--border-radius-xl);
+    background: var(
+      --gradient-surface,
+      var(--surface-gradient, var(--card, var(--background)))
+    );
+    border-color: var(--accent);
+  }
+  .tag-chip {
+    background: var(--gradient-primary, var(--primary-gradient, var(--accent)));
+    border-radius: var(--border-radius-full);
+    font-weight: 600;
+  }
+  .editor-container {
+    border-radius: var(--border-radius-lg);
+  }
+  .editor-container.dragover::after {
+    border-radius: var(--border-radius-xl);
+    background: var(--gradient-primary, var(--primary-gradient, var(--accent)));
+  }
+}
+
+:host-context([data-personality='electric']) {
+  .forum-compose-card {
+    box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  .editor-container:focus-within {
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .tag-chip {
+    box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+}
+
+// Casual
+:host-context([data-personality='soft']),
+:host-context([data-personality='soft-touch']) {
+  .forum-compose-card {
+    border: none;
+    background-color: color-mix(in srgb, var(--accent) 6%, var(--background));
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-none);
+  }
+  .forum-compose-form h3 {
+    border-bottom: none;
+  }
+  .form-actions {
+    border-top: none;
+  }
+  .tag-chip {
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    border-radius: var(--border-radius-full);
+  }
+  .tag-remove {
+    color: var(--accent);
+  }
+  .editor-container {
+    border-color: color-mix(in srgb, var(--border) 40%, transparent);
+    border-radius: var(--border-radius-lg);
+  }
+}
+
+// Technical
+:host-context([data-personality='architect']) {
+  .forum-compose-card {
+    border-radius: var(--border-radius-none);
+    box-shadow: var(--shadow-lg);
+    border-top: 3px solid var(--accent);
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+}
+
+:host-context([data-personality='architect']),
+:host-context([data-personality='control-center']),
+:host-context([data-personality='foundation']) {
+  .forum-compose-card {
+    border-radius: var(--border-radius-none);
+  }
+  .forum-compose-form h3 {
+    font-family: var(--font-mono, monospace);
+    letter-spacing: 0.03em;
+  }
+  .form-group label {
+    font-family: var(--font-mono, monospace);
+    text-transform: uppercase;
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.05em;
+  }
+  .tag-chip {
+    border-radius: var(--border-radius-none);
+    font-family: var(--font-mono, monospace);
+    text-transform: uppercase;
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.04em;
+  }
+  .editor-container {
+    border-radius: var(--border-radius-none);
+  }
+}
+
+:host-context([data-personality='control-center']) {
+  .forum-compose-form {
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+}
+
+// ============================================
+// Personality-Specific Compose Forum Post (body class)
+// ============================================
+
+body.personality-architect {
+  :host {
+    .forum-compose-card {
+      border-width: 3px;
+      border-radius: 0;
+      &:hover {
+        box-shadow: 4px 4px 0 var(--primary);
+      }
+    }
+    .form-group label {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .tag-chip {
+      font-family: var(--font-mono);
+      border-radius: 0;
+      text-transform: uppercase;
+    }
+  }
+}
+
+body.personality-playful {
+  :host {
+    .forum-compose-card {
+      border-radius: 24px;
+      &:hover {
+        transform: translateY(-4px) scale(1.01);
+      }
+    }
+    .tag-chip {
+      border-radius: 16px;
+    }
+  }
+}
+
+body.personality-minimal {
+  :host {
+    .forum-compose-card {
+      border-width: 1px;
+      border-radius: 4px;
+      box-shadow: none;
+    }
+  }
+}
+
+body.personality-electric {
+  :host {
+    .forum-compose-card {
+      &:hover {
+        box-shadow: 0 0 20px var(--primary);
+      }
+    }
+    .tag-chip {
+      box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 30%, transparent);
+    }
+  }
+}
+
+body.personality-soft-touch {
+  :host {
+    .forum-compose-card {
+      border-radius: 28px;
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+      }
+    }
+    .tag-chip {
+      border-radius: 20px;
+    }
+  }
+}
+
+body.personality-control-center {
+  :host {
+    .forum-compose-card {
+      border-radius: 2px;
+    }
+    .forum-compose-form {
+      gap: var(--spacing-sm);
+      padding: var(--spacing-sm);
+    }
+    .tag-chip {
+      font-family: var(--font-mono);
+      border-radius: 0;
+    }
+    &:hover {
+      box-shadow: inset 0 0 0 1px var(--primary);
     }
   }
 }

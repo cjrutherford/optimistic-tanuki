@@ -1,12 +1,13 @@
 .main-body {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: var(--spacing-sm);
   margin: 0;
   padding: 0;
   width: 100%;
   min-height: 100vh;
-  padding-bottom: 5rem; // Adjust this to match the footer height
+  padding-bottom: var(--spacing-xl);
+  position: relative;
 }
 
 .main-footer {
@@ -15,13 +16,76 @@
   bottom: 0;
   width: 100%;
   background: inherit;
-  max-height: 10rem; // Set a fixed height for the footer
+  max-height: 8rem;
   margin-top: 0;
   z-index: 100;
 }
 
 hr {
   border: none;
-  border-top: 4px solid #ccc;
-  margin: 0 1rem;
+  border-top: 2px solid var(--border);
+  margin: 0 var(--spacing-sm);
+}
+
+.section {
+  padding: var(--spacing-lg) 0;
+  position: relative;
+}
+
+.section:nth-child(even) {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: var(--spacing-md);
+  position: relative;
+  padding-bottom: var(--spacing-sm);
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 2px;
+  background: var(--gradient);
+  border-radius: 1px;
+}
+
+@media (max-width: 768px) {
+  .main-body {
+    gap: var(--spacing-xs);
+    padding-bottom: var(--spacing-lg);
+  }
+
+  .section {
+    padding: var(--spacing-md) 0;
+  }
+
+  .section-title {
+    margin-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-xs);
+  }
+
+  hr {
+    margin: 0 var(--spacing-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .main-body {
+    padding-bottom: var(--spacing-md);
+  }
+
+  .section {
+    padding: var(--spacing-sm) 0;
+  }
+
+  .main-footer {
+    max-height: 6rem;
+  }
 }

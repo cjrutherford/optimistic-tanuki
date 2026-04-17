@@ -11,7 +11,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppScopeDto } from '@optimistic-tanuki/ui-models';
-import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
+import { ColDef } from 'ag-grid-community';
+import { AgGridUiComponent } from '@optimistic-tanuki/ag-grid-ui/ag-grid-ui.component';
 
 @Component({
   selector: 'app-ag-app-scopes-table',
@@ -69,8 +70,8 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 export class AgAppScopesTableComponent implements OnInit, OnChanges {
   @Input() appScopes: AppScopeDto[] = [];
   @Input() permissionCounts: Map<string, number> = new Map();
-  @Input() loading: boolean = false;
-  @Input() height: string = '600px';
+  @Input() loading = false;
+  @Input() height = '600px';
   @Output() create = new EventEmitter<void>();
   @Output() edit = new EventEmitter<AppScopeDto>();
   @Output() delete = new EventEmitter<AppScopeDto>();

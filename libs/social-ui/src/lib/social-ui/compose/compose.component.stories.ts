@@ -1,7 +1,6 @@
 import { moduleMetadata, type Meta, type StoryObj } from '@storybook/angular';
 import { ComposeComponent } from './compose.component';
-import { within } from '@storybook/test';
-import { expect } from '@storybook/jest';
+import { expect, within } from '@storybook/test';
 
 const meta: Meta<ComposeComponent> = {
   component: ComposeComponent,
@@ -18,6 +17,6 @@ export const Heading: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/What's on your mind\?/gi)).toBeTruthy();
+    await expect(canvas.getByText(/What's on your mind\?/gi)).toBeTruthy();
   },
 };

@@ -6,6 +6,20 @@ import { join } from 'path';
 const execAsync = promisify(exec);
 
 async function globalSetup(config: FullConfig) {
+  if (process.env['CI']) {
+    console.log(
+      '\n[Playwright Global Setup] Skipping docker-compose because CI environment detected'
+    );
+    return;
+  }
+
+  if (process.env['SKIP_SETUP'] === 'true') {
+    console.log(
+      '\n[Playwright Global Setup] SKIP_SETUP=true detected, skipping docker-compose'
+    );
+    return;
+  }
+
   const composeFile = join(
     __dirname,
     '../../e2e/docker-compose.store-client-e2e.yaml'
@@ -26,7 +40,7 @@ async function globalSetup(config: FullConfig) {
       );
       console.log('Permissions seeded.');
     } catch (e) {
-      console.warn('Failed to seed permissions:', e.message);
+      console.warn('Failed to seed permissions:', (e as Error).message);
     }
 
     try {
@@ -35,7 +49,7 @@ async function globalSetup(config: FullConfig) {
       );
       console.log('Store seeded.');
     } catch (e) {
-      console.warn('Failed to seed store:', e.message);
+      console.warn('Failed to seed store:', (e as Error).message);
     }
 
     console.log('Waiting for store-client to be ready on port 4200...');

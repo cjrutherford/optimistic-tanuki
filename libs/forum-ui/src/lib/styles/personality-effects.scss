@@ -1,0 +1,254 @@
+@use 'sass:color';
+
+// ============================================
+// Personality Visual Effects for Forum UI
+// ============================================
+
+@mixin pattern-grid($color: var(--primary), $size: 20px, $opacity: 0.03) {
+  background-image: linear-gradient($color $opacity, transparent 1px),
+    linear-gradient(90deg, $color $opacity, transparent 1px);
+  background-size: $size $size;
+}
+
+@mixin pattern-dots($color: var(--primary), $size: 4px, $opacity: 0.05) {
+  background-image: radial-gradient($color $size, transparent $size);
+  background-size: $size * 2 $size * 2;
+}
+
+@mixin glow-primary($blur: 20px, $spread: 4px) {
+  box-shadow: 0 0 $blur $spread
+    var(--glow-color, rgba(var(--primary-rgb, 63, 81, 181), 0.3));
+}
+
+@mixin glow-inner($blur: 10px, $color: var(--primary)) {
+  box-shadow: inset 0 0 $blur $color;
+}
+
+// ============================================
+// Hover Effects per Personality
+// ============================================
+
+@mixin hover-architect {
+  &:hover {
+    box-shadow: 4px 4px 0 var(--primary);
+    transform: translate(-2px, -2px);
+  }
+  &:active {
+    box-shadow: 2px 2px 0 var(--primary);
+    transform: translate(0, 0);
+  }
+}
+
+@mixin hover-playful {
+  &:hover {
+    transform: translateY(-4px) scale(1.02);
+  }
+  &:active {
+    transform: translateY(0) scale(0.98);
+  }
+}
+
+@mixin hover-minimal {
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+@mixin hover-electric {
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px var(--primary);
+  }
+}
+
+@mixin hover-soft-touch {
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@mixin hover-control-center {
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  &:active {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+}
+
+// ============================================
+// Focus Ring per Personality
+// ============================================
+
+@mixin focus-ring-classic {
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+@mixin focus-ring-minimal {
+  &:focus-visible {
+    outline: 1px solid var(--primary);
+    outline-offset: 4px;
+  }
+}
+
+@mixin focus-ring-bold {
+  &:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--primary-alpha-20);
+  }
+}
+
+@mixin focus-ring-architect {
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 0;
+    box-shadow: 4px 4px 0 var(--primary);
+  }
+}
+
+// ============================================
+// Forum-specific Components
+// ============================================
+
+@mixin forum-card {
+  @include forum-card;
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+}
+
+@mixin thread-item {
+  padding: var(--spacing-md, 16px);
+  border-left: 3px solid var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 5%, transparent),
+    transparent
+  );
+  transition: all var(--animation-duration-fast) var(--animation-easing);
+}
+
+@mixin topic-header {
+  font-family: var(--font-heading, system-ui);
+  font-weight: 600;
+  color: var(--foreground);
+  transition: color var(--animation-duration-fast) var(--animation-easing);
+
+  &:hover {
+    color: var(--accent);
+  }
+}
+
+@mixin forum-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-sm, 4px);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+@mixin pinned-badge {
+  background: color-mix(in srgb, var(--warning) 20%, transparent);
+  color: var(--warning);
+}
+
+@mixin locked-badge {
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  color: var(--danger);
+}
+
+// ============================================
+// Animation Keyframes
+// ============================================
+
+@keyframes forum-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes forum-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes forum-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+// ============================================
+// CSS Classes
+// ============================================
+
+.forum-card {
+  @include forum-card;
+}
+
+.forum-thread {
+  @include thread-item;
+}
+
+.forum-topic-header {
+  @include topic-header;
+}
+
+.forum-badge {
+  @include forum-badge;
+}
+
+.animate-forum-slide-in {
+  animation: forum-slide-in 0.3s ease-out;
+}
+
+.animate-forum-pulse {
+  animation: forum-pulse 2s ease-in-out infinite;
+}
+
+.animate-forum-shimmer {
+  animation: forum-shimmer 1.5s infinite linear;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--primary) 10%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+}
+
+// Background patterns
+.bg-pattern-grid {
+  @include pattern-grid;
+}
+
+.bg-pattern-dots {
+  @include pattern-dots;
+}

@@ -1,16 +1,19 @@
 // Services
 export * from './lib/services/component-injection.service';
+export * from './lib/services/image-upload.service';
 
 // Interfaces
 export * from './lib/interfaces/component-injection.interface';
 
 // Extensions
 export * from './lib/extensions/angular-component-node.extension';
+export * from './lib/extensions/component-injection.extension';
 
 // Components
 export * from './lib/components/component-selector.component';
 export * from './lib/components/property-editor.component';
 export * from './lib/components/component-wrapper.component';
+export * from './lib/components/component-editor-wrapper.component';
 
 // Example Components
 export * from './lib/components/example-components/callout-box.component';

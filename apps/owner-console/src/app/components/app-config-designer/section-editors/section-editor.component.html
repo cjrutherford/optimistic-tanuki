@@ -3,7 +3,7 @@
   <div class="editor-header">
     <h3>Edit {{ editedSection.type | titlecase }} Section</h3>
     <button (click)="onClose()" class="close-btn">
-      <mat-icon>close</mat-icon>
+      <otui-icon name="close"></otui-icon>
     </button>
   </div>
 
@@ -77,7 +77,7 @@
       <div class="array-field-header">
         <label>Features</label>
         <otui-button variant="secondary" (action)="addFeature()">
-          <mat-icon>add</mat-icon> Add Feature
+          <otui-icon name="add"></otui-icon> Add Feature
         </otui-button>
       </div>
 
@@ -86,7 +86,7 @@
         <div class="array-item-header">
           <span>Feature {{ i + 1 }}</span>
           <button class="icon-btn danger" (click)="removeFeature(i)">
-            <mat-icon>delete</mat-icon>
+            <otui-icon name="delete"></otui-icon>
           </button>
         </div>
 
@@ -191,7 +191,7 @@
     <div class="form-group">
       <div class="array-field-header">
         <otui-button variant="secondary" (action)="addGridItem()">
-          <mat-icon>add</mat-icon> Add Item
+          <otui-icon name="add"></otui-icon> Add Item
         </otui-button>
       </div>
 
@@ -200,7 +200,7 @@
         <div class="array-item-header">
           <span>Item {{ i + 1 }}</span>
           <button class="icon-btn danger" (click)="removeGridItem(i)">
-            <mat-icon>delete</mat-icon>
+            <otui-icon name="delete"></otui-icon>
           </button>
         </div>
 
@@ -300,7 +300,7 @@
       <div class="array-field-header">
         <label>Footer Links</label>
         <otui-button variant="secondary" (action)="addFooterLink()">
-          <mat-icon>add</mat-icon> Add Link
+          <otui-icon name="add"></otui-icon> Add Link
         </otui-button>
       </div>
 
@@ -310,7 +310,7 @@
         <div class="array-item-header">
           <span>Link {{ i + 1 }}</span>
           <button class="icon-btn danger" (click)="removeFooterLink(i)">
-            <mat-icon>delete</mat-icon>
+            <otui-icon name="delete"></otui-icon>
           </button>
         </div>
 

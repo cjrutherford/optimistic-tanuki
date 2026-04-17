@@ -9,345 +9,347 @@
     </div>
   </div>
 
-  <mat-tab-group [(selectedIndex)]="selectedTab" class="designer-tabs">
-    <!-- General Tab -->
-    <mat-tab label="General">
-      <div class="tab-content">
-        <h2>General Information</h2>
+  <otui-tabs
+    [tabs]="tabs"
+    [activeTab]="selectedTab"
+    (tabChange)="onTabChange($event)"
+    class="designer-tabs"
+  >
+    @if (selectedTab === 'general') {
+    <div class="tab-content">
+      <h2>General Information</h2>
 
-        <div class="form-group">
-          <label for="configName">Configuration Name *</label>
-          <lib-text-input
-            id="configName"
-            [(ngModel)]="config.name"
-            placeholder="My Application"
-            type="text"
-          ></lib-text-input>
-        </div>
-
-        <div class="form-group">
-          <label for="configDescription">Description</label>
-          <lib-text-area
-            id="configDescription"
-            [(ngModel)]="config.description"
-            placeholder="Brief description of this application"
-          ></lib-text-area>
-        </div>
-
-        <div class="form-group">
-          <label for="configDomain">Domain</label>
-          <lib-text-input
-            id="configDomain"
-            [(ngModel)]="config.domain"
-            placeholder="example.com"
-            type="text"
-          ></lib-text-input>
-        </div>
-
-        <div class="form-group">
-          <lib-checkbox
-            [(ngModel)]="config.active"
-            label="Active Configuration"
-          ></lib-checkbox>
-        </div>
+      <div class="form-group">
+        <label for="configName">Configuration Name *</label>
+        <lib-text-input
+          id="configName"
+          [(ngModel)]="config.name"
+          placeholder="My Application"
+          type="text"
+        ></lib-text-input>
       </div>
-    </mat-tab>
 
-    <!-- Sections Tab -->
-    <mat-tab label="Sections">
-      <div class="tab-content">
-        <div class="sections-header">
-          <h2>Landing Page Sections</h2>
-          <otui-button (action)="showSectionSelector()">
-            <mat-icon>add</mat-icon> Add Section
-          </otui-button>
-        </div>
+      <div class="form-group">
+        <label for="configDescription">Description</label>
+        <lib-text-area
+          id="configDescription"
+          [(ngModel)]="config.description"
+          placeholder="Brief description of this application"
+        ></lib-text-area>
+      </div>
 
-        @if (config.landingPage.sections && config.landingPage.sections.length
-        > 0) {
-        <div
-          cdkDropList
-          (cdkDropListDropped)="onSectionDrop($event)"
-          class="sections-list"
-        >
-          @for (section of config.landingPage.sections; track section.id; let i
-          = $index) {
-          <div class="section-item" cdkDrag>
-            <div class="section-drag-handle" cdkDragHandle>
-              <mat-icon>drag_indicator</mat-icon>
-            </div>
+      <div class="form-group">
+        <label for="configDomain">Domain</label>
+        <lib-text-input
+          id="configDomain"
+          [(ngModel)]="config.domain"
+          placeholder="example.com"
+          type="text"
+        ></lib-text-input>
+      </div>
 
-            <div class="section-icon">
-              <mat-icon>{{ getSectionIcon(section.type) }}</mat-icon>
-            </div>
+      <div class="form-group">
+        <lib-checkbox
+          [(ngModel)]="config.active"
+          label="Active Configuration"
+        ></lib-checkbox>
+      </div>
+    </div>
+    } @if (selectedTab === 'sections') {
+    <div class="tab-content">
+      <div class="sections-header">
+        <h2>Landing Page Sections</h2>
+        <otui-button (action)="showSectionSelector()">
+          <otui-icon name="add"></otui-icon> Add Section
+        </otui-button>
+      </div>
 
-            <div class="section-info">
-              <h4>{{ getSectionTitle(section) }}</h4>
-              <span class="section-type">{{ section.type }}</span>
-            </div>
-
-            <div class="section-actions">
-              <button
-                class="icon-btn"
-                (click)="toggleSectionVisibility(section)"
-                [title]="section.visible ? 'Hide' : 'Show'"
-              >
-                <mat-icon>{{
-                  section.visible ? 'visibility' : 'visibility_off'
-                }}</mat-icon>
-              </button>
-              <button
-                class="icon-btn"
-                (click)="editSection(section, i)"
-                title="Edit"
-              >
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button
-                class="icon-btn danger"
-                (click)="deleteSection(i)"
-                title="Delete"
-              >
-                <mat-icon>delete</mat-icon>
-              </button>
-            </div>
+      @if (config.landingPage.sections && config.landingPage.sections.length >
+      0) {
+      <div
+        cdkDropList
+        (cdkDropListDropped)="onSectionDrop($event)"
+        class="sections-list"
+      >
+        @for (section of config.landingPage.sections; track section.id; let i =
+        $index) {
+        <div class="section-item" cdkDrag>
+          <div class="section-drag-handle" cdkDragHandle>
+            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+              <circle cx="9" cy="5" r="1.5"></circle>
+              <circle cx="15" cy="5" r="1.5"></circle>
+              <circle cx="9" cy="12" r="1.5"></circle>
+              <circle cx="15" cy="12" r="1.5"></circle>
+              <circle cx="9" cy="19" r="1.5"></circle>
+              <circle cx="15" cy="19" r="1.5"></circle>
+            </svg>
           </div>
-          }
-        </div>
-        } @else {
-        <div class="empty-state">
-          <mat-icon>web</mat-icon>
-          <p>No sections added yet. Click "Add Section" to get started.</p>
+
+          <div class="section-icon">
+            <otui-icon [name]="getSectionIcon(section.type)"></otui-icon>
+          </div>
+
+          <div class="section-info">
+            <h4>{{ getSectionTitle(section) }}</h4>
+            <span class="section-type">{{ section.type }}</span>
+          </div>
+
+          <div class="section-actions">
+            <button
+              class="icon-btn"
+              (click)="toggleSectionVisibility(section)"
+              [title]="section.visible ? 'Hide' : 'Show'"
+            >
+              <otui-icon
+                [name]="section.visible ? 'visibility' : 'eye-off'"
+              ></otui-icon>
+            </button>
+            <button
+              class="icon-btn"
+              (click)="editSection(section, i)"
+              title="Edit"
+            >
+              <otui-icon name="edit"></otui-icon>
+            </button>
+            <button
+              class="icon-btn danger"
+              (click)="deleteSection(i)"
+              title="Delete"
+            >
+              <otui-icon name="delete"></otui-icon>
+            </button>
+          </div>
         </div>
         }
       </div>
-    </mat-tab>
-
-    <!-- Features Tab -->
-    <mat-tab label="Features">
-      <div class="tab-content">
-        <h2>Feature Configuration</h2>
-
-        <div class="features-grid">
-          <!-- Social Features -->
-          <otui-card class="feature-card">
-            <div class="feature-header">
-              <mat-icon>people</mat-icon>
-              <h3>Social</h3>
-            </div>
-            <div class="feature-content">
-              <lib-checkbox
-                [(ngModel)]="config.features.social!.enabled"
-                label="Enable Social Features"
-              ></lib-checkbox>
-              @if (config.features.social?.enabled) {
-              <div class="feature-options">
-                <lib-checkbox
-                  [(ngModel)]="config.features.social!.showPosts"
-                  label="Show Posts"
-                ></lib-checkbox>
-                <lib-checkbox
-                  [(ngModel)]="config.features.social!.showFollowing"
-                  label="Show Following"
-                ></lib-checkbox>
-                <lib-checkbox
-                  [(ngModel)]="config.features.social!.showComments"
-                  label="Show Comments"
-                ></lib-checkbox>
-                <lib-checkbox
-                  [(ngModel)]="config.features.social!.allowAttachments"
-                  label="Allow Attachments"
-                ></lib-checkbox>
-              </div>
-              }
-            </div>
-          </otui-card>
-
-          <!-- Tasks Features -->
-          <otui-card class="feature-card">
-            <div class="feature-header">
-              <mat-icon>task</mat-icon>
-              <h3>Tasks</h3>
-            </div>
-            <div class="feature-content">
-              <lib-checkbox
-                [(ngModel)]="config.features.tasks!.enabled"
-                label="Enable Tasks"
-              ></lib-checkbox>
-              @if (config.features.tasks?.enabled) {
-              <div class="feature-options">
-                <lib-checkbox
-                  [(ngModel)]="config.features.tasks!.showCalendar"
-                  label="Show Calendar"
-                ></lib-checkbox>
-                <lib-checkbox
-                  [(ngModel)]="config.features.tasks!.allowRecurring"
-                  label="Allow Recurring Tasks"
-                ></lib-checkbox>
-                <lib-checkbox
-                  [(ngModel)]="config.features.tasks!.enableTimers"
-                  label="Enable Timers"
-                ></lib-checkbox>
-              </div>
-              }
-            </div>
-          </otui-card>
-
-          <!-- Blogging Features -->
-          <otui-card class="feature-card">
-            <div class="feature-header">
-              <mat-icon>article</mat-icon>
-              <h3>Blogging</h3>
-            </div>
-            <div class="feature-content">
-              <lib-checkbox
-                [(ngModel)]="config.features.blogging!.enabled"
-                label="Enable Blogging"
-              ></lib-checkbox>
-              @if (config.features.blogging?.enabled) {
-              <div class="feature-options">
-                <lib-checkbox
-                  [(ngModel)]="config.features.blogging!.allowComments"
-                  label="Allow Comments"
-                ></lib-checkbox>
-                <lib-checkbox
-                  [(ngModel)]="config.features.blogging!.moderateComments"
-                  label="Moderate Comments"
-                ></lib-checkbox>
-              </div>
-              }
-            </div>
-          </otui-card>
-
-          <!-- Project Planning Features -->
-          <otui-card class="feature-card">
-            <div class="feature-header">
-              <mat-icon>dashboard</mat-icon>
-              <h3>Project Planning</h3>
-            </div>
-            <div class="feature-content">
-              <lib-checkbox
-                [(ngModel)]="config.features.projectPlanning!.enabled"
-                label="Enable Project Planning"
-              ></lib-checkbox>
-              @if (config.features.projectPlanning?.enabled) {
-              <div class="feature-options">
-                <lib-checkbox
-                  [(ngModel)]="config.features.projectPlanning!.showGantt"
-                  label="Show Gantt Chart"
-                ></lib-checkbox>
-                <lib-checkbox
-                  [(ngModel)]="config.features.projectPlanning!.showKanban"
-                  label="Show Kanban Board"
-                ></lib-checkbox>
-                <lib-checkbox
-                  [(ngModel)]="config.features.projectPlanning!.allowRisks"
-                  label="Allow Risk Management"
-                ></lib-checkbox>
-              </div>
-              }
-            </div>
-          </otui-card>
-        </div>
+      } @else {
+      <div class="empty-state">
+        <otui-icon name="star"></otui-icon>
+        <p>No sections added yet. Click "Add Section" to get started.</p>
       </div>
-    </mat-tab>
+      }
+    </div>
+    } @if (selectedTab === 'features') {
+    <div class="tab-content">
+      <h2>Feature Configuration</h2>
 
-    <!-- Theme Tab -->
-    <mat-tab label="Theme">
-      <div class="tab-content">
-        <h2>Theme Customization</h2>
-
-        <div class="theme-grid">
-          <div class="form-group">
-            <label for="primaryColor">Primary Color</label>
-            <div class="color-input-group">
-              <input
-                type="color"
-                id="primaryColor"
-                [(ngModel)]="config.theme.primaryColor"
-                class="color-picker"
-              />
-              <lib-text-input
-                [(ngModel)]="config.theme.primaryColor"
-                placeholder="#3f51b5"
-                type="text"
-              ></lib-text-input>
-            </div>
+      <div class="features-grid">
+        <!-- Social Features -->
+        <otui-card class="feature-card">
+          <div class="feature-header">
+            <otui-icon name="users"></otui-icon>
+            <h3>Social</h3>
           </div>
-
-          <div class="form-group">
-            <label for="secondaryColor">Secondary Color</label>
-            <div class="color-input-group">
-              <input
-                type="color"
-                id="secondaryColor"
-                [(ngModel)]="config.theme.secondaryColor"
-                class="color-picker"
-              />
-              <lib-text-input
-                [(ngModel)]="config.theme.secondaryColor"
-                placeholder="#ff4081"
-                type="text"
-              ></lib-text-input>
+          <div class="feature-content">
+            <lib-checkbox
+              [(ngModel)]="config.features.social!.enabled"
+              label="Enable Social Features"
+            ></lib-checkbox>
+            @if (config.features.social?.enabled) {
+            <div class="feature-options">
+              <lib-checkbox
+                [(ngModel)]="config.features.social!.showPosts"
+                label="Show Posts"
+              ></lib-checkbox>
+              <lib-checkbox
+                [(ngModel)]="config.features.social!.showFollowing"
+                label="Show Following"
+              ></lib-checkbox>
+              <lib-checkbox
+                [(ngModel)]="config.features.social!.showComments"
+                label="Show Comments"
+              ></lib-checkbox>
+              <lib-checkbox
+                [(ngModel)]="config.features.social!.allowAttachments"
+                label="Allow Attachments"
+              ></lib-checkbox>
             </div>
+            }
           </div>
+        </otui-card>
 
-          <div class="form-group">
-            <label for="backgroundColor">Background Color</label>
-            <div class="color-input-group">
-              <input
-                type="color"
-                id="backgroundColor"
-                [(ngModel)]="config.theme.backgroundColor"
-                class="color-picker"
-              />
-              <lib-text-input
-                [(ngModel)]="config.theme.backgroundColor"
-                placeholder="#ffffff"
-                type="text"
-              ></lib-text-input>
+        <!-- Tasks Features -->
+        <otui-card class="feature-card">
+          <div class="feature-header">
+            <otui-icon name="check"></otui-icon>
+            <h3>Tasks</h3>
+          </div>
+          <div class="feature-content">
+            <lib-checkbox
+              [(ngModel)]="config.features.tasks!.enabled"
+              label="Enable Tasks"
+            ></lib-checkbox>
+            @if (config.features.tasks?.enabled) {
+            <div class="feature-options">
+              <lib-checkbox
+                [(ngModel)]="config.features.tasks!.showCalendar"
+                label="Show Calendar"
+              ></lib-checkbox>
+              <lib-checkbox
+                [(ngModel)]="config.features.tasks!.allowRecurring"
+                label="Allow Recurring Tasks"
+              ></lib-checkbox>
+              <lib-checkbox
+                [(ngModel)]="config.features.tasks!.enableTimers"
+                label="Enable Timers"
+              ></lib-checkbox>
             </div>
+            }
           </div>
+        </otui-card>
 
-          <div class="form-group">
-            <label for="textColor">Text Color</label>
-            <div class="color-input-group">
-              <input
-                type="color"
-                id="textColor"
-                [(ngModel)]="config.theme.textColor"
-                class="color-picker"
-              />
-              <lib-text-input
-                [(ngModel)]="config.theme.textColor"
-                placeholder="#000000"
-                type="text"
-              ></lib-text-input>
+        <!-- Blogging Features -->
+        <otui-card class="feature-card">
+          <div class="feature-header">
+            <otui-icon name="edit"></otui-icon>
+            <h3>Blogging</h3>
+          </div>
+          <div class="feature-content">
+            <lib-checkbox
+              [(ngModel)]="config.features.blogging!.enabled"
+              label="Enable Blogging"
+            ></lib-checkbox>
+            @if (config.features.blogging?.enabled) {
+            <div class="feature-options">
+              <lib-checkbox
+                [(ngModel)]="config.features.blogging!.allowComments"
+                label="Allow Comments"
+              ></lib-checkbox>
+              <lib-checkbox
+                [(ngModel)]="config.features.blogging!.moderateComments"
+                label="Moderate Comments"
+              ></lib-checkbox>
             </div>
+            }
           </div>
+        </otui-card>
 
-          <div class="form-group full-width">
-            <label for="fontFamily">Font Family</label>
+        <!-- Project Planning Features -->
+        <otui-card class="feature-card">
+          <div class="feature-header">
+            <otui-icon name="star"></otui-icon>
+            <h3>Project Planning</h3>
+          </div>
+          <div class="feature-content">
+            <lib-checkbox
+              [(ngModel)]="config.features.projectPlanning!.enabled"
+              label="Enable Project Planning"
+            ></lib-checkbox>
+            @if (config.features.projectPlanning?.enabled) {
+            <div class="feature-options">
+              <lib-checkbox
+                [(ngModel)]="config.features.projectPlanning!.showGantt"
+                label="Show Gantt Chart"
+              ></lib-checkbox>
+              <lib-checkbox
+                [(ngModel)]="config.features.projectPlanning!.showKanban"
+                label="Show Kanban Board"
+              ></lib-checkbox>
+              <lib-checkbox
+                [(ngModel)]="config.features.projectPlanning!.allowRisks"
+                label="Allow Risk Management"
+              ></lib-checkbox>
+            </div>
+            }
+          </div>
+        </otui-card>
+      </div>
+    </div>
+    } @if (selectedTab === 'theme') {
+    <div class="tab-content">
+      <h2>Theme Customization</h2>
+
+      <div class="theme-grid">
+        <div class="form-group">
+          <label for="primaryColor">Primary Color</label>
+          <div class="color-input-group">
+            <input
+              type="color"
+              id="primaryColor"
+              [(ngModel)]="config.theme.primaryColor"
+              class="color-picker"
+            />
             <lib-text-input
-              id="fontFamily"
-              [(ngModel)]="config.theme.fontFamily"
-              placeholder="Roboto, sans-serif"
+              [(ngModel)]="config.theme.primaryColor"
+              placeholder="#3f51b5"
               type="text"
             ></lib-text-input>
           </div>
+        </div>
 
-          <div class="form-group full-width">
-            <label for="customCss">Custom CSS</label>
-            <lib-text-area
-              id="customCss"
-              [(ngModel)]="config.theme.customCss"
-              placeholder="/* Add custom CSS here */"
-            ></lib-text-area>
+        <div class="form-group">
+          <label for="secondaryColor">Secondary Color</label>
+          <div class="color-input-group">
+            <input
+              type="color"
+              id="secondaryColor"
+              [(ngModel)]="config.theme.secondaryColor"
+              class="color-picker"
+            />
+            <lib-text-input
+              [(ngModel)]="config.theme.secondaryColor"
+              placeholder="#ff4081"
+              type="text"
+            ></lib-text-input>
           </div>
         </div>
+
+        <div class="form-group">
+          <label for="backgroundColor">Background Color</label>
+          <div class="color-input-group">
+            <input
+              type="color"
+              id="backgroundColor"
+              [(ngModel)]="config.theme.backgroundColor"
+              class="color-picker"
+            />
+            <lib-text-input
+              [(ngModel)]="config.theme.backgroundColor"
+              placeholder="#ffffff"
+              type="text"
+            ></lib-text-input>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="textColor">Text Color</label>
+          <div class="color-input-group">
+            <input
+              type="color"
+              id="textColor"
+              [(ngModel)]="config.theme.textColor"
+              class="color-picker"
+            />
+            <lib-text-input
+              [(ngModel)]="config.theme.textColor"
+              placeholder="#000000"
+              type="text"
+            ></lib-text-input>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="fontFamily">Font Family</label>
+          <lib-text-input
+            id="fontFamily"
+            [(ngModel)]="config.theme.fontFamily"
+            placeholder="Roboto, sans-serif"
+            type="text"
+          ></lib-text-input>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="customCss">Custom CSS</label>
+          <lib-text-area
+            id="customCss"
+            [(ngModel)]="config.theme.customCss"
+            placeholder="/* Add custom CSS here */"
+          ></lib-text-area>
+        </div>
       </div>
-    </mat-tab>
-  </mat-tab-group>
+    </div>
+    }
+  </otui-tabs>
 </otui-card>
 
 <!-- Section Selector Modal -->

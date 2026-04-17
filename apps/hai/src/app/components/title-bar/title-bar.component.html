@@ -1,0 +1,16 @@
+<otui-app-bar
+  appTitle="HAI"
+  [showThemeToggle]="true"
+  [useTile]="true"
+  menuIcon="☰"
+  (menuToggle)="toggleMenu()"
+>
+</otui-app-bar>
+
+<otui-nav-sidebar
+  [isOpen]="menuOpen()"
+  [navItems]="navItems"
+  heading="Navigate HAI"
+  (close)="menuOpen.set(false)"
+>
+</otui-nav-sidebar>

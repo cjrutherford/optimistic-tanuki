@@ -1,12 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 
-import { MatIconModule } from '@angular/material/icon';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'lib-component-wrapper',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [IconComponent],
   template: `
     <div
       class="component-wrapper"
@@ -21,32 +21,47 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
       @if (isHovered || isSelected) {
       <div class="component-controls">
         <button
+          class="control-btn drag-handle"
+          data-drag-handle
+          title="Drag to Move"
+          style="cursor: grab;"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <circle cx="9" cy="5" r="1.5"></circle>
+            <circle cx="15" cy="5" r="1.5"></circle>
+            <circle cx="9" cy="12" r="1.5"></circle>
+            <circle cx="15" cy="12" r="1.5"></circle>
+            <circle cx="9" cy="19" r="1.5"></circle>
+            <circle cx="15" cy="19" r="1.5"></circle>
+          </svg>
+        </button>
+        <button
           class="control-btn edit-btn"
           (click)="onEdit($event)"
           title="Edit Properties"
         >
-          <mat-icon>edit</mat-icon>
+          <otui-icon name="edit"></otui-icon>
         </button>
         <button
           class="control-btn delete-btn"
           (click)="onDelete($event)"
           title="Delete Component"
         >
-          <mat-icon>delete</mat-icon>
+          <otui-icon name="delete"></otui-icon>
         </button>
         <button
           class="control-btn move-up-btn"
           (click)="onMoveUp($event)"
           title="Move Up"
         >
-          <mat-icon>keyboard_arrow_up</mat-icon>
+          <otui-icon name="keyboard_arrow_up"></otui-icon>
         </button>
         <button
           class="control-btn move-down-btn"
           (click)="onMoveDown($event)"
           title="Move Down"
         >
-          <mat-icon>keyboard_arrow_down</mat-icon>
+          <otui-icon name="keyboard_arrow_down"></otui-icon>
         </button>
       </div>
       } @if (isSelected) {
@@ -66,6 +81,8 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
         border-radius: 4px;
         transition: all 0.2s ease;
         margin: 0.5rem 0;
+        min-height: 40px;
+        pointer-events: auto;
       }
 
       .component-wrapper.hover {
@@ -121,14 +138,16 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
       }
 
       .move-up-btn,
-      .move-down-btn {
+      .move-down-btn,
+      .drag-handle {
         background-color: var(--background, white);
         color: var(--foreground, #333);
         border: 1px solid var(--border-color, #e0e0e0);
       }
 
       .move-up-btn:hover,
-      .move-down-btn:hover {
+      .move-down-btn:hover,
+      .drag-handle:hover {
         background-color: var(--background-secondary, #f8f9fa);
       }
 

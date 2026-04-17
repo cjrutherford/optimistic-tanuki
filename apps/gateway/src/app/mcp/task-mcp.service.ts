@@ -27,13 +27,13 @@ const createTaskSchema = z.object({
   description: z.string().optional().describe('Description of the task'),
   status: z
     .nativeEnum(TaskStatus)
-    .optional()
+    .default(TaskStatus.TODO)
     .describe(
       'Status of the task. MUST be one of: TODO, IN_PROGRESS, DONE, ARCHIVED. Default: TODO'
     ),
   priority: z
     .nativeEnum(TaskPriority)
-    .optional()
+    .default(TaskPriority.MEDIUM)
     .describe(
       'Priority of the task. MUST be one of: LOW, MEDIUM_LOW, MEDIUM, MEDIUM_HIGH, HIGH. Default: MEDIUM'
     ),
@@ -101,7 +101,7 @@ export class TaskMcpService {
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
     private readonly projectPlanningService: ClientProxy
-  ) {}
+  ) { }
 
   @McpTool({
     name: 'list_tasks',

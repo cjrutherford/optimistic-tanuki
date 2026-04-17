@@ -1,0 +1,12 @@
+<section
+  class="shimmer-beam"
+  [class.is-fallback]="reducedMotion"
+  [class.is-horizontal]="direction === 'horizontal'"
+  [style.height]="height"
+  [style.--beam-speed]="speed"
+  [style.--beam-intensity]="intensity"
+>
+  <div class="beam-base"></div>
+  <div class="beam-sweep beam-sweep-primary"></div>
+  <div class="beam-sweep beam-sweep-secondary"></div>
+</section>

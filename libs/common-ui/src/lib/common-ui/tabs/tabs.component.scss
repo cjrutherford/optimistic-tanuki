@@ -1,0 +1,210 @@
+@use '../../styles/personality-tokens' as *;
+@use '../../styles/personality-effects' as *;
+
+.tabs-container {
+  display: flex;
+  flex-direction: column;
+
+  &.vertical {
+    flex-direction: row;
+
+    .tabs-header {
+      flex-direction: column;
+      border-bottom: none;
+      border-right: 1px solid var(--tabs-border-color, var(--border, #ccc));
+    }
+
+    .tab-item {
+      border-bottom: none;
+      border-right: 2px solid transparent;
+
+      &.active {
+        border-right-color: var(--tabs-active-color, var(--accent, #3f51b5));
+        &::after {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+.tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--tabs-border-color, var(--border, #ccc));
+  gap: 4px;
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  color: var(--tabs-inactive-color, var(--foreground, #666));
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease, background-color 0.2s ease;
+
+  &:hover:not(.disabled) {
+    color: var(--tabs-active-color, var(--accent, #3f51b5));
+    background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+  }
+
+  &.active {
+    color: var(--tabs-active-color, var(--accent, #3f51b5));
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--tabs-active-color, var(--accent, #3f51b5));
+    }
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.tab-label {
+  white-space: nowrap;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--tabs-active-color, var(--accent, #3f51b5));
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tabs-content {
+  padding: 16px 0;
+}
+
+// ============================================
+// Personality-Specific Tab Enhancements
+// ============================================
+
+// Architect personality - underline style
+body.personality-architect .tab-item {
+  font-family: var(--font-heading);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  &.active::after {
+    height: 3px;
+    background: var(--primary);
+  }
+}
+
+// Playful personality - pill style
+body.personality-playful .tab-item {
+  border-radius: 20px;
+
+  &:hover:not(.disabled) {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+
+  &.active {
+    background: var(--primary);
+    color: var(--primary-foreground);
+
+    &::after {
+      display: none;
+    }
+  }
+}
+
+// Minimal personality - subtle
+body.personality-minimal .tab-item {
+  padding: 8px 16px;
+  font-weight: 400;
+
+  &.active {
+    font-weight: 600;
+
+    &::after {
+      height: 1px;
+    }
+  }
+}
+
+// Electric personality - bold indicator
+body.personality-electric .tab-item {
+  &.active::after {
+    height: 4px;
+    border-radius: 2px;
+  }
+}
+
+// Soft Touch personality - rounded
+body.personality-soft-touch .tab-item {
+  border-radius: 12px;
+
+  &.active {
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+
+    &::after {
+      display: none;
+    }
+  }
+}
+
+// Control Center - technical underline
+body.personality-control-center .tab-item {
+  font-family: var(--font-mono);
+  font-size: 13px;
+
+  &.active::after {
+    height: 2px;
+    background: var(--primary);
+  }
+}
+
+// Pills variant
+.tabs-pills .tab-item {
+  border-radius: 9999px;
+  padding: 8px 16px;
+
+  &.active {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+}
+
+// Enclosed variant
+.tabs-enclosed {
+  .tabs-header {
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-md, 4px);
+    padding: 4px;
+    gap: 0;
+  }
+
+  .tab-item {
+    border-radius: var(--border-radius-sm, 2px);
+
+    &.active {
+      background: var(--primary);
+      color: var(--primary-foreground);
+
+      &::after {
+        display: none;
+      }
+    }
+  }
+}

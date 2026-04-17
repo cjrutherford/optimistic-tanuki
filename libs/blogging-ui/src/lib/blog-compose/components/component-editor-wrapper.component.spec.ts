@@ -87,7 +87,11 @@ describe('ComponentEditorWrapperComponent', () => {
 
   it('should emit selectionChanged on click', () => {
     const spy = jest.spyOn(component.selectionChanged, 'emit');
-    const event = new MouseEvent('click');
+    // Create a proper mock event with stopPropagation and target.closest
+    const event = {
+      stopPropagation: jest.fn(),
+      target: document.createElement('div'),
+    } as unknown as MouseEvent;
     component.onClick(event);
     expect(spy).toHaveBeenCalledWith(mockComponentInstance);
   });
@@ -95,35 +99,28 @@ describe('ComponentEditorWrapperComponent', () => {
   it('should emit editRequested when edit button clicked', () => {
     // Note: The editRequested event is for the full property editor
     // The component now opens inline quick edit instead
-    const event = new MouseEvent('click');
+    const event = { stopPropagation: jest.fn() } as unknown as MouseEvent;
     component.onEditClick(event);
     expect(component.isEditing).toBe(true);
   });
 
   it('should emit deleteRequested when delete button clicked', () => {
     const spy = jest.spyOn(component.deleteRequested, 'emit');
-    const event = new MouseEvent('click');
+    const event = { stopPropagation: jest.fn() } as unknown as MouseEvent;
     component.onDeleteClick(event);
     expect(spy).toHaveBeenCalledWith(mockComponentInstance);
   });
 
   it('should emit duplicateRequested when duplicate button clicked', () => {
     const spy = jest.spyOn(component.duplicateRequested, 'emit');
-    const event = new MouseEvent('click');
+    const event = { stopPropagation: jest.fn() } as unknown as MouseEvent;
     component.onDuplicateClick(event);
-    expect(spy).toHaveBeenCalledWith(mockComponentInstance);
-  });
-
-  it('should emit configRequested when config button clicked', () => {
-    const spy = jest.spyOn(component.configRequested, 'emit');
-    const event = new MouseEvent('click');
-    component.onConfigClick(event);
     expect(spy).toHaveBeenCalledWith(mockComponentInstance);
   });
 
   it('should open quick edit mode', () => {
     expect(component.isEditing).toBe(false);
-    const event = new MouseEvent('click');
+    const event = { stopPropagation: jest.fn() } as unknown as MouseEvent;
     component.onEditClick(event);
     expect(component.isEditing).toBe(true);
   });

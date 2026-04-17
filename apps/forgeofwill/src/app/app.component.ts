@@ -28,6 +28,9 @@ import {
 import { filter } from 'rxjs';
 import { AiAssistantBubbleComponent } from './ai-assistant-bubble/ai-assistant-bubble.component';
 import { ChatMessage } from '@optimistic-tanuki/chat-ui';
+import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   imports: [
@@ -37,6 +40,9 @@ import { ChatMessage } from '@optimistic-tanuki/chat-ui';
     ChatComponent,
     MessageComponent,
     AiAssistantBubbleComponent,
+    DevInfoComponent,
+    HaiAboutTagComponent,
+    PulseRingsComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -44,6 +50,14 @@ import { ChatMessage } from '@optimistic-tanuki/chat-ui';
 })
 export class AppComponent implements OnInit {
   title = 'forgeofwill';
+  readonly haiAboutConfig = {
+    appId: 'forge-of-will',
+    appName: 'Forge of Will',
+    appTagline: 'Intentional systems for focused personal workflows.',
+    appDescription:
+      'Forge of Will helps people shape projects, habits, and personal systems with tools that support deliberate work instead of background churn.',
+    appUrl: '/forge-of-will',
+  };
   isModalOpen = signal<boolean>(false);
   messages = signal<MessageType[]>([]);
   navItems = signal<NavItem[]>([]);
@@ -58,6 +72,22 @@ export class AppComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly messageService = inject(MessageService);
   private readonly themeService = inject(ThemeService);
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   constructor() {
     effect(() => {
@@ -95,44 +125,13 @@ export class AppComponent implements OnInit {
 
     // Initialize theme - only in browser to avoid SSR issues
     if (isPlatformBrowser(this.platformId)) {
-      // Check if there's a stored palette preference, otherwise use default
-      const currentPalette = this.themeService.getCurrentPalette();
-      if (!currentPalette) {
-        // Set default palette for forgeofwill
-        this.themeService.setPalette('Forest Dream');
-      }
-      // Apply stored or default theme mode
-      this.themeService.setTheme(this.themeService.getTheme());
+      // Set fixed Bold personality with clean professional + energetic accent
+      // No theme selection UI - this is the brand identity
+      this.themeService.setPersonality('bold');
+      this.themeService.setPrimaryColor('#0EA5E9'); // Sky blue - energetic, productive, action-oriented
+
+      console.log('[Forge of Will] Theme initialized with Bold personality');
     }
-
-    this.themeService.themeColors$.subscribe({
-      next: (colors) => {
-        if (!colors || !isPlatformBrowser(this.platformId)) return;
-        const backgroundPattern = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="80" height="105" viewBox="0 0 80 105">
-              <g fill-rule="evenodd">
-                  <g id="death-star" fill="${colors.tertiary}" fill-opacity="0.4" fill-rule="nonzero">
-                      <path d="M20 10a5 5 0 0 1 10 0v50a5 5 0 0 1-10 0V10zm15 35a5 5 0 0 1 10 0v50a5 5 0 0 1-10 0V45zM20 75a5 5 0 0 1 10 0v20a5 5 0 0 1-10 0V75zm30-65a5 5 0 0 1 10 0v50a5 5 0 0 1-10 0V10zm0 65a5 5 0 0 1 10 0v20a5 5 0 0 1-10 0V75zM35 10a5 5 0 0 1 10 0v20a5 5 0 0 1-10 0V10zM5 45a5 5 0 0 1 10 0v50a5 5 0 0 1-10 0V45zm0-35a5 5 0 0 1 10 0v20a5 5 0 0 1-10 0V10zm60 35a5 5 0 0 1 10 0v50a5 5 0 0 1-10 0V45zm0-35a5 5 0 0 1 10 0v20a5 5 0 0 1-10 0V10z" />
-                  </g>
-              </g>
-          </svg>
-
-      `;
-        const encodedPattern = encodeURIComponent(backgroundPattern)
-          .replace(/'/g, '%27')
-          .replace(/"/g, '%22')
-          .replace(/#/g, '%23')
-          .replace(/</g, '%3C')
-          .replace(/>/g, '%3E')
-          .replace(/\s+/g, ' '); // Minimize whitespace
-
-        // Set the encoded SVG as a CSS variable
-        document.documentElement.style.setProperty(
-          '--background-pattern',
-          `url("data:image/svg+xml,${encodedPattern}")`
-        );
-      },
-    });
   }
 
   updateNavItems() {
@@ -140,13 +139,14 @@ export class AppComponent implements OnInit {
     if (this.isAuthenticated()) {
       this.navItems.set([
         {
-          label: 'Logout',
-          action: () => this.loginOutButton(),
+          label: 'Home',
+          action: () => this.navigateTo('/'),
+          isActive: currentUrl === '/',
         },
         {
           label: 'Projects',
-          action: () => this.navigateTo('/'),
-          isActive: currentUrl === '/',
+          action: () => this.navigateTo('/projects'),
+          isActive: currentUrl === '/projects',
         },
         {
           label: 'Forum',
@@ -163,9 +163,18 @@ export class AppComponent implements OnInit {
           action: () => this.navigateTo('/settings'),
           isActive: currentUrl === '/settings',
         },
+        {
+          label: 'Logout',
+          action: () => this.loginOutButton(),
+        },
       ]);
     } else {
       this.navItems.set([
+        {
+          label: 'Home',
+          action: () => this.navigateTo('/'),
+          isActive: currentUrl === '/',
+        },
         {
           label: 'Login',
           action: () => this.loginOutButton(),

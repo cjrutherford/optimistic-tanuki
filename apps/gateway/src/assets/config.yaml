@@ -74,7 +74,32 @@ services:
     name: videos
     transport: TCP
     host: ot_videos
+    port: 3019
+  wellness:
+    name: wellness
+    transport: TCP
+    host: ot_wellness
     port: 3016
+  classifieds:
+    name: classifieds
+    transport: TCP
+    host: ot_classifieds
+    port: 3017
+  payments:
+    name: payments
+    transport: TCP
+    host: ot_payments
+    port: 3018
+  lead_tracker:
+    name: lead_tracker
+    transport: TCP
+    host: ot_lead_tracker
+    port: 3020
+  system_configurator:
+    name: system_configurator
+    transport: TCP
+    host: ot_system_configurator_api
+    port: 3021
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

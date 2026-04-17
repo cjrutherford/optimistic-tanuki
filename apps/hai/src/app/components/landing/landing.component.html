@@ -1,0 +1,205 @@
+<div class="landing-shell" data-theme-surface="page">
+  <section class="hero-panel" data-theme-surface="hero">
+    <div class="hero-backdrop" aria-hidden="true">
+      <otui-topographic-drift
+        class="hero-topography"
+        height="100%"
+        [density]="7"
+        [speed]="0.85"
+        [intensity]="0.68"
+        [reducedMotion]="reducedMotion"
+      ></otui-topographic-drift>
+      <otui-pulse-rings
+        class="hero-beacon"
+        height="100%"
+        [ringCount]="5"
+        [speed]="0.9"
+        [intensity]="0.74"
+        [reducedMotion]="reducedMotion"
+      ></otui-pulse-rings>
+    </div>
+
+    <div class="hero-copy">
+      <p class="eyebrow">Software House + Personal Cloud Workshop</p>
+      <h1>
+        Software, cloud, and personal-cloud systems for digital homesteading.
+      </h1>
+      <p class="lede">
+        <hai-expansion></hai-expansion> helps people and organizations build
+        durable software, calmer cloud architecture, and pre-configured personal
+        computing systems they can actually own.
+      </p>
+
+      <div class="hero-actions">
+        <a class="cta primary" href="/hai-computer">Explore HAI Computer</a>
+        <a class="cta secondary" href="#ecosystem">See the HAI ecosystem</a>
+      </div>
+    </div>
+
+    <aside class="hero-signal" data-theme-surface="card">
+      <p class="card-label">Built For</p>
+      <ul>
+        <li>Cloud-native product teams</li>
+        <li>Homelab and personal-cloud adopters</li>
+        <li>Families building their digital homestead</li>
+        <li>Organizations that want software with staying power</li>
+      </ul>
+
+      <div class="signal-note">
+        <span class="signal-kicker">Operating principle</span>
+        <strong>Owned capability over rented complexity.</strong>
+      </div>
+    </aside>
+  </section>
+
+  <section class="manifesto-rail" data-theme-surface="feature">
+    <div class="manifesto-copy">
+      <p class="eyebrow">HAI Approach</p>
+      <h2>Cloud fluency without surrendering ownership.</h2>
+      <p>
+        We design systems that let hosted platforms and personal infrastructure
+        reinforce each other instead of competing for control.
+      </p>
+    </div>
+
+    <div class="manifesto-track">
+      <otui-shimmer-beam
+        class="manifesto-beam"
+        height="100%"
+        direction="horizontal"
+        [speed]="0.85"
+        [intensity]="0.72"
+        [reducedMotion]="reducedMotion"
+      ></otui-shimmer-beam>
+
+      <div class="manifesto-grid">
+        @for (item of manifesto; track item.label) {
+        <article class="manifesto-card" data-theme-surface="card">
+          <span class="manifesto-label">{{ item.label }}</span>
+          <p>{{ item.value }}</p>
+        </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="story-grid" id="services">
+    <article class="story-panel" data-theme-surface="card">
+      <p class="eyebrow">Services</p>
+      <h2>We build software that respects ownership, clarity, and scale.</h2>
+      <p>
+        HAI delivers application development, platform integration, cloud
+        architecture, and personal-cloud systems. We work where product vision
+        meets real infrastructure.
+      </p>
+    </article>
+
+    <div class="service-list">
+      @for (pillar of servicePillars; track pillar.title) {
+      <article class="service-card" data-theme-surface="card">
+        <span class="card-icon" aria-hidden="true">{{ pillar.icon }}</span>
+        <h3>{{ pillar.title }}</h3>
+        <p>{{ pillar.description }}</p>
+      </article>
+      }
+    </div>
+  </section>
+
+  <section
+    class="personal-cloud-panel"
+    data-theme-surface="feature"
+    id="personal-cloud"
+  >
+    <div class="section-copy">
+      <p class="eyebrow">Digital Homesteading</p>
+      <h2>Personal cloud should feel grounded, not experimental.</h2>
+      <p>
+        We package personal-cloud systems for homelab, family compute, and
+        self-hosted workflows so they feel approachable, stable, and useful. The
+        goal is not novelty. The goal is owned capability.
+      </p>
+    </div>
+
+    <div class="ownership-layout">
+      <article class="ownership-card" data-theme-surface="card">
+        <ul class="ownership-list">
+          @for (note of ownershipNotes; track note) {
+          <li>{{ note }}</li>
+          }
+        </ul>
+      </article>
+
+      <otui-aurora-ribbon
+        class="ownership-motion"
+        height="100%"
+        [density]="3"
+        [speed]="0.75"
+        [intensity]="0.64"
+        [reducedMotion]="reducedMotion"
+      ></otui-aurora-ribbon>
+    </div>
+  </section>
+
+  <section class="ecosystem-panel" id="ecosystem">
+    <div class="section-copy">
+      <p class="eyebrow">HAI Apps</p>
+      <h2>An ecosystem of practical software.</h2>
+      <p>
+        HAI products share a common thread: tools that feel useful, legible, and
+        built to endure.
+      </p>
+    </div>
+
+    <div class="ecosystem-grid">
+      @for (app of ecosystem; track app.name; let i = $index) {
+      <a
+        class="ecosystem-card"
+        [class.ecosystem-card-featured]="i === 0"
+        [href]="app.href"
+        data-theme-surface="card"
+      >
+        <span class="card-label">{{ app.category }}</span>
+        <span class="app-name">{{ app.name }}</span>
+        <span class="app-tagline">{{ app.tagline }}</span>
+      </a>
+      }
+    </div>
+  </section>
+
+  <section class="acronym-generator-panel" data-theme-surface="feature">
+    <div
+      class="section-copy"
+      style="text-align: center; max-width: 800px; margin: 0 auto"
+    >
+      <p class="eyebrow">Marketing Strategy</p>
+      <h2>What does HAI actually stand for?</h2>
+      <p>
+        The meaning of HAI is fluid, dynamic, and essentially meaningless. We
+        change it constantly to keep our SEO team on their toes and our brand
+        identity comfortably vague.
+      </p>
+
+      <div class="generator-box" data-theme-surface="card">
+        <p>Today, for you, HAI means:</p>
+        <div class="big-acronym">
+          <hai-expansion [showExpansionOnInit]="true"></hai-expansion>
+        </div>
+        <p class="hint">Click the acronym to generate a new brand identity.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact-panel" data-theme-surface="hero" id="contact">
+    <p class="eyebrow">Work With HAI</p>
+    <h2>
+      Build durable software. Set up owned computing. Start with the next
+      sensible step.
+    </h2>
+    <div class="hero-actions" style="justify-content: center">
+      <a class="cta primary" href="/hai-computer">Go to HAI Computer</a>
+      <a class="cta secondary" href="mailto:hello@hai.computer"
+        >hello@hai.computer</a
+      >
+    </div>
+  </section>
+</div>

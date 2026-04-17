@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: optimistic-tanuki
+
+resources:
+  - gateway.yaml
+  - services/authentication.yaml
+  - services/profile.yaml
+  - services/social.yaml
+  - services/forum.yaml
+  - services/chat-collector.yaml
+  - services/assets.yaml
+  - services/prompt-proxy.yaml
+  - services/ai-orchestration.yaml
+  - services/telos-docs-service.yaml
+  - services/blogging.yaml
+  - services/permissions.yaml
+  - services/project-planning.yaml
+  - services/classifieds.yaml
+  - services/payments.yaml
+  - services/lead-tracker.yaml
+  - services/store.yaml
+  - services/app-configurator.yaml
+  - services/system-configurator-api.yaml
+  - services/wellness.yaml
+  - clients/client-interface.yaml
+  - clients/forgeofwill.yaml
+  - clients/digital-homestead.yaml
+  - clients/hai.yaml
+  - clients/christopherrutherford-net.yaml
+  - clients/owner-console.yaml
+  - clients/store-client.yaml
+  - clients/configurable-client.yaml
+  - clients/system-configurator.yaml
+  - clients/d6.yaml
+  - clients/local-hub.yaml
+  - clients/leads-app.yaml
+  - ingress.yaml
+  - tailscale-ingress.yaml

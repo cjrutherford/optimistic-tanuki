@@ -1,0 +1,101 @@
+{
+  "name": "system-configurator",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/system-configurator/src",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/system-configurator",
+        "index": "apps/system-configurator/src/index.html",
+        "browser": "apps/system-configurator/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/system-configurator/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/system-configurator/public"
+          }
+        ],
+        "styles": ["apps/system-configurator/src/styles.scss"],
+        "scripts": [],
+        "server": "apps/system-configurator/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/system-configurator/src/server.ts"
+        },
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "16kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "proxyConfig": "apps/system-configurator/proxy.conf.json"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "system-configurator:build:production"
+        },
+        "development": {
+          "buildTarget": "system-configurator:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular/build:extract-i18n",
+      "options": {
+        "buildTarget": "system-configurator:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/system-configurator/jest.config.ts",
+        "tsConfig": "apps/system-configurator/tsconfig.spec.json"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "system-configurator:build",
+        "port": 4200,
+        "staticFilePath": "dist/apps/system-configurator/browser",
+        "spa": true
+      }
+    }
+  }
+}

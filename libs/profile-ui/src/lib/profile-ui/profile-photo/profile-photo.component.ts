@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'lib-profile-photo',
@@ -10,4 +10,22 @@ import { Component, Input } from '@angular/core';
 export class ProfilePhotoComponent {
   @Input() src = '';
   @Input() alt = '';
+  @Input() size = 32;
+  @Input() profileId = '';
+  @Input() enableChat = false;
+  @Output() startChat = new EventEmitter<string>();
+  @Output() profileClick = new EventEmitter<void>();
+
+  handleClick(event: Event) {
+    if (this.enableChat && this.profileId) {
+      this.startChat.emit(this.profileId);
+    } else {
+      this.profileClick.emit();
+    }
+  }
+
+  handleImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    img.src = 'https://placehold.co/150x150/grey/white?text=Profile';
+  }
 }

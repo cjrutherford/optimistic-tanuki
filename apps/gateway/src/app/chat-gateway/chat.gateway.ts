@@ -142,6 +142,7 @@ export class ChatGateway {
     @ConnectedSocket() client: Socket
   ): Promise<void> {
     this.l.log('New Message Received');
+    console.log('[ChatGateway] handleMessage received payload id:', payload.id);
     const senderId = payload.senderId;
     const recipientIds = payload.recipientId;
     this.updateConnectedSockets(senderId, client, 'connect');
@@ -160,6 +161,13 @@ export class ChatGateway {
     if (aiRecipients && aiRecipients.length > 0) {
       this.l.log('AI recipients found, preparing message for AI.');
       payload.recipientName = aiRecipients.map((x) => x.name); // Add a flag or modify the payload as needed
+
+      // Notify that AI is thinking
+      this.broadcastToConversation(payload.conversationId, 'ai_status_update', {
+        conversationId: payload.conversationId,
+        status: 'thinking',
+        message: 'AI is processing your message...',
+      });
     }
 
     // Post the message
@@ -171,6 +179,13 @@ export class ChatGateway {
     // Continue processing for AI recipients if any
     if (aiRecipients && aiRecipients.length > 0) {
       this.l.log('Sending to AI Orchestration Service');
+
+      // Update status to responding
+      this.broadcastToConversation(payload.conversationId, 'ai_status_update', {
+        conversationId: payload.conversationId,
+        status: 'responding',
+      });
+
       const aiPayload: ChatConversation = await firstValueFrom(
         this.chatCollectorClient.send(
           { cmd: ChatCommands.GET_CONVERSATION },
@@ -226,6 +241,16 @@ export class ChatGateway {
         .then((aiResponses: Partial<ChatMessage>[]) => {
           this.l.log(
             `AI orchestrator completed with ${aiResponses.length} messages`
+          );
+
+          // Notify that AI has completed
+          this.broadcastToConversation(
+            payload.conversationId,
+            'ai_status_update',
+            {
+              conversationId: payload.conversationId,
+              status: 'complete',
+            }
           );
 
           // Stop polling after AI completes
@@ -326,6 +351,40 @@ export class ChatGateway {
     );
   }
 
+  @SubscribeMessage('get_or_create_direct_chat')
+  async handleGetOrCreateDirectChat(
+    @MessageBody() payload: { participantIds: string[] },
+    @ConnectedSocket() client: Socket
+  ): Promise<void> {
+    this.l.log(
+      `get_or_create_direct_chat for participants: ${payload.participantIds.join(
+        ', '
+      )}`
+    );
+    const conversation = await firstValueFrom(
+      this.chatCollectorClient.send(
+        { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
+        { participantIds: payload.participantIds }
+      )
+    );
+    client.emit('conversation', conversation);
+  }
+
+  @SubscribeMessage('get_messages')
+  async handleGetMessages(
+    @MessageBody() payload: { conversationId: string },
+    @ConnectedSocket() client: Socket
+  ): Promise<void> {
+    this.l.log(`get_messages for conversation: ${payload.conversationId}`);
+    const messages = await firstValueFrom(
+      this.chatCollectorClient.send(
+        { cmd: ChatCommands.GET_MESSAGES },
+        { conversationId: payload.conversationId }
+      )
+    );
+    client.emit('messages', messages || []);
+  }
+
   @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
     const disconnectedClient = this.connectedClients.find(
@@ -336,5 +395,23 @@ export class ChatGateway {
       this.updateConnectedSockets(disconnectedClient.id, client, 'disconnect');
     }
     client.disconnect();
+  }
+
+  /**
+   * Broadcast AI status updates to all clients in a conversation
+   */
+  private broadcastToConversation(
+    conversationId: string,
+    event: string,
+    data: any
+  ) {
+    this.l.debug(
+      `Broadcasting ${event} to conversation ${conversationId}:`,
+      data
+    );
+    // Send to all connected clients - in a real implementation, we'd filter by conversation participants
+    this.connectedClients.forEach(({ client }) => {
+      client.emit(event, data);
+    });
   }
 }

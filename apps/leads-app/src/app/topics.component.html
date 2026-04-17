@@ -1,0 +1,632 @@
+<div class="topics-page">
+  <header class="header">
+    <div class="header-content">
+      <a routerLink="/" class="back-link">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Dashboard
+      </a>
+      <h1 class="title">Discovery Topics</h1>
+      <p class="subtitle">Configure automated lead discovery</p>
+    </div>
+    <div class="header-actions">
+      <div class="active-count">
+        <span class="count-value">{{ activeCount }}</span>
+        <span class="count-label">Active</span>
+      </div>
+      <button
+        class="btn btn-primary"
+        (click)="openAddForm()"
+        *ngIf="!showAddForm"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Add Topic
+      </button>
+    </div>
+  </header>
+
+  <div
+    *ngIf="showAddForm"
+    class="topic-modal-overlay"
+    (click)="cancelAdd()"
+    (keydown.escape)="cancelAdd()"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+  >
+    <div class="topic-modal-shell" (click)="$event.stopPropagation()">
+      <div class="add-topic-card">
+        <div class="add-topic-heading">
+          <div>
+            <h3 class="add-topic-title">
+              {{ isEditing ? 'Edit Discovery Topic' : 'New Discovery Topic' }}
+            </h3>
+            <span class="topic-mode-badge" *ngIf="isEditing">Editing</span>
+          </div>
+          <button
+            type="button"
+            class="topic-modal-close"
+            (click)="cancelAdd()"
+            aria-label="Close topic editor"
+          >
+            ×
+          </button>
+        </div>
+        <p *ngIf="actionError" class="form-error">{{ actionError }}</p>
+        <form (ngSubmit)="submitTopic()">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="topic-name">Topic Name *</label>
+              <input
+                id="topic-name"
+                type="text"
+                [(ngModel)]="topicForm.name"
+                name="name"
+                placeholder="e.g. Healthcare SaaS"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="topic-description">Description</label>
+              <input
+                id="topic-description"
+                type="text"
+                [(ngModel)]="topicForm.description"
+                name="description"
+                placeholder="Brief description of this topic"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="topic-keywords">Keywords (comma-separated)</label>
+            <input
+              id="topic-keywords"
+              type="text"
+              [(ngModel)]="topicForm.keywords"
+              name="keywords"
+              placeholder="healthcare, SaaS, telemedicine, HIPAA"
+            />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="topic-excluded-terms">Excluded Terms</label>
+              <input
+                id="topic-excluded-terms"
+                type="text"
+                [(ngModel)]="topicForm.excludedTerms"
+                name="excludedTerms"
+                placeholder="wordpress, php, wix"
+              />
+            </div>
+            <div class="form-group">
+              <label for="topic-discovery-intent">Discovery Intent</label>
+              <select
+                id="topic-discovery-intent"
+                [(ngModel)]="topicForm.discoveryIntent"
+                name="discoveryIntent"
+              >
+                <option [ngValue]="LeadTopicDiscoveryIntent.JOB_OPENINGS">
+                  Job Openings
+                </option>
+                <option [ngValue]="LeadTopicDiscoveryIntent.SERVICE_BUYERS">
+                  Service Buyers
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <span class="form-section-label">Sources</span>
+            <div class="source-selector">
+              <label
+                class="source-option"
+                *ngFor="let source of availableSources"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="topicForm.sources.includes(source)"
+                  (change)="toggleSource(source, $any($event.target).checked)"
+                />
+                <span>{{ formatSourceLabel(source) }}</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-row local-search-row" *ngIf="isGoogleMapsSelected">
+            <div class="form-group">
+              <label for="topic-google-maps-cities">Google Maps Cities *</label>
+              <div class="autocomplete-field">
+                <div class="chips-input chips-input-location">
+                  <div class="chips" *ngIf="selectedGoogleMapsCities.length">
+                    <span
+                      class="chip"
+                      *ngFor="let city of selectedGoogleMapsCities"
+                    >
+                      {{ city }}
+                      <button
+                        type="button"
+                        (click)="removeGoogleMapsCity(city)"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                  <input
+                    id="topic-google-maps-cities"
+                    type="text"
+                    [ngModel]="googleMapsCityInput"
+                    (ngModelChange)="onGoogleMapsCitiesInput($event)"
+                    (keydown)="onGoogleMapsCityInputKeydown($event)"
+                    (blur)="closeGoogleMapsSuggestions('cities')"
+                    name="googleMapsCitiesInput"
+                    placeholder="Add a city and pick from autocomplete"
+                    required
+                    autocomplete="off"
+                  />
+                </div>
+                <div
+                  class="autocomplete-menu"
+                  *ngIf="googleMapsCitySuggestions.length"
+                >
+                  <button
+                    type="button"
+                    class="autocomplete-option"
+                    *ngFor="let suggestion of googleMapsCitySuggestions"
+                    (mousedown)="applyGoogleMapsCitySuggestion(suggestion)"
+                  >
+                    <span class="autocomplete-primary">{{
+                      suggestion.primaryText
+                    }}</span>
+                    <span
+                      class="autocomplete-secondary"
+                      *ngIf="suggestion.secondaryText"
+                    >
+                      {{ suggestion.secondaryText }}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="topic-google-maps-types">Business Types *</label>
+              <input
+                id="topic-google-maps-types"
+                type="text"
+                [(ngModel)]="topicForm.googleMapsTypes"
+                name="googleMapsTypes"
+                placeholder="e.g. marketing agency, dental office"
+                required
+              />
+            </div>
+          </div>
+          <div class="form-row local-search-row" *ngIf="isGoogleMapsSelected">
+            <div class="form-group">
+              <label for="topic-google-maps-location">Search Location *</label>
+              <div class="autocomplete-field">
+                <div class="chips-input chips-input-location">
+                  <div class="chips" *ngIf="topicForm.googleMapsLocation">
+                    <span class="chip">
+                      {{ topicForm.googleMapsLocation }}
+                      <button type="button" (click)="clearGoogleMapsLocation()">
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                  <input
+                    id="topic-google-maps-location"
+                    type="text"
+                    [ngModel]="googleMapsLocationInput"
+                    (ngModelChange)="onGoogleMapsLocationInput($event)"
+                    (keydown)="onGoogleMapsLocationInputKeydown($event)"
+                    (blur)="closeGoogleMapsSuggestions('location')"
+                    name="googleMapsLocationInput"
+                    placeholder="Choose the search center (city preferred; ZIP okay)"
+                    required
+                    autocomplete="off"
+                  />
+                </div>
+                <div
+                  class="autocomplete-menu"
+                  *ngIf="googleMapsLocationSuggestions.length"
+                >
+                  <button
+                    type="button"
+                    class="autocomplete-option"
+                    *ngFor="let suggestion of googleMapsLocationSuggestions"
+                    (mousedown)="applyGoogleMapsLocationSuggestion(suggestion)"
+                  >
+                    <span class="autocomplete-primary">{{
+                      suggestion.primaryText
+                    }}</span>
+                    <span
+                      class="autocomplete-secondary"
+                      *ngIf="suggestion.secondaryText"
+                    >
+                      {{ suggestion.secondaryText }}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="topic-google-maps-radius">Radius (miles) *</label>
+              <input
+                id="topic-google-maps-radius"
+                type="number"
+                [(ngModel)]="topicForm.googleMapsRadiusMiles"
+                name="googleMapsRadiusMiles"
+                min="1"
+                step="1"
+                required
+              />
+            </div>
+          </div>
+          <div class="form-hint-card" *ngIf="isGoogleMapsSelected">
+            <p class="form-hint">
+              <ng-container
+                *ngIf="
+                  topicForm.discoveryIntent ===
+                    LeadTopicDiscoveryIntent.SERVICE_BUYERS;
+                  else googleMapsJobHint
+                "
+              >
+                Service-buyer discovery searches local businesses by category in
+                each city, not job postings. Use business types like
+                <strong>dental office</strong> or <strong>law firm</strong>,
+                then exclude terms you do not want such as
+                <strong>wordpress</strong> or <strong>php</strong>.
+              </ng-container>
+              <ng-template #googleMapsJobHint>
+                Google Maps discovery searches each city and business type
+                combination. For job-opening topics, keywords still act as the
+                main matching signal.
+              </ng-template>
+            </p>
+          </div>
+          <div class="form-checkbox-row">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [(ngModel)]="topicForm.enabled"
+                name="enabled"
+              />
+              <span>Enable topic immediately</span>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="cancelAdd()"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="!topicForm.name.trim() || formSubmitting"
+            >
+              {{
+                formSubmitting
+                  ? 'Saving...'
+                  : isEditing
+                  ? 'Save Changes'
+                  : 'Create Topic'
+              }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Topics Grid -->
+  <div class="topics-layout" *ngIf="topics.length > 0">
+    <div class="topics-grid">
+      <button
+        type="button"
+        *ngFor="let topic of topics"
+        class="topic-card topic-summary-card"
+        [class.enabled]="topic.enabled"
+        [class.disabled]="!topic.enabled"
+        [class.selected]="selectedTopicId === topic.id"
+        (click)="selectTopic(topic)"
+      >
+        <div class="topic-header">
+          <div class="topic-info">
+            <h3 class="topic-name">{{ topic.name }}</h3>
+            <p class="topic-description">{{ topic.description }}</p>
+            <p class="topic-strategy">
+              {{ getTopicStrategySummary(topic) }}
+            </p>
+          </div>
+          <span class="status-badge-inline">{{
+            topic.enabled ? 'Active' : 'Paused'
+          }}</span>
+        </div>
+
+        <div class="topic-sources">
+          <span
+            *ngFor="let source of getTopicSources(topic)"
+            class="source-chip"
+            [attr.data-source]="source"
+          >
+            {{ formatSourceLabel(source) }}
+          </span>
+        </div>
+
+        <div class="topic-summary-metrics">
+          <span>{{ topic.leadCount }} leads</span>
+          <span>{{ getDiscoveryIntentLabel(topic.discoveryIntent) }}</span>
+          <span>{{
+            topic.lastRun ? (topic.lastRun | date : 'short') : 'Not yet scanned'
+          }}</span>
+        </div>
+      </button>
+    </div>
+
+    <section class="topic-detail-panel" *ngIf="selectedTopic as topic">
+      <div class="topic-detail-header">
+        <div>
+          <h2>{{ topic.name }}</h2>
+          <p>{{ topic.description || getTopicStrategySummary(topic) }}</p>
+        </div>
+        <div class="topic-detail-actions">
+          <button
+            type="button"
+            class="btn btn-secondary btn-compact"
+            (click)="editTopic(topic)"
+            [disabled]="
+              activeTopicId === topic.id || deletingTopicId === topic.id
+            "
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary btn-compact"
+            (click)="runDiscovery(topic)"
+            [disabled]="
+              activeTopicId === topic.id || isDiscoveryPending(topic.id)
+            "
+          >
+            {{ getDiscoveryActionLabel(topic.id) }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary btn-compact btn-danger"
+            (click)="deleteTopic(topic)"
+            [disabled]="deletingTopicId === topic.id"
+          >
+            {{ deletingTopicId === topic.id ? 'Deleting...' : 'Delete' }}
+          </button>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              [checked]="topic.enabled"
+              (change)="toggleTopic(topic)"
+              [disabled]="
+                activeTopicId === topic.id || deletingTopicId === topic.id
+              "
+            />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="topic-keywords">
+        <span *ngFor="let keyword of topic.keywords" class="keyword-chip">{{
+          keyword
+        }}</span>
+      </div>
+
+      <div class="topic-keywords" *ngIf="topic.excludedTerms?.length">
+        <span *ngFor="let term of topic.excludedTerms" class="keyword-chip">
+          Exclude: {{ term }}
+        </span>
+      </div>
+
+      <div class="topic-local-area">
+        <span class="topic-local-area-label">Intent</span>
+        <span class="topic-local-area-value">{{
+          getDiscoveryIntentLabel(topic.discoveryIntent)
+        }}</span>
+      </div>
+
+      <div
+        class="topic-local-area"
+        *ngIf="getTopicGoogleMapsSummary(topic) as searchArea"
+      >
+        <span class="topic-local-area-label">Google Maps</span>
+        <span class="topic-local-area-value">{{ searchArea }}</span>
+      </div>
+
+      <div
+        class="topic-local-area"
+        *ngIf="topic.qualificationSummary as summary"
+      >
+        <span class="topic-local-area-label">Strong match</span>
+        <span class="topic-local-area-value">{{
+          summary.byClassification['strong-match']
+        }}</span>
+      </div>
+
+      <div
+        class="topic-local-area"
+        *ngIf="topic.qualificationSummary as summary"
+      >
+        <span class="topic-local-area-label">Avg relevance</span>
+        <span class="topic-local-area-value">{{
+          summary.averageRelevanceScore ?? 'N/A'
+        }}</span>
+      </div>
+
+      <div class="topic-footer">
+        <div class="topic-stat">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+          </svg>
+          <span>{{ topic.leadCount }} leads found</span>
+        </div>
+        <div class="topic-footer-actions">
+          <span *ngIf="topic.lastRun" class="topic-last-run"
+            >Last scan: {{ topic.lastRun | date : 'short' }}</span
+          >
+          <span *ngIf="!topic.lastRun" class="topic-last-run"
+            >Not yet scanned</span
+          >
+        </div>
+      </div>
+
+      <div
+        class="discovery-result"
+        [attr.data-severity]="getDiscoverySeverity(discoveryResult)"
+        *ngIf="getDiscoveryResult(topic.id) as discoveryResult"
+      >
+        <div class="discovery-summary">
+          <div class="discovery-summary-header">
+            <span class="discovery-status-pill">{{
+              getDiscoverySeverityLabel(discoveryResult)
+            }}</span>
+            <span class="discovery-provider-meta">
+              Status: {{ discoveryResult.status }}
+            </span>
+          </div>
+          <h4 class="discovery-summary-title">
+            {{ getDiscoverySummaryTitle(discoveryResult) }}
+          </h4>
+          <p class="discovery-message">
+            {{ getDiscoverySummaryBody(discoveryResult) }}
+          </p>
+          <div class="discovery-summary-stats">
+            <span class="discovery-stat">
+              {{ discoveryResult.linkedLeadCount }} linked
+            </span>
+            <span class="discovery-stat">
+              {{ discoveryResult.addedCount }} added
+            </span>
+            <span class="discovery-stat">
+              {{ discoveryResult.removedCount }} removed
+            </span>
+            <span
+              class="discovery-stat"
+              *ngIf="discoveryResult.diagnosticCounts"
+            >
+              {{ discoveryResult.diagnosticCounts.providersWithIssues }}
+              providers with issues
+            </span>
+          </div>
+          <ul
+            class="discovery-action-list"
+            *ngIf="discoveryResult.actionItems?.length"
+          >
+            <li *ngFor="let action of discoveryResult.actionItems">
+              {{ action }}
+            </li>
+          </ul>
+        </div>
+
+        <details
+          class="discovery-details"
+          *ngIf="discoveryResult.providerResults?.length"
+        >
+          <summary>Provider details</summary>
+          <div class="discovery-provider-grid">
+            <div
+              class="discovery-provider-card"
+              *ngFor="let providerResult of discoveryResult.providerResults"
+              [attr.data-status]="providerResult.status || 'ok'"
+            >
+              <div class="discovery-provider-header">
+                <span class="discovery-provider-name">{{
+                  providerResult.providerName
+                }}</span>
+                <div class="discovery-provider-badges">
+                  <span class="discovery-provider-status">{{
+                    getProviderStatusLabel(providerResult.status)
+                  }}</span>
+                  <span class="discovery-provider-count"
+                    >{{ providerResult.candidateCount }} found</span
+                  >
+                </div>
+              </div>
+              <p class="discovery-provider-meta">
+                {{ providerResult.queries.length }} quer{{
+                  providerResult.queries.length === 1 ? 'y' : 'ies'
+                }}
+                run
+              </p>
+              <div
+                class="discovery-issue-list"
+                *ngIf="providerResult.issues?.length"
+              >
+                <div
+                  class="discovery-issue"
+                  *ngFor="let issue of providerResult.issues"
+                  [attr.data-severity]="issue.severity"
+                >
+                  <div class="discovery-issue-header">
+                    <span class="discovery-issue-summary">{{
+                      issue.summary
+                    }}</span>
+                    <span class="discovery-issue-type">{{ issue.type }}</span>
+                  </div>
+                  <p class="discovery-issue-detail">{{ issue.detail }}</p>
+                  <p class="discovery-issue-action" *ngIf="issue.action">
+                    {{ issue.action }}
+                  </p>
+                </div>
+              </div>
+              <div
+                class="discovery-raw-warning-list"
+                *ngIf="providerResult.warnings?.length"
+              >
+                <p
+                  class="discovery-provider-warning"
+                  *ngFor="let warning of providerResult.warnings"
+                >
+                  {{ warning }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <div *ngIf="topics.length === 0" class="empty-state">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+    <h3>No Topics Configured</h3>
+    <p>Add a discovery topic to start finding leads automatically.</p>
+    <button class="btn btn-primary" (click)="openAddForm()">
+      Add Your First Topic
+    </button>
+  </div>
+</div>

@@ -1,11 +1,11 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
 
 @Component({
   selector: 'lib-component-wrapper',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [IconComponent],
   template: `
     <div
       class="component-wrapper"
@@ -24,7 +24,7 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
           (click)="onEdit($event)"
           title="Edit Properties"
         >
-          <mat-icon>edit</mat-icon>
+          <otui-icon name="edit"></otui-icon>
         </button>
         <button
           class="control-btn delete-btn"

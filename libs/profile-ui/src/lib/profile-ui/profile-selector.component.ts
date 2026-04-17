@@ -33,7 +33,6 @@ import {
   TextInputComponent,
 } from '@optimistic-tanuki/form-ui';
 
-import { MatListModule } from '@angular/material/list';
 import { ProfilePhotoComponent } from './profile-photo/profile-photo.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
@@ -48,7 +47,6 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     ModalComponent,
     ImageUploadComponent,
     ProfilePhotoComponent,
-    MatListModule,
   ],
   templateUrl: './profile-selector.component.html',
   styleUrl: './profile-selector.component.scss',

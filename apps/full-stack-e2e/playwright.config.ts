@@ -10,7 +10,7 @@ const digitalHomesteadBaseURL =
 const ownerConsoleBaseURL =
   process.env['OWNER_CONSOLE_BASE_URL'] || 'http://localhost:8084';
 
-const isCI = !!process.env.CI;
+const isCI = !!process.env['CI'];
 
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),

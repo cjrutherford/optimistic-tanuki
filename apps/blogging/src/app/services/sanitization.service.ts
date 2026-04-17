@@ -68,6 +68,9 @@ export class SanitizationService {
         'hr',
       ],
       ALLOWED_ATTR: [
+        'componentid',
+        'instanceid',
+        'data',
         'href',
         'src',
         'alt',
@@ -92,7 +95,22 @@ export class SanitizationService {
       SAFE_FOR_TEMPLATES: true,
     };
 
-    return this.purify.sanitize(content, config);
+    const sanitizedContent = this.purify.sanitize(content, config);
+    console.log('Content sanitized successfully');
+    console.log(`Sanitized Content: ${sanitizedContent}`);
+    const dom = new JSDOM(sanitizedContent);
+    const componentNodes = dom.window.document.querySelectorAll('div.angular-component-node');
+
+    componentNodes.forEach((node) => {
+      const componentId = node.getAttribute('componentid');
+      const instanceId = node.getAttribute('instanceid');
+      const data = node.getAttribute('data');
+      console.log(
+        `Found component node - componentId: ${componentId}, instanceId: ${instanceId} data: ${JSON.stringify(data)}`
+      );
+    });
+
+    return sanitizedContent;
   }
 
   /**
@@ -166,7 +184,7 @@ export class SanitizationService {
     const maliciousPatterns = [
       /<script[^>]*>[\s\S]*?<\/script>/gi,
       /javascript:/gi,
-      /on\w+\s*=/gi, // Event handlers like onclick=
+      /\bon\w+\s*=/gi, // Event handlers like onclick= (word boundary ensures "on" is not part of another word like "component")
       /<iframe[^>]*>/gi,
       /<embed[^>]*>/gi,
       /<object[^>]*>/gi,
@@ -174,6 +192,15 @@ export class SanitizationService {
       /data:text\/html/gi,
     ];
 
-    return maliciousPatterns.some((pattern) => pattern.test(content));
+    for (const pattern of maliciousPatterns) {
+      const match = content.match(pattern);
+      if (match) {
+        console.warn(`Malicious pattern detected: ${pattern}`);
+        console.warn(`Matching content: ${match}`);
+        return true;
+      }
+    }
+
+    return false;
   }
 }

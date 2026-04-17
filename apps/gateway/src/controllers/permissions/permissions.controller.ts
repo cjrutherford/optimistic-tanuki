@@ -29,6 +29,8 @@ import {
   UpdateAppScopeDto,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { firstValueFrom } from 'rxjs';
 
@@ -42,7 +44,8 @@ export class PermissionsController {
   ) { }
 
   // App Scope endpoints
-  @UseGuards(AuthGuard)
+  @RequirePermissions('appscopes.create')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Create a new app scope' })
   @Post('app-scope')
   async createAppScope(@Body() createAppScopeDto: CreateAppScopeDto) {
@@ -75,7 +78,8 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('appscopes.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Update an app scope' })
   @Put('app-scope/:id')
   async updateAppScope(
@@ -90,7 +94,8 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('appscopes.delete')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Delete an app scope' })
   @Delete('app-scope/:id')
   async deleteAppScope(@Param('id') id: string) {
@@ -100,7 +105,8 @@ export class PermissionsController {
   }
 
   // Permission endpoints
-  @UseGuards(AuthGuard)
+  @RequirePermissions('permissions.create')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Create a new permission' })
   @Post('permission')
   async createPermission(@Body() createPermissionDto: CreatePermissionDto) {
@@ -127,7 +133,8 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('permissions.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Update a permission' })
   @Put('permission/:id')
   async updatePermission(
@@ -142,7 +149,8 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('permissions.delete')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Delete a permission' })
   @Delete('permission/:id')
   async deletePermission(@Param('id') id: string) {
@@ -152,7 +160,8 @@ export class PermissionsController {
   }
 
   // Role endpoints
-  @UseGuards(AuthGuard)
+  @RequirePermissions('roles.create')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Create a new role' })
   @Post('role')
   async createRole(@Body() createRoleDto: CreateRoleDto) {
@@ -179,7 +188,8 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('roles.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Update a role' })
   @Put('role/:id')
   async updateRole(
@@ -191,7 +201,8 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('roles.delete')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Delete a role' })
   @Delete('role/:id')
   async deleteRole(@Param('id') id: string) {
@@ -200,7 +211,8 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('roles.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Add permission to role' })
   @Post('role/:roleId/permission/:permissionId')
   async addPermissionToRole(
@@ -215,7 +227,8 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('roles.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Remove permission from role' })
   @Delete('role/:roleId/permission/:permissionId')
   async removePermissionFromRole(
@@ -230,7 +243,8 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('users.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Assign role to user' })
   @Post('assignment')
   async assignRole(@Body() assignRoleDto: AssignRoleDto) {
@@ -239,7 +253,8 @@ export class PermissionsController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('users.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Unassign role from user' })
   @Delete('assignment/:assignmentId')
   async unassignRole(@Param('assignmentId') assignmentId: string) {

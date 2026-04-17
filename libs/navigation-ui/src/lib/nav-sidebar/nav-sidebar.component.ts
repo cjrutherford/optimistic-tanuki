@@ -8,7 +8,7 @@ import {
 
 export interface NavItem {
   label: string;
-  action: () => void;
+  action?: () => void; // Optional action function
   variant?:
     | 'primary'
     | 'secondary'
@@ -38,9 +38,16 @@ export class NavSidebarComponent {
     this.close.emit();
   }
 
+  navItemTrackBy(index: number, item: NavItem): number {
+    return index; // Assuming label is unique for each nav item
+  }
+
   onNavItemClick(item: NavItem) {
-    item.action();
-    this.close.emit(); // Close sidebar after navigation
+    // Handle action items
+    if (item.action) {
+      item.action();
+      this.close.emit(); // Close sidebar after navigation
+    }
   }
 
   getVariant(

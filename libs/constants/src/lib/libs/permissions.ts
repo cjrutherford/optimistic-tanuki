@@ -40,6 +40,7 @@ export const ALL_APP_SCOPES = [
   'global',
   'forgeofwill',
   'client-interface',
+  'leads-app',
   'digital-homestead',
   'christopherrutherford-net',
   'blogging',
@@ -52,6 +53,9 @@ export const ALL_APP_SCOPES = [
   'store',
   'store-client',
   'forum',
+  'D6',
+  'wellness',
+  'local-hub',
 ] as const;
 
 export type AppScopeName = (typeof ALL_APP_SCOPES)[number];

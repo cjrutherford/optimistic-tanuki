@@ -1,32 +1,32 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 
-import {
-  CardComponent,
-  GridComponent,
-  HeadingComponent,
-  ListComponent,
-  TileComponent,
-} from '@optimistic-tanuki/common-ui';
+import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [
-    CommonModule,
-    CardComponent,
-    GridComponent,
-    HeadingComponent,
-    ListComponent,
-    TileComponent,
-  ],
+  imports: [CommonModule, CardComponent, ButtonComponent, MurmurationSceneComponent],
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.scss'],
 })
 export class LandingComponent {
-  featureItems: string[] = [
-    'Light/Dark Mode',
-    'Custom Accent/Complement Colors',
-    'Rich text editing for: Posts, comments, and responses.',
-  ];
+  private router = inject(Router);
+
+  navigateToLogin(): void {
+    this.router.navigate(['/login']);
+  }
+
+  navigateToRegister(): void {
+    this.router.navigate(['/register']);
+  }
+
+  scrollToHowItWorks(): void {
+    const featuresSection = document.getElementById('how-it-works');
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
 }

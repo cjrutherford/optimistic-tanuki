@@ -1,42 +1,349 @@
-.text-input-container {
+@use '../../styles/mixins' as *;
+@use '../../styles/personality-tokens' as *;
+@use '../../styles/personality-effects' as *;
+
+// ============================================
+// Personality-Driven Text Input Component
+// Adapts to application personality via CSS custom properties
+// ============================================
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs, 6px);
+  width: 100%;
+
+  &.label-left {
+    flex-direction: row;
+    align-items: center;
+
+    .form-label {
+      margin-bottom: 0;
+      margin-right: var(--spacing-sm, 12px);
+      white-space: nowrap;
+    }
+  }
+
+  &.label-right {
+    flex-direction: row-reverse;
+    align-items: center;
+
+    .form-label {
+      margin-bottom: 0;
+      margin-left: var(--spacing-sm, 12px);
+      white-space: nowrap;
+    }
+  }
+
+  &.label-bottom {
+    flex-direction: column-reverse;
+
+    .form-label {
+      margin-bottom: 0;
+      margin-top: var(--spacing-xs, 8px);
+    }
+  }
+
+  @include mobile {
+    &.label-left,
+    &.label-right {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .form-label {
+        margin: 0 0 var(--spacing-xs, 6px) 0;
+      }
+    }
+  }
+}
+
+.form-label {
+  font-family: var(--font-heading, system-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted, var(--foreground-secondary));
+  margin-bottom: var(--spacing-xs, 6px);
+  padding-left: var(--spacing-xs, 4px);
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--spacing-sm, 12px) var(--spacing-md, 20px);
+  font-family: var(--font-body, system-ui);
+  font-size: 0.9375rem;
+  color: var(--foreground);
+  background: var(--surface, var(--background));
+  border: var(--border-width, 1px) solid var(--border);
+  border-radius: var(--border-radius-md, 8px);
+  outline: none;
+  transition: all var(--animation-duration-normal, 250ms)
+    var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+  box-shadow: var(--shadow-sm);
+
+  @include reduced-motion {
+    transition: none;
+  }
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-md),
+      0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+    background: var(--background);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--surface);
+    box-shadow: none;
+  }
+
+  &::placeholder {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  &.has-error {
+    border-color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 10%, var(--background));
+    box-shadow: var(--shadow-sm),
+      0 0 0 1px color-mix(in srgb, var(--danger) 30%, transparent);
+
+    &:focus {
+      box-shadow: var(--shadow-md),
+        0 0 0 2px color-mix(in srgb, var(--danger) 20%, transparent);
+    }
+  }
+
+  &.soft {
+    background: color-mix(in srgb, var(--background) 80%, var(--surface));
+    border-color: color-mix(in srgb, var(--primary) 20%, var(--border));
+
+    &:focus {
+      background: var(--background);
+      border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+    }
+  }
+
+  &.filled {
+    background: var(--surface);
+    border-color: transparent;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
+
+    &:focus {
+      background: var(--background);
+      border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    }
+  }
+
+  // Size variants
+  &.small {
+    padding: 8px 16px;
+    font-size: 0.8125rem;
+  }
+
+  &.large {
+    padding: 16px 24px;
+    font-size: 1.0625rem;
+  }
+}
+
+.error-message {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.75rem;
+  color: var(--danger, #dc2626);
+  margin-top: 4px;
+  padding-left: 8px;
   display: flex;
   align-items: center;
-  cursor: pointer;
-  gap: 1rem;
-  margin-top: 10px;
-  user-select: none;
+  gap: 4px;
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: var(--danger, #dc2626);
+    border-radius: 50%;
+  }
 }
 
-.text-input-container.top {
-  flex-direction: column;
+// Input wrapper with icon
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .form-control {
+    padding-left: 44px;
+  }
+
+  .input-icon {
+    position: absolute;
+    left: 16px;
+    color: var(--muted, rgba(107, 114, 128, 0.5));
+    pointer-events: none;
+    transition: color var(--animation-duration-fast, 200ms) ease;
+
+    + .form-control {
+      padding-left: 44px;
+    }
+  }
+
+  &:focus-within .input-icon {
+    color: color-mix(in srgb, var(--primary) 60%, transparent);
+  }
 }
 
-.text-input-container.left {
-  flex-direction: row;
+// Input with prefix/suffix
+.input-affix {
+  display: flex;
+  align-items: center;
+  background: var(--surface, var(--background));
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--primary) 15%, transparent);
+  border-radius: var(--border-radius-md, 8px);
+  overflow: hidden;
+  transition: all 250ms var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+
+  &:focus-within {
+    border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent);
+  }
+
+  .form-control {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 12px 16px;
+
+    &:focus {
+      box-shadow: none;
+    }
+  }
+
+  .input-prefix,
+  .input-suffix {
+    padding: 0 16px;
+    font-family: var(--font-heading, system-ui, sans-serif);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted, rgba(107, 114, 128, 0.7));
+    white-space: nowrap;
+  }
+
+  .input-prefix {
+    border-right: 0.5px solid
+      color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+
+  .input-suffix {
+    border-left: 0.5px solid color-mix(in srgb, var(--primary) 10%, transparent);
+  }
 }
 
-.text-input-container.right {
-  flex-direction: row-reverse;
+// ============================================
+// Personality-Specific Input Enhancements
+// ============================================
+
+// Architect - sharp corners, hard focus
+body.personality-architect .form-control {
+  border-radius: 0;
+
+  &:focus {
+    border-width: 2px;
+    box-shadow: 4px 4px 0 var(--primary);
+  }
 }
 
-.text-input-container.bottom {
-  flex-direction: column-reverse;
+// Playful - bouncy, rounded
+body.personality-playful .form-control {
+  border-radius: 12px;
+
+  &:focus {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent);
+    transform: scale(1.01);
+  }
 }
 
-.text-input-container input {
-  height: 20px;
-  width: 99%;
-  margin: 10px;
-  padding: 5px;
-  border: 2px solid var(--accent);
-  color: var(--foreground);
-  border: 2px solid var(--border-color);
-  box-shadow: 0 0 2px 1px var(--complement);
+// Minimal - subtle, sharp
+body.personality-minimal .form-control {
+  border-radius: 2px;
+  border-width: 0.5px;
+
+  &:focus {
+    border-width: 1px;
+    box-shadow: none;
+    outline: 1px solid var(--primary);
+    outline-offset: 3px;
+  }
+}
+
+// Electric - glow effect
+body.personality-electric .form-control {
+  &:focus {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
+    border-color: var(--primary);
+  }
+}
+
+// Soft Touch - rounded, gentle
+body.personality-soft-touch .form-control {
+  border-radius: 20px;
+
+  &:focus {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent);
+  }
+}
+
+// Control Center - technical
+body.personality-control-center .form-control {
   border-radius: 4px;
-  background-color: var(--accent);
+  font-family: var(--font-mono);
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: inset 0 2px 4px
+      color-mix(in srgb, var(--primary) 10%, transparent);
+  }
 }
 
-.text-input-container input:focus {
-  border-color: var(--border-color);
-  box-shadow: 0 0 5px 4px var(--complement);
+// Elegant - refined
+body.personality-elegant .form-control {
+  border-radius: 6px;
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+}
+
+// Gradient focus variant
+.form-control.gradient-focus {
+  &:focus {
+    background: var(--gradient-input-focus);
+  }
+}
+
+// Animated focus variant
+.form-control.animate-focus {
+  &:focus {
+    animation: input-focus-pulse 0.3s ease-out;
+  }
+}
+
+@keyframes input-focus-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
 }

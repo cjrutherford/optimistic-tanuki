@@ -26,6 +26,23 @@ const forumUserIdResolver: ResolveFn<string> = () => {
   return profile?.id || '';
 };
 
+const communityPermissionResolver: ResolveFn<string[]> = async () => {
+  const permissionsService = inject(UserPermissionsService);
+  const permissions = await permissionsService.searchPermissions('community.');
+  return permissions;
+};
+
+const communityIsLoggedInResolver: ResolveFn<boolean> = () => {
+  const authState = inject(AuthStateService);
+  return authState.isAuthenticated;
+};
+
+const communityUserIdResolver: ResolveFn<string> = () => {
+  const authState = inject(AuthStateService);
+  const profile = authState.getPersistedSelectedProfile();
+  return profile?.id || '';
+};
+
 export const appRoutes: Route[] = [
   {
     path: '',
@@ -50,19 +67,42 @@ export const appRoutes: Route[] = [
       import('./components/social/feed.component').then((m) => m.FeedComponent),
     canActivate: [AuthGuard, ProfileGuard], // Protect the feed route
   },
-  // profile route removed — profile editing is available from Settings
   {
-    path: 'tasks',
+    path: 'profile',
     loadComponent: () =>
-      import('./components/tasks/tasks.component').then(
-        (m) => m.TasksComponent
-      ),
-    canActivate: [AuthGuard, ProfileGuard], // Protect the tasks route
+      import('./components/profile.component').then((m) => m.ProfileComponent),
+    canActivate: [AuthGuard],
   },
   {
+    path: 'profile/:userId',
+    loadComponent: () =>
+      import('./components/profile.component').then((m) => m.ProfileComponent),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  // profile route removed — profile editing is available from Settings
+  {
     path: 'forum',
-    loadChildren: () => import('@optimistic-tanuki/forum-ui').then(m => m.provideForumRoutes(forumPermissionResolver, forumIsLoggedInResolver, forumUserIdResolver)),
+    loadChildren: () =>
+      import('@optimistic-tanuki/forum-ui').then((m) =>
+        m.provideForumRoutes(
+          forumPermissionResolver,
+          forumIsLoggedInResolver,
+          forumUserIdResolver
+        )
+      ),
     canActivate: [AuthGuard, ProfileGuard], // Protect the forum route
+  },
+  {
+    path: 'communities',
+    loadChildren: () =>
+      import('@optimistic-tanuki/community-ui').then((m) =>
+        m.provideCommunityRoutes(
+          communityPermissionResolver,
+          communityIsLoggedInResolver,
+          communityUserIdResolver
+        )
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
   },
   {
     path: 'settings',
@@ -71,6 +111,46 @@ export const appRoutes: Route[] = [
         (m) => m.SettingsComponent
       ),
     canActivate: [AuthGuard], // Protect the settings route
+  },
+  {
+    path: 'settings/privacy',
+    loadComponent: () =>
+      import('./components/settings/privacy-settings.component').then(
+        (m) => m.PrivacySettingsComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'messages',
+    loadComponent: () =>
+      import('./components/messages.component').then(
+        (m) => m.MessagesComponent
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
+    path: 'notifications',
+    loadComponent: () =>
+      import('./components/notifications/notifications-page.component').then(
+        (m) => m.NotificationsPageComponent
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
+    path: 'explore',
+    loadComponent: () =>
+      import('@optimistic-tanuki/search-ui').then(
+        (m) => m.ExplorePageComponent
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
+    path: 'activity',
+    loadComponent: () =>
+      import('./components/activity/activity-page.component').then(
+        (m) => m.ActivityPageComponent
+      ),
+    canActivate: [AuthGuard, ProfileGuard],
   },
   {
     path: '**',

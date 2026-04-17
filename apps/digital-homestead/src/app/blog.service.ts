@@ -6,6 +6,9 @@ import {
   CreateBlogPostDto,
   BlogPostQueryDto,
   UpdateBlogPostDto,
+  BlogComponentDto,
+  CreateBlogComponentDto,
+  UpdateBlogComponentDto,
 } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
@@ -45,7 +48,7 @@ export class BlogService {
    * Update an existing blog post
    */
   updatePost(id: string, data: UpdateBlogPostDto): Observable<BlogPostDto> {
-    return this.http.put<BlogPostDto>(`/api/post/${id}`, data);
+    return this.http.patch<BlogPostDto>(`/api/post/${id}`, data);
   }
 
   /**
@@ -114,5 +117,42 @@ export class BlogService {
    */
   publishDraft(id: string): Observable<BlogPostDto> {
     return this.http.post<BlogPostDto>(`/api/post/${id}/publish`, {});
+  }
+
+  // ========== Blog Component Methods ==========
+
+  /**
+   * Get components for a blog post
+   */
+  getComponentsForPost(postId: string): Observable<BlogComponentDto[]> {
+    return this.http.get<BlogComponentDto[]>(`/api/blog-components/post/${postId}`);
+  }
+
+  /**
+   * Create a blog component
+   */
+  createComponent(component: CreateBlogComponentDto): Observable<BlogComponentDto> {
+    return this.http.post<BlogComponentDto>('/api/blog-components', component);
+  }
+
+  /**
+   * Update a blog component
+   */
+  updateComponent(id: string, component: UpdateBlogComponentDto): Observable<BlogComponentDto> {
+    return this.http.put<BlogComponentDto>(`/api/blog-components/${id}`, component);
+  }
+
+  /**
+   * Delete a blog component
+   */
+  deleteComponent(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/blog-components/${id}`);
+  }
+
+  /**
+   * Delete all components for a post
+   */
+  deleteComponentsByPost(postId: string): Observable<void> {
+    return this.http.delete<void>(`/api/blog-components/post/${postId}`);
   }
 }

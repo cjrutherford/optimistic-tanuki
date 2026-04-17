@@ -60,9 +60,14 @@
       [ngModelOptions]="{ standalone: true }"
       placeholder="Name your Masterpiece"
     ></lib-text-input>
+    @if (titleError) {
+    <div class="error-message">{{ titleError }}</div>
+    }
 
     <label for="content">Content</label>
-    @if (editor) {
+    @if (contentError) {
+    <div class="error-message">{{ contentError }}</div>
+    } @if (editor) {
     <lib-rich-text-toolbar
       [editor]="editor"
       (componentsClicked)="onToolbarComponentsClick()"
@@ -97,14 +102,5 @@
   (componentSelected)="onComponentSelected($event)"
   (closed)="hideComponentSelector()"
 ></lib-component-selector>
-
-<!-- Property editor -->
-<lib-property-editor
-  [isVisible]="isPropertyEditorVisible"
-  [componentInstance]="selectedComponentInstance"
-  [propertyDefinitions]="selectedComponentProperties"
-  (propertiesUpdated)="onPropertiesUpdated($event)"
-  (closed)="hidePropertyEditor()"
-></lib-property-editor>
 
 <ng-container #componentContainer></ng-container>

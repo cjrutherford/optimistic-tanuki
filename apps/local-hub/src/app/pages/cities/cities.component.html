@@ -1,0 +1,411 @@
+<div class="cities-page">
+  <header class="page-header">
+    <div class="header-background">
+      <div class="header-pattern"></div>
+      <div class="header-gradient"></div>
+    </div>
+    <div class="header-content">
+      <div class="header-top">
+        <div class="brand">
+          <span class="brand-icon">🏠</span>
+          <span class="brand-text">Towne Square</span>
+        </div>
+      </div>
+      <h1 class="page-title">Explore Local Hubs</h1>
+      <p class="page-subtitle">
+        Discover communities across {{ filteredCities().length }} supported
+        localities
+      </p>
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-value">{{ filteredCities().length }}</span>
+          <span class="stat-label">Localities</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{ getTotalCommunities() }}</span>
+          <span class="stat-label">Communities</span>
+        </div>
+        @if (signedIn) {
+        <div class="stat">
+          <span class="stat-value">{{ filteredMyCommunities().length }}</span>
+          <span class="stat-label">Your Communities</span>
+        </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  @if (loading()) {
+  <div class="loading-state">
+    <div class="loading-spinner"></div>
+    <p>Loading cities...</p>
+  </div>
+  } @else {
+  <section class="city-workbench">
+    <aside class="map-rail">
+      <div class="map-rail-card">
+        <div class="map-header">
+          <p class="eyebrow">Live Atlas</p>
+          <h2 class="section-title">
+            <span class="title-icon">🗺️</span>
+            Regional Map
+          </h2>
+          <p class="section-subtitle">
+            Always-on navigation for the current result set. Select a marker to
+            jump directly into a city hub.
+          </p>
+        </div>
+        <div class="map-frame">
+          <app-map
+            [cities]="filteredCities()"
+            [centerLat]="31.9"
+            [centerLng]="-81.1"
+            [zoom]="6"
+            [showRadius]="false"
+            (citySelected)="onMapCitySelect($event)"
+          ></app-map>
+        </div>
+        <div class="map-note">
+          <span class="map-note-kicker">Visible now</span>
+          <strong>{{ filteredCities().length }}</strong> cities and
+          <strong>{{ filteredCommunities().length }}</strong> communities
+        </div>
+      </div>
+    </aside>
+
+    <div class="workspace-column">
+      <section class="control-panel">
+        <button
+          class="section-toggle"
+          type="button"
+          (click)="toggleSection('filters')"
+          [attr.aria-expanded]="isSectionExpanded('filters')"
+        >
+          <div>
+            <p class="eyebrow">Refine</p>
+            <h2 class="section-title">
+              <span class="title-icon">🔎</span>
+              Search & Filters
+            </h2>
+          </div>
+          <span
+            class="toggle-indicator"
+            [class.expanded]="isSectionExpanded('filters')"
+            >⌄</span
+          >
+        </button>
+
+        @if (isSectionExpanded('filters')) {
+        <div class="filters-shell">
+          <label class="search-field">
+            <span class="search-label">Search localities and communities</span>
+            <input
+              type="search"
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+              placeholder="Try Savannah, food, military, downtown..."
+            />
+          </label>
+
+          <div class="filter-stack">
+            <div class="filter-block">
+              <span class="filter-label">States</span>
+              <div class="filter-buttons">
+                @for (state of states; track state) {
+                <button
+                  class="filter-chip"
+                  [class.active]="selectedStates().includes(state)"
+                  (click)="toggleState(state)"
+                  type="button"
+                >
+                  {{ state }}
+                </button>
+                }
+              </div>
+            </div>
+
+            <div class="filter-block">
+              <span class="filter-label">Community type</span>
+              <div class="filter-buttons">
+                @for (type of communityTypes; track type) {
+                <button
+                  class="filter-chip soft"
+                  [class.active]="selectedCommunityTypes().includes(type)"
+                  (click)="toggleCommunityType(type)"
+                  type="button"
+                >
+                  {{ type }}
+                </button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-summary">
+            <span
+              >{{ activeFiltersCount }} active
+              {{ activeFiltersCount === 1 ? 'control' : 'controls' }}</span
+            >
+            @if (activeFiltersCount > 0) {
+            <button
+              class="clear-filters"
+              type="button"
+              (click)="clearFilters()"
+            >
+              Reset all
+            </button>
+            }
+          </div>
+        </div>
+        }
+      </section>
+
+      @if (signedIn) {
+      <section class="panel-section accent">
+        <button
+          class="section-toggle"
+          type="button"
+          (click)="toggleSection('myCommunities')"
+          [attr.aria-expanded]="isSectionExpanded('myCommunities')"
+        >
+          <div>
+            <p class="eyebrow">Signed In</p>
+            <h2 class="section-title">
+              <span class="title-icon">⭐</span>
+              Your Communities
+            </h2>
+          </div>
+          <span
+            class="toggle-indicator"
+            [class.expanded]="isSectionExpanded('myCommunities')"
+            >⌄</span
+          >
+        </button>
+
+        @if (isSectionExpanded('myCommunities')) {
+        <div class="panel-body">
+          @if (filteredMyCommunities().length > 0) {
+          <div class="community-list compact">
+            @for (community of filteredMyCommunities(); track trackById($index,
+            community)) {
+            <otui-card
+              class="community-card compact"
+              (click)="navigateToCommunity(community.slug)"
+              role="button"
+              [attr.aria-label]="community.name + ' community'"
+            >
+              <div class="community-card-body">
+                <div class="community-image-wrapper small">
+                  @if (community.imageUrl) {
+                  <img
+                    [src]="community.imageUrl"
+                    [alt]="community.name"
+                    class="community-image"
+                    loading="lazy"
+                    width="180"
+                    height="140"
+                    (error)="$event.target.style.display = 'none'"
+                  />
+                  }
+                </div>
+                <div class="community-content">
+                  <div class="community-header">
+                    <span class="community-type">{{
+                      community.localityType
+                    }}</span>
+                    <span class="community-location"
+                      >{{ community.city }}, {{ community.adminArea }}</span
+                    >
+                  </div>
+                  <h3 class="community-name">{{ community.name }}</h3>
+                  <p class="community-description">
+                    {{ community.description }}
+                  </p>
+                  <div class="community-meta">
+                    <span class="community-members"
+                      >{{ community.memberCount | number }} members</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </otui-card>
+            }
+          </div>
+          } @else {
+          <div class="empty-state inline">
+            <p>
+              No memberships match the current search and filter settings yet.
+            </p>
+          </div>
+          }
+        </div>
+        }
+      </section>
+      }
+
+      <section class="panel-section">
+        <button
+          class="section-toggle"
+          type="button"
+          (click)="toggleSection('cities')"
+          [attr.aria-expanded]="isSectionExpanded('cities')"
+        >
+          <div>
+            <p class="eyebrow">Browse</p>
+            <h2 class="section-title">
+              <span class="title-icon">🏛️</span>
+              Supported Cities
+            </h2>
+          </div>
+          <span
+            class="toggle-indicator"
+            [class.expanded]="isSectionExpanded('cities')"
+            >⌄</span
+          >
+        </button>
+
+        @if (isSectionExpanded('cities')) {
+        <div class="panel-body">
+          @if (filteredCities().length > 0) {
+          <div class="city-cards">
+            @for (city of filteredCities(); track trackById($index, city); let i
+            = $index) {
+            <otui-card
+              class="city-card"
+              (click)="navigateToCity(city.slug)"
+              role="button"
+              [attr.aria-label]="'View ' + city.name + ' city hub'"
+              (mouseenter)="onCityHover(city)"
+              (mouseleave)="onCityHover(null)"
+              [style.animation-delay]="i * 40 + 'ms'"
+            >
+              <div class="city-image-wrapper">
+                @if (city.imageUrl) {
+                <img
+                  [src]="city.imageUrl"
+                  [alt]="city.name"
+                  class="city-image"
+                  loading="lazy"
+                  width="400"
+                  height="250"
+                  (error)="$event.target.style.display = 'none'"
+                />
+                }
+                <div class="city-image-overlay"></div>
+                <span class="city-badge">{{ city.adminArea }}</span>
+              </div>
+              <div class="city-content">
+                <div class="city-heading-row">
+                  <h3 class="city-name">{{ city.name }}</h3>
+                  <span class="city-pill">{{ city.communities }} groups</span>
+                </div>
+                <p class="city-description">{{ city.description }}</p>
+                <div class="city-meta">
+                  <span class="city-population"
+                    >{{ city.population | number }} residents</span
+                  >
+                  <span class="city-communities">{{ city.timezone }}</span>
+                </div>
+                <div class="city-highlights">
+                  @for (highlight of city.highlights.slice(0, 3); track
+                  highlight.headline) {
+                  <span class="highlight-tag">{{ highlight.headline }}</span>
+                  }
+                </div>
+              </div>
+            </otui-card>
+            }
+          </div>
+          } @else {
+          <div class="empty-state">
+            <h3>No cities match the current filters</h3>
+            <p>Broaden the search or clear one of the active filters.</p>
+          </div>
+          }
+        </div>
+        }
+      </section>
+
+      <section class="panel-section">
+        <button
+          class="section-toggle"
+          type="button"
+          (click)="toggleSection('communities')"
+          [attr.aria-expanded]="isSectionExpanded('communities')"
+        >
+          <div>
+            <p class="eyebrow">Network</p>
+            <h2 class="section-title">
+              <span class="title-icon">👥</span>
+              All Communities
+            </h2>
+          </div>
+          <span
+            class="toggle-indicator"
+            [class.expanded]="isSectionExpanded('communities')"
+            >⌄</span
+          >
+        </button>
+
+        @if (isSectionExpanded('communities')) {
+        <div class="panel-body">
+          @if (filteredCommunities().length > 0) {
+          <div class="community-list">
+            @for (community of filteredCommunities(); track trackById($index,
+            community)) {
+            <otui-card
+              class="community-card"
+              (click)="navigateToCommunity(community.slug)"
+              role="button"
+              [attr.aria-label]="community.name + ' community'"
+            >
+              <div class="community-card-body">
+                <div class="community-image-wrapper">
+                  @if (community.imageUrl) {
+                  <img
+                    [src]="community.imageUrl"
+                    [alt]="community.name"
+                    class="community-image"
+                    loading="lazy"
+                    width="220"
+                    height="180"
+                    (error)="$event.target.style.display = 'none'"
+                  />
+                  }
+                </div>
+                <div class="community-content">
+                  <div class="community-header">
+                    <span class="community-type">{{
+                      community.localityType
+                    }}</span>
+                    <span class="community-location"
+                      >{{ community.city }}, {{ community.adminArea }}</span
+                    >
+                  </div>
+                  <h3 class="community-name">{{ community.name }}</h3>
+                  <p class="community-description">
+                    {{ community.description }}
+                  </p>
+                  <div class="community-meta">
+                    <span class="community-members"
+                      >{{ community.memberCount | number }} members</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </otui-card>
+            }
+          </div>
+          } @else {
+          <div class="empty-state">
+            <h3>No communities match the current filters</h3>
+            <p>Try a different state, community type, or search term.</p>
+          </div>
+          }
+        </div>
+        }
+      </section>
+    </div>
+  </section>
+  }
+</div>

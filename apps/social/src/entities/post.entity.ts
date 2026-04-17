@@ -10,6 +10,7 @@ import {
   ManyToMany,
   MoreThanOrEqual,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -17,6 +18,9 @@ import { Comment } from './comment.entity';
 import { Link } from './link.entity';
 import { SearchPostDto } from '@optimistic-tanuki/models';
 import { Vote } from './vote.entity';
+import { Reaction } from './reaction.entity';
+import { SocialComponent } from './social-component.entity';
+import { Poll } from './poll.entity';
 
 @Entity()
 export class Post {
@@ -41,6 +45,9 @@ export class Post {
   @OneToMany(() => Vote, (vote) => vote.post)
   votes: Vote[];
 
+  @OneToMany(() => Reaction, (reaction) => reaction.post)
+  reactions: Reaction[];
+
   @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];
 
@@ -49,6 +56,12 @@ export class Post {
 
   @OneToMany(() => Attachment, (attachment) => attachment.post)
   attachments: Attachment[];
+
+  @OneToMany(() => SocialComponent, (component) => component.post)
+  components: SocialComponent[];
+
+  @OneToOne(() => Poll, (poll) => poll.post)
+  poll: Poll;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
@@ -62,6 +75,15 @@ export class Post {
 
   @Column({ type: 'varchar', default: 'public' })
   visibility: 'public' | 'followers';
+
+  @Column({ type: 'uuid', nullable: true })
+  communityId: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  scheduledAt: Date | null;
+
+  @Column({ default: false })
+  isScheduled: boolean;
 }
 
 export function postSearchDtoToFindManyOptions(
@@ -100,6 +122,22 @@ export function postSearchDtoToFindManyOptions(
 
   if (searchDto?.visibility) {
     where.visibility = searchDto.visibility;
+  }
+
+  if (searchDto?.communityId) {
+    where.communityId = searchDto.communityId;
+  }
+
+  if (searchDto?.communityId === null) {
+    where.communityId = null;
+  }
+
+  if (searchDto?.communityIds && searchDto.communityIds.length > 0) {
+    where.communityId = In(searchDto.communityIds);
+  }
+
+  if (searchDto?.appScope) {
+    where.appScope = searchDto.appScope;
   }
 
   searchOptions.where = where;

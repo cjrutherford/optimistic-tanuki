@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forgeofwill
+  namespace: optimistic-tanuki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: forgeofwill
+  template:
+    metadata:
+      labels:
+        app: forgeofwill
+    spec:
+      containers:
+        - name: forgeofwill
+          image: cjrutherford/optimistic_tanuki_forgeofwill:sha-2850755da05286086a098d1dbdaf74f339af2a62
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4000
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: PORT
+              value: '4000'
+            - name: GATEWAY_URL
+              value: 'http://gateway:3000'
+          resources:
+            requests:
+              memory: '64Mi'
+              cpu: '50m'
+            limits:
+              memory: '256Mi'
+              cpu: '250m'
+          livenessProbe:
+            tcpSocket:
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forgeofwill
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: forgeofwill
+  ports:
+    - port: 8081
+      targetPort: 4000
+  type: LoadBalancer

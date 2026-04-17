@@ -1,7 +1,7 @@
-import { Component, EventEmitter, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Output, signal, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PersonaSelectionMenuComponent } from '@optimistic-tanuki/persona-ui';
-import { PersonaTelosDto } from '@optimistic-tanuki/ui-models';
+import { PersonaTelosDto, ProfileDto } from '@optimistic-tanuki/ui-models';
 
 /**
  * AI Assistant chat bubble button component.
@@ -21,6 +21,11 @@ export class AiAssistantBubbleComponent {
   @Output() personaSelected = new EventEmitter<PersonaTelosDto>();
 
   /**
+   * User profile for displaying avatar
+   */
+  @Input() userProfile: ProfileDto | null = null;
+
+  /**
    * Badge count for unread messages
    */
   unreadCount = signal<number>(0);
@@ -29,6 +34,10 @@ export class AiAssistantBubbleComponent {
    * Whether the persona selection menu is visible
    */
   showMenu = signal<boolean>(false);
+
+  get userAvatarUrl(): string | null {
+    return this.userProfile?.profilePic || null;
+  }
 
   /**
    * Handle click on the bubble

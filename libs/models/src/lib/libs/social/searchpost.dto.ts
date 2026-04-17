@@ -107,6 +107,36 @@ export class SearchPostDto {
   @IsOptional()
   @IsString()
   visibility?: 'public' | 'followers';
+
+  @ApiPropertyOptional({
+    description: 'Community ID to filter posts',
+  })
+  @IsOptional()
+  @IsUUID()
+  communityId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Community IDs to filter posts (multiple communities)',
+  })
+  @IsOptional()
+  @IsUUID(undefined, { each: true })
+  communityIds?: string[];
+
+  @ApiPropertyOptional({
+    description: 'the profile id of the posts author',
+  })
+  @IsOptional()
+  @IsUUID()
+  profileId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'App scope to filter posts (e.g., "local-hub", "client-interface")',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  appScope?: string;
 }
 
 export class SearchPostOptions {

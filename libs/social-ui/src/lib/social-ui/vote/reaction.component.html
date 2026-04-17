@@ -1,0 +1,38 @@
+<div class="reaction-container" (click)="togglePicker()">
+  @if (totalReactions > 0) { @if (showSummary && reactionsWithCounts.length > 0)
+  {
+  <div class="reaction-summary">
+    @for (item of reactionsWithCounts; track item.reaction.value) {
+    <span
+      class="reaction-item"
+      [class.selected]="currentReaction === item.reaction.value"
+    >
+      <span class="emoji">{{ item.reaction.emoji }}</span>
+      <span class="count">{{ item.count }}</span>
+    </span>
+    }
+  </div>
+  } @else {
+  <span class="current-reaction">{{ currentReactionEmoji }}</span>
+  <span class="reaction-count">{{ totalReactions }}</span>
+  } } @else {
+  <span class="add-reaction">😀</span>
+  } @if (showPicker) {
+  <div class="reaction-picker" (click)="$event.stopPropagation()">
+    @for (reaction of reactions; track reaction.value) {
+    <button
+      class="reaction-btn"
+      [class.selected]="currentReaction === reaction.value"
+      (click)="selectReaction(reaction.value)"
+      [title]="reaction.label"
+    >
+      {{ reaction.emoji }}
+      @if (getCountForReaction(reaction.value) > 0) {
+      <span class="count-badge">{{ getCountForReaction(reaction.value) }}</span>
+      }
+    </button>
+    }
+    <button class="close-picker" (click)="closePicker()">✕</button>
+  </div>
+  }
+</div>

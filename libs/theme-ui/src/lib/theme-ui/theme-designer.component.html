@@ -1,6 +1,18 @@
 <div class="theme-designer">
   <h2>Theme Designer</h2>
 
+  <!-- Personality Selection -->
+  <section class="designer-section personality-section">
+    <lib-personality-selector
+      (personalitySelected)="onPersonalitySelected($event)"
+    ></lib-personality-selector>
+  </section>
+
+  <!-- Personality Preview -->
+  <section class="designer-section preview-section">
+    <lib-personality-preview></lib-personality-preview>
+  </section>
+
   <!-- Theme Mode Toggle -->
   <section class="designer-section">
     <h3>Theme Mode</h3>
@@ -13,6 +25,34 @@
         />
         <span>{{ currentTheme === 'dark' ? 'Dark Mode' : 'Light Mode' }}</span>
       </label>
+    </div>
+  </section>
+
+  <!-- Primary Color Selection -->
+  <section class="designer-section">
+    <h3>Primary Color</h3>
+    <div class="color-pickers">
+      <div class="color-picker-group">
+        <label for="primary-color">Choose your primary color</label>
+        <div class="color-input-wrapper">
+          <input
+            id="primary-color"
+            type="color"
+            [(ngModel)]="primaryColor"
+            (change)="updatePrimaryColor()"
+          />
+          <input
+            type="text"
+            [(ngModel)]="primaryColor"
+            (change)="updatePrimaryColor()"
+            class="color-text-input"
+          />
+        </div>
+        <p class="color-hint">
+          The personality will automatically generate complementary and tertiary
+          colors using color harmony rules.
+        </p>
+      </div>
     </div>
   </section>
 

@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -32,6 +33,8 @@ import {
 } from '@optimistic-tanuki/permission-lib';
 
 import { Throttle } from '@nestjs/throttler';
+import { AuthGuard } from '../../auth/auth.guard';
+import { User, UserDetails } from '../../decorators/user.decorator';
 
 @ApiTags('authentication')
 @Controller('authentication')
@@ -59,12 +62,19 @@ export class AuthenticationController {
   async loginUser(@Body() data: LoginRequest, @AppScope() appScope: string) {
     try {
       this.logger.debug(`loginUser called for email=${data.email}`);
-      const userId: string = await firstValueFrom(
+      const userIdResult: string | { userId?: string; id?: string } = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.UserIdFromEmail },
           { email: data.email }
         )
       );
+      const userId =
+        typeof userIdResult === 'string'
+          ? userIdResult
+          : userIdResult?.userId || userIdResult?.id;
+      if (!userId) {
+        throw new Error(`Unable to resolve userId for email=${data.email}`);
+      }
       this.logger.debug(
         `loginUser resolved userId=${userId} for email=${data.email}`
       );
@@ -75,8 +85,7 @@ export class AuthenticationController {
         )
       );
       this.logger.debug(
-        `loginUser found ${
-          profiles?.length || 0
+        `loginUser found ${profiles?.length || 0
         } profile(s) for userId=${userId}`
       );
 
@@ -90,30 +99,38 @@ export class AuthenticationController {
       const globalProfile = profiles.find(
         (p: ProfileDto) => !p.appScope || p.appScope === 'global'
       );
+      const seedProfile = globalProfile || profiles[0] || null;
 
       // If the user is signing into a new app for the first time,
       // create an app-scoped profile and initialize permissions now.
-      if (
-        !appScopedProfile &&
-        effectiveAppScope !== 'global' &&
-        globalProfile
-      ) {
+      if (!appScopedProfile && effectiveAppScope !== 'global') {
+        if (!seedProfile) {
+          this.logger.error(
+            `No profile available to seed scoped profile for userId=${userId} in scope=${effectiveAppScope}`
+          );
+          throw new Error('No profile available for user');
+        }
+
         this.logger.log(
-          `No app-scoped profile found for userId=${userId} in scope=${effectiveAppScope}. Creating one from global profile ${globalProfile.id}.`
+          `No app-scoped profile found for userId=${userId} in scope=${effectiveAppScope}. Creating one from seed profile ${seedProfile.id}.`
         );
 
-        const newProfile: CreateProfileDto & { appScope: string } = {
-          userId: globalProfile.userId,
-          name: globalProfile.profileName || data.email,
+        const newProfile: CreateProfileDto & {
+          appScope: string;
+          copyPermissionsFromGlobalProfile?: boolean;
+        } = {
+          userId: seedProfile.userId,
+          name: seedProfile.profileName || data.email,
           description: '',
-          profilePic: '',
-          coverPic: '',
-          bio: '',
-          location: '',
-          occupation: '',
-          interests: '',
-          skills: '',
+          profilePic: seedProfile.profilePic || '',
+          coverPic: seedProfile.coverPic || '',
+          bio: seedProfile.bio || '',
+          location: seedProfile.location || '',
+          occupation: seedProfile.occupation || '',
+          interests: seedProfile.interests || '',
+          skills: seedProfile.skills || '',
           appScope: effectiveAppScope,
+          copyPermissionsFromGlobalProfile: false,
         };
 
         const createdProfile: ProfileDto = await firstValueFrom(
@@ -143,7 +160,9 @@ export class AuthenticationController {
       }
 
       const profileToUse =
-        appScopedProfile || globalProfile || profiles[0] || null;
+        effectiveAppScope === 'global'
+          ? globalProfile || profiles[0] || null
+          : appScopedProfile;
 
       if (!profileToUse) {
         this.logger.error(
@@ -165,6 +184,34 @@ export class AuthenticationController {
       this.logger.error('Error in loginUser:', error?.message || error);
       throw new HttpException(
         `Login failed: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('issue')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Issue a token for the requested profile' })
+  @ApiResponse({ status: 201, description: 'Token issued successfully.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async issueTokenForProfile(
+    @User() user: UserDetails,
+    @Body() body: { profileId?: string }
+  ) {
+    try {
+      return await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.Issue },
+          { userId: user.userId, profileId: body.profileId || user.profileId }
+        )
+      );
+    } catch (error) {
+      this.logger.error(
+        'Error in issueTokenForProfile:',
+        error?.message || error
+      );
+      throw new HttpException(
+        `Token issue failed: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -246,7 +293,7 @@ export class AuthenticationController {
       }
       return result;
     } catch (error) {
-      this.logger.error('Error in registerUser:', error?.message || error);
+      this.logger.error('Error in registerUser:', error?.message || JSON.stringify(error));
       throw new HttpException(
         `Registration failed: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -324,6 +371,25 @@ export class AuthenticationController {
       console.error('Error in validateMfa:', error);
       throw new HttpException(
         `MFA validation failed: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('logout')
+  @ApiOperation({ summary: 'Logout a user and invalidate token' })
+  @ApiResponse({ status: 201, description: 'User logged out successfully.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async logoutUser(@Body() data: { token: string }) {
+    try {
+      this.logger.debug('logoutUser called');
+      return await firstValueFrom(
+        this.authClient.send({ cmd: AuthCommands.Logout }, data)
+      );
+    } catch (error) {
+      console.error('Error in logoutUser:', error);
+      throw new HttpException(
+        `Logout failed: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

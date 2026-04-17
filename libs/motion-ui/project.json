@@ -1,0 +1,97 @@
+{
+  "name": "motion-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/motion-ui/src",
+  "prefix": "otui",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/angular:ng-packagr-lite",
+      "outputs": ["{workspaceRoot}/dist/{projectRoot}"],
+      "options": {
+        "project": "libs/motion-ui/ng-package.json",
+        "tsConfig": "libs/motion-ui/tsconfig.lib.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "libs/motion-ui/tsconfig.lib.json"
+        },
+        "development": {
+          "tsConfig": "libs/motion-ui/tsconfig.lib.json"
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/motion-ui/jest.config.ts",
+        "coverageReporters": ["lcov", "text"]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "storybook": {
+      "executor": "@storybook/angular:start-storybook",
+      "options": {
+        "port": 4400,
+        "configDir": "libs/motion-ui/.storybook",
+        "browserTarget": "motion-ui:build-storybook",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "storybook-share": {
+      "executor": "@storybook/angular:start-storybook",
+      "options": {
+        "port": 4400,
+        "host": "0.0.0.0",
+        "configDir": "libs/motion-ui/.storybook",
+        "browserTarget": "motion-ui:build-storybook",
+        "compodoc": false
+      }
+    },
+    "build-storybook": {
+      "executor": "@storybook/angular:build-storybook",
+      "outputs": ["{options.outputDir}"],
+      "options": {
+        "outputDir": "dist/storybook/motion-ui",
+        "configDir": "libs/motion-ui/.storybook",
+        "browserTarget": "motion-ui:build-storybook",
+        "compodoc": false
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "test-storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test-storybook -c libs/motion-ui/.storybook --url=http://localhost:4400"
+      }
+    },
+    "static-storybook": {
+      "executor": "@nx/web:file-server",
+      "dependsOn": ["build-storybook"],
+      "options": {
+        "buildTarget": "motion-ui:build-storybook",
+        "staticFilePath": "dist/storybook/motion-ui",
+        "spa": true
+      },
+      "configurations": {
+        "ci": {
+          "buildTarget": "motion-ui:build-storybook:ci"
+        }
+      }
+    }
+  }
+}

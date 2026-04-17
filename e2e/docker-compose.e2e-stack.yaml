@@ -1,0 +1,505 @@
+# Shared E2E Infrastructure Stack
+# Single stack used by all e2e test suites - start once, run all tests sequentially
+services:
+  # ──────────────── Infrastructure ────────────────
+  db:
+    image: postgres:latest
+    restart: always
+    container_name: e2e_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:latest
+    restart: always
+    container_name: e2e_redis
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  db-setup:
+    image: node:lts-alpine
+    container_name: e2e_db_setup
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # Use the default ADDITIONAL_DBS from setup-and-migrate.sh which includes all service DBs
+    depends_on:
+      db:
+        condition: service_healthy
+    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    restart: 'no'
+
+  # ──────────────── Backend Microservices ────────────────
+  authentication:
+    container_name: e2e_authentication
+    build:
+      context: ..
+      dockerfile: ./apps/authentication/Dockerfile
+    ports:
+      - '3001:3001'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_authentication
+      JWT_SECRET: e2e-test-jwt-secret
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  profile:
+    container_name: e2e_profile
+    build:
+      context: ..
+      dockerfile: ./apps/profile/Dockerfile
+    ports:
+      - '3002:3002'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_profile
+      SERVICE_PERMISSIONS_HOST: permissions
+      SERVICE_PERMISSIONS_PORT: 3012
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  social:
+    container_name: e2e_social
+    build:
+      context: ..
+      dockerfile: ./apps/social/Dockerfile
+    ports:
+      - '3003:3003'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_social
+      SERVICE_AUTHENTICATION_HOST: authentication
+      SERVICE_AUTHENTICATION_PORT: 3001
+      SERVICE_PROFILE_HOST: profile
+      SERVICE_PROFILE_PORT: 3002
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  assets:
+    container_name: e2e_assets
+    build:
+      context: ..
+      dockerfile: ./apps/assets/Dockerfile
+    ports:
+      - '3005:3005'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_assets
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  project-planning:
+    container_name: e2e_project_planning
+    build:
+      context: ..
+      dockerfile: ./apps/project-planning/Dockerfile
+    ports:
+      - '3006:3006'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_project_planning
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  chat-collector:
+    container_name: e2e_chat_collector
+    build:
+      context: ..
+      dockerfile: ./apps/chat-collector/Dockerfile
+    ports:
+      - '3007:3007'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_chat_collector
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  telos-docs-service:
+    container_name: e2e_telos_docs_service
+    build:
+      context: ..
+      dockerfile: ./apps/telos-docs-service/Dockerfile
+    ports:
+      - '3008:3008'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_telos_docs_service
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  prompt-proxy:
+    container_name: e2e_prompt_proxy
+    build:
+      context: ..
+      dockerfile: ./apps/prompt-proxy/Dockerfile
+    ports:
+      - '3009:3009'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    volumes:
+      - ../apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  ai-orchestrator:
+    container_name: e2e_ai_orchestrator
+    build:
+      context: ..
+      dockerfile: ./apps/ai-orchestrator/Dockerfile
+    ports:
+      - '3010:3010'
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TELEOS_DOCS_URL: http://telos-docs-service:3008
+      MCP_URL: http://gateway:3000/api/mcp
+      # Ollama is not available in CI - AI model features are disabled in e2e stack
+      OLLAMA_HOST: ''
+      OLLAMA_PORT: 11434
+    depends_on:
+      redis:
+        condition: service_healthy
+      telos-docs-service:
+        condition: service_started
+      chat-collector:
+        condition: service_started
+      project-planning:
+        condition: service_started
+
+  blogging:
+    container_name: e2e_blogging
+    build:
+      context: ..
+      dockerfile: ./apps/blogging/Dockerfile
+    ports:
+      - '3011:3011'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_blogging
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  permissions:
+    container_name: e2e_permissions
+    build:
+      context: ..
+      dockerfile: ./apps/permissions/Dockerfile
+    ports:
+      - '3012:3012'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_permissions
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  store:
+    container_name: e2e_store
+    build:
+      context: ..
+      dockerfile: ./apps/store/Dockerfile
+    ports:
+      - '3013:3009'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_store
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  app-configurator:
+    container_name: e2e_app_configurator
+    build:
+      context: ..
+      dockerfile: ./apps/app-configurator/Dockerfile
+    ports:
+      - '3014:3014'
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ot_app_configurator
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 3014
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  app-configurator-seed:
+    container_name: e2e_app_configurator_seed
+    build:
+      context: ..
+      dockerfile: ./apps/app-configurator/Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ot_app_configurator
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 3014
+    depends_on:
+      app-configurator:
+        condition: service_started
+    command: sh -c "sleep 5 && node seed-data/seed-script.js"
+    restart: 'no'
+
+  lead-tracker:
+    container_name: e2e_lead_tracker
+    build:
+      context: ..
+      dockerfile: ./apps/lead-tracker/Dockerfile
+    ports:
+      - '3020:3020'
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ot_lead_tracker
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  gateway:
+    container_name: e2e_gateway
+    build:
+      context: ..
+      dockerfile: ./apps/gateway/Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+      JWT_SECRET: e2e-test-jwt-secret
+      AUTHENTICATION_HOST: authentication
+      AUTHENTICATION_PORT: 3001
+      PROFILE_HOST: profile
+      PROFILE_PORT: 3002
+      SOCIAL_HOST: social
+      SOCIAL_PORT: 3003
+      ASSET_HOST: assets
+      ASSET_PORT: 3005
+      PROJECT_PLANNING_HOST: project-planning
+      PROJECT_PLANNING_PORT: 3006
+      CHAT_COLLECTOR_HOST: chat-collector
+      CHAT_COLLECTOR_PORT: 3007
+      BLOGGING_HOST: blogging
+      BLOGGING_PORT: 3011
+      PERMISSIONS_HOST: permissions
+      PERMISSIONS_PORT: 3012
+      STORE_HOST: store
+      STORE_PORT: 3009
+      APP_CONFIGURATOR_HOST: app-configurator
+      APP_CONFIGURATOR_PORT: 3014
+      LEAD_TRACKER_HOST: lead-tracker
+      LEAD_TRACKER_PORT: 3020
+    depends_on:
+      db:
+        condition: service_healthy
+      authentication:
+        condition: service_started
+      profile:
+        condition: service_started
+      social:
+        condition: service_started
+      assets:
+        condition: service_started
+      blogging:
+        condition: service_started
+      permissions:
+        condition: service_started
+      store:
+        condition: service_started
+      app-configurator:
+        condition: service_started
+      lead-tracker:
+        condition: service_started
+
+  # ──────────────── UI Apps (for UI e2e tests) ────────────────
+  # Each UI app is started selectively during its test suite via --profile
+  client-interface:
+    container_name: e2e_client_interface
+    profiles: [client-interface]
+    build:
+      context: ..
+      dockerfile: ./apps/client-interface/Dockerfile
+    ports:
+      - '8080:4000'
+    depends_on:
+      gateway:
+        condition: service_started
+
+  forgeofwill:
+    container_name: e2e_forgeofwill
+    profiles: [forgeofwill]
+    build:
+      context: ..
+      dockerfile: ./apps/forgeofwill/Dockerfile
+    ports:
+      - '8081:4000'
+    depends_on:
+      gateway:
+        condition: service_started
+
+  digital-homestead:
+    container_name: e2e_digital_homestead
+    profiles: [digital-homestead]
+    build:
+      context: ..
+      dockerfile: ./apps/digital-homestead/Dockerfile
+    ports:
+      - '8082:4000'
+    depends_on:
+      gateway:
+        condition: service_started
+
+  christopherrutherford-net:
+    container_name: e2e_crdn
+    profiles: [christopherrutherford-net]
+    build:
+      context: ..
+      dockerfile: ./apps/christopherrutherford-net/Dockerfile
+    ports:
+      - '8083:4000'
+    depends_on:
+      gateway:
+        condition: service_started
+
+  owner-console:
+    container_name: e2e_owner_console
+    profiles: [owner-console]
+    build:
+      context: ..
+      dockerfile: ./apps/owner-console/Dockerfile
+    ports:
+      - '8084:4000'
+    depends_on:
+      gateway:
+        condition: service_started
+
+  store-client:
+    container_name: e2e_store_client
+    profiles: [store-client]
+    build:
+      context: ..
+      dockerfile: ./apps/store-client/Dockerfile
+    ports:
+      - '8085:4000'
+    environment:
+      PORT: 4000
+    depends_on:
+      gateway:
+        condition: service_started
+
+  configurable-client:
+    container_name: e2e_configurable_client
+    profiles: [configurable-client]
+    build:
+      context: ..
+      dockerfile: ./apps/configurable-client/Dockerfile
+    ports:
+      - '8090:4000'
+    environment:
+      GATEWAY_URL: http://gateway:3000
+    depends_on:
+      gateway:
+        condition: service_started
+      app-configurator:
+        condition: service_started

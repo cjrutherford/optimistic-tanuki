@@ -1,0 +1,22 @@
+<section
+  class="parallax-grid-warp"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--warp-intensity]="intensity"
+  [style.--warp-speed]="speed"
+>
+  <div class="warp-horizon"></div>
+
+  <div class="warp-plane">
+    <div class="warp-drift"></div>
+    <span
+      *ngFor="let beam of beams"
+      class="warp-beam"
+      [style.left]="beam.left"
+      [style.animation-delay]="beam.delay"
+      [style.animation-duration]="beam.duration"
+    ></span>
+  </div>
+
+  <div class="warp-focus"></div>
+</section>

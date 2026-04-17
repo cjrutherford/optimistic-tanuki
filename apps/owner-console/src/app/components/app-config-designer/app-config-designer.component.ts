@@ -1,15 +1,25 @@
-import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatIconModule } from '@angular/material/icon';
+import {
+  TabsComponent,
+  IconComponent,
+  ButtonComponent,
+  CardComponent,
+} from '@optimistic-tanuki/common-ui';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   CdkDragDrop,
   DragDropModule,
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import {
   TextInputComponent,
   TextAreaComponent,
@@ -44,8 +54,8 @@ import { SectionEditorComponent } from './section-editors/section-editor.compone
   imports: [
     CommonModule,
     FormsModule,
-    MatTabsModule,
-    MatIconModule,
+    TabsComponent,
+    IconComponent,
     DragDropModule,
     ButtonComponent,
     CardComponent,
@@ -57,12 +67,21 @@ import { SectionEditorComponent } from './section-editors/section-editor.compone
   ],
   templateUrl: './app-config-designer.component.html',
   styleUrls: ['./app-config-designer.component.scss'],
-  changeDetection: ChangeDetectionStrategy.Default, // Using Default for FormsModule compatibility
+  changeDetection: ChangeDetectionStrategy.Default,
 })
 export class AppConfigDesignerComponent implements OnInit {
   @Input() configId?: string;
   @Output() saved = new EventEmitter<AppConfiguration>();
   @Output() cancelled = new EventEmitter<void>();
+
+  selectedTab = 'general';
+
+  tabs = [
+    { id: 'general', label: 'General' },
+    { id: 'sections', label: 'Sections' },
+    { id: 'features', label: 'Features' },
+    { id: 'theme', label: 'Theme' },
+  ];
 
   config: Omit<AppConfiguration, 'id'> = {
     name: '',
@@ -99,7 +118,6 @@ export class AppConfigDesignerComponent implements OnInit {
     active: true,
   };
 
-  selectedTab = 0;
   isSectionSelectorVisible = false;
   isSectionEditorVisible = false;
   selectedSection: Section | null = null;
@@ -113,7 +131,7 @@ export class AppConfigDesignerComponent implements OnInit {
 
   ngOnInit(): void {
     // Check for route parameter first
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params) => {
       const id = params['id'];
       if (id) {
         this.configId = id;
@@ -123,6 +141,10 @@ export class AppConfigDesignerComponent implements OnInit {
         this.loadConfiguration(this.configId);
       }
     });
+  }
+
+  onTabChange(tabId: string): void {
+    this.selectedTab = tabId;
   }
 
   get customCss(): string {
@@ -146,7 +168,11 @@ export class AppConfigDesignerComponent implements OnInit {
       },
       error: (err) => {
         console.error('[AppConfigDesigner] Failed to load configuration:', err);
-        alert(`Failed to load configuration: ${err.message || err.statusText || 'Unknown error'}`);
+        alert(
+          `Failed to load configuration: ${
+            err.message || err.statusText || 'Unknown error'
+          }`
+        );
       },
     });
   }
@@ -327,7 +353,10 @@ export class AppConfigDesignerComponent implements OnInit {
     console.log('[AppConfigDesigner] Saving configuration:', this.config);
 
     if (this.configId) {
-      console.log('[AppConfigDesigner] Updating existing configuration:', this.configId);
+      console.log(
+        '[AppConfigDesigner] Updating existing configuration:',
+        this.configId
+      );
       this.appConfigService
         .updateConfiguration(this.configId, this.config)
         .subscribe({
@@ -338,8 +367,15 @@ export class AppConfigDesignerComponent implements OnInit {
             this.router.navigate(['/dashboard/app-config']);
           },
           error: (err) => {
-            console.error('[AppConfigDesigner] Failed to update configuration:', err);
-            alert(`Failed to save configuration: ${err.message || err.statusText || 'Unknown error'}`);
+            console.error(
+              '[AppConfigDesigner] Failed to update configuration:',
+              err
+            );
+            alert(
+              `Failed to save configuration: ${
+                err.message || err.statusText || 'Unknown error'
+              }`
+            );
           },
         });
     } else {
@@ -352,8 +388,15 @@ export class AppConfigDesignerComponent implements OnInit {
           this.router.navigate(['/dashboard/app-config']);
         },
         error: (err) => {
-          console.error('[AppConfigDesigner] Failed to create configuration:', err);
-          alert(`Failed to save configuration: ${err.message || err.statusText || 'Unknown error'}`);
+          console.error(
+            '[AppConfigDesigner] Failed to create configuration:',
+            err
+          );
+          alert(
+            `Failed to save configuration: ${
+              err.message || err.statusText || 'Unknown error'
+            }`
+          );
         },
       });
     }

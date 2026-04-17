@@ -26,10 +26,20 @@ import { ConfigService } from '@nestjs/config';
 import { ModelInitializerService } from './model-initializer.service';
 import { WorkflowControlService } from './workflow-control.service';
 import { SystemPromptBuilder } from './system-prompt-builder.service';
-import {
-  StreamingEvent,
-  StreamingEventType,
-} from './streaming-events';
+import { ToolFactory } from './tool-factory.service';
+import { StreamingEvent, StreamingEventType } from './streaming-events';
+
+const TOOL_OUTPUT_BLACKLIST = ['list_tools'];
+const TOOL_RESULT_SUMMARIES: Record<string, string> = {
+  list_tools: 'Available tools retrieved',
+};
+
+function getToolResultContent(tool: string, output: unknown): string {
+  if (TOOL_OUTPUT_BLACKLIST.includes(tool)) {
+    return TOOL_RESULT_SUMMARIES[tool] || 'Tool executed successfully';
+  }
+  return typeof output === 'string' ? output : JSON.stringify(output, null, 2);
+}
 
 @Injectable()
 export class LangChainService {
@@ -43,7 +53,8 @@ export class LangChainService {
     private readonly config: ConfigService,
     private readonly modelInitializer: ModelInitializerService,
     private readonly workflowControl: WorkflowControlService,
-    private readonly systemPromptBuilder: SystemPromptBuilder
+    private readonly systemPromptBuilder: SystemPromptBuilder,
+    private readonly toolFactory: ToolFactory
   ) {
     this.initializeModels();
   }
@@ -167,168 +178,7 @@ export class LangChainService {
     userId: string,
     conversationId: string
   ): Promise<any[]> {
-    const mcpTools = await this.toolsService.listTools();
-
-    // Create MCP tools with smart parameter enrichment
-    const tools = mcpTools.map((tool) => {
-      const schema = this.convertToZodSchema(tool.inputSchema);
-      return new DynamicStructuredTool({
-        name: tool.name,
-        description: tool.description || `Execute ${tool.name}`,
-        schema,
-        func: async (input: any) => {
-          // Smart parameter enrichment based on tool requirements
-          const enrichedInput = { ...input };
-
-          // Auto-inject userId if not provided and tool expects it
-          if (!enrichedInput.userId && tool.inputSchema?.properties?.userId) {
-            enrichedInput.userId = userId;
-          }
-
-          // Auto-inject createdBy if not provided and tool expects it
-          if (
-            !enrichedInput.createdBy &&
-            tool.inputSchema?.properties?.createdBy
-          ) {
-            enrichedInput.createdBy = userId;
-          }
-
-          // Auto-inject owner if not provided and tool expects it
-          if (!enrichedInput.owner && tool.inputSchema?.properties?.owner) {
-            enrichedInput.owner = userId;
-          }
-
-          // Always include profileId for context (backwards compatibility)
-          enrichedInput.profileId = userId;
-
-          this.logger.debug(
-            `Executing ${tool.name} with enriched parameters:`,
-            Object.keys(enrichedInput)
-          );
-
-          const toolCall = {
-            id: `lc_${Date.now()}`,
-            type: 'function' as const,
-            function: {
-              name: tool.name,
-              arguments: JSON.stringify(enrichedInput),
-            },
-          };
-          const result: ToolResult = await this.mcpExecutor.executeToolCall(
-            toolCall,
-            { userId, profileId: userId, conversationId }
-          );
-          if (result.success) {
-            return typeof result.result === 'string'
-              ? result.result
-              : JSON.stringify(result.result);
-          }
-          throw new Error(result.error?.message || 'Tool failed');
-        },
-      }) as any;
-    });
-
-    // Add list_tools as a LangChain tool so LLM can discover available tools
-    const listToolsTool = new DynamicStructuredTool({
-      name: 'list_tools',
-      description:
-        'List all available tools with their descriptions and parameters. Call this when you need to discover what actions you can perform.',
-      schema: z.object({}), // No parameters needed
-      func: async () => {
-        this.logger.log('LLM called list_tools to discover available actions');
-
-        // Group tools by category for better organization
-        const projectTools: any[] = [];
-        const taskTools: any[] = [];
-        const riskTools: any[] = [];
-        const changeTools: any[] = [];
-        const otherTools: any[] = [];
-
-        mcpTools.forEach((tool) => {
-          if (tool.name.includes('project')) projectTools.push(tool);
-          else if (tool.name.includes('task')) taskTools.push(tool);
-          else if (tool.name.includes('risk')) riskTools.push(tool);
-          else if (tool.name.includes('change')) changeTools.push(tool);
-          else otherTools.push(tool);
-        });
-
-        const formatToolCategory = (tools: any[], category: string) => {
-          if (tools.length === 0) return '';
-          const formatted = tools
-            .map((tool) => {
-              const params = tool.inputSchema?.properties || {};
-              const required = tool.inputSchema?.required || [];
-
-              const paramList = Object.entries(params)
-                .map(([name, schema]: [string, any]) => {
-                  const isRequired = required.includes(name);
-                  const typeInfo = schema.type || 'any';
-                  const description = schema.description || '';
-                  const enumValues = schema.enum
-                    ? ` (values: ${schema.enum.join(', ')})`
-                    : '';
-                  return `  - ${name} (${typeInfo})${enumValues}${
-                    isRequired ? ' **[REQUIRED]**' : ' [optional]'
-                  }: ${description}`;
-                })
-                .join('\n');
-
-              return `### ${tool.name}
-${tool.description || 'No description'}
-**Parameters:**
-${paramList || '  (none)'}`;
-            })
-            .join('\n\n');
-          return `## ${category}\n\n${formatted}`;
-        };
-
-        const sections = [
-          formatToolCategory(projectTools, 'PROJECT MANAGEMENT'),
-          formatToolCategory(taskTools, 'TASK MANAGEMENT'),
-          formatToolCategory(riskTools, 'RISK MANAGEMENT'),
-          formatToolCategory(changeTools, 'CHANGE MANAGEMENT'),
-          formatToolCategory(otherTools, 'OTHER TOOLS'),
-        ].filter(Boolean);
-
-        return `# AVAILABLE TOOLS
-
-${sections.join('\n\n')}
-
-## CRITICAL REMINDERS
-- **userId/createdBy**: Auto-injected as current user (${userId}) if not provided
-- **projectId/taskId/riskId**: MUST be obtained from list/query calls - NEVER fabricate
-- **status/priority**: Use EXACT enum values shown above
-- **Parameter names**: Use EXACTLY as shown - no variations allowed
-
-Always verify parameter names match tool schemas before calling!`;
-      },
-    }) as any;
-
-    // Return all tools including list_tools
-    return [listToolsTool, ...tools] as any[];
-  }
-
-  private convertToZodSchema(jsonSchema: any): z.ZodObject<any> {
-    const shape: Record<string, z.ZodTypeAny> = {};
-    if (jsonSchema.properties) {
-      for (const [key, prop] of Object.entries(
-        jsonSchema.properties as Record<string, any>
-      )) {
-        let zodType: z.ZodTypeAny = z.any();
-        if (prop.type === 'string') zodType = z.string();
-        else if (prop.type === 'number' || prop.type === 'integer')
-          zodType = z.number();
-        else if (prop.type === 'boolean') zodType = z.boolean();
-        else if (prop.type === 'array') zodType = z.array(z.any());
-        else if (prop.type === 'object') zodType = z.object({}).passthrough();
-
-        if (prop.description) zodType = zodType.describe(prop.description);
-        if (!jsonSchema.required || !jsonSchema.required.includes(key))
-          zodType = zodType.optional();
-        shape[key] = zodType;
-      }
-    }
-    return z.object(shape);
+    return this.toolFactory.createTools({ userId, conversationId });
   }
 
   private convertChatHistory(messages: ChatMessage[]): BaseMessage[] {
@@ -362,26 +212,29 @@ Always verify parameter names match tool schemas before calling!`;
 
     // Detect if this is the first message in the conversation
     // First message = empty conversation history OR only system/assistant greetings
-    const isFirstMessage = conversationHistory.length === 0 || 
-      (conversationHistory.length === 1 && conversationHistory[0].role !== 'user');
+    const isFirstMessage =
+      conversationHistory.length === 0 ||
+      (conversationHistory.length === 1 &&
+        conversationHistory[0].role !== 'user');
 
     // Use SystemPromptBuilder for STATIC TELOS-driven system prompts
     // CRITICAL: System prompt should NOT include conversation summary
     // Conversation context is passed as full message history below
-    const { template, variables } = await this.systemPromptBuilder.buildSystemPrompt(
-      {
-        personaId: persona.id,
-        profileId: profile.id,
-        projectContext: projectContext || '',
-      },
-      {
-        includeTools: !isFirstMessage, // Don't include tools on first message
-        includeExamples: false,
-        includeProjectContext: !!projectContext,
-        isFirstMessage: isFirstMessage, // Special first message instructions
-      }
-    );
-    
+    const { template, variables } =
+      await this.systemPromptBuilder.buildSystemPrompt(
+        {
+          personaId: persona.id,
+          profileId: profile.id,
+          projectContext: projectContext || '',
+        },
+        {
+          includeTools: !isFirstMessage, // Don't include tools on first message
+          includeExamples: false,
+          includeProjectContext: !!projectContext,
+          isFirstMessage: isFirstMessage, // Special first message instructions
+        }
+      );
+
     const systemMessages = await template.formatMessages(variables);
 
     const tools = await this.createTools(profile.id, conversationId);
@@ -397,14 +250,17 @@ Always verify parameter names match tool schemas before calling!`;
 
     // For first message, ALWAYS use conversational model (no tool calling)
     if (isFirstMessage) {
-      this.logger.log('First message detected - using conversational model only (no tools)');
-      
+      this.logger.log(
+        'First message detected - using conversational model only (no tools)'
+      );
+
       const response = await this.conversationalLLM.invoke(messages);
-      
+
       // Extract and emit thinking tokens before filtering
       const responseText = response.content as string;
-      const { thinking, filtered } = this.workflowControl.extractThinkingTokens(responseText);
-      
+      const { thinking, filtered } =
+        this.workflowControl.extractThinkingTokens(responseText);
+
       if (thinking.length > 0 && onStreamEvent) {
         for (const thinkingText of thinking) {
           await onStreamEvent({
@@ -417,7 +273,7 @@ Always verify parameter names match tool schemas before calling!`;
           });
         }
       }
-      
+
       // Return conversational-only response (no tool calls)
       return {
         response: filtered,
@@ -448,8 +304,8 @@ Always verify parameter names match tool schemas before calling!`;
       ? selectedLLM.bindTools(tools)
       : selectedLLM;
 
-    const toolsMessage = workflow.requiresToolCalling 
-      ? `with ${tools.length} tools bound to LLM` 
+    const toolsMessage = workflow.requiresToolCalling
+      ? `with ${tools.length} tools bound to LLM`
       : 'with LLM (no tools)';
     this.logger.log(`Executing conversation ${toolsMessage}`);
 
@@ -457,8 +313,9 @@ Always verify parameter names match tool schemas before calling!`;
 
     // Extract and emit thinking tokens before filtering
     const responseText = response.content as string;
-    const { thinking, filtered } = this.workflowControl.extractThinkingTokens(responseText);
-    
+    const { thinking, filtered } =
+      this.workflowControl.extractThinkingTokens(responseText);
+
     if (thinking.length > 0 && onStreamEvent) {
       for (const thinkingText of thinking) {
         await onStreamEvent({
@@ -544,7 +401,7 @@ Always verify parameter names match tool schemas before calling!`;
           this.logger.log(`Tool ${toolCall.name} executed successfully`);
         } catch (error) {
           this.logger.error(`Tool ${toolCall.name} execution failed:`, error);
-          
+
           toolCalls.push({
             tool: toolCall.name,
             input: toolCall.args,
@@ -567,13 +424,28 @@ Always verify parameter names match tool schemas before calling!`;
 
       // If tools were called, get final response from LLM with tool results
       if (toolCalls.length > 0) {
+        // Emit response start event
+        if (onStreamEvent) {
+          await onStreamEvent({
+            type: StreamingEventType.RESPONSE_START,
+            content: { mode: 'hybrid' },
+            timestamp: new Date(),
+          });
+        }
+
         // Add tool results to conversation and get final response
-        const toolResultMessages = toolCalls.map(
-          (tc) =>
-            new AIMessage(
-              `Tool ${tc.tool} result: ${JSON.stringify(tc.output)}`
-            )
-        );
+        // Filter verbose tool outputs (like list_tools) to prevent context pollution
+        const toolResultMessages = toolCalls
+          .filter((tc) => !TOOL_OUTPUT_BLACKLIST.includes(tc.tool))
+          .map(
+            (tc) =>
+              new AIMessage(
+                `Tool ${tc.tool} result: ${getToolResultContent(
+                  tc.tool,
+                  tc.output
+                )}`
+              )
+          );
 
         const finalMessages = [...messages, response, ...toolResultMessages];
         const finalResponse = await llmWithTools.invoke(finalMessages);
@@ -605,7 +477,15 @@ Always verify parameter names match tool schemas before calling!`;
       }
     }
 
-    // No tool calls, just return the response with filtered thinking tokens
+    // No tool calls, emit response start and return conversational response
+    if (onStreamEvent) {
+      await onStreamEvent({
+        type: StreamingEventType.RESPONSE_START,
+        content: { mode: 'conversational' },
+        timestamp: new Date(),
+      });
+    }
+
     return {
       response: filtered,
       intermediateSteps: [],
@@ -632,26 +512,29 @@ Always verify parameter names match tool schemas before calling!`;
 
     // Detect if this is the first message in the conversation
     // First message = empty conversation history OR only system/assistant greetings
-    const isFirstMessage = conversationHistory.length === 0 || 
-      (conversationHistory.length === 1 && conversationHistory[0].role !== 'user');
+    const isFirstMessage =
+      conversationHistory.length === 0 ||
+      (conversationHistory.length === 1 &&
+        conversationHistory[0].role !== 'user');
 
     // Use SystemPromptBuilder for STATIC TELOS-driven system prompts
     // CRITICAL: System prompt should NOT include conversation summary
     // Conversation context is passed as full message history below
-    const { template, variables } = await this.systemPromptBuilder.buildSystemPrompt(
-      {
-        personaId: persona.id,
-        profileId: profile.id,
-        projectContext: projectContext || '',
-      },
-      {
-        includeTools: !isFirstMessage, // Don't include tools on first message
-        includeExamples: false,
-        includeProjectContext: !!projectContext,
-        isFirstMessage: isFirstMessage, // Special first message instructions
-      }
-    );
-    
+    const { template, variables } =
+      await this.systemPromptBuilder.buildSystemPrompt(
+        {
+          personaId: persona.id,
+          profileId: profile.id,
+          projectContext: projectContext || '',
+        },
+        {
+          includeTools: !isFirstMessage, // Don't include tools on first message
+          includeExamples: false,
+          includeProjectContext: !!projectContext,
+          isFirstMessage: isFirstMessage, // Special first message instructions
+        }
+      );
+
     const systemMessages = await template.formatMessages(variables);
 
     const tools = await this.createTools(profile.id, conversationId);
@@ -667,25 +550,35 @@ Always verify parameter names match tool schemas before calling!`;
 
     // For first message, ALWAYS use conversational model (no tool calling)
     if (isFirstMessage) {
-      this.logger.log('First message detected - streaming conversational response only (no tools)');
-      
+      this.logger.log(
+        'First message detected - streaming conversational response only (no tools)'
+      );
+
+      // Emit response start
+      yield {
+        type: StreamingEventType.RESPONSE_START,
+        content: { mode: 'conversational' },
+        timestamp: new Date(),
+      };
+
       const stream = await this.conversationalLLM.stream(messages);
       let fullResponse = '';
-      
+
       for await (const chunk of stream) {
         const content = chunk.content as string;
         fullResponse += content;
-        
+
         yield {
           type: StreamingEventType.CHUNK,
           content: { text: content },
           timestamp: new Date(),
         };
       }
-      
+
       // Extract and emit thinking tokens from complete response
-      const { thinking, filtered } = this.workflowControl.extractThinkingTokens(fullResponse);
-      
+      const { thinking, filtered } =
+        this.workflowControl.extractThinkingTokens(fullResponse);
+
       if (thinking.length > 0) {
         for (const thinkingText of thinking) {
           yield {
@@ -698,14 +591,14 @@ Always verify parameter names match tool schemas before calling!`;
           };
         }
       }
-      
+
       // Emit final response
       yield {
         type: StreamingEventType.FINAL_RESPONSE,
         content: { text: filtered },
         timestamp: new Date(),
       };
-      
+
       return;
     }
 
@@ -726,6 +619,19 @@ Always verify parameter names match tool schemas before calling!`;
     const llmWithTools = workflow.requiresToolCalling
       ? selectedLLM.bindTools(tools)
       : selectedLLM;
+
+    const responseMode = workflow.requiresToolCalling
+      ? workflow.requiresConversation
+        ? 'hybrid'
+        : 'tool_calling'
+      : 'conversational';
+
+    // Emit response start
+    yield {
+      type: StreamingEventType.RESPONSE_START,
+      content: { mode: responseMode },
+      timestamp: new Date(),
+    };
 
     const toolsMessage = workflow.requiresToolCalling
       ? `with ${tools.length} tools bound to LLM`
@@ -754,8 +660,9 @@ Always verify parameter names match tool schemas before calling!`;
     }
 
     // Extract and emit thinking tokens before final response
-    const { thinking, filtered } = this.workflowControl.extractThinkingTokens(fullResponse);
-    
+    const { thinking, filtered } =
+      this.workflowControl.extractThinkingTokens(fullResponse);
+
     if (thinking.length > 0) {
       for (const thinkingText of thinking) {
         yield {

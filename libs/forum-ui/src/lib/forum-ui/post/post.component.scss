@@ -1,24 +1,198 @@
+:host {
+  display: block;
+}
+
 .post-content {
-  margin-bottom: 0.5rem;
-  color: var(--on-surface);
+  margin-bottom: var(--spacing-sm);
+  color: var(--foreground);
+  font-family: var(--font-body, sans-serif);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
 }
 
 .edited-badge {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-style: italic;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
+  margin-left: var(--spacing-xs);
 }
 
 .post-meta {
   display: flex;
-  gap: 1rem;
-  font-size: 0.75rem;
-  color: var(--on-surface-variant);
-  margin: 0.5rem 0;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-xs);
+  color: var(--muted-foreground);
+  margin: var(--spacing-sm) 0;
+  padding-top: var(--spacing-sm);
+  border-top: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--border) 50%, transparent);
 }
 
 .post-actions {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: var(--border-width, 1px) solid var(--border);
+}
+
+// ── Personality Overrides ──
+
+// Professional
+:host-context([data-personality='elegant']) {
+  .post-content {
+    line-height: 1.75;
+  }
+  .post-meta {
+    border-top-color: var(--accent);
+    border-top-width: 1px;
+  }
+}
+
+:host-context([data-personality='minimal']) {
+  .post-actions {
+    border-top: none;
+  }
+}
+
+// Creative
+:host-context([data-personality='bold']) {
+  .post-actions {
+    border-top-width: 3px;
+    border-top-color: var(--accent);
+  }
+}
+
+:host-context([data-personality='playful']) {
+  .edited-badge {
+    color: var(--accent);
+    font-style: normal;
+    font-weight: 600;
+  }
+  .post-meta {
+    border-top: none;
+  }
+}
+
+:host-context([data-personality='electric']) {
+  .post-actions {
+    border-top-color: var(--accent);
+    border-top-style: dashed;
+  }
+}
+
+// Casual
+:host-context([data-personality='soft']),
+:host-context([data-personality='soft-touch']) {
+  .post-meta,
+  .post-actions {
+    border-top: none;
+  }
+}
+
+// Technical
+:host-context([data-personality='architect']),
+:host-context([data-personality='control-center']),
+:host-context([data-personality='foundation']) {
+  .post-meta {
+    font-family: var(--font-mono, monospace);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+}
+
+:host-context([data-personality='control-center']) {
+  .post-content {
+    line-height: 1.4;
+  }
+}
+
+// ============================================
+// Personality-Specific Post Enhancements (body class)
+// ============================================
+
+body.personality-architect {
+  :host {
+    .post-content {
+      font-family: var(--font-mono);
+    }
+    .post-meta {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .post-actions {
+      border-top-width: 3px;
+      &:hover {
+        box-shadow: 4px 4px 0 var(--primary);
+        transform: translate(-2px, -2px);
+      }
+    }
+  }
+}
+
+body.personality-playful {
+  :host {
+    .edited-badge {
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .post-meta {
+      border-top: none;
+    }
+    .post-actions:hover {
+      transform: translateY(-4px) scale(1.02);
+    }
+  }
+}
+
+body.personality-minimal {
+  :host {
+    .post-actions {
+      border-top: none;
+      &:hover {
+        box-shadow: var(--shadow-sm);
+      }
+    }
+  }
+}
+
+body.personality-electric {
+  :host {
+    .post-actions {
+      border-top-style: dashed;
+      &:hover {
+        box-shadow: 0 0 20px var(--primary);
+      }
+    }
+  }
+}
+
+body.personality-soft-touch {
+  :host {
+    .post-meta,
+    .post-actions {
+      border-top: none;
+    }
+    .post-actions:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+body.personality-control-center {
+  :host {
+    .post-meta {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .post-content {
+      line-height: 1.4;
+    }
+    .post-actions:hover {
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
 }

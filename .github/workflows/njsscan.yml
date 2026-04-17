@@ -4,14 +4,19 @@ on:
     branches: [master, main]
   pull_request:
     branches: [master, main]
+
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   njsscan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     name: njsscan code scanning
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.2.2
-      - uses: actions/setup-python@v5.3.0
+        uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: nodejsscan scan
@@ -20,6 +25,6 @@ jobs:
         with:
           args: '. -c .njsscan --sarif --output results.sarif || true'
       - name: Upload njsscan report
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: results.sarif

@@ -1,0 +1,113 @@
+{
+  "name": "leads-app",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/leads-app/src",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/leads-app",
+        "index": "apps/leads-app/src/index.html",
+        "browser": "apps/leads-app/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/leads-app/tsconfig.app.json",
+        "allowedCommonJsDependencies": [
+          "socket.io-client",
+          "socket.io-parser",
+          "engine.io-client",
+          "fs",
+          "path",
+          "stream",
+          "util",
+          "url",
+          "crypto",
+          "zlib",
+          "buffer",
+          "async_hooks",
+          "perf_hooks"
+        ],
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/leads-app/public"
+          }
+        ],
+        "styles": ["apps/leads-app/src/styles.scss"],
+        "scripts": [],
+        "server": "apps/leads-app/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/leads-app/src/server.ts"
+        },
+        "prerender": false
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "16kb",
+              "maximumError": "32kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "leads-app:build:production"
+        },
+        "development": {
+          "buildTarget": "leads-app:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular/build:extract-i18n",
+      "options": {
+        "buildTarget": "leads-app:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/leads-app/jest.config.ts",
+        "tsConfig": "apps/leads-app/tsconfig.spec.json"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "leads-app:build",
+        "port": 4200,
+        "staticFilePath": "dist/apps/leads-app/browser",
+        "spa": true
+      }
+    }
+  }
+}

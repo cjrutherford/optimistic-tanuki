@@ -107,7 +107,7 @@ export class CreateProjectTelosDto {
 export class UpdateProjectTelosDto extends PartialType(CreateProjectTelosDto) {
   @ApiProperty()
   @IsUUID()
-  id: string;
+  id!: string;
 }
 
 export class QueryProjectTelosDto extends PartialType(ProjectTelosDto) {}

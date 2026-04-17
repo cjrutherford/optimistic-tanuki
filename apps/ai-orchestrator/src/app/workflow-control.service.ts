@@ -319,8 +319,19 @@ Examples:
       });
     }
 
+    // Extract DeepSeek <output> reasoning blocks
+    const outputMatches = response.match(/<output>([\s\S]*?)(<\/output>|$)/gi);
+    if (outputMatches) {
+      outputMatches.forEach((match) => {
+        const content = match.replace(/<\/?output>/gi, '').trim();
+        if (content) thinking.push(content);
+      });
+    }
+
     // Extract [THINKING] blocks
-    const thinkingMatches = response.match(/\[THINKING\]([\s\S]*?)(\[\/THINKING\]|$)/gi);
+    const thinkingMatches = response.match(
+      /\[THINKING\]([\s\S]*?)(\[\/THINKING\]|$)/gi
+    );
     if (thinkingMatches) {
       thinkingMatches.forEach((match) => {
         const content = match.replace(/\[\/?(THINKING)\]/gi, '').trim();
@@ -329,7 +340,9 @@ Examples:
     }
 
     // Extract **Thinking:** blocks
-    const thinkingHeaderMatches = response.match(/\*\*Thinking:?\*\*([\s\S]*?)(\n\n|$)/gi);
+    const thinkingHeaderMatches = response.match(
+      /\*\*Thinking:?\*\*([\s\S]*?)(\n\n|$)/gi
+    );
     if (thinkingHeaderMatches) {
       thinkingHeaderMatches.forEach((match) => {
         const content = match.replace(/\*\*Thinking:?\*\*/gi, '').trim();
@@ -345,12 +358,13 @@ Examples:
 
   /**
    * Filter thinking tokens from model response
-   * DeepSeek and similar models often output thinking tokens in <think> tags
+   * DeepSeek and similar models often output thinking tokens in <think> or <output> tags
    */
   filterThinkingTokens(response: string): string {
     // Combined regex pattern for all thinking token types, handling potentially unclosed tags at end of string
-    const thinkingPattern = /<think>[\s\S]*?(<\/think>|$)|\[THINKING\][\s\S]*?(\[\/THINKING\]|$)|\*\*Thinking:?\*\*[\s\S]*?(\n\n|$)/gi;
-    
+    const thinkingPattern =
+      /<think>[\s\S]*?(<\/think>|$)|<output>[\s\S]*?(<\/output>|$)|\[THINKING\][\s\S]*?(\[\/THINKING\]|$)|\*\*Thinking:?\*\*[\s\S]*?(\n\n|$)/gi;
+
     let filtered = response.replace(thinkingPattern, '');
 
     // Clean up extra whitespace

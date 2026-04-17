@@ -8,13 +8,19 @@ import {
   TimerDto,
   TimerStatus,
 } from '@optimistic-tanuki/ui-models';
+import {
+  ButtonComponent,
+  CardComponent,
+  GridComponent,
+  TileComponent,
+} from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'app-tasks',
   templateUrl: './tasks.component.html',
   styleUrls: ['./tasks.component.scss'],
   standalone: true,
-  imports: [],
+  imports: [ButtonComponent, CardComponent, GridComponent, TileComponent],
 })
 export class TasksComponent implements OnInit {
   tasks: TaskDto[] = [];

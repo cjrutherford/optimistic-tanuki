@@ -100,8 +100,8 @@ test.describe('Store Product Management E2E', () => {
     const firstProduct = page.locator('store-product-card').first();
 
     // Product should have some content
-    const content = await firstProduct.textContent();
-    expect(content).toBeTruthy();
+    const content = firstProduct;
+    await expect(content).toHaveText();
   });
 
   test('should handle product with low stock', async ({ page }) => {
@@ -130,7 +130,7 @@ test.describe('Store Product Management E2E', () => {
 
     if (await description.isVisible()) {
       const text = await description.textContent();
-      expect(text).not.toBeEmpty();
+      await expect(text).not.toBeEmpty();
     }
   });
 });

@@ -13,7 +13,7 @@ export class CreateProductDto {
   @IsString()
   @MinLength(1)
   @MaxLength(200)
-  name: string;
+  name!: string;
   @ApiProperty({
     description: 'Product description',
     example: 'A high-quality wireless mouse',
@@ -24,10 +24,10 @@ export class CreateProductDto {
   description?: string;
   @ApiProperty({ description: 'Product price', example: 29.99 })
   @IsNumber()
-  price: number;
+  price!: number;
   @ApiProperty({ description: 'Product type', example: 'physical' })
   @IsString()
-  type: string;
+  type!: string;
   @ApiPropertyOptional({
     description: 'Product image URL',
     example: 'https://example.com/image.jpg',

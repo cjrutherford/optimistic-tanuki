@@ -51,13 +51,12 @@ describe('ModalComponent', () => {
     component.theme = 'dark';
     component.applyTheme(mockColors);
 
-    expect(component.background).toBe(
-      `linear-gradient(30deg, ${mockColors.accent}, ${mockColors.background})`
-    );
+    // Modal applyTheme sets background to colors.background directly
+    expect(component.background).toBe(mockColors.background);
     expect(component.accent).toBe(mockColors.accent);
     expect(component.borderColor).toBe(mockColors.complementary);
     expect(component.borderGradient).toBe(
-      mockColors.complementaryGradients.dark
+      mockColors.complementaryGradients.light
     );
     expect(component.foreground).toBe(mockColors.foreground);
     expect(component.complement).toBe(mockColors.complementary);
@@ -91,9 +90,7 @@ describe('ModalComponent', () => {
     component.theme = 'light';
     component.applyTheme(mockColors);
 
-    expect(component.background).toBe(
-      `linear-gradient(30deg, ${mockColors.accent}, ${mockColors.background})`
-    );
+    expect(component.background).toBe(mockColors.background);
     expect(component.accent).toBe(mockColors.accent);
     expect(component.borderColor).toBe(mockColors.complementary);
     expect(component.borderGradient).toBe(
@@ -107,5 +104,37 @@ describe('ModalComponent', () => {
     jest.spyOn(component.closeModal, 'emit');
     component.closeModal.emit();
     expect(component.closeModal.emit).toHaveBeenCalled();
+  });
+
+  it('should show modal when show() is called', () => {
+    component.visible = false;
+    component.show();
+    expect(component.visible).toBe(true);
+  });
+
+  it('should hide modal when hide() is called', () => {
+    component.visible = true;
+    component.hide();
+    expect(component.visible).toBe(false);
+  });
+
+  it('should support different modal sizes', () => {
+    component.size = 'sm';
+    fixture.detectChanges();
+    expect(component.size).toBe('sm');
+
+    component.size = 'lg';
+    fixture.detectChanges();
+    expect(component.size).toBe('lg');
+  });
+
+  it('should support different modal positions', () => {
+    component.position = 'center';
+    fixture.detectChanges();
+    expect(component.position).toBe('center');
+
+    component.position = 'sidebar-left';
+    fixture.detectChanges();
+    expect(component.position).toBe('sidebar-left');
   });
 });

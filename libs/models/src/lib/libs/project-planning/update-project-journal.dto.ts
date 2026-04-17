@@ -14,7 +14,7 @@ export class UpdateProjectJournalDto extends PartialType(
 ) {
   @ApiProperty({ description: 'Journal entry ID' })
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional({ description: 'User who last updated the journal' })
   @IsOptional()

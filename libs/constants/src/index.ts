@@ -10,9 +10,23 @@ export {
   CommentCommands,
   AttachmentCommands,
   VoteCommands,
+  ReactionCommands,
   LinkCommands,
   FollowCommands,
+  SocialComponentCommands,
   SocialRealtimeCommands,
+  CommunityCommands,
+  NotificationCommands,
+  SearchCommands,
+  PrivacyCommands,
+  ActivityCommands,
+  SavedItemCommands,
+  PresenceCommands,
+  ProfileAnalyticsCommands,
+  PollCommands,
+  PostShareCommands,
+  EventCommands as SocialEventCommands,
+  ScheduledPostCommands,
 } from './lib/libs/social';
 
 export { TasksCommands, TimersCommands, NotesCommands } from './lib/libs/tasks';
@@ -38,8 +52,9 @@ export * from './lib/libs/common';
 
 export {
   BlogCommands,
+  BlogComponentCommands,
   ContactCommands,
-  EventCommands,
+  EventCommands as BlogEventCommands,
   PostCommands as BlogPostCommands,
 } from './lib/libs/blog';
 
@@ -56,9 +71,11 @@ export {
   SubscriptionCommands,
   DonationCommands,
   OrderCommands,
+  PaymentCommands,
 } from './lib/libs/store';
 
 export { AppConfigCommands } from './lib/libs/app-config';
+export { HardwareCommands } from './lib/libs/system-configurator';
 export {
   AppointmentCommands,
   AvailabilityCommands,
@@ -74,3 +91,38 @@ export {
 
 export { VideoCommands } from './lib/libs/videos';
 
+export { WellnessCommands } from './lib/libs/wellness';
+
+export { WellnessAiCommands } from './lib/libs/ai-orchestration';
+
+export { ClassifiedCommands } from './lib/libs/classifieds';
+
+export {
+  PLATFORM_FEE_PERCENTAGE,
+  LEMON_SQUEEZY_FEE_PERCENTAGE,
+  LEMON_SQUEEZY_FLAT_FEE,
+  TOTAL_FEE_PERCENTAGE,
+} from './lib/libs/payment-fees';
+
+export {
+  BUSINESS_PLACEMENTS,
+  getPlacementForTier,
+  getDefaultPlacementForTier,
+  type BusinessPlacement,
+  type FeaturedSpotType,
+} from './lib/libs/business-placement';
+
+export {
+  BUSINESS_TIER_FEATURES,
+  getTierFromPrice,
+  type BusinessTierFeature,
+  type BusinessTierType,
+} from './lib/libs/business-tiers';
+
+export {
+  LeadCommands,
+  LeadTopicCommands,
+  LeadFlagCommands,
+  LeadOnboardingCommands,
+  LeadAnalysisCommands,
+} from './lib/libs/leads/lead-commands';

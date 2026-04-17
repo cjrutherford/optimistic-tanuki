@@ -1,0 +1,90 @@
+{
+  "name": "lead-tracker",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/lead-tracker/src",
+  "projectType": "application",
+  "dependencies": {
+    "pg": "^8.16.0",
+    "typeorm": "^0.3.28"
+  },
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "webpack-cli build",
+        "args": ["--node-env=production"],
+        "cwd": "apps/lead-tracker"
+      },
+      "configurations": {
+        "development": {
+          "args": ["--node-env=development"]
+        }
+      }
+    },
+    "add-pg-dependency": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/scripts/add-pg-dep.js dist/apps/lead-tracker"
+      },
+      "dependsOn": ["build"]
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "lead-tracker:build",
+        "runBuildTargetDependencies": false,
+        "externalDependencies": ["pg"]
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "lead-tracker:build:development"
+        },
+        "production": {
+          "buildTarget": "lead-tracker:build:production"
+        }
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/lead-tracker/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "typeorm:migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:generate",
+        "cwd": "apps/lead-tracker",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        }
+      }
+    },
+    "typeorm:migration:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:run",
+        "cwd": "apps/lead-tracker",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        }
+      }
+    },
+    "typeorm:migration:revert": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:revert",
+        "cwd": "apps/lead-tracker",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        }
+      }
+    }
+  }
+}

@@ -41,9 +41,13 @@ export class TextInputComponent
   @Input() label = '';
   @Input() placeholder = '';
   @Input() labelPosition: 'top' | 'left' | 'right' | 'bottom' = 'top';
+  @Input() disabled = false;
+  @Input() hasError = false;
+  @Input() errorMessage = '';
   @Output() valueChange = new EventEmitter<string>();
 
   value = '';
+  inputId = `text-input-${Math.random().toString(36).substr(2, 9)}`;
 
   onChange?: (value: string) => void = (value: string) => {
     /*console.log(value);*/

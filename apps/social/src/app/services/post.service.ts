@@ -10,6 +10,7 @@ import {
   In,
   FindOperator,
   FindOptionsWhere,
+  MoreThanOrEqual,
 } from 'typeorm';
 import {
   CreatePostDto,
@@ -17,6 +18,11 @@ import {
   SearchPostDto,
 } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
+import { CommunityService } from './community.service';
+import {
+  CommunityMemberRole,
+  CommunityMembershipStatus,
+} from '../../entities/community-member.entity';
 
 @Injectable()
 export class PostService {
@@ -26,7 +32,8 @@ export class PostService {
     @Inject(getRepositoryToken(Attachment))
     private readonly attachmentRepo: Repository<Attachment>,
     @Inject(getRepositoryToken(Comment))
-    private readonly commentRepo: Repository<Comment>
+    private readonly commentRepo: Repository<Comment>,
+    private readonly communityService: CommunityService
   ) {}
 
   private sanitizeContent(content: string): string {
@@ -64,6 +71,17 @@ export class PostService {
   }
 
   async create(createPostDto: CreatePostDto): Promise<Post> {
+    // If communityId is provided, check membership
+    if (createPostDto.communityId) {
+      const isMember = await this.communityService.isMember(
+        createPostDto.communityId,
+        createPostDto.userId
+      );
+      if (!isMember) {
+        throw new Error('You must be a community member to post');
+      }
+    }
+
     // Sanitize content before saving
     const sanitizedDto = {
       ...createPostDto,
@@ -99,7 +117,39 @@ export class PostService {
     return await this.postRepo.findOne(finalOptions);
   }
 
-  async update(id: string, updatePostDto: UpdatePostDto): Promise<void> {
+  async update(
+    id: string,
+    updatePostDto: UpdatePostDto,
+    userId: string
+  ): Promise<void> {
+    // Get the post to check if it's a community post
+    const post = await this.postRepo.findOne({ where: { id } });
+    if (!post) {
+      throw new Error('Post not found');
+    }
+
+    // If it's a community post, check membership or moderator privileges
+    if (post.communityId) {
+      const hasPermission = await this.communityService.hasPermission(
+        post.communityId,
+        userId,
+        [
+          CommunityMemberRole.OWNER,
+          CommunityMemberRole.ADMIN,
+          CommunityMemberRole.MODERATOR,
+        ]
+      );
+      const isMember = await this.communityService.isMember(
+        post.communityId,
+        userId
+      );
+
+      // Allow if user is a moderator OR if user is the post author (who is also a member)
+      if (!hasPermission && (!isMember || post.userId !== userId)) {
+        throw new Error('You do not have permission to update this post');
+      }
+    }
+
     // Sanitize content if provided
     const sanitizedDto = {
       ...updatePostDto,
@@ -110,8 +160,36 @@ export class PostService {
     await this.postRepo.update(id, sanitizedDto);
   }
 
-  async remove(id: string): Promise<{ success: boolean }> {
+  async remove(id: string, userId: string): Promise<{ success: boolean }> {
     console.log(`PostService.remove called for ID: ${id}`);
+
+    // Get the post to check if it's a community post
+    const post = await this.postRepo.findOne({ where: { id } });
+    if (!post) {
+      throw new Error('Post not found');
+    }
+
+    // If it's a community post, check membership or moderator privileges
+    if (post.communityId) {
+      const hasPermission = await this.communityService.hasPermission(
+        post.communityId,
+        userId,
+        [
+          CommunityMemberRole.OWNER,
+          CommunityMemberRole.ADMIN,
+          CommunityMemberRole.MODERATOR,
+        ]
+      );
+      const isMember = await this.communityService.isMember(
+        post.communityId,
+        userId
+      );
+
+      // Allow if user is a moderator OR if user is the post author (who is also a member)
+      if (!hasPermission && (!isMember || post.userId !== userId)) {
+        throw new Error('You do not have permission to delete this post');
+      }
+    }
 
     // Delete related entities first to avoid foreign key constraint errors
     try {
@@ -149,5 +227,98 @@ export class PostService {
     }
 
     return await this.postRepo.find({ where });
+  }
+
+  async createScheduledPost(data: {
+    title: string;
+    content?: string;
+    profileId: string;
+    userId: string;
+    scheduledAt: Date;
+    visibility?: 'public' | 'followers';
+    communityId?: string;
+    attachmentIds?: string[];
+  }): Promise<Post> {
+    const post = this.postRepo.create({
+      title: data.title,
+      content: data.content || '',
+      profileId: data.profileId,
+      userId: data.userId,
+      scheduledAt: data.scheduledAt,
+      isScheduled: true,
+      visibility: data.visibility || 'public',
+      communityId: data.communityId || null,
+    });
+
+    if (data.attachmentIds && data.attachmentIds.length > 0) {
+      const attachments = await this.attachmentRepo.findBy({
+        id: In(data.attachmentIds),
+      });
+      post.attachments = attachments;
+    }
+
+    return await this.postRepo.save(post);
+  }
+
+  async findScheduledPosts(profileId?: string): Promise<Post[]> {
+    const where: FindOptionsWhere<Post> = { isScheduled: true };
+    if (profileId) {
+      where.profileId = profileId;
+    }
+    return await this.postRepo.find({
+      where,
+      order: { scheduledAt: 'ASC' },
+    });
+  }
+
+  async findPendingScheduledPosts(): Promise<Post[]> {
+    return await this.postRepo.find({
+      where: {
+        isScheduled: true,
+        scheduledAt: MoreThanOrEqual(new Date()),
+      },
+      order: { scheduledAt: 'ASC' },
+    });
+  }
+
+  async publishScheduledPost(id: string): Promise<Post> {
+    const post = await this.postRepo.findOne({ where: { id } });
+    if (!post || !post.isScheduled) {
+      throw new Error('Scheduled post not found');
+    }
+
+    await this.postRepo.update(id, {
+      isScheduled: false,
+      scheduledAt: null,
+    });
+
+    return await this.postRepo.findOne({ where: { id } });
+  }
+
+  async updateScheduledPost(
+    id: string,
+    data: {
+      title?: string;
+      content?: string;
+      scheduledAt?: Date;
+      visibility?: 'public' | 'followers';
+      communityId?: string;
+    }
+  ): Promise<Post> {
+    const post = await this.postRepo.findOne({ where: { id } });
+    if (!post || !post.isScheduled) {
+      throw new Error('Scheduled post not found');
+    }
+
+    await this.postRepo.update(id, data);
+    return await this.postRepo.findOne({ where: { id } });
+  }
+
+  async deleteScheduledPost(id: string): Promise<void> {
+    const post = await this.postRepo.findOne({ where: { id } });
+    if (!post || !post.isScheduled) {
+      throw new Error('Scheduled post not found');
+    }
+    await this.postRepo.delete(id);
   }
 }

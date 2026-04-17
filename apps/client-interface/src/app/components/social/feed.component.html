@@ -1,23 +1,42 @@
-<div class="feed-tabs">
-  <button (click)="loadPublicFeed()" [class.active]="currentFeed === 'public'">
-    Public Feed
-  </button>
-  <button
-    (click)="loadFollowingFeed()"
-    [class.active]="currentFeed === 'following'"
-  >
-    Following Feed
-  </button>
-</div>
 <div class="feed-container">
-  <lib-social-compose
-    (postSubmitted)="createdPost($event)"
-    [imageUploadCallback]="imageUploadCallback"
-    style="width: 100%; padding-left: 1em; margin-right: 1em"
-  >
-  </lib-social-compose>
-  @for (post of posts(); track post.id; let i = $index) {
-  <div class="post">
+  <div class="feed-tabs">
+    <otui-button
+      [variant]="currentFeed === 'public' ? 'primary' : 'outlined'"
+      (action)="loadPublicFeed()"
+    >
+      Public Feed
+    </otui-button>
+    <otui-button
+      [variant]="currentFeed === 'following' ? 'primary' : 'outlined'"
+      (action)="loadFollowingFeed()"
+    >
+      Following Feed
+    </otui-button>
+    <otui-button
+      [variant]="currentFeed === 'communities' ? 'primary' : 'outlined'"
+      (action)="loadCommunitiesFeed()"
+    >
+      My Communities
+    </otui-button>
+  </div>
+
+  @if (loading()) {
+  <div class="feed-loading">
+    <otui-spinner></otui-spinner>
+    <p>Loading posts...</p>
+  </div>
+  }
+
+  <div class="compose-wrapper">
+    <lib-social-compose
+      (postSubmitted)="createdPost($event)"
+      [imageUploadCallback]="imageUploadCallback"
+    >
+    </lib-social-compose>
+  </div>
+
+  <div class="posts-list">
+    @for (post of posts(); track post.id; let i = $index) {
     <lib-post
       [profile]="profiles()[post.profileId]"
       [availableProfiles]="profiles()"
@@ -27,10 +46,40 @@
       (postDeleted)="onDeletePost(post)"
       [canFollow]="canFollow(post)"
       [isFollowing]="isFollowing(post)"
+      [isBlocked]="isBlocked(post)"
+      [ownedCommunities]="ownedCommunities()"
       (followToggle)="onFollowToggle(post)"
+      (blockToggle)="onBlockToggle(post)"
+      (profileClick)="onProfileClick($event)"
       (newCommentAdded)="commented($event, i)"
       [imageUploadCallback]="imageUploadCallback"
+      [communityInfo]="
+        post.communityId ? communityInfo()[post.communityId] : undefined
+      "
+      [currentUserId]="getCurrentUserId()"
+      [userVote]="getUserVote(post.id)"
+      [voteCount]="getVoteCount(post.id)"
+      [userReaction]="getUserReaction(post.id)"
+      [reactionCounts]="getReactionCounts(post.id)"
+      (voteChange)="onVoteChanged($event)"
+      (reactionChange)="onReactionChanged($event)"
     ></lib-post>
+    }
+
+    <div
+      appInfiniteScroll
+      [disabled]="loadingMore() || !hasMorePosts()"
+      (scrolled)="loadMorePosts()"
+      class="scroll-trigger"
+    >
+      @if (loadingMore()) {
+      <div class="loading-more">
+        <otui-spinner></otui-spinner>
+        <p>Loading more posts...</p>
+      </div>
+      } @if (!hasMorePosts() && posts().length > 0) {
+      <div class="end-message">You've reached the end</div>
+      }
+    </div>
   </div>
-  }
 </div>

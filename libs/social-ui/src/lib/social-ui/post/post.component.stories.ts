@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { PostComponent } from './post.component';
-import { within } from '@storybook/test';
-import { expect } from '@storybook/jest';
+import { expect, within } from '@storybook/test';
 import { PostDto } from '../../models';
 
 const meta: Meta<PostComponent> = {

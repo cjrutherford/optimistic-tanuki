@@ -1,18 +1,121 @@
+/* Responsive attachment grid with theme variables */
+.attachments-container {
+  margin: var(--spacing-sm, 8px);
+  padding: var(--spacing-sm, 8px);
+  font-family: var(
+    --font-body,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif
+  );
+}
+
 .attachment-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
+  gap: var(--spacing-sm, 8px);
+
+  /* Mobile: 2 columns */
+  grid-template-columns: repeat(2, 1fr);
+
+  /* Tablet: 4 columns */
+  @media (min-width: 641px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* Desktop: 6 columns */
+  @media (min-width: 1025px) {
+    grid-template-columns: repeat(6, 1fr);
+  }
 }
 
 .attachment-item {
-  border: 1px solid #ccc;
-  padding: 10px;
+  border: 1px solid var(--complement, #c0af4b);
+  padding: var(--spacing-sm, 8px);
   text-align: center;
+  border-radius: var(--border-radius-md, 4px);
+  background-color: var(--background, #ffffff);
+  transition: all 0.15s ease-in-out;
+
+  &:hover {
+    border-color: var(--accent, #3f51b5);
+    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent, #3f51b5);
+    outline-offset: 2px;
+  }
 }
-.attachments-container {
-  margin: 10px;
-  padding: 10px;
-}
+
 .attachment-input {
-  margin: 10px;
+  margin: var(--spacing-sm, 8px);
+
+  &:focus-visible {
+    outline: 2px solid var(--accent, #3f51b5);
+    outline-offset: 2px;
+  }
+}
+
+// ============================================
+// Personality-Specific Attachment Enhancements
+// ============================================
+
+body.personality-architect {
+  .attachment-item {
+    border-radius: 0;
+    &:hover {
+      box-shadow: 4px 4px 0 var(--primary);
+      transform: translate(-2px, -2px);
+    }
+  }
+}
+
+body.personality-playful {
+  .attachment-item {
+    border-radius: 16px;
+    &:hover {
+      transform: translateY(-4px) scale(1.02);
+    }
+  }
+}
+
+body.personality-minimal {
+  .attachment-item {
+    border-radius: 2px;
+    border-width: 1px;
+    box-shadow: none;
+    &:hover {
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+  }
+}
+
+body.personality-electric {
+  .attachment-item {
+    &:hover {
+      box-shadow: 0 0 20px var(--primary);
+    }
+  }
+}
+
+body.personality-soft-touch {
+  .attachment-item {
+    border-radius: 20px;
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+body.personality-control-center {
+  .attachment-item {
+    border-radius: 2px;
+    &:hover {
+      box-shadow: inset 0 0 0 1px var(--primary);
+    }
+  }
 }

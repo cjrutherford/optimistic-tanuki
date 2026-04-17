@@ -1,1 +1,15 @@
-<router-outlet></router-outlet>
+@if (isBrowser) {
+<div class="motion-background" aria-hidden="true">
+  <otui-topographic-drift
+    [reducedMotion]="reducedMotion"
+    height="100vh"
+    [density]="7"
+    [speed]="0.28"
+    [intensity]="0.4"
+  ></otui-topographic-drift>
+</div>
+}
+
+<div class="app-content">
+  <router-outlet></router-outlet>
+</div>

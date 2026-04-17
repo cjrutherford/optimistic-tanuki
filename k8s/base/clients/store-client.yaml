@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: store-client
+  namespace: optimistic-tanuki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: store-client
+  template:
+    metadata:
+      labels:
+        app: store-client
+    spec:
+      containers:
+        - name: store-client
+          image: cjrutherford/optimistic_tanuki_store-client:sha-2850755da05286086a098d1dbdaf74f339af2a62
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4000
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: PORT
+              value: '4000'
+            - name: GATEWAY_URL
+              value: 'http://gateway:3000'
+          resources:
+            requests:
+              memory: '64Mi'
+              cpu: '50m'
+            limits:
+              memory: '256Mi'
+              cpu: '250m'
+          livenessProbe:
+            tcpSocket:
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-client
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: store-client
+  ports:
+    - port: 8085
+      targetPort: 4000
+  type: LoadBalancer

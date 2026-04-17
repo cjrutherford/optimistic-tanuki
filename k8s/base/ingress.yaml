@@ -1,0 +1,100 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: optimistic-tanuki-ingress
+  namespace: optimistic-tanuki
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: '50m'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '300'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '300'
+    nginx.ingress.kubernetes.io/websocket-services: 'gateway'
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: optimistic-tanuki-ingress-client
+  namespace: optimistic-tanuki
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: '50m'
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: localhost
+      http:
+        paths:
+          - path: /client
+            pathType: Prefix
+            backend:
+              service:
+                name: client-interface
+                port:
+                  number: 8080
+          - path: /forgeofwill
+            pathType: Prefix
+            backend:
+              service:
+                name: forgeofwill
+                port:
+                  number: 8081
+          - path: /digital-homestead
+            pathType: Prefix
+            backend:
+              service:
+                name: digital-homestead
+                port:
+                  number: 8082
+          - path: /hai
+            pathType: Prefix
+            backend:
+              service:
+                name: hai
+                port:
+                  number: 8088
+          - path: /crdn
+            pathType: Prefix
+            backend:
+              service:
+                name: christopherrutherford-net
+                port:
+                  number: 8083
+          - path: /console
+            pathType: Prefix
+            backend:
+              service:
+                name: owner-console
+                port:
+                  number: 8084
+          - path: /store
+            pathType: Prefix
+            backend:
+              service:
+                name: store-client
+                port:
+                  number: 8085
+          - path: /d6
+            pathType: Prefix
+            backend:
+              service:
+                name: d6
+                port:
+                  number: 8086
+          - path: /app
+            pathType: Prefix
+            backend:
+              service:
+                name: configurable-client
+                port:
+                  number: 8090

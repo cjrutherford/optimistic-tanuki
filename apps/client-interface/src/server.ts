@@ -13,6 +13,9 @@ const indexHtml = join(serverDistFolder, 'index.server.html');
 const app = express();
 const commonEngine = new CommonEngine();
 
+const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
+const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+
 /**
  * Example Express Rest API endpoints can be defined here.
  * Uncomment and define endpoints as necessary.
@@ -23,11 +26,26 @@ const commonEngine = new CommonEngine();
  *   // Handle API request
  * });
  * ```
- */
+ */ app.use(
+  '/socket.io',
+  createProxyMiddleware({
+    target: gatewayWsUrl,
+    ws: true,
+    changeOrigin: true,
+  })
+);
+app.use(
+  '/chat',
+  createProxyMiddleware({
+    target: gatewayWsUrl,
+    ws: true,
+    changeOrigin: true,
+  })
+);
 app.use(
   '/api',
   createProxyMiddleware({
-    target: 'http://gateway:3000/api',
+    target: `${gatewayUrl}/api`,
     changeOrigin: true,
   })
 );

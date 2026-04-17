@@ -1,20 +1,15 @@
 # Project UI
 
-This library contains UI components for project management, such as a Kanban board and a task list.
+`project-ui` contains reusable project-management UI components and styles. Its source lives under `libs/project-ui/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the components in this library, import the `ProjectUiModule` into your Angular module:
+- shared project, task, and workflow presentation
+- frontend companion library for Forge of Will and related apps
 
-```typescript
-import { ProjectUiModule } from '@optimistic-tanuki/project-ui';
+## Nx Commands
 
-@NgModule({
-  imports: [ProjectUiModule],
-})
-export class MyModule {}
+```bash
+npx nx build project-ui
+npx nx test project-ui
 ```
-
-## Running unit tests
-
-Run `nx test project-ui` to execute the unit tests.

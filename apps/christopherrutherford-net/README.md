@@ -1,13 +1,27 @@
-# Christopher Rutherford .NET
+# Christopher Rutherford Net
 
-This project is the frontend application for the christopherrutherford.net website. It is built with Angular and is responsible for rendering the user interface and interacting with the various backend services.
+`christopherrutherford-net` is the frontend for the personal site experience in this monorepo. Its source lives under `apps/christopherrutherford-net/src` with landing-page sections split into focused folders such as `hero`, `about`, `contact`, and `project-grid`.
 
-## 🚀 Getting Started
+## Local Development
 
-This application is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+Run it with the main stack:
 
-The application will be available at `http://localhost:4200`.
+```bash
+npm run docker:dev
+```
 
-## 🚢 Deployment
+Primary local URL:
 
-This application is deployed as a Docker container. See the main [README.md](../../README.md) for instructions on how to deploy the application.
+- `http://localhost:8083`
+
+For direct Nx work:
+
+```bash
+npx nx serve christopherrutherford-net
+npx nx build christopherrutherford-net
+```
+
+## Repo Role
+
+- public-facing site frontend
+- deployed as part of the current client image matrix and k8s overlay surface

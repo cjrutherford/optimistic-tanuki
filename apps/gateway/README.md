@@ -1,35 +1,38 @@
 # Gateway
 
-This service is an API gateway that routes requests to the appropriate microservice. It provides a single point of entry for all API requests, and is responsible for tasks such as authentication, rate limiting, and logging.
+The gateway is the platform entrypoint for HTTP, SSE, and WebSocket traffic. It routes requests to backend services and exposes the authenticated surface used by browser clients and terminal tooling such as `tools/stack-client`.
 
-## 🚀 Getting Started
+## Local Development
 
-This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+The gateway runs as part of the main dev stack:
 
-## 📝 API Reference
+```bash
+npm run docker:dev
+```
 
-The Gateway service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api-docs`.
+Primary local endpoints:
 
-## 🔌 WebSocket Endpoints
+- HTTP API: `http://localhost:3000`
+- Swagger UI: `http://localhost:3000/api-docs`
+- MCP SSE: `http://localhost:3000/api/mcp/sse`
+- Chat WebSocket: `ws://localhost:3300/chat`
+- Social WebSocket: `ws://localhost:3301/social`
 
-The Gateway service also provides WebSocket support for real-time updates:
+## Role in the Repo
 
-### Chat WebSocket
+The gateway is central to both local and deployed flows:
 
-- **Port:** 3300 (configurable via `SOCKET_PORT` environment variable)
-- **Namespace:** `/chat`
-- **Purpose:** Real-time chat messaging
+- local browser apps call it as the main backend entrypoint
+- `tools/stack-client` authenticates against it and issues terminal-driven requests through it
+- staging and production smoke tests in `.github/workflows/deploy.yml` currently hit its exposed surface
 
-### Social WebSocket
+## Environment Variables
 
-- **Port:** 3301 (configurable via `SOCIAL_SOCKET_PORT` environment variable)
-- **Namespace:** `/social`
-- **Purpose:** Real-time social updates (posts, comments, votes, follows)
-- **Documentation:** See [Social WebSocket Client Guide](../../docs/SOCIAL_WEBSOCKET_CLIENT.md)
+- `PORT`: HTTP API port, default `3000`
+- `SOCKET_PORT`: chat WebSocket port, default `3300`
+- `SOCIAL_SOCKET_PORT`: social WebSocket port, default `3301`
+- `CORS_ORIGIN`: CORS configuration for development and local testing
 
-## 🔧 Environment Variables
+## Deployment Notes
 
-- `PORT` - HTTP API port (default: 3000)
-- `SOCKET_PORT` - Chat WebSocket port (default: 3300)
-- `SOCIAL_SOCKET_PORT` - Social WebSocket port (default: 3301)
-- `CORS_ORIGIN` - CORS origin configuration for WebSocket connections (default: '\*' for development)
+The gateway is part of the canonical deployment inventory exported by `tools/admin-env-wizard/cmd/deployment-inventory`. Its image tag is promoted through the staging and production Kustomize overlays rather than by directly rewriting the base manifest.

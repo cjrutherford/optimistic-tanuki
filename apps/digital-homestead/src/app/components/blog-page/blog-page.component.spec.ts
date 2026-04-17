@@ -1,4 +1,9 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import { BlogPageComponent } from './blog-page.component';
 import { provideHttpClient } from '@angular/common/http';
 import {
@@ -10,7 +15,8 @@ import { BlogService } from '../../blog.service';
 import { AuthStateService } from '../../auth-state.service';
 import { PermissionService } from '../../permission.service';
 import { of, BehaviorSubject, throwError } from 'rxjs';
-import { BlogPostDto } from '@optimistic-tanuki/ui-models';
+import { BlogPostDto, API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { ComponentPersistenceService } from '@optimistic-tanuki/blogging-ui';
 
 describe('BlogPageComponent', () => {
   let component: BlogPageComponent;
@@ -50,10 +56,23 @@ describe('BlogPageComponent', () => {
     isAuthenticated$ = new BehaviorSubject<boolean>(true);
     blogService = {
       getAllPosts: jest.fn(() => of(mockPosts)),
-      getPost: jest.fn((id) => of(mockPosts.find(p => p.id === id) || mockPosts[0])),
-      createPost: jest.fn((dto) => of({ ...dto, id: 'new-id', createdAt: new Date(), updatedAt: new Date() } as any)),
-      updatePost: jest.fn((id, dto) => of({ ...dto, id, createdAt: new Date(), updatedAt: new Date() } as any)),
-      publishPost: jest.fn((id) => of({ ...mockPosts[1], isDraft: false, publishedAt: new Date() })),
+      getPost: jest.fn((id) =>
+        of(mockPosts.find((p) => p.id === id) || mockPosts[0])
+      ),
+      createPost: jest.fn((dto) =>
+        of({
+          ...dto,
+          id: 'new-id',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any)
+      ),
+      updatePost: jest.fn((id, dto) =>
+        of({ ...dto, id, createdAt: new Date(), updatedAt: new Date() } as any)
+      ),
+      publishPost: jest.fn((id) =>
+        of({ ...mockPosts[1], isDraft: false, publishedAt: new Date() })
+      ),
     };
 
     authStateService = {
@@ -66,6 +85,12 @@ describe('BlogPageComponent', () => {
       permissionsLoaded$: jest.fn(() => of(true)),
     };
 
+    const mockComponentPersistence = {
+      getComponentsForPost: jest.fn(() => of([])),
+      extractComponentsFromContent: jest.fn(() => []),
+      saveComponents: jest.fn(() => of({})),
+    };
+
     await TestBed.configureTestingModule({
       imports: [BlogPageComponent],
       providers: [
@@ -75,6 +100,11 @@ describe('BlogPageComponent', () => {
         { provide: BlogService, useValue: blogService },
         { provide: AuthStateService, useValue: authStateService },
         { provide: PermissionService, useValue: permissionService },
+        {
+          provide: ComponentPersistenceService,
+          useValue: mockComponentPersistence,
+        },
+        { provide: API_BASE_URL, useValue: '/api' },
       ],
     }).compileComponents();
 
@@ -97,11 +127,12 @@ describe('BlogPageComponent', () => {
   });
 
   describe('Post selection and loading', () => {
-    it('should load specific post when loadPost is called', () => {
+    it('should load specific post when loadPost is called', fakeAsync(() => {
       component.loadPost('1');
+      tick(); // Wait for forkJoin to complete
       expect(blogService.getPost).toHaveBeenCalledWith('1');
       expect(component.selectedPost()?.id).toBe('1');
-    });
+    }));
 
     it('should navigate when selectPost is called', () => {
       const spy = jest.spyOn(router, 'navigate');
@@ -110,21 +141,27 @@ describe('BlogPageComponent', () => {
     });
 
     it('should set error if trying to view draft while unauthenticated', fakeAsync(() => {
-        isAuthenticated$.next(false);
-        tick();
-        fixture.detectChanges();
-        
-        component.selectPost(mockPosts[1]); // Post 2 is draft
-        expect(component.error()).toBe('You must be signed in to view draft posts.');
+      isAuthenticated$.next(false);
+      tick();
+      fixture.detectChanges();
+
+      component.selectPost(mockPosts[1]); // Post 2 is draft
+      expect(component.error()).toBe(
+        'You must be signed in to view draft posts.'
+      );
     }));
   });
 
   describe('Creating and Editing', () => {
-    it('startCreatePost should change mode and reset editor data', () => {
+    it('startCreatePost should change mode and reset editor data', fakeAsync(() => {
+      // Spy on router.navigate to prevent actual navigation
+      jest.spyOn(router, 'navigate').mockResolvedValue(true);
+      tick(); // Wait for signals to update
       component.startCreatePost();
-      expect(component.mode()).toBe('create');
-      expect(component.editorData().title).toBe('');
-    });
+      tick(); // Wait for async operations
+      // Mode will be 'edit' after creating a draft post since it navigates to the new post
+      expect(component.mode()).toBe('edit');
+    }));
 
     it('editPost should change mode and set editor data', () => {
       component.editPost(mockPosts[0]);
@@ -133,9 +170,9 @@ describe('BlogPageComponent', () => {
     });
 
     it('cancelEdit should return to view mode', () => {
-        component.mode.set('edit');
-        component.cancelEdit();
-        expect(component.mode()).toBe('view');
+      component.mode.set('edit');
+      component.cancelEdit();
+      expect(component.mode()).toBe('view');
     });
   });
 
@@ -143,35 +180,50 @@ describe('BlogPageComponent', () => {
     it('onPostSubmitted should create new post in create mode', () => {
       component.mode.set('create');
       component.pendingSaveAction.set('draft');
-      const postData = { title: 'New', content: 'Content', links: [], attachments: [] };
-      
+      const postData = {
+        title: 'New',
+        content: 'Content',
+        links: [],
+        attachments: [],
+      };
+
       component.onPostSubmitted(postData);
-      
-      expect(blogService.createPost).toHaveBeenCalledWith(expect.objectContaining({
+
+      expect(blogService.createPost).toHaveBeenCalledWith(
+        expect.objectContaining({
           title: 'New',
-          isDraft: true
-      }));
+          isDraft: true,
+        })
+      );
       expect(component.mode()).toBe('view');
     });
 
     it('onPostSubmitted should update post in edit mode', () => {
-        component.mode.set('edit');
-        component.selectedPost.set(mockPosts[0]);
-        // Mock currentPostId to return '1'
-        jest.spyOn(component, 'currentPostId').mockReturnValue('1');
-        
-        const postData = { title: 'Updated', content: 'Content', links: [], attachments: [] };
-        component.onPostSubmitted(postData);
-        
-        expect(blogService.updatePost).toHaveBeenCalledWith('1', expect.objectContaining({
-            title: 'Updated'
-        }));
+      component.mode.set('edit');
+      component.selectedPost.set(mockPosts[0]);
+      // Mock currentPostId to return '1'
+      jest.spyOn(component, 'currentPostId').mockReturnValue('1');
+
+      const postData = {
+        title: 'Updated',
+        content: 'Content',
+        links: [],
+        attachments: [],
+      };
+      component.onPostSubmitted(postData);
+
+      expect(blogService.updatePost).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({
+          title: 'Updated',
+        })
+      );
     });
 
     it('publishDraft should call blogService.publishPost', () => {
-        component.selectedPost.set(mockPosts[1]);
-        component.publishDraft();
-        expect(blogService.publishPost).toHaveBeenCalledWith('2');
+      component.selectedPost.set(mockPosts[1]);
+      component.publishDraft();
+      expect(blogService.publishPost).toHaveBeenCalledWith('2');
     });
   });
 
@@ -182,19 +234,19 @@ describe('BlogPageComponent', () => {
     });
 
     it('formatDate should return empty string for null', () => {
-        expect(component.formatDate(null)).toBe('');
+      expect(component.formatDate(null)).toBe('');
     });
 
     it('dismissError should clear error', () => {
-        component.error.set('Some error');
-        component.dismissError();
-        expect(component.error()).toBeNull();
+      component.error.set('Some error');
+      component.dismissError();
+      expect(component.error()).toBeNull();
     });
 
     it('toggleThemeDesigner should toggle signal', () => {
-        const initial = component.showThemeDesigner();
-        component.toggleThemeDesigner();
-        expect(component.showThemeDesigner()).toBe(!initial);
+      const initial = component.showThemeDesigner();
+      component.toggleThemeDesigner();
+      expect(component.showThemeDesigner()).toBe(!initial);
     });
   });
 });

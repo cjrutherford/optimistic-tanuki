@@ -8,6 +8,24 @@ import { Comment } from '../entities/comment.entity';
 import { Attachment } from '../entities/attachment.entity';
 import { Link } from '../entities/link.entity';
 import FollowEntity from '../entities/Follow.entity';
+import { SocialComponent } from '../entities/social-component.entity';
+import { Community } from '../entities/community.entity';
+import { CommunityMember } from '../entities/community-member.entity';
+import { CommunityInvite } from '../entities/community-invite.entity';
+import { Notification } from '../entities/notification.entity';
+import { Reaction } from '../entities/reaction.entity';
+import { Activity } from '../entities/activity.entity';
+import { SavedItem } from '../entities/saved-item.entity';
+import { UserBlock } from '../entities/user-block.entity';
+import { UserMute } from '../entities/user-mute.entity';
+import { UserPresence } from '../entities/user-presence.entity';
+import { ProfileView } from '../entities/profile-view.entity';
+import { ContentReport } from '../entities/content-report.entity';
+import { SearchHistory } from '../entities/search-history.entity';
+import { ChatMessage } from '../entities/chat-message.entity';
+import { Event } from '../entities/event.entity';
+import { Poll } from '../entities/poll.entity';
+import { PostShare } from '../entities/post-share.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -28,7 +46,32 @@ const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [Post, Vote, Comment, Attachment, Link, FollowEntity];
+const entities = [
+  Post,
+  Vote,
+  Comment,
+  Attachment,
+  Link,
+  FollowEntity,
+  SocialComponent,
+  Community,
+  CommunityMember,
+  CommunityInvite,
+  Notification,
+  Reaction,
+  Activity,
+  SavedItem,
+  UserBlock,
+  UserMute,
+  UserPresence,
+  ProfileView,
+  ContentReport,
+  SearchHistory,
+  ChatMessage,
+  Event,
+  Poll,
+  PostShare,
+];
 
 const staticSource = new DataSource({
   type: 'postgres',

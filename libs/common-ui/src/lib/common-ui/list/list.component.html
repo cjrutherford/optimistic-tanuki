@@ -1,0 +1,52 @@
+<ul
+  [attr.role]="'list'"
+  [attr.aria-label]="ariaLabel || (clickable ? 'Interactive list' : null)"
+  [attr.aria-labelledby]="ariaLabelledBy"
+  [attr.aria-describedby]="
+    ariaDescribedBy || (clickable ? 'list-instructions' : null)
+  "
+  [ngClass]="[type, variant, size, layout, dividers, hoverable]"
+>
+  @if (clickable) {
+  <span id="list-instructions" class="sr-only" aria-hidden="true">
+    Use arrow keys to navigate, Enter or Space to select
+  </span>
+  } @for (item of items; track trackByIndex($index, item)) {
+  <li
+    [attr.id]="item.id || 'list-item-' + $index"
+    [attr.role]="'listitem'"
+    [attr.aria-selected]="item.selected"
+    [attr.aria-disabled]="item.disabled"
+    [attr.aria-label]="item.ariaLabel || item.label || item.content"
+    [attr.aria-describedby]="item.ariaDescribedBy"
+    [attr.aria-setsize]="items.length"
+    [attr.aria-posinset]="$index + 1"
+    [ngClass]="{
+      'list-item': true,
+      clickable: clickable && !item.disabled,
+      disabled: item.disabled,
+      selected: item.selected,
+      'has-icon': !!item.icon,
+      hoverable: hoverable
+    }"
+    (click)="onItemClick(item, $index)"
+    (keydown)="onKeydown($event, item, $index)"
+    [attr.tabindex]="clickable && !item.disabled ? 0 : -1"
+  >
+    @if (item.icon) {
+    <span class="list-icon" aria-hidden="true">{{ item.icon }}</span>
+    } @if (item.label || item.content) {
+    <span class="list-content" [attr.aria-label]="item.ariaLabel || null">
+      {{ item.label || item.content }}
+    </span>
+    }
+    <ng-content select="[list-item-{{ $index }}]"></ng-content>
+  </li>
+  }
+</ul>
+
+@if (clickable) {
+<div aria-live="polite" aria-atomic="true" class="sr-only">
+  {{ selectedCount }} items selected
+</div>
+}

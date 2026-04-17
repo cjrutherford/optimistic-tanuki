@@ -12,355 +12,458 @@ permissions:
   actions: read
 
 jobs:
-  microservices-e2e:
-    name: Microservices E2E Tests
-    runs-on: ubuntu-latest
+  # ──────────────────────────────────────────────────────────────────────────
+  # Build all applications once, cache the dist output as an artifact
+  # ──────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build All Applications
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
-    strategy:
-      matrix:
-        service:
-          - authentication-e2e
-          - profile-e2e
-          - social-e2e
-          - assets-e2e
-          - blogging-e2e
-          - gateway-e2e
-          - permissions-e2e
-          - project-planning-e2e
-          - chat-collector-e2e
-          - prompt-proxy-e2e
-          - telos-docs-service-e2e
-          - ai-orchestrator-e2e
-          - app-configurator-e2e
-      fail-fast: false
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build applications
-        run: |
-          # Build all applications needed for microservices
-          npx nx run-many -t build --projects=authentication,profile,social,assets,blogging,gateway,permissions,project-planning,chat-collector,prompt-proxy,telos-docs-service,ai-orchestrator --parallel=3
-        env:
-          CI: true
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Start E2E environment for ${{ matrix.service }}
-        run: |
-          # Check if independent docker-compose exists for this service
-          COMPOSE_FILE="e2e/docker-compose.${{ matrix.service }}.yaml"
-          if [ -f "$COMPOSE_FILE" ]; then
-            echo "Using independent compose file: $COMPOSE_FILE"
-            docker compose -f $COMPOSE_FILE up -d
-            # Wait for services to be ready
-            sleep 30
-          fi
-        env:
-          CI: true
-
-      - name: Run E2E tests for ${{ matrix.service }}
-        run: npx nx e2e ${{ matrix.service }} --configuration=ci
-        env:
-          CI: true
-
-      - name: Stop E2E environment
-        if: always()
-        run: |
-          COMPOSE_FILE="e2e/docker-compose.${{ matrix.service }}.yaml"
-          if [ -f "$COMPOSE_FILE" ]; then
-            docker compose -f $COMPOSE_FILE down -v
-          fi
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.service }}
-          path: |
-            coverage/${{ matrix.service }}
-            test-results/${{ matrix.service }}
-          retention-days: 30
-
-  ui-e2e:
-    name: UI E2E Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    strategy:
-      matrix:
-        app:
-          - client-interface-e2e
-          - forgeofwill-e2e
-          - digital-homestead-e2e
-          - christopherrutherford-net-e2e
-          - owner-console-e2e
-          - store-client-e2e
-          - configurable-client-e2e
-      fail-fast: false
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+          version: 9
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Build applications
-        run: |
-          # Build all applications and backend services needed for UI e2e tests
-          npx nx run-many -t build --projects=authentication,profile,social,assets,blogging,gateway,permissions,client-interface,forgeofwill,digital-homestead,christopherrutherford-net,owner-console,store-client,project-planning --parallel=3
-        env:
-          CI: true
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Start E2E environment for ${{ matrix.app }}
-        run: |
-          # Check if independent docker-compose exists for this service
-          COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
-          if [ -f "$COMPOSE_FILE" ]; then
-            echo "Using independent compose file: $COMPOSE_FILE"
-            docker compose -f $COMPOSE_FILE up -d --build
-            # Wait for services to be ready
-            sleep 45
-          fi
-        env:
-          CI: true
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-
-      - name: Run E2E tests for ${{ matrix.app }}
-        run: npx nx e2e ${{ matrix.app }} --configuration=ci
-        env:
-          CI: true
-
-      - name: Stop E2E environment
-        if: always()
-        run: |
-          COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
-          if [ -f "$COMPOSE_FILE" ]; then
-            docker compose -f $COMPOSE_FILE down -v
-          fi
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-${{ matrix.app }}
-          path: |
-            dist/.playwright/apps/${{ matrix.app }}/playwright-report
-            dist/.playwright/apps/${{ matrix.app }}/test-output
-          retention-days: 30
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.app }}
-          path: test-results/${{ matrix.app }}
-          retention-days: 30
-
-  # Full Browser E2E Tests using main docker-compose.yaml
-  browser-e2e-full-stack:
-    name: Full Stack Browser E2E Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build all applications
-        run: |
-          # Build all applications for full stack browser tests
-          npx nx run-many -t build --all --parallel=3
+        run: pnpm exec nx run-many -t build --parallel=4 --outputStyle=static
         env:
           CI: true
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Microservice E2E tests — all suites run sequentially on one runner
+  # using the shared infrastructure stack
+  # ──────────────────────────────────────────────────────────────────────────
+  microservices-e2e:
+    name: Microservices E2E Tests
+    runs-on: ubuntu-24.04
+    needs: build
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and start full environment with docker-compose
+      - name: Start shared infrastructure stack
         run: |
-          # Use the main docker-compose.yaml for full stack browser tests
-          docker compose up -d --build
-
-          # Wait for all services to be healthy
-          echo "Waiting for services to be ready..."
+          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d \
+            db redis db-setup \
+            authentication profile social assets \
+            project-planning chat-collector telos-docs-service prompt-proxy \
+            ai-orchestrator blogging permissions store app-configurator \
+            app-configurator-seed lead-tracker gateway
+          echo "Waiting for infrastructure to be ready..."
           sleep 60
-
-          # Check gateway health
-          curl --retry 10 --retry-delay 5 --retry-all-errors http://localhost:3000/health || echo "Gateway health check (may not exist)"
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium firefox webkit
-
-      - name: Run Digital Homestead Full Stack E2E
-        run: |
-          # Run against the dockerized digital-homestead at port 8082
-          BASE_URL=http://localhost:8082 npx nx e2e digital-homestead-e2e
+          docker compose -f e2e/docker-compose.e2e-stack.yaml ps
         env:
           CI: true
-          BASE_URL: http://localhost:8082
 
-      - name: Run Owner Console Full Stack E2E
-        run: |
-          # Run against the dockerized owner-console at port 8084
-          BASE_URL=http://localhost:8084 npx nx e2e owner-console-e2e
+      - name: Run authentication-e2e
+        run: pnpm exec nx e2e authentication-e2e --configuration=ci
         env:
           CI: true
-          BASE_URL: http://localhost:8084
+
+      - name: Run profile-e2e
+        run: pnpm exec nx e2e profile-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run social-e2e
+        run: pnpm exec nx e2e social-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run assets-e2e
+        run: pnpm exec nx e2e assets-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run blogging-e2e
+        run: pnpm exec nx e2e blogging-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run gateway-e2e
+        run: pnpm exec nx e2e gateway-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run permissions-e2e
+        run: pnpm exec nx e2e permissions-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run project-planning-e2e
+        run: pnpm exec nx e2e project-planning-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run chat-collector-e2e
+        run: pnpm exec nx e2e chat-collector-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run prompt-proxy-e2e
+        run: pnpm exec nx e2e prompt-proxy-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run telos-docs-service-e2e
+        run: pnpm exec nx e2e telos-docs-service-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run ai-orchestrator-e2e
+        run: pnpm exec nx e2e ai-orchestrator-e2e --configuration=ci
+        env:
+          CI: true
+
+      - name: Run app-configurator-e2e
+        run: pnpm exec nx e2e app-configurator-e2e --configuration=ci
+        env:
+          CI: true
 
       - name: Collect docker logs on failure
         if: failure()
         run: |
           mkdir -p docker-logs
-          docker compose logs > docker-logs/all-services.log
-          docker compose ps > docker-logs/services-status.txt
+          docker compose -f e2e/docker-compose.e2e-stack.yaml logs > docker-logs/microservices-stack.log
+          docker compose -f e2e/docker-compose.e2e-stack.yaml ps > docker-logs/microservices-status.txt
 
       - name: Upload docker logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: docker-logs
+          name: docker-logs-microservices
           path: docker-logs/
           retention-days: 7
 
-      - name: Stop full environment
+      - name: Stop shared infrastructure stack
         if: always()
-        run: docker compose down -v
+        run: docker compose -f e2e/docker-compose.e2e-stack.yaml down -v
 
-      - name: Upload Full Stack E2E report
+      - name: Upload microservices test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: browser-e2e-full-stack-report
+          name: test-results-microservices
           path: |
-            dist/.playwright/apps/digital-homestead-e2e/playwright-report
-            dist/.playwright/apps/owner-console-e2e/playwright-report
+            coverage/
+            test-results/
           retention-days: 30
 
-  # Cross-browser E2E Suite with Independent Docker Compose
-  browser-e2e-suite:
-    name: Cross-Browser E2E Suite
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-
-    strategy:
-      matrix:
-        browser: [chromium, firefox, webkit]
-        app: [digital-homestead-e2e, owner-console-e2e]
-      fail-fast: false
+  # ──────────────────────────────────────────────────────────────────────────
+  # UI E2E tests — each app is started via Docker Compose profile, tested,
+  # then stopped. All suites share the same backend infrastructure.
+  # ──────────────────────────────────────────────────────────────────────────
+  ui-e2e:
+    name: UI E2E Tests
+    runs-on: ubuntu-24.04
+    needs: build
+    timeout-minutes: 120
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
-      - name: Build applications
-        run: |
-          # Build all applications and backend services needed for cross-browser e2e tests
-          npx nx run-many -t build --projects=authentication,profile,social,assets,blogging,gateway,permissions,digital-homestead,owner-console,project-planning --parallel=3
-        env:
-          CI: true
+      - name: Download dist artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Start E2E environment for ${{ matrix.app }}
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Start shared backend infrastructure
         run: |
-          COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
-          if [ -f "$COMPOSE_FILE" ]; then
-            echo "Using compose file: $COMPOSE_FILE"
-            docker compose -f $COMPOSE_FILE up -d --build
-            echo "Waiting for services..."
-            sleep 45
-          fi
+          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d \
+            db redis db-setup \
+            authentication profile social assets \
+            project-planning chat-collector telos-docs-service prompt-proxy \
+            blogging permissions store app-configurator \
+            app-configurator-seed lead-tracker gateway
+          echo "Waiting for backend infrastructure to be ready..."
+          sleep 60
+          docker compose -f e2e/docker-compose.e2e-stack.yaml ps
         env:
           CI: true
 
-      - name: Install Playwright Browser - ${{ matrix.browser }}
-        run: npx playwright install --with-deps ${{ matrix.browser }}
-
-      - name: Run ${{ matrix.app }} E2E tests on ${{ matrix.browser }}
-        run: npx nx e2e ${{ matrix.app }} --project=${{ matrix.browser }}
+      # ── client-interface ────────────────────────────────────────────────
+      - name: Start client-interface app
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile client-interface up -d client-interface
+          sleep 20
         env:
           CI: true
-          BASE_URL: http://localhost:4200
 
-      - name: Stop E2E environment
+      - name: Run client-interface-e2e
+        run: pnpm exec nx e2e client-interface-e2e --configuration=ci
+        env:
+          CI: true
+          BASE_URL: http://localhost:8080
+
+      - name: Stop client-interface app
         if: always()
         run: |
-          COMPOSE_FILE="e2e/docker-compose.${{ matrix.app }}.yaml"
-          if [ -f "$COMPOSE_FILE" ]; then
-            docker compose -f $COMPOSE_FILE down -v
-          fi
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile client-interface stop client-interface
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile client-interface rm -f client-interface
 
-      - name: Upload browser E2E report
+      # ── forgeofwill ─────────────────────────────────────────────────────
+      - name: Start forgeofwill app
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile forgeofwill up -d forgeofwill
+          sleep 20
+        env:
+          CI: true
+
+      - name: Run forgeofwill-e2e
+        run: pnpm exec nx e2e forgeofwill-e2e --configuration=ci
+        env:
+          CI: true
+          BASE_URL: http://localhost:8081
+
+      - name: Stop forgeofwill app
         if: always()
-        uses: actions/upload-artifact@v4
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile forgeofwill stop forgeofwill
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile forgeofwill rm -f forgeofwill
+
+      # ── digital-homestead ───────────────────────────────────────────────
+      - name: Start digital-homestead app
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile digital-homestead up -d digital-homestead
+          sleep 20
+        env:
+          CI: true
+
+      - name: Run digital-homestead-e2e
+        run: pnpm exec nx e2e digital-homestead-e2e --configuration=ci
+        env:
+          CI: true
+          BASE_URL: http://localhost:8082
+
+      - name: Stop digital-homestead app
+        if: always()
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile digital-homestead stop digital-homestead
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile digital-homestead rm -f digital-homestead
+
+      # ── christopherrutherford-net ────────────────────────────────────────
+      - name: Start christopherrutherford-net app
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile christopherrutherford-net up -d christopherrutherford-net
+          sleep 20
+        env:
+          CI: true
+
+      - name: Run christopherrutherford-net-e2e
+        run: pnpm exec nx e2e christopherrutherford-net-e2e --configuration=ci
+        env:
+          CI: true
+          BASE_URL: http://localhost:8083
+
+      - name: Stop christopherrutherford-net app
+        if: always()
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile christopherrutherford-net stop christopherrutherford-net
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile christopherrutherford-net rm -f christopherrutherford-net
+
+      # ── owner-console ────────────────────────────────────────────────────
+      - name: Start owner-console app
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile owner-console up -d owner-console
+          sleep 20
+        env:
+          CI: true
+
+      - name: Run owner-console-e2e
+        run: pnpm exec nx e2e owner-console-e2e --configuration=ci
+        env:
+          CI: true
+          BASE_URL: http://localhost:8084
+
+      - name: Stop owner-console app
+        if: always()
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile owner-console stop owner-console
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile owner-console rm -f owner-console
+
+      # ── store-client ─────────────────────────────────────────────────────
+      - name: Start store-client app
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile store-client up -d store-client
+          sleep 20
+        env:
+          CI: true
+
+      - name: Run store-client-e2e
+        run: pnpm exec nx e2e store-client-e2e --configuration=ci
+        env:
+          CI: true
+          BASE_URL: http://localhost:8085
+
+      - name: Stop store-client app
+        if: always()
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile store-client stop store-client
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile store-client rm -f store-client
+
+      # ── configurable-client ───────────────────────────────────────────────
+      - name: Start configurable-client app
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile configurable-client up -d configurable-client
+          sleep 20
+        env:
+          CI: true
+
+      - name: Run configurable-client-e2e
+        run: pnpm exec nx e2e configurable-client-e2e --configuration=ci
+        env:
+          CI: true
+          BASE_URL: http://localhost:8090
+
+      - name: Stop configurable-client app
+        if: always()
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile configurable-client stop configurable-client
+          docker compose -f e2e/docker-compose.e2e-stack.yaml \
+            --profile configurable-client rm -f configurable-client
+
+      # ── Cleanup ──────────────────────────────────────────────────────────
+      - name: Collect docker logs on failure
+        if: failure()
+        run: |
+          mkdir -p docker-logs
+          docker compose -f e2e/docker-compose.e2e-stack.yaml logs > docker-logs/ui-stack.log
+          docker compose -f e2e/docker-compose.e2e-stack.yaml ps > docker-logs/ui-status.txt
+
+      - name: Upload docker logs
+        if: failure()
+        uses: actions/upload-artifact@v6
         with:
-          name: browser-e2e-${{ matrix.app }}-${{ matrix.browser }}
-          path: |
-            dist/.playwright/apps/${{ matrix.app }}/playwright-report
+          name: docker-logs-ui
+          path: docker-logs/
+          retention-days: 7
+
+      - name: Stop shared backend infrastructure
+        if: always()
+        run: docker compose -f e2e/docker-compose.e2e-stack.yaml down -v
+
+      - name: Upload Playwright reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-reports-ui
+          path: dist/.playwright/apps/*/playwright-report
           retention-days: 30
 
+      - name: Upload UI test results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-results-ui
+          path: test-results/
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Test Summary
+  # ──────────────────────────────────────────────────────────────────────────
   test-summary:
     name: Test Summary
-    runs-on: ubuntu-latest
-    needs:
-      [microservices-e2e, ui-e2e, browser-e2e-full-stack, browser-e2e-suite]
+    runs-on: ubuntu-24.04
+    needs: [microservices-e2e, ui-e2e]
     if: always()
 
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 
@@ -370,19 +473,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           echo "### Microservices Tests" >> $GITHUB_STEP_SUMMARY
-          ls -la artifacts/test-results-*-e2e/ 2>/dev/null || echo "No microservice results found" >> $GITHUB_STEP_SUMMARY
+          ls -la artifacts/test-results-microservices/ 2>/dev/null || echo "No microservice results found" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           echo "### UI Tests" >> $GITHUB_STEP_SUMMARY
-          ls -la artifacts/playwright-report-*/ 2>/dev/null || echo "No UI test results found" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "### Full Stack Browser Tests" >> $GITHUB_STEP_SUMMARY
-          ls -la artifacts/browser-e2e-full-stack-report/ 2>/dev/null || echo "No full stack browser results found" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "### Cross-Browser E2E Tests" >> $GITHUB_STEP_SUMMARY
-          ls -la artifacts/browser-e2e-*/ 2>/dev/null || echo "No cross-browser E2E results found" >> $GITHUB_STEP_SUMMARY
+          ls -la artifacts/playwright-reports-ui/ 2>/dev/null || echo "No UI test results found" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
       - name: Check test status
@@ -390,39 +485,25 @@ jobs:
           FAILED=false
 
           if [ "${{ needs.microservices-e2e.result }}" != "success" ]; then
-            echo "❌ Microservices E2E: ${{ needs.microservices-e2e.result }}"
+            echo "FAIL Microservices E2E: ${{ needs.microservices-e2e.result }}"
             FAILED=true
           else
-            echo "✅ Microservices E2E: passed"
+            echo "PASS Microservices E2E: passed"
           fi
 
           if [ "${{ needs.ui-e2e.result }}" != "success" ]; then
-            echo "❌ UI E2E: ${{ needs.ui-e2e.result }}"
+            echo "FAIL UI E2E: ${{ needs.ui-e2e.result }}"
             FAILED=true
           else
-            echo "✅ UI E2E: passed"
-          fi
-
-          if [ "${{ needs.browser-e2e-full-stack.result }}" != "success" ]; then
-            echo "❌ Full Stack Browser E2E: ${{ needs.browser-e2e-full-stack.result }}"
-            FAILED=true
-          else
-            echo "✅ Full Stack Browser E2E: passed"
-          fi
-
-          if [ "${{ needs.browser-e2e-suite.result }}" != "success" ]; then
-            echo "❌ Cross-Browser E2E Suite: ${{ needs.browser-e2e-suite.result }}"
-            FAILED=true
-          else
-            echo "✅ Cross-Browser E2E Suite: passed"
+            echo "PASS UI E2E: passed"
           fi
 
           if [ "$FAILED" = true ]; then
             echo ""
-            echo "❌ Some E2E tests failed"
+            echo "FAIL Some E2E tests failed"
             exit 1
           else
             echo ""
-            echo "✅ All E2E tests passed!"
+            echo "PASS All E2E tests passed!"
             exit 0
           fi

@@ -1,0 +1,23 @@
+<section
+  class="particle-veil"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--veil-speed]="speed"
+  [style.--veil-intensity]="intensity"
+>
+  <div class="particle-grid"></div>
+
+  <span
+    *ngFor="let particle of particles"
+    class="particle"
+    [style.left]="particle.left"
+    [style.top]="particle.top"
+    [style.width]="particle.size"
+    [style.height]="particle.size"
+    [style.opacity]="particle.opacity"
+    [style.animation-delay]="particle.delay"
+    [style.animation-duration]="particle.duration"
+    [style.--particle-drift-x]="particle.driftX"
+    [style.--particle-drift-y]="particle.driftY"
+  ></span>
+</section>

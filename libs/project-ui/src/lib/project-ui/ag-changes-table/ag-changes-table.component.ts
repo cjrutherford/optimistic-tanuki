@@ -40,7 +40,7 @@ import { ChangeFormComponent } from '../change-form/change-form.component';
 export class AgChangesTableComponent implements OnInit, OnChanges {
   // Traditional inputs/outputs for compatibility
   @Input() changes: Change[] = [];
-  @Input() loading: boolean = false;
+  @Input() loading = false;
   @Output() createChange = new EventEmitter<CreateChange>();
   @Output() editChange = new EventEmitter<Change>();
   @Output() deleteChange = new EventEmitter<string>();

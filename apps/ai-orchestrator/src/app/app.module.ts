@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { WellnessController } from './wellness.controller';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { loadConfig } from './config';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { ServiceTokens, WellnessCommands } from '@optimistic-tanuki/constants';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { ToolsService } from './tools.service';
 import { MCPToolExecutor } from './mcp-tool-executor';
+import { EnhancedMCPToolExecutor } from './enhanced-mcp-tool-executor.service';
 import { LangChainService } from './langchain.service';
 import { ContextStorageService } from './context-storage.service';
 import { LangGraphService } from './langgraph.service';
@@ -17,9 +19,20 @@ import { ModelInitializerService } from './model-initializer.service';
 import { WorkflowControlService } from './workflow-control.service';
 import { PromptTemplateService } from './prompt-template.service';
 import { SystemPromptBuilder } from './system-prompt-builder.service';
+import { ToolValidationService } from './tool-validation.service';
+import { ToolFactory } from './tool-factory.service';
+import { WellnessPromptService } from './wellness-prompt.service';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { RateLimitGuard } from './guards/rate-limit.guard';
+
+// New refactored services
+import { ModelManager } from './models/model-manager.service';
+import { ToolRegistry } from './tools/tool-registry.service';
+import { IntentAnalyzer } from './intent/intent-analyzer.service';
+import { DataTracker } from './data/data-tracker.service';
+import { ConversationService } from './conversation/conversation.service';
+import { RedisCheckpointer } from './conversation/redis-checkpointer';
 
 @Module({
   imports: [
@@ -28,26 +41,31 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
       load: [loadConfig],
     }),
     HttpModule,
-    // ThrottlerModule.forRoot([
-    //   {
-    //     ttl: 60000, // 60 seconds
-    //     limit: 10,  // 10 requests per profile per 60 seconds
-    //   },
-    // ]),
   ],
-  controllers: [AppController],
+  controllers: [AppController, WellnessController],
   providers: [
     AppService,
     ToolsService,
     MCPToolExecutor,
+    EnhancedMCPToolExecutor,
     ModelInitializerService,
     WorkflowControlService,
     PromptTemplateService,
     SystemPromptBuilder,
+    ToolValidationService,
+    ToolFactory,
+    WellnessPromptService,
     LangChainService,
     ContextStorageService,
     LangGraphService,
     LangChainAgentService,
+    // New refactored services
+    ModelManager,
+    ToolRegistry,
+    IntentAnalyzer,
+    DataTracker,
+    ConversationService,
+    RedisCheckpointer,
     // {
     //   provide: APP_GUARD,
     //   useClass: RateLimitGuard,

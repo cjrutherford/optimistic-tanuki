@@ -135,12 +135,22 @@ describe('ProjectsComponent', () => {
     };
     const messageServiceMock = { addMessage: jest.fn() };
     const taskTimeEntryServiceMock = {
-      startTimer: jest.fn().mockReturnValue(of({ id: 'time1', taskId: 'task1' })),
-      stopTimer: jest.fn().mockReturnValue(of({ id: 'time1', taskId: 'task1' })),
+      startTimer: jest
+        .fn()
+        .mockReturnValue(of({ id: 'time1', taskId: 'task1' })),
+      stopTimer: jest
+        .fn()
+        .mockReturnValue(of({ id: 'time1', taskId: 'task1' })),
     };
     const themeServiceMock = {
       getTheme: jest.fn().mockReturnValue('light'),
-      themeColors$: of({ background: '#fff', foreground: '#000', accent: '#00f' }),
+      themeColors$: of({
+        background: '#fff',
+        foreground: '#000',
+        accent: '#00f',
+      }),
+      getCurrentPersonality: jest.fn().mockReturnValue(undefined),
+      personality$: of(undefined),
     };
 
     await TestBed.configureTestingModule({
@@ -159,13 +169,21 @@ describe('ProjectsComponent', () => {
 
     fixture = TestBed.createComponent(ProjectsComponent);
     component = fixture.componentInstance;
-    projectService = TestBed.inject(ProjectService) as jest.Mocked<ProjectService>;
+    projectService = TestBed.inject(
+      ProjectService
+    ) as jest.Mocked<ProjectService>;
     taskService = TestBed.inject(TaskService) as jest.Mocked<TaskService>;
     riskService = TestBed.inject(RiskService) as jest.Mocked<RiskService>;
     changeService = TestBed.inject(ChangeService) as jest.Mocked<ChangeService>;
-    journalService = TestBed.inject(JournalService) as jest.Mocked<JournalService>;
-    messageService = TestBed.inject(MessageService) as jest.Mocked<MessageService>;
-    taskTimeEntryService = TestBed.inject(TaskTimeEntryService) as jest.Mocked<TaskTimeEntryService>;
+    journalService = TestBed.inject(
+      JournalService
+    ) as jest.Mocked<JournalService>;
+    messageService = TestBed.inject(
+      MessageService
+    ) as jest.Mocked<MessageService>;
+    taskTimeEntryService = TestBed.inject(
+      TaskTimeEntryService
+    ) as jest.Mocked<TaskTimeEntryService>;
     themeService = TestBed.inject(ThemeService) as jest.Mocked<ThemeService>;
     jest.spyOn(console, 'error').mockImplementation(() => {});
     jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -185,10 +203,14 @@ describe('ProjectsComponent', () => {
   }));
 
   it('should handle project loading error', fakeAsync(() => {
-    projectService.getProjects.mockReturnValue(throwError(() => new Error('Failed')));
+    projectService.getProjects.mockReturnValue(
+      throwError(() => new Error('Failed'))
+    );
     (component as any).loadProjects();
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle project selection', () => {
@@ -213,7 +235,15 @@ describe('ProjectsComponent', () => {
   });
 
   it('should handle project creation', fakeAsync(() => {
-    const createProjectDto: CreateProject = { name: 'New', description: '', owner: '', createdBy: '', members: [], status: 'IN_PROGRESS', startDate: new Date() };
+    const createProjectDto: CreateProject = {
+      name: 'New',
+      description: '',
+      owner: '',
+      createdBy: '',
+      members: [],
+      status: 'IN_PROGRESS',
+      startDate: new Date(),
+    };
     component.onProjectCreated(createProjectDto);
     tick();
     expect(projectService.createProject).toHaveBeenCalled();
@@ -286,21 +316,31 @@ describe('ProjectsComponent', () => {
     component.onCreateJournalEntry({ content: 'New' } as any);
     tick();
     expect(journalService.createJournalEntry).toHaveBeenCalled();
-    expect(component.selectedProject()?.journalEntries).toContainEqual(mockJournal);
+    expect(component.selectedProject()?.journalEntries).toContainEqual(
+      mockJournal
+    );
   }));
 
   it('should handle updating a journal entry', fakeAsync(() => {
-    component.selectedProject.set({ ...mockProject, journalEntries: [mockJournal] });
+    component.selectedProject.set({
+      ...mockProject,
+      journalEntries: [mockJournal],
+    });
     const updatedJournal = { ...mockJournal, content: 'Updated' };
     journalService.updateJournalEntry.mockReturnValue(of(updatedJournal));
     component.onUpdateJournalEntry(updatedJournal);
     tick();
     expect(journalService.updateJournalEntry).toHaveBeenCalled();
-    expect(component.selectedProject()?.journalEntries).toContainEqual(updatedJournal);
+    expect(component.selectedProject()?.journalEntries).toContainEqual(
+      updatedJournal
+    );
   }));
 
   it('should handle deleting a journal entry', fakeAsync(() => {
-    component.selectedProject.set({ ...mockProject, journalEntries: [mockJournal] });
+    component.selectedProject.set({
+      ...mockProject,
+      journalEntries: [mockJournal],
+    });
     component.onDeleteJournalEntry('journal1');
     tick();
     expect(journalService.deleteJournalEntry).toHaveBeenCalled();
@@ -319,10 +359,10 @@ describe('ProjectsComponent', () => {
 
   it('should calculate counts', () => {
     component.selectedProject.set({
-        ...mockProject,
-        tasks: [mockTask],
-        risks: [mockRisk],
-        changes: [mockChange]
+      ...mockProject,
+      tasks: [mockTask],
+      risks: [mockRisk],
+      changes: [mockChange],
     });
     expect(component.taskCount()).toBe(1);
     expect(component.riskCount()).toBe(1);
@@ -334,7 +374,9 @@ describe('ProjectsComponent', () => {
     taskService.createTask.mockReturnValue(throwError(() => new Error('Fail')));
     component.onCreateTask({} as any);
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle editing a task', fakeAsync(() => {
@@ -348,7 +390,9 @@ describe('ProjectsComponent', () => {
     taskService.updateTask.mockReturnValue(throwError(() => new Error('Fail')));
     component.onEditTask({ id: '1' } as any);
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle deleting a task', fakeAsync(() => {
@@ -363,7 +407,9 @@ describe('ProjectsComponent', () => {
     taskService.deleteTask.mockReturnValue(throwError(() => new Error('Fail')));
     component.onDeleteTask('1');
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle startTimer', fakeAsync(() => {
@@ -375,15 +421,23 @@ describe('ProjectsComponent', () => {
   }));
 
   it('should handle startTimer error', fakeAsync(() => {
-    taskTimeEntryService.startTimer.mockReturnValue(throwError(() => new Error('Fail')));
+    taskTimeEntryService.startTimer.mockReturnValue(
+      throwError(() => new Error('Fail'))
+    );
     component.onStartTimer('task1');
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle stopTimer', fakeAsync(() => {
     component.selectedProject.set(mockProject);
-    const mockTimeEntry = { id: 'time1', taskId: 'task1', task: { id: 'task1' } };
+    const mockTimeEntry = {
+      id: 'time1',
+      taskId: 'task1',
+      task: { id: 'task1' },
+    };
     taskTimeEntryService.stopTimer.mockReturnValue(of(mockTimeEntry as any));
     component.onStopTimer('time1');
     tick();
@@ -392,32 +446,48 @@ describe('ProjectsComponent', () => {
   }));
 
   it('should handle stopTimer error', fakeAsync(() => {
-    taskTimeEntryService.stopTimer.mockReturnValue(throwError(() => new Error('Fail')));
+    taskTimeEntryService.stopTimer.mockReturnValue(
+      throwError(() => new Error('Fail'))
+    );
     component.onStopTimer('time1');
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle journal entry creation error', fakeAsync(() => {
     component.selectedProject.set(mockProject);
-    journalService.createJournalEntry.mockReturnValue(throwError(() => new Error('Fail')));
+    journalService.createJournalEntry.mockReturnValue(
+      throwError(() => new Error('Fail'))
+    );
     component.onCreateJournalEntry({} as any);
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle journal entry update error', fakeAsync(() => {
-    journalService.updateJournalEntry.mockReturnValue(throwError(() => new Error('Fail')));
+    journalService.updateJournalEntry.mockReturnValue(
+      throwError(() => new Error('Fail'))
+    );
     component.onUpdateJournalEntry({ id: '1' } as any);
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle journal entry deletion error', fakeAsync(() => {
-    journalService.deleteJournalEntry.mockReturnValue(throwError(() => new Error('Fail')));
+    journalService.deleteJournalEntry.mockReturnValue(
+      throwError(() => new Error('Fail'))
+    );
     component.onDeleteJournalEntry('1');
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle risk creation error', fakeAsync(() => {
@@ -425,43 +495,61 @@ describe('ProjectsComponent', () => {
     riskService.createRisk.mockReturnValue(throwError(() => new Error('Fail')));
     component.onCreateRisk({} as any);
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle risk update error', fakeAsync(() => {
     riskService.updateRisk.mockReturnValue(throwError(() => new Error('Fail')));
     component.onEditRisk({ id: '1' } as any);
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle risk deletion error', fakeAsync(() => {
     riskService.deleteRisk.mockReturnValue(throwError(() => new Error('Fail')));
     component.onDeleteRisk('1');
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle change creation error', fakeAsync(() => {
     component.selectedProject.set(mockProject);
-    changeService.createChange.mockReturnValue(throwError(() => new Error('Fail')));
+    changeService.createChange.mockReturnValue(
+      throwError(() => new Error('Fail'))
+    );
     component.onCreateChange({} as any);
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle change update error', fakeAsync(() => {
-    changeService.updateChange.mockReturnValue(throwError(() => new Error('Fail')));
+    changeService.updateChange.mockReturnValue(
+      throwError(() => new Error('Fail'))
+    );
     component.onEditChange({ id: '1' } as any);
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle change deletion error', fakeAsync(() => {
-    changeService.deleteChange.mockReturnValue(throwError(() => new Error('Fail')));
+    changeService.deleteChange.mockReturnValue(
+      throwError(() => new Error('Fail'))
+    );
     component.onDeleteChange('1');
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 
   it('should handle loadProject', fakeAsync(() => {
@@ -472,9 +560,13 @@ describe('ProjectsComponent', () => {
   }));
 
   it('should handle loadProject error', fakeAsync(() => {
-    projectService.getProjectById.mockReturnValue(throwError(() => new Error('Fail')));
+    projectService.getProjectById.mockReturnValue(
+      throwError(() => new Error('Fail'))
+    );
     (component as any).loadProject('1');
     tick();
-    expect(messageService.addMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    );
   }));
 });

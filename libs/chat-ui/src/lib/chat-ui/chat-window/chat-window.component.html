@@ -1,30 +1,93 @@
 @if(windowState !== 'hidden'){
 <div class="chat-window-container" [ngClass]="windowState">
   <div class="chat-window-header">
-    <span>Chat</span>
+    <div class="header-content">
+      @if(contact && contact.length) {
+      <div class="header-info">
+        <div class="contact-avatar">
+          @for (c of contact.slice(0, 3); track c.id; let i = $index) {
+          <div class="avatar-wrapper" [style.--index]="i">
+            <lib-profile-photo
+              [src]="c.avatarUrl || c.profilePic || ''"
+              [alt]="c.name + ' avatar'"
+              [size]="36"
+            ></lib-profile-photo>
+            <div class="contact-details">
+              <div class="contact-name">{{ c.name }}</div>
+              <div
+                class="contact-status"
+                [class]="'status-' + (c.presence || 'offline')"
+              >
+                <span class="status-dot"></span>
+                @if (c.presence === 'online') { Online } @else if (c.presence
+                === 'away') { Away } @else if (c.presence === 'busy') { Busy }
+                @else if (c.lastSeen) { Last seen
+                {{ c.lastSeen | date : 'short' }}
+                } @else { Offline }
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      } @else {
+      <div class="contact-details">
+        <div class="contact-name">No Participants</div>
+      </div>
+      }
+    </div>
     <div class="chat-window-actions">
       @if(windowState === 'fullscreen') {
       <button (click)="onWindowStateChange('popout')">↘️</button>
       } @else if(windowState === 'popout') {
       <button (click)="onWindowStateChange('fullscreen')">↗️</button>
       }
-      <button (click)="onClose()">❌</button>
+      <button (click)="onClose()">✕</button>
     </div>
   </div>
+
+  <div class="header-divider"></div>
+
   <div class="chat-window-content">
     @if(contact && contact.length) {
-    <lib-participants [participants]="contact"></lib-participants>
+    <!-- <div class="participants-section">
+      <lib-participants [participants]="contact"></lib-participants>
+    </div> -->
+    <!-- <div class="participants-divider"></div> -->
     <lib-message-list
       [messages]="messages.messages"
       [contacts]="contact"
+      [currentUserId]="currentUserId"
+      [typingUsers]="typingUsers"
+      (reactionAdded)="onReactionAdded($event)"
+      (reactionRemoved)="onReactionRemoved($event)"
     ></lib-message-list>
     } @else {
     <div class="no-participants">No participants</div>
     <lib-message-list
       [messages]="messages.messages"
       [contacts]="[]"
+      [currentUserId]="currentUserId"
+      [typingUsers]="typingUsers"
+      (reactionAdded)="onReactionAdded($event)"
+      (reactionRemoved)="onReactionRemoved($event)"
     ></lib-message-list>
+    } @if(aiIsResponding || aiThinkingMessage) {
+    <div class="ai-status-indicator">
+      @if(aiThinkingMessage) {
+      <div class="ai-thinking">
+        <span class="thinking-dots"></span>
+        {{ aiThinkingMessage }}
+      </div>
+      } @else {
+      <div class="ai-responding">
+        <span class="typing-indicator"></span>
+        AI is responding...
+      </div>
+      }
+    </div>
     }
+
     <lib-compose-chat
       (messageSubmitted)="onMessageSubmitted($event)"
     ></lib-compose-chat>

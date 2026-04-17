@@ -1,5 +1,6 @@
 @if(open) {
 <otui-modal
+  [visible]="open"
   [heading]="profile ? 'Edit Profile' : 'New Profile'"
   (closeModal)="close()"
   size="lg"

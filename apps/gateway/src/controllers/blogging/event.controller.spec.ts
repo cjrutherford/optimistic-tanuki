@@ -8,7 +8,7 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { Reflector } from '@nestjs/core';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 
-import { EventCommands } from '@optimistic-tanuki/constants';
+import { BlogEventCommands } from '@optimistic-tanuki/constants';
 
 describe('EventController', () => {
   let controller: EventController;
@@ -74,7 +74,7 @@ describe('EventController', () => {
     eventService.send.mockReturnValue(of(dto));
     await controller.createEvent(dto);
     expect(eventService.send).toHaveBeenCalledWith(
-      { cmd: EventCommands.CREATE },
+      { cmd: BlogEventCommands.CREATE },
       dto
     );
   });
@@ -84,7 +84,7 @@ describe('EventController', () => {
     eventService.send.mockReturnValue(of([]));
     await controller.findAllEvents(query);
     expect(eventService.send).toHaveBeenCalledWith(
-      { cmd: EventCommands.FIND_ALL },
+      { cmd: BlogEventCommands.FIND_ALL },
       query
     );
   });
@@ -93,7 +93,7 @@ describe('EventController', () => {
     eventService.send.mockReturnValue(of({ id: '1' }));
     await controller.getEvent('1');
     expect(eventService.send).toHaveBeenCalledWith(
-      { cmd: EventCommands.FIND },
+      { cmd: BlogEventCommands.FIND },
       '1'
     );
   });
@@ -103,7 +103,7 @@ describe('EventController', () => {
     eventService.send.mockReturnValue(of({ id: '1', ...dto }));
     await controller.updateEvent('1', dto);
     expect(eventService.send).toHaveBeenCalledWith(
-      { cmd: EventCommands.UPDATE },
+      { cmd: BlogEventCommands.UPDATE },
       { id: '1', updateEventDto: dto }
     );
   });
@@ -112,7 +112,7 @@ describe('EventController', () => {
     eventService.send.mockReturnValue(of({}));
     await controller.deleteEvent('1');
     expect(eventService.send).toHaveBeenCalledWith(
-      { cmd: EventCommands.DELETE },
+      { cmd: BlogEventCommands.DELETE },
       '1'
     );
   });

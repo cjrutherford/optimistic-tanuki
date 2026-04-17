@@ -1,37 +1,39 @@
-<ng-template #commentDialog>
-  <otui-card class="comment-dialog-card">
-    <form (ngSubmit)="onSubmit()" class="comment-form">
-      <h2>Leave a Comment</h2>
-      @if(editor) {
-      <lib-rich-text-toolbar
-        [editor]="editor"
-        (componentsClicked)="onToolbarComponentsClick()"
-        (imageUploadClicked)="onToolbarImageUploadClick()"
-      ></lib-rich-text-toolbar>
-      <input
-        type="file"
-        id="commentImageInput"
-        #imageInput
-        hidden
-        (change)="onFileSelected($event)"
-        accept="image/*"
-      />
-      <tiptap-editor
-        [editor]="editor"
-        [(ngModel)]="comment"
-        [ngModelOptions]="{ standalone: true }"
-        class="tiptap-editor-styles comment-editor"
-      ></tiptap-editor>
-      }
-      <div class="comment-actions">
-        <otui-button variant="success" type="submit">Submit</otui-button>
-        <otui-button variant="warning" type="button" (click)="onCancel()"
-          >Cancel</otui-button
-        >
-      </div>
-    </form>
-  </otui-card>
-</ng-template>
-<otui-button variant="success" (click)="openCommentDialog()"
-  >Leave a Comment</otui-button
->
+<!-- Comment toggle button -->
+<otui-button variant="success" (click)="toggleCommentDialog()">
+  {{ showDialog ? 'Cancel' : 'Leave a Comment' }}
+</otui-button>
+
+<!-- Inline comment form -->
+@if (showDialog) {
+<div class="inline-comment-form">
+  <form (ngSubmit)="onSubmit()" class="comment-form">
+    @if(editor) {
+    <lib-rich-text-toolbar
+      [editor]="editor"
+      (componentsClicked)="onToolbarComponentsClick()"
+      (imageUploadClicked)="onToolbarImageUploadClick()"
+    ></lib-rich-text-toolbar>
+    <input
+      type="file"
+      id="commentImageInput"
+      #imageInput
+      hidden
+      (change)="onFileSelected($event)"
+      accept="image/*"
+    />
+    <tiptap-editor
+      [editor]="editor"
+      [(ngModel)]="comment"
+      [ngModelOptions]="{ standalone: true }"
+      class="tiptap-editor-styles comment-editor"
+    ></tiptap-editor>
+    }
+    <div class="comment-actions">
+      <otui-button variant="success" type="submit">Submit</otui-button>
+      <otui-button variant="warning" type="button" (click)="onCancel()"
+        >Cancel</otui-button
+      >
+    </div>
+  </form>
+</div>
+}

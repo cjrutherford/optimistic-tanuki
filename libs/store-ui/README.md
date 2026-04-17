@@ -1,7 +1,15 @@
-# store-ui
+# Store UI
 
-This library was generated with [Nx](https://nx.dev).
+`store-ui` contains reusable commerce and donation UI components. Its source lives under `libs/store-ui/src/lib` with product, cart, and donation-related building blocks.
 
-## Running unit tests
+## Repo Role
 
-Run `nx test store-ui` to execute the unit tests.
+- shared storefront and commerce presentation
+- supports store and payment-facing applications in the repo
+
+## Nx Commands
+
+```bash
+npx nx build store-ui
+npx nx test store-ui
+```

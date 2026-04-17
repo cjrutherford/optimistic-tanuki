@@ -4,11 +4,13 @@ export * from './lib/blog-post/card.component';
 export * from './lib/author-profile/author-profile.component';
 export * from './lib/contact-form/contact-form.component';
 export * from './lib/featured-posts/featured-posts.component';
+export * from './lib/newsletter-signup/newsletter-signup.component';
 
 // Blog compose component and related exports
 export * from './lib/blog-compose/blog-compose.component';
 export * from './lib/blog-compose/interfaces/component-injection.interface';
 export * from './lib/blog-compose/services/component-injection.service';
+export * from './lib/blog-compose/services/component-persistence.service';
 export * from './lib/blog-compose/components/component-selector.component';
 export * from './lib/blog-compose/components/property-editor.component';
 export * from './lib/blog-compose/components/component-wrapper.component';

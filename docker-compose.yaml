@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:17
     restart: always
     container_name: db # Changed back from ot_postgres
     environment:
@@ -28,7 +28,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    command: /bin/sh -c "apk add --no-cache postgresql-client && command -v pg_isready && npm run db:setup"
     restart: 'no'
   redis:
     image: redis:latest
@@ -79,6 +79,14 @@ services:
     ports:
       - '8082:4000'
 
+  hai-client-interface:
+    container_name: hai_client_interface
+    build:
+      context: .
+      dockerfile: ./apps/hai/Dockerfile
+    ports:
+      - '8088:4000'
+
   crdn-client-interface:
     container_name: crdn_client_interface # Added
     build:
@@ -95,6 +103,29 @@ services:
     ports:
       - '8084:4000'
 
+  leads-app:
+    container_name: ot_leads_app
+    build:
+      context: .
+      dockerfile: ./apps/leads-app/Dockerfile
+    ports:
+      - '4201:4000'
+
+  system-configurator:
+    container_name: ot_system_configurator
+    build:
+      context: .
+      dockerfile: ./apps/system-configurator/Dockerfile
+    ports:
+      - '8091:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+      - system-configurator-api
+
   gateway:
     container_name: ot_gateway
     build:
@@ -108,7 +139,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'node -e "require(''http'').get(''http://localhost:3000/api/mcp/sse'', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }).on(''error'', (err) => process.exit(1));"',
+          'node -e "require(''http'').get(''http://localhost:3000/api-docs'', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }).on(''error'', (err) => process.exit(1));"',
         ]
       interval: 10s
       timeout: 5s
@@ -123,6 +154,8 @@ services:
       forgeofwill-client-interface:
         condition: service_started
       digital-homestead-client-interface:
+        condition: service_started
+      hai-client-interface:
         condition: service_started
       profile:
         condition: service_started
@@ -146,6 +179,36 @@ services:
         condition: service_started
       forum:
         condition: service_started
+      wellness:
+        condition: service_started
+      classifieds:
+        condition: service_started
+      payments:
+        condition: service_started
+      lead-tracker:
+        condition: service_started
+      leads-app:
+        condition: service_started
+
+  lead-tracker:
+    container_name: ot_lead_tracker
+    build:
+      context: .
+      dockerfile: ./apps/lead-tracker/Dockerfile
+    ports:
+      - '3020:3020'
+    environment:
+      - OLLAMA_HOST=192.168.50.14
+      - OLLAMA_MODEL=gemma3:4b
+      - LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY=${LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY:-}
+      - LEAD_DISCOVERY_SEARCH_GOOGLE_CX=${LEAD_DISCOVERY_SEARCH_GOOGLE_CX:-}
+      - LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY=${LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY:-}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
 
   profile:
     container_name: ot_profile
@@ -220,6 +283,11 @@ services:
       dockerfile: ./apps/assets/Dockerfile
     ports:
       - '3005:3005'
+    volumes:
+      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
+    environment:
+      - STORAGE_STRATEGY=local
+      - LOCAL_STORAGE_PATH=/usr/src/app/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -356,6 +424,28 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  system-configurator-api:
+    container_name: ot_system_configurator_api
+    build:
+      context: .
+      dockerfile: ./apps/system-configurator-api/Dockerfile
+    ports:
+      - '3021:3021'
+    environment:
+      - NODE_ENV=production
+      - PORT=3021
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=ot_system_configurator
+      - PCPARTPICKER_SYNC_ON_START=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   app-configurator-seed:
     container_name: ot_app_configurator_seed
     build:
@@ -386,11 +476,11 @@ services:
       - app-configurator
       - app-configurator-seed
 
-  videos:
-    container_name: ot_videos
+  wellness:
+    container_name: ot_wellness
     build:
       context: .
-      dockerfile: ./apps/videos/Dockerfile
+      dockerfile: ./apps/wellness/Dockerfile
     ports:
       - '3016:3016'
     depends_on:
@@ -398,6 +488,76 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+
+  classifieds:
+    container_name: ot_classifieds
+    build:
+      context: .
+      dockerfile: ./apps/classifieds/Dockerfile
+    ports:
+      - '3017:3017'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  payments:
+    container_name: ot_payments
+    build:
+      context: .
+      dockerfile: ./apps/payments/Dockerfile
+    ports:
+      - '3018:3018'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  videos:
+    container_name: ot_videos
+    build:
+      context: .
+      dockerfile: ./apps/videos/Dockerfile
+    ports:
+      - '3019:3019'
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ot_videos
+      - PORT=3019
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  local-hub-client-interface:
+    container_name: ot_local_hub
+    build:
+      context: .
+      dockerfile: ./apps/local-hub/Dockerfile
+    ports:
+      - '8087:4000'
+    environment:
+      - GATEWAY_URL=http://gateway:3000
+      - GATEWAY_WS_URL=http://gateway:3300
+    depends_on:
+      - gateway
+
+  d6:
+    container_name: ot_d6
+    build:
+      context: .
+      dockerfile: ./apps/d6/Dockerfile
+    ports:
+      - '8086:4000'
+    depends_on:
+      - gateway
+
 
 volumes:
   postgres_data:

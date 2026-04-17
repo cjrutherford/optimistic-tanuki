@@ -6,7 +6,7 @@ import { IsUUID, IsOptional, IsBoolean } from 'class-validator';
 export class UpdateTaskTagDto extends PartialType(CreateTaskTagDto) {
   @ApiProperty({ description: 'Tag ID' })
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional({ description: 'User who last updated the tag' })
   @IsOptional()

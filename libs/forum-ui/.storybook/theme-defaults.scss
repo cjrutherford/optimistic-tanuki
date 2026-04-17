@@ -1,59 +1,82 @@
 :root {
-    /* Default Theme Variables (mimicking ThemeService defaults) */
-    --theme: light;
+  /* Default Theme Variables (mimicking ThemeService defaults) */
+  --theme: light;
 
-    /* Primary Colors */
-    --accent: #3f51b5;
-    --complement: #c0af4b;
-    --tertiary: #7e57c2;
-    --success: #4caf50;
-    --danger: #f44336;
-    --warning: #ff9800;
-    --background: #ffffff;
-    --foreground: #212121;
+  /* Primary Colors */
+  --primary: #3f51b5;
+  --primary-foreground: #ffffff;
+  --accent: #3f51b5;
+  --complement: #c0af4b;
+  --tertiary: #7e57c2;
+  --success: #4caf50;
+  --success-foreground: #ffffff;
+  --danger: #f44336;
+  --danger-foreground: #ffffff;
+  --warning: #ff9800;
+  --warning-foreground: #ffffff;
+  --background: #ffffff;
+  --foreground: #212121;
+  --surface: #fafafa;
+  --card: #ffffff;
+  --muted: #f5f5f5;
+  --muted-foreground: #757575;
+  --border: #e0e0e0;
 
-    /* Legacy variable support (if needed based on theme.component.scss) */
-    --accent-color: var(--accent);
-    --complementary-color: var(--complement);
-    --background-color: var(--background);
-    /* Just in case */
-    --foreground-color: var(--foreground);
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #3f51b5, #7e57c2);
+  --gradient-secondary: linear-gradient(135deg, #c0af4b, #ff9800);
+  --gradient-surface: linear-gradient(135deg, #fafafa, #ffffff);
+  --primary-gradient: var(--gradient-primary);
+  --secondary-gradient: var(--gradient-secondary);
+  --surface-gradient: var(--gradient-surface);
 
-    /* Spacing */
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
-    --spacing-xxl: 48px;
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
 
-    /* Shadows */
-    --shadow-none: none;
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  /* Shadows */
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 
-    /* Border Radius */
-    --border-radius-none: 0;
-    --border-radius-sm: 2px;
-    --border-radius-md: 4px;
-    --border-radius-lg: 8px;
-    --border-radius-xl: 12px;
-    --border-radius-full: 50%;
+  /* Border Radius */
+  --border-radius-none: 0;
+  --border-radius-sm: 2px;
+  --border-radius-md: 4px;
+  --border-radius-lg: 8px;
+  --border-radius-xl: 12px;
+  --border-radius-full: 9999px;
 
-    /* Typography */
-    --font-size-xs: 0.75rem;
-    --font-size-sm: 0.875rem;
-    --font-size-base: 1rem;
-    --font-size-lg: 1.125rem;
-    --font-size-xl: 1.25rem;
-    --font-size-xxl: 1.5rem;
+  /* Border */
+  --border-width: 1px;
 
-    /* Z-Index */
-    --z-index-base: 0;
-    --z-index-dropdown: 1000;
-    --z-index-modal: 1050;
-    --z-index-tooltip: 1070;
-    --z-index-overlay: 1080;
+  /* Typography */
+  --font-heading: 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Fira Code', 'SF Mono', Monaco, 'Courier New', monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-xxl: 1.5rem;
+
+  /* Animation */
+  --animation-duration-fast: 150ms;
+  --animation-duration-normal: 300ms;
+  --animation-duration-slow: 500ms;
+  --animation-easing: ease;
+
+  /* Z-Index */
+  --z-index-base: 0;
+  --z-index-dropdown: 1000;
+  --z-index-modal: 1050;
+  --z-index-tooltip: 1070;
+  --z-index-overlay: 1080;
 }

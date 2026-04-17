@@ -1,0 +1,15 @@
+<section
+  class="pulse-rings"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--pulse-speed]="speed"
+  [style.--pulse-intensity]="intensity"
+>
+  <div class="pulse-core"></div>
+
+  <div
+    *ngFor="let ring of rings"
+    class="pulse-ring"
+    [style.--ring-index]="ring"
+  ></div>
+</section>

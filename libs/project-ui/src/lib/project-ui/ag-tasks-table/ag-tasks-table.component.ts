@@ -42,7 +42,7 @@ import { TaskFormComponent } from '../task-form/task-form.component';
 export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
   // Traditional inputs/outputs for compatibility with parent components
   @Input() tasks: Task[] = [];
-  @Input() loading: boolean = false;
+  @Input() loading = false;
   @Output() createTask = new EventEmitter<CreateTask>();
   @Output() editTask = new EventEmitter<Task>();
   @Output() deleteTask = new EventEmitter<string>();

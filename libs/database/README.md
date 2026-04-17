@@ -1,20 +1,15 @@
 # Database
 
-This library contains services and entities for interacting with the database. It provides a convenient and consistent way to access and manipulate data.
+`database` contains shared database code used by backend services. Its source lives under `libs/database/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the services in this library, inject them into your NestJS services or controllers:
+- database helpers and shared persistence infrastructure
+- intended for NestJS and backend application use, not frontend consumption
 
-```typescript
-import { DatabaseService } from '@optimistic-tanuki/database';
+## Nx Commands
 
-@Injectable()
-export class MyService {
-  constructor(private readonly databaseService: DatabaseService) {}
-}
+```bash
+npx nx build database
+npx nx test database
 ```
-
-## Running unit tests
-
-Run `nx test database` to execute the unit tests.

@@ -1,0 +1,464 @@
+<div
+  class="modal-overlay"
+  *ngIf="showModal"
+  (click)="allowClose && closeModal()"
+  (keydown.escape)="allowClose && closeModal()"
+  role="dialog"
+  aria-modal="true"
+  tabindex="-1"
+>
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <ng-container *ngIf="showTopicReview; else interviewMode">
+      <div class="modal-header">
+        <h2>Review Generated Topics</h2>
+        <button *ngIf="allowClose" class="close-btn" (click)="closeModal()">
+          ×
+        </button>
+      </div>
+
+      <div class="topic-review">
+        <p class="review-intro">
+          Based on your profile, we've generated these discovery topics:
+        </p>
+
+        <div class="topic-card" *ngIf="profile.discAssessment">
+          <div class="topic-header">
+            <span class="topic-priority">Behavioral Profile</span>
+            <span class="confidence-badge high">
+              {{ profile.discAssessment.confidence }}% confidence
+            </span>
+          </div>
+          <h3>
+            {{ profile.discAssessment.primaryType }}
+            <span *ngIf="profile.discAssessment.secondaryType">
+              / {{ profile.discAssessment.secondaryType }}
+            </span>
+          </h3>
+          <p class="topic-desc">{{ profile.discAssessment.summary }}</p>
+          <div class="topic-details">
+            <div class="detail-row">
+              <span class="label">D:</span>
+              <span class="value">{{ profile.discAssessment.dScore }}%</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">I:</span>
+              <span class="value">{{ profile.discAssessment.iScore }}%</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">S:</span>
+              <span class="value">{{ profile.discAssessment.sScore }}%</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">C:</span>
+              <span class="value">{{ profile.discAssessment.cScore }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-cards">
+          <div
+            class="topic-card"
+            *ngFor="let topic of submittedTopics; let i = index"
+          >
+            <div class="topic-header">
+              <span class="topic-priority">#{{ i + 1 }}</span>
+              <span
+                class="confidence-badge"
+                [class.high]="topic.confidence >= 80"
+                [class.medium]="topic.confidence >= 60 && topic.confidence < 80"
+              >
+                {{ topic.confidence }}% confidence
+              </span>
+            </div>
+            <h3>{{ topic.name }}</h3>
+            <p class="topic-desc">{{ topic.description }}</p>
+
+            <div class="topic-details">
+              <div class="detail-row">
+                <span class="label">Keywords:</span>
+                <span class="value">{{ topic.keywords.join(', ') }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Strategy:</span>
+                <span class="value">{{ topic.searchStrategy }}</span>
+              </div>
+              <div class="detail-row" *ngIf="topic.buyerPersona">
+                <span class="label">Buyer:</span>
+                <span class="value">{{ topic.buyerPersona }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p *ngIf="errorMessage" class="onboarding-error">{{ errorMessage }}</p>
+
+        <div class="review-actions">
+          <otui-button variant="secondary" (action)="backToInterview()">
+            Edit Profile
+          </otui-button>
+          <otui-button
+            variant="primary"
+            (action)="confirmAndCreate()"
+            [disabled]="confirmingTopics"
+          >
+            {{
+              confirmingTopics
+                ? 'Creating Topics...'
+                : 'Confirm & Create Topics'
+            }}
+          </otui-button>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #interviewMode>
+      <div class="modal-header">
+        <h2>Setup Interview</h2>
+        <button *ngIf="allowClose" class="close-btn" (click)="closeModal()">
+          ×
+        </button>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="progressPercentage"></div>
+      </div>
+
+      <div class="section-indicator">
+        <ng-container [ngSwitch]="currentStage">
+          <span *ngSwitchCase="'mad-lib'">Step 1 of 4: Quick intro</span>
+          <span *ngSwitchCase="'resume'">Step 2 of 4: Resume prefill</span>
+          <span *ngSwitchCase="'profile'">
+            Step 3 of 4: Question {{ currentQuestionIndex + 1 }} of
+            {{ questions.length }}
+          </span>
+          <span *ngSwitchCase="'disc'">Step 4 of 4: DISC interview</span>
+        </ng-container>
+      </div>
+
+      <div class="questions-container">
+        <div class="question-card" *ngIf="currentStage === 'mad-lib'">
+          <label for="mad-lib">
+            Fill in the onboarding scaffold
+            <span class="required">*</span>
+          </label>
+          <p class="question-help">
+            Each section maps to later onboarding fields, so include the buyer,
+            problems, outcomes, delivery, and outreach details you want
+            prefilled.
+          </p>
+          <textarea
+            id="mad-lib"
+            [(ngModel)]="madLibValue"
+            rows="7"
+            placeholder="I help [customer type] in [industries] solve [problems] by delivering [service offer/results] using [skills]. I usually work with [company sizes/budget/geography] and reach buyers through [outreach methods]. My communication style is [style]."
+          ></textarea>
+        </div>
+
+        <div class="question-card" *ngIf="currentStage === 'resume'">
+          <label for="resume-upload">Upload your resume</label>
+          <p class="question-help">
+            Optional. We'll parse it to prefill your skills and experience, and
+            you can edit everything before analysis.
+          </p>
+          <input
+            id="resume-upload"
+            type="file"
+            accept=".pdf,.docx,.txt"
+            (change)="onResumeFileSelected($event)"
+          />
+          <p class="question-help" *ngIf="resumeFileName">
+            Selected: {{ resumeFileName }}
+          </p>
+          <p class="question-help" *ngIf="profile.resumeParseSummary">
+            {{ profile.resumeParseSummary }}
+          </p>
+          <div class="disc-thread" *ngIf="profile.resumeRoleSummaries?.length">
+            <div
+              class="disc-turn assistant"
+              *ngFor="let role of profile.resumeRoleSummaries"
+            >
+              <span class="disc-role"
+                >{{ role.title
+                }}<span *ngIf="role.company"> · {{ role.company }}</span></span
+              >
+              <p *ngIf="role.highlights.length">
+                {{ role.highlights.join(' ') }}
+              </p>
+              <p *ngIf="role.skills.length">
+                Skills: {{ role.skills.join(', ') }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="question-card" *ngIf="currentStage === 'profile'">
+          <label [for]="currentQuestion.id">
+            {{ currentQuestion.question }}
+            <span class="required" *ngIf="currentQuestion.required">*</span>
+          </label>
+          <p class="question-help" *ngIf="getCurrentQuestionSourceLabel()">
+            {{ getCurrentQuestionSourceLabel() }}
+          </p>
+          <p
+            class="question-help"
+            *ngIf="currentQuestion.id === 'localSearchLocation'"
+          >
+            City autocomplete is preferred here. You can still enter a ZIP code
+            manually if Google Maps search should center on that area.
+          </p>
+          <div class="disc-thread" *ngIf="getCurrentQuestionEvidence().length">
+            <div class="disc-turn assistant">
+              <span class="disc-role">Evidence</span>
+              <p>{{ getCurrentQuestionEvidence().join(' ') }}</p>
+            </div>
+          </div>
+
+          <div
+            class="autocomplete-field"
+            *ngIf="
+              currentQuestion.type === 'text' && isLocationAutocompleteQuestion
+            "
+          >
+            <div class="chips-input chips-input-location">
+              <div class="chips" *ngIf="getProfileValue(currentQuestion.id)">
+                <span class="chip">
+                  {{ getProfileValue(currentQuestion.id) }}
+                  <button type="button" (click)="clearLocationSelection()">
+                    ×
+                  </button>
+                </span>
+              </div>
+              <input
+                type="text"
+                [id]="currentQuestion.id"
+                [ngModel]="locationInputValue"
+                (ngModelChange)="onLocationInput($event)"
+                (keydown)="onLocationInputKeydown($event)"
+                (blur)="closeLocationSuggestions()"
+                [placeholder]="currentQuestion.placeholder"
+                autocomplete="off"
+              />
+            </div>
+            <div class="autocomplete-menu" *ngIf="locationSuggestions.length">
+              <button
+                type="button"
+                class="autocomplete-option"
+                *ngFor="let suggestion of locationSuggestions"
+                (mousedown)="applyLocationSuggestion(suggestion)"
+              >
+                <span class="autocomplete-primary">{{
+                  suggestion.primaryText
+                }}</span>
+                <span
+                  class="autocomplete-secondary"
+                  *ngIf="suggestion.secondaryText"
+                >
+                  {{ suggestion.secondaryText }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <input
+            *ngIf="
+              currentQuestion.type === 'text' && !isLocationAutocompleteQuestion
+            "
+            type="text"
+            [id]="currentQuestion.id"
+            [ngModel]="getProfileValue(currentQuestion.id)"
+            (ngModelChange)="setProfileValue(currentQuestion.id, $event)"
+            [placeholder]="currentQuestion.placeholder"
+          />
+
+          <textarea
+            *ngIf="currentQuestion.type === 'textarea'"
+            [id]="currentQuestion.id"
+            [ngModel]="getProfileValue(currentQuestion.id)"
+            (ngModelChange)="setProfileValue(currentQuestion.id, $event)"
+            [placeholder]="currentQuestion.placeholder"
+            rows="3"
+          ></textarea>
+
+          <select
+            *ngIf="currentQuestion.type === 'single-select'"
+            [id]="currentQuestion.id"
+            [ngModel]="getProfileValue(currentQuestion.id)"
+            (ngModelChange)="setProfileValue(currentQuestion.id, $event)"
+          >
+            <option value="">Select...</option>
+            <option *ngFor="let opt of currentQuestion.options" [value]="opt">
+              {{ opt }}
+            </option>
+          </select>
+
+          <div
+            class="multi-select"
+            *ngIf="currentQuestion.type === 'multiselect'"
+          >
+            <button
+              *ngFor="let opt of currentQuestion.options"
+              class="option-btn"
+              [class.selected]="isMultiSelected(currentQuestion.id, opt)"
+              (click)="toggleMultiSelect(currentQuestion.id, opt)"
+            >
+              {{ opt }}
+            </button>
+          </div>
+
+          <div class="chips-input" *ngIf="currentQuestion.type === 'chips'">
+            <div class="chips">
+              <span
+                class="chip"
+                *ngFor="let chip of getProfileListValue(currentQuestion.id)"
+              >
+                {{ chip }}
+                <button (click)="removeChip(currentQuestion.id, chip)">
+                  ×
+                </button>
+              </span>
+            </div>
+            <input
+              type="text"
+              [placeholder]="currentQuestion.placeholder"
+              [(ngModel)]="newChipValue"
+              (keydown)="onChipInputKeydown($event)"
+            />
+          </div>
+        </div>
+
+        <div class="question-card" *ngIf="currentStage === 'disc'">
+          <label for="disc-answer">DISC interview</label>
+          <p class="question-help">
+            Answer a few short prompts. We'll score the full DISC profile before
+            generating topics.
+          </p>
+
+          <div class="disc-thread" *ngIf="discTranscript.length > 0">
+            <div
+              class="disc-turn"
+              *ngFor="let turn of discTranscript"
+              [class.assistant]="turn.role === 'assistant'"
+              [class.user]="turn.role === 'user'"
+            >
+              <span class="disc-role">{{
+                turn.role === 'assistant' ? 'Guide' : 'You'
+              }}</span>
+              <p>{{ turn.text }}</p>
+            </div>
+          </div>
+
+          <textarea
+            *ngIf="!hasCompletedDiscAssessment"
+            id="disc-answer"
+            [(ngModel)]="discAnswerValue"
+            rows="4"
+            placeholder="Share a real example or describe how you usually operate."
+          ></textarea>
+          <div
+            class="disc-thread"
+            *ngIf="hasCompletedDiscAssessment && profile.discAssessment"
+          >
+            <div class="disc-turn assistant">
+              <span class="disc-role">DISC Summary</span>
+              <p>{{ profile.discAssessment.summary }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p *ngIf="errorMessage" class="onboarding-error">{{ errorMessage }}</p>
+
+      <div class="modal-footer">
+        <button
+          *ngIf="currentStage === 'profile' && submittedTopics.length > 0"
+          class="btn-secondary"
+          (click)="returnToReview()"
+          [disabled]="isAnalyzing || isResumeParsing || isDiscLoading"
+        >
+          Back to Summary
+        </button>
+
+        <button
+          class="btn-secondary"
+          (click)="prevQuestion()"
+          [disabled]="
+            currentStage === 'mad-lib' ||
+            isAnalyzing ||
+            isResumeParsing ||
+            isDiscLoading
+          "
+        >
+          Back
+        </button>
+
+        <button
+          *ngIf="currentStage === 'mad-lib'"
+          class="btn-primary"
+          (click)="requestMadLibAnalysis()"
+          [disabled]="!madLibValue.trim() || isAnalyzing"
+        >
+          {{ isAnalyzing ? 'Analyzing...' : 'Continue' }}
+        </button>
+
+        <ng-container *ngIf="currentStage === 'resume'">
+          <button
+            class="btn-secondary"
+            (click)="skipResumeStep()"
+            [disabled]="isResumeParsing"
+          >
+            Skip for now
+          </button>
+          <button
+            class="btn-primary"
+            (click)="skipResumeStep()"
+            [disabled]="isResumeParsing"
+          >
+            {{ isResumeParsing ? 'Parsing...' : 'Continue to questions' }}
+          </button>
+        </ng-container>
+
+        <button
+          *ngIf="currentStage === 'profile' && !isLastQuestion"
+          class="btn-primary"
+          (click)="nextQuestion()"
+          [disabled]="!canGoNext"
+        >
+          Next
+        </button>
+
+        <button
+          *ngIf="currentStage === 'profile' && isLastQuestion"
+          class="btn-primary"
+          (click)="submitForAnalysis()"
+          [disabled]="!canSubmit"
+        >
+          Continue to DISC
+        </button>
+
+        <button
+          *ngIf="currentStage === 'disc' && hasCompletedDiscAssessment"
+          class="btn-primary"
+          (click)="rerunTopicAnalysis()"
+          [disabled]="isAnalyzing"
+        >
+          {{ isAnalyzing ? 'Analyzing...' : 'Rebuild Topics' }}
+        </button>
+
+        <button
+          *ngIf="currentStage === 'disc' && !hasCompletedDiscAssessment"
+          class="btn-primary"
+          (click)="submitDiscAnswer()"
+          [disabled]="!discAnswerValue.trim() || isDiscLoading || isAnalyzing"
+        >
+          {{
+            isDiscLoading
+              ? 'Continuing...'
+              : isAnalyzing
+              ? 'Analyzing...'
+              : 'Continue DISC'
+          }}
+        </button>
+      </div>
+    </ng-template>
+  </div>
+</div>

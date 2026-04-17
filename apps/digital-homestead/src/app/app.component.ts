@@ -3,11 +3,22 @@ import { isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
-import { GradientBuilder } from '@optimistic-tanuki/common-ui';
+import {
+  GradientBuilder,
+  DevInfoComponent,
+} from '@optimistic-tanuki/common-ui';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { hexToRgb } from '@optimistic-tanuki/theme-lib';
+import { GlassFogComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
-  imports: [RouterModule, TitleBarComponent],
+  imports: [
+    RouterModule,
+    TitleBarComponent,
+    DevInfoComponent,
+    HaiAboutTagComponent,
+    GlassFogComponent,
+  ],
   selector: 'dh-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -18,21 +29,47 @@ import { hexToRgb } from '@optimistic-tanuki/theme-lib';
 export class AppComponent implements OnInit {
   title = 'digital-homestead';
   headingGradient = 'linear-gradient(90deg, #ff7e5f, #feb47b)'; // Example gradient
+  readonly haiAboutConfig = {
+    appId: 'digital-grange',
+    appName: 'Digital Grange',
+    appTagline: 'Digital homesteading for owned, calm computing.',
+    appDescription:
+      'Digital Grange brings together blogging, community, and personal-cloud minded tools for people building a durable digital homestead.',
+    appUrl: '/digital-grange',
+  };
 
   constructor(
     private readonly themeService: ThemeService,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: object
   ) {}
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
+  get reducedMotion(): boolean {
+    if (!this.isBrowser) {
+      return true;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   ngOnInit() {
     // Initialize theme - only in browser to avoid SSR issues
     if (isPlatformBrowser(this.platformId)) {
-      // Check if there's a stored palette preference, otherwise use default
-      const currentPalette = this.themeService.getCurrentPalette();
-      if (!currentPalette) {
+      const hasStoredPersonalityTheme = !!localStorage.getItem(
+        'optimistic-tanuki-personality-theme'
+      );
+      if (!hasStoredPersonalityTheme) {
         // Set default palette for digital-homestead
         this.themeService.setTheme('dark');
-        this.themeService.setPalette('Optimistic Blue');
+        this.themeService.setPersonality('classic');
+        this.themeService.setPrimaryColor('#3f51b5');
       } else {
         // Apply stored theme mode
         this.themeService.setTheme(this.themeService.getTheme());
@@ -42,8 +79,16 @@ export class AppComponent implements OnInit {
     this.themeService.themeColors$.subscribe({
       next: (colors) => {
         if (!colors || !isPlatformBrowser(this.platformId)) return;
-        const accentRgb = hexToRgb(colors.accent) as { r: number; g: number; b: number };
-        const complementRgb = hexToRgb(colors.complementary) as { r: number; g: number; b: number };
+        const accentRgb = hexToRgb(colors.accent) as {
+          r: number;
+          g: number;
+          b: number;
+        };
+        const complementRgb = hexToRgb(colors.complementary) as {
+          r: number;
+          g: number;
+          b: number;
+        };
         const accentRgba = `rgba(${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}, 0.9)`;
         const complementRgba = `rgba(${complementRgb.r}, ${complementRgb.g}, ${complementRgb.b}, 0.9)`;
 
@@ -55,7 +100,7 @@ export class AppComponent implements OnInit {
           })
           .build();
 
-          console.log('Updated heading gradient:', this.headingGradient);
+        console.log('Updated heading gradient:', this.headingGradient);
         // Only set app-specific variables, theme colors are handled by ThemeService
         const backgroundPattern = `
 <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">

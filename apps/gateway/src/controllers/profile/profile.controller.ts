@@ -21,6 +21,7 @@ import {
   TimelineCommands,
   RoleCommands,
   AppScopeCommands,
+  PrivacyCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateProfileDto,
@@ -62,6 +63,8 @@ export class ProfileController {
     private readonly telosDocsClient: ClientProxy,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly permissionsClient: ClientProxy,
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialClient: ClientProxy,
     private readonly roleInit: RoleInitService
   ) {}
 
@@ -217,14 +220,35 @@ export class ProfileController {
   @Get()
   getAllProfiles(
     @User() user: UserDetails,
-    @Param('query') query: Partial<ProfileDto>
+    @Param('query') query: Partial<ProfileDto>,
+    @AppScope() appScope: string
   ) {
     this.l.debug(`User payload: ${JSON.stringify(user)}`);
-    this.l.log(`Fetching all profiles for user: ${user.userId}`);
-    return this.client.send(
-      { cmd: ProfileCommands.GetAll },
-      { where: { userId: user.userId, ...query } }
+    const isOwnerConsole = appScope === 'owner-console';
+    this.l.log(
+      `Fetching ${isOwnerConsole ? 'all' : ''} profiles for user: ${
+        user.userId
+      } (appScope: ${appScope})`
     );
+    const where = isOwnerConsole
+      ? { ...query }
+      : { userId: user.userId, ...query };
+    return this.client.send({ cmd: ProfileCommands.GetAll }, { where });
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'The current user profile has been successfully retrieved.',
+  })
+  @ApiResponse({ status: 404, description: 'Profile not found.' })
+  @Get('me')
+  async getCurrentProfile(@User() user: UserDetails) {
+    if (!user.profileId) {
+      throw new RpcException('No profile associated with this user');
+    }
+    return this.getProfileById(user.profileId, 'social');
   }
 
   @UseGuards(AuthGuard)
@@ -234,8 +258,8 @@ export class ProfileController {
     description: 'The profile has been successfully retrieved.',
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
-  @Get(':id')
-  async getProfile(@Param('id') id: string, @AppScope() appScope: string) {
+  @Get('by-id/:id')
+  async getProfileById(@Param('id') id: string, @AppScope() appScope: string) {
     try {
       const profile: ProfileDto = await firstValueFrom(
         this.client.send({ cmd: ProfileCommands.Get }, { id })
@@ -287,6 +311,21 @@ export class ProfileController {
   }
 
   @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get a profile by ID (legacy)' })
+  @ApiResponse({
+    status: 200,
+    description: 'The profile has been successfully retrieved.',
+  })
+  @ApiResponse({ status: 404, description: 'Profile not found.' })
+  @Get(':id')
+  async getProfileLegacy(
+    @Param('id') id: string,
+    @AppScope() appScope: string
+  ) {
+    return this.getProfileById(id, appScope);
+  }
+
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Update a profile by ID' })
   @ApiResponse({
     status: 200,
@@ -316,6 +355,72 @@ export class ProfileController {
   @RequirePermissions('profile.delete')
   deleteProfile(@Param('id') id: string) {
     return this.client.send({ cmd: ProfileCommands.Delete }, id);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get profiles by IDs' })
+  @ApiResponse({
+    status: 200,
+    description: 'The profiles have been successfully retrieved.',
+  })
+  @ApiResponse({ status: 404, description: 'Profiles not found.' })
+  @Post('by-ids')
+  async getProfilesByIds(
+    @Body() body: { ids: string[] },
+    @AppScope() appScope: string
+  ) {
+    if (!body.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+      return [];
+    }
+    try {
+      const profiles: ProfileDto[] = await firstValueFrom(
+        this.client.send({ cmd: ProfileCommands.GetAll }, {})
+      );
+      const filteredProfiles = profiles.filter(
+        (p) =>
+          body.ids.includes(p.id) &&
+          (p.appScope === 'global' || p.appScope === appScope)
+      );
+
+      // For any missing profiles, back-fill with AI persona if available
+      const missingIds = body.ids.filter(
+        (id) => !filteredProfiles.some((p) => p.id === id)
+      );
+      const backfilledProfiles: ProfileDto[] = [];
+
+      for (const id of missingIds) {
+        try {
+          const telos: PersonaTelosDto = await firstValueFrom(
+            this.telosDocsClient.send(
+              { cmd: PersonaTelosCommands.FIND_ONE },
+              { id }
+            )
+          );
+          if (telos) {
+            backfilledProfiles.push({
+              id: telos.id,
+              userId: telos.id,
+              profileName: telos.name,
+              avatarUrl: `assets/${telos.name}-avatar.png`,
+              email: `${telos.name}@optimisitic-tanuki.com`,
+              bio: '',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              appScope: appScope === 'owner-console' ? 'global' : appScope,
+            });
+          }
+        } catch {
+          // Silently skip missing personas
+        }
+      }
+
+      return [...filteredProfiles, ...backfilledProfiles];
+    } catch (error) {
+      this.l.error(`Error retrieving profiles by IDs: ${body.ids}`, error);
+      throw new RpcException(
+        `Failed to retrieve profiles: ${error.message || error}`
+      );
+    }
   }
 
   // Removed unused project/goal endpoint stubs to reduce commented-out scaffolding. See git history if needed.
@@ -379,5 +484,59 @@ export class ProfileController {
   @Delete('timeline/:id')
   deleteTimeline(@Param('id') id: string) {
     return this.client.send({ cmd: TimelineCommands.Delete }, id);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get blocked users for a profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'The blocked users have been successfully retrieved.',
+  })
+  @Get(':id/blocked')
+  async getBlockedUsers(@Param('id') profileId: string) {
+    const blocked = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: PrivacyCommands.GET_BLOCKED_USERS },
+        { blockerId: profileId }
+      )
+    );
+    return (blocked || []).map((b: any) => ({
+      ...b,
+      blockedProfileId: b.blockedId,
+    }));
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Block a user' })
+  @ApiResponse({
+    status: 201,
+    description: 'User has been blocked.',
+  })
+  @Post(':id/block')
+  async blockUser(
+    @Param('id') profileId: string,
+    @Body() body: { blockedProfileId: string }
+  ) {
+    return this.socialClient.send(
+      { cmd: PrivacyCommands.BLOCK_USER },
+      { blockerId: profileId, blockedId: body.blockedProfileId }
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Unblock a user' })
+  @ApiResponse({
+    status: 200,
+    description: 'User has been unblocked.',
+  })
+  @Delete(':id/block/:blockedProfileId')
+  async unblockUser(
+    @Param('id') profileId: string,
+    @Param('blockedProfileId') blockedProfileId: string
+  ) {
+    return this.socialClient.send(
+      { cmd: PrivacyCommands.UNBLOCK_USER },
+      { blockerId: profileId, blockedId: blockedProfileId }
+    );
   }
 }

@@ -3,6 +3,20 @@
   height: 100vh;
 }
 
+.motion-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.app-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
 .app-container {
   display: flex;
   flex-direction: column;
@@ -10,7 +24,7 @@
 }
 
 .main-nav {
-  background-color: var(--accent, #007bff);
+  background-color: color-mix(in srgb, var(--accent, #007bff) 86%, transparent);
   color: var(--nav-text-color, #ffffff);
   padding: 1rem 2rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);

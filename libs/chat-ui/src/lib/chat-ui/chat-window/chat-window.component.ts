@@ -17,9 +17,9 @@ import { CommonModule } from '@angular/common';
 import { MessageListComponent } from './message-list/message-list.component';
 import { ParticipantsComponent } from './participants/participants.component';
 import { ComposeChatComponent } from '../compose-chat/compose-chat.component';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
-import { GradientBuilder } from 'libs/common-ui/src/lib/common-ui/gradient-builder';
-import { hexToRgb } from 'libs/common-ui/src/lib/common-ui/glass-container.component';
+import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
+import { Themeable, ThemeColors, hexToRgb } from '@optimistic-tanuki/theme-lib';
+import { GradientBuilder } from '@optimistic-tanuki/common-ui';
 
 export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
 
@@ -31,6 +31,7 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
     MessageListComponent,
     ParticipantsComponent,
     ComposeChatComponent,
+    ProfilePhotoComponent,
   ],
   templateUrl: './chat-window.component.html',
   styleUrls: ['./chat-window.component.scss'],
@@ -70,6 +71,26 @@ export class ChatWindowComponent
     updatedAt: new Date(),
   };
   /**
+   * Indicates if AI is currently responding
+   */
+  @Input() aiIsResponding = false;
+
+  /**
+   * AI thinking message
+   */
+  @Input() aiThinkingMessage: string | null = null;
+
+  /**
+   * Current user ID for determining message ownership.
+   */
+  @Input() currentUserId: string = '';
+
+  /**
+   * IDs of users currently typing in this conversation.
+   */
+  @Input() typingUsers: string[] = [];
+
+  /**
    * The current state of the chat window.
    */
   @Input() windowState: ChatWindowState = 'popout';
@@ -81,6 +102,14 @@ export class ChatWindowComponent
   @Output() windowStateChange: EventEmitter<ChatWindowState> =
     new EventEmitter<ChatWindowState>();
   @Output() messageSubmitted: EventEmitter<string> = new EventEmitter<string>();
+  @Output() reactionAdded = new EventEmitter<{
+    messageId: string;
+    emoji: string;
+  }>();
+  @Output() reactionRemoved = new EventEmitter<{
+    messageId: string;
+    emoji: string;
+  }>();
   accentTransparent = 'rgba(0, 123, 255, 0.1)';
   complementTransparent = 'rgba(108, 117, 125, 0.1)';
   /**
@@ -97,6 +126,14 @@ export class ChatWindowComponent
     this.messageSubmitted.emit(message);
   }
 
+  onReactionAdded(event: { messageId: string; emoji: string }) {
+    this.reactionAdded.emit(event);
+  }
+
+  onReactionRemoved(event: { messageId: string; emoji: string }) {
+    this.reactionRemoved.emit(event);
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['messages']) {
       this.scrollToBottom();
@@ -107,6 +144,8 @@ export class ChatWindowComponent
     this.scrollToBottom();
   }
   override applyTheme(colors: ThemeColors): void {
+    const accentRgb = hexToRgb(colors.accent);
+    const complementRgb = hexToRgb(colors.complementary);
     // Use standardized color assignments with design tokens
     this.themeColors = colors;
     this.background = colors.background;
@@ -114,8 +153,12 @@ export class ChatWindowComponent
     this.accent = colors.accent;
     this.complement = colors.complementary;
     this.borderColor = colors.accent;
-    this.accentTransparent = `rgba(${hexToRgb(colors.accent)}, 0.5)`;
-    this.complementTransparent = `rgba(${hexToRgb(colors.complementary)}, 0.5)`;
+    this.accentTransparent = `rgba(${accentRgb?.r || 0}, ${
+      accentRgb?.g || 0
+    }, ${accentRgb?.b || 0}, 0.5)`;
+    this.complementTransparent = `rgba(${complementRgb?.r || 0}, ${
+      complementRgb?.g || 0
+    }, ${complementRgb?.b || 0}, 0.5)`;
     this.borderGradient = new GradientBuilder()
       .setType('linear')
       .setOptions({
@@ -137,6 +180,11 @@ export class ChatWindowComponent
     this.windowState = 'hidden';
     this.windowStateChange.emit(this.windowState);
   }
+
+  trackById(index: number, contact: ChatContact): string {
+    return contact.id;
+  }
+
   private scrollToBottom() {
     if (this.chatWindowContent) {
       const element = this.chatWindowContent.nativeElement;

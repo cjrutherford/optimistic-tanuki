@@ -1,0 +1,86 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: optimistic-tanuki-staging
+resources:
+  - ../../base
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: gateway
+      spec:
+        replicas: 1
+    target:
+      kind: Deployment
+      name: gateway
+configMapGenerator:
+  - name: optimistic-tanuki-env
+    literals:
+      - NODE_ENV=staging
+      - LOG_LEVEL=debug
+images:
+  - name: cjrutherford/optimistic_tanuki_ai-orchestrator
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_app-configurator
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_assets
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_authentication
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_blogging
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_chat-collector
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_christopherrutherford-net
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_classifieds
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_client-interface
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_configurable-client
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_d6
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_digital-homestead
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_forgeofwill
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_forum
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_gateway
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_hai
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_lead-tracker
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_leads-app
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_local-hub
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_owner-console
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_payments
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_permissions
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_profile
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_project-planning
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_prompt-proxy
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_social
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_store
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_store-client
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_system-configurator
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_system-configurator-api
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_telos-docs-service
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_wellness
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae

@@ -76,7 +76,7 @@ import { FooterSectionComponent } from './sections/footer-section.component';
 })
 export class LandingPageComponent implements OnInit {
   sections: Section[] = [];
-  layout: string = 'single-column';
+  layout = 'single-column';
 
   constructor(private configService: ConfigurationService) {}
 

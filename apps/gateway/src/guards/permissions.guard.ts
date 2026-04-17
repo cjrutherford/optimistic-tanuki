@@ -18,6 +18,8 @@ import { firstValueFrom } from 'rxjs';
 import {
   PERMISSIONS_KEY,
   PermissionRequirement,
+  PERMISSION_TARGET_KEY,
+  PermissionTargetRequirement,
 } from '../decorators/permissions.decorator';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { ProfileDto } from '@optimistic-tanuki/models';
@@ -32,13 +34,18 @@ export class PermissionsGuard implements CanActivate {
     private readonly cacheService: PermissionsCacheService,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileService: ClientProxy
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requirement = this.reflector.getAllAndOverride<PermissionRequirement>(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()]
     );
+    const targetRequirement =
+      this.reflector.getAllAndOverride<PermissionTargetRequirement>(
+        PERMISSION_TARGET_KEY,
+        [context.getHandler(), context.getClass()]
+      );
 
     if (!requirement) {
       return true; // No permissions required
@@ -87,15 +94,17 @@ export class PermissionsGuard implements CanActivate {
       )
     );
 
+    const globalProfile = profiles.find(
+      (p) => !p.appScope || p.appScope === 'global'
+    );
+    const appScopeProfile = profiles.find((p) => p.appScope === appScopeName);
+    const currentProfile = profiles.find((p) => p.id === user.profileId);
+
     // If the JWT is missing profileId (for example, after initial
     // registration or before a re-login that encodes it), attempt to
     // resolve an appropriate profile for this request and attach it to
     // the user context so permission checks can proceed.
     if (!user.profileId) {
-      const appScopeProfile = profiles.find((p) => p.appScope === appScopeName);
-      const globalProfile = profiles.find(
-        (p) => !p.appScope || p.appScope === 'global'
-      );
       const fallbackProfile = appScopeProfile || globalProfile || profiles[0];
 
       if (!fallbackProfile) {
@@ -110,11 +119,17 @@ export class PermissionsGuard implements CanActivate {
       this.logger.debug(
         `Resolved missing profileId from profiles list: profileId=${user.profileId}, appScope=${fallbackProfile.appScope}`
       );
+    } else if (appScopeProfile && currentProfile?.appScope !== appScopeName) {
+      user.profileId = appScopeProfile.id;
+      request.user = user;
+      this.logger.debug(
+        `Switched request profileId to app-scoped profile: profileId=${user.profileId}, appScope=${appScopeName}`
+      );
     }
 
     // Check for global scope first - if user has permission in global scope, allow access
-    const globalProfile = profiles.find((p) => p.appScope === 'global');
-    const appScopeProfile = profiles.find((p) => p.appScope === appScopeName);
+    const globalPermissionProfileId = globalProfile?.id || user.profileId;
+    const appScopePermissionProfileId = appScopeProfile?.id || user.profileId;
 
     // Determine if we should check global scope permissions first
     const checkGlobalFirst = !!globalProfile;
@@ -122,14 +137,19 @@ export class PermissionsGuard implements CanActivate {
     // Get the global scope for permission checking
     const globalScope = checkGlobalFirst
       ? await firstValueFrom(
-          this.permissionsClient.send(
-            { cmd: AppScopeCommands.GetByName },
-            { name: 'global' }
-          )
+        this.permissionsClient.send(
+          { cmd: AppScopeCommands.GetByName },
+          { name: 'global' }
         )
+      )
       : null;
 
     const { permissions } = requirement;
+
+    const targetId = this.resolveTargetId(request, targetRequirement);
+    if (targetId) {
+      this.logger.debug(`Resolved permission targetId: ${targetId}`);
+    }
 
     // First, try to authorize with global scope permissions (if user has global profile)
     if (checkGlobalFirst && globalScope) {
@@ -137,9 +157,10 @@ export class PermissionsGuard implements CanActivate {
 
       for (const permission of permissions) {
         let hasPermission = await this.cacheService.get(
-          user.profileId,
+          globalPermissionProfileId,
           permission,
-          globalScope.id
+          globalScope.id,
+          targetId
         );
 
         if (hasPermission === null) {
@@ -150,19 +171,21 @@ export class PermissionsGuard implements CanActivate {
             this.permissionsClient.send(
               { cmd: RoleCommands.CheckPermission },
               {
-                profileId: user.profileId,
+                profileId: globalPermissionProfileId,
                 permission,
                 profileAppScope: 'global',
                 appScopeId: globalScope.id,
+                targetId,
               }
             )
           );
 
           await this.cacheService.set(
-            user.profileId,
+            globalPermissionProfileId,
             permission,
             globalScope.id,
-            hasPermission
+            hasPermission,
+            targetId
           );
         }
 
@@ -174,7 +197,7 @@ export class PermissionsGuard implements CanActivate {
 
       if (allGlobalPermissionsGranted) {
         this.logger.debug(
-          `Access granted via global scope permissions for profile ${user.profileId}`
+          `Access granted via global scope permissions for profile ${globalPermissionProfileId}`
         );
         return true;
       }
@@ -193,9 +216,10 @@ export class PermissionsGuard implements CanActivate {
     for (const permission of permissions) {
       // Try to get from cache first
       let hasPermission = await this.cacheService.get(
-        user.profileId,
+        appScopePermissionProfileId,
         permission,
-        appScope.id
+        appScope.id,
+        targetId
       );
 
       // If not in cache, check with permissions service
@@ -207,23 +231,23 @@ export class PermissionsGuard implements CanActivate {
           this.permissionsClient.send(
             { cmd: RoleCommands.CheckPermission },
             {
-              profileId: user.profileId,
+              profileId: appScopePermissionProfileId,
               permission,
               profileAppScope: appScopeName,
               appScopeId: appScope.id,
-              checkGlobalFallback: true, // Enable global fallback for app-scope checks
+              checkGlobalFallback: true,
+              targetId,
             }
           )
         );
 
-        console.log(hasPermission);
-
         // Cache the result
         await this.cacheService.set(
-          user.profileId,
+          appScopePermissionProfileId,
           permission,
           appScope.id,
-          hasPermission
+          hasPermission,
+          targetId
         );
       } else {
         this.logger.debug(
@@ -233,7 +257,7 @@ export class PermissionsGuard implements CanActivate {
 
       if (!hasPermission) {
         this.logger.warn(
-          `Permission denied: ${permission} in app scope ${appScopeName} for profile ${user.profileId}`
+          `Permission denied: ${permission} in app scope ${appScopeName} for profile ${appScopePermissionProfileId}`
         );
         throw new ForbiddenException(
           `Permission denied: ${permission} in app scope ${appScopeName}`
@@ -242,5 +266,38 @@ export class PermissionsGuard implements CanActivate {
     }
 
     return true;
+  }
+
+  private resolveTargetId(
+    request: Record<string, any>,
+    targetRequirement?: PermissionTargetRequirement
+  ): string | null {
+    if (targetRequirement) {
+      const source = request[targetRequirement.source];
+      const resolved = this.getValueByPath(source, targetRequirement.path);
+
+      if (typeof resolved === 'string' && resolved.trim()) {
+        return resolved;
+      }
+    }
+
+    const routeTargetId = request.params?.id;
+    return typeof routeTargetId === 'string' && routeTargetId.trim()
+      ? routeTargetId
+      : null;
+  }
+
+  private getValueByPath(source: unknown, path: string): unknown {
+    if (!source || !path) {
+      return undefined;
+    }
+
+    return path.split('.').reduce<unknown>((current, segment) => {
+      if (current && typeof current === 'object' && segment in current) {
+        return (current as Record<string, unknown>)[segment];
+      }
+
+      return undefined;
+    }, source);
   }
 }

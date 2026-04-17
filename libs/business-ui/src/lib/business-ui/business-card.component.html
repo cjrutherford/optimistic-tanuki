@@ -1,0 +1,47 @@
+<article class="business-card">
+  <div class="business-card__header">
+    @if (business().logoUrl) {
+    <img
+      [src]="business().logoUrl"
+      [alt]="business().name"
+      class="business-card__logo"
+    />
+    } @else {
+    <div class="business-card__logo-placeholder">
+      <svg
+        width="32"
+        height="32"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    </div>
+    }
+    <div class="business-card__info">
+      <h3 class="business-card__name">{{ business().name }}</h3>
+      <span class="business-card__tier" [class]="'tier--' + business().tier">
+        {{ business().tier | titlecase }}
+      </span>
+    </div>
+  </div>
+  @if (business().description) {
+  <p class="business-card__description">{{ business().description }}</p>
+  }
+  <div class="business-card__meta">
+    @if (business().website) {
+    <a
+      [href]="business().website"
+      target="_blank"
+      rel="noopener"
+      class="business-card__link"
+      >Visit Website</a
+    >
+    } @if (business().phone) {
+    <span class="business-card__phone">{{ business().phone }}</span>
+    }
+  </div>
+</article>

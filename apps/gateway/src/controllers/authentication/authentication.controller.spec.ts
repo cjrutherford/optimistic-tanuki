@@ -7,17 +7,19 @@ import {
 } from '@optimistic-tanuki/models';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { AuthCommands } from '@optimistic-tanuki/constants';
+import { AuthCommands, ProfileCommands } from '@optimistic-tanuki/constants';
 import { AuthenticationController } from './authentication.controller';
 import { ClientProxy } from '@nestjs/microservices';
 import { HttpException, Logger } from '@nestjs/common';
 import { of } from 'rxjs';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
+import { AuthGuard } from '../../auth/auth.guard';
 
 describe('AuthenticationController', () => {
   let controller: AuthenticationController;
   let clientProxy: ClientProxy;
   let profileService: ClientProxy;
+  let roleInitService: { processNow: jest.Mock };
 
   beforeEach(async () => {
     clientProxy = {
@@ -32,7 +34,11 @@ describe('AuthenticationController', () => {
       connect: jest.fn().mockResolvedValue({}),
     } as unknown as jest.Mocked<ClientProxy>;
 
-    const module: TestingModule = await Test.createTestingModule({
+    roleInitService = {
+      processNow: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const moduleRef = Test.createTestingModule({
       controllers: [AuthenticationController],
       providers: [
         {
@@ -45,15 +51,14 @@ describe('AuthenticationController', () => {
         },
         {
           provide: RoleInitService,
-          useValue: {
-            initializeRoles: jest.fn().mockResolvedValue(undefined),
-            enqueue: jest.fn().mockResolvedValue(undefined),
-            processNow: jest.fn().mockResolvedValue(undefined),
-          },
+          useValue: roleInitService,
         },
         Logger,
       ],
-    }).compile();
+    }).overrideGuard(AuthGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) });
+
+    const module: TestingModule = await moduleRef.compile();
 
     controller = module.get<AuthenticationController>(AuthenticationController);
   });
@@ -69,7 +74,7 @@ describe('AuthenticationController', () => {
     };
     // Mock UserIdFromEmail to return a valid userId
     (clientProxy.send as jest.Mock)
-      .mockReturnValueOnce(of({ userId: 'user-1' })) // UserIdFromEmail
+      .mockReturnValueOnce(of('user-1')) // UserIdFromEmail
       .mockReturnValueOnce(of(true)); // Login
     await expect(controller.loginUser(loginRequest, 'test')).resolves.toBe(
       true
@@ -77,6 +82,83 @@ describe('AuthenticationController', () => {
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Login },
       { ...loginRequest, profileId: 'profile-1' }
+    );
+  });
+
+  it('should auto-create app-scoped profile for cross-app users and login with it', async () => {
+    const loginRequest: LoginRequest = {
+      email: 'cross@app.com',
+      password: 'test',
+    };
+
+    (clientProxy.send as jest.Mock).mockImplementation((pattern) => {
+      if (pattern?.cmd === AuthCommands.UserIdFromEmail) {
+        return of('user-1');
+      }
+      if (pattern?.cmd === AuthCommands.Login) {
+        return of(true);
+      }
+      return of(true);
+    });
+
+    (profileService.send as jest.Mock).mockImplementation((pattern, payload) => {
+      if (pattern?.cmd === ProfileCommands.GetAll) {
+        return of([
+          {
+            id: 'profile-client',
+            userId: 'user-1',
+            profileName: 'Client Profile',
+            appScope: 'client-interface',
+            profilePic: 'pic',
+            coverPic: 'cover',
+            bio: 'bio',
+            location: 'loc',
+            occupation: 'occ',
+            interests: 'int',
+            skills: 'skills',
+          },
+        ]);
+      }
+
+      if (pattern?.cmd === ProfileCommands.Create) {
+        expect(payload).toEqual(
+          expect.objectContaining({
+            userId: 'user-1',
+            name: 'Client Profile',
+            appScope: 'forgeofwill',
+            copyPermissionsFromGlobalProfile: false,
+          })
+        );
+        return of({
+          id: 'profile-forge',
+          userId: 'user-1',
+          profileName: 'Client Profile',
+          appScope: 'forgeofwill',
+        });
+      }
+
+      return of([]);
+    });
+
+    await expect(controller.loginUser(loginRequest, 'forgeofwill')).resolves.toBe(
+      true
+    );
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.Login },
+      { ...loginRequest, profileId: 'profile-forge' }
+    );
+    expect(roleInitService.processNow).toHaveBeenCalled();
+    expect(roleInitService.processNow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopeName: 'forgeofwill',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({
+            roleName: 'forgeofwill_standard_user',
+            profileId: 'profile-forge',
+          }),
+        ]),
+      })
     );
   });
 
@@ -90,6 +172,24 @@ describe('AuthenticationController', () => {
     });
     await expect(controller.loginUser(loginRequest, 'test')).rejects.toThrow(
       HttpException
+    );
+  });
+
+  it('should issue a fresh token for the requested profile', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ data: { newToken: 'fresh-token' } })
+    );
+
+    await expect(
+      controller.issueTokenForProfile(
+        { userId: 'user-1', email: 'u@example.com', name: 'U' } as any,
+        { profileId: 'profile-2' }
+      )
+    ).resolves.toEqual({ data: { newToken: 'fresh-token' } });
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.Issue },
+      { userId: 'user-1', profileId: 'profile-2' }
     );
   });
 
@@ -119,6 +219,63 @@ describe('AuthenticationController', () => {
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Register },
       registerRequest
+    );
+  });
+
+  it('provisions minimum leads permissions during leads-app registration', async () => {
+    const registerRequest: RegisterRequest = {
+      fn: 'Lead',
+      ln: 'User',
+      password: 'test',
+      email: 'lead@test.com',
+      confirm: 'test',
+      bio: '',
+    };
+    const mockResult = {
+      data: {
+        user: {
+          id: 'lead-user',
+          profileId: 'lead-profile',
+          firstName: 'Lead',
+          lastName: 'User',
+        },
+      },
+    };
+
+    jest.spyOn(clientProxy, 'send').mockReturnValueOnce(of(mockResult));
+    jest
+      .spyOn(profileService, 'send')
+      .mockReturnValueOnce(of({ id: 'leads-profile', appScope: 'leads-app' }));
+
+    await expect(
+      controller.registerUser(registerRequest, 'leads-app')
+    ).resolves.toEqual(mockResult);
+
+    expect(roleInitService.processNow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopeName: 'leads-app',
+        permissions: expect.arrayContaining([
+          expect.objectContaining({ name: 'lead.read' }),
+          expect.objectContaining({ name: 'lead.topic.read' }),
+          expect.objectContaining({ name: 'lead.onboarding.update' }),
+        ]),
+        roles: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'leads_app_member',
+            permissions: expect.arrayContaining([
+              'lead.read',
+              'lead.topic.read',
+              'lead.onboarding.update',
+            ]),
+          }),
+        ]),
+        assignments: expect.arrayContaining([
+          expect.objectContaining({
+            roleName: 'leads_app_member',
+            profileId: 'leads-profile',
+          }),
+        ]),
+      })
     );
   });
 

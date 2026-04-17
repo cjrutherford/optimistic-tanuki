@@ -1,7 +1,7 @@
 <otui-card class="forum-compose-card">
   <form (ngSubmit)="onSubmit()" class="forum-compose-form">
     <h3>Create Forum Post</h3>
-    
+
     <!-- Topic Selection -->
     <div class="form-group">
       <label for="topic">Topic</label>
@@ -10,15 +10,10 @@
         [ngModel]="selectedTopicId"
         (ngModelChange)="onTopicChange($event)"
         [ngModelOptions]="{ standalone: true }"
+        [options]="topicOptions"
         placeholder="Select or create a topic"
-      >
-        <option value="">Select Topic</option>
-        <option *ngFor="let topic of availableTopics" [value]="topic.id">
-          {{ topic.title }}
-        </option>
-        <option value="new">+ Create New Topic</option>
-      </lib-select>
-      
+      ></lib-select>
+
       @if (showNewTopicInput) {
       <lib-text-input
         [(ngModel)]="newTopicName"
@@ -37,16 +32,11 @@
         [ngModel]="selectedThreadId"
         (ngModelChange)="onThreadChange($event)"
         [ngModelOptions]="{ standalone: true }"
+        [options]="threadOptions"
         placeholder="Select or create a thread"
         [disabled]="!selectedTopicId && !showNewTopicInput"
-      >
-        <option value="">Select Thread</option>
-        <option *ngFor="let thread of availableThreads" [value]="thread.id">
-          {{ thread.title }}
-        </option>
-        <option value="new">+ Create New Thread</option>
-      </lib-select>
-      
+      ></lib-select>
+
       @if (showNewThreadInput) {
       <lib-text-input
         [(ngModel)]="newThreadTitle"
@@ -71,13 +61,15 @@
           Add Tag
         </otui-button>
       </div>
-      
+
       @if (tags.length > 0) {
       <div class="tags-display">
         @for (tag of tags; track tag; let i = $index) {
         <span class="tag-chip">
           {{ tag }}
-          <button type="button" (click)="removeTag(i)" class="tag-remove">×</button>
+          <button type="button" (click)="removeTag(i)" class="tag-remove">
+            ×
+          </button>
         </span>
         }
       </div>
@@ -94,7 +86,7 @@
         (imageUploadClicked)="onToolbarImageUploadClick()"
       ></lib-rich-text-toolbar>
       }
-      
+
       <input
         type="file"
         id="forumImageInput"
@@ -102,9 +94,16 @@
         (change)="onFileSelected($event)"
         accept="image/*"
       />
-      
+
       @if (editor) {
-      <div class="editor-container">
+      <div
+        class="editor-container"
+        [class.dragover]="isDragOver"
+        (dragenter)="handleDragEnter($event)"
+        (dragover)="handleDragOver($event)"
+        (dragleave)="handleDragLeave($event)"
+        (drop)="handleDrop($event)"
+      >
         <tiptap-editor
           [editor]="editor"
           [(ngModel)]="content"

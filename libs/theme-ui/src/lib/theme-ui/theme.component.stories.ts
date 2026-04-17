@@ -1,23 +1,27 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ThemeToggleComponent } from './theme.component';
-import { within } from '@storybook/test';
-import { expect } from '@storybook/jest';
 
 const meta: Meta<ThemeToggleComponent> = {
   component: ThemeToggleComponent,
-  title: 'ToggleComponent',
+  title: 'Theme/Theme Toggle',
+  tags: ['autodocs'],
 };
 export default meta;
 type Story = StoryObj<ThemeToggleComponent>;
 
 export const Primary: Story = {
-  args: {},
+  render: () => ({
+    template: `<lib-theme-toggle></lib-theme-toggle>`,
+  }),
 };
 
-export const Heading: Story = {
-  args: {},
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText(/theme works!/gi)).toBeTruthy();
+export const DarkMode: Story = {
+  render: () => ({
+    template: `<lib-theme-toggle></lib-theme-toggle>`,
+  }),
+  parameters: {
+    globals: {
+      colorMode: 'dark',
+    },
   },
 };

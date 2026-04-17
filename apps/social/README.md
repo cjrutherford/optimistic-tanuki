@@ -1,11 +1,29 @@
 # Social
 
-This service is responsible for managing social media integrations. It provides a unified interface for interacting with various social media platforms, and is responsible for tasks such as posting updates, retrieving data, and managing social media accounts.
+The social service handles social interactions and social data for the platform. Its source lives under `apps/social/src/app` with supporting entities and service implementations under `src/entities` and `src/app/services`.
 
-## 🚀 Getting Started
+## Local Development
 
-This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+Run it via the main stack:
 
-## 📝 API Reference
+```bash
+npm run docker:dev
+```
 
-The Social service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/social`.
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/social`
+- social WebSocket exposed through the gateway on `ws://localhost:3301/social`
+
+## Repo Role
+
+- social graph and interaction backend
+- supports posts, comments, reactions, and real-time social updates
+- part of the deployment inventory and gateway runtime surface
+
+## Nx Commands
+
+```bash
+npx nx build social
+npx nx test social
+```

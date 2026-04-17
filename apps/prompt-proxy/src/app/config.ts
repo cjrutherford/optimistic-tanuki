@@ -12,7 +12,7 @@ export declare type PromptProxyConfigType = {
 
 const loadConfig = () => {
   return yaml.load(
-    fs.readFileSync(path.join(__dirname, '../assets/config.yaml'))
+    fs.readFileSync(path.join(__dirname, '../assets/config.yaml')).toString()
   ) as PromptProxyConfigType;
 };
 

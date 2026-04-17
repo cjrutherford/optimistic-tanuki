@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700">
+  <!-- Background -->
+  <rect width="900" height="700" fill="#f5f5f5"/>
+  
+  <!-- Editor Card -->
+  <rect x="50" y="50" width="800" height="600" rx="8" fill="white" stroke="#667eea" stroke-width="2"/>
+  
+  <!-- Title -->
+  <text x="450" y="90" font-family="Arial" font-size="20" font-weight="bold" text-anchor="middle">Blog Post Editor - Image Resize Feature</text>
+  
+  <!-- Toolbar -->
+  <rect x="70" y="110" width="760" height="40" rx="4" fill="#f0f0f0" stroke="#ddd" stroke-width="1"/>
+  <text x="90" y="135" font-family="Arial" font-size="14">B  I  U  🖼️  📎  ⚙️</text>
+  
+  <!-- Editor Content Area -->
+  <rect x="70" y="160" width="760" height="460" rx="4" fill="#fafafa" stroke="#667eea" stroke-width="2"/>
+  
+  <!-- Sample Text -->
+  <text x="90" y="190" font-family="Arial" font-size="14">Lorem ipsum dolor sit amet, consectetur adipiscing elit...</text>
+  
+  <!-- Image Wrapper (95% width = 722px) -->
+  <g id="image-wrapper">
+    <!-- Selected Border -->
+    <rect x="89" y="209" width="724" height="274" rx="4" fill="none" stroke="#007acc" stroke-width="3" stroke-dasharray="5,5" opacity="0.5"/>
+    
+    <!-- Image -->
+    <rect x="90" y="210" width="722" height="270" rx="4" fill="#667eea"/>
+    
+    <!-- Image Label -->
+    <text x="451" y="330" font-family="Arial" font-size="24" fill="white" text-anchor="middle" font-weight="bold">Sample Image</text>
+    <text x="451" y="360" font-family="Arial" font-size="16" fill="white" text-anchor="middle">722px × 270px (95% of editor width)</text>
+    
+    <!-- Resize Handle -->
+    <rect x="800" y="468" width="12" height="12" fill="#007acc" stroke="white" stroke-width="2" rx="2"/>
+    
+    <!-- Resize Handle Label -->
+    <text x="850" y="477" font-family="Arial" font-size="12" fill="#007acc">← Drag to resize</text>
+    
+    <!-- Cursor Icon -->
+    <path d="M 805 473 L 812 480 L 805 480 Z" fill="#333" opacity="0.7"/>
+  </g>
+  
+  <!-- More Sample Text -->
+  <text x="90" y="510" font-family="Arial" font-size="14">Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</text>
+  
+  <!-- Legend -->
+  <g id="legend">
+    <rect x="70" y="540" width="760" height="80" rx="4" fill="#e8f4f8" stroke="#007acc" stroke-width="1"/>
+    <text x="90" y="565" font-family="Arial" font-size="14" font-weight="bold">How to Use:</text>
+    <text x="90" y="585" font-family="Arial" font-size="12">1. Upload image → Automatically sized to 95% of editor width</text>
+    <text x="90" y="602" font-family="Arial" font-size="12">2. Hover over image → Resize handle appears in bottom-right corner</text>
+    <text x="450" y="585" font-family="Arial" font-size="12">3. Click and drag handle → Image resizes while maintaining aspect ratio</text>
+    <text x="450" y="602" font-family="Arial" font-size="12">4. Release mouse → New size is saved</text>
+  </g>
+  
+  <!-- States Legend -->
+  <g id="states" transform="translate(70, 640)">
+    <text x="0" y="0" font-family="Arial" font-size="11" font-weight="bold">States:</text>
+    
+    <!-- Normal -->
+    <rect x="60" y="-10" width="40" height="20" fill="#667eea" rx="2"/>
+    <text x="105" y="4" font-family="Arial" font-size="10">Normal</text>
+    
+    <!-- Hover -->
+    <rect x="160" y="-10" width="40" height="20" fill="#667eea" rx="2"/>
+    <rect x="195" y="6" width="5" height="5" fill="#007acc" stroke="white" stroke-width="1"/>
+    <text x="205" y="4" font-family="Arial" font-size="10">Hover (handle visible)</text>
+    
+    <!-- Selected -->
+    <rect x="330" y="-10" width="40" height="20" fill="#667eea" rx="2" stroke="#007acc" stroke-width="2"/>
+    <rect x="365" y="6" width="5" height="5" fill="#007acc" stroke="white" stroke-width="1"/>
+    <text x="375" y="4" font-family="Arial" font-size="10">Selected (blue outline + handle)</text>
+  </g>
+</svg>

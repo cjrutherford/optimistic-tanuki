@@ -1,0 +1,482 @@
+version: '3.8'
+
+services:
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweedfs
+    ports:
+      - '8333:8333'
+      - '9333:9333'
+      - '8888:8888'
+    command: server -dir=/data -volume.max=100 -s3
+    volumes:
+      - seaweedfs_data:/data
+    restart: always
+    environment:
+      - WEED_MASTER_PORT=9333
+      - WEED_VOLUME_PORT=8333
+      - WEED_S3_PORT=8888
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9333/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:latest
+    restart: always
+    container_name: db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+  db-setup:
+    image: node:lts-alpine
+    container_name: db-setup
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    restart: 'no'
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - '6379:6379'
+    restart: always
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  authentication:
+    container_name: ot_authentication
+    build:
+      context: .
+      dockerfile: ./apps/authentication/Dockerfile
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  ot-client-interface:
+    container_name: ot_client_interface
+    build:
+      context: .
+      dockerfile: ./apps/client-interface/Dockerfile
+    ports:
+      - '8080:4000'
+
+  forgeofwill-client-interface:
+    container_name: fow_client_interface
+    build:
+      context: .
+      dockerfile: ./apps/forgeofwill/Dockerfile
+    ports:
+      - '8081:4000'
+
+  digital-homestead-client-interface:
+    container_name: dh_client_interface
+    build:
+      context: .
+      dockerfile: ./apps/digital-homestead/Dockerfile
+    ports:
+      - '8082:4000'
+
+  hai-client-interface:
+    container_name: hai_client_interface
+    build:
+      context: .
+      dockerfile: ./apps/hai/Dockerfile
+    ports:
+      - '8088:4000'
+
+  crdn-client-interface:
+    container_name: crdn_client_interface
+    build:
+      context: .
+      dockerfile: ./apps/christopherrutherford-net/Dockerfile
+    ports:
+      - '8083:4000'
+
+  owner-console:
+    container_name: owner_console
+    build:
+      context: .
+      dockerfile: ./apps/owner-console/Dockerfile
+    ports:
+      - '8084:4000'
+
+  gateway:
+    container_name: ot_gateway
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile
+    ports:
+      - '3000:3000'
+      - '3300:3300'
+      - '3301:3301'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "require(''http'').get(''http://localhost:3000/api/mcp/sse'', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }).on(''error'', (err) => process.exit(1));"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      authentication:
+        condition: service_started
+      ot-client-interface:
+        condition: service_started
+      forgeofwill-client-interface:
+        condition: service_started
+      digital-homestead-client-interface:
+        condition: service_started
+      hai-client-interface:
+        condition: service_started
+      profile:
+        condition: service_started
+      social:
+        condition: service_started
+      chat-collector:
+        condition: service_started
+      assets:
+        condition: service_started
+      prompt-proxy:
+        condition: service_started
+      ai-orchestration:
+        condition: service_started
+      telos-docs-service:
+        condition: service_started
+      blogging:
+        condition: service_started
+      permissions:
+        condition: service_started
+      project-planning:
+        condition: service_started
+      forum:
+        condition: service_started
+      wellness:
+        condition: service_started
+
+  profile:
+    container_name: ot_profile
+    build:
+      context: .
+      dockerfile: ./apps/profile/Dockerfile
+    ports:
+      - '3002:3002'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  social:
+    container_name: ot_social
+    build:
+      context: .
+      dockerfile: ./apps/social/Dockerfile
+    ports:
+      - '3003:3003'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  forum:
+    container_name: ot_forum
+    build:
+      context: .
+      dockerfile: ./apps/forum/Dockerfile
+    ports:
+      - 3015:3015
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  chat-collector:
+    container_name: ot_chat_collector
+    build:
+      context: .
+      dockerfile: ./apps/chat-collector/Dockerfile
+    ports:
+      - '3007:3007'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  assets:
+    container_name: ot_assets
+    build:
+      context: .
+      dockerfile: ./apps/assets/Dockerfile
+    ports:
+      - '3005:3005'
+    environment:
+      - STORAGE_STRATEGY=network
+      - S3_ENDPOINT=http://seaweedfs:8888
+      - S3_BUCKET=assets
+      - S3_ACCESS_KEY=seaweedfs
+      - S3_SECRET_KEY=seaweedfs
+    volumes:
+      - assets_storage:/usr/src/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      seaweedfs:
+        condition: service_started
+
+  prompt-proxy:
+    container_name: ot_prompt_proxy
+    build:
+      context: .
+      dockerfile: ./apps/prompt-proxy/Dockerfile
+    ports:
+      - '3009:3009'
+    volumes:
+      - ./apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  ai-orchestration:
+    container_name: ot_ai_orchestration
+    build:
+      context: .
+      dockerfile: ./apps/ai-orchestrator/Dockerfile
+    ports:
+      - '3010:3010'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      prompt-proxy:
+        condition: service_started
+      telos-docs-service:
+        condition: service_started
+
+  telos-docs-service:
+    container_name: ot_telos_docs_service
+    build:
+      context: .
+      dockerfile: ./apps/telos-docs-service/Dockerfile
+    ports:
+      - '3008:3008'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  blogging:
+    container_name: ot_blogging
+    build:
+      context: .
+      dockerfile: ./apps/blogging/Dockerfile
+    ports:
+      - '3011:3011'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  permissions:
+    container_name: ot_permissions
+    build:
+      context: .
+      dockerfile: ./apps/permissions/Dockerfile
+    ports:
+      - '3012:3012'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  project-planning:
+    container_name: ot_project_planning
+    build:
+      context: .
+      dockerfile: ./apps/project-planning/Dockerfile
+    ports:
+      - '3006:3006'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  store-client:
+    container_name: ot_store_client
+    build:
+      context: .
+      dockerfile: ./apps/store-client/Dockerfile
+    ports:
+      - '8085:4000'
+    depends_on:
+      - gateway
+
+  store:
+    container_name: ot_store
+    build:
+      context: .
+      dockerfile: ./apps/store/Dockerfile
+    ports:
+      - '3013:3009'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  app-configurator:
+    container_name: ot_app_configurator
+    build:
+      context: .
+      dockerfile: ./apps/app-configurator/Dockerfile
+    ports:
+      - '3014:3014'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  app-configurator-seed:
+    container_name: ot_app_configurator_seed
+    build:
+      context: .
+      dockerfile: ./apps/app-configurator/Dockerfile
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=ot_app_configurator
+      - PORT=3014
+    depends_on:
+      app-configurator:
+        condition: service_started
+    command: sh -c "sleep 5 && node seed-data/seed-script.js"
+    restart: 'no'
+
+  configurable-client:
+    container_name: ot_configurable_client
+    build:
+      context: .
+      dockerfile: ./apps/configurable-client/Dockerfile
+    ports:
+      - '8090:4000'
+    depends_on:
+      - gateway
+      - app-configurator
+      - app-configurator-seed
+
+  system-configurator:
+    container_name: ot_system_configurator
+    build:
+      context: .
+      dockerfile: ./apps/system-configurator/Dockerfile
+    ports:
+      - '8091:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+      - system-configurator-api
+
+  system-configurator-api:
+    container_name: ot_system_configurator_api
+    build:
+      context: .
+      dockerfile: ./apps/system-configurator-api/Dockerfile
+    ports:
+      - '3021:3021'
+    environment:
+      - NODE_ENV=production
+      - PORT=3021
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=ot_system_configurator
+      - PCPARTPICKER_SYNC_ON_START=false
+
+  wellness:
+    container_name: ot_wellness
+    build:
+      context: .
+      dockerfile: ./apps/wellness/Dockerfile
+    ports:
+      - '3016:3016'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  d6:
+    container_name: ot_d6
+    build:
+      context: .
+      dockerfile: ./apps/d6/Dockerfile
+    ports:
+      - '8086:4000'
+    depends_on:
+      - gateway
+
+volumes:
+  postgres_data:
+  assets_storage:
+  seaweedfs_data:

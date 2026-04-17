@@ -6,6 +6,7 @@ import { Attachment } from '../../entities/attachment.entity';
 import { Comment } from '../../entities/comment.entity';
 import { Repository } from 'typeorm';
 import { CreatePostDto, UpdatePostDto } from '@optimistic-tanuki/models';
+import { CommunityService } from './community.service';
 
 describe('PostService', () => {
   let service: PostService;
@@ -39,13 +40,25 @@ describe('PostService', () => {
           provide: getRepositoryToken(Comment),
           useFactory: mockRepoFactory,
         },
+        {
+          provide: CommunityService,
+          useValue: {
+            findOne: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<PostService>(PostService);
-    postRepo = module.get(getRepositoryToken(Post)) as jest.Mocked<Repository<Post>>;
-    attachmentRepo = module.get(getRepositoryToken(Attachment)) as jest.Mocked<Repository<Attachment>>;
-    commentRepo = module.get(getRepositoryToken(Comment)) as jest.Mocked<Repository<Comment>>;
+    postRepo = module.get(getRepositoryToken(Post)) as jest.Mocked<
+      Repository<Post>
+    >;
+    attachmentRepo = module.get(getRepositoryToken(Attachment)) as jest.Mocked<
+      Repository<Attachment>
+    >;
+    commentRepo = module.get(getRepositoryToken(Comment)) as jest.Mocked<
+      Repository<Comment>
+    >;
   });
 
   it('should be defined', () => {
@@ -65,10 +78,12 @@ describe('PostService', () => {
     postRepo.save.mockResolvedValue(post);
     const result = await service.create(dto);
     // Content should be sanitized, so we check the structure was called with sanitized version
-    expect(postRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+    expect(postRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
         title: dto.title,
-        userId: dto.userId
-    }));
+        userId: dto.userId,
+      })
+    );
     expect(postRepo.save).toHaveBeenCalledWith(post);
     expect(result).toBe(post);
   });
@@ -90,187 +105,156 @@ describe('PostService', () => {
   });
 
   it('should update a post', async () => {
-    postRepo.update.mockResolvedValue({ generatedMaps: [], raw: [], affected: 1 });
+    postRepo.findOne.mockResolvedValue({ id: '1' } as Post);
+    postRepo.update.mockResolvedValue({
+      generatedMaps: [],
+      raw: [],
+      affected: 1,
+    });
     const dto: UpdatePostDto = { title: 'Updated', content: 'Updated' };
-    await service.update('1', dto);
+    await service.update('1', dto, 'user-1');
     // Content should be sanitized
-    expect(postRepo.update).toHaveBeenCalledWith('1', expect.objectContaining({
-        title: dto.title
-    }));
+    expect(postRepo.update).toHaveBeenCalledWith(
+      '1',
+      expect.objectContaining({
+        title: dto.title,
+      })
+    );
   });
 
-    it('should create a post with attachmentIds', async () => {
+  it('should create a post with attachmentIds', async () => {
+    const dto: CreatePostDto = {
+      title: 'Post with Attachments',
 
-      const dto: CreatePostDto = {
+      content: 'Content',
 
-        title: 'Post with Attachments',
+      userId: 'user1',
 
-        content: 'Content',
+      profileId: 'profile1',
 
-        userId: 'user1',
+      visibility: 'public',
 
-        profileId: 'profile1',
+      attachmentIds: ['att1', 'prof1'],
+    };
+
+    const mockAttachments = [{ id: 'att1' }, { id: 'prof1' }];
+
+    const post = { id: '1', ...dto } as Post;
+
+    postRepo.create.mockReturnValue(post);
+
+    attachmentRepo.findBy.mockResolvedValue(mockAttachments as any);
+
+    postRepo.save.mockResolvedValue(post);
+
+    const result = await service.create(dto);
+
+    expect(attachmentRepo.findBy).toHaveBeenCalled();
+
+    expect(post.attachments).toEqual(mockAttachments);
+
+    expect(result).toBe(post);
+  });
+
+  it('should find one post with where as an array', async () => {
+    const post = { id: '1' } as Post;
+
+    postRepo.findOne.mockResolvedValue(post);
+
+    await service.findOne('1', {
+      where: [{ userId: 'u1' }, { visibility: 'public' }],
+    });
+
+    expect(postRepo.findOne).toHaveBeenCalledWith({
+      where: [
+        { userId: 'u1', id: '1' },
+        { visibility: 'public', id: '1' },
+      ],
+    });
+  });
+
+  it('should find one post with where as an object', async () => {
+    const post = { id: '1' } as Post;
+
+    postRepo.findOne.mockResolvedValue(post);
+
+    await service.findOne('1', { where: { userId: 'u1' } });
+
+    expect(postRepo.findOne).toHaveBeenCalledWith({
+      where: { userId: 'u1', id: '1' },
+    });
+  });
+
+  it('should update a post and sanitize content', async () => {
+    postRepo.findOne.mockResolvedValue({ id: '1' } as Post);
+    postRepo.update.mockResolvedValue({
+      generatedMaps: [],
+      raw: [],
+      affected: 1,
+    });
+
+    const dto: UpdatePostDto = {
+      content: '<script>alert("xss")</script><p>Hello</p>',
+    };
+
+    await service.update('1', dto, 'user-1');
+
+    expect(postRepo.update).toHaveBeenCalledWith(
+      '1',
+      expect.objectContaining({
+        content: '<p>Hello</p>',
+      })
+    );
+  });
+
+  it('should throw error when remove fails', async () => {
+    postRepo.findOne.mockResolvedValue({ id: '1' } as Post);
+    commentRepo.delete.mockRejectedValue(new Error('Delete failed'));
+
+    await expect(service.remove('1')).rejects.toThrow('Delete failed');
+  });
+
+  it('should get posts with various filters', async () => {
+    const searchDto = {
+      userIds: ['user1'],
+
+      visibility: 'public' as any,
+
+      profileId: 'prof1',
+    };
+
+    const posts = [{ id: '1' } as Post];
+
+    postRepo.find.mockResolvedValue(posts);
+
+    const result = await service.getPosts(searchDto);
+
+    expect(postRepo.find).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        userId: expect.anything(),
 
         visibility: 'public',
 
-        attachmentIds: ['att1', 'prof1'],
-
-      };
-
-      const mockAttachments = [{ id: 'att1' }, { id: 'prof1' }];
-
-      const post = { id: '1', ...dto } as Post;
-
-      postRepo.create.mockReturnValue(post);
-
-      attachmentRepo.findBy.mockResolvedValue(mockAttachments as any);
-
-      postRepo.save.mockResolvedValue(post);
-
-  
-
-      const result = await service.create(dto);
-
-  
-
-      expect(attachmentRepo.findBy).toHaveBeenCalled();
-
-      expect(post.attachments).toEqual(mockAttachments);
-
-      expect(result).toBe(post);
-
+        profileId: 'prof1',
+      }),
     });
 
-  
-
-    it('should find one post with where as an array', async () => {
-
-      const post = { id: '1' } as Post;
-
-      postRepo.findOne.mockResolvedValue(post);
-
-      await service.findOne('1', { where: [{ userId: 'u1' }, { visibility: 'public' }] });
-
-      expect(postRepo.findOne).toHaveBeenCalledWith({
-
-        where: [{ userId: 'u1', id: '1' }, { visibility: 'public', id: '1' }],
-
-      });
-
-    });
-
-  
-
-    it('should find one post with where as an object', async () => {
-
-      const post = { id: '1' } as Post;
-
-      postRepo.findOne.mockResolvedValue(post);
-
-      await service.findOne('1', { where: { userId: 'u1' } });
-
-      expect(postRepo.findOne).toHaveBeenCalledWith({
-
-        where: { userId: 'u1', id: '1' },
-
-      });
-
-    });
-
-  
-
-    it('should update a post and sanitize content', async () => {
-
-      postRepo.update.mockResolvedValue({ generatedMaps: [], raw: [], affected: 1 });
-
-      const dto: UpdatePostDto = { content: '<script>alert("xss")</script><p>Hello</p>' };
-
-      await service.update('1', dto);
-
-      expect(postRepo.update).toHaveBeenCalledWith('1', expect.objectContaining({
-
-          content: '<p>Hello</p>'
-
-      }));
-
-    });
-
-  
-
-    it('should throw error when remove fails', async () => {
-
-      commentRepo.delete.mockRejectedValue(new Error('Delete failed'));
-
-      await expect(service.remove('1')).rejects.toThrow('Delete failed');
-
-    });
-
-  
-
-    it('should get posts with various filters', async () => {
-
-      const searchDto = {
-
-        userIds: ['user1'],
-
-        visibility: 'public' as any,
-
-        profileId: 'prof1'
-
-      };
-
-      const posts = [{ id: '1' } as Post];
-
-      postRepo.find.mockResolvedValue(posts);
-
-  
-
-      const result = await service.getPosts(searchDto);
-
-  
-
-      expect(postRepo.find).toHaveBeenCalledWith({
-
-        where: expect.objectContaining({
-
-          userId: expect.anything(),
-
-          visibility: 'public',
-
-          profileId: 'prof1'
-
-        })
-
-      });
-
-      expect(result).toBe(posts);
-
-    });
-
-  
-
-    it('should get posts with empty userIds and no visibility', async () => {
-
-      const searchDto = {
-
-        userIds: [],
-
-        profileId: 'prof1'
-
-      };
-
-      postRepo.find.mockResolvedValue([]);
-
-      await service.getPosts(searchDto);
-
-      expect(postRepo.find).toHaveBeenCalledWith({
-
-        where: { profileId: 'prof1' }
-
-      });
-
-    });
-
+    expect(result).toBe(posts);
   });
 
-  
+  it('should get posts with empty userIds and no visibility', async () => {
+    const searchDto = {
+      userIds: [],
+
+      profileId: 'prof1',
+    };
+
+    postRepo.find.mockResolvedValue([]);
+
+    await service.getPosts(searchDto);
+
+    expect(postRepo.find).toHaveBeenCalledWith({
+      where: { profileId: 'prof1' },
+    });
+  });
+});

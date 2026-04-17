@@ -235,10 +235,18 @@ describe('SocialController', () => {
     const updatePostDto: UpdatePostDto = {
       /* mock data */
     };
-    await socialController.updatePost(id, updatePostDto);
+    const mockUser = {
+      userId: 'user-1',
+      email: 'test@test.com',
+      exp: 123,
+      iat: 123,
+      name: 'Test',
+      profileId: 'profile-1',
+    };
+    await socialController.updatePost(id, mockUser, updatePostDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.UPDATE },
-      { id, data: updatePostDto }
+      { id, data: updatePostDto, userId: 'user-1' }
     );
   });
 
@@ -271,10 +279,18 @@ describe('SocialController', () => {
 
   it('should delete a post', async () => {
     const id = '1';
-    await socialController.deletePost(id);
+    const mockUser = {
+      userId: 'user-1',
+      email: 'test@test.com',
+      exp: 123,
+      iat: 123,
+      name: 'Test',
+      profileId: 'profile-1',
+    };
+    await socialController.deletePost(id, mockUser);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.DELETE },
-      { id }
+      { id, userId: 'user-1' }
     );
   });
 

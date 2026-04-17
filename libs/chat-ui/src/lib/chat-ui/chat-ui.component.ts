@@ -11,6 +11,7 @@ import {
   OnInit,
   OnChanges,
 } from '@angular/core';
+import { DatePipe, NgIf } from '@angular/common';
 
 import { ChatConversation, ChatMessage } from '../types/message';
 
@@ -33,15 +34,27 @@ export declare type ChatContact = {
   /**
    * The URL of the contact's avatar.
    */
-  avatarUrl: string;
+  avatarUrl?: string;
+  /**
+   * The URL of the contact's profile picture (from ProfileDto).
+   */
+  profilePic?: string;
   /**
    * The last message received from the contact.
    */
-  lastMessage: string;
+  lastMessage?: string;
   /**
    * The timestamp of the last message.
    */
-  lastMessageTime: string;
+  lastMessageTime?: string;
+  /**
+   * The presence status of the contact.
+   */
+  presence?: 'online' | 'offline' | 'away' | 'busy';
+  /**
+   * The last time the contact was seen (for offline users).
+   */
+  lastSeen?: Date;
 };
 
 /**
@@ -49,7 +62,7 @@ export declare type ChatContact = {
  */
 @Component({
   selector: 'lib-chat-ui',
-  imports: [ContactBubbleComponent],
+  imports: [ContactBubbleComponent, ChatWindowComponent, DatePipe, NgIf],
   templateUrl: './chat-ui.component.html',
   styleUrl: './chat-ui.component.scss',
 })
@@ -142,6 +155,7 @@ export class ChatUiComponent implements OnInit, OnChanges {
       updatedAt: new Date('2023-10-01T12:10:00Z'),
     },
   ];
+  @Input() autoOpenFirstConversation = false;
   /**
    * A signal that holds the state of each chat window.
    */
@@ -154,11 +168,11 @@ export class ChatUiComponent implements OnInit, OnChanges {
   /**
    * A signal that holds the currently selected contact.
    */
-  selectedContact = signal<ChatContact | null>(null);
+  selectedContact = signal(null);
   /**
    * A signal that determines whether the modal is shown.
    */
-  showModal = signal<boolean>(false);
+  showModal = signal(false);
 
   /**
    * The list of user profiles.
@@ -241,6 +255,15 @@ export class ChatUiComponent implements OnInit, OnChanges {
         };
       }
     });
+
+    if (this.autoOpenFirstConversation && this.contacts.length > 0) {
+      const firstContactId = this.contacts[0].id;
+      const firstState = currentStates[firstContactId];
+      if (firstState) {
+        firstState.windowState = 'popout';
+      }
+    }
+
     this.windowStates.set(currentStates);
   }
 
@@ -286,5 +309,24 @@ export class ChatUiComponent implements OnInit, OnChanges {
         [contactId]: currentState,
       });
     }
+  }
+
+  getConversation(contactId: string): ChatConversation {
+    const state = this.windowStates()[contactId];
+    if (state && state.conversation && state.conversation.length > 0) {
+      return state.conversation[0];
+    }
+    return {
+      id: '',
+      participants: [],
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  getMessagesForContact(contactId: string): ChatMessage[] {
+    const conversation = this.getConversation(contactId);
+    return conversation.messages || [];
   }
 }

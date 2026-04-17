@@ -1,11 +1,28 @@
 # Authentication
 
-This service is responsible for user authentication and authorization. It provides a secure and reliable way to manage user identities and access control for all applications in the Optimistic Tanuki project.
+The authentication service handles login, identity, tokens, and related user security flows. Its source lives in `apps/authentication/src`, with domain areas for users, tokens, key data, and cache behavior.
 
-## 🚀 Getting Started
+## Local Development
 
-This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+Run it as part of the main stack:
 
-## 📝 API Reference
+```bash
+npm run docker:dev
+```
 
-The Authentication service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/authentication`.
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/authentication`
+
+## Repo Role
+
+- user login and token issuance
+- authentication checks for the broader gateway-facing platform
+- part of the canonical deployment inventory used by CI and k8s validation
+
+## Nx Commands
+
+```bash
+npx nx build authentication
+npx nx test authentication
+```

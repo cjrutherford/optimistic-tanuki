@@ -7,7 +7,7 @@
 .carousel-inner {
   display: flex;
   flex-direction: row;
-  gap: 1rem;
+  gap: var(--spacing-md, 16px);
   transition: transform 0.5s ease;
 }
 
@@ -21,18 +21,40 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.5);
-  border: none;
-  font-size: 2rem;
-  color: white;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--border-radius-full, 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  z-index: 1;
+  z-index: var(--z-index-dropdown, 100);
+  transition: all 0.2s ease;
+  color: var(--foreground);
+  box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+
+  &:hover {
+    background: var(--accent);
+    color: var(--primary-foreground, white);
+    transform: translateY(-50%) scale(1.1);
+  }
+
+  &:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 .carousel-control.prev {
-  left: 0;
+  left: var(--spacing-sm, 8px);
 }
 
 .carousel-control.next {
-  right: 0;
+  right: var(--spacing-sm, 8px);
 }

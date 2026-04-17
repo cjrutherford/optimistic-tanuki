@@ -1,0 +1,45 @@
+listenPort: 3020
+ollama:
+  host: prompt-proxy
+  port: 11434
+  model: gemma3
+  temperature: 0.3
+  timeoutMs: 120000
+database:
+  host: db
+  port: 5432
+  name: ot_lead_tracker
+  username: postgres
+  password: postgres
+leadDiscovery:
+  search:
+    enabled: true
+    provider: google-html
+    requestTimeoutMs: 5000
+    userAgent: OptimisticTanukiLeadDiscovery/1.0
+    maxResultsPerQuery: 8
+    maxQueriesPerProvider: 6
+    locale: en-US
+    googleApiKey:
+    googleCx:
+  remoteOk:
+    enabled: true
+  himalayas:
+    enabled: true
+  weWorkRemotely:
+    enabled: true
+  justRemote:
+    enabled: true
+  jobicy:
+    enabled: true
+  clutch:
+    enabled: true
+  crunchbase:
+    enabled: true
+  indeed:
+    enabled: true
+  googleMaps:
+    enabled: true
+    apiKey:
+    textSearchUrl: https://maps.googleapis.com/maps/api/place/textsearch/json
+    maxResults: 10

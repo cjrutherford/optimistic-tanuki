@@ -1,20 +1,15 @@
 # Social UI
 
-This library contains UI components for social media integrations, such as a social media feed and a post composer.
+`social-ui` contains reusable social components, models, services, types, and styles. Its source lives under `libs/social-ui/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the components in this library, import the `SocialUiModule` into your Angular module:
+- shared frontend support for social features
+- companion library to the `social` backend service and gateway social flows
 
-```typescript
-import { SocialUiModule } from '@optimistic-tanuki/social-ui';
+## Nx Commands
 
-@NgModule({
-  imports: [SocialUiModule],
-})
-export class MyModule {}
+```bash
+npx nx build social-ui
+npx nx test social-ui
 ```
-
-## Running unit tests
-
-Run `nx test social-ui` to execute the unit tests.

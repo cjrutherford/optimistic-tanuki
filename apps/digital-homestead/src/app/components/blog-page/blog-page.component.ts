@@ -5,13 +5,17 @@ import {
   computed,
   effect,
   ViewChild,
+  OnDestroy,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Subject, Subscription, forkJoin } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 
-import { BlogComposeComponent } from '@optimistic-tanuki/blogging-ui';
+import { BlogComposeComponent, ComponentPersistenceService } from '@optimistic-tanuki/blogging-ui';
 import { BlogViewerComponent } from '../blog-viewer/blog-viewer.component';
 import { BlogService } from '../../blog.service';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
@@ -21,9 +25,13 @@ import {
   BlogPostDto,
   CreateBlogPostDto,
   UpdateBlogPostDto,
+  CreateBlogComponentDto
 } from '@optimistic-tanuki/ui-models';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
 import { PostThemeConfig } from '@optimistic-tanuki/ui-models';
+import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 /**
  * Editor data matching the PostData interface from BlogComposeComponent
@@ -34,6 +42,8 @@ interface PostData {
   links: { url: string }[];
   attachments: File[];
   themeConfig?: PostThemeConfig;
+  injectedComponents?: any[]; // Old format
+  injectedComponentsNew?: InjectedComponentData[]; // New format
 }
 
 /**
@@ -57,7 +67,7 @@ type SaveAction = 'draft' | 'publish';
   templateUrl: './blog-page.component.html',
   styleUrl: './blog-page.component.scss',
 })
-export class BlogPageComponent {
+export class BlogPageComponent implements OnDestroy {
   @ViewChild('blogCompose') blogCompose?: BlogComposeComponent;
 
   private readonly route = inject(ActivatedRoute);
@@ -65,6 +75,15 @@ export class BlogPageComponent {
   private readonly blogService = inject(BlogService);
   private readonly authState = inject(AuthStateService);
   private readonly permissionService = inject(PermissionService);
+  private readonly componentPersistence = inject(ComponentPersistenceService);
+  private readonly http = inject(HttpClient);
+
+  // Gateway URL for RPC calls
+  private readonly gatewayUrl = '/api'; // Use gateway proxy path
+
+  // Auto-save subject
+  private readonly editorChange$ = new Subject<PostData>();
+  private readonly autoSaveSub: Subscription;
 
   // Route params as signal
   private readonly routeParams = toSignal(this.route.params, {
@@ -99,6 +118,11 @@ export class BlogPageComponent {
     this.permissionService.permissionsLoaded$(),
     { initialValue: false }
   );
+
+  readonly profileId = computed(() => {
+    const profile = this.authState.getProfileId();
+    return profile || undefined;
+  })
 
   // Computed: can user edit
   readonly canEdit = computed(
@@ -167,6 +191,51 @@ export class BlogPageComponent {
     { allowSignalWrites: true }
   );
 
+  constructor() {
+    this.autoSaveSub = this.editorChange$
+      .pipe(debounceTime(1000))
+      .subscribe((data) => this.handleAutoSave(data));
+  }
+
+  ngOnDestroy(): void {
+    this.autoSaveSub.unsubscribe();
+  }
+
+  /**
+   * Handle changes from the editor
+   */
+  onEditorChange(data: PostData): void {
+    // Only process changes in create/edit mode
+    if (this.mode() !== 'view') {
+      this.editorData.set(data);
+      this.editorChange$.next(data);
+    }
+  }
+
+  /**
+   * Auto-save components when content changes
+   */
+  private handleAutoSave(data: PostData): void {
+    const postId = this.currentPostId();
+    // Only auto-save when authenticated, with edit rights, and owner of the post
+    if (!this.isAuthenticated() || !this.canEdit() || !this.isPostOwner()) {
+      return;
+    }
+    // Verify we have a post ID and components to save
+    if (postId && this.hasInjectedComponents(data.content)) {
+      const components = this.componentPersistence.extractComponentsFromContent(data.content);
+
+      if (components.length > 0) {
+        console.log('Auto-saving components...', components.length);
+        // Strategy: Upsert only during auto-save to avoid permission issues with DELETE
+        this.componentPersistence.saveComponents(postId, components).subscribe({
+          next: () => console.log('Auto-save complete'),
+          error: (err) => console.error('Auto-save failed', err)
+        });
+      }
+    }
+  }
+
   /**
    * Load all blog posts for the sidebar
    */
@@ -194,15 +263,29 @@ export class BlogPageComponent {
     this.loading.set(true);
     this.error.set(null);
 
-    this.blogService.getPost(id).subscribe({
-      next: (post) => {
+    // Load post and its components
+    forkJoin({
+      post: this.blogService.getPost(id),
+      components: this.componentPersistence.getComponentsForPost(id)
+    }).subscribe({
+      next: ({ post, components }) => {
         this.selectedPost.set(post);
+
+        // Map stored components to InjectedComponentInstance format expected by editor
+        const injectedComponents = components.map(comp => ({
+          instanceId: comp.instanceId,
+          // We map componentData to data for the editor
+          data: comp.componentData,
+          componentDef: { id: comp.componentType } as any // Minimal def needed if any
+        }));
+
         this.editorData.set({
           title: post.title,
           content: post.content,
           links: [],
           attachments: [],
           themeConfig: post.themeConfig,
+          injectedComponents: injectedComponents as any[]
         });
         this.loading.set(false);
       },
@@ -227,15 +310,56 @@ export class BlogPageComponent {
   }
 
   /**
-   * Start creating a new post
+   * Start creating a new post - immediately creates a draft
    */
   startCreatePost(): void {
-    this.mode.set('create');
-    this.editorData.set({
-      title: '',
-      content: '',
-      links: [],
-      attachments: [],
+    if (!this.canEdit()) {
+      this.error.set('You do not have permission to create blog posts.');
+      return;
+    }
+
+    const authorId = this.authState.getProfileId();
+    if (!authorId) {
+      this.error.set('You must be logged in to create blog posts.');
+      return;
+    }
+
+    this.loading.set(true);
+
+    // Create a draft post immediately
+    const createData: CreateBlogPostDto = {
+      title: 'Untitled Draft',
+      content: '<p>this is sample content</p>',
+      authorId,
+      isDraft: true
+    };
+
+    this.blogService.createPost(createData).subscribe({
+      next: (post) => {
+        this.loading.set(false);
+        this.selectedPost.set(post);
+        this.addPostToList(post);
+
+        // Setup editor with the new draft
+        this.editorData.set({
+          title: post.title,
+          content: post.content,
+          links: [],
+          attachments: [],
+          themeConfig: post.themeConfig
+        });
+
+        // Set mode to edit since we now have a real post ID
+        this.mode.set('edit');
+
+        // Navigate to the new post URL
+        this.router.navigate(['/blog', post.id]);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set('Failed to create draft post: ' + err.message);
+        console.error('Error creating draft:', err);
+      }
     });
   }
 
@@ -405,63 +529,358 @@ export class BlogPageComponent {
     this.error.set(null);
 
     const saveAction = this.pendingSaveAction();
-    const isDraft = saveAction === 'draft';
-
-    const postId = this.currentPostId(); // Move this above postPayload
-
+    const postId = this.currentPostId();
     const currentMode = this.mode();
 
+    // Check if post has components that need persistence (new format preferred)
+    const hasComponents = postData.injectedComponentsNew && postData.injectedComponentsNew.length > 0;
+    console.log('[BlogPage] Post has components:', hasComponents, postData.injectedComponentsNew);
+
     if (currentMode === 'edit' && postId) {
-      const postPayload = {
-        id: postId, // Ensure the ID is included for updates
-        title: postData.title,
-        content: postData.content,
-        authorId: authorId,
-        isDraft: isDraft,
-        themeConfig: postData.themeConfig,
-      };
-      // Update existing post
-      this.blogService.updatePost(postId, postPayload).subscribe({
-        next: (updatedPost) => {
-          this.selectedPost.set(updatedPost);
-          this.mode.set('view');
-          this.loading.set(false);
-          // Update the post in the sidebar list
-          this.updatePostInList(updatedPost);
-        },
-        error: (err) => {
-          this.error.set('Failed to update post: ' + err.message);
-          this.loading.set(false);
-          console.error('Error updating post:', err);
-        },
-      });
+      this.updatePostWithComponentsNew(postData, postId, authorId, saveAction);
     } else {
-      const postPayload = {
-        title: postData.title,
-        content: postData.content,
-        authorId: authorId,
-        isDraft: isDraft,
-        themeConfig: postData.themeConfig,
-      };
-      // Create new post
-      this.blogService.createPost(postPayload).subscribe({
-        next: (newPost) => {
-          this.selectedPost.set(newPost);
-          this.mode.set('view');
-          this.loading.set(false);
-          // Add the new post to the sidebar list
-          this.addPostToList(newPost);
-          if (newPost.id) {
-            this.router.navigate(['/blog', newPost.id]);
+      // For new posts with components, always create as draft first
+      if (hasComponents) {
+        this.createDraftWithComponentsNew(postData, authorId, saveAction);
+      } else {
+        this.createPostDirectly(postData, authorId, saveAction);
+      }
+    }
+  }
+
+  /**
+   * Check if content has injectable components
+   */
+  private hasInjectedComponents(content: string): boolean {
+    return content.includes('data-angular-component');
+  }
+
+  /**
+   * Create post as draft first to get ID for component persistence
+   */
+  private createDraftWithComponents(postData: PostData, authorId: string, finalAction: SaveAction): void {
+    // Extract components before cleaning content
+    const components = this.componentPersistence.extractComponentsFromContent(postData.content);
+    const cleanedContent = this.componentPersistence.cleanContentForStorage(postData.content);
+
+    const draftPayload = {
+      title: postData.title,
+      content: cleanedContent,
+      authorId: authorId,
+      isDraft: true,
+      themeConfig: postData.themeConfig,
+    };
+
+    this.blogService.createPost(draftPayload).subscribe({
+      next: (createdPost) => {
+        // Save components with the new post ID
+        if (components.length > 0) {
+          this.componentPersistence.saveComponents(createdPost.id, components).subscribe({
+            next: (savedComponents) => {
+              console.log('Components saved:', savedComponents);
+              this.handlePostCreateSuccess(createdPost, finalAction);
+            },
+            error: (err) => {
+              console.error('Failed to save components:', err);
+              this.error.set('Failed to save post components: ' + err.message);
+              this.loading.set(false);
+            }
+          });
+        } else {
+          this.handlePostCreateSuccess(createdPost, finalAction);
+        }
+      },
+      error: (err) => {
+        this.error.set('Failed to create post: ' + err.message);
+        this.loading.set(false);
+        console.error('Error creating post:', err);
+      },
+    });
+  }
+
+  /**
+   * Create post directly without component persistence
+   */
+  private createPostDirectly(postData: PostData, authorId: string, saveAction: SaveAction): void {
+    const isDraft = saveAction === 'draft';
+    const cleanedContent = this.cleanInjectedContent(postData.content);
+
+    const postPayload = {
+      title: postData.title,
+      content: cleanedContent,
+      authorId: authorId,
+      isDraft: isDraft,
+      themeConfig: postData.themeConfig,
+    };
+
+    this.blogService.createPost(postPayload).subscribe({
+      next: (newPost) => {
+        this.loading.set(false);
+        this.selectedPost.set(newPost);
+        this.addPostToList(newPost);
+        this.mode.set('view');
+
+        if (newPost.id) {
+          this.router.navigate(['/blog', newPost.id]);
+        }
+      },
+      error: (err) => {
+        this.error.set('Failed to create post: ' + err.message);
+        this.loading.set(false);
+        console.error('Error creating post:', err);
+      },
+    });
+  }
+
+  /**
+   * Update existing post with component persistence
+   */
+  private updatePostWithComponents(postData: PostData, postId: string, authorId: string, saveAction: SaveAction): void {
+    const isDraft = saveAction === 'draft';
+
+    // Extract and save components if content has them
+    const hasComponents = this.hasInjectedComponents(postData.content);
+    if (hasComponents) {
+      const components = this.componentPersistence.extractComponentsFromContent(postData.content);
+      const cleanedContent = this.componentPersistence.cleanContentForStorage(postData.content);
+
+      // First save components, then update post
+      this.componentPersistence.deleteComponentsByPost(postId).subscribe({
+        next: () => {
+          if (components.length > 0) {
+            this.componentPersistence.saveComponents(postId, components).subscribe({
+              next: (savedComponents) => {
+                console.log('Components updated:', savedComponents);
+                this.updatePostContent(postId, postData, cleanedContent, authorId, isDraft);
+              },
+              error: (err) => {
+                console.error('Failed to save updated components:', err);
+                this.error.set('Failed to save post components: ' + err.message);
+                this.loading.set(false);
+              }
+            });
+          } else {
+            this.updatePostContent(postId, postData, cleanedContent, authorId, isDraft);
           }
         },
         error: (err) => {
-          this.error.set('Failed to create post: ' + err.message);
+          console.error('Failed to delete old components:', err);
+          this.error.set('Failed to update post components: ' + err.message);
           this.loading.set(false);
-          console.error('Error creating post:', err);
-        },
+        }
       });
+    } else {
+      // No components, update directly
+      const cleanedContent = this.cleanInjectedContent(postData.content);
+      this.updatePostContent(postId, postData, cleanedContent, authorId, isDraft);
     }
+  }
+
+  /**
+   * Update post content in database
+   */
+  private updatePostContent(postId: string, postData: PostData, content: string, authorId: string, isDraft: boolean): void {
+    const postPayload = {
+      id: postId,
+      title: postData.title,
+      content: content,
+      authorId: authorId,
+      isDraft: isDraft,
+      themeConfig: postData.themeConfig,
+    };
+
+    this.blogService.updatePost(postId, postPayload).subscribe({
+      next: (updatedPost) => {
+        this.loading.set(false);
+        this.selectedPost.set(updatedPost);
+        this.updatePostInList(updatedPost);
+        this.mode.set('view');
+
+        if (updatedPost.id) {
+          this.router.navigate(['/blog', updatedPost.id]);
+        }
+      },
+      error: (err) => {
+        this.error.set('Failed to update post: ' + err.message);
+        this.loading.set(false);
+        console.error('Error updating post:', err);
+      },
+    });
+  }
+
+  /**
+   * Handle successful post creation and optionally publish
+   */
+  private handlePostCreateSuccess(createdPost: any, finalAction: SaveAction): void {
+    if (finalAction === 'publish') {
+      // Publish the draft and then view
+      this.blogService.publishPost(createdPost.id).subscribe({
+        next: (publishedPost) => {
+          this.loading.set(false);
+          this.selectedPost.set(publishedPost);
+          this.addPostToList(publishedPost);
+          this.mode.set('view');
+          if (publishedPost.id) {
+            this.router.navigate(['/blog', publishedPost.id]);
+          }
+        },
+        error: (err) => {
+          this.error.set('Post created but failed to publish: ' + err.message);
+          this.loading.set(false);
+          console.error('Error publishing post:', err);
+          // Stay on draft in edit mode
+          this.selectedPost.set(createdPost);
+          this.addPostToList(createdPost);
+          this.mode.set('edit');
+        }
+      });
+    } else {
+      // Keep as draft and continue editing
+      this.loading.set(false);
+      this.selectedPost.set(createdPost);
+      this.addPostToList(createdPost);
+      this.mode.set('edit');
+      // Do not navigate away; let the editor remain open
+    }
+  }
+
+  /**
+   * Create post with components using new format
+   */
+  private async createDraftWithComponentsNew(postData: PostData, authorId: string, finalAction: SaveAction): Promise<void> {
+    try {
+      // Create post first
+      const draftPayload: CreateBlogPostDto = {
+        title: postData.title,
+        content: postData.content,
+        authorId: authorId,
+        isDraft: true,
+        themeConfig: postData.themeConfig,
+      };
+
+      const createdPost = await firstValueFrom(this.blogService.createPost(draftPayload));
+      console.log('[BlogPage] Post created:', createdPost.id);
+
+      // Save components if available
+      if (postData.injectedComponentsNew && postData.injectedComponentsNew.length > 0) {
+        await this.saveComponentsNew(createdPost.id, postData.injectedComponentsNew);
+        console.log('[BlogPage] Components saved for post:', createdPost.id);
+      }
+
+      // Handle publish if needed
+      this.handlePostCreateSuccess(createdPost, finalAction);
+    } catch (err: any) {
+      this.error.set('Failed to create post: ' + err.message);
+      this.loading.set(false);
+      console.error('Error creating post with components:', err);
+    }
+  }
+
+  /**
+   * Update post with components using new format
+   */
+  private async updatePostWithComponentsNew(postData: PostData, postId: string, authorId: string, saveAction: SaveAction): Promise<void> {
+    try {
+      // Update post content
+      const updateData: UpdateBlogPostDto = {
+        id: postId,
+        title: postData.title,
+        content: postData.content,
+        authorId,
+        isDraft: saveAction === 'draft',
+        themeConfig: postData.themeConfig,
+      };
+
+      const updatedPost = await firstValueFrom(this.blogService.updatePost(postId, updateData));
+      console.log('[BlogPage] Post updated:', postId);
+
+      // Update components
+      if (postData.injectedComponentsNew) {
+        // Delete old components first
+        await this.deleteComponentsByPostId(postId);
+
+        // Save new components
+        if (postData.injectedComponentsNew.length > 0) {
+          await this.saveComponentsNew(postId, postData.injectedComponentsNew);
+          console.log('[BlogPage] Components updated for post:', postId);
+        }
+      }
+
+      this.loading.set(false);
+      this.selectedPost.set(updatedPost);
+      this.updatePostInList(updatedPost);
+      this.mode.set('view');
+
+      if (updatedPost.id) {
+        this.router.navigate(['/blog', updatedPost.id]);
+      }
+    } catch (err: any) {
+      this.error.set('Failed to update post: ' + err.message);
+      this.loading.set(false);
+      console.error('Error updating post with components:', err);
+    }
+  }
+
+  /**
+   * Save components to database using RPC
+   */
+  private async saveComponentsNew(blogPostId: string, components: InjectedComponentData[]): Promise<void> {
+    console.log('[BlogPage] Saving components:', components);
+
+    for (const component of components) {
+      const dto: CreateBlogComponentDto = {
+        blogPostId,
+        instanceId: component.instanceId,
+        componentType: component.componentType,
+        componentData: component.componentData,
+        position: component.position || 0,
+      };
+
+      try {
+        await firstValueFrom(
+          this.http.post(`${this.gatewayUrl}/blog-components`, dto)
+        );
+        console.log('[BlogPage] Component saved:', component.instanceId);
+      } catch (error) {
+        console.error('[BlogPage] Failed to save component:', component.instanceId, error);
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Delete all components for a post using RPC
+   */
+  private async deleteComponentsByPostId(blogPostId: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.gatewayUrl}/blog-components/post/${blogPostId}`)
+      );
+      console.log('[BlogPage] Components deleted for post:', blogPostId);
+    } catch (error) {
+      console.error('[BlogPage] Failed to delete components:', error);
+      // Don't throw - continue with saving new components
+    }
+  }
+
+  cleanInjectedContent(content: string): string {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, 'text/html');
+    const nodes = doc.querySelectorAll('div.angular-component-node');
+
+    nodes.forEach((node) => {
+      const data = node.getAttribute('data');
+      if (data) {
+        try {
+          const parsedData = JSON.parse(data);
+          node.setAttribute('data', JSON.stringify(parsedData));
+        } catch (error) {
+          console.error('Failed to parse data attribute:', error);
+        }
+      }
+    });
+
+    return doc.body.innerHTML;
   }
 
   /**

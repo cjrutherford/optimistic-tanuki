@@ -1,21 +1,102 @@
 .pagination {
   display: flex;
-  gap: 8px;
-}
-
-button {
-  width: 40px;
-  height: 40px;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  border: 1px solid #ccc;
-  background-color: #fff;
-  cursor: pointer;
-}
+  gap: var(--spacing-xs, 4px);
+  flex-wrap: wrap;
 
-button.active {
-  background-color: #007bff;
-  color: #fff;
-  border-color: #007bff;
+  .pagination-list {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: var(--spacing-xs, 4px);
+  }
+
+  .pagination-item {
+    flex-shrink: 0;
+    min-width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pagination-item otui-button {
+    &:focus-visible {
+      outline: 2px solid var(--local-accent, var(--accent, #3f51b5));
+      outline-offset: 2px;
+    }
+
+    &.active {
+      background: var(--local-accent, var(--accent, #3f51b5));
+      color: var(--local-foreground, var(--foreground, #ffffff));
+
+      &:focus-visible {
+        outline: 2px solid var(--local-foreground, var(--foreground, #ffffff));
+        outline-offset: 2px;
+      }
+    }
+
+    &[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+
+      &:focus-visible {
+        outline: 2px solid var(--local-foreground, var(--foreground, #ffffff));
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  // Size variants
+  &.sm {
+    .pagination-item {
+      min-width: 36px;
+      height: 36px;
+      font-size: var(--font-size-xs, 0.75rem);
+    }
+
+    otui-button {
+      font-size: var(--font-size-xs, 0.75rem);
+      padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+    }
+  }
+
+  &.lg {
+    .pagination-item {
+      min-width: 52px;
+      height: 52px;
+      font-size: var(--font-size-lg, 1.125rem);
+    }
+
+    otui-button {
+      font-size: var(--font-size-lg, 1.125rem);
+      padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    }
+  }
+
+  // Style variants
+  &.outlined {
+    .pagination-item {
+      border: 1px solid var(--local-border, var(--complement, #c0af4b));
+      background: transparent;
+    }
+
+    otui-button {
+      border: 1px solid var(--local-border, var(--complement, #c0af4b));
+      background: transparent;
+    }
+  }
+
+  &.filled {
+    .pagination-item {
+      background: var(--local-accent, var(--accent, #3f51b5));
+      border: none;
+    }
+
+    otui-button {
+      background: var(--local-accent, var(--accent, #3f51b5));
+      border: none;
+    }
+  }
 }

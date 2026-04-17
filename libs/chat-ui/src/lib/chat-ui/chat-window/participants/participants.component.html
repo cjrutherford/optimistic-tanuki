@@ -1,12 +1,12 @@
 <div class="participants">
-  @for (participant of participants; track participant) {
-  <span class="participant">
-    <img
-      [src]="participant.avatarUrl"
-      [alt]="participant.name"
-      class="avatar"
-    />
-    {{ participant.name }}
-  </span>
+  @for (participant of participants; track participant.id) {
+  <div class="participant">
+    <lib-profile-photo
+      [src]="participant.avatarUrl || participant.profilePic || ''"
+      [alt]="participant.name + ' profile photo'"
+      [size]="40"
+    ></lib-profile-photo>
+    <span class="participant-name">{{ participant.name }}</span>
+  </div>
   }
 </div>

@@ -11,7 +11,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PermissionDto } from '@optimistic-tanuki/ui-models';
-import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
+import { ColDef } from 'ag-grid-community';
+import { AgGridUiComponent } from '@optimistic-tanuki/ag-grid-ui/ag-grid-ui.component';
 
 @Component({
   selector: 'app-ag-permissions-table',
@@ -68,8 +69,8 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 })
 export class AgPermissionsTableComponent implements OnInit, OnChanges {
   @Input() permissions: PermissionDto[] = [];
-  @Input() loading: boolean = false;
-  @Input() height: string = '600px';
+  @Input() loading = false;
+  @Input() height = '600px';
   @Output() create = new EventEmitter<void>();
   @Output() edit = new EventEmitter<PermissionDto>();
   @Output() delete = new EventEmitter<PermissionDto>();

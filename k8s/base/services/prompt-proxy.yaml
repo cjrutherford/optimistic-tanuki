@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prompt-proxy
+  namespace: optimistic-tanuki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: prompt-proxy
+  template:
+    metadata:
+      labels:
+        app: prompt-proxy
+    spec:
+      containers:
+        - name: prompt-proxy
+          image: cjrutherford/optimistic_tanuki_prompt-proxy:sha-2850755da05286086a098d1dbdaf74f339af2a62
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3009
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3009"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: STORAGE_STRATEGY
+              value: "network"
+            - name: S3_ENDPOINT
+              value: "http://seaweedfs:8888"
+            - name: S3_BUCKET
+              value: "assets"
+          envFrom:
+            - secretRef:
+                name: optimistic-tanuki-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 3009
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3009
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /usr/src/assets/config.yaml
+              subPath: config.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: prompt-proxy-config
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prompt-proxy
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: prompt-proxy
+  ports:
+    - port: 3009
+      targetPort: 3009
+  clusterIP: None

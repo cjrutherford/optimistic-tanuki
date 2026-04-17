@@ -28,4 +28,28 @@ export class VoteService {
   deleteVote(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+
+  vote(postId: string, value: number, profileId: string): Observable<VoteDto> {
+    return this.http.post<VoteDto>(this.baseUrl, {
+      postId,
+      value,
+      profileId,
+    });
+  }
+
+  getVotesByPostId(postId: string): Observable<VoteDto[]> {
+    return this.http.post<VoteDto[]>(`${this.baseUrl}/find`, {
+      postId,
+    });
+  }
+
+  getUserVoteForPost(
+    postId: string,
+    userId: string
+  ): Observable<VoteDto | null> {
+    return this.http.post<VoteDto | null>(`${this.baseUrl}/find`, {
+      postId,
+      userId,
+    });
+  }
 }

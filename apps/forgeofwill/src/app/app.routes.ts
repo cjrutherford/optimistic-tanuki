@@ -1,6 +1,7 @@
 import { Route, ResolveFn } from '@angular/router';
 import { AuthenticationGuard } from './authentication.guard';
 import { ProfileGuard } from './profile.guard';
+import { AlreadyAuthenticatedGuard } from './already-authenticated.guard';
 import { inject } from '@angular/core';
 import { UserPermissionsService } from './user-permissions.service';
 import { AuthStateService } from './auth-state.service';
@@ -10,7 +11,7 @@ const forumPermissionResolver = async () => {
   const startsWith = 'forum.';
   const permissions = await permissionsService.searchPermissions(startsWith);
   return permissions;
-}
+};
 
 const forumIsLoggedInResolver: ResolveFn<boolean> = () => {
   const authState = inject(AuthStateService);
@@ -22,10 +23,17 @@ const forumUserIdResolver: ResolveFn<string> = () => {
   return authState.getDecodedTokenValue()?.userId || '';
 };
 
-
 export const appRoutes: Route[] = [
   {
     path: '',
+    loadComponent: () =>
+      import('./pages/landing/landing.component').then(
+        (m) => m.LandingComponent
+      ),
+    title: 'Forge of Will - Welcome',
+  },
+  {
+    path: 'projects',
     loadComponent: () =>
       import('./pages/projects/projects.component').then(
         (m) => m.ProjectsComponent
@@ -35,9 +43,20 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'forum',
-    loadChildren: () => import('@optimistic-tanuki/forum-ui').then(m => m.provideForumRoutes(forumPermissionResolver, forumIsLoggedInResolver, forumUserIdResolver)),
+    loadChildren: () =>
+      import('@optimistic-tanuki/forum-ui').then((m) =>
+        m.provideForumRoutes(
+          forumPermissionResolver,
+          forumIsLoggedInResolver,
+          forumUserIdResolver
+        )
+      ),
   },
-  // profile route removed; profile editing is available from Settings
+  {
+    path: 'profile',
+    redirectTo: 'settings',
+    pathMatch: 'full',
+  },
   {
     path: 'settings',
     loadComponent: () =>
@@ -48,10 +67,29 @@ export const appRoutes: Route[] = [
     canActivate: [AuthenticationGuard],
   },
   {
+    path: 'messages',
+    loadComponent: () =>
+      import('./pages/messages/messages.component').then(
+        (m) => m.MessagesComponent
+      ),
+    title: 'Messages',
+    canActivate: [AuthenticationGuard, ProfileGuard],
+  },
+  {
+    path: 'messages/new',
+    loadComponent: () =>
+      import('./pages/new-message/new-message.component').then(
+        (m) => m.NewMessageComponent
+      ),
+    title: 'New Message',
+    canActivate: [AuthenticationGuard, ProfileGuard],
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./pages/login/login.component').then((m) => m.LoginComponent),
     title: 'Login',
+    canActivate: [AlreadyAuthenticatedGuard],
   },
   {
     path: 'register',
@@ -60,6 +98,7 @@ export const appRoutes: Route[] = [
         (m) => m.RegisterComponent
       ),
     title: 'Register',
+    canActivate: [AlreadyAuthenticatedGuard],
   },
   {
     path: '**',

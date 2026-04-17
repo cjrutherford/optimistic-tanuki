@@ -12,6 +12,8 @@ describe('VoteComponent', () => {
 
     fixture = TestBed.createComponent(VoteComponent);
     component = fixture.componentInstance;
+    component.postId = 'test-post';
+    component.userId = 'test-user';
     fixture.detectChanges();
   });
 
@@ -19,19 +21,22 @@ describe('VoteComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should set voteState to 1 when upvote is called', () => {
+  it('should emit voteChanged with value 1 when upvote is called', () => {
+    const emitSpy = jest.spyOn(component.voteChanged, 'emit');
     component.upvote();
-    expect(component.voteState).toBe(1);
+    expect(emitSpy).toHaveBeenCalledWith({ postId: 'test-post', value: 1 });
   });
 
-  it('should set voteState to -1 when downvote is called', () => {
+  it('should emit voteChanged with value -1 when downvote is called', () => {
+    const emitSpy = jest.spyOn(component.voteChanged, 'emit');
     component.downvote();
-    expect(component.voteState).toBe(-1);
+    expect(emitSpy).toHaveBeenCalledWith({ postId: 'test-post', value: -1 });
   });
 
-  it('should set voteState to 0 when cancelVote is called', () => {
-    component.voteState = 1; // Set to a non-zero value first
-    component.cancelVote();
-    expect(component.voteState).toBe(0);
+  it('should toggle upvote off when already upvoted', () => {
+    component.currentVote = 1;
+    const emitSpy = jest.spyOn(component.voteChanged, 'emit');
+    component.upvote();
+    expect(emitSpy).toHaveBeenCalledWith({ postId: 'test-post', value: 0 });
   });
 });

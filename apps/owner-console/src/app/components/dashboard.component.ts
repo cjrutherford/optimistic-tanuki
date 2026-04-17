@@ -1,148 +1,57 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import {
   AppBarComponent,
   NavSidebarComponent,
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
 import { AuthService } from '../services/auth.service';
+import { OPERATOR_WORKSPACES } from '../operator-workspaces';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule, AppBarComponent, NavSidebarComponent],
-  template: `
-    <div class="dashboard-container">
-      <otui-app-bar
-        appTitle="Owner Console"
-        [showThemeToggle]="true"
-        [useTile]="false"
-        (menuToggle)="toggleSidebar()"
-        [logoSrc]="'/temptest-in-a-teacup.png'"
-        logoAlt="Owner Console Logo"
-      ></otui-app-bar>
-
-      <otui-nav-sidebar
-        [isOpen]="sidebarOpen"
-        [navItems]="navItems"
-        heading="Management"
-        (close)="closeSidebar()"
-      ></otui-nav-sidebar>
-
-      <div class="content" [class.sidebar-open]="sidebarOpen">
-        <router-outlet></router-outlet>
-      </div>
-    </div>
-  `,
-  styles: [
-    `
-      .dashboard-container {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-      }
-
-      .content {
-        flex: 1;
-        padding: 2rem;
-        transition: margin-left 0.3s ease;
-      }
-
-      .content.sidebar-open {
-        margin-left: 250px;
-      }
-
-      @media (max-width: 768px) {
-        .content.sidebar-open {
-          margin-left: 0;
-        }
-      }
-    `,
-  ],
+  templateUrl: './dashboard.component.html',
+  styleUrl: './dashboard.component.scss',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
+  private themeService = inject(ThemeService);
+  private destroy$ = new Subject<void>();
+  private authService: AuthService;
+  private router: Router;
+
   sidebarOpen = false;
   navItems: NavItem[] = [];
+  theme$ = this.themeService.theme;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(authService: AuthService, router: Router) {
+    this.authService = authService;
+    this.router = router;
+  }
 
   ngOnInit(): void {
-    this.navItems = [
-      {
-        label: 'Users',
-        action: () => this.router.navigate(['/dashboard/users']),
-        variant: 'text',
-        isActive: this.router.url.includes('/users'),
-      },
-      {
-        label: 'Roles',
-        action: () => this.router.navigate(['/dashboard/roles']),
-        variant: 'text',
-        isActive: this.router.url.includes('/roles'),
-      },
-      {
-        label: 'Permissions',
-        action: () => this.router.navigate(['/dashboard/permissions']),
-        variant: 'text',
-        isActive:
-          this.router.url.includes('/permissions') &&
-          !this.router.url.includes('/permissions-inspector'),
-      },
-      {
-        label: 'Permissions Inspector',
-        action: () =>
-          this.router.navigate(['/dashboard/permissions-inspector']),
-        variant: 'text',
-        isActive: this.router.url.includes('/permissions-inspector'),
-      },
-      {
-        label: 'App Scopes',
-        action: () => this.router.navigate(['/dashboard/app-scopes']),
-        variant: 'text',
-        isActive: this.router.url.includes('/app-scopes'),
-      },
-      {
-        label: 'Theme',
-        action: () => this.router.navigate(['/dashboard/theme']),
-        variant: 'text',
-        isActive: this.router.url.includes('/theme'),
-      },
-      {
-        label: 'Store Overview',
-        action: () => this.router.navigate(['/dashboard/store/overview']),
-        variant: 'text',
-        isActive: this.router.url.includes('/store/overview'),
-      },
-      {
-        label: 'Products',
-        action: () => this.router.navigate(['/dashboard/store/products']),
-        variant: 'text',
-        isActive: this.router.url.includes('/store/products'),
-      },
-      {
-        label: 'Orders',
-        action: () => this.router.navigate(['/dashboard/store/orders']),
-        variant: 'text',
-        isActive: this.router.url.includes('/store/orders'),
-      },
-      {
-        label: 'App Config',
-        action: () => this.router.navigate(['/dashboard/app-config']),
-        variant: 'text',
-        isActive: this.router.url.includes('/app-config'),
-      },
-      {
-        label: 'Logout',
-        action: () => this.logout(),
-        variant: 'danger',
-      },
-    ];
+    this.themeService.setPersonality('control-center');
+    this.themeService.setPrimaryColor('#2dd4bf');
 
-    // Navigate to users by default
+    this.theme$.pipe(takeUntil(this.destroy$)).subscribe((theme) => {
+      // Theme changes are handled by ThemeService via CSS variables
+    });
+
+    this.navItems = this.buildNavItems();
+
+    // Navigate to overview by default
     if (this.router.url === '/dashboard') {
-      this.router.navigate(['/dashboard/users']);
+      this.router.navigate(['/dashboard/overview']);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   toggleSidebar(): void {
@@ -155,5 +64,40 @@ export class DashboardComponent implements OnInit {
 
   logout(): void {
     this.authService.logout();
+  }
+
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
+  }
+
+  private buildNavItems(): NavItem[] {
+    const workspaceNav = [
+      {
+        label: 'Overview',
+        route: '/dashboard/overview',
+      },
+      ...OPERATOR_WORKSPACES.map((workspace) => ({
+        label: workspace.label,
+        route: `/dashboard/${workspace.path}`,
+      })),
+      {
+        label: 'Operations',
+        route: '/dashboard/operations',
+      },
+    ];
+
+    return [
+      ...workspaceNav.map((item) => ({
+        label: item.label,
+        action: () => this.router.navigate([item.route]),
+        variant: 'text' as const,
+        isActive: this.router.url.startsWith(item.route),
+      })),
+      {
+        label: 'Logout',
+        action: () => this.logout(),
+        variant: 'danger',
+      },
+    ];
   }
 }

@@ -13,8 +13,20 @@
       [profileName]="profileName"
       [profileImage]="profileImage"
       [backgroundImage]="backgroundImage"
+      (bannerClick)="openProfileEditor()"
     ></lib-banner>
     <p class="hint">Click the banner to edit your profile</p>
+  </div>
+
+  <div class="settings-section">
+    <h2>Theme & Personality</h2>
+    <p class="section-description">
+      Choose a personality that matches your style. Each personality provides
+      distinct visual language, gradients, and animations.
+    </p>
+    <lib-personality-selector
+      (personalitySelected)="onPersonalitySelected($event)"
+    ></lib-personality-selector>
   </div>
 
   <div class="controls">

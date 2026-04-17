@@ -2,7 +2,12 @@ jest.mock('isomorphic-dompurify', () => ({
   sanitize: jest.fn((content) => content),
 }));
 
-import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import {
   CreateBlogPostDto,
   UpdateBlogPostDto,
@@ -86,19 +91,29 @@ describe('PostService', () => {
     });
 
     it('should throw BadRequestException if content is empty', async () => {
-        const dto: CreateBlogPostDto = { title: 'T', content: '', authorId: 'a' };
-        await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+      const dto: CreateBlogPostDto = { title: 'T', content: '', authorId: 'a' };
+      await expect(service.create(dto)).rejects.toThrow(RpcException);
     });
 
     it('should throw BadRequestException if content is too long', async () => {
-        const dto: CreateBlogPostDto = { title: 'T', content: 'a'.repeat(100001), authorId: 'a' };
-        await expect(service.create(dto)).rejects.toThrow('Post content is too long (max 100KB)');
+      const dto: CreateBlogPostDto = {
+        title: 'T',
+        content: 'a'.repeat(100001),
+        authorId: 'a',
+      };
+      await expect(service.create(dto)).rejects.toThrow(RpcException);
     });
 
     it('should throw BadRequestException if content contains malicious patterns', async () => {
-        const dto: CreateBlogPostDto = { title: 'T', content: 'malicious', authorId: 'a' };
-        sanitizationService.containsMaliciousPatterns!.mockReturnValue(true);
-        await expect(service.create(dto)).rejects.toThrow('Post content contains potentially malicious patterns');
+      const dto: CreateBlogPostDto = {
+        title: 'T',
+        content: 'malicious',
+        authorId: 'a',
+      };
+      sanitizationService.containsMaliciousPatterns!.mockReturnValue(true);
+      await expect(service.create(dto)).rejects.toThrow(
+        'Post content contains potentially malicious patterns'
+      );
     });
 
     it('should create a published post when isDraft is false', async () => {
@@ -509,8 +524,8 @@ describe('PostService', () => {
     });
 
     it('should return empty array for null or undefined search term', async () => {
-        expect(await service.searchPosts(null as any)).toEqual([]);
-        expect(await service.searchPosts(undefined as any)).toEqual([]);
+      expect(await service.searchPosts(null as any)).toEqual([]);
+      expect(await service.searchPosts(undefined as any)).toEqual([]);
     });
 
     it('should only search published posts', async () => {

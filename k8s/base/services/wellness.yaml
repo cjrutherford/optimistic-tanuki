@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wellness
+  namespace: optimistic-tanuki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: wellness
+  template:
+    metadata:
+      labels:
+        app: wellness
+    spec:
+      containers:
+        - name: wellness
+          image: cjrutherford/optimistic_tanuki_wellness:sha-2850755da05286086a098d1dbdaf74f339af2a62
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3016
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3016"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: STORAGE_STRATEGY
+              value: "network"
+            - name: S3_ENDPOINT
+              value: "http://seaweedfs:8888"
+            - name: S3_BUCKET
+              value: "assets"
+          envFrom:
+            - secretRef:
+                name: optimistic-tanuki-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 3016
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3016
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wellness
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: wellness
+  ports:
+    - port: 3016
+      targetPort: 3016
+  clusterIP: None

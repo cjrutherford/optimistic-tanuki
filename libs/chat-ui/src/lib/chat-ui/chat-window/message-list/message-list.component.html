@@ -1,21 +1,118 @@
 <div class="message-list">
   @for (message of messages; track message; let i = $index) {
-  <div class="message">
-    <div class="profile">
-      <img
-        src="{{ getContact(message.senderId)?.avatarUrl }}"
-        alt="{{ getContact(message.senderId)?.name }}'s avatar"
-        class="avatar"
-      />
-      <span class="sender"
-        >{{ getContact(message.senderId)?.name || message.senderId }}:</span
-      >
+  <div
+    class="message"
+    [ngClass]="{
+      'message-received': isReceived(message.senderId),
+      'message-sent': isSent(message.senderId),
+      'first-in-group': isFirstInGroup(messages, i),
+      'last-in-group': isLastInGroup(messages, i),
+      'message-edited': message.isEdited,
+      'message-deleted': message.isDeleted
+    }"
+  >
+    <div
+      class="message-avatar"
+      *ngIf="isFirstInGroup(messages, i) && !message.isDeleted"
+    >
+      <lib-profile-photo
+        [src]="
+          getContact(message.senderId)?.avatarUrl ||
+          getContact(message.senderId)?.profilePic ||
+          ''
+        "
+        [alt]="(getContact(message.senderId)?.name || 'Unknown') + ' avatar'"
+        [size]="32"
+      ></lib-profile-photo>
     </div>
-    <span
-      class="text"
-      [class.sender]="i === messages.length - 1"
-      [innerHTML]="getMessageHtml(message.content)"
-    ></span>
+    <div class="message-bubble">
+      <div class="message-content">
+        <span
+          class="message-sender-name"
+          *ngIf="isFirstInGroup(messages, i) && !message.isDeleted"
+        >
+          {{ getContact(message.senderId)?.name || 'Unknown' }}
+        </span>
+        <span class="message-text" [class.deleted-text]="message.isDeleted">
+          @if (message.isDeleted) { [Message deleted] } @else {
+          {{ getMessageContent(message.content) }}
+          }
+        </span>
+
+        <!-- Reactions Display -->
+        @if (hasReactions(message)) {
+        <div class="message-reactions">
+          @for (reaction of getReactionsByEmoji(message); track reaction.emoji)
+          {
+          <button
+            class="reaction-badge"
+            [class.active]="reaction.isActive"
+            (click)="
+              reaction.isActive
+                ? removeReaction(message.id, reaction.emoji)
+                : addReaction(message.id, reaction.emoji)
+            "
+          >
+            {{ reaction.emoji }} {{ reaction.count }}
+          </button>
+          }
+          <button
+            class="add-reaction-btn"
+            (click)="toggleEmojiPicker(message.id)"
+          >
+            +
+          </button>
+        </div>
+        }
+
+        <!-- Emoji Picker -->
+        @if (showEmojiPicker[message.id]) {
+        <div class="emoji-picker">
+          @for (emoji of commonEmojis; track emoji) {
+          <button class="emoji-btn" (click)="addReaction(message.id, emoji)">
+            {{ emoji }}
+          </button>
+          }
+        </div>
+        }
+
+        <div class="message-footer">
+          @if (message.isEdited && !message.isDeleted) {
+          <span class="edited-label">edited</span>
+          }
+          <span class="message-timestamp">
+            {{ message.timestamp | date : 'shortTime' }}
+          </span>
+          @if (isSent(message.senderId) && !message.isDeleted) {
+          <span class="message-status">
+            <span
+              class="status-icon"
+              [ngClass]="getMessageStatusClass(message)"
+            ></span>
+          </span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Typing Indicators -->
+  @if (typingUsers.length > 0) {
+  <div class="typing-indicator">
+    <span class="typing-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </span>
+    <span class="typing-text">
+      {{
+        typingUsers.length === 1
+          ? getContactName(typingUsers[0])
+          : typingUsers.length + ' people'
+      }}
+      {{ typingUsers.length === 1 ? 'is' : 'are' }} typing...
+    </span>
   </div>
   }
 </div>

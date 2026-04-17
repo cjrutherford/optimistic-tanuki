@@ -1,0 +1,15 @@
+{
+  "name": "screenshots",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "tools/screenshots",
+  "targets": {
+    "capture": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "playwright test --config=tools/screenshots/playwright.config.ts",
+        "cwd": "."
+      }
+    }
+  }
+}

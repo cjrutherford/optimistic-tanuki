@@ -16,6 +16,11 @@
       "active": true
     },
     {
+      "name": "leads-app",
+      "description": "Lead Command application",
+      "active": true
+    },
+    {
       "name": "digital-homestead",
       "description": "Digital Homestead application",
       "active": true
@@ -68,6 +73,26 @@
     {
       "name": "forum",
       "description": "Forum discussion platform",
+      "active": true
+    },
+    {
+      "name": "D6",
+      "description": "D6 Wellness Tracker application",
+      "active": true
+    },
+    {
+      "name": "wellness",
+      "description": "Wellness microservice",
+      "active": true
+    },
+    {
+      "name": "community",
+      "description": "Community/Groups feature",
+      "active": true
+    },
+    {
+      "name": "local-hub",
+      "description": "Local Hub - local-centric communities platform",
       "active": true
     }
   ],
@@ -126,6 +151,16 @@
       "name": "client_asset_manager",
       "description": "Manage own assets via client-interface",
       "appScope": "client-interface"
+    },
+    {
+      "name": "leads_app_member",
+      "description": "Standard user for Lead Command",
+      "appScope": "leads-app"
+    },
+    {
+      "name": "leads_app_admin",
+      "description": "Administrator for Lead Command",
+      "appScope": "leads-app"
     },
     {
       "name": "forgeofwill_standard_user",
@@ -231,6 +266,51 @@
       "name": "store_customer",
       "description": "Customer of the store",
       "appScope": "store"
+    },
+    {
+      "name": "d6_user",
+      "description": "Standard user for D6 wellness tracker",
+      "appScope": "D6"
+    },
+    {
+      "name": "d6_admin",
+      "description": "Administrator for D6 wellness tracker",
+      "appScope": "D6"
+    },
+    {
+      "name": "community_standard_user",
+      "description": "Standard user for community features",
+      "appScope": "community"
+    },
+    {
+      "name": "community_owner",
+      "description": "Owner of a community",
+      "appScope": "community"
+    },
+    {
+      "name": "community_manager",
+      "description": "Manager of a community",
+      "appScope": "community"
+    },
+    {
+      "name": "local_hub_member",
+      "description": "Standard member of a local-hub community",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "local_hub_community_poster",
+      "description": "Community-scoped poster for local-hub communities",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "local_hub_moderator",
+      "description": "Community moderator for local-hub",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "local_hub_admin",
+      "description": "Community admin for local-hub",
+      "appScope": "local-hub"
     }
   ],
   "permissions": [
@@ -345,6 +425,110 @@
       "action": "delete",
       "targetId": null,
       "appScope": "client-interface"
+    },
+    {
+      "name": "lead.read",
+      "description": "Read leads workspace data",
+      "resource": "lead",
+      "action": "read",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.create",
+      "description": "Create leads",
+      "resource": "lead",
+      "action": "create",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.update",
+      "description": "Update leads",
+      "resource": "lead",
+      "action": "update",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.delete",
+      "description": "Delete leads",
+      "resource": "lead",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.topic.read",
+      "description": "Read lead topics",
+      "resource": "lead.topic",
+      "action": "read",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.topic.create",
+      "description": "Create lead topics",
+      "resource": "lead.topic",
+      "action": "create",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.topic.update",
+      "description": "Update lead topics",
+      "resource": "lead.topic",
+      "action": "update",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.topic.delete",
+      "description": "Delete lead topics",
+      "resource": "lead.topic",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.topic.run",
+      "description": "Run topic discovery",
+      "resource": "lead.topic",
+      "action": "run",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.flag.read",
+      "description": "Read lead flags",
+      "resource": "lead.flag",
+      "action": "read",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.flag.create",
+      "description": "Create lead flags",
+      "resource": "lead.flag",
+      "action": "create",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.onboarding.update",
+      "description": "Run onboarding and topic generation",
+      "resource": "lead.onboarding",
+      "action": "update",
+      "targetId": null,
+      "appScope": "leads-app"
+    },
+    {
+      "name": "lead.admin",
+      "description": "Administer the leads workspace",
+      "resource": "lead",
+      "action": "admin",
+      "targetId": null,
+      "appScope": "leads-app"
     },
     {
       "name": "blog.post.create",
@@ -731,6 +915,14 @@
       "appScope": "social"
     },
     {
+      "name": "social.reaction.create",
+      "description": "Create a reaction (social)",
+      "resource": "reaction",
+      "action": "create",
+      "targetId": null,
+      "appScope": "social"
+    },
+    {
       "name": "social.post.read",
       "description": "Read social post",
       "resource": "post",
@@ -896,6 +1088,27 @@
       "resource": "appscopes",
       "action": "delete",
       "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "app-config.create",
+      "description": "Create app configurations",
+      "resource": "app-config",
+      "action": "create",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "app-config.update",
+      "description": "Update app configurations",
+      "resource": "app-config",
+      "action": "update",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "app-config.delete",
+      "description": "Delete app configurations",
+      "resource": "app-config",
+      "action": "delete",
       "appScope": "owner-console"
     },
     {
@@ -1577,6 +1790,398 @@
       "action": "update",
       "targetId": null,
       "appScope": "store"
+    },
+    {
+      "name": "daily-four.create",
+      "description": "Create Daily Four entries",
+      "resource": "daily-four",
+      "action": "create",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-four.read",
+      "description": "Read Daily Four entries",
+      "resource": "daily-four",
+      "action": "read",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-four.update",
+      "description": "Update Daily Four entries",
+      "resource": "daily-four",
+      "action": "update",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-four.delete",
+      "description": "Delete Daily Four entries",
+      "resource": "daily-four",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-six.create",
+      "description": "Create Daily Six entries",
+      "resource": "daily-six",
+      "action": "create",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-six.read",
+      "description": "Read Daily Six entries",
+      "resource": "daily-six",
+      "action": "read",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-six.update",
+      "description": "Update Daily Six entries",
+      "resource": "daily-six",
+      "action": "update",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "daily-six.delete",
+      "description": "Delete Daily Six entries",
+      "resource": "daily-six",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "D6"
+    },
+    {
+      "name": "community.create",
+      "description": "Create a community",
+      "resource": "community",
+      "action": "create",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.read",
+      "description": "View communities",
+      "resource": "community",
+      "action": "read",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.update",
+      "description": "Update community",
+      "resource": "community",
+      "action": "update",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.delete",
+      "description": "Delete community",
+      "resource": "community",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.join",
+      "description": "Join community",
+      "resource": "community",
+      "action": "join",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.leave",
+      "description": "Leave community",
+      "resource": "community",
+      "action": "leave",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.member.approve",
+      "description": "Approve community member",
+      "resource": "community",
+      "action": "member.approve",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.member.reject",
+      "description": "Reject community member",
+      "resource": "community",
+      "action": "member.reject",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.member.remove",
+      "description": "Remove community member",
+      "resource": "community",
+      "action": "member.remove",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.invite",
+      "description": "Invite users to community",
+      "resource": "community",
+      "action": "invite",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "community.manage",
+      "description": "Manage a specific community",
+      "resource": "community",
+      "action": "manage",
+      "targetId": null,
+      "appScope": "community"
+    },
+    {
+      "name": "classified.create",
+      "description": "Create classified ad",
+      "active": true,
+      "resource": "classified",
+      "action": "create",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "classified.read",
+      "description": "Read classified ad",
+      "active": true,
+      "resource": "classified",
+      "action": "read",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "classified.update",
+      "description": "Update classified ad",
+      "active": true,
+      "resource": "classified",
+      "action": "update",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "classified.delete",
+      "description": "Delete classified ad",
+      "active": true,
+      "resource": "classified",
+      "action": "delete",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "classified.feature",
+      "description": "Feature classified ad",
+      "active": true,
+      "resource": "classified",
+      "action": "feature",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "community.join",
+      "description": "Join a local-hub community",
+      "active": true,
+      "resource": "community",
+      "action": "join",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "community.leave",
+      "description": "Leave a local-hub community",
+      "active": true,
+      "resource": "community",
+      "action": "leave",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "community.read",
+      "description": "Read local-hub community",
+      "active": true,
+      "resource": "community",
+      "action": "read",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "community.create",
+      "description": "Create local-hub community",
+      "active": true,
+      "resource": "community",
+      "action": "create",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "moderation.remove",
+      "description": "Remove content (mod)",
+      "active": true,
+      "resource": "moderation",
+      "action": "remove",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "moderation.ban",
+      "description": "Ban user (mod)",
+      "active": true,
+      "resource": "moderation",
+      "action": "ban",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "app-config.create",
+      "description": "Create app configurations (global)",
+      "active": true,
+      "resource": "app-config",
+      "action": "create",
+      "appScope": "global"
+    },
+    {
+      "name": "app-config.update",
+      "description": "Update app configurations (global)",
+      "active": true,
+      "resource": "app-config",
+      "action": "update",
+      "appScope": "global"
+    },
+    {
+      "name": "app-config.delete",
+      "description": "Delete app configurations (global)",
+      "active": true,
+      "resource": "app-config",
+      "action": "delete",
+      "appScope": "global"
+    },
+    {
+      "name": "store.product.create",
+      "description": "Create store products",
+      "active": true,
+      "resource": "store.product",
+      "action": "create",
+      "appScope": "global"
+    },
+    {
+      "name": "store.product.update",
+      "description": "Update store products",
+      "active": true,
+      "resource": "store.product",
+      "action": "update",
+      "appScope": "global"
+    },
+    {
+      "name": "store.product.delete",
+      "description": "Delete store products",
+      "active": true,
+      "resource": "store.product",
+      "action": "delete",
+      "appScope": "global"
+    },
+    {
+      "name": "store.order.view",
+      "description": "View store orders",
+      "active": true,
+      "resource": "store.order",
+      "action": "view",
+      "appScope": "global"
+    },
+    {
+      "name": "store.order.update",
+      "description": "Update store orders",
+      "active": true,
+      "resource": "store.order",
+      "action": "update",
+      "appScope": "global"
+    },
+    {
+      "name": "store.subscription.view",
+      "description": "View store subscriptions",
+      "active": true,
+      "resource": "store.subscription",
+      "action": "view",
+      "appScope": "global"
+    },
+    {
+      "name": "store.subscription.cancel",
+      "description": "Cancel store subscriptions",
+      "active": true,
+      "resource": "store.subscription",
+      "action": "cancel",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.view",
+      "description": "View store appointments",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "view",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.approve",
+      "description": "Approve store appointments",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "approve",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.deny",
+      "description": "Deny store appointments",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "deny",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.cancel",
+      "description": "Cancel store appointments",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "cancel",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.complete",
+      "description": "Complete store appointments",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "complete",
+      "appScope": "global"
+    },
+    {
+      "name": "store.appointment.invoice",
+      "description": "Generate store appointment invoices",
+      "active": true,
+      "resource": "store.appointment",
+      "action": "invoice",
+      "appScope": "global"
+    },
+    {
+      "name": "store.availability.create",
+      "description": "Create store availability",
+      "active": true,
+      "resource": "store.availability",
+      "action": "create",
+      "appScope": "global"
+    },
+    {
+      "name": "store.availability.update",
+      "description": "Update store availability",
+      "active": true,
+      "resource": "store.availability",
+      "action": "update",
+      "appScope": "global"
+    },
+    {
+      "name": "store.availability.delete",
+      "description": "Delete store availability",
+      "active": true,
+      "resource": "store.availability",
+      "action": "delete",
+      "appScope": "global"
     }
   ],
   "role_permissions": [
@@ -1654,6 +2259,191 @@
       "role": "client_asset_manager",
       "permission": "asset.delete",
       "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.delete",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.topic.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.topic.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.topic.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.topic.delete",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.topic.run",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.flag.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.flag.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_member",
+      "permission": "lead.onboarding.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.delete",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.topic.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.topic.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.topic.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.topic.delete",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.topic.run",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.flag.read",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.flag.create",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.onboarding.update",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "leads_app_admin",
+      "permission": "lead.admin",
+      "permissionAppScope": "leads-app"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.create",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.read",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.update",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.delete",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.invite",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.manage",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.manage",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.read",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.invite",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.member.approve",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.member.reject",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_manager",
+      "permission": "community.member.remove",
+      "permissionAppScope": "community"
     },
     {
       "role": "forgeofwill_planner",
@@ -2334,7 +3124,8 @@
       "role": "forum_moderator",
       "permission": "forum.topic.create",
       "permissionAppScope": "forum"
-    },    {
+    },
+    {
       "role": "forum_moderator",
       "permission": "forum.topic.create",
       "permissionAppScope": "client-interface"
@@ -3518,6 +4309,791 @@
       "role": "store_customer",
       "permission": "order.read",
       "permissionAppScope": "store"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-four.create",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-four.read",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-four.update",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-four.delete",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-six.create",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-six.read",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-six.update",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_user",
+      "permission": "daily-six.delete",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-four.create",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-four.read",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-four.update",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-four.delete",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-six.create",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-six.read",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-six.update",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "d6_admin",
+      "permission": "daily-six.delete",
+      "permissionAppScope": "D6"
+    },
+    {
+      "role": "community_standard_user",
+      "permission": "community.read",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_standard_user",
+      "permission": "community.join",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_standard_user",
+      "permission": "community.leave",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.read",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.create",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.update",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.delete",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.member.approve",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.member.reject",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.member.remove",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "community_owner",
+      "permission": "community.invite",
+      "permissionAppScope": "community"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.post.read",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.post.update",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.post.delete",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.vote.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.comment.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.follow",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_standard_user",
+      "permission": "social.reaction.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.post.read",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.vote.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.comment.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.follow",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "social_user",
+      "permission": "social.reaction.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "local_hub_community_poster",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.update",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.delete",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "social.comment.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "social.vote.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.join",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.leave",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "classified.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "classified.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "classified.update",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "classified.delete",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "classified.feature",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "community.join",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "community.leave",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "moderation.remove",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_moderator",
+      "permission": "moderation.ban",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "community.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "classified.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "classified.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "classified.update",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "classified.delete",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "classified.feature",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "community.join",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "community.leave",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "moderation.remove",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "moderation.ban",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.join",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.leave",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "classified.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "store.create",
+      "permissionAppScope": "store"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.create",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.delete",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
     }
   ]
 }

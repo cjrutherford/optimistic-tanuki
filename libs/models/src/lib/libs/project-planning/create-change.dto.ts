@@ -35,7 +35,7 @@ export enum ChangeStatus {
 export class CreateChangeDto {
   @ApiProperty({ enum: Changetype, description: 'Type of change' })
   @IsEnum(Changetype)
-  changeType: Changetype;
+  changeType!: Changetype;
 
   @ApiProperty({
     description: 'Description of the change',
@@ -44,14 +44,14 @@ export class CreateChangeDto {
   @IsString()
   @MinLength(10)
   @MaxLength(5000)
-  changeDescription: string;
+  changeDescription!: string;
 
   @ApiProperty({
     enum: ChangeStatus,
     description: 'Current status of the change',
   })
   @IsEnum(ChangeStatus)
-  changeStatus: ChangeStatus;
+  changeStatus!: ChangeStatus;
 
   @ApiProperty({
     type: String,
@@ -60,20 +60,20 @@ export class CreateChangeDto {
   })
   @IsDate()
   @Type(() => Date)
-  changeDate: Date;
+  changeDate!: Date;
 
   @ApiProperty({ description: 'Requester user profile ID' })
   @IsString()
   @IsUUID()
-  requestor: string; // manual reference to the User Profile Entity from the [Profile Service] representing the requester of the change
+  requestor!: string; // manual reference to the User Profile Entity from the [Profile Service] representing the requester of the change
 
   @ApiProperty({ description: 'Approver user profile ID' })
   @IsString()
   @IsUUID()
-  approver: string; // manual reference to the User Profile Entity from the [Profile Service] representing the approver of the change
+  approver!: string; // manual reference to the User Profile Entity from the [Profile Service] representing the approver of the change
 
   @ApiProperty({ description: 'Related project ID' })
   @IsString()
   @IsUUID()
-  projectId: string; // manual reference to the Project Entity from the [Project Planning Service] representing a related party to the change
+  projectId!: string; // manual reference to the Project Entity from the [Project Planning Service] representing a related party to the change
 }

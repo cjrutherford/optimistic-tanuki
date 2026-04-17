@@ -7,6 +7,7 @@ import {
   InjectableComponent,
   InjectedComponentInstance,
 } from '../interfaces/component-injection.interface';
+import { ComponentEditorWrapperComponent } from '../components/component-editor-wrapper.component';
 
 export interface AngularComponentOptions {
   HTMLAttributes: Record<string, unknown>;
@@ -20,6 +21,7 @@ export interface AngularComponentOptions {
     data: Record<string, unknown>,
     element: HTMLElement
   ) => InjectedComponentInstance;
+  disableDefaultControls?: boolean;
 }
 
 declare module '@tiptap/core' {
@@ -66,6 +68,7 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
       onComponentDelete: undefined,
       onComponentEdit: undefined,
       renderer: undefined,
+      disableDefaultControls: false,
     };
   },
 
@@ -86,29 +89,82 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
     };
   },
 
-  parseHTML(): { tag: string }[] {
+  parseHTML(): Array<{
+    tag: string;
+    getAttrs?: (dom: HTMLElement) => Record<string, any> | false;
+  }> {
     return [
       {
         tag: 'div[data-angular-component]',
+        getAttrs: (dom: HTMLElement) => {
+          const componentId = dom.getAttribute('data-component-id');
+          const instanceId = dom.getAttribute('data-instance-id');
+          const dataStr = dom.getAttribute('data-component-data');
+          const componentDefStr = dom.getAttribute('data-component-def');
+
+          return {
+            componentId: componentId || null,
+            instanceId: instanceId || null,
+            data: dataStr ? JSON.parse(dataStr) : {},
+            componentDef: componentDefStr ? JSON.parse(componentDefStr) : null,
+          };
+        },
       },
     ];
   },
 
   renderHTML({
+    node,
     HTMLAttributes,
   }: {
+    node?: any;
     HTMLAttributes: Record<string, any>;
   }): [string, Record<string, any>, ...any[]] {
+    // Get node attributes if available
+    const componentId = node?.attrs?.componentId || '';
+    const instanceId = node?.attrs?.instanceId || '';
+    const data = node?.attrs?.data || {};
+    const componentDef = node?.attrs?.componentDef || null;
+
+    // Filter out complex objects from HTMLAttributes to prevent [object Object] in DOM
+    // These are handled manually below as stringified JSON in data-* attributes
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const {
+      data: _d,
+      componentDef: _cd,
+      ...cleanHTMLAttributes
+    } = HTMLAttributes;
+
+    // Serialize component data as JSON strings in data attributes
+    const attributes: Record<string, any> = {
+      'data-angular-component': '',
+      class: 'angular-component-node',
+    };
+
+    if (componentId) {
+      attributes['data-component-id'] = componentId;
+    }
+    if (instanceId) {
+      attributes['data-instance-id'] = instanceId;
+    }
+    if (data && Object.keys(data).length > 0) {
+      attributes['data-component-data'] = JSON.stringify(data);
+    }
+    if (componentDef) {
+      attributes['data-component-def'] = JSON.stringify(componentDef);
+    }
+
     return [
       'div',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-angular-component': '',
-        class: 'angular-component-node',
-      }),
+      mergeAttributes(
+        this.options.HTMLAttributes,
+        cleanHTMLAttributes,
+        attributes
+      ),
       [
         'div',
         { class: 'component-placeholder' },
-        'Angular Component Loading...',
+        componentDef?.name || 'Angular Component Loading...',
       ],
     ];
   },
@@ -141,10 +197,20 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
             instance.componentRef &&
             instance.componentRef.instance
           ) {
-            Object.assign(instance.componentRef.instance, newData);
+            // Update the wrapper component's componentData property
+            const wrapperInstance: ComponentEditorWrapperComponent = instance
+              .componentRef.instance as ComponentEditorWrapperComponent;
+            if (wrapperInstance.componentData) {
+              wrapperInstance.componentData = {
+                ...wrapperInstance.componentData,
+                ...newData,
+              };
+            }
+
             // Also update the instance data
             instance.data = { ...instance.data, ...newData };
 
+            // Trigger change detection on the wrapper
             if (instance.componentRef.changeDetectorRef) {
               instance.componentRef.changeDetectorRef.detectChanges();
             }
@@ -183,7 +249,15 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
 
       updateAngularComponent:
         (options: { instanceId: string; data: Record<string, any> }) =>
-        ({ tr, state }: { tr: Transaction; state: EditorState }) => {
+        ({
+          tr,
+          state,
+          dispatch,
+        }: {
+          tr: Transaction;
+          state: EditorState;
+          dispatch?: (tr: Transaction) => void;
+        }) => {
           const { doc } = state;
           let updated = false;
 
@@ -199,6 +273,11 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
               updated = true;
             }
           });
+
+          // Actually dispatch the transaction to update the editor state
+          if (updated && dispatch) {
+            dispatch(tr);
+          }
 
           return updated;
         },
@@ -226,6 +305,11 @@ export const AngularComponentNode = Node.create<AngularComponentOptions>({
 
   addProseMirrorPlugins(): Plugin[] {
     const options = this.options;
+
+    // If default controls are disabled, do not add the decoration plugin
+    if (options.disableDefaultControls) {
+      return [];
+    }
 
     return [
       new Plugin({

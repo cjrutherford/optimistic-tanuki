@@ -2,19 +2,55 @@
   <div class="post-header">
     @if (profile) {
     <div class="post-profile">
+      <otui-dropdown [triggerLabel]="'...'">
+        <button class="dropdown-item" (click)="onProfileClick()">
+          View Profile
+        </button>
+        @if (profile.id !== currentUserId) { @if (canFollow) {
+        <button class="dropdown-item" (click)="onFollowToggle()">
+          {{ isFollowing ? 'Unfollow' : 'Follow' }}
+        </button>
+        }
+        <button class="dropdown-item" (click)="startChat.emit(profile.id)">
+          Direct Message
+        </button>
+        <button class="dropdown-item" (click)="onBlockToggle()">
+          {{ isBlocked ? 'Unblock' : 'Block' }}
+        </button>
+        @if (ownedCommunities.length > 0) {
+        <div class="dropdown-submenu">
+          <span class="dropdown-item">Invite to Community</span>
+          <div class="submenu">
+            @for (community of ownedCommunities; track community.id) {
+            <button
+              class="dropdown-item"
+              (click)="onInviteToCommunity(community.id)"
+            >
+              {{ community.name }}
+            </button>
+            }
+          </div>
+        </div>
+        } }
+      </otui-dropdown>
       <lib-profile-photo
         [src]="profile.avatar"
         [alt]="profile.name"
+        [profileId]="profile.id"
+        [enableChat]="false"
+        (profileClick)="onProfileClick()"
+        (startChat)="startChat.emit($event)"
       ></lib-profile-photo>
-      {{ profile.name }}
-      @if (canFollow) {
-      <otui-button
-        size="sm"
-        [variant]="isFollowing ? 'warning' : 'primary'"
-        (action)="onFollowToggle()"
-      >
-        {{ isFollowing ? 'Unfollow' : 'Follow' }}
-      </otui-button>
+      <span class="profile-name" (click)="onProfileClick()">{{
+        profile.name
+      }}</span>
+      @if (communityInfo) {
+      <span class="community-badge">
+        @if (communityInfo.logoUrl) {
+        <img [src]="communityInfo.logoUrl" alt="" class="community-logo" />
+        }
+        <span class="community-name">{{ communityInfo.name }}</span>
+      </span>
       }
     </div>
     }
@@ -22,13 +58,16 @@
     <div class="subtitle">{{ content.createdAt | date }}</div>
   </div>
   <div class="content">
-    <div class="post-content" [innerHTML]="content.content"></div>
+    <div
+      class="post-content"
+      #contentContainer
+      [innerHTML]="content.content"
+    ></div>
     @if (attachments.length > 0) {
     <div class="post-attachment">
       <h3>Attachments</h3>
       <otui-grid [columns]="6" [rows]="attachmentRows" class="attachment">
-        <!-- Display attachment details here -->
-        @for (attachment of attachments; track attachment) {
+        @for (attachment of attachments; track attachment.id) {
         <otui-tile (click)="downloadAttachment(attachment)" target="_blank">{{
           attachment.name
         }}</otui-tile>
@@ -39,9 +78,8 @@
     <div class="post-link">
       <h3>Links</h3>
       <otui-grid [columns]="1" [rows]="links.length">
-        @for (link of links; track link) {
+        @for (link of links; track link.url) {
         <otui-tile class="link">
-          <!-- Display link details here -->
           <a [href]="link.url" target="_blank">{{ link.title }}</a>
         </otui-tile>
         }
@@ -49,13 +87,31 @@
     </div>
     }
     <div class="actions">
-      <otui-button variant="success">Like</otui-button>
-      <otui-button variant="success">Share</otui-button>
+      <lib-vote
+        [postId]="content.id"
+        [userId]="currentUserId"
+        [currentVote]="userVote"
+        [voteCount]="voteCount"
+        (voteChanged)="onVoteChanged($event)"
+      ></lib-vote>
+      <lib-reaction
+        [postId]="content.id"
+        [userId]="currentUserId"
+        [currentReaction]="userReaction"
+        [reactionCounts]="reactionCounts"
+        (reactionSelected)="onReactionChanged($event)"
+      ></lib-reaction>
+      <otui-button variant="success" (action)="onShare()"> Share </otui-button>
+      <otui-button
+        [variant]="isSaved ? 'warning' : 'secondary'"
+        (action)="onSaveToggle()"
+      >
+        {{ isSaved ? 'Saved' : 'Save' }}
+      </otui-button>
       @if (canDelete) {
       <otui-button variant="danger" (action)="onDelete()">Delete</otui-button>
       }
-      <lib-vote></lib-vote>
-      <lib-comment 
+      <lib-comment
         (commentAdded)="onCommentAdd($event)"
         [imageUploadCallback]="imageUploadCallback"
       ></lib-comment>

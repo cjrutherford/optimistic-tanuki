@@ -1,18 +1,106 @@
-<div class="pagination">
-  <otui-button (click)="onFirstPageClick()">First</otui-button>
-  <otui-button (click)="onPreviousPageClick()">Previous</otui-button>
-  @if (showStartEllipsis()) {
-  <otui-button [disabled]="true">...</otui-button>
-  } @for (page of pages(); track page) {
-  <otui-button
-    [class.active]="page === currentPage"
-    (click)="onPageClick(page)"
-  >
-    {{ page }}
-  </otui-button>
-  } @if (showEndEllipsis()) {
-  <otui-button [disabled]="true">...</otui-button>
-  }
-  <otui-button (click)="onNextPageClick()">Next</otui-button>
-  <otui-button (click)="onLastPageClick()">Last</otui-button>
-</div>
+<nav
+  class="pagination"
+  [attr.aria-label]="ariaLabel || 'Pagination navigation'"
+  [attr.aria-labelledby]="ariaLabelledBy"
+  [attr.aria-describedby]="ariaDescribedBy"
+>
+  <ul class="pagination-list" role="list">
+    <!-- First page button -->
+    @if (showFirstLast) {
+    <li class="pagination-item" role="listitem">
+      <otui-button
+        [disabled]="currentPage === 1 || disabled"
+        [attr.aria-label]="'Go to first page'"
+        [attr.aria-current]="currentPage === 1 ? 'page' : null"
+        (click)="onFirstPageClick()"
+        (keydown)="onPaginationKeydown($event)"
+      >
+        First
+      </otui-button>
+    </li>
+    }
+
+    <!-- Previous page button -->
+    <li class="pagination-item" role="listitem">
+      <otui-button
+        [disabled]="currentPage === 1 || disabled"
+        [attr.aria-label]="'Go to previous page'"
+        (click)="onPreviousPageClick()"
+        (keydown)="onPaginationKeydown($event)"
+      >
+        Previous
+      </otui-button>
+    </li>
+
+    <!-- Start ellipsis -->
+    @if (showStartEllipsis) {
+    <li class="pagination-item" role="listitem">
+      <otui-button
+        [disabled]="true"
+        [attr.aria-hidden]="true"
+        [attr.tabindex]="-1"
+      >
+        ...
+      </otui-button>
+    </li>
+    }
+
+    <!-- Page numbers -->
+    @for (page of pages; track page) {
+    <li class="pagination-item" role="listitem">
+      <otui-button
+        [class.active]="page === currentPage"
+        [disabled]="disabled"
+        [attr.aria-label]="'Go to page ' + page"
+        [attr.aria-current]="page === currentPage ? 'page' : null"
+        [attr.aria-setsize]="totalPagesCount"
+        [attr.aria-posinset]="page"
+        (click)="onPageClick(page)"
+        (keydown)="onPaginationKeydown($event)"
+      >
+        {{ page }}
+      </otui-button>
+    </li>
+    }
+
+    <!-- End ellipsis -->
+    @if (showEndEllipsis) {
+    <li class="pagination-item" role="listitem">
+      <otui-button
+        [disabled]="true"
+        [attr.aria-hidden]="true"
+        [attr.tabindex]="-1"
+      >
+        ...
+      </otui-button>
+    </li>
+    }
+
+    <!-- Next page button -->
+    <li class="pagination-item" role="listitem">
+      <otui-button
+        [disabled]="currentPage === totalPagesCount || disabled"
+        [attr.aria-label]="'Go to next page'"
+        (click)="onNextPageClick()"
+        (keydown)="onPaginationKeydown($event)"
+      >
+        Next
+      </otui-button>
+    </li>
+
+    <!-- Last page button -->
+    @if (showFirstLast) {
+    <li class="pagination-item" role="listitem">
+      <otui-button
+        [disabled]="currentPage === totalPagesCount || disabled"
+        [attr.aria-label]="'Go to last page'"
+        [attr.aria-current]="currentPage === totalPagesCount ? 'page' : null"
+        (click)="onLastPageClick()"
+        (keydown)="onPaginationKeydown($event)"
+      >
+        Last
+      </otui-button>
+    </li>
+    }
+  </ul>
+</nav>

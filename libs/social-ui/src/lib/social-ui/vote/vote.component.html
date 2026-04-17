@@ -1,20 +1,31 @@
-<div>
+<div class="vote-container">
   <otui-button
-    [variant]="voteState === 1 ? 'success' : 'danger'"
+    [variant]="isUpvoted ? 'primary' : 'outlined'"
     (action)="upvote()"
-    [class.active]="voteState === 1"
-    >⬆️</otui-button
+    [class.active]="isUpvoted"
+    size="sm"
+    class="vote-btn"
+    title="Like"
   >
+    <span class="vote-icon">👍</span>
+    @if (isUpvoted) {
+    <span class="vote-label">Like</span>
+    }
+  </otui-button>
+
+  <span class="vote-count">{{ voteCount }}</span>
+
   <otui-button
-    [variant]="voteState === 0 ? 'success' : 'danger'"
-    (action)="cancelVote()"
-    [class.active]="voteState === 0"
-    >😑</otui-button
-  >
-  <otui-button
-    [variant]="voteState === -1 ? 'success' : 'danger'"
+    [variant]="isDownvoted ? 'danger' : 'outlined'"
     (action)="downvote()"
-    [class.active]="voteState === -1"
-    >⬇️</otui-button
+    [class.active]="isDownvoted"
+    size="sm"
+    class="vote-btn"
+    title="Dislike"
   >
+    <span class="vote-icon">👎</span>
+    @if (isDownvoted) {
+    <span class="vote-label">Dislike</span>
+    }
+  </otui-button>
 </div>

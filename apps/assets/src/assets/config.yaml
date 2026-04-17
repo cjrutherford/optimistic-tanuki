@@ -5,3 +5,8 @@ database:
   name: ot_assets
   username: postgres
   password: postgres
+storagePath: /usr/src/app/storage
+storage-module-options:
+  enabledAdapters:
+    - local
+  localStoragePath: /usr/src/app/storage

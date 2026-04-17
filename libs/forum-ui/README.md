@@ -1,7 +1,15 @@
-# forum-ui
+# Forum UI
 
-This library was generated with [Nx](https://nx.dev).
+`forum-ui` contains forum-oriented shared UI components and styles. Its source lives under `libs/forum-ui/src/lib`.
 
-## Running unit tests
+## Repo Role
 
-Run `nx test forum-ui` to execute the unit tests.
+- reusable forum presentation
+- shared Angular UI library for forum-facing screens
+
+## Nx Commands
+
+```bash
+npx nx build forum-ui
+npx nx test forum-ui
+```

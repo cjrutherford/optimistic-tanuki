@@ -8,4 +8,4 @@ export default {
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/libs/database',
   coverageReporters: ['lcov', 'text', 'text-summary'],
-};
+  }

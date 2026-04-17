@@ -5,6 +5,7 @@ import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 
 import { AssetController } from '../controllers/asset.controller';
 import { PalettesController } from '../controllers/palettes.controller';
+import { PersonalitiesController } from '../controllers/personalities.controller';
 import { AuthGuard } from '../auth/auth.guard';
 import { AuthenticationController } from '../controllers/authentication/authentication.controller';
 import { JwtService } from '@nestjs/jwt';
@@ -21,6 +22,7 @@ import { ContactController } from '../controllers/blogging/contact.controller';
 import { PostController } from '../controllers/blogging/post.controller';
 import { EventController } from '../controllers/blogging/event.controller';
 import { BlogController } from '../controllers/blogging/blog.controller';
+import { BlogComponentController } from '../controllers/blogging/blog-component.controller';
 import { PermissionsController } from '../controllers/permissions/permissions.controller';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
@@ -34,6 +36,24 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
 import { VideosController } from '../controllers/videos/videos.controller';
+import { SocialComponentController } from '../controllers/social/social-component.controller';
+import { CommunityController } from '../controllers/social/community/community.controller';
+import { WellnessController } from '../controllers/wellness/wellness.controller';
+import { ClassifiedsController } from '../controllers/classifieds/classifieds.controller';
+import { CommunitiesController } from '../controllers/communities/communities.controller';
+import { NotificationController } from '../controllers/social/notification/notification.controller';
+import { SearchController } from '../controllers/social/search/search.controller';
+import { PrivacyController } from '../controllers/social/privacy/privacy.controller';
+import { ActivityController } from '../controllers/social/activity/activity.controller';
+import { PresenceController } from '../controllers/social/presence/presence.controller';
+import { ProfileAnalyticsController } from '../controllers/social/profile-analytics/profile-analytics.controller';
+import { PollController } from '../controllers/social/poll/poll.controller';
+import { PostShareController } from '../controllers/social/post-share/post-share.controller';
+import { SocialEventController } from '../controllers/social/social-event/social-event.controller';
+import { PaymentsController } from '../controllers/payments/payments.controller';
+import { DonationsController } from '../controllers/donations/donations.controller';
+import { LeadsController } from '../controllers/leads/leads.controller';
+import { HardwareController } from '../controllers/hardware/hardware.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -62,9 +82,12 @@ import { VideosController } from '../controllers/videos/videos.controller';
   ],
   controllers: [
     PalettesController,
+    PersonalitiesController,
     AuthenticationController,
     ProfileController,
     SocialController,
+    SocialComponentController,
+    CommunityController,
     FollowController,
     AssetController,
     ProjectPlanningController,
@@ -72,12 +95,29 @@ import { VideosController } from '../controllers/videos/videos.controller';
     PostController,
     EventController,
     BlogController,
+    BlogComponentController,
     PermissionsController,
     PersonaController,
     StoreController,
     AppConfigController,
     ForumController,
     VideosController,
+    WellnessController,
+    ClassifiedsController,
+    CommunitiesController,
+    NotificationController,
+    SearchController,
+    PrivacyController,
+    ActivityController,
+    PresenceController,
+    ProfileAnalyticsController,
+    PollController,
+    PostShareController,
+    SocialEventController,
+    PaymentsController,
+    DonationsController,
+    LeadsController,
+    HardwareController,
   ],
   providers: [
     {
@@ -299,8 +339,70 @@ import { VideosController } from '../controllers/videos/videos.controller';
     {
       provide: ServiceTokens.FORUM_SERVICE,
       useFactory: (configService: ConfigService) => {
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.forum');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.WELLNESS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.wellness');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.CLASSIFIEDS_SERVICE,
+      useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.forum'
+          'services.classifieds'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.LEAD_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.lead_tracker'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.SYSTEM_CONFIGURATOR_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.system_configurator'
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,

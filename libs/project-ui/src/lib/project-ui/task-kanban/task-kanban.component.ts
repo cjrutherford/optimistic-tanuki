@@ -62,7 +62,7 @@ export class TaskKanbanComponent
   implements OnInit, OnChanges, OnDestroy
 {
   @Input() tasks: Task[] = [];
-  @Input() loading: boolean = false;
+  @Input() loading = false;
   @Output() createTask = new EventEmitter<CreateTask>();
   @Output() editTask = new EventEmitter<UpdateTask>();
   @Output() deleteTask = new EventEmitter<string>();

@@ -1,15 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ComponentWrapperComponent } from './component-wrapper.component';
 import { InjectedComponentInstance } from '../interfaces/component-injection.interface';
-import { Component, ComponentRef } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
+import { Component, ComponentRef, Input } from '@angular/core';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
-  selector: 'mat-icon',
+  selector: 'otui-icon',
   standalone: true,
-  template: ''
+  template: '',
 })
-class MockMatIconComponent {}
+class MockIconComponent {
+  @Input() name: any;
+}
 
 describe('ComponentWrapperComponent', () => {
   let component: ComponentWrapperComponent;
@@ -24,22 +26,22 @@ describe('ComponentWrapperComponent', () => {
       component: {} as any,
       category: 'Test',
       description: '',
-      icon: ''
+      icon: '',
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     componentRef: {} as ComponentRef<any>,
-    data: {}
+    data: {},
   };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ComponentWrapperComponent]
+      imports: [ComponentWrapperComponent],
     })
-    .overrideComponent(ComponentWrapperComponent, {
-      remove: { imports: [MatIconModule] }, 
-      add: { imports: [MockMatIconComponent] }
-    })
-    .compileComponents();
+      .overrideComponent(ComponentWrapperComponent, {
+        remove: { imports: [IconComponent] },
+        add: { imports: [MockIconComponent] },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(ComponentWrapperComponent);
     component = fixture.componentInstance;
@@ -69,55 +71,65 @@ describe('ComponentWrapperComponent', () => {
       const event = new Event('click');
       jest.spyOn(event, 'stopPropagation');
       jest.spyOn(component.selectionChanged, 'emit');
-      
+
       component.onClick(event);
-      
+
       expect(event.stopPropagation).toHaveBeenCalled();
-      expect(component.selectionChanged.emit).toHaveBeenCalledWith(mockComponentInstance);
+      expect(component.selectionChanged.emit).toHaveBeenCalledWith(
+        mockComponentInstance
+      );
     });
 
     it('should emit editRequested on edit', () => {
       const event = new Event('click');
       jest.spyOn(event, 'stopPropagation');
       jest.spyOn(component.editRequested, 'emit');
-      
+
       component.onEdit(event);
-      
+
       expect(event.stopPropagation).toHaveBeenCalled();
-      expect(component.editRequested.emit).toHaveBeenCalledWith(mockComponentInstance);
+      expect(component.editRequested.emit).toHaveBeenCalledWith(
+        mockComponentInstance
+      );
     });
 
     it('should emit deleteRequested on delete', () => {
       const event = new Event('click');
       jest.spyOn(event, 'stopPropagation');
       jest.spyOn(component.deleteRequested, 'emit');
-      
+
       component.onDelete(event);
-      
+
       expect(event.stopPropagation).toHaveBeenCalled();
-      expect(component.deleteRequested.emit).toHaveBeenCalledWith(mockComponentInstance);
+      expect(component.deleteRequested.emit).toHaveBeenCalledWith(
+        mockComponentInstance
+      );
     });
 
     it('should emit moveUpRequested on move up', () => {
       const event = new Event('click');
       jest.spyOn(event, 'stopPropagation');
       jest.spyOn(component.moveUpRequested, 'emit');
-      
+
       component.onMoveUp(event);
-      
+
       expect(event.stopPropagation).toHaveBeenCalled();
-      expect(component.moveUpRequested.emit).toHaveBeenCalledWith(mockComponentInstance);
+      expect(component.moveUpRequested.emit).toHaveBeenCalledWith(
+        mockComponentInstance
+      );
     });
 
     it('should emit moveDownRequested on move down', () => {
       const event = new Event('click');
       jest.spyOn(event, 'stopPropagation');
       jest.spyOn(component.moveDownRequested, 'emit');
-      
+
       component.onMoveDown(event);
-      
+
       expect(event.stopPropagation).toHaveBeenCalled();
-      expect(component.moveDownRequested.emit).toHaveBeenCalledWith(mockComponentInstance);
+      expect(component.moveDownRequested.emit).toHaveBeenCalledWith(
+        mockComponentInstance
+      );
     });
   });
 });

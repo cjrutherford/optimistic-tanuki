@@ -1,15 +1,15 @@
 # Constants
 
-This library contains constants that are shared across multiple applications, such as API endpoints and feature flags.
+`constants` contains shared constants and tokens used across the monorepo. Its source lives under `libs/constants/src/lib`.
 
-## Usage
+## Repo Role
 
-To use the constants in this library, import them directly from the library:
+- shared compile-time values and identifiers
+- supports both frontend and backend packages
 
-```typescript
-import { API_ENDPOINTS } from '@optimistic-tanuki/constants';
+## Nx Commands
+
+```bash
+npx nx build constants
+npx nx test constants
 ```
-
-## Running unit tests
-
-Run `nx test constants` to execute the unit tests.

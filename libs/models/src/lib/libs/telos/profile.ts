@@ -108,7 +108,7 @@ export class CreateProfileTelosDto {
 export class UpdateProfileTelosDto extends PartialType(CreateProfileTelosDto) {
   @ApiProperty()
   @IsUUID()
-  id: string;
+  id!: string;
 }
 
 export class QueryProfileTelosDto extends PartialType(ProfileTelosDto) {}

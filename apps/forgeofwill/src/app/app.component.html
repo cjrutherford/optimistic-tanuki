@@ -1,26 +1,50 @@
-<otui-app-bar
-  appTitle="Forge of Will"
-  logoSrc="android-chrome-192x192.png"
-  logoAlt="Forge of Will Logo"
-  [showThemeToggle]="true"
-  [useTile]="false"
-  (menuToggle)="showModal()"
->
-</otui-app-bar>
-
-<otui-nav-sidebar
-  [isOpen]="isModalOpen()"
-  [navItems]="navItems()"
-  heading="Navigation"
-  (close)="isModalOpen.set(false)"
->
-</otui-nav-sidebar>
-
-<router-outlet></router-outlet>
-@if (isAuthenticated() && selectedProfile()) {
-<app-chat [externalMessages]="newPersonaMessages()"></app-chat>
-<app-ai-assistant-bubble
-  (personaSelected)="onPersonaSelected($event)"
-></app-ai-assistant-bubble>
+@if (isBrowser) {
+<div class="motion-background" aria-hidden="true">
+  <otui-pulse-rings
+    [reducedMotion]="reducedMotion"
+    height="100vh"
+    [ringCount]="5"
+    [speed]="0.32"
+    [intensity]="0.45"
+  ></otui-pulse-rings>
+</div>
 }
-<lib-message></lib-message>
+
+<div class="app-content">
+  <div class="app-container">
+    <otui-app-bar
+      appTitle="Forge of Will"
+      logoSrc="android-chrome-192x192.png"
+      logoAlt="Forge of Will Logo"
+      [showThemeToggle]="true"
+      [useTile]="false"
+      (menuToggle)="showModal()"
+    >
+    </otui-app-bar>
+
+    <otui-nav-sidebar
+      [isOpen]="isModalOpen()"
+      [navItems]="navItems()"
+      heading="Navigation"
+      (close)="isModalOpen.set(false)"
+    >
+    </otui-nav-sidebar>
+
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+
+    @if (isAuthenticated() && selectedProfile()) {
+    <app-chat [externalMessages]="newPersonaMessages()"></app-chat>
+    <app-ai-assistant-bubble
+      [userProfile]="selectedProfile()"
+      (personaSelected)="onPersonaSelected($event)"
+    ></app-ai-assistant-bubble>
+    }
+
+    <lib-message></lib-message>
+
+    <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
+    <otui-dev-info />
+  </div>
+</div>

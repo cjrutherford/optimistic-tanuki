@@ -1,0 +1,333 @@
+@use 'sass:map';
+
+// ============================================
+// Personality Token System
+// Maps personality configurations to CSS values
+// ============================================
+
+// Border radius mappings based on personality token overrides
+$border-radius-values: (
+  // Sharp - minimal, foundation, control-center
+  'sharp':
+    (
+      'none': '0px',
+      'sm': '2px',
+      'md': '4px',
+      'lg': '6px',
+      'xl': '8px',
+      'full': '4px',
+    ),
+  // Soft - classic, professional, elegant
+  'soft':
+    (
+      'none': '0px',
+      'sm': '4px',
+      'md': '8px',
+      'lg': '12px',
+      'xl': '16px',
+      'full': '9999px',
+    ),
+  // Round - playful, soft, soft-touch
+  'round':
+    (
+      'none': '0px',
+      'sm': '6px',
+      'md': '12px',
+      'lg': '18px',
+      'xl': '24px',
+      'full': '9999px',
+    ),
+  // Pill - soft-touch
+  'pill':
+    (
+      'none': '0px',
+      'sm': '8px',
+      'md': '16px',
+      'lg': '24px',
+      'xl': '32px',
+      'full': '9999px',
+    )
+);
+
+// Shadow definitions based on personality intensity
+$shadow-values: (
+  // None
+  'none':
+    (
+      'sm': 'none',
+      'md': 'none',
+      'lg': 'none',
+      'xl': 'none',
+    ),
+  // Subtle - minimal, foundation
+  'subtle':
+    (
+      'sm': '0 1px 2px rgba(0, 0, 0, 0.05)',
+      'md': '0 2px 4px rgba(0, 0, 0, 0.06)',
+      'lg': '0 4px 8px rgba(0, 0, 0, 0.08)',
+      'xl': '0 8px 16px rgba(0, 0, 0, 0.1)',
+    ),
+  // Medium - classic, professional, control-center
+  'medium':
+    (
+      'sm': '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)',
+      'md': '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
+      'lg': '0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05)',
+      'xl': '0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04)',
+    ),
+  // Dramatic - bold, playful, electric, architect
+  'dramatic':
+    (
+      'sm': '0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12)',
+      'md': '0 10px 20px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.1)',
+      'lg': '0 15px 35px rgba(0, 0, 0, 0.2), 0 10px 10px rgba(0, 0, 0, 0.05)',
+      'xl': '0 25px 50px rgba(0, 0, 0, 0.25), 0 15px 15px rgba(0, 0, 0, 0.1)',
+    )
+);
+
+// Animation timing based on personality speed
+$animation-timings: (
+  'instant': (
+    'duration': '0ms',
+    'easing': 'steps(1)',
+  ),
+  'fast': (
+    'duration': '100ms',
+    'easing': 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+  ),
+  'normal': (
+    'duration': '250ms',
+    'easing': 'cubic-bezier(0.4, 0, 0.2, 1)',
+  ),
+  'slow': (
+    'duration': '400ms',
+    'easing': 'cubic-bezier(0.4, 0, 0.2, 1)',
+  ),
+  'deliberate': (
+    'duration': '600ms',
+    'easing': 'cubic-bezier(0.4, 0, 0.2, 1)',
+  ),
+);
+
+// Bouncy easing for playful personalities
+$bouncy-easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+
+// Smooth easing for elegant/minimal personalities
+$smooth-easing: 'cubic-bezier(0.4, 0, 0.2, 1)';
+
+// Brutalist/sharp easing for architect
+$brutalist-easing: 'steps(2)';
+
+// Technical easing for control-center
+$technical-easing: 'cubic-bezier(0.23, 1, 0.32, 1)';
+
+// ============================================
+// Mixins for personality token access
+// ============================================
+
+@mixin border-radius($size: 'md') {
+  $style: var(--personality-border-radius-style, 'soft');
+  $multiplier: var(--personality-border-radius-multiplier, 1);
+
+  border-radius: var(--border-radius-#{$size}, 4px);
+}
+
+@mixin shadow($size: 'md') {
+  $intensity: var(--personality-shadow-intensity, 'medium');
+  $multiplier: var(--personality-shadow-multiplier, 1);
+
+  box-shadow: var(--shadow-#{$size});
+}
+
+@mixin shadow-personalized($intensity: 'medium', $size: 'md') {
+  $shadows: map.get($shadow-values, $intensity, $size);
+  @if $shadows {
+    box-shadow: #{$shadows};
+  } @else {
+    box-shadow: var(--shadow-#{$size});
+  }
+}
+
+@mixin animation-fast {
+  animation-duration: var(--animation-duration-fast, 150ms);
+  animation-timing-function: var(
+    --animation-easing,
+    cubic-bezier(0.4, 0, 0.2, 1)
+  );
+}
+
+@mixin animation-normal {
+  animation-duration: var(--animation-duration-normal, 300ms);
+  animation-timing-function: var(
+    --animation-easing,
+    cubic-bezier(0.4, 0, 0.2, 1)
+  );
+}
+
+@mixin animation-slow {
+  animation-duration: var(--animation-duration-slow, 500ms);
+  animation-timing-function: var(
+    --animation-easing,
+    cubic-bezier(0.4, 0, 0.2, 1)
+  );
+}
+
+@mixin animation-bouncy {
+  animation-timing-function: #{$bouncy-easing};
+}
+
+@mixin animation-smooth {
+  animation-timing-function: #{$smooth-easing};
+}
+
+@mixin animation-brutalist {
+  animation-timing-function: #{$brutalist-easing};
+}
+
+@mixin animation-technical {
+  animation-timing-function: #{$technical-easing};
+}
+
+// Transition mixin with personality-aware defaults
+@mixin transition-personalized(
+  $property: all,
+  $duration: var(--animation-duration-fast, 150ms),
+  $timing: var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1))
+) {
+  transition: $property $duration $timing;
+}
+
+// ============================================
+// Form-specific input styling
+// ============================================
+
+@mixin form-input-base {
+  width: 100%;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  font-family: var(--personality-font-family, var(--font-body, system-ui));
+  font-size: 0.9375rem;
+  color: var(--foreground);
+  background: var(--surface, var(--background));
+  border: var(--personality-input-border-width, var(--border-width, 1px))
+    var(--personality-border-style, solid) var(--border);
+  border-radius: var(
+    --personality-input-radius,
+    var(--border-radius-md, 4px)
+  );
+  outline: none;
+  transition: var(
+    --personality-transition,
+    border-color var(--animation-duration-fast) var(--animation-easing),
+      box-shadow var(--animation-duration-fast) var(--animation-easing)
+  );
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: var(
+      --personality-input-focus-style,
+      0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent)
+    );
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &::placeholder {
+    color: var(--muted);
+    font-style: italic;
+  }
+}
+
+@mixin form-input-focus {
+  border-color: var(--primary);
+  box-shadow: var(
+    --gradient-input-focus,
+    0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent)
+  );
+}
+
+@mixin form-input-error {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 20%, transparent);
+}
+
+// ============================================
+// CSS Custom Property Generation
+// These are set by the theme service but can be overridden
+// ============================================
+
+:root {
+  --personality-border-radius-style: 'soft';
+  --personality-border-radius-multiplier: 1;
+  --personality-shadow-intensity: 'medium';
+  --personality-shadow-multiplier: 1;
+  --personality-border-width: '1px';
+  --personality-border-style: 'solid';
+}
+
+// ============================================
+// Personality-specific selector classes
+// Applied via theme service based on current personality
+// ============================================
+
+.personality-classic {
+  --personality-border-radius-style: 'soft';
+  --personality-shadow-intensity: 'medium';
+}
+
+.personality-minimal {
+  --personality-border-radius-style: 'sharp';
+  --personality-shadow-intensity: 'subtle';
+}
+
+.personality-bold {
+  --personality-border-radius-style: 'soft';
+  --personality-shadow-intensity: 'dramatic';
+}
+
+.personality-soft {
+  --personality-border-radius-style: 'round';
+  --personality-shadow-intensity: 'medium';
+}
+
+.personality-professional {
+  --personality-border-radius-style: 'soft';
+  --personality-shadow-intensity: 'medium';
+}
+
+.personality-playful {
+  --personality-border-radius-style: 'round';
+  --personality-shadow-intensity: 'dramatic';
+}
+
+.personality-elegant {
+  --personality-border-radius-style: 'soft';
+  --personality-shadow-intensity: 'medium';
+}
+
+.personality-architect {
+  --personality-border-radius-style: 'sharp';
+  --personality-shadow-intensity: 'dramatic';
+}
+
+.personality-soft-touch {
+  --personality-border-radius-style: 'pill';
+  --personality-shadow-intensity: 'medium';
+}
+
+.personality-electric {
+  --personality-border-radius-style: 'soft';
+  --personality-shadow-intensity: 'dramatic';
+}
+
+.personality-control-center {
+  --personality-border-radius-style: 'sharp';
+  --personality-shadow-intensity: 'medium';
+}
+
+.personality-foundation {
+  --personality-border-radius-style: 'sharp';
+  --personality-shadow-intensity: 'subtle';
+}

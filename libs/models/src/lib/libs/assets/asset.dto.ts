@@ -36,16 +36,16 @@ export class CreateAssetDto {
   @IsNotEmpty()
   @MinLength(1)
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @ApiProperty({ description: 'Profile ID of the asset owner' })
   @IsString()
   @IsUUID()
-  profileId: string;
+  profileId!: string;
 
   @ApiProperty({ description: 'Asset type', enum: AssetType })
   @IsEnum(AssetType)
-  type: AssetType;
+  type!: AssetType;
 
   @ApiProperty({
     description: 'Optional content for in-memory operations',
@@ -67,22 +67,22 @@ export class CreateAssetDto {
 
 export class AssetDto {
   @ApiProperty({ description: 'Asset ID' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'Asset filename' })
-  name: string;
+  name!: string;
 
   @ApiProperty({ description: 'Asset type', enum: AssetType })
-  type: AssetType;
+  type!: AssetType;
 
   @ApiProperty({ description: 'Storage strategy', enum: StorageStrategy })
-  storageStrategy: StorageStrategy;
+  storageStrategy!: StorageStrategy;
 
   @ApiProperty({ description: 'Storage path' })
-  storagePath: string;
+  storagePath!: string;
 
   @ApiProperty({ description: 'Profile ID of owner' })
-  profileId: string;
+  profileId!: string;
 
   @ApiProperty({ description: 'Optional content', required: false })
   content?: Buffer;
@@ -92,7 +92,7 @@ export class AssetHandle {
   @ApiProperty({ description: 'Asset ID' })
   @IsString()
   @IsUUID()
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'Profile ID', required: false })
   @IsOptional()

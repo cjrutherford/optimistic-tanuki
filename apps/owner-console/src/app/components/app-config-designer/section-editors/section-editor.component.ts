@@ -1,9 +1,15 @@
 import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
-import { TextInputComponent, TextAreaComponent } from '@optimistic-tanuki/form-ui';
+import {
+  IconComponent,
+  ButtonComponent,
+  CardComponent,
+} from '@optimistic-tanuki/common-ui';
+import {
+  TextInputComponent,
+  TextAreaComponent,
+} from '@optimistic-tanuki/form-ui';
 import {
   Section,
   HeroSection,
@@ -20,7 +26,7 @@ import {
   imports: [
     CommonModule,
     FormsModule,
-    MatIconModule,
+    IconComponent,
     ButtonComponent,
     CardComponent,
     TextInputComponent,
