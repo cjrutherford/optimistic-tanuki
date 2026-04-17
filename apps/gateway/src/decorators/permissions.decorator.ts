@@ -8,7 +8,7 @@ export interface PermissionRequirement {
 }
 
 export interface PermissionTargetRequirement {
-  source: 'params' | 'body' | 'query';
+  source: 'params' | 'body' | 'query' | 'headers';
   path: string;
 }
 

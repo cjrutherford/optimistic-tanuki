@@ -41,8 +41,15 @@
       "@optimistic-tanuki/form-ui": ["libs/form-ui/src/index.ts"],
       "@optimistic-tanuki/form-ui/*": ["libs/form-ui/src/lib/form-ui/*"],
       "@optimistic-tanuki/forum-ui": ["libs/forum-ui/src/index.ts"],
+      "@optimistic-tanuki/finance-ui": ["libs/finance-ui/src/index.ts"],
       "@optimistic-tanuki/hai-ui": ["libs/hai-ui/src/index.ts"],
       "@optimistic-tanuki/leads-ui": ["libs/leads-ui/src/index.ts"],
+      "@optimistic-tanuki/fin-commander-data-access": [
+        "libs/fin-commander-data-access/src/index.ts"
+      ],
+      "@optimistic-tanuki/fin-commander-imports": [
+        "libs/fin-commander-imports/src/index.ts"
+      ],
       "@optimistic-tanuki/logger": ["libs/logger/src/index.ts"],
       "@optimistic-tanuki/message-ui": ["libs/message-ui/src/index.ts"],
       "@optimistic-tanuki/message-ui/*": ["libs/message-ui/src/lib/*"],

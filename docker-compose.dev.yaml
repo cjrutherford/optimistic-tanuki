@@ -2,9 +2,9 @@
 # This file configures services for development with debugging and hot-reload support.
 #
 # USAGE:
-# 1. Build all applications: npm run build:dev
+# 1. Build all applications: pnpm run build:dev
 # 2. Start containers: docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
-# 3. For hot-reload on source changes: npm run watch:build (in a separate terminal)
+# 3. For hot-reload on source changes: pnpm run watch:build (in a separate terminal)
 #
 # DEBUGGING:
 # - All services expose inspector ports (9000-9244) for attaching debuggers
@@ -13,7 +13,7 @@
 #
 # HOT RELOAD:
 # - Containers use nodemon to restart when dist files change
-# - Run 'npm run watch:build' to rebuild on source file changes
+# - Run 'pnpm run watch:build' to rebuild on source file changes
 # - Changes flow: src/ → nx watch → dist/ → nodemon detects → service restarts
 #
 services:
@@ -43,6 +43,14 @@ services:
     depends_on: # Added
       postgres:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   ot-client-interface:
     container_name: ot_client_interface # Added
@@ -146,6 +154,37 @@ services:
       ]
     environment:
       - NODE_ENV=development
+
+  fin-commander:
+    container_name: ot_fin_commander
+    build:
+      context: .
+      dockerfile: ./apps/fin-commander/Dockerfile
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
+    volumes:
+      - ./apps/fin-commander:/app/apps/fin-commander
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /usr/src/app/node_modules
+    ports:
+      - '9246:9246'
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--watch',
+        '/app/dist/apps/fin-commander/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/fin-commander/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9246 /app/dist/apps/fin-commander/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
 
   crdn-client-interface:
     container_name: crdn_client_interface # Added
@@ -277,6 +316,14 @@ services:
       - '9000:9000' # Expose the debugging port
     environment:
       - NODE_ENV=development
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     depends_on:
       postgres: # Added
         condition: service_healthy # Added
@@ -315,6 +362,8 @@ services:
       classifieds:
         condition: service_started
       payments:
+        condition: service_started
+      finance:
         condition: service_started
       leads-app:
         condition: service_started
@@ -483,7 +532,6 @@ services:
       ]
     ports:
       - '9217:9217'
-      - '3017:3017'
     environment:
       - NODE_ENV=development
     depends_on:
@@ -509,10 +557,41 @@ services:
         'main.js',
       ]
     ports:
-      - '3018:3018'
       - '9208:9208'
     environment:
       - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  finance:
+    container_name: ot_finance
+    build:
+      context: .
+      dockerfile: ./apps/finance/Dockerfile
+    volumes:
+      - ./dist/apps:/usr/src/app/dist/apps
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--watch',
+        '/usr/src/app/dist/apps/finance',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node --inspect=0.0.0.0:9209',
+        '-L',
+        'dist/apps/finance/main.js',
+      ]
+    ports:
+      - '9209:9209'
+    environment:
+      - NODE_ENV=development
+      - PORT=3019
     depends_on:
       postgres:
         condition: service_healthy

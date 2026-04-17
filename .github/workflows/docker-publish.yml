@@ -21,6 +21,7 @@ jobs:
             forgeofwill,
             christopherrutherford-net,
             digital-homestead,
+            fin-commander,
           ]
     steps:
       - name: Checkout repository
@@ -72,6 +73,7 @@ jobs:
             ai-orchestrator,
             telos-docs-service,
             blogging,
+            finance,
           ]
     steps:
       - name: Checkout repository
