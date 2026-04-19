@@ -23,13 +23,25 @@ export class Video {
   assetId: string;
 
   @Column({ nullable: true })
+  sourceAssetId: string;
+
+  @Column({ nullable: true })
+  playbackAssetId: string;
+
+  @Column({ nullable: true })
+  hlsManifestAssetId: string;
+
+  @Column({ nullable: true })
   thumbnailAssetId: string;
 
   @ManyToOne(() => Channel, (channel) => channel.videos)
   channel: Channel;
 
-  @Column()
+  @Column({ type: 'uuid' })
   channelId: string;
+
+  @Column({ nullable: true })
+  communityId: string;
 
   @Column({ type: 'int', nullable: true })
   durationSeconds: number;
@@ -39,6 +51,12 @@ export class Video {
 
   @Column({ nullable: true })
   encoding: string;
+
+  @Column({ type: 'varchar', default: 'pending' })
+  processingStatus: 'pending' | 'processing' | 'ready' | 'failed';
+
+  @Column({ type: 'text', nullable: true })
+  processingError: string | null;
 
   @OneToMany(() => VideoView, (view) => view.video)
   views: VideoView[];

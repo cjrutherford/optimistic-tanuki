@@ -88,6 +88,7 @@ const ALL_USER_ROLES: { [key: string]: string[] } = {
   'christopherrutherford-net': ['christopherrutherford_standard_user'],
   store: ['store_customer'],
   'local-hub': ['local_hub_member'],
+  'video-client': ['video_client_member'],
 };
 
 export class RoleInitBuilder {
@@ -125,7 +126,7 @@ export class RoleInitBuilder {
     action: string,
     description = '',
     targetId?: string,
-    appScope?: string
+    appScope?: string,
   ) {
     this.opts.permissions?.push({
       name,
@@ -143,25 +144,25 @@ export class RoleInitBuilder {
       'asset.create',
       'asset',
       'create',
-      'Create asset for profile'
+      'Create asset for profile',
     );
     this.addPermission(
       'asset.read',
       'asset',
       'read',
-      'Read asset owned by user'
+      'Read asset owned by user',
     );
     this.addPermission(
       'asset.update',
       'asset',
       'update',
-      'Update asset owned by user'
+      'Update asset owned by user',
     );
     this.addPermission(
       'asset.delete',
       'asset',
       'delete',
-      'Delete asset owned by user'
+      'Delete asset owned by user',
     );
     // Create an AssetUser role and assign it so the permissions are linked
     this.addRole('AssetUser', 'User with asset upload permissions', [
@@ -251,7 +252,7 @@ export class RoleInitBuilder {
           'create',
           'Create community',
           undefined,
-          'client-interface'
+          'client-interface',
         );
         this.addPermission(
           'community.read',
@@ -259,7 +260,7 @@ export class RoleInitBuilder {
           'read',
           'Read community',
           undefined,
-          'client-interface'
+          'client-interface',
         );
         this.addPermission(
           'community.update',
@@ -267,7 +268,7 @@ export class RoleInitBuilder {
           'update',
           'Update community',
           undefined,
-          'client-interface'
+          'client-interface',
         );
         this.addPermission(
           'community.delete',
@@ -275,7 +276,7 @@ export class RoleInitBuilder {
           'delete',
           'Delete community',
           undefined,
-          'client-interface'
+          'client-interface',
         );
         this.addPermission(
           'community.invite',
@@ -283,7 +284,7 @@ export class RoleInitBuilder {
           'invite',
           'Invite to community',
           undefined,
-          'client-interface'
+          'client-interface',
         );
         this.addRole(
           'community_owner',
@@ -294,7 +295,7 @@ export class RoleInitBuilder {
             'community.update',
             'community.delete',
             'community.invite',
-          ]
+          ],
         );
         this.assignRoleToProfile('client_interface_user');
         this.assignRoleToProfile('forum_user');
@@ -307,7 +308,7 @@ export class RoleInitBuilder {
           'read',
           'Read leads and overview metrics',
           undefined,
-          'leads-app'
+          'leads-app',
         );
         this.addPermission(
           'lead.topic.read',
@@ -315,7 +316,7 @@ export class RoleInitBuilder {
           'read',
           'Read lead topics',
           undefined,
-          'leads-app'
+          'leads-app',
         );
         this.addPermission(
           'lead.onboarding.update',
@@ -323,7 +324,7 @@ export class RoleInitBuilder {
           'update',
           'Complete and update onboarding for leads workspace',
           undefined,
-          'leads-app'
+          'leads-app',
         );
         this.addRole('leads_app_member', 'Standard user for Lead Command', [
           'lead.read',
@@ -352,7 +353,7 @@ export class RoleInitBuilder {
           'create',
           'Create classified ad',
           undefined,
-          'local-hub'
+          'local-hub',
         );
         this.addPermission(
           'classified.read',
@@ -360,7 +361,7 @@ export class RoleInitBuilder {
           'read',
           'Read classified ad',
           undefined,
-          'local-hub'
+          'local-hub',
         );
         this.addPermission(
           'classified.update',
@@ -368,7 +369,7 @@ export class RoleInitBuilder {
           'update',
           'Update classified ad',
           undefined,
-          'local-hub'
+          'local-hub',
         );
         this.addPermission(
           'classified.delete',
@@ -376,7 +377,7 @@ export class RoleInitBuilder {
           'delete',
           'Delete classified ad',
           undefined,
-          'local-hub'
+          'local-hub',
         );
         this.addRole('local_hub_member', 'Local Hub community member', [
           'classified.create',
@@ -386,6 +387,10 @@ export class RoleInitBuilder {
         ]);
         this.assignRoleToProfile('local_hub_member');
         return this;
+      case 'video-client':
+        this.assignRoleToProfile('video_client_member');
+        this.assignRoleToProfile('video_channel_creator');
+        return this;
       case 'social':
         // Add social permissions and assign social_user role
         this.addPermission(
@@ -394,7 +399,7 @@ export class RoleInitBuilder {
           'post',
           'Create social post',
           undefined,
-          'social'
+          'social',
         );
         this.addPermission(
           'social.post.read',
@@ -402,7 +407,7 @@ export class RoleInitBuilder {
           'post',
           'Read social post',
           undefined,
-          'social'
+          'social',
         );
         this.addPermission(
           'social.post.update',
@@ -410,7 +415,7 @@ export class RoleInitBuilder {
           'post',
           'Update social post',
           undefined,
-          'social'
+          'social',
         );
         this.addPermission(
           'social.post.delete',
@@ -418,7 +423,7 @@ export class RoleInitBuilder {
           'post',
           'Delete social post',
           undefined,
-          'social'
+          'social',
         );
         this.addPermission(
           'social.vote.create',
@@ -426,7 +431,7 @@ export class RoleInitBuilder {
           'vote',
           'Create vote',
           undefined,
-          'social'
+          'social',
         );
         this.addPermission(
           'social.comment.create',
@@ -434,7 +439,7 @@ export class RoleInitBuilder {
           'comment',
           'Create comment',
           undefined,
-          'social'
+          'social',
         );
         this.addPermission(
           'social.follow',
@@ -442,7 +447,7 @@ export class RoleInitBuilder {
           'follow',
           'Follow/unfollow users',
           undefined,
-          'social'
+          'social',
         );
         this.addRole('SocialUser', 'Social user with basic permissions', [
           'social.post.create',
@@ -487,7 +492,7 @@ export class RoleInitBuilder {
       'read',
       'Read profile',
       profileId,
-      appScope
+      appScope,
     );
     this.addPermission(
       'profile.update',
@@ -495,7 +500,7 @@ export class RoleInitBuilder {
       'update',
       'Update profile',
       profileId,
-      appScope
+      appScope,
     );
     this.addRole('ProfileOwner', 'Owner of profile', [
       'profile.read',

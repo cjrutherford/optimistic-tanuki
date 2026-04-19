@@ -1,4 +1,11 @@
-import { Component, inject, signal, OnInit, OnDestroy, PLATFORM_ID } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  OnInit,
+  OnDestroy,
+  PLATFORM_ID,
+} from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
@@ -7,12 +14,23 @@ import { map, startWith } from 'rxjs/operators';
 import { AuthStateService } from './state/auth-state.service';
 import { ProfileService } from './services/profile.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
-import { AppBarComponent, NavSidebarComponent, NavItem } from '@optimistic-tanuki/navigation-ui';
+import {
+  AppBarComponent,
+  NavSidebarComponent,
+  NavItem,
+} from '@optimistic-tanuki/navigation-ui';
+import { TopographicDriftComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'video-client-root',
   standalone: true,
-  imports: [CommonModule, RouterModule, AppBarComponent, NavSidebarComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    AppBarComponent,
+    NavSidebarComponent,
+    TopographicDriftComponent,
+  ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
@@ -28,13 +46,13 @@ export class AppComponent implements OnInit, OnDestroy {
   foreground = '';
   accent = '';
   backgroundGradient = '';
-  
+
   themeName = signal('light-theme');
   isNavExpanded = signal(false);
   isAuthenticated = signal(false);
   selectedProfile = signal<ProfileDto | null>(null);
   navItems = signal<NavItem[]>([]);
-  
+
   currentUrl$!: Observable<string>;
   private themeSub?: Subscription;
   private authSub?: Subscription;
@@ -44,7 +62,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.currentUrl$ = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       map((event: NavigationEnd) => event.urlAfterRedirects),
-      startWith(this.router.url)
+      startWith(this.router.url),
     );
 
     this.authSub = this.authState.isAuthenticated$.subscribe({
@@ -81,7 +99,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.foreground = theme.foreground;
         this.accent = theme.accent;
         this.backgroundGradient = theme.accentGradients['light'];
-      }
+      },
     );
   }
 

@@ -5,6 +5,7 @@ A complete Angular application for the video streaming platform, providing a You
 ## Features
 
 ### Authentication & User Management
+
 - **Registration**: Create new accounts with email/password
 - **Login**: Secure JWT-based authentication
 - **Profile Management**: Create and manage multiple profiles
@@ -13,12 +14,14 @@ A complete Angular application for the video streaming platform, providing a You
 ### Pages
 
 #### Home Page (`/`)
+
 - Displays recommended videos based on views and likes
 - Shows trending videos from the last 7 days
 - Responsive video grid layout
 - Public access (no login required)
 
 #### Watch Page (`/watch/:id`)
+
 - HTML5 video player with full controls
 - Video metadata (views, date, likes)
 - Like/unlike functionality
@@ -28,6 +31,7 @@ A complete Angular application for the video streaming platform, providing a You
 - Public access
 
 #### Channel Page (`/channel/:id`)
+
 - Channel header with banner and avatar
 - Subscribe/unsubscribe button
 - Grid of all channel videos
@@ -35,6 +39,7 @@ A complete Angular application for the video streaming platform, providing a You
 - Public access
 
 #### My Channel Page (`/my-channel`) - Protected
+
 - Manage your own channel
 - **Videos Tab**: View all your uploaded videos with upload button
 - **Analytics Tab**: View channel statistics (total views, video count, subscribers)
@@ -42,6 +47,7 @@ A complete Angular application for the video streaming platform, providing a You
 - Create channel button if you don't have one
 
 #### Upload Page (`/upload`) - Protected
+
 - Video file upload (MP4, WebM, MOV up to 500MB)
 - Thumbnail upload (optional)
 - Video metadata form (title, description)
@@ -51,23 +57,27 @@ A complete Angular application for the video streaming platform, providing a You
 - Requires authentication
 
 #### Profile Settings (`/profile`) - Protected
+
 - View current profile
 - Switch between profiles
 - Profile avatar display
 - Requires authentication
 
 #### Watch History (`/history`) - Protected
+
 - View all previously watched videos
 - Watch timestamps
 - Continue watching from where you left off
 - Requires authentication
 
 #### Login Page (`/login`)
+
 - Email/password login form
 - Redirect to profile creation if needed
 - Integration with auth-ui library
 
 #### Register Page (`/register`)
+
 - User registration form
 - Email, password, name, and bio fields
 - Automatic redirect to login after registration
@@ -75,18 +85,22 @@ A complete Angular application for the video streaming platform, providing a You
 ### Navigation
 
 #### App Bar (Top Navigation)
+
 - Platform logo and title
 - Theme toggle button (light/dark mode)
 - Menu toggle for sidebar
 - Responsive design
 
 #### Sidebar Navigation (Collapsible)
+
 **When Not Authenticated:**
+
 - Home
 - Login
 - Register
 
 **When Authenticated:**
+
 - Home
 - My Channel
 - Upload
@@ -99,22 +113,26 @@ A complete Angular application for the video streaming platform, providing a You
 All UI components follow the workspace theming patterns:
 
 **From `@optimistic-tanuki/video-ui`:**
+
 - `VideoPlayerComponent`: HTML5 video player with theme support
 - `ChannelHeaderComponent`: Channel display with dynamic theme colors
 - `VideoCardComponent`: Video thumbnail cards with theme-aware styling
 - `VideoGridComponent`: Responsive grid layout
 
 **From `@optimistic-tanuki/navigation-ui`:**
+
 - `AppBarComponent`: Top navigation bar
 - `NavSidebarComponent`: Collapsible sidebar menu
 
 **From `@optimistic-tanuki/auth-ui`:**
+
 - `LoginBlockComponent`: Login form
 - `RegisterBlockComponent`: Registration form
 
 ### Services
 
 #### VideoService
+
 Handles all API calls to the video backend:
 
 ```typescript
@@ -144,6 +162,7 @@ getChannelSubscribers(channelId: string): Observable<ChannelSubscriptionDto[]>
 ```
 
 #### AuthStateService
+
 Manages authentication state and JWT tokens:
 
 ```typescript
@@ -156,6 +175,7 @@ getDecodedTokenValue(): DecodedToken | null
 ```
 
 #### AuthenticationService
+
 Handles user registration and account management:
 
 ```typescript
@@ -166,6 +186,7 @@ resetPassword(token: string, newPassword: string): Observable<any>
 ```
 
 #### ProfileService
+
 Manages user profiles:
 
 ```typescript
@@ -182,14 +203,17 @@ loadStoredProfile(): void
 ### Guards & Interceptors
 
 #### AuthGuard
+
 Protects routes that require authentication. Redirects to `/login` if not authenticated.
 
 #### AuthInterceptor
+
 Automatically adds JWT token to all HTTP requests in the `Authorization` header.
 
 ### Theme Integration
 
 The video-client uses the `@optimistic-tanuki/theme-lib` with:
+
 - **Default Palette**: "Sunset Vibes"
 - **Theme Toggle**: Available in app bar
 - **Dynamic Theming**: All video-ui components respond to theme changes
@@ -238,13 +262,13 @@ The app uses a proxy configuration (`proxy.conf.json`) to forward API requests t
 docker build -t video-client -f apps/video-client/Dockerfile .
 
 # Run the container
-docker run -p 8086:4000 video-client
+docker run -p 8089:4000 video-client
 
 # Or use docker-compose
 docker-compose up -d video-client
 ```
 
-The app will be available at `http://localhost:8086`
+The app will be available at `http://localhost:8089`
 
 ### Environment Variables
 
@@ -256,6 +280,7 @@ The app will be available at `http://localhost:8086`
 ### Server-Side Rendering (SSR)
 
 The app uses Angular Universal for SSR:
+
 - Faster initial page load
 - Better SEO for public videos
 - Social media preview support
@@ -272,6 +297,7 @@ The app uses Angular Universal for SSR:
 ### State Management
 
 Currently using simple service-based state management:
+
 - VideoService holds API logic
 - Components manage local state
 - Could be enhanced with NgRx or similar
@@ -300,6 +326,7 @@ The app integrates with:
 ## Future Enhancements
 
 ### Planned Features
+
 - [ ] User authentication integration
 - [ ] Search functionality
 - [ ] Comments section (integrate with social service)
@@ -311,6 +338,7 @@ The app integrates with:
 - [ ] Multiple quality options (360p, 720p, 1080p)
 
 ### Performance Optimizations
+
 - [ ] Lazy loading for video grid
 - [ ] Infinite scroll
 - [ ] Image optimization

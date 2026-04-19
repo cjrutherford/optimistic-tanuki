@@ -20,6 +20,7 @@ import {
   FileValidationService,
   VirusScanService,
 } from '@optimistic-tanuki/storage';
+import * as fs from 'node:fs/promises';
 
 @Injectable()
 export class AppService {
@@ -30,7 +31,7 @@ export class AppService {
     @Inject(STORAGE_ADAPTERS)
     private readonly storageAdapter: StorageAdapter,
     private readonly fileValidationService: FileValidationService,
-    private readonly virusScanService: VirusScanService
+    private readonly virusScanService: VirusScanService,
   ) {}
 
   async createAsset(data: CreateAssetDto): Promise<AssetEntity> {
@@ -43,64 +44,37 @@ export class AppService {
         data.name,
         data.profileId,
         data.type,
-        data.content?.length || 0
+        data.content?.length || 0,
       );
 
-      // If content is provided, validate the file
-      if (data.content) {
-        const contentBuffer = Buffer.isBuffer(data.content)
-          ? data.content
-          : Buffer.from(data.content, 'base64');
+      if (data.content || data.sourcePath) {
+        const prepared = await this.prepareAssetPayload(data);
+        data = prepared.data;
 
-        // Determine MIME type from file extension
-        const mimeType = this.getMimeTypeFromExtension(
-          data.fileExtension || 'png'
-        );
-
-        // Validate file
-        const validation = this.fileValidationService.validateFile(
-          data.name,
-          mimeType,
-          contentBuffer.length,
-          data.type
-        );
-
-        if (!validation.isValid) {
-          this.l.error('File validation failed:', validation.errors);
-          throw new RpcException({
-            statusCode: 400,
-            message: 'File validation failed',
-            errors: validation.errors,
-          });
+        if (prepared.validation.sanitizedFilename) {
+          data.name = prepared.validation.sanitizedFilename;
         }
 
-        // Use sanitized filename if provided
-        if (validation.sanitizedFilename) {
-          data.name = validation.sanitizedFilename;
-        }
-
-        // Scan for viruses
-        const scanResult = await this.virusScanService.scanFile(
-          contentBuffer,
-          data.name
-        );
-
-        if (!scanResult.isClean) {
-          this.l.error('Virus scan failed:', scanResult.threats);
+        if (!prepared.scanResult.isClean) {
+          this.l.error('Virus scan failed:', prepared.scanResult.threats);
           throw new RpcException({
             statusCode: 400,
             message: 'File failed virus scan',
-            threats: scanResult.threats,
+            threats: prepared.scanResult.threats,
           });
         }
 
         this.l.log(
-          `File validated and scanned: ${data.name} (${scanResult.scanner})`
+          `File validated and scanned: ${data.name} (${prepared.scanResult.scanner})`,
         );
       }
 
+      const persistedName = this.buildPersistedFilename(
+        data.name,
+        data.fileExtension,
+      );
       const entityAsset: Partial<AssetEntity> = {
-        name: `${data.name}.${data.fileExtension || 'png'}`,
+        name: persistedName,
         profileId: data.profileId,
         type: data.type,
         storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
@@ -121,6 +95,56 @@ export class AppService {
       }
       throw new RpcException('Failed to create asset');
     }
+  }
+
+  private async prepareAssetPayload(data: CreateAssetDto): Promise<{
+    data: CreateAssetDto;
+    validation: ReturnType<FileValidationService['validateFile']>;
+    scanResult: Awaited<ReturnType<VirusScanService['scanFile']>>;
+  }> {
+    const contentBuffer = data.content
+      ? this.normalizeContentBuffer(data.content)
+      : await this.readSourceFile(data.sourcePath);
+
+    if (data.content) {
+      data.content = contentBuffer;
+    }
+
+    const mimeType = this.getMimeTypeFromExtension(data.fileExtension || 'png');
+    const validation = this.fileValidationService.validateFile(
+      data.name,
+      mimeType,
+      contentBuffer.length,
+      data.type,
+    );
+
+    if (!validation.isValid) {
+      this.l.error('File validation failed:', validation.errors);
+      throw new RpcException({
+        statusCode: 400,
+        message: 'File validation failed',
+        errors: validation.errors,
+      });
+    }
+
+    const scanResult = await this.virusScanService.scanFile(
+      contentBuffer,
+      data.name,
+    );
+
+    return {
+      data,
+      validation,
+      scanResult,
+    };
+  }
+
+  private async readSourceFile(sourcePath?: string): Promise<Buffer> {
+    if (!sourcePath) {
+      throw new BadRequestException('Asset content or sourcePath is required');
+    }
+
+    return fs.readFile(sourcePath);
   }
 
   private getMimeTypeFromExtension(extension: string): string {
@@ -145,6 +169,13 @@ export class AppService {
       mpeg: 'video/mpeg',
       mov: 'video/quicktime',
       webm: 'video/webm',
+      mkv: 'video/x-matroska',
+      avi: 'video/x-msvideo',
+      wmv: 'video/x-ms-wmv',
+      flv: 'video/x-flv',
+      m4v: 'video/mp4',
+      ts: 'video/mp2t',
+      m3u8: 'application/vnd.apple.mpegurl',
       // Audio
       mp3: 'audio/mpeg',
       wav: 'audio/wav',
@@ -152,6 +183,48 @@ export class AppService {
     };
 
     return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
+  }
+
+  private normalizeContentBuffer(content: Buffer | string | unknown): Buffer {
+    if (Buffer.isBuffer(content)) {
+      return content;
+    }
+
+    if (
+      typeof content === 'object' &&
+      content !== null &&
+      'type' in content &&
+      'data' in content &&
+      (content as { type?: unknown }).type === 'Buffer' &&
+      Array.isArray((content as { data?: unknown }).data)
+    ) {
+      return Buffer.from((content as { data: number[] }).data);
+    }
+
+    if (typeof content === 'string') {
+      if (content.startsWith('data:')) {
+        const base64Data = content.split(',')[1] || '';
+        return Buffer.from(base64Data, 'base64');
+      }
+
+      return Buffer.from(content, 'base64');
+    }
+
+    throw new BadRequestException('Invalid asset content payload');
+  }
+
+  private buildPersistedFilename(name: string, fileExtension?: string): string {
+    if (!fileExtension) {
+      return name;
+    }
+
+    const normalizedExtension = fileExtension.startsWith('.')
+      ? fileExtension.slice(1)
+      : fileExtension;
+
+    return name.toLowerCase().endsWith(`.${normalizedExtension.toLowerCase()}`)
+      ? name
+      : `${name}.${normalizedExtension}`;
   }
 
   async removeAsset(data: AssetHandle): Promise<AssetEntity> {

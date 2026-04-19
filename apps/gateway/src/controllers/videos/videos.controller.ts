@@ -19,6 +19,11 @@ import {
   UpdateVideoDto,
   CreateChannelSubscriptionDto,
   RecordVideoViewDto,
+  CreateProgramBlockDto,
+  StartLiveSessionDto,
+  StopLiveSessionDto,
+  CompleteVideoProcessingResultDto,
+  VideoProcessingStatus,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
@@ -30,7 +35,7 @@ import { Public } from '../../decorators/public.decorator';
 export class VideosController {
   constructor(
     @Inject(ServiceTokens.VIDEOS_SERVICE)
-    private readonly videosService: ClientProxy
+    private readonly videosService: ClientProxy,
   ) {}
 
   // ===== Channel Endpoints =====
@@ -42,8 +47,8 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.CREATE_CHANNEL },
-        createChannelDto
-      )
+        createChannelDto,
+      ),
     );
   }
 
@@ -51,15 +56,18 @@ export class VideosController {
   @Get('channels')
   async findAllChannels() {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.FIND_ALL_CHANNELS }, {})
+      this.videosService.send({ cmd: VideoCommands.FIND_ALL_CHANNELS }, {}),
     );
   }
 
   @Public()
-  @Get('channels/:id')
-  async findOneChannel(@Param('id') id: string) {
+  @Get('channels/:slugOrId')
+  async findOneChannel(@Param('slugOrId') slugOrId: string) {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.FIND_ONE_CHANNEL }, id)
+      this.videosService.send(
+        { cmd: VideoCommands.FIND_CHANNEL_BY_SLUG_OR_ID },
+        slugOrId,
+      ),
     );
   }
 
@@ -69,8 +77,8 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.FIND_CHANNELS_BY_USER },
-        userId
-      )
+        userId,
+      ),
     );
   }
 
@@ -79,13 +87,13 @@ export class VideosController {
   @Put('channels/:id')
   async updateChannel(
     @Param('id') id: string,
-    @Body() updateChannelDto: UpdateChannelDto
+    @Body() updateChannelDto: UpdateChannelDto,
   ) {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.UPDATE_CHANNEL },
-        { id, updateChannelDto }
-      )
+        { id, updateChannelDto },
+      ),
     );
   }
 
@@ -94,7 +102,7 @@ export class VideosController {
   @Delete('channels/:id')
   async deleteChannel(@Param('id') id: string) {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.DELETE_CHANNEL }, id)
+      this.videosService.send({ cmd: VideoCommands.DELETE_CHANNEL }, id),
     );
   }
 
@@ -107,8 +115,8 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.CREATE_VIDEO },
-        createVideoDto
-      )
+        createVideoDto,
+      ),
     );
   }
 
@@ -116,7 +124,7 @@ export class VideosController {
   @Get('/')
   async findAllVideos() {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.FIND_ALL_VIDEOS }, {})
+      this.videosService.send({ cmd: VideoCommands.FIND_ALL_VIDEOS }, {}),
     );
   }
 
@@ -126,8 +134,8 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.FIND_RECOMMENDED_VIDEOS },
-        limit
-      )
+        limit ?? {},
+      ),
     );
   }
 
@@ -137,8 +145,8 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.FIND_TRENDING_VIDEOS },
-        limit
-      )
+        limit ?? {},
+      ),
     );
   }
 
@@ -148,8 +156,8 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.FIND_VIDEOS_BY_CHANNEL },
-        channelId
-      )
+        channelId,
+      ),
     );
   }
 
@@ -157,7 +165,7 @@ export class VideosController {
   @Get(':id')
   async findOneVideo(@Param('id') id: string) {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.FIND_ONE_VIDEO }, id)
+      this.videosService.send({ cmd: VideoCommands.FIND_ONE_VIDEO }, id),
     );
   }
 
@@ -166,13 +174,13 @@ export class VideosController {
   @Put(':id')
   async updateVideo(
     @Param('id') id: string,
-    @Body() updateVideoDto: UpdateVideoDto
+    @Body() updateVideoDto: UpdateVideoDto,
   ) {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.UPDATE_VIDEO },
-        { id, updateVideoDto }
-      )
+        { id, updateVideoDto },
+      ),
     );
   }
 
@@ -180,7 +188,7 @@ export class VideosController {
   @Post(':id/view')
   async incrementViewCount(@Param('id') id: string) {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.INCREMENT_VIEW_COUNT }, id)
+      this.videosService.send({ cmd: VideoCommands.INCREMENT_VIEW_COUNT }, id),
     );
   }
 
@@ -188,7 +196,7 @@ export class VideosController {
   @Post(':id/like')
   async incrementLikeCount(@Param('id') id: string) {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.INCREMENT_LIKE_COUNT }, id)
+      this.videosService.send({ cmd: VideoCommands.INCREMENT_LIKE_COUNT }, id),
     );
   }
 
@@ -196,7 +204,7 @@ export class VideosController {
   @Delete(':id/like')
   async decrementLikeCount(@Param('id') id: string) {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.DECREMENT_LIKE_COUNT }, id)
+      this.videosService.send({ cmd: VideoCommands.DECREMENT_LIKE_COUNT }, id),
     );
   }
 
@@ -205,7 +213,26 @@ export class VideosController {
   @Delete(':id')
   async deleteVideo(@Param('id') id: string) {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.DELETE_VIDEO }, id)
+      this.videosService.send({ cmd: VideoCommands.DELETE_VIDEO }, id),
+    );
+  }
+
+  @Post(':id/processing/complete')
+  async completeVideoProcessing(
+    @Param('id') id: string,
+    @Body() result: Omit<CompleteVideoProcessingResultDto, 'processingStatus'>,
+  ) {
+    return await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.COMPLETE_VIDEO_PROCESSING },
+        {
+          id,
+          result: {
+            ...result,
+            processingStatus: VideoProcessingStatus.READY,
+          },
+        },
+      ),
     );
   }
 
@@ -214,13 +241,13 @@ export class VideosController {
   @UseGuards(AuthGuard)
   @Post('subscriptions')
   async subscribeToChannel(
-    @Body() createSubscriptionDto: CreateChannelSubscriptionDto
+    @Body() createSubscriptionDto: CreateChannelSubscriptionDto,
   ) {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.SUBSCRIBE_TO_CHANNEL },
-        createSubscriptionDto
-      )
+        createSubscriptionDto,
+      ),
     );
   }
 
@@ -228,13 +255,13 @@ export class VideosController {
   @Delete('subscriptions/:channelId')
   async unsubscribeFromChannel(
     @Param('channelId') channelId: string,
-    @Body() body: { userId: string }
+    @Body() body: { userId: string },
   ) {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.UNSUBSCRIBE_FROM_CHANNEL },
-        { channelId, userId: body.userId }
-      )
+        { channelId, userId: body.userId },
+      ),
     );
   }
 
@@ -244,8 +271,8 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.FIND_USER_SUBSCRIPTIONS },
-        userId
-      )
+        userId,
+      ),
     );
   }
 
@@ -255,8 +282,113 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.FIND_CHANNEL_SUBSCRIBERS },
-        channelId
-      )
+        channelId,
+      ),
+    );
+  }
+
+  @Public()
+  @Get('channels/:slugOrId/feed')
+  async getChannelFeed(@Param('slugOrId') slugOrId: string) {
+    const channel = await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.FIND_CHANNEL_BY_SLUG_OR_ID },
+        slugOrId,
+      ),
+    );
+    return await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.GET_CHANNEL_FEED },
+        channel.communityId,
+      ),
+    );
+  }
+
+  @Public()
+  @Get('channels/:slugOrId/schedule')
+  async getChannelSchedule(@Param('slugOrId') slugOrId: string) {
+    const channel = await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.FIND_CHANNEL_BY_SLUG_OR_ID },
+        slugOrId,
+      ),
+    );
+    return await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.GET_CHANNEL_SCHEDULE },
+        channel.communityId,
+      ),
+    );
+  }
+
+  @RequirePermissions('videos.schedule.create')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Post('channels/:slugOrId/schedule')
+  async createProgramBlock(
+    @Param('slugOrId') slugOrId: string,
+    @Body() createProgramBlockDto: CreateProgramBlockDto,
+  ) {
+    const channel = await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.FIND_CHANNEL_BY_SLUG_OR_ID },
+        slugOrId,
+      ),
+    );
+    return await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.CREATE_PROGRAM_BLOCK },
+        {
+          ...createProgramBlockDto,
+          communityId: channel.communityId,
+          channelId: channel.id,
+        },
+      ),
+    );
+  }
+
+  @RequirePermissions('videos.live.start')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Post('channels/:slugOrId/live/start')
+  async startLiveSession(
+    @Param('slugOrId') slugOrId: string,
+    @Body() startLiveSessionDto: StartLiveSessionDto,
+  ) {
+    const channel = await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.FIND_CHANNEL_BY_SLUG_OR_ID },
+        slugOrId,
+      ),
+    );
+    return await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.START_LIVE_SESSION },
+        {
+          ...startLiveSessionDto,
+          communityId: channel.communityId,
+          channelId: channel.id,
+        },
+      ),
+    );
+  }
+
+  @RequirePermissions('videos.live.stop')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Post('channels/:slugOrId/live/stop')
+  async stopLiveSession(@Param('slugOrId') slugOrId: string) {
+    const channel = await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.FIND_CHANNEL_BY_SLUG_OR_ID },
+        slugOrId,
+      ),
+    );
+    const payload: StopLiveSessionDto = {
+      communityId: channel.communityId,
+    };
+    return await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.STOP_LIVE_SESSION },
+        payload,
+      ),
     );
   }
 
@@ -268,8 +400,8 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.RECORD_VIDEO_VIEW },
-        { dto: recordVideoViewDto }
-      )
+        { dto: recordVideoViewDto },
+      ),
     );
   }
 
@@ -277,7 +409,7 @@ export class VideosController {
   @Get('views/:videoId')
   async findVideoViews(@Param('videoId') videoId: string) {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.FIND_VIDEO_VIEWS }, videoId)
+      this.videosService.send({ cmd: VideoCommands.FIND_VIDEO_VIEWS }, videoId),
     );
   }
 }

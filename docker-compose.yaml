@@ -391,7 +391,7 @@ services:
       context: .
       dockerfile: ./apps/video-client/Dockerfile
     ports:
-      - '8086:4000'
+      - '8089:4000'
     depends_on:
       - gateway
       - videos
@@ -529,11 +529,40 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=ot_videos
       - PORT=3019
+      - VIDEO_SEED_SOURCE_DIR=${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}
+      - ASSETS_HOST=${ASSETS_HOST:-assets}
+      - ASSETS_PORT=${ASSETS_PORT:-3005}
+      - LOCAL_STORAGE_PATH=/usr/src/app/storage
+      - VIDEO_TRANSCODER_HOST=${VIDEO_TRANSCODER_HOST:-video-transcoder-worker}
+      - VIDEO_TRANSCODER_PORT=${VIDEO_TRANSCODER_PORT:-3022}
+    volumes:
+      - ${VIDEO_SEED_SOURCE_HOST_PATH:-/mnt/valhalla/media/TV}:${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}:ro
+      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
+      - video-processing-data:/tmp/video-processing
     depends_on:
       postgres:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+      assets:
+        condition: service_started
+      video-transcoder-worker:
+        condition: service_started
+
+  video-transcoder-worker:
+    container_name: ot_video_transcoder_worker
+    build:
+      context: .
+      dockerfile: ./apps/video-transcoder-worker/Dockerfile
+    ports:
+      - '3022:3022'
+    environment:
+      - PORT=3022
+      - HOST=0.0.0.0
+      - VIDEO_TRANSCODER_OUTPUT_ROOT=/tmp/video-processing
+    volumes:
+      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
+      - video-processing-data:/tmp/video-processing
 
   local-hub-client-interface:
     container_name: ot_local_hub
@@ -558,6 +587,6 @@ services:
     depends_on:
       - gateway
 
-
 volumes:
   postgres_data:
+  video-processing-data:

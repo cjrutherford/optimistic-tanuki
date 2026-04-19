@@ -16,7 +16,13 @@ export declare type VideoConfigType = {
 const loadConfig = () => {
   const configPath = path.resolve(__dirname, './assets/config.yaml');
   const configFile = fs.readFileSync(configPath, 'utf8');
-  const finalConfig = yaml.load(configFile) as VideoConfigType;
+  const fileConfig = yaml.load(configFile) as VideoConfigType;
+  const finalConfig: VideoConfigType = {
+    ...fileConfig,
+    listenPort: process.env.PORT
+      ? Number.parseInt(process.env.PORT, 10)
+      : fileConfig.listenPort,
+  };
   console.log('Loaded configuration:', finalConfig);
   return finalConfig;
 };

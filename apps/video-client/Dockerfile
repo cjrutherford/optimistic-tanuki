@@ -1,44 +1,53 @@
 # Stage 1: Build the Angular SSR application
 FROM node:lts-alpine as builder
 
-# Set working directory
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json
+ARG GIT_SHA=unknown
+
 COPY package.json ./
-COPY package-lock.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY tsconfig*.json ./
+COPY nx.json ./
+COPY libs ./libs
+COPY apps/video-client ./apps/video-client
 
-# Install all dependencies (including devDependencies needed for build)
-RUN npm install --legacy-peer-deps
+RUN corepack enable && pnpm install --frozen-lockfile
+RUN pnpm exec nx build video-client --configuration=development
 
-# Copy the entire workspace source code
-# Nx needs this to build the application and its dependencies
-COPY . .
-
-# Build the video-client application for production with SSR
-RUN npx nx build video-client --configuration=production
-
-# Stage 2: Create the runtime image from a slim Node.js base
+# Stage 2: Runtime image
 FROM node:lts-alpine
 RUN apk add --no-cache dumb-init
 
 WORKDIR /app
 
-# Set NODE_ENV to production for the runtime environment
+ARG GIT_SHA=unknown
+
 ENV NODE_ENV=production
+ENV PORT=4000
+ENV GIT_SHA=${GIT_SHA}
 
-# Copy package.json and package-lock.json again to install only production dependencies
 COPY --from=builder /usr/src/app/package.json ./
-COPY --from=builder /usr/src/app/package-lock.json ./
+COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
+COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
-# Install only production dependencies
-RUN npm install --omit=dev --legacy-peer-deps && npm i -g nodemon
+RUN corepack enable && pnpm install --prod --frozen-lockfile
 
-# Copy the built application (server and browser bundles) from the builder stage
 COPY --from=builder /usr/src/app/dist/apps/video-client ./dist/apps/video-client
 
-# Expose the port the SSR server will listen on
+RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
+    echo 'if [ "$NODE_ENV" = "development" ]; then' >> /docker-entrypoint.sh && \
+    echo '  STARTUP_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")' >> /docker-entrypoint.sh && \
+    echo '  for f in $(find /app/dist/apps/video-client/browser -name "index.html"); do' >> /docker-entrypoint.sh && \
+    echo '    sed -i "s|<head>|<head><script>window.__env__ = { GIT_SHA: \"$GIT_SHA\", STARTUP_TIME: \"$STARTUP_TIME\", NODE_ENV: \"$NODE_ENV\" };</script>|g" "$f"' >> /docker-entrypoint.sh && \
+    echo '  done' >> /docker-entrypoint.sh && \
+    echo 'fi' >> /docker-entrypoint.sh && \
+    echo 'exec "$@"' >> /docker-entrypoint.sh && \
+    chmod +x /docker-entrypoint.sh
+
 EXPOSE 4000
 
-# Command to run the SSR server
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
 CMD ["node", "/app/dist/apps/video-client/server/server.mjs"]

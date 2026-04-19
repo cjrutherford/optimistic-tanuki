@@ -3,11 +3,22 @@ import { Channel } from '../entities/channel.entity';
 import { Video } from '../entities/video.entity';
 import { ChannelSubscription } from '../entities/channel-subscription.entity';
 import { VideoView } from '../entities/video-view.entity';
+import { ChannelFeed } from '../entities/channel-feed.entity';
+import { ProgramBlock } from '../entities/program-block.entity';
+import { LiveSession } from '../entities/live-session.entity';
 import { ConfigService } from '@nestjs/config';
 
 export default function loadDatabase(config: ConfigService): DataSourceOptions {
   const database = config.get('database');
-  const entities = [Channel, Video, ChannelSubscription, VideoView];
+  const entities = [
+    Channel,
+    Video,
+    ChannelSubscription,
+    VideoView,
+    ChannelFeed,
+    ProgramBlock,
+    LiveSession,
+  ];
   const {
     host, port, username, password, database: dbName
   } = database;

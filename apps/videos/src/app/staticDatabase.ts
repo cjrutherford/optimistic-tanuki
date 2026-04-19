@@ -2,10 +2,21 @@ import { DataSource } from 'typeorm';
 import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
-import { Channel, ChannelSubscription, Video, VideoView } from '../entities';
+import {
+  Channel,
+  ChannelFeed,
+  ChannelSubscription,
+  LiveSession,
+  ProgramBlock,
+  Video,
+  VideoView,
+} from '../entities';
+import { Initial1770152975983 } from '../../migrations/1770152975983-initial';
+import { CommunityBroadcast20260417143000 } from '../../migrations/20260417143000-community-broadcast';
+import { VideoProcessingPipeline20260418170000 } from '../../migrations/20260418170000-video-processing-pipeline';
 
 const config = yaml.load(
-  fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
+  fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8'),
 ) as Record<string, any>;
 const {
   database: {
@@ -18,12 +29,25 @@ const {
   },
 } = config;
 
-// Use environment variable for host if available, otherwise use configHost
-const host = process.env.POSTGRES_HOST || configHost;
+// Default to localhost for host-side migration work; Docker sets POSTGRES_HOST=db.
+const host = process.env.POSTGRES_HOST || 'localhost';
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [Channel, ChannelSubscription, Video, VideoView];
+const entities = [
+  Channel,
+  ChannelFeed,
+  ChannelSubscription,
+  LiveSession,
+  ProgramBlock,
+  Video,
+  VideoView,
+];
+const migrations = [
+  Initial1770152975983,
+  CommunityBroadcast20260417143000,
+  VideoProcessingPipeline20260418170000,
+];
 
 const staticSource = new DataSource({
   type: 'postgres',
@@ -33,6 +57,6 @@ const staticSource = new DataSource({
   password,
   database: database, // Use the potentially overridden database name
   entities,
-  migrations: ['./migrations/*.ts'],
+  migrations,
 });
 export default staticSource;
