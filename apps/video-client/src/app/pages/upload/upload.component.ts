@@ -5,11 +5,12 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { VideoService } from '../../services/video.service';
 import { CreateVideoDto } from '@optimistic-tanuki/ui-models';
+import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'video-upload',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PulseRingsComponent],
   template: `
     <div class="upload-page">
       <div class="upload-container">
@@ -19,25 +20,43 @@ import { CreateVideoDto } from '@optimistic-tanuki/ui-models';
           <!-- Video File -->
           <div class="form-group">
             <label for="videoFile">Video File *</label>
-            <input
-              type="file"
-              id="videoFile"
-              accept="video/*"
-              (change)="onVideoFileSelected($event)"
-              required
-            />
-            <small class="form-hint">Supported: MP4, WebM, MOV (Max 500MB)</small>
+            <div class="file-drop-zone" [class.has-file]="videoFile">
+              <input
+                type="file"
+                id="videoFile"
+                accept="video/*"
+                (change)="onVideoFileSelected($event)"
+                required
+              />
+              <div class="drop-zone-content">
+                <span class="drop-icon">🎬</span>
+                <span class="drop-text">{{
+                  videoFile ? videoFile.name : 'Choose or drop a video file'
+                }}</span>
+              </div>
+            </div>
+            <small class="form-hint">Supported: MP4, WebM, MOV</small>
           </div>
 
           <!-- Thumbnail -->
           <div class="form-group">
             <label for="thumbnailFile">Thumbnail (Optional)</label>
-            <input
-              type="file"
-              id="thumbnailFile"
-              accept="image/*"
-              (change)="onThumbnailFileSelected($event)"
-            />
+            <div class="file-drop-zone" [class.has-file]="thumbnailFile">
+              <input
+                type="file"
+                id="thumbnailFile"
+                accept="image/*"
+                (change)="onThumbnailFileSelected($event)"
+              />
+              <div class="drop-zone-content">
+                <span class="drop-icon">🖼️</span>
+                <span class="drop-text">{{
+                  thumbnailFile
+                    ? thumbnailFile.name
+                    : 'Choose or drop a thumbnail'
+                }}</span>
+              </div>
+            </div>
             <small class="form-hint">Recommended: 1280x720 JPG or PNG</small>
           </div>
 
@@ -100,11 +119,12 @@ import { CreateVideoDto } from '@optimistic-tanuki/ui-models';
 
           <!-- Upload Progress -->
           <div *ngIf="uploading" class="upload-progress">
+            <div class="pulse-indicator">
+              <otui-pulse-rings></otui-pulse-rings>
+            </div>
             <div class="progress-bar">
-              <div
-                class="progress-fill"
-                [style.width.%]="uploadProgress"
-              ></div>
+              <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+              <div class="progress-shimmer"></div>
             </div>
             <p>Uploading... {{ uploadProgress }}%</p>
           </div>
@@ -141,156 +161,273 @@ import { CreateVideoDto } from '@optimistic-tanuki/ui-models';
       </div>
     </div>
   `,
-  styles: [`
-    .upload-page {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 2rem 1rem;
-    }
+  styles: [
+    `
+      .upload-page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+      }
 
-    .upload-container {
-      background: white;
-      border-radius: 8px;
-      padding: 2rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
+      .upload-container {
+        backdrop-filter: blur(20px);
+        background: rgba(var(--background-rgb, 10, 10, 15), 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--personality-border-radius, 16px);
+        padding: 2rem;
+      }
 
-    h1 {
-      font-size: 1.75rem;
-      font-weight: 600;
-      margin: 0 0 2rem 0;
-    }
+      h1 {
+        font-family: var(--font-heading, system-ui);
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0 0 2rem 0;
+        color: var(--foreground);
+      }
 
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
 
-    label {
-      display: block;
-      font-weight: 500;
-      margin-bottom: 0.5rem;
-      color: #030303;
-    }
+      label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: var(--foreground);
+      }
 
-    input[type="text"],
-    textarea,
-    select {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #e0e0e0;
-      border-radius: 4px;
-      font-size: 1rem;
-      font-family: inherit;
-    }
+      input[type='text'],
+      textarea,
+      select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--personality-border-radius, 8px);
+        font-size: 1rem;
+        font-family: inherit;
+        background: rgba(var(--background-rgb, 10, 10, 15), 0.5);
+        color: var(--foreground);
+        transition:
+          border-color var(--animation-duration-fast, 0.15s)
+            var(--animation-easing, ease),
+          box-shadow var(--animation-duration-fast, 0.15s)
+            var(--animation-easing, ease);
+      }
 
-    input[type="file"] {
-      width: 100%;
-      padding: 0.5rem 0;
-    }
+      input[type='text']:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border-color: rgba(var(--accent-rgb, 99, 102, 241), 0.5);
+        box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 99, 102, 241), 0.15);
+      }
 
-    textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
+      input[type='text']::placeholder,
+      textarea::placeholder {
+        color: rgba(var(--foreground-rgb, 232, 232, 236), 0.35);
+      }
 
-    .form-hint {
-      display: block;
-      margin-top: 0.25rem;
-      font-size: 0.875rem;
-      color: #606060;
-    }
+      select option {
+        background: var(--background, #0a0a0f);
+        color: var(--foreground);
+      }
 
-    .upload-progress {
-      margin: 1.5rem 0;
-    }
+      .file-drop-zone {
+        position: relative;
+        border: 2px dashed rgba(255, 255, 255, 0.12);
+        border-radius: var(--personality-border-radius, 12px);
+        padding: 2rem;
+        text-align: center;
+        transition: all var(--animation-duration-fast, 0.15s)
+          var(--animation-easing, ease);
+        background: rgba(var(--background-rgb, 10, 10, 15), 0.4);
+        cursor: pointer;
+      }
 
-    .progress-bar {
-      width: 100%;
-      height: 8px;
-      background: #e0e0e0;
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 0.5rem;
-    }
+      .file-drop-zone:hover {
+        border-color: rgba(var(--accent-rgb, 99, 102, 241), 0.4);
+        background: rgba(var(--accent-rgb, 99, 102, 241), 0.05);
+      }
 
-    .progress-fill {
-      height: 100%;
-      background: #1976d2;
-      transition: width 0.3s ease;
-    }
+      .file-drop-zone.has-file {
+        border-color: rgba(var(--accent-rgb, 99, 102, 241), 0.3);
+        background: rgba(var(--accent-rgb, 99, 102, 241), 0.08);
+      }
 
-    .upload-progress p {
-      font-size: 0.875rem;
-      color: #606060;
-      margin: 0;
-    }
+      .file-drop-zone input[type='file'] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
 
-    .error-message {
-      padding: 1rem;
-      background: #ffebee;
-      border: 1px solid #ef5350;
-      border-radius: 4px;
-      color: #c62828;
-      margin-bottom: 1rem;
-    }
+      .drop-zone-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        pointer-events: none;
+      }
 
-    .success-message {
-      padding: 1rem;
-      background: #e8f5e9;
-      border: 1px solid #66bb6a;
-      border-radius: 4px;
-      color: #2e7d32;
-      margin-bottom: 1rem;
-    }
+      .drop-icon {
+        font-size: 2rem;
+      }
 
-    .form-actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: flex-end;
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid #e0e0e0;
-    }
+      .drop-text {
+        color: rgba(var(--foreground-rgb, 232, 232, 236), 0.6);
+        font-size: 0.9rem;
+      }
 
-    .btn {
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
+      textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
 
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+      .form-hint {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: rgba(var(--foreground-rgb, 232, 232, 236), 0.45);
+      }
 
-    .btn-secondary {
-      background: #f5f5f5;
-      color: #606060;
-    }
+      .upload-progress {
+        margin: 1.5rem 0;
+        position: relative;
+      }
 
-    .btn-secondary:hover:not(:disabled) {
-      background: #e0e0e0;
-    }
+      .pulse-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1rem;
+        height: 60px;
+      }
 
-    .btn-primary {
-      background: #1976d2;
-      color: white;
-    }
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(var(--foreground-rgb, 232, 232, 236), 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+        position: relative;
+      }
 
-    .btn-primary:hover:not(:disabled) {
-      background: #1565c0;
-    }
-  `]
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          var(--accent, #6366f1),
+          rgba(var(--accent-rgb, 99, 102, 241), 0.7)
+        );
+        transition: width 0.3s ease;
+        border-radius: 4px;
+        position: relative;
+      }
+
+      .progress-shimmer {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.15) 50%,
+          transparent 100%
+        );
+        background-size: 200% 100%;
+        animation: progressShimmer 1.5s ease-in-out infinite;
+      }
+
+      @keyframes progressShimmer {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+
+      .upload-progress p {
+        font-size: 0.875rem;
+        color: rgba(var(--foreground-rgb, 232, 232, 236), 0.6);
+        margin: 0;
+      }
+
+      .error-message {
+        padding: 1rem;
+        background: rgba(var(--danger, 239, 68, 68), 0.1);
+        border: 1px solid rgba(var(--danger, 239, 68, 68), 0.3);
+        border-radius: var(--personality-border-radius, 8px);
+        color: var(--danger, #ef4444);
+        margin-bottom: 1rem;
+      }
+
+      .success-message {
+        padding: 1rem;
+        background: rgba(var(--success, 34, 197, 94), 0.1);
+        border: 1px solid rgba(var(--success, 34, 197, 94), 0.3);
+        border-radius: var(--personality-border-radius, 8px);
+        color: var(--success, #22c55e);
+        margin-bottom: 1rem;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 999px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--animation-duration-fast, 0.15s)
+          var(--animation-easing, ease);
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .btn-secondary {
+        background: rgba(var(--foreground-rgb, 232, 232, 236), 0.08);
+        color: rgba(var(--foreground-rgb, 232, 232, 236), 0.7);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .btn-secondary:hover:not(:disabled) {
+        background: rgba(var(--foreground-rgb, 232, 232, 236), 0.14);
+      }
+
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          var(--accent, #6366f1),
+          rgba(var(--accent-rgb, 99, 102, 241), 0.8)
+        );
+        color: #ffffff;
+        box-shadow: 0 4px 16px rgba(var(--accent-rgb, 99, 102, 241), 0.3);
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        box-shadow: 0 6px 24px rgba(var(--accent-rgb, 99, 102, 241), 0.45);
+        transform: translateY(-1px);
+      }
+    `,
+  ],
 })
 export class UploadComponent {
   videoFile: File | null = null;
   thumbnailFile: File | null = null;
   channels: any[] = [];
-  
+
   videoData = {
     title: '',
     description: '',
@@ -306,7 +443,7 @@ export class UploadComponent {
   constructor(
     private http: HttpClient,
     private videoService: VideoService,
-    private router: Router
+    private router: Router,
   ) {
     this.loadChannels();
   }
@@ -326,10 +463,6 @@ export class UploadComponent {
   onVideoFileSelected(event: any) {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 500 * 1024 * 1024) {
-        this.error = 'Video file is too large. Maximum size is 500MB.';
-        return;
-      }
       this.videoFile = file;
       this.error = null;
     }
@@ -356,17 +489,17 @@ export class UploadComponent {
       // Step 1: Upload video file to asset service
       this.uploadProgress = 10;
       const videoAssetId = await this.uploadFile(this.videoFile, 'video');
-      
+
       this.uploadProgress = 50;
-      
+
       // Step 2: Upload thumbnail if provided
       let thumbnailAssetId: string | undefined;
       if (this.thumbnailFile) {
         thumbnailAssetId = await this.uploadFile(this.thumbnailFile, 'image');
       }
-      
+
       this.uploadProgress = 70;
-      
+
       // Step 3: Create video record
       const createVideoDto: CreateVideoDto = {
         title: this.videoData.title,
@@ -382,7 +515,7 @@ export class UploadComponent {
           this.uploadProgress = 100;
           this.success = true;
           this.uploading = false;
-          
+
           // Redirect to video page after 2 seconds
           setTimeout(() => {
             this.router.navigate(['/watch', video.id]);
@@ -394,7 +527,6 @@ export class UploadComponent {
           console.error('Error creating video:', err);
         },
       });
-      
     } catch (err) {
       this.error = 'Failed to upload file';
       this.uploading = false;
@@ -405,7 +537,7 @@ export class UploadComponent {
   private async uploadFile(file: File, type: string): Promise<string> {
     // Convert file to base64
     const base64 = await this.fileToBase64(file);
-    
+
     // Create asset
     const assetData = {
       name: file.name,

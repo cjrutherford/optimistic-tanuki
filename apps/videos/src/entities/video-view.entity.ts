@@ -9,7 +9,7 @@ export class VideoView {
   @ManyToOne(() => Video, (video) => video.views)
   video: Video;
 
-  @Column()
+  @Column({ type: 'uuid' })
   videoId: string;
 
   @Column({ nullable: true })

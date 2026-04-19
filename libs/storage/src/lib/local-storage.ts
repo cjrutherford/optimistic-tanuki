@@ -7,16 +7,20 @@ import {
   StorageStrategy,
 } from '@optimistic-tanuki/models';
 import { Injectable, Logger } from '@nestjs/common';
-import { existsSync, promises as fs, mkdirSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
+import * as fs from 'fs/promises';
 
 import { StorageAdapter } from './storage-adapter.interface';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class LocalStorageAdapter implements StorageAdapter {
-  constructor(private readonly l: Logger, private readonly basePath: string) {
+  constructor(
+    private readonly l: Logger,
+    private readonly basePath: string,
+  ) {
     this.l.log(
-      `LocalStorageAdapter initialized with basePath: ${this.basePath}`
+      `LocalStorageAdapter initialized with basePath: ${this.basePath}`,
     );
     this.ensureBasePathExists();
   }
@@ -36,7 +40,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       data.name,
       data.profileId,
       data.type,
-      data.content?.length
+      data.content?.length,
     );
     const assetId = uuidv4();
     // Create a unique path for the file within the base path
@@ -47,26 +51,26 @@ export class LocalStorageAdapter implements StorageAdapter {
       // Ensure the directory for the file exists
       await fs.mkdir(path.dirname(absolutePath), { recursive: true });
 
-      // Write the file content (assuming data.content is available in CreateAssetDto)
-      // You might need to adjust CreateAssetDto or how content is passed
-      // For now, let's assume data has a 'content' property which is a Buffer
-      if (!data.content) {
-        throw new Error('File content is missing in CreateAssetDto');
-      }
-      let buffer: Buffer;
-      if (
-        typeof data.content === 'string' &&
-        data.content.startsWith('data:')
-      ) {
-        // Handle base64 encoded data URL
-        const base64Data = data.content.split(',')[1];
-        buffer = Buffer.from(base64Data, 'base64');
-      } else if (Buffer.isBuffer(data.content)) {
-        buffer = data.content;
+      if (data.sourcePath) {
+        await fs.copyFile(data.sourcePath, absolutePath);
       } else {
-        throw new Error('Invalid content type in CreateAssetDto');
+        if (!data.content) {
+          throw new Error('File content is missing in CreateAssetDto');
+        }
+        let buffer: Buffer;
+        if (
+          typeof data.content === 'string' &&
+          data.content.startsWith('data:')
+        ) {
+          const base64Data = data.content.split(',')[1];
+          buffer = Buffer.from(base64Data, 'base64');
+        } else if (Buffer.isBuffer(data.content)) {
+          buffer = data.content;
+        } else {
+          throw new Error('Invalid content type in CreateAssetDto');
+        }
+        await fs.writeFile(absolutePath, new Uint8Array(buffer));
       }
-      await fs.writeFile(absolutePath, new Uint8Array(buffer));
 
       const createdAsset: AssetDto = {
         id: assetId,
@@ -81,7 +85,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       return createdAsset;
     } catch (error: any) {
       this.l.error(
-        `LocalStorageAdapter: Failed to create asset: ${error.message}`
+        `LocalStorageAdapter: Failed to create asset: ${error.message}`,
       );
       throw error; // Re-throw the error
     }
@@ -104,11 +108,11 @@ export class LocalStorageAdapter implements StorageAdapter {
       // Ignore error if file doesn't exist
       if (error.code === 'ENOENT') {
         this.l.warn(
-          `LocalStorageAdapter: Attempted to remove non-existent asset at ${absolutePath}`
+          `LocalStorageAdapter: Attempted to remove non-existent asset at ${absolutePath}`,
         );
       } else {
         this.l.error(
-          `LocalStorageAdapter: Failed to remove asset at ${absolutePath}: ${error.message}`
+          `LocalStorageAdapter: Failed to remove asset at ${absolutePath}: ${error.message}`,
         );
         throw error; // Re-throw other errors
       }
@@ -137,7 +141,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       `LocalStorageAdapter: Reading asset with data:`,
       Object.entries(data)
         .map(([key, value]) => `${key}: ${value}`)
-        .join(', ')
+        .join(', '),
     );
     const absolutePath = path.join(this.basePath, data.storagePath);
 
@@ -145,33 +149,64 @@ export class LocalStorageAdapter implements StorageAdapter {
       // Read the file content
       const fileContent = await fs.readFile(absolutePath);
       this.l.log(
-        `LocalStorageAdapter: Asset content read from ${absolutePath}: ${fileContent.length}`
+        `LocalStorageAdapter: Asset content read from ${absolutePath}: ${fileContent.length}`,
       );
-      const mime = this.getMimeType(data.type);
+      const mime = this.getMimeType(data.name, data.type);
       const base64Content = `data:${mime};base64,${fileContent.toString(
-        'base64'
+        'base64',
       )}`;
       return base64Content;
     } catch (error: any) {
       this.l.error(
-        `LocalStorageAdapter: Failed to read asset content from ${absolutePath}: ${error.message}`
+        `LocalStorageAdapter: Failed to read asset content from ${absolutePath}: ${error.message}`,
       );
       throw error; // Re-throw the error
     }
   }
 
-  private getMimeType(type: AssetType): string {
+  private getMimeType(name: string, type: AssetType): string {
+    const extension = path.extname(name).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml',
+      '.mp4': 'video/mp4',
+      '.mpeg': 'video/mpeg',
+      '.mpg': 'video/mpeg',
+      '.mov': 'video/quicktime',
+      '.webm': 'video/webm',
+      '.mkv': 'video/x-matroska',
+      '.avi': 'video/x-msvideo',
+      '.wmv': 'video/x-ms-wmv',
+      '.m4v': 'video/mp4',
+      '.ts': 'video/mp2t',
+      '.m3u8': 'application/vnd.apple.mpegurl',
+      '.mp3': 'audio/mpeg',
+      '.wav': 'audio/wav',
+      '.ogg': 'audio/ogg',
+      '.pdf': 'application/pdf',
+      '.txt': 'text/plain',
+      '.md': 'text/markdown',
+    };
+
+    if (mimeTypes[extension]) {
+      return mimeTypes[extension];
+    }
+
     switch (type) {
       case AssetType.IMAGE:
-        return 'image/png'; // Default to PNG for simplicity
+        return 'image/png';
       case AssetType.VIDEO:
-        return 'video/mp4'; // Default to MP4 for simplicity
+        return 'video/mp4';
       case AssetType.AUDIO:
-        return 'audio/mpeg'; // Default to MP3 for simplicity
+        return 'audio/mpeg';
       case AssetType.DOCUMENT:
-        return 'application/pdf'; // Default to PDF for simplicity
+        return 'application/pdf';
       default:
-        return 'application/octet-stream'; // Fallback for unknown types
+        return 'application/octet-stream';
     }
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import {
   VideoDto,
   ChannelDto,
@@ -8,6 +8,11 @@ import {
   CreateVideoDto,
   CreateChannelDto,
   SubscribeDto,
+  ChannelFeedDto,
+  CreateProgramBlockDto,
+  LiveSessionDto,
+  ProgramBlockDto,
+  StartLiveSessionDto,
 } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
@@ -71,15 +76,60 @@ export class VideoService {
   }
 
   async getMyChannels(): Promise<ChannelDto[]> {
-    return this.http.get<ChannelDto[]>(`${this.API_URL}/channels/my`).toPromise() as Promise<ChannelDto[]>;
+    return firstValueFrom(
+      this.http.get<ChannelDto[]>(`${this.API_URL}/channels`)
+    );
   }
 
   async getChannelVideos(channelId: string): Promise<VideoDto[]> {
-    return this.http.get<VideoDto[]>(`${this.API_URL}/channel/${channelId}`).toPromise() as Promise<VideoDto[]>;
+    return firstValueFrom(
+      this.http.get<VideoDto[]>(`${this.API_URL}/channel/${channelId}`)
+    );
   }
 
   createChannel(channel: CreateChannelDto): Promise<ChannelDto> {
-    return this.http.post<ChannelDto>(`${this.API_URL}/channels`, channel).toPromise() as Promise<ChannelDto>;
+    return firstValueFrom(
+      this.http.post<ChannelDto>(`${this.API_URL}/channels`, channel)
+    );
+  }
+
+  getChannelFeed(slugOrId: string): Observable<ChannelFeedDto> {
+    return this.http.get<ChannelFeedDto>(
+      `${this.API_URL}/channels/${slugOrId}/feed`
+    );
+  }
+
+  getChannelSchedule(slugOrId: string): Observable<ProgramBlockDto[]> {
+    return this.http.get<ProgramBlockDto[]>(
+      `${this.API_URL}/channels/${slugOrId}/schedule`
+    );
+  }
+
+  createProgramBlock(
+    slugOrId: string,
+    dto: CreateProgramBlockDto
+  ): Observable<ProgramBlockDto> {
+    return this.http.post<ProgramBlockDto>(
+      `${this.API_URL}/channels/${slugOrId}/schedule`,
+      dto
+    );
+  }
+
+  startLiveSession(
+    slugOrId: string,
+    dto: StartLiveSessionDto
+  ): Observable<LiveSessionDto> {
+    return this.http.post<LiveSessionDto>(
+      `${this.API_URL}/channels/${slugOrId}/live/start`,
+      dto
+    );
+  }
+
+  stopLiveSession(slugOrId: string): Observable<LiveSessionDto | null> {
+    return this.http.post<LiveSessionDto | null>(
+      `${this.API_URL}/channels/${slugOrId}/live/stop`,
+      {}
+    );
   }
 
   // Subscription operations
@@ -115,5 +165,9 @@ export class VideoService {
 
   getVideoUrl(assetId: string): string {
     return `/api/asset/${assetId}`;
+  }
+
+  getHlsUrl(assetId?: string): string | null {
+    return assetId ? `/api/asset/${assetId}` : null;
   }
 }

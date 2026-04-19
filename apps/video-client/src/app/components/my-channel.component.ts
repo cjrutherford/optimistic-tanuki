@@ -1,9 +1,15 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { VideoService } from '../services/video.service';
 import { ProfileService } from '../services/profile.service';
-import { ChannelDto, VideoDto } from '@optimistic-tanuki/ui-models';
+import {
+  ChannelDto,
+  ChannelFeedDto,
+  ProgramBlockDto,
+  VideoDto,
+} from '@optimistic-tanuki/ui-models';
 import { ChannelHeaderComponent, VideoGridComponent } from '@optimistic-tanuki/video-ui';
 
 @Component({
@@ -36,9 +42,9 @@ import { ChannelHeaderComponent, VideoGridComponent } from '@optimistic-tanuki/v
           </button>
           <button 
             class="tab-button"
-            [class.active]="activeTab === 'settings'"
-            (click)="activeTab = 'settings'">
-            Settings
+            [class.active]="activeTab === 'programming'"
+            (click)="activeTab = 'programming'">
+            Programming
           </button>
         </div>
 
@@ -71,9 +77,34 @@ import { ChannelHeaderComponent, VideoGridComponent } from '@optimistic-tanuki/v
             </div>
           </div>
 
-          <div *ngIf="activeTab === 'settings'" class="settings-tab">
-            <h2>Channel Settings</h2>
-            <p>Channel settings coming soon...</p>
+          <div *ngIf="activeTab === 'programming'" class="settings-tab">
+            <h2>Programming Workspace</h2>
+            <p *ngIf="feed">Feed mode: <strong>{{ feed.currentMode }}</strong> ({{ feed.timezone }})</p>
+            <p *ngIf="schedule.length > 0">Scheduled blocks: {{ schedule.length }}</p>
+            <div class="workspace-actions">
+              <button class="upload-button" (click)="scheduleFeaturedVideo()" [disabled]="videos.length === 0 || !channel">
+                Schedule Next Video
+              </button>
+              <button
+                class="upload-button"
+                *ngIf="feed?.currentMode !== 'live'"
+                (click)="goLive()"
+                [disabled]="!channel"
+              >
+                Go Live
+              </button>
+              <button
+                class="create-button"
+                *ngIf="feed?.currentMode === 'live'"
+                (click)="endLive()"
+                [disabled]="!channel"
+              >
+                End Live
+              </button>
+              <button class="tab-button active" *ngIf="channel" (click)="openPublicChannel()">
+                Open Public Channel
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -185,6 +216,13 @@ import { ChannelHeaderComponent, VideoGridComponent } from '@optimistic-tanuki/v
       margin: 0 0 2rem 0;
       opacity: 0.7;
     }
+
+    .workspace-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
   `]
 })
 export class MyChannelComponent implements OnInit {
@@ -194,18 +232,26 @@ export class MyChannelComponent implements OnInit {
   
   channel: ChannelDto | null = null;
   videos: VideoDto[] = [];
-  activeTab: 'videos' | 'analytics' | 'settings' = 'videos';
+  feed: ChannelFeedDto | null = null;
+  schedule: ProgramBlockDto[] = [];
+  activeTab: 'videos' | 'analytics' | 'programming' = 'videos';
   loading = true;
 
   async ngOnInit() {
     try {
       const profile = this.profileService.getCurrentUserProfile();
       if (profile) {
-        // Try to get user's channel
-        const channels = await this.videoService.getMyChannels();
+        const channels = await firstValueFrom(
+          this.videoService.getUserChannels(profile.userId)
+        );
         if (channels.length > 0) {
           this.channel = channels[0];
           this.videos = await this.videoService.getChannelVideos(this.channel.id);
+          const slugOrId = this.channel.communitySlug ?? this.channel.id;
+          this.feed = await firstValueFrom(this.videoService.getChannelFeed(slugOrId));
+          this.schedule = await firstValueFrom(
+            this.videoService.getChannelSchedule(slugOrId)
+          );
         }
       }
     } catch (error) {
@@ -228,7 +274,13 @@ export class MyChannelComponent implements OnInit {
         userId: profile.userId,
         name: `${profile.profileName}'s Channel`,
         description: 'My video channel',
+        communitySlug: profile.profileName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
+      this.feed = await firstValueFrom(
+        this.videoService.getChannelFeed(this.channel.communitySlug ?? this.channel.id)
+      );
+      this.schedule = [];
     } catch (error) {
       console.error('Error creating channel:', error);
     }
@@ -244,6 +296,68 @@ export class MyChannelComponent implements OnInit {
 
   onSubscribe(channelId: string) {
     // User can't subscribe to their own channel
+  }
+
+  async scheduleFeaturedVideo() {
+    if (!this.channel || this.videos.length === 0) {
+      return;
+    }
+
+    const nextVideo = this.videos[0];
+    const start = new Date();
+    start.setHours(start.getHours() + 1, 0, 0, 0);
+    const end = new Date(start.getTime() + Math.max(nextVideo.durationSeconds ?? 1800, 1800) * 1000);
+    const slugOrId = this.channel.communitySlug ?? this.channel.id;
+
+    await firstValueFrom(
+      this.videoService.createProgramBlock(slugOrId, {
+        communityId: this.channel.communityId,
+        channelId: this.channel.id,
+        videoId: nextVideo.id,
+        blockType: 'prerecorded',
+        title: nextVideo.title,
+        description: nextVideo.description,
+        startsAt: start.toISOString(),
+        endsAt: end.toISOString(),
+      })
+    );
+
+    this.schedule = await firstValueFrom(this.videoService.getChannelSchedule(slugOrId));
+  }
+
+  async goLive() {
+    const profile = this.profileService.getCurrentUserProfile();
+    if (!this.channel || !profile) {
+      return;
+    }
+
+    const slugOrId = this.channel.communitySlug ?? this.channel.id;
+    this.feed = await firstValueFrom(
+      this.videoService.startLiveSession(slugOrId, {
+        communityId: this.channel.communityId,
+        channelId: this.channel.id,
+        startedByUserId: profile.userId,
+        startedByProfileId: profile.id,
+        title: `${this.channel.name} Live`,
+      })
+    ).then(() => firstValueFrom(this.videoService.getChannelFeed(slugOrId)));
+  }
+
+  async endLive() {
+    if (!this.channel) {
+      return;
+    }
+
+    const slugOrId = this.channel.communitySlug ?? this.channel.id;
+    await firstValueFrom(this.videoService.stopLiveSession(slugOrId));
+    this.feed = await firstValueFrom(this.videoService.getChannelFeed(slugOrId));
+  }
+
+  openPublicChannel() {
+    if (!this.channel) {
+      return;
+    }
+    this.router.navigate(['/c', this.channel.communitySlug ?? this.channel.id]);
   }
 
   getTotalViews(): number {

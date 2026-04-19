@@ -12,4 +12,11 @@ export type {
   CreateChannelDto,
   UpdateChannelDto,
   SubscribeDto,
+  ChannelFeedDto,
+  CreateProgramBlockDto,
+  UpdateProgramBlockDto,
+  ProgramBlockDto,
+  StartLiveSessionDto,
+  StopLiveSessionDto,
+  LiveSessionDto,
 } from './video.dto';

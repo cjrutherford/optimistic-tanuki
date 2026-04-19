@@ -55,6 +55,14 @@ export class CreateAssetDto {
   content?: Buffer | string;
 
   @ApiProperty({
+    description: 'Optional existing file path to ingest without inline content',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  sourcePath?: string;
+
+  @ApiProperty({
     description: 'File extension',
     example: 'jpg',
     required: false,

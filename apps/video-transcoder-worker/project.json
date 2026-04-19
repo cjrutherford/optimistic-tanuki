@@ -1,0 +1,30 @@
+{
+  "name": "video-transcoder-worker",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/video-transcoder-worker",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "mkdir -p ../../dist/apps/video-transcoder-worker && GOCACHE=/tmp/go-build go build -o ../../dist/apps/video-transcoder-worker/video-transcoder-worker .",
+        "cwd": "apps/video-transcoder-worker"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "GOCACHE=/tmp/go-build go run .",
+        "cwd": "apps/video-transcoder-worker"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "GOCACHE=/tmp/go-build go test ./...",
+        "cwd": "apps/video-transcoder-worker"
+      }
+    }
+  },
+  "tags": ["scope:backend", "type:service"]
+}

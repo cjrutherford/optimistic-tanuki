@@ -9,7 +9,7 @@ export class ChannelSubscription {
   @ManyToOne(() => Channel, (channel) => channel.subscriptions)
   channel: Channel;
 
-  @Column()
+  @Column({ type: 'uuid' })
   channelId: string;
 
   @Column()

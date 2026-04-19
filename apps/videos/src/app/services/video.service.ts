@@ -1,19 +1,40 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
-import { CreateVideoDto, UpdateVideoDto } from '@optimistic-tanuki/models';
+import {
+  CreateVideoDto,
+  UpdateVideoDto,
+  VideoProcessingStatus,
+  CompleteVideoProcessingResultDto,
+} from '@optimistic-tanuki/models';
 import { Video } from '../../entities/video.entity';
+import { Channel } from '../../entities/channel.entity';
+import { VideoProcessingService } from './video-processing.service';
 
 @Injectable()
 export class VideoService {
   constructor(
     @InjectRepository(Video)
-    private readonly videoRepository: Repository<Video>
+    private readonly videoRepository: Repository<Video>,
+    @InjectRepository(Channel)
+    private readonly channelRepository: Repository<Channel>,
+    private readonly videoProcessingService?: VideoProcessingService,
   ) {}
 
   async create(createVideoDto: CreateVideoDto): Promise<Video> {
-    const video = this.videoRepository.create(createVideoDto);
-    return this.videoRepository.save(video);
+    const channel = await this.channelRepository.findOne({
+      where: { id: createVideoDto.channelId },
+    });
+    const video = this.videoRepository.create({
+      ...createVideoDto,
+      sourceAssetId: createVideoDto.sourceAssetId ?? createVideoDto.assetId,
+      processingStatus:
+        createVideoDto.processingStatus ?? VideoProcessingStatus.PENDING,
+      communityId: createVideoDto.communityId ?? channel?.communityId,
+    });
+    const savedVideo = await this.videoRepository.save(video);
+    void this.videoProcessingService?.processVideo(savedVideo.id);
+    return savedVideo;
   }
 
   async findAll(): Promise<Video[]> {
@@ -97,5 +118,53 @@ export class VideoService {
 
   async remove(id: string): Promise<void> {
     await this.videoRepository.delete(id);
+  }
+
+  async markProcessing(id: string): Promise<void> {
+    await this.findOneOrFail(id);
+    await this.videoRepository.update(id, {
+      processingStatus: VideoProcessingStatus.PROCESSING,
+      processingError: null,
+      updatedAt: new Date(),
+    });
+  }
+
+  async completeProcessing(
+    id: string,
+    result: CompleteVideoProcessingResultDto,
+  ): Promise<void> {
+    const video = await this.findOneOrFail(id);
+
+    await this.videoRepository.update(id, {
+      assetId: result.playbackAssetId,
+      playbackAssetId: result.playbackAssetId,
+      hlsManifestAssetId: result.hlsManifestAssetId,
+      durationSeconds: result.durationSeconds ?? video.durationSeconds,
+      resolution: result.resolution ?? video.resolution,
+      encoding: result.encoding ?? video.encoding,
+      processingStatus: result.processingStatus,
+      processingError: null,
+      updatedAt: new Date(),
+    });
+  }
+
+  async failProcessing(id: string, error: string): Promise<void> {
+    await this.findOneOrFail(id);
+    await this.videoRepository.update(id, {
+      processingStatus: VideoProcessingStatus.FAILED,
+      processingError: error,
+      updatedAt: new Date(),
+    });
+  }
+
+  private async findOneOrFail(id: string): Promise<Video> {
+    const video = await this.videoRepository.findOne({
+      where: { id },
+      relations: ['channel', 'views'],
+    });
+    if (!video) {
+      throw new Error(`Video with ID ${id} not found`);
+    }
+    return video;
   }
 }

@@ -17,6 +17,13 @@ export enum VideoVisibility {
   PRIVATE = 'private',
 }
 
+export enum VideoProcessingStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  READY = 'ready',
+  FAILED = 'failed',
+}
+
 export class CreateVideoDto {
   @ApiProperty({
     description: 'Video title',
@@ -44,6 +51,14 @@ export class CreateVideoDto {
   assetId: string;
 
   @ApiProperty({
+    description: 'Original uploaded asset ID',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  sourceAssetId?: string;
+
+  @ApiProperty({
     description: 'Thumbnail asset ID',
     required: false,
   })
@@ -55,6 +70,14 @@ export class CreateVideoDto {
   @IsString()
   @IsUUID()
   channelId: string;
+
+  @ApiProperty({
+    description: 'Canonical community ID for the owning channel',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  communityId?: string;
 
   @ApiProperty({
     description: 'Video duration in seconds',
@@ -90,6 +113,15 @@ export class CreateVideoDto {
   @IsOptional()
   @IsEnum(VideoVisibility)
   visibility?: VideoVisibility;
+
+  @ApiProperty({
+    description: 'Video processing status',
+    enum: VideoProcessingStatus,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(VideoProcessingStatus)
+  processingStatus?: VideoProcessingStatus;
 }
 
 export class UpdateVideoDto {
@@ -135,11 +167,23 @@ export class VideoDto {
   @ApiProperty({ description: 'Asset ID' })
   assetId: string;
 
+  @ApiProperty({ description: 'Original source asset ID', required: false })
+  sourceAssetId?: string;
+
+  @ApiProperty({ description: 'Normalized MP4 playback asset ID', required: false })
+  playbackAssetId?: string;
+
+  @ApiProperty({ description: 'HLS manifest asset ID', required: false })
+  hlsManifestAssetId?: string;
+
   @ApiProperty({ description: 'Thumbnail asset ID' })
   thumbnailAssetId?: string;
 
   @ApiProperty({ description: 'Channel ID' })
   channelId: string;
+
+  @ApiProperty({ description: 'Canonical community ID for the owning channel' })
+  communityId?: string;
 
   @ApiProperty({ description: 'Duration in seconds' })
   durationSeconds?: number;
@@ -149,6 +193,15 @@ export class VideoDto {
 
   @ApiProperty({ description: 'Encoding' })
   encoding?: string;
+
+  @ApiProperty({
+    description: 'Current processing status',
+    enum: VideoProcessingStatus,
+  })
+  processingStatus: VideoProcessingStatus;
+
+  @ApiProperty({ description: 'Processing error message', required: false })
+  processingError?: string;
 
   @ApiProperty({ description: 'View count' })
   viewCount: number;
@@ -167,6 +220,60 @@ export class VideoDto {
 
   @ApiProperty({ description: 'Published at' })
   publishedAt?: Date;
+}
+
+export class CompleteVideoProcessingResultDto {
+  @ApiProperty({ description: 'Normalized MP4 playback asset ID' })
+  @IsUUID()
+  playbackAssetId: string;
+
+  @ApiProperty({ description: 'HLS manifest asset ID', required: false })
+  @IsOptional()
+  @IsUUID()
+  hlsManifestAssetId?: string;
+
+  @ApiProperty({ description: 'Video duration in seconds', required: false })
+  @IsOptional()
+  @IsInt()
+  durationSeconds?: number;
+
+  @ApiProperty({ description: 'Video resolution', required: false })
+  @IsOptional()
+  @IsString()
+  resolution?: string;
+
+  @ApiProperty({ description: 'Video encoding label', required: false })
+  @IsOptional()
+  @IsString()
+  encoding?: string;
+
+  @ApiProperty({
+    description: 'Final processing status',
+    enum: VideoProcessingStatus,
+    default: VideoProcessingStatus.READY,
+  })
+  @IsEnum(VideoProcessingStatus)
+  processingStatus: VideoProcessingStatus;
+}
+
+export class CompleteVideoProcessingDto {
+  @ApiProperty({ description: 'Video ID' })
+  @IsUUID()
+  id: string;
+
+  @ApiProperty({ type: CompleteVideoProcessingResultDto })
+  result: CompleteVideoProcessingResultDto;
+}
+
+export class FailVideoProcessingDto {
+  @ApiProperty({ description: 'Video ID' })
+  @IsUUID()
+  id: string;
+
+  @ApiProperty({ description: 'Processing error message' })
+  @IsString()
+  @IsNotEmpty()
+  error: string;
 }
 
 export class RecordVideoViewDto {
